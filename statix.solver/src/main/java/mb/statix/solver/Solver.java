@@ -20,6 +20,8 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.SolverResult;
+import mb.statix.solver.State;
 
 public class Solver {
 

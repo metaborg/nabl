@@ -37,11 +37,11 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
-import mb.statix.solver.State;
 import mb.statix.solver.constraint.Constraints;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.State;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 

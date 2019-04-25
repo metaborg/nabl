@@ -18,7 +18,6 @@ import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
 import mb.statix.solver.constraint.Constraints;
 import mb.statix.spec.Spec;
 
@@ -94,10 +93,10 @@ public class Completeness implements ICompleteness {
         return criticalEdges.build();
     }
 
-    public static List<CriticalEdge> criticalEdges(IConstraint constraint, State state) {
+    public static List<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
         ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
-        criticalEdges(constraint, state.spec(), (scopeTerm, label) -> {
-            AScope.matcher().match(scopeTerm, state.unifier()).ifPresent(scope -> {
+        criticalEdges(constraint, spec, (scopeTerm, label) -> {
+            AScope.matcher().match(scopeTerm, unifier).ifPresent(scope -> {
                 criticalEdges.add(CriticalEdge.of(scope, label));
             });
         });

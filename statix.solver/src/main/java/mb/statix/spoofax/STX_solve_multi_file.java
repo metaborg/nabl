@@ -22,10 +22,10 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.SolverResult;
+import mb.statix.solver.State;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi_file extends StatixPrimitive {

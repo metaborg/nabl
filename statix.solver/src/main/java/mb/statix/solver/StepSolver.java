@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.value.Value;
+import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
 
@@ -30,7 +32,6 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -148,7 +149,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         }
                         completeness.updateAll(result.vars(), state.unifier());
                         constraints.activateFromVars(result.vars(), subDebug);
-                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, result.state()), subDebug);
+                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
@@ -600,13 +601,18 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try rule {}", rawRule.toString());
             }
-            final State instantiatedState;
+            final Ref<State> instantiatedState;
             final List<IConstraint> instantiatedBody;
-            final Tuple3<State, Set<ITermVar>, List<IConstraint>> appl;
             try {
-                if((appl = rawRule.apply(args, state, c).orElse(null)) != null) {
-                    instantiatedState = appl._1();
-                    instantiatedBody = appl._3();
+                instantiatedState = new Ref<>(state);
+                final Function1<String, ITermVar> freshVar = (base) -> {
+                    final Tuple2<ITermVar, State> stateAndVar = instantiatedState.get().freshVar(base);
+                    instantiatedState.set(stateAndVar._2());
+                    return stateAndVar._1();
+                };
+                final Tuple2<Set<ITermVar>, List<IConstraint>> appl;
+                if((appl = rawRule.apply(args, state.unifier(), freshVar, c).orElse(null)) != null) {
+                    instantiatedBody = appl._2();
                 } else {
                     proxyDebug.info("Rule rejected (mismatching arguments)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
@@ -620,7 +626,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.ofConstraints(instantiatedState, instantiatedBody));
+            return Optional.of(ConstraintResult.ofConstraints(instantiatedState.get(), instantiatedBody));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);

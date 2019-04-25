@@ -10,25 +10,27 @@ import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
-import mb.statix.solver.log.NullDebugContext;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -47,27 +49,26 @@ public abstract class ARule {
     @Value.Parameter public abstract List<IConstraint> body();
 
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
-        State state = State.of(spec);
-        List<ITerm> args = Lists.newArrayList();
-        for(@SuppressWarnings("unused") Pattern param : params()) {
-            final Tuple2<ITermVar, State> stateAndVar = state.freshVar("arg");
-            args.add(stateAndVar._1());
-            state = stateAndVar._2();
-        }
-        Tuple3<State, Set<ITermVar>, List<IConstraint>> stateAndInst;
+        final Ref<State> state = new Ref<>(State.of(spec));
+        final Function1<String, ITermVar> freshVar = (base) -> {
+            final Tuple2<ITermVar, State> stateAndVar = state.get().freshVar(base);
+            state.set(stateAndVar._2());
+            return stateAndVar._1();
+        };
+        List<ITerm> args = params().stream().map(p -> freshVar.apply("arg")).collect(ImmutableList.toImmutableList());
+        Tuple2<Set<ITermVar>, List<IConstraint>> inst;
         try {
-            if((stateAndInst = apply(args, state).orElse(null)) == null) {
+            if((inst = apply(args, PersistentUnifier.Immutable.of(), freshVar).orElse(null)) == null) {
                 return Optional.of(false);
             }
         } catch(Delay e) {
             return Optional.of(false);
         }
-        state = stateAndInst._1();
-        final Set<ITermVar> instVars = stateAndInst._2();
-        final List<IConstraint> instBody = stateAndInst._3();
+        final Set<ITermVar> instVars = inst._1();
+        final List<IConstraint> instBody = inst._2();
         try {
             Optional<SolverResult> solverResult =
-                    Solver.entails(state, instBody, (s, l, st) -> true, instVars, new NullDebugContext());
+                    Solver.entails(state.get(), instBody, (s, l, st) -> true, instVars, new NullDebugContext());
             if(solverResult.isPresent()) {
                 return Optional.of(true);
             } else {
@@ -85,32 +86,31 @@ public abstract class ARule {
         return Rule.of(name(), params(), bodyVars(), newBody);
     }
 
-    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
-        return apply(args, state, null);
+    public Optional<Tuple2<Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, IUnifier unifier,
+            Function1<String, ITermVar> freshVar) throws Delay {
+        return apply(args, unifier, freshVar, null);
     }
 
-    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state,
-            @Nullable IConstraint cause) throws Delay {
+    public Optional<Tuple2<Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, IUnifier unifier,
+            Function1<String, ITermVar> freshVar, @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
-                P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
+                P.match(params(), args, unifier).matchOrThrow(r -> r, vars -> {
                     throw Delay.ofVars(vars);
                 });
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
             return Optional.empty();
         }
-        State newState = state;
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {
-            final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
-            subst.put(var, vs._1());
-            freshBodyVars.add(vs._1());
-            newState = vs._2();
+            final ITermVar v = freshVar.apply(var.getName());
+            subst.put(var, v);
+            freshBodyVars.add(v);
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final List<IConstraint> newBody =
                 body().stream().map(c -> c.apply(isubst).withCause(cause)).collect(ImmutableList.toImmutableList());
-        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
+        return Optional.of(ImmutableTuple2.of(freshBodyVars.build(), newBody));
     }
 
     public String toString(TermFormatter termToString) {

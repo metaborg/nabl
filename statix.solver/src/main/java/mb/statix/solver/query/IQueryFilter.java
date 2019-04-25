@@ -6,9 +6,9 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.State;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.State;
 
 public interface IQueryFilter {
 

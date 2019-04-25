@@ -20,15 +20,15 @@ public class ConstraintContext {
         return debug;
     }
 
-    public boolean isComplete(Scope scope, ITerm label, State state) {
+    public boolean isComplete(Scope scope, ITerm label, IState state) {
         return isComplete.test(scope, label, state);
     }
 
-    public boolean isRigid(ITermVar var, State state) {
+    public boolean isRigid(ITermVar var, IState state) {
         return !state.vars().contains(var);
     }
 
-    public boolean isClosed(Scope scope, State state) {
+    public boolean isClosed(Scope scope, IState state) {
         return !state.scopes().contains(scope);
     }
 

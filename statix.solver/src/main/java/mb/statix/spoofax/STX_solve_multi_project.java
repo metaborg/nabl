@@ -17,9 +17,9 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);

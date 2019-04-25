@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
@@ -19,16 +21,15 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.SolverResult;
+import mb.statix.solver.State;
 import mb.statix.spec.Rule;
 
 public class ConstraintLabelWF implements LabelWF<ITerm> {
@@ -123,17 +124,22 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
 
     public static ConstraintLabelWF of(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         // duplicate logic from entails, because we call solve directly in step()
-        final State _state = state.clearVarsAndScopes();
-        final Tuple2<ITermVar, State> lbls = _state.freshVar("lbls");
-        final Tuple3<State, Set<ITermVar>, List<IConstraint>> inst;
+        final Ref<State> _state = new Ref<>(state.clearVarsAndScopes());
+        final Function1<String, ITermVar> freshVar = (base) -> {
+            final Tuple2<ITermVar, State> stateAndVar = _state.get().freshVar(base);
+            _state.set(stateAndVar._2());
+            return stateAndVar._1();
+        };
+        final ITermVar lbls = freshVar.apply("lbls");
+        final Tuple2<Set<ITermVar>, List<IConstraint>> inst;
         try {
-            if((inst = constraint.apply(ImmutableList.of(lbls._1()), lbls._2()).orElse(null)) == null) {
+            if((inst = constraint.apply(ImmutableList.of(lbls), state.unifier(), freshVar).orElse(null)) == null) {
                 throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");
             }
         } catch(Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
-        return new ConstraintLabelWF(inst._3(), inst._1(), isComplete, debug, lbls._1(), lbls._1());
+        return new ConstraintLabelWF(inst._2(), _state.get(), isComplete, debug, lbls, lbls);
     }
 
 }

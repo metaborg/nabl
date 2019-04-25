@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
 
@@ -29,7 +31,6 @@ import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -66,6 +67,8 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.SolverResult;
+import mb.statix.solver.State;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -140,7 +143,7 @@ public class GreedySolver {
         completeness.updateAll(updatedVars, unifier);
         completeness.addAll(newConstraints, unifier);
         constraints.activateFromVars(updatedVars, debug);
-        constraints.activateFromEdges(Completeness.criticalEdges(constraint, state), debug);
+        constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), debug);
         final IDebugContext subDebug = debug.subContext();
         if(!newConstraints.isEmpty()) {
             subDebug.info("Simplified to:");
@@ -547,13 +550,18 @@ public class GreedySolver {
                     if(proxyDebug.isEnabled(Level.Info)) {
                         proxyDebug.info("Try rule {}", rawRule.toString());
                     }
-                    final State instantiatedState;
+                    final Ref<State> instantiatedState;
                     final List<IConstraint> instantiatedBody;
-                    final Tuple3<State, Set<ITermVar>, List<IConstraint>> appl;
                     try {
-                        if((appl = rawRule.apply(args, state, c).orElse(null)) != null) {
-                            instantiatedState = appl._1();
-                            instantiatedBody = appl._3();
+                        instantiatedState = new Ref<>(state);
+                        final Function1<String, ITermVar> freshVar = (base) -> {
+                            final Tuple2<ITermVar, State> stateAndVar = instantiatedState.get().freshVar(base);
+                            instantiatedState.set(stateAndVar._2());
+                            return stateAndVar._1();
+                        };
+                        final Tuple2<Set<ITermVar>, List<IConstraint>> appl;
+                        if((appl = rawRule.apply(args, state.unifier(), freshVar, c).orElse(null)) != null) {
+                            instantiatedBody = appl._2();
                         } else {
                             proxyDebug.info("Rule rejected (mismatching arguments)");
                             unsuccessfulLog.absorb(proxyDebug.clear());
@@ -567,7 +575,7 @@ public class GreedySolver {
                     }
                     proxyDebug.info("Rule accepted");
                     proxyDebug.commit();
-                    return success(c, instantiatedState, ImmutableList.of(), instantiatedBody, fuel);
+                    return success(c, instantiatedState.get(), ImmutableList.of(), instantiatedBody, fuel);
                 }
                 debug.info("No rule applies");
                 unsuccessfulLog.flush(debug);

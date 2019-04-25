@@ -7,9 +7,9 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.solver.State;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.State;
 import mb.statix.spec.Rule;
 
 public class QueryMin implements IQueryMin, Serializable {

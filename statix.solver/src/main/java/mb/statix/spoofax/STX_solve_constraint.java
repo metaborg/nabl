@@ -27,9 +27,9 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
+import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixPrimitive {
@@ -64,7 +64,7 @@ public class STX_solve_constraint extends StatixPrimitive {
 
     private ITerm solveConstraint(Spec spec, List<ITermVar> topLevelVars, Collection<IConstraint> constraints,
             IDebugContext debug) {
-        State state = State.of(spec);
+        mb.statix.solver.State state = State.of(spec);
 
         final Tuple2<Immutable, State> freshVarsAndState = freshenToplevelVariables(topLevelVars, state);
         final ISubstitution.Immutable subst = freshVarsAndState._1();
