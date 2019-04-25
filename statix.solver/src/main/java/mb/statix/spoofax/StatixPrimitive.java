@@ -153,7 +153,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected ITerm makeMessage(String prefix, IConstraint constraint, IUnifier.Immutable unifier) {
+    protected ITerm makeMessage(String prefix, IConstraint constraint, IUnifier unifier) {
         final ITerm astTerm = findClosestASTTerm(constraint, unifier);
         final StringBuilder message = new StringBuilder();
         message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
@@ -193,7 +193,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
     }
 
-    private static void formatTrace(@Nullable IConstraint constraint, IUnifier.Immutable unifier, StringBuilder sb) {
+    private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");

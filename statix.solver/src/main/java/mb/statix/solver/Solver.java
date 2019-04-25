@@ -118,7 +118,7 @@ public class Solver {
 
     }
 
-    public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
+    public static TermFormatter shallowTermFormatter(final IUnifier unifier) {
         return new UnifierFormatter(unifier, 3);
     }
 

@@ -228,7 +228,7 @@ public class GreedySolver {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
 
-                final IUnifier.Immutable unifier = state.unifier();
+                final IUnifier unifier = state.unifier();
                 return unifier.areEqual(term1, term2).matchOrThrow(result -> {
                     if(result) {
                         return fail(c, state);
@@ -285,7 +285,7 @@ public class GreedySolver {
             }
 
             @Override public State casePathLt(CPathLt c) throws InterruptedException {
-                final IRelation.Immutable<ITerm> lt = c.lt();
+                final IRelation<ITerm> lt = c.lt();
                 final ITerm label1Term = c.label1Term();
                 final ITerm label2Term = c.label2Term();
 
@@ -390,7 +390,7 @@ public class GreedySolver {
                     type = StatixTerms.SCOPE_REL_TYPE;
                 }
 
-                final IUnifier.Immutable unifier = state.unifier();
+                final IUnifier unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
                     return delay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)));
                 }
@@ -444,7 +444,7 @@ public class GreedySolver {
                 final ITerm label = c.label();
                 final ITerm targetTerm = c.targetTerm();
 
-                final IUnifier.Immutable unifier = state.unifier();
+                final IUnifier unifier = state.unifier();
                 if(!unifier.isGround(sourceTerm)) {
                     return delay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)));
                 }
@@ -481,7 +481,7 @@ public class GreedySolver {
                     return fail(c, state);
                 }
 
-                final IUnifier.Immutable unifier = state.unifier();
+                final IUnifier unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
                     return delay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)));
                 }

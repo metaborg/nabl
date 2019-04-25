@@ -79,7 +79,7 @@ public class STX_solve_constraint extends StatixPrimitive {
             throw new RuntimeException(e);
         }
         final State resultState = resultConfig.state();
-        final IUnifier.Immutable unifier = resultState.unifier();
+        final IUnifier unifier = resultState.unifier();
 
         final List<ITerm> errorList = Lists.newArrayList();
         if(resultConfig.hasErrors()) {
