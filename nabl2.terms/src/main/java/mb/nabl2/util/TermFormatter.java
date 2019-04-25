@@ -21,8 +21,4 @@ public interface TermFormatter {
         return sb.toString();
     }
 
-    default TermFormatter removeAll(@SuppressWarnings("unused") Iterable<ITermVar> vars) {
-        return this;
-    }
-
 }

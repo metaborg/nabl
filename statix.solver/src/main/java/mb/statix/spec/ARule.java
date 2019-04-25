@@ -89,11 +89,13 @@ public abstract class ARule {
         return apply(args, state, null);
     }
 
-    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state, @Nullable IConstraint cause) throws Delay {
+    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state,
+            @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
-        final Optional<ISubstitution.Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
-            throw Delay.ofVars(vars);
-        });
+        final Optional<ISubstitution.Immutable> matchResult =
+                P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
+                    throw Delay.ofVars(vars);
+                });
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
             return Optional.empty();
         }
@@ -121,9 +123,9 @@ public abstract class ARule {
         if(!body().isEmpty()) {
             sb.append(" :- ");
             if(!bodyVars().isEmpty()) {
-                sb.append("{").append(bodyVars()).append("} ");
+                sb.append("{").append(termToString.format(bodyVars())).append("} ");
             }
-            sb.append(IConstraint.toString(body(), termToString.removeAll(bodyVars())));
+            sb.append(IConstraint.toString(body(), termToString));
         }
         if(name().isEmpty()) {
             sb.append(" }");

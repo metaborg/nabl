@@ -40,20 +40,20 @@ class ConsPattern extends Pattern {
         return vars.build();
     }
 
-    @Override protected MaybeNotInstantiated<Boolean> matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
         // @formatter:off
         return M.list(listTerm -> {
-            return listTerm.match(ListTerms.<MaybeNotInstantiated<Boolean>>cases()
+            return listTerm.match(ListTerms.<MaybeNotInstantiatedBool>cases()
                 .cons(consTerm -> {
                     return matchTerms(Iterables2.from(head, tail),
                             Iterables2.from(consTerm.getHead(), consTerm.getTail()), subst, unifier);
                 }).var(v -> {
-                    return MaybeNotInstantiated.ofNotInstantiated(v);
+                    return MaybeNotInstantiatedBool.ofNotInstantiated(v);
                 }).otherwise(t -> {
-                    return MaybeNotInstantiated.ofResult(false);
+                    return MaybeNotInstantiatedBool.ofResult(false);
                 })
             );
-        }).match(unifier.findTerm(term)).orElse(MaybeNotInstantiated.ofResult(false));
+        }).match(unifier.findTerm(term)).orElse(MaybeNotInstantiatedBool.ofResult(false));
     }
 
     @Override public String toString() {
