@@ -10,28 +10,16 @@ import java.util.function.Consumer;
 import org.metaborg.util.log.Level;
 
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
-import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 
-public class SolverCoordinator implements ISolverCoordinator {
+public class SolverCoordinator extends ASolverCoordinator {
     protected final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
     protected final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
-    protected ModuleSolver root;
-    protected IMState rootState;
     
     public SolverCoordinator() {}
-    
-    @Override
-    public ModuleSolver getRootSolver() {
-        return root;
-    }
-    
-    @Override
-    public IMState getRootState() {
-        return rootState;
-    }
     
     @Override
     public Map<IModule, MSolverResult> getResults() {
@@ -50,70 +38,88 @@ public class SolverCoordinator implements ISolverCoordinator {
     
     public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug)
         throws InterruptedException {
-        rootState = state;
-        root = ModuleSolver.topLevelSolver(state, constraints, debug);
-        solvers.add(root);
+        init(state, constraints, debug);
+        addSolver(root);
         
-        PrefixedDebugContext cdebug = new PrefixedDebugContext("Coordinator", debug);
+        runToCompletion();
         
+        return aggregateResults();
+    }
+    
+    @Override
+    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
+        init(state, constraints, debug);
+        new Thread(() -> {
+            try {
+                runToCompletion();
+            } catch (InterruptedException ex) {
+                this.debug.error("Interrupted while solving!");
+            }
+            
+            onFinished.accept(aggregateResults());
+        }).start();
+    }
+    
+    @Override
+    public Map<String, ISolverResult> solve(IMState state, Map<String, Set<IConstraint>> constraints, IDebugContext debug)
+            throws InterruptedException {
+        init(state, Collections.emptyList(), debug);
+        
+        Map<IModule, Set<IConstraint>> modules = createModules(constraints);
+        scheduleModules(modules);
+        
+        runToCompletion();
+        
+        return collectResults(modules.keySet());
+    }
+    
+    /**
+     * Runs the solvers until completion.
+     */
+    @Override
+    protected void runToCompletion() throws InterruptedException {
         boolean anyProgress = true;
-        ModuleSolver progressed = root; //The solver that has progressed, or null if multiple
-        outer: while (anyProgress && !solvers.isEmpty()) {
-            cdebug.log(Level.Trace, "Begin of main loop");
+        while (anyProgress && !solvers.isEmpty()) {
+            this.debug.log(Level.Trace, "Begin of main loop");
             anyProgress = false;
             
             //Ensure that changes are not reflected this run
             
             ModuleSolver[] tempSolvers = solvers.toArray(new ModuleSolver[0]);
             for (ModuleSolver solver : tempSolvers) {
-                cdebug.log(Level.Trace, "Checking solver for module {}", solver.getOwner().getId());
+                this.debug.log(Level.Trace, "Checking solver for module {}", solver.getOwner().getId());
                 //If this solver is done, store its result and continue.
                 if (solver.isDone()) {
-                    cdebug.log(Level.Debug, "[{}] done, removing...", solver.getOwner().getId());
+                    this.debug.log(Level.Debug, "[{}] done, removing...", solver.getOwner().getId());
                     solvers.remove(solver);
                     results.put(solver.getOwner(), solver.finishSolver());
                     continue;
                 }
-                cdebug.log(Level.Trace, "[{}] is not done", solver.getOwner().getId());
-                
-                //TODO Improve the mechanism of delaying and "someone progresses, so just redo all"
-                //If this solver is not the only solver that has made progress last round, then inform it that someone else has made progress.
-                if (solver != progressed) {
-                    cdebug.log(Level.Debug, "[{}] informed of external progress by {}", solver.getOwner().getId(), progressed);
-//                    solver.externalProgress();
-                } else {
-                    cdebug.log(Level.Debug, "[{}] is the only solver who made progress last round", solver.getOwner().getId());
-                }
-                
-                cdebug.log(Level.Debug, "[{}] going to try solve a step", solver.getOwner().getId());
+                this.debug.log(Level.Trace, "[{}] going to try solve a step", solver.getOwner().getId());
                 //If any progress can be made, store that information
                 if (solver.solveStep()) {
-                    cdebug.log(Level.Debug, "[{}] solved one step", solver.getOwner().getId());
-                    if (anyProgress) {
-                        progressed = null;
-                    } else {
-                        anyProgress = true;
-                        progressed = solver;
-                    }
+                    this.debug.log(Level.Debug, "[{}] solved one step", solver.getOwner().getId());
+                    anyProgress = true;
                     
                     //Solve this solver as far as possible
+                    this.debug.log(Level.Trace, "[{}] solving as far as possible", solver.getOwner().getId());
                     while (solver.solveStep());
                 } else {
-                    cdebug.log(Level.Debug, "[{}] unable to solve a step", solver.getOwner().getId());
+                    this.debug.log(Level.Debug, "[{}] unable to solve a step", solver.getOwner().getId());
                 }
                 
-                
                 if (solver.hasFailed()) {
-                    cdebug.log(Level.Debug, "[{}] failed", solver.getOwner().getId());
-                    //TODO IMPORTANT Do not break upon failure, other solvers might be able to continue still!
-                    break outer;
+                    this.debug.log(Level.Debug, "[{}] failed, removing...", solver.getOwner().getId());
+                    solvers.remove(solver);
+                    results.put(solver.getOwner(), solver.finishSolver());
+                    continue;
                 }
             }
             
-            cdebug.log(Level.Trace, "end of main loop");
+            this.debug.log(Level.Trace, "end of main loop");
         }
         
-        LazyDebugContext lazyDebug = new LazyDebugContext(cdebug);
+        LazyDebugContext lazyDebug = new LazyDebugContext(this.debug);
         //If we end up here, none of the solvers is still able to make progress
         if (solvers.isEmpty()) {
             //All solvers are done!
@@ -131,19 +137,5 @@ public class SolverCoordinator implements ISolverCoordinator {
         }
         logDebugInfo(lazyDebug);
         lazyDebug.commit();
-        
-        return aggregateResults();
-    }
-    
-    @Override
-    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
-        throw new UnsupportedOperationException();
-//        MSolverResult result;
-//        try {
-//            result = solve(state, constraints, debug);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException("Interrupted!", e);
-//        }
-//        onFinished.accept(result);
     }
 }

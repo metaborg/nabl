@@ -46,4 +46,10 @@ public interface IChangeSet {
      *      all modules that definitely did not change (all - dirty - clirty)
      */
     Set<IModule> clean();
+    
+    /**
+     * @return
+     *      a set of module names for the added modules
+     */
+    Set<String> added();
 }

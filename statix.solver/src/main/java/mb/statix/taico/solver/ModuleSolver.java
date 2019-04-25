@@ -58,6 +58,21 @@ public class ModuleSolver implements IOwnable {
     private int reductions = 0;
     private int delays = 0;
     
+    /**
+     * Creates a new top level solver.
+     * <p>
+     * <b>NOTE:</b> sets the solver of the given state to the created solver.
+     * 
+     * @param state
+     *      the state to create the solver for
+     * @param constraints
+     *      the constraints that should be solved
+     * @param debug
+     *      the debug context
+     * 
+     * @return
+     *      the created solver
+     */
     public static ModuleSolver topLevelSolver(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
         return new ModuleSolver(null, state, constraints, (s, l, st) -> CompletenessResult.of(true, null), topDebug);
@@ -77,11 +92,15 @@ public class ModuleSolver implements IOwnable {
     
     /**
      * Creates a solver as a child of this solver.
+     * <p>
+     * <b>NOTE</b>: This method adds the created solver to the coordinator.<br>
+     * <b>NOTE</b>: This method sets the solver of the given state to the created solver.
      * 
      * @param state
      *      the newly created state for this solver
      * @param constraints
      *      the constraints to solve
+     * 
      * @return
      *      the new solver
      */
@@ -441,6 +460,16 @@ public class ModuleSolver implements IOwnable {
         @Override
         public Immutable unifier() {
             return state().unifier();
+        }
+        
+        /**
+         * Resets all errors and delays on this solver result.
+         * 
+         * @return
+         *      a new solver result
+         */
+        public MSolverResult reset() {
+            return MSolverResult.of(state(), new HashSet<>(), new HashMap<>());
         }
     }
 

@@ -7,14 +7,20 @@ imports
 
   libspoofax/analysis/constraint
   libspoofax/core/language
+  
+  libspoofax/stratego/debug
 
   pp/statix/runtime/-
 
 signature
   constructors
 
-    ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
-    FileAnalysis    : Constraint -> AnalysisResult
+    //Global Scope * Global State * Initial Project State * Combined Project State
+    ProjectAnalysis : Scope * SolverResult * SolverResult * SolverResult -> AnalysisResult
+    FileAnalysis    : SolverResult -> AnalysisResult
+    
+    MModuleAnalysis  : SolverResult -> AnalysisResult
+    MProjectAnalysis : Scope * SolverResult -> AnalysisResult
 
     Solution : List(Var, Term) * SolverResult -> Solution
 
@@ -27,6 +33,19 @@ signature
     CTrue : Constraint
     CConj : Constraint * Constraint -> Constraint
     C     : String * List(Term) -> Constraint
+    
+    // Modules
+    Module : String -> Module
+    
+    // Module changes
+    MAdded     : String * Term        -> MChange //name * AST            -> MChange
+    MRemoved   : String * Term        -> MChange //name * Analysis       -> MChange
+    MUnchanged : String * Term        -> MChange //name * Analysis       -> MChange
+    MChanged   : String * Term * Term -> MChange //name * AST * Analysis -> MChange
+    
+    //Solution(substitutions, solverResult)
+    //stx-solve-constraint: (List(Var), Constraint) -> (Solution, errors, warnings, notes)
+    //stx-solve-constraint: List(List(Var), Constraint) -> List(Solution, errors, warnings, notes)
 
 rules
 
@@ -68,7 +87,7 @@ rules // single file analysis
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> (resource, [], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
     ; solve-result* := <mstx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ : \
         ((resource, ast'), (a, error*, warning*, note*)) ->
@@ -76,7 +95,7 @@ rules // single file analysis
       \})> (resource-ast'*, solve-result*)
   
   mstx-editor-analyze(desugar|spec-name, init-constraint):
-      AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
+      AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `mstx-editor-analyze_1_2` called for multi-file analysis. Use `mstx-editor-analyze_1_3` instead.")>
 
 rules // single file elaboration
 
@@ -104,7 +123,7 @@ rules // single file elaboration
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; V := Var("out")
-    ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> (resource, [V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
     ; solve-result* := <mstx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ ast'': \
         ((resource, ast'), (a@Solution(subst, _), error*, warning*, note*)) ->
@@ -188,7 +207,133 @@ rules // multi file analysis
   // @type SolverResult -> (SolverResult, [Error], [Warning], [Note])
   stx--extract-messages = prim("STX_extract_messages")
   
-  //TODO mstx-editor-analyze for multifile
+  
+  //no desugar, no incremental strategy -> id, default
+  mstx-editor-analyze(|spec-name, project-constraint, file-constraint) =
+    mstx-editor-analyze(id|"default", spec-name, project-constraint, file-constraint)
+  
+  //no incremental strategy -> default
+  mstx-editor-analyze(desugar|spec-name, project-constraint, file-constraint) =
+    mstx-editor-analyze(desugar|"default", spec-name, project-constraint, file-constraint)
+  
+  //no desugar -> id
+  mstx-editor-analyze(|incremental-strategy, spec-name, project-constraint, file-constraint) =
+    mstx-editor-analyze(id|incremental-strategy, spec-name, project-constraint, file-constraint)
+
+  mstx-editor-analyze(desugar|incremental-strategy, spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      //initial-project-state: The Solver Result of solving the global scope (the project module) OR
+      //                       The previous result of solving the entire project
+      //full-state*  : Tuples (resource, solver result) for files that are new or changed
+      //update-state*: Tuples (resource, solver result) for files that were unchanged but received an update
+      //res-type-state*: Tuples (resource, F/U, solver result) for the new/changed/unchanged but updated files.
+      
+      //The project module can either be added or be unchanged.
+      switch !project-change
+        case ?Added(project-ast):
+          //
+          // 1. Create global scope and module
+          //
+          global-scope-var := Var("s")
+        ; (Solution(global-scope-subst, initial-project-state), _, _, _) :=
+              <mstx--solve-constraint(|spec, level)> (project-resource, [global-scope-var], CNew([global-scope-var]))
+        ; global-scope := <lookup> (global-scope-var, global-scope-subst)
+          //
+          // 2. Create project change and constraint
+          //
+          //TODO IMPORTANT The project constraint needs its own module, instead of merging with the global scope module?
+        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope])
+        ; mchanged-project := MAdded("", project-ast)
+        case ?Cached(mpa@MProjectAnalysis(global-scope, initial-project-state)):
+          //
+          // 2. Create project change and constraint
+          //
+          project-C := C(project-constraint, <map(stx--explode)> [global-scope])
+        ; mchanged-project := MUnchanged("", mpa)
+          //TODO IMPORTANT It is possible for the project module to have a dependency on its child modules!
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+      //
+      // 3. Partially solve file constraints
+      //
+      //Let the incremental algorithm figure out the 
+      //(resource, Change) -> MChange
+    ; mchanged*   := <map(\ (resource, change) -> <mstx--change(desugar|resource)> change \)> change*
+    ; mchanged-C* := <map(\ change -> (change, C(file-constraint, <map(stx--explode)> [global-scope, <mstx--ast> change])) \)> mchanged*
+    ; mchanged-C-with-project* := [(mchanged-project, project-C), mchanged-C*]
+    
+    ; <debug> "Pre solving files"
+      // Solve with the previous result as starting point.
+    ; (full-state*, update-state*) := <mstx--solve-multi-file(|incremental-strategy, initial-project-state, level)> mchanged-C-with-project*
+    ; <debug> "Files solved"
+    ; fullresource-ast* := <map(\ c -> (m, ast) where ?MAdded(m, ast) + ?MChanged(m, ast, _) \)>
+                           <filter(?MAdded(_, _) + ?MChanged(_, _, _))> mchanged*
+    ; updatedresource*  := <filter(?MUnchanged(<id>, _))> mchanged*
+    ; <debug> "Computed resource-ast for full and updated"
+    
+    ; project-solver-result := <filter(?("", <id>))> [full-state*, update-state*]
+    
+    // The full results (resource, analysis)
+    ; file-result := <zip({ file-state', error*, warning*, note*, file-analysis: \
+        ((resource, ast'), (resource', file-state)) ->
+            (resource, Full(ast', file-analysis, error*, warning*, note*))
+          with (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
+             ; file-analysis := MModuleAnalysis(file-state')
+             ; <ppdebug(|"Should be equal: ")> (resource, resource')
+      \})> (<filter(not(?("", _)))> fullresource-ast*, <filter(not(?("", _)))> full-state*)
+    
+    // The updated results (resource, analysis)
+    ; file-result2 := <map({ file-state', error*, warning*, note*, file-analysis: \
+        (resource, file-state) ->
+            (resource, Update(file-analysis, error*, warning*, note*))
+          with
+          (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
+             ; file-analysis := MModuleAnalysis(file-state')
+      \})> <filter(not(?("", _)))> update-state*
+      
+      //TODO Not really needed for modularized statix
+      //
+      // 4. Combine and solve all partial solution
+      //
+    ; <debug> "Going to call solve-multi-project (aggregate results)"
+      //Aggregate results
+    ; aggregated-solver-result := <mstx--solve-multi-project(|initial-project-state, level)> <filter(?(_, <id>))> [full-state*, update-state*]
+    ; <debug> "Finished solve-multi-project (aggregate results)"
+    ; (aggregated-solver-result', error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> aggregated-solver-result
+    ; <debug> "Extracted errors and messages"
+    ; project-analysis := MProjectAnalysis(global-scope, aggregated-solver-result')
+    ; switch !project-change
+        case ?Added(project-ast):
+          project-result := Full(project-ast, project-analysis, error*, warning*, note*)
+        case ?Cached(_):
+          project-result := Update(project-analysis, error*, warning*, note*)
+      end
+    ; <debug> "Created project"
+    ; result* := <concat> [[(project-resource, project-result)], file-result, file-result2]
+    ; <debug> "Concatenated results"
+
+  mstx--sorter-tuples = ?((name1, _), (name2, _)); <string-lt> (name1, name2)
+
+  mstx-editor-analyze(desugar|incremental-strategy, spec-name, project-constraint, file-constraint):
+      AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `mstx-editor-analyze_1_4` called for single-file analysis. Use `mstx-editor-analyze_1_2` instead.")>
+
+  /**
+   * @param incremental-strategy : String
+   * @param state : SolverResult
+   * @param level : LogLevel
+   * @type [(MChange, Constraint)] -> [SolverResult]
+   */
+  mstx--solve-multi-file(|incremental-strategy,state,level) = prim("MSTX_solve_multi_file", incremental-strategy, state, level)
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [SolverResult] -> SolverResult
+  mstx--solve-multi-project(|state,level) = prim("MSTX_solve_multi_project", state, level)
+
 
 rules
 
@@ -203,6 +348,19 @@ rules
        ; C     := C(constraint, [T*, V])
        ; level := <stx--log-level>
        ; (a@Solution(subst, _), error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; out := <substitute(stx--is-var);stx--implode> (subst, V)
+  
+  mstx-evaluate(|spec-name, constraint): in* -> out
+    where (out, a, [], _, _) := <mstx--evaluate(|spec-name, constraint)> in*
+
+  mstx--evaluate(|spec-name, constraint):
+      in* -> (out, a, error*, warning*, note*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; T*    := <map(stx--explode)> in*
+       ; V     := Var("out")
+       ; C     := C(constraint, [T*, V])
+       ; level := <stx--log-level>
+       ; (a@Solution(subst, _), error*, warning*, note*) := <mstx--solve-constraint(|spec, level)> ("?", [V], C)
        ; out := <substitute(stx--is-var);stx--implode> (subst, V)
 
 rules
@@ -221,7 +379,7 @@ rules
   // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
   
-  // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
+  // solve-constraint(|Spec, LogLevel) : (String, [Var], Constraint) -> (Solution, [Error], [Warning], [Note])
   mstx--solve-constraint(|spec, level) = prim("MSTX_solve_constraint", spec, level)
 
 rules
@@ -303,3 +461,30 @@ rules
 
   prettyprint-Statix-SolverResult =
     ![S(<write-to-string>)]
+
+rules
+
+
+  /**
+   * Converts from a Change to an MChange.
+   * Any AST elements are desugared with the given desugar function and then indexed.
+   * 
+   * @param desugar : Term -> Term
+   * @param resource : String
+   * @type Change -> MChange
+   */
+  mstx--change(desugar|resource): Added(ast)        -> MAdded(resource, <desugar;stx--index-ast(|resource)> ast)
+  mstx--change(desugar|resource): Removed(old)      -> MRemoved(resource, old)
+  mstx--change(desugar|resource): Changed(ast, old) -> MChanged(resource, <desugar;stx--index-ast(|resource)> ast, old)
+  mstx--change(desugar|resource): Cached(old)       -> MUnchanged(resource, old)
+  
+  /**
+   * Retrieves the AST from an MChange.
+   * If the change does not have an ast, an empty tuple is returned.
+   *
+   * @type MChange -> Term
+   */
+  mstx--ast: MAdded(_, ast)      -> ast
+  mstx--ast: MRemoved(_, _)      -> ()
+  mstx--ast: MChanged(_, ast, _) -> ast
+  mstx--ast: MUnchanged(_, _)    -> ()

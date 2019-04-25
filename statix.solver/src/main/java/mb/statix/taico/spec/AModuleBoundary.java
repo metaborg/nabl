@@ -24,6 +24,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.constraint.CUser;
 import mb.statix.spec.ARule;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
@@ -83,7 +84,7 @@ public abstract class AModuleBoundary extends ARule {
         }
         
         String modName = moduleString().build(subst);
-        IModule child = state.owner().createOrGetChild(modName, canExtend);
+        IModule child = state.owner().createOrGetChild(modName, canExtend, new CUser(name(), newArgs));
         IMState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();

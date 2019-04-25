@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
@@ -30,6 +31,7 @@ public class Module implements IModule {
     private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
     private Map<IModule, CResolveQuery> dependants = new HashMap<>();
     private ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
+    private IConstraint initialization;
     
     /**
      * Creates a new top level module.
@@ -119,11 +121,23 @@ public class Module implements IModule {
     }
 
     @Override
-    public synchronized Module createChild(String name, List<IOwnableScope> canExtend) {
+    public synchronized Module createChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) {
         Module child = new Module(manager, name, this);
+        child.setInitialization(constraint);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
         return child;
     }
+    
+    @Override
+    public IConstraint getInitialization() {
+        return initialization;
+    }
+    
+    @Override
+    public void setInitialization(IConstraint constraint) {
+        this.initialization = constraint;
+    }
+    
     
 //    @Override
 //    public Module copy(ModuleManager newManager, IModule newParent, List<IOwnableScope> newScopes) {

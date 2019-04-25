@@ -24,7 +24,9 @@ public interface IMState extends IOwnable {
     
     public ModuleManager manager();
     
-    public ISolverCoordinator coordinator();
+    public ASolverCoordinator coordinator();
+    
+    public void setCoordinator(ASolverCoordinator coordinator);
     
     public ModuleSolver solver();
     

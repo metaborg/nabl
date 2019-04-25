@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -20,11 +21,12 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.util.Tuple3;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
@@ -32,7 +34,7 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.solver.ISolverCoordinator;
+import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
@@ -41,7 +43,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
     public static final boolean MODULES_OVERRIDE = true;
     public static final boolean OVERRIDE_LOGLEVEL = true;
     public static final String LOGLEVEL = "info"; //"debug" "none"
-    private static final boolean CONCURRENT = true;
+    public static final boolean CONCURRENT = true;
     public static final boolean QUERY_DEBUG = false;
 
     @Inject public MSTX_solve_constraint() {
@@ -56,21 +58,35 @@ public class MSTX_solve_constraint extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(1));
 
-        final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
-                .tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
-                        (t, vs, c) -> ImmutableTuple2.of(vs, c))
-                .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
-
-        final ITerm resultTerm = solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), debug);
-        return Optional.of(resultTerm);
+        final IMatcher<Tuple3<String, List<ITermVar>, Set<IConstraint>>> constraintMatcher =
+                M.tuple3(M.stringValue(), M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
+                        (t, r, vs, c) -> ImmutableTuple3.of(r, vs, c));
+        
+        final Function1<Tuple3<String, List<ITermVar>, Set<IConstraint>>, ITerm> solveConstraint =
+                res_vars_constraint -> solveConstraint(spec, res_vars_constraint._1(), res_vars_constraint._2(), res_vars_constraint._3(), debug);
+        
+        // @formatter:off
+        return M.cases(
+            constraintMatcher.map(solveConstraint::apply),
+            M.listElems(constraintMatcher).map(vars_constraints -> {
+                return B.newList(vars_constraints.parallelStream().map(solveConstraint::apply).collect(Collectors.toList()));
+            })
+        ).match(term);
+        // @formatter:on
+//        final Tuple3<String, List<ITermVar>, Set<IConstraint>> vars_constraint = M
+//                .tuple3(M.stringValue(), M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
+//                        (t, r, vs, c) -> ImmutableTuple3.of(r, vs, c))
+//                .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
+//
+//        final ITerm resultTerm = solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), vars_constraint._3(), debug);
+//        return Optional.of(resultTerm);
     }
 
-    private ITerm solveConstraint(Spec spec, List<ITermVar> topLevelVars, Set<IConstraint> constraints,
+    private ITerm solveConstraint(Spec spec, String resource, List<ITermVar> topLevelVars, Set<IConstraint> constraints,
             IDebugContext debug) {
-        //TODO TAICO Determine ID from somewhere for this module
         final ModuleManager manager = new ModuleManager();
-        final IModule module = new Module(manager, "G", spec);
-        final ISolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
+        final IModule module = new Module(manager, resource, spec);
+        final ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
         final MState state = new MState(manager, coordinator, module, spec);
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         for(ITermVar var : topLevelVars) {
@@ -101,6 +117,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
             unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
         }
 
+        
         final ITerm substTerm =
                 StatixTerms.explicateMapEntries(toplevelSubstitution(topLevelVars, isubst, state.unifier()).entrySet());
         final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableSet.of()));

@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
@@ -82,11 +83,15 @@ public interface IModule {
      * @param canExtend
      *      the list of scopes from this module and parents that the child can extend, in the order
      *      they are encountered in the rule
+     * @param constraint
+     *      the constraint which caused this modules creation
+     *      (TODO IMPORTANT substitute scopes)
+     *      (TODO does this preserve declaration (references) correctly?)
      * 
      * @return
      *      the child
      */
-    IModule createChild(String name, List<IOwnableScope> canExtend);
+    IModule createChild(String name, List<IOwnableScope> canExtend, IConstraint constraint);
     
     /**
      * If the module with the given name already existed as a child of this module, that module is
@@ -97,11 +102,16 @@ public interface IModule {
      * @param canExtend
      *      the list of scopes from this module and parents that the child can extend, in the order
      *      they are encountered in the rule
+     * @param moduleBoundary
+     *      the name of the module boundary which caused this modules creation
+     * @param args
+     *      the arguments with which the module boundary was called (TODO IMPORTANT substitute scopes)
+     *      (TODO does this preserve declarations (references) correctly?)
      * 
      * @return
      *      the new/old child module
      */
-    default IModule createOrGetChild(String name, List<IOwnableScope> canExtend) {
+    default IModule createOrGetChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) {
         //TODO Incrementality breaks if parent or child names are changed
         String id = ModulePaths.build(getId(), name);
         IModule oldModule = getCurrentState().manager().getModule(id);
@@ -109,12 +119,30 @@ public interface IModule {
             //Update the edges to the new scopes and add it as a child of the current scope graph.
             oldModule.getScopeGraph().substitute(canExtend);
             oldModule.setParent(this);
+            //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
+            oldModule.setInitialization(constraint);
+            //Set the coordinator to our coordinator
+            oldModule.getCurrentState().setCoordinator(getCurrentState().coordinator());
             getScopeGraph().addChild(oldModule);
             return oldModule;
         } else {
-            return createChild(name, canExtend);
+            return createChild(name, canExtend, constraint);
         }
     }
+    
+    /**
+     * @return
+     *      the initialization cause of this module
+     */
+    IConstraint getInitialization();
+    
+    /**
+     * Sets the constraint causing the initialization of this module.
+     * 
+     * @param constraint
+     *      the constraint that caused this module to be created
+     */
+    void setInitialization(IConstraint constraint);
 
     /**
      * @return
@@ -156,6 +184,8 @@ public interface IModule {
     void flag(ModuleCleanliness cleanliness);
     
     ModuleCleanliness getFlag();
+    
+    
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
     

@@ -21,8 +21,8 @@ import mb.statix.taico.scopegraph.IOwnableTerm;
  */
 public class MState implements IMState {
     private final ModuleManager manager;
-    private final ISolverCoordinator coordinator;
     private final IModule owner;
+    private ASolverCoordinator coordinator;
     private Spec spec;
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     
@@ -33,7 +33,7 @@ public class MState implements IMState {
     
     private ModuleSolver solver;
     
-    public MState(ModuleManager manager, ISolverCoordinator coordinator, IModule owner, Spec spec) {
+    public MState(ModuleManager manager, ASolverCoordinator coordinator, IModule owner, Spec spec) {
         this.manager = manager;
         this.coordinator = coordinator;
         this.owner = owner;
@@ -83,8 +83,13 @@ public class MState implements IMState {
     }
     
     @Override
-    public ISolverCoordinator coordinator() {
+    public ASolverCoordinator coordinator() {
         return coordinator;
+    }
+    
+    @Override
+    public void setCoordinator(ASolverCoordinator coordinator) {
+        this.coordinator = coordinator;
     }
     
     @Override

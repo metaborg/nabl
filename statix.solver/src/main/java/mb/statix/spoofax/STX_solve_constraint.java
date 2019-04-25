@@ -46,7 +46,8 @@ public class STX_solve_constraint extends StatixPrimitive {
         //TODO Temporary override for convenience
         if (MSTX_solve_constraint.MODULES_OVERRIDE) {
             System.err.println("Running modularized solver!");
-            return new MSTX_solve_constraint().call(env, term, terms);
+            ITerm newTerm = M.tuple2(M.term(), M.term(), (a, t1, t2) -> B.newTuple(B.newString("?"), t1, t2)).match(term).get();
+            return new MSTX_solve_constraint().call(env, newTerm, terms);
         }
         
         final Spec spec =

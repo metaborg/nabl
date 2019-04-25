@@ -1,5 +1,6 @@
 package mb.statix.taico.incremental;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
@@ -8,18 +9,33 @@ import java.util.stream.Collectors;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.module.ModulePaths;
 
 public class ChangeSet implements IChangeSet {
     private Set<IModule> all;
     private Set<IModule> removed, changed, unchanged;
     private Set<IModule> dirty, clirty, clean;
+    private Set<String> added;
 
-    public ChangeSet(ModuleManager manager, Set<String> removed, Set<String> changed) {
-        this.removed = removed.stream().map(manager::getModule).collect(Collectors.toSet());
-        this.changed = changed.stream().map(manager::getModule).collect(Collectors.toSet());
-
+    public ChangeSet(ModuleManager manager, Collection<String> removed, Collection<String> changed) {
+        this(manager, removed, changed, new HashSet<>());
+    }
+    
+    public ChangeSet(ModuleManager manager, Collection<String> removed, Collection<String> changed, Collection<String> added) {
+        System.err.println("All modules in the manager: " + manager.getModules());
+        
+        this.removed = removed.stream().map(name -> getModule(manager, name)).collect(Collectors.toSet());
+        this.changed = changed.stream().map(name -> getModule(manager, name)).collect(Collectors.toSet());
+        this.added = new HashSet<>(added);
+        
         init(manager);
         validate();
+    }
+    
+    private IModule getModule(ModuleManager manager, String name) {
+        IModule module = manager.getModuleByName(name);
+        if (module == null) throw new IllegalStateException("Encountered module that is unknown: " + name);
+        return module;
     }
 
     private void init(ModuleManager manager) {
@@ -93,6 +109,12 @@ public class ChangeSet implements IChangeSet {
         
         //Check that the children of each clean module are marked as clean as well
         for (IModule module : clean) {
+            //The root is allowed to be clean even though it's children are not.
+            if (ModulePaths.pathSegments(module.getId(), 2).length == 1) {
+                System.err.println("Validation check cannot be removed");
+                continue;
+            }
+            
             validateChildren(module, module, ModuleCleanliness.CLEAN);
         }
         
@@ -181,6 +203,11 @@ public class ChangeSet implements IChangeSet {
     @Override
     public Set<IModule> clean() {
         return clean;
+    }
+    
+    @Override
+    public Set<String> added() {
+        return added;
     }
 
 }

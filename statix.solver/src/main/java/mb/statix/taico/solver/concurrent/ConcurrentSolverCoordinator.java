@@ -11,22 +11,18 @@ import java.util.function.Consumer;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
-import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.ISolverCoordinator;
-import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.IMState;
+import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 
-public class ConcurrentSolverCoordinator implements ISolverCoordinator {
+public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());
     private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
     private final ProgressCounter progressCounter = new ProgressCounter(this::onFinished);
     private final ExecutorService executors;
     
-    private IDebugContext debug;
-    private ModuleSolver root;
-    private IMState rootState;
     private Consumer<MSolverResult> onFinished;
     private MSolverResult finalResult;
     
@@ -37,17 +33,7 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     public ConcurrentSolverCoordinator(ExecutorService executors) {
         this.executors = executors;
     }
-    
-    @Override
-    public ModuleSolver getRootSolver() {
-        return root;
-    }
-    
-    @Override
-    public IMState getRootState() {
-        return rootState;
-    }
-    
+
     @Override
     public Map<IModule, MSolverResult> getResults() {
         return results;
@@ -56,6 +42,12 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     @Override
     public Set<ModuleSolver> getSolvers() {
         return solvers.keySet();
+    }
+    
+    @Override
+    protected void init(IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
+        this.finalResult = null;
+        super.init(rootState, constraints, debug);
     }
     
     @Override
@@ -80,22 +72,26 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
     @Override
     public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
         solveAsync(state, constraints, debug, null);
-
-        synchronized (this) {
-            while (finalResult == null) {
-                wait();
-            }
-        }
+        awaitCompletion();
         return finalResult;
     }
     
     @Override
     public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
-        this.debug = new PrefixedDebugContext("Coordinator", debug);
         this.onFinished = onFinished;
-        this.rootState = state;
-        this.root = ModuleSolver.topLevelSolver(state, constraints, debug);
+        init(state, constraints, debug);
         addSolver(root);
+    }
+    
+    @Override
+    protected void scheduleModules(Map<IModule, Set<IConstraint>> modules) {
+        //Increase the progress counter to ensure modules do not finish before we are done scheduling them.
+        progressCounter.switchToPending();
+        try {
+            super.scheduleModules(modules);
+        } finally {
+            progressCounter.switchToWaiting();
+        }
     }
     
     private void onFinished() {
@@ -143,5 +139,22 @@ public class ConcurrentSolverCoordinator implements ISolverCoordinator {
             notify();
         }
         return finalResult;
+    }
+
+    @Override
+    protected void runToCompletion() throws InterruptedException {
+        awaitCompletion();
+    }
+    
+    /**
+     * Awaits the completion of this coordinator.
+     * 
+     * @throws InterruptedException
+     *      
+     */
+    private synchronized void awaitCompletion() throws InterruptedException {
+        while (finalResult == null) {
+            wait();
+        }
     }
 }
