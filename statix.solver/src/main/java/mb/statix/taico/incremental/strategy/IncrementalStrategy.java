@@ -18,18 +18,8 @@ import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.IMState;
 
 public interface IncrementalStrategy {
-    /**
-     * Reanalyzes using this incremental strategy.
-     * 
-     * @param topModule
-     *      the top module
-     * @param manager
-     *      the module manager to set the modules to be solved in (TODO)
-     * @param changeSet
-     *      the change set
-     */
-    void setupReanalysis(ModuleManager manager, IChangeSet changeSet);
-
+    void clearDirtyModules(IChangeSet changeSet, ModuleManager manager);
+    
     /**
      * Reanalyzes modules in an incremental fashion depending on the strategy.
      * 

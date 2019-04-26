@@ -33,6 +33,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
@@ -361,6 +362,11 @@ public class ModuleSolver implements IOwnable {
         // invariant: there should be no remaining active constraints
         if(constraints.activeSize() > 0) {
             debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
+        }
+        
+        if (getOwner().getCurrentState().solver() == this) {
+            //Flag the module as clean if we are its main solver.
+            getOwner().flag(ModuleCleanliness.CLEAN);
         }
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();

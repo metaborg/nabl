@@ -92,18 +92,18 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             modules.put(change.getModule(), tuple._2());
         }
         ChangeSet cs = new ChangeSet(manager, removed, changed, added);
-        strategy.setupReanalysis(manager, cs);
-        
         ASolverCoordinator coordinator = MSTX_solve_constraint.CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
         initial.state().setCoordinator(coordinator);
         
         //Do the actual analysis
         Map<String, ISolverResult> results;
         try {
-            results = strategy.reanalyze(cs, initial.state(), modules, debug);
+            results = coordinator.solve(strategy, cs, initial.state(), modules, debug);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        //TODO This is wrong!
+        System.err.println("Modules in the manager post solve: " + manager.getModules());
 
 //        List<ITerm> strategoResults = results.entrySet().stream()
 //                .sorted((a, b) -> a.getKey().compareTo(b.getKey()))

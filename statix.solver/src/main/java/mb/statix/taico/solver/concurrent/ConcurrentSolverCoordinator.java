@@ -11,6 +11,8 @@ import java.util.function.Consumer;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.taico.incremental.strategy.IncrementalStrategy;
+import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.IMState;
@@ -45,9 +47,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    protected void init(IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
+    protected void init(IncrementalStrategy strategy, IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
         this.finalResult = null;
-        super.init(rootState, constraints, debug);
+        super.init(strategy, rootState, constraints, debug);
     }
     
     @Override
@@ -79,7 +81,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     @Override
     public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
         this.onFinished = onFinished;
-        init(state, constraints, debug);
+        init(new NonIncrementalStrategy(), state, constraints, debug);
         addSolver(root);
     }
     

@@ -33,6 +33,7 @@ public class ChangeSet implements IChangeSet {
     }
     
     private IModule getModule(ModuleManager manager, String name) {
+        //TODO Use id by using the name of the parent.
         IModule module = manager.getModuleByName(name);
         if (module == null) throw new IllegalStateException("Encountered module that is unknown: " + name);
         return module;

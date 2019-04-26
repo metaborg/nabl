@@ -11,15 +11,15 @@ import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.IMState;
 
 public class NonIncrementalStrategy implements IncrementalStrategy {
-
     @Override
-    public void setupReanalysis(ModuleManager manager, IChangeSet changeSet) {
+    public void clearDirtyModules(IChangeSet changeSet, ModuleManager manager) {
         manager.clearModules();
     }
-
+    
     @Override
     public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, Set<IConstraint>> constraints, IDebugContext debug)
             throws InterruptedException {
-        return baseState.coordinator().solve(baseState, constraints, debug);
+        //TODO Ensure everything is redone, but that we remember old modules.
+        return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
     }
 }

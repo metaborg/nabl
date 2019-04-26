@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
@@ -73,14 +72,17 @@ public class ModuleManager {
      *      given module.
      */
     public synchronized void addModule(IModule module) {
-        final IModule old = modules.putIfAbsent(module.getId(), module);
+        System.err.println("[ModuleManager " + this + "] Adding module " + module.getId());
+        final IModule old = modules.put(module.getId(), module);
         moduleNames.put(module.getName(), module);
         if (old == null) return;
         
         if (old == module) {
             System.err.println("[ModuleManager] Added module " + module.getId() + " twice");
+        } else if (old.getFlag() != ModuleCleanliness.CLEAN) {
+            System.err.println("[ModuleManager] Module " + old.getId() + " replaced with new version.");
         } else {
-            throw new IllegalStateException("[ModuleManager] Duplicate ID " + old.getId() + " discovered when adding module.");
+            System.err.println("[ModuleManager] Duplicate ID " + old.getId() + " discovered when adding module.");
         }
     }
     
@@ -110,10 +112,13 @@ public class ModuleManager {
         }
     }
     
-    /**
+    /**out
      * Removes all modules.
      */
     public synchronized void clearModules() {
+        for (IModule module : topLevelModules()) {
+            purgeModules(module);
+        }
         modules.clear();
         moduleNames.clear();
     }

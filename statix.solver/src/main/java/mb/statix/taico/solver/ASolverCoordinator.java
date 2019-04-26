@@ -21,6 +21,8 @@ import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
+import mb.statix.taico.incremental.IChangeSet;
+import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.IOwnableScope;
@@ -30,6 +32,7 @@ public abstract class ASolverCoordinator {
     protected ModuleSolver root;
     protected IMState rootState;
     
+    protected IncrementalStrategy strategy;
     protected IDebugContext debug;
     
     /**
@@ -71,6 +74,8 @@ public abstract class ASolverCoordinator {
     /**
      * Initializes the solver coordinator with the given root state and constraints.
      * 
+     * @param strategy
+     *      the incremental strategy
      * @param rootState
      *      the root state
      * @param constraints
@@ -78,11 +83,12 @@ public abstract class ASolverCoordinator {
      * @param debug
      *      the debug context
      */
-    protected void init(IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
+    protected void init(IncrementalStrategy strategy, IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
         this.debug = new PrefixedDebugContext("Coordinator", debug);
         this.rootState = rootState;
         this.rootState.setCoordinator(this);
         this.root = ModuleSolver.topLevelSolver(rootState, constraints, debug);
+        this.strategy = strategy;
     }
     
     /**
@@ -126,10 +132,16 @@ public abstract class ASolverCoordinator {
     public abstract void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
     
     
-    public Map<String, ISolverResult> solve(IMState state, Map<String, Set<IConstraint>> constraints, IDebugContext debug) throws InterruptedException {
-        init(state, Collections.emptyList(), debug);
+    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, Set<IConstraint>> constraints, IDebugContext debug)
+            throws InterruptedException {
+        init(strategy, state, Collections.emptyList(), debug);
         
         Map<IModule, Set<IConstraint>> modules = createModules(constraints);
+        System.err.println("Clearing dirty modules");
+        strategy.clearDirtyModules(changeSet, state.manager());
+        //Recreating modules
+        recreateModules(modules.keySet(), state.manager());
+        System.err.println("Scheduling");
         scheduleModules(modules);
         
         runToCompletion();
@@ -137,6 +149,22 @@ public abstract class ASolverCoordinator {
         return collectResults(modules.keySet());
     }
     
+    /**
+     * Resets modules that are marked for reanalysis.
+     * 
+     * @param modules
+     *      the modules for which solvers will be created
+     * @param manager
+     *      the module manager
+     */
+    protected void recreateModules(Set<IModule> modules, ModuleManager manager) {
+        for (IModule module : modules) {
+            if (manager.getModule(module.getId()) != null) continue;
+            
+            module.reset(this, rootState.spec());
+        }
+    }
+
     /**
      * Creates / gets the modules from the given map from module name to constraints.
      * This method assumes that each module has exactly one constraint, which will be used
@@ -154,18 +182,34 @@ public abstract class ASolverCoordinator {
         IModule rootOwner = root.getOwner();
         Map<IModule, Set<IConstraint>> modules = new HashMap<>();
         for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
-            IConstraint initConstraint = null;
-            List<IOwnableScope> scopes = new ArrayList<>();
-            if (entry.getValue().size() != 1) throw new IllegalArgumentException("Module " + entry.getKey() + " has more than one initialization constraint: " + entry.getValue());
-            for (IConstraint constraint : entry.getValue()) {
-                initConstraint = constraint;
-                if (!(constraint instanceof CUser)) break;
-                scopes = getScopes(rootState.manager(), (CUser) constraint);
+            String childName = entry.getKey();
+            if (entry.getValue().size() > 1) {
+                throw new IllegalArgumentException("Module " + childName + " has more than one initialization constraint: " + entry.getValue());
             }
             
-            IModule module = rootOwner.createOrGetChild(entry.getKey(), scopes, initConstraint);
-            new MState(rootState.manager(), this, module, rootState.spec());
-            modules.put(module, entry.getValue());
+            //Retrieve the child
+            IModule child;
+            if (entry.getValue().isEmpty()) {
+                //Scope substitution does not have to occur here, since the global scope remains constant.
+                //If there is no constraint available, use the initialization constraint for the child
+                child = rootOwner.getChildAndAdd(childName);
+                if (child != null) entry.setValue(Collections.singleton(child.getInitialization()));
+            } else {
+                IConstraint initConstraint = null;
+                List<IOwnableScope> scopes = new ArrayList<>();
+                for (IConstraint constraint : entry.getValue()) {
+                    initConstraint = constraint;
+                    if (!(constraint instanceof CUser)) break;
+                    scopes = getScopes(rootState.manager(), (CUser) constraint);
+                }
+                
+                child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
+            }
+            
+            if (child == null) throw new IllegalStateException("Child " + childName + " could not be found!");
+            
+            new MState(rootState.manager(), this, child, rootState.spec());
+            modules.put(child, entry.getValue());
         }
         return modules;
     }

@@ -1,8 +1,9 @@
 package mb.statix.taico.incremental.strategy;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -25,7 +26,7 @@ import mb.statix.taico.solver.IMState;
  */
 public class BaselineIncrementalStrategy implements IncrementalStrategy {
     @Override
-    public void setupReanalysis(ModuleManager manager, IChangeSet changeSet) {
+    public void clearDirtyModules(IChangeSet changeSet, ModuleManager manager) {
         if (!changeSet.added().isEmpty()) {
             //We cannot guarantee that these additions don't influence existing results, so we will flag everything as dirty (except for the top module)
             manager.retainModules(manager.topLevelModules());
@@ -33,28 +34,25 @@ public class BaselineIncrementalStrategy implements IncrementalStrategy {
         }
         
         //TODO: redo dirty and clirty, with clean in the context
-        Set<IModule> redo = new HashSet<>(changeSet.dirty());
-        redo.addAll(changeSet.clirty());
-
+        Set<IModule> redo = Sets.union(changeSet.dirty(), changeSet.clirty());
         if (redo.isEmpty()) return;
 
         //Delete all modules that need to be redone as well as their children
         for (IModule module : redo) {
+            //Invariant: global scope never changes
             if (ModulePaths.pathSegments(module.getId(), 2).length == 1) {
-                System.err.println("Top module is in the set to redo. This should not be correct!");
-                //Module is the top module, don't purge its children
-                manager.removeModule(module);
-            } else {
-                manager.purgeModules(module);
+                throw new IllegalStateException("Top module is in the set to redo. This should not be correct!");
             }
+            
+            manager.purgeModules(module);
         }
     }
-
+    
     /**
      * Reanalyzes the modules that are not marked as clean.
      */
     @Override
     public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, Set<IConstraint>> constraints, IDebugContext debug) throws InterruptedException {
-        return baseState.coordinator().solve(baseState, constraints, debug);
+        return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
     }
 }

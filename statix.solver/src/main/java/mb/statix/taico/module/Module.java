@@ -15,7 +15,9 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
+import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.IMState;
+import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.query.QueryDetails;
 
 /**
@@ -183,6 +185,16 @@ public class Module implements IModule {
     @Override
     public ModuleCleanliness getFlag() {
         return cleanliness;
+    }
+    
+    @Override
+    public void reset(ASolverCoordinator coordinator, Spec spec) {
+        this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getLabels(), scopeGraph.getEndOfPath(), scopeGraph.getRelations(), scopeGraph.getParentScopes());
+        this.queries = new HashMap<>();
+        this.dependants = new HashMap<>();
+        this.cleanliness = ModuleCleanliness.NEW;
+        new MState(manager, coordinator, this, spec);
+        manager.addModule(this);
     }
     
     @Override

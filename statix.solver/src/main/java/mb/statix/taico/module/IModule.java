@@ -10,9 +10,11 @@ import java.util.stream.StreamSupport;
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CResolveQuery;
+import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
+import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.util.IOwnable;
@@ -113,9 +115,13 @@ public interface IModule {
      */
     default IModule createOrGetChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) {
         //TODO Incrementality breaks if parent or child names are changed
-        String id = ModulePaths.build(getId(), name);
-        IModule oldModule = getCurrentState().manager().getModule(id);
-        if (oldModule != null && oldModule.getFlag() == ModuleCleanliness.CLEAN) {
+        IModule oldModule = getChild(name);
+        if (oldModule == null) {
+            System.err.println("[" + getId() + "] Creating new child " + name);
+            return createChild(name, canExtend, constraint);
+        }
+        
+        if (oldModule.getFlag() == ModuleCleanliness.CLEAN) {
             //Update the edges to the new scopes and add it as a child of the current scope graph.
             oldModule.getScopeGraph().substitute(canExtend);
             oldModule.setParent(this);
@@ -128,6 +134,49 @@ public interface IModule {
         } else {
             return createChild(name, canExtend, constraint);
         }
+    }
+    
+    /**
+     * @param name
+     *      the name of the child
+     * 
+     * @return
+     *      the child of this module
+     */
+    default IModule getChild(String name) {
+        String id = ModulePaths.build(getId(), name);
+        return getCurrentState().manager().getModule(id);
+    }
+    
+    /**
+     * Gets the child with the given name, adding it as a child of this module.
+     * The child will have its parent and coordinator updated.
+     * 
+     * @param name
+     *      the name of the child
+     * 
+     * @return
+     *      the child, or null if no such child exists
+     */
+    default IModule getChildAndAdd(String name) {
+        IModule child = getChild(name);
+        if (child == null) return null;
+        
+        child.setParent(this);
+        child.getCurrentState().setCoordinator(getCurrentState().coordinator());
+        getScopeGraph().addChild(child);
+        getCurrentState().manager().addModule(child);
+        return child;
+    }
+    
+    /**
+     * Removes the given module as child of this module.
+     * 
+     * @param module
+     *      the module
+     */
+    default void removeChild(IModule module) {
+        getScopeGraph().removeChild(module);
     }
     
     /**
@@ -185,7 +234,10 @@ public interface IModule {
     
     ModuleCleanliness getFlag();
     
-    
+    /**
+     * Resets the module to a clean module: no children, no scope graph.
+     */
+    void reset(ASolverCoordinator coordinator, Spec spec);
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
     
@@ -204,5 +256,4 @@ public interface IModule {
 //     *      the copied module
 //     */
 //    IModule copy(ModuleManager newManager, IModule newParent, List<IOwnableScope> newScopes);
-    
 }

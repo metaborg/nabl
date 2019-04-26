@@ -10,9 +10,9 @@ import java.util.function.Consumer;
 import org.metaborg.util.log.Level;
 
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 
 public class SolverCoordinator extends ASolverCoordinator {
@@ -38,7 +38,7 @@ public class SolverCoordinator extends ASolverCoordinator {
     
     public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug)
         throws InterruptedException {
-        init(state, constraints, debug);
+        init(new NonIncrementalStrategy(), state, constraints, debug);
         addSolver(root);
         
         runToCompletion();
@@ -48,7 +48,7 @@ public class SolverCoordinator extends ASolverCoordinator {
     
     @Override
     public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
-        init(state, constraints, debug);
+        init(new NonIncrementalStrategy(), state, constraints, debug);
         new Thread(() -> {
             try {
                 runToCompletion();
@@ -58,19 +58,6 @@ public class SolverCoordinator extends ASolverCoordinator {
             
             onFinished.accept(aggregateResults());
         }).start();
-    }
-    
-    @Override
-    public Map<String, ISolverResult> solve(IMState state, Map<String, Set<IConstraint>> constraints, IDebugContext debug)
-            throws InterruptedException {
-        init(state, Collections.emptyList(), debug);
-        
-        Map<IModule, Set<IConstraint>> modules = createModules(constraints);
-        scheduleModules(modules);
-        
-        runToCompletion();
-        
-        return collectResults(modules.keySet());
     }
     
     /**

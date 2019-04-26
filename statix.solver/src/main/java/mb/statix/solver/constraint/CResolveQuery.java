@@ -204,7 +204,7 @@ public class CResolveQuery implements IConstraint, Serializable {
                 pathTerms);
         state.owner().addQuery(this, details);
         
-        //Add reverse dependancies
+        //Add reverse dependencies
         for (IModule module : trackingGraph.getReachedModules()) {
             module.addDependant(state.owner(), this);
         }
