@@ -1,8 +1,15 @@
 package mb.statix.solver.constraint;
 
+import java.util.List;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableList;
+
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
 public final class Constraints {
@@ -12,7 +19,9 @@ public final class Constraints {
 
     // @formatter:off
     public static <R> IConstraint.Cases<R> cases(
+                Function1<CConj,R> onConj,
                 Function1<CEqual,R> onEqual,
+                Function1<CExists,R> onExists,
                 Function1<CFalse,R> onFalse,
                 Function1<CInequal,R> onInequal,
                 Function1<CNew,R> onNew,
@@ -31,8 +40,16 @@ public final class Constraints {
             ) {
         return new IConstraint.Cases<R>() {
 
+            @Override public R caseConj(CConj c) {
+                return onConj.apply(c);
+            }
+
             @Override public R caseEqual(CEqual c) {
                 return onEqual.apply(c);
+            }
+
+            @Override public R caseExists(CExists c) {
+                return onExists.apply(c);
             }
 
             @Override public R caseFalse(CFalse c) {
@@ -101,7 +118,9 @@ public final class Constraints {
 
     // @formatter:off
     public static <R, E extends Throwable> IConstraint.CheckedCases<R, E> checkedCases(
+                CheckedFunction1<CConj, R, E> onConj,
                 CheckedFunction1<CEqual, R, E> onEqual,
+                CheckedFunction1<CExists, R, E> onExists,
                 CheckedFunction1<CFalse, R, E> onFalse,
                 CheckedFunction1<CInequal, R, E> onInequal,
                 CheckedFunction1<CNew, R, E> onNew,
@@ -120,8 +139,16 @@ public final class Constraints {
             ) {
         return new IConstraint.CheckedCases<R, E>() {
 
+            @Override public R caseConj(CConj c) throws E {
+                return onConj.apply(c);
+            }
+
             @Override public R caseEqual(CEqual c) throws E {
                 return onEqual.apply(c);
+            }
+
+            @Override public R caseExists(CExists c) throws E {
+                return onExists.apply(c);
             }
 
             @Override public R caseFalse(CFalse c) throws E {
@@ -187,5 +214,37 @@ public final class Constraints {
         };
     }
     // @formatter:on
+
+    public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst) {
+        return Constraints.apply(constraints, subst, null);
+    }
+
+    public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst,
+            @Nullable IConstraint cause) {
+        return constraints.stream().map(c -> c.apply(subst).withCause(cause)).collect(ImmutableList.toImmutableList());
+    }
+
+    public static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {
+        final StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for(IConstraint constraint : constraints) {
+            if(!first) {
+                sb.append(", ");
+            }
+            first = false;
+            sb.append(constraint.toString(termToString));
+        }
+        return sb.toString();
+    }
+
+    public static IConstraint conjoin(Iterable<? extends IConstraint> constraints) {
+        // FIXME What about causes? Unfolding this conjunction might overwrite
+        //       causes in the constraints by null.
+        IConstraint conj = null;
+        for(IConstraint constraint : constraints) {
+            conj = (conj != null) ? new CConj(constraint, conj) : constraint;
+        }
+        return (conj != null) ? conj : new CTrue();
+    }
 
 }

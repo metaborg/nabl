@@ -1,4 +1,4 @@
-package mb.statix.solver;
+package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
@@ -17,7 +17,7 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.State;
+import mb.statix.solver.IState;
 import mb.statix.spec.Spec;
 
 @Value.Immutable
@@ -53,10 +53,6 @@ public abstract class AState implements IState {
 
     public State clearVarsAndScopes() {
         return State.copyOf(this).with__vars(Set.Immutable.of()).with__scopes(Set.Immutable.of());
-    }
-
-    public State retainVarsAndClearScopes(Set.Immutable<ITermVar> vars) {
-        return State.copyOf(this).with__vars(Set.Immutable.intersect(vars(), vars)).with__scopes(Set.Immutable.of());
     }
 
     // --- variables ---

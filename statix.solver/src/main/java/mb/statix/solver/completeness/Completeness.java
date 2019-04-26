@@ -57,7 +57,20 @@ public class Completeness implements ICompleteness {
     static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
+            onConj -> {
+                criticalEdges(onConj.left(), spec, criticalEdge);
+                criticalEdges(onConj.right(), spec, criticalEdge);
+                return null;
+            },
             onEqual -> null,
+            onExists -> {
+                criticalEdges(onExists.constraint(), spec, (s, l) -> {
+                    if(!onExists.vars().contains(s)) {
+                        criticalEdge.apply(s, l);
+                    }
+                });
+                return null;
+            },
             onFalse -> null,
             onInequal -> null,
             onNew -> null,

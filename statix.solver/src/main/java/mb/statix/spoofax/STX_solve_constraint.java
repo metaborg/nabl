@@ -18,18 +18,14 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
+import mb.statix.solver.constraint.CExists;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
 import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixPrimitive {
@@ -47,11 +43,9 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<Tuple2<List<ITermVar>, List<IConstraint>>> constraintMatcher =
-                M.tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
-                        (t, vs, c) -> ImmutableTuple2.of(vs, c));
-        final Function1<Tuple2<List<ITermVar>, List<IConstraint>>, ITerm> solveConstraint =
-                vars_constraint -> solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), debug);
+        final IMatcher<IConstraint> constraintMatcher = M.tuple2(M.listElems(StatixTerms.varTerm()),
+                StatixTerms.constraint(spec.labels()), (t, vs, c) -> new CExists(vs, c));
+        final Function1<IConstraint, ITerm> solveConstraint = constraint -> solveConstraint(spec, constraint, debug);
         // @formatter:off
         return M.cases(
             constraintMatcher.map(solveConstraint::apply),
@@ -62,19 +56,12 @@ public class STX_solve_constraint extends StatixPrimitive {
         // @formatter:on
     }
 
-    private ITerm solveConstraint(Spec spec, List<ITermVar> topLevelVars, Collection<IConstraint> constraints,
-            IDebugContext debug) {
-        mb.statix.solver.State state = State.of(spec);
-
-        final Tuple2<Immutable, State> freshVarsAndState = freshenToplevelVariables(topLevelVars, state);
-        final ISubstitution.Immutable subst = freshVarsAndState._1();
-        state = freshVarsAndState._2();
-
-        constraints = constraints.stream().map(c -> c.apply(subst)).collect(ImmutableList.toImmutableList());
+    private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug) {
+        mb.statix.solver.persistent.State state = State.of(spec);
 
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(state, constraints, debug);
+            resultConfig = Solver.solve(state, constraint, debug);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -92,7 +79,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         }
 
         final ITerm substTerm =
-                StatixTerms.explicateMapEntries(toplevelSubstitution(topLevelVars, subst, resultState).entrySet());
+                StatixTerms.explicateMapEntries(resultConfig.existentials().entrySet(), resultConfig.state().unifier());
         final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableList.of()));
         final ITerm solveResultTerm = B.newAppl("Solution", substTerm, solverTerm);
         final IListTerm errors = B.newList(errorList);

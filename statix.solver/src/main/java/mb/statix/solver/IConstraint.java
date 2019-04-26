@@ -7,7 +7,9 @@ import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
+import mb.statix.solver.constraint.CExists;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
@@ -38,22 +40,13 @@ public interface IConstraint {
 
     String toString(TermFormatter termToString);
 
-    static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {
-        final StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(IConstraint constraint : constraints) {
-            if(!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append(constraint.toString(termToString));
-        }
-        return sb.toString();
-    }
-
     interface Cases<R> extends Function1<IConstraint, R> {
 
+        R caseConj(CConj c);
+
         R caseEqual(CEqual c);
+
+        R caseExists(CExists c);
 
         R caseFalse(CFalse c);
 
@@ -93,7 +86,11 @@ public interface IConstraint {
 
     interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
 
+        R caseConj(CConj c) throws E;
+
         R caseEqual(CEqual c) throws E;
+
+        R caseExists(CExists c) throws E;
 
         R caseFalse(CFalse c) throws E;
 

@@ -3,7 +3,6 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,11 +20,11 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi_file extends StatixPrimitive {
@@ -44,12 +43,12 @@ public class STX_solve_multi_file extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<Tuple2<String, List<IConstraint>>> constraintMatcher = M.tuple2(M.stringValue(),
-                StatixTerms.constraints(spec.labels()), (t, r, c) -> ImmutableTuple2.of(r, c));
-        final Function1<Tuple2<String, List<IConstraint>>, ITerm> solveConstraint =
-                resource_constraints -> solveConstraint(initial.state().withResource(resource_constraints._1()),
-                        resource_constraints._2(), debug);
-        final List<Tuple2<String, List<IConstraint>>> constraints = M.listElems(constraintMatcher).match(term)
+        final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
+                M.tuple2(M.stringValue(), StatixTerms.constraint(spec.labels()), (t, r, c) -> ImmutableTuple2.of(r, c));
+        final Function1<Tuple2<String, IConstraint>, ITerm> solveConstraint =
+                resource_constraint -> solveConstraint(initial.state().withResource(resource_constraint._1()),
+                        resource_constraint._2(), debug);
+        final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
         final double t0 = System.currentTimeMillis();
         final List<ITerm> results =
@@ -59,13 +58,13 @@ public class STX_solve_multi_file extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private ITerm solveConstraint(State state, Collection<IConstraint> constraints, IDebugContext debug) {
+    private ITerm solveConstraint(State state, IConstraint constraint, IDebugContext debug) {
         final IsComplete isComplete = (s, l, st) -> {
             return !state.scopes().contains(s);
         };
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(state, constraints, isComplete, debug);
+            resultConfig = Solver.solve(state, constraint, isComplete, debug);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

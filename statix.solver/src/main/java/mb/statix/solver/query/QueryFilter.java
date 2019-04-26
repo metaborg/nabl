@@ -5,11 +5,6 @@ import java.io.Serializable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.solver.completeness.IsComplete;
-import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.State;
 import mb.statix.spec.Rule;
 
 public class QueryFilter implements IQueryFilter, Serializable {
@@ -23,16 +18,16 @@ public class QueryFilter implements IQueryFilter, Serializable {
         this.dataConstraint = dataConstraint;
     }
 
+    @Override public Rule getLabelWF() {
+        return pathConstraint;
+    }
+
+    @Override public Rule getDataWF() {
+        return dataConstraint;
+    }
+
     @Override public IQueryFilter apply(ISubstitution.Immutable subst) {
         return new QueryFilter(pathConstraint.apply(subst), dataConstraint.apply(subst));
-    }
-
-    @Override public LabelWF<ITerm> getLabelWF(State state, IsComplete isComplete, IDebugContext debug) {
-        return ConstraintLabelWF.of(pathConstraint, state, isComplete, debug);
-    }
-
-    @Override public DataWF<ITerm> getDataWF(State state, IsComplete isComplete, IDebugContext debug) {
-        return new ConstraintDataWF(dataConstraint, state, isComplete, debug);
     }
 
     @Override public String toString(TermFormatter termToString) {

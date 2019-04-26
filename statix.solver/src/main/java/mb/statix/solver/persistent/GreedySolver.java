@@ -1,4 +1,4 @@
-package mb.statix.solver;
+package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
@@ -11,12 +11,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.util.Ref;
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.regexp.IRegExpMatcher;
@@ -26,6 +26,8 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.terms.unification.OccursException;
@@ -43,11 +45,17 @@ import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.Delay;
+import mb.statix.solver.IConstraint;
+import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
+import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
+import mb.statix.solver.constraint.CExists;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
@@ -67,8 +75,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.NullDebugContext;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
+import mb.statix.solver.persistent.query.ConstraintQueries;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -82,13 +89,14 @@ public class GreedySolver {
     private static final int MAX_DEPTH = 32;
 
     // set-up
-    final IDebugContext debug;
-    final IConstraintStore constraints;
-    final ICompleteness completeness;
-    final State initialState;
-    final ConstraintContext params;
+    private final IDebugContext debug;
+    private final IConstraintStore constraints;
+    private final ICompleteness completeness;
+    private final State initialState;
+    private final ConstraintContext params;
 
-    final List<IConstraint> failed = new ArrayList<>();
+    private Map<ITermVar, ITermVar> existentials = null;
+    private final List<IConstraint> failed = new ArrayList<>();
 
     public GreedySolver(State state, IsComplete _isComplete, IDebugContext debug) {
         this.initialState = state;
@@ -101,15 +109,13 @@ public class GreedySolver {
         this.params = new ConstraintContext(isComplete, debug);
     }
 
-    public SolverResult solve(Iterable<IConstraint> initialConstraints) throws InterruptedException {
+    public SolverResult solve(IConstraint initialConstraint) throws InterruptedException {
         debug.info("Solving constraints");
 
         State state = this.initialState;
 
-        completeness.addAll(initialConstraints, state.unifier());
-        for(IConstraint constraint : initialConstraints) {
-            state = step(state, constraint);
-        }
+        completeness.add(initialConstraint, state.unifier());
+        state = step(state, initialConstraint);
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
@@ -125,7 +131,8 @@ public class GreedySolver {
         debug.info("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
 
-        return SolverResult.of(state, failed, delayed);
+        final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
+        return SolverResult.of(state, failed, delayed, existentials);
     }
 
     private State step(State state, IConstraint constraint) throws InterruptedException {
@@ -137,7 +144,11 @@ public class GreedySolver {
 
 
     private State success(IConstraint constraint, State state, Collection<ITermVar> updatedVars,
-            Collection<IConstraint> newConstraints, int fuel) throws InterruptedException {
+            Collection<IConstraint> newConstraints, Map<ITermVar, ITermVar> existentials, int fuel)
+            throws InterruptedException {
+        if(this.existentials == null) {
+            this.existentials = existentials;
+        }
         final Immutable unifier = state.unifier();
         completeness.remove(constraint, unifier);
         completeness.updateAll(updatedVars, unifier);
@@ -193,6 +204,12 @@ public class GreedySolver {
         // solve
         return constraint.matchOrThrow(new IConstraint.CheckedCases<State, InterruptedException>() {
 
+            @Override public State caseConj(CConj c) throws InterruptedException {
+                final List<IConstraint> newConstraints =
+                        ImmutableList.of(c.left().withCause(c), c.right().withCause(c));
+                return success(c, state, ImmutableList.of(), newConstraints, ImmutableMap.of(), fuel);
+            }
+
             @Override public State caseEqual(CEqual c) throws InterruptedException {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
@@ -205,7 +222,8 @@ public class GreedySolver {
                             debug.info("Unification succeeded: {}", result.result());
                         }
                         final State newState = state.withUnifier(result.unifier());
-                        return success(c, newState, result.result().varSet(), ImmutableList.of(), fuel);
+                        return success(c, newState, result.result().varSet(), ImmutableList.of(), ImmutableMap.of(),
+                                fuel);
                     } else {
                         if(debug.isEnabled(Level.Info)) {
                             debug.info("Unification failed: {} != {}", unifier.toString(term1),
@@ -223,6 +241,21 @@ public class GreedySolver {
                 }
             }
 
+            @Override public State caseExists(CExists c) throws InterruptedException {
+                final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
+                State newState = state;
+                for(ITermVar var : c.vars()) {
+                    final Tuple2<ITermVar, State> varAndState = newState.freshVar(var.getName());
+                    final ITermVar freshVar = varAndState._1();
+                    newState = varAndState._2();
+                    existentialsBuilder.put(var, freshVar);
+                }
+                final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
+                final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
+                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c);
+                return success(c, newState, ImmutableSet.of(), ImmutableList.of(newConstraint), existentials, fuel);
+            }
+
             @Override public State caseFalse(CFalse c) {
                 return fail(c, state);
             }
@@ -236,7 +269,7 @@ public class GreedySolver {
                     if(result) {
                         return fail(c, state);
                     } else {
-                        return success(c, state, ImmutableList.of(), ImmutableList.of(), fuel);
+                        return success(c, state, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(), fuel);
                     }
                 }, vars -> {
                     return delay(c, state, Delay.ofVars(vars));
@@ -254,7 +287,7 @@ public class GreedySolver {
                     constraints.add(new CEqual(t, ss._1(), c));
                     newState = ss._2();
                 }
-                return success(c, newState, ImmutableList.of(), constraints, fuel);
+                return success(c, newState, ImmutableList.of(), constraints, ImmutableMap.of(), fuel);
             }
 
             @Override public State casePathDst(CPathDst c) throws InterruptedException {
@@ -269,7 +302,7 @@ public class GreedySolver {
                         M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                                 () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
                 return success(c, state, ImmutableList.of(), ImmutableList.of(new CEqual(path.getTarget(), dstTerm, c)),
-                        fuel);
+                        ImmutableMap.of(), fuel);
             }
 
             @Override public State casePathLabels(CPathLabels c) throws InterruptedException {
@@ -284,7 +317,7 @@ public class GreedySolver {
                         M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                                 () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
                 return success(c, state, ImmutableList.of(),
-                        ImmutableList.of(new CEqual(B.newList(path.labels()), labelsTerm, c)), fuel);
+                        ImmutableList.of(new CEqual(B.newList(path.labels()), labelsTerm, c)), ImmutableMap.of(), fuel);
             }
 
             @Override public State casePathLt(CPathLt c) throws InterruptedException {
@@ -306,7 +339,7 @@ public class GreedySolver {
                 if(!lt.contains(label1, label2)) {
                     return fail(c, state);
                 } else {
-                    return success(c, state, ImmutableList.of(), ImmutableList.of(), fuel);
+                    return success(c, state, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(), fuel);
                 }
             }
 
@@ -328,12 +361,12 @@ public class GreedySolver {
                         if(newRe.isEmpty()) {
                             return fail(c, state);
                         } else {
-                            return success(c, state, ImmutableList.of(), ImmutableList.of(new CPathMatch(newRe, cons.getTail(), c)), fuel);
+                            return success(c, state, ImmutableList.of(), ImmutableList.of(new CPathMatch(newRe, cons.getTail(), c)), ImmutableMap.of(), fuel);
                         }
                     },
                     nil -> {
                         if(re.isAccepting()) {
-                            return success(c, state, ImmutableList.of(), ImmutableList.of(), fuel);
+                            return success(c, state, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(), fuel);
                         } else {
                             return fail(c, state);
                         }
@@ -357,7 +390,7 @@ public class GreedySolver {
                         M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                                 () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
                 return success(c, state, ImmutableList.of(),
-                        ImmutableList.of(new CEqual(B.newList(path.scopes()), scopesTerm, c)), fuel);
+                        ImmutableList.of(new CEqual(B.newList(path.scopes()), scopesTerm, c)), ImmutableMap.of(), fuel);
             }
 
             @Override public State casePathSrc(CPathSrc c) throws InterruptedException {
@@ -372,7 +405,7 @@ public class GreedySolver {
                         M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
                                 () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
                 return success(c, state, ImmutableList.of(), ImmutableList.of(new CEqual(path.getSource(), srcTerm, c)),
-                        fuel);
+                        ImmutableMap.of(), fuel);
             }
 
             @Override public State caseResolveQuery(CResolveQuery c) throws InterruptedException {
@@ -405,12 +438,13 @@ public class GreedySolver {
                     final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
                         return params.isComplete(s, l, state);
                     };
+                    final ConstraintQueries cq = new ConstraintQueries(state, params);
                     // @formatter:off
                     final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
-                                .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
-                                .withDataWF(filter(relation, type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
-                                .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
-                                .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params::isComplete, subDebug), subDebug))
+                                .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
+                                .withDataWF(filter(relation, type, cq.getDataWF(filter.getDataWF()), subDebug))
+                                .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
+                                .withDataEquiv(filter(relation, type, cq.getDataEquiv(min.getDataEquiv()), subDebug))
                                 .withEdgeComplete(isComplete)
                                 .withDataComplete(isComplete)
                                 .build(state.scopeGraph(), relation);
@@ -426,7 +460,7 @@ public class GreedySolver {
                                 .collect(ImmutableList.toImmutableList());
                     }
                     return success(c, state, ImmutableList.of(),
-                            ImmutableList.of(new CEqual(B.newList(pathTerms), resultTerm, c)), fuel);
+                            ImmutableList.of(new CEqual(B.newList(pathTerms), resultTerm, c)), ImmutableMap.of(), fuel);
                 } catch(IncompleteDataException e) {
                     params.debug().info("Query resolution delayed: {}", e.getMessage());
                     return delay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())));
@@ -465,7 +499,8 @@ public class GreedySolver {
                                 "Expected target scope, got " + unifier.toString(targetTerm)));
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                         state.scopeGraph().addEdge(source, label, target);
-                return success(c, state.withScopeGraph(scopeGraph), ImmutableList.of(), ImmutableList.of(), fuel);
+                return success(c, state.withScopeGraph(scopeGraph), ImmutableList.of(), ImmutableList.of(),
+                        ImmutableMap.of(), fuel);
             }
 
             @Override public State caseTellRel(CTellRel c) throws InterruptedException {
@@ -501,7 +536,8 @@ public class GreedySolver {
                 }
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                         state.scopeGraph().addDatum(scope, relation, datumTerms);
-                return success(c, state.withScopeGraph(scopeGraph), ImmutableList.of(), ImmutableList.of(), fuel);
+                return success(c, state.withScopeGraph(scopeGraph), ImmutableList.of(), ImmutableList.of(),
+                        ImmutableMap.of(), fuel);
             }
 
             @Override public State caseTermId(CTermId c) throws InterruptedException {
@@ -526,11 +562,11 @@ public class GreedySolver {
                         eq = new CEqual(idTerm, B.newAppl(StatixTerms.NOID_OP));
                     }
                 }
-                return success(c, state, ImmutableList.of(), ImmutableList.of(eq), fuel);
+                return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
             }
 
             @Override public State caseTrue(CTrue c) throws InterruptedException {
-                return success(c, state, ImmutableList.of(), ImmutableList.of(), fuel);
+                return success(c, state, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(), fuel);
             }
 
             @Override public State caseUser(CUser c) throws InterruptedException {
@@ -550,19 +586,9 @@ public class GreedySolver {
                     if(proxyDebug.isEnabled(Level.Info)) {
                         proxyDebug.info("Try rule {}", rawRule.toString());
                     }
-                    final Ref<State> instantiatedState;
-                    final List<IConstraint> instantiatedBody;
+                    final IConstraint instantiatedBody;
                     try {
-                        instantiatedState = new Ref<>(state);
-                        final Function1<String, ITermVar> freshVar = (base) -> {
-                            final Tuple2<ITermVar, State> stateAndVar = instantiatedState.get().freshVar(base);
-                            instantiatedState.set(stateAndVar._2());
-                            return stateAndVar._1();
-                        };
-                        final Tuple2<Set<ITermVar>, List<IConstraint>> appl;
-                        if((appl = rawRule.apply(args, state.unifier(), freshVar, c).orElse(null)) != null) {
-                            instantiatedBody = appl._2();
-                        } else {
+                        if((instantiatedBody = rawRule.apply(args, state.unifier(), c).orElse(null)) == null) {
                             proxyDebug.info("Rule rejected (mismatching arguments)");
                             unsuccessfulLog.absorb(proxyDebug.clear());
                             continue;
@@ -575,7 +601,8 @@ public class GreedySolver {
                     }
                     proxyDebug.info("Rule accepted");
                     proxyDebug.commit();
-                    return success(c, instantiatedState.get(), ImmutableList.of(), instantiatedBody, fuel);
+                    return success(c, state, ImmutableList.of(), ImmutableList.of(instantiatedBody), ImmutableMap.of(),
+                            fuel);
                 }
                 debug.info("No rule applies");
                 unsuccessfulLog.flush(debug);

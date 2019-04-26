@@ -56,7 +56,7 @@ public class CNew implements IConstraint, Serializable {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("new ");
-        sb.append(termToString.format(terms));
+        sb.append(termToString.format(terms, " "));
         return sb.toString();
     }
 

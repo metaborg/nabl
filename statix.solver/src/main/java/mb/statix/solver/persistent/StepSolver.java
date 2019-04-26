@@ -1,23 +1,20 @@
-package mb.statix.solver;
+package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.immutables.value.Value;
-import org.metaborg.util.Ref;
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -28,6 +25,8 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
@@ -44,12 +43,19 @@ import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.Delay;
+import mb.statix.solver.IConstraint;
+import mb.statix.solver.IConstraintStore;
+import mb.statix.solver.SolverException;
 import mb.statix.solver.SolverException.SolverInterrupted;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
+import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
+import mb.statix.solver.constraint.CExists;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
@@ -69,6 +75,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.persistent.query.ConstraintQueries;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -80,6 +87,7 @@ import mb.statix.spoofax.StatixTerms;
 public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintResult>, SolverException> {
 
     private State state;
+    private Map<ITermVar, ITermVar> existentials;
     private final IsComplete isComplete;
     private final ICompleteness completeness;
     private final ConstraintContext params;
@@ -90,6 +98,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
     public StepSolver(State state, IsComplete _isComplete, IDebugContext debug) {
         this.state = state;
+        this.existentials = null;
         this.completeness = new IncrementalCompleteness(state.spec());
         this.isComplete = (s, l, st) -> completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         this.debug = debug;
@@ -98,13 +107,13 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         this.params = new ConstraintContext(this.isComplete, subDebug);
     }
 
-    public SolverResult solve(final Iterable<IConstraint> _constraints) throws InterruptedException {
+    public SolverResult solve(final IConstraint initialConstraint) throws InterruptedException {
         debug.info("Solving constraints");
 
         // set-up
-        completeness.addAll(_constraints, state.unifier());
+        completeness.add(initialConstraint, state.unifier());
         final IConstraintStore constraints = new BaseConstraintStore(debug);
-        constraints.addAll(_constraints);
+        constraints.add(initialConstraint);
 
         // time log
         final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
@@ -129,7 +138,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 }
                 try {
                     final Optional<ConstraintResult> maybeResult;
-                    maybeResult = solve(constraint);
+                    maybeResult = step(constraint);
                     addTime(constraint, 1, successCount, debug);
                     progress = true;
                     completeness.remove(constraint, state.unifier());
@@ -137,6 +146,9 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                     if(maybeResult.isPresent()) {
                         final ConstraintResult result = maybeResult.get();
                         state = result.state();
+                        if(existentials == null) {
+                            existentials = result.existentials();
+                        }
                         if(!result.constraints().isEmpty()) {
                             subDebug.info("Simplified to:");
                             for(IConstraint newConstraint : result.constraints()) {
@@ -149,7 +161,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         }
                         completeness.updateAll(result.vars(), state.unifier());
                         constraints.activateFromVars(result.vars(), subDebug);
-                        constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
+                        constraints.activateFromEdges(
+                                Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
@@ -183,7 +196,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         logTimes("success", successCount, debug);
         logTimes("delay", delayCount, debug);
 
-        return SolverResult.of(state, failed, delayed);
+        final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
+        return SolverResult.of(state, failed, delayed, existentials);
     }
 
     private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,
@@ -204,13 +218,18 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         debug.info("# ----- {} -----", "-");
     }
 
-    private Optional<ConstraintResult> solve(final IConstraint constraint) throws Delay, InterruptedException {
+    private Optional<ConstraintResult> step(final IConstraint constraint) throws Delay, InterruptedException {
         try {
             return constraint.matchOrThrow(this);
         } catch(SolverException ex) {
             ex.rethrow();
             throw new IllegalStateException("something should have been thrown");
         }
+    }
+
+    @Override public Optional<ConstraintResult> caseConj(CConj c) throws SolverException {
+        final List<IConstraint> newConstraints = ImmutableList.of(c.left().withCause(c), c.right().withCause(c));
+        return Optional.of(ConstraintResult.ofConstraints(state, newConstraints));
     }
 
     @Override public Optional<ConstraintResult> caseEqual(CEqual c) throws SolverException {
@@ -225,7 +244,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                     debug.info("Unification succeeded: {}", result.result());
                 }
                 final State newState = state.withUnifier(result.unifier());
-                return Optional.of(ConstraintResult.ofVars(newState, result.result().varSet()));
+                return Optional.of(ConstraintResult.of(newState, ImmutableList.of(), result.result().varSet()));
             } else {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
@@ -240,6 +259,21 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         } catch(RigidVarsException e) {
             throw Delay.ofVars(e.vars());
         }
+    }
+
+    @Override public Optional<ConstraintResult> caseExists(CExists c) throws SolverException {
+        final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
+        State newState = state;
+        for(ITermVar var : c.vars()) {
+            final Tuple2<ITermVar, State> varAndState = newState.freshVar(var.getName());
+            final ITermVar freshVar = varAndState._1();
+            newState = varAndState._2();
+            existentialsBuilder.put(var, freshVar);
+        }
+        final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
+        final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
+        final IConstraint newConstraint = c.constraint().apply(subst).withCause(c);
+        return Optional.of(ConstraintResult.ofConstraints(newState, newConstraint).withExistentials(existentials));
     }
 
     @Override public Optional<ConstraintResult> caseFalse(CFalse c) throws SolverException {
@@ -427,12 +461,13 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                     return false;
                 }
             };
+            final ConstraintQueries cq = new ConstraintQueries(state, params);
             // @formatter:off
             final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
-                        .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
-                        .withDataWF(filter(relation, type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
-                        .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
-                        .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params::isComplete, subDebug), subDebug))
+                        .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
+                        .withDataWF(filter(relation, type, cq.getDataWF(filter.getDataWF()), subDebug))
+                        .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
+                        .withDataEquiv(filter(relation, type, cq.getDataEquiv(min.getDataEquiv()), subDebug))
                         .withEdgeComplete(isComplete)
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
@@ -601,19 +636,9 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try rule {}", rawRule.toString());
             }
-            final Ref<State> instantiatedState;
-            final List<IConstraint> instantiatedBody;
+            final IConstraint instantiatedBody;
             try {
-                instantiatedState = new Ref<>(state);
-                final Function1<String, ITermVar> freshVar = (base) -> {
-                    final Tuple2<ITermVar, State> stateAndVar = instantiatedState.get().freshVar(base);
-                    instantiatedState.set(stateAndVar._2());
-                    return stateAndVar._1();
-                };
-                final Tuple2<Set<ITermVar>, List<IConstraint>> appl;
-                if((appl = rawRule.apply(args, state.unifier(), freshVar, c).orElse(null)) != null) {
-                    instantiatedBody = appl._2();
-                } else {
+                if((instantiatedBody = rawRule.apply(args, state.unifier(), c).orElse(null)) == null) {
                     proxyDebug.info("Rule rejected (mismatching arguments)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
                     continue;
@@ -626,38 +651,11 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.ofConstraints(instantiatedState.get(), instantiatedBody));
+            return Optional.of(ConstraintResult.ofConstraints(state, instantiatedBody));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);
         return Optional.empty();
-    }
-
-    @Value.Immutable
-    static abstract class AConstraintResult {
-
-        @Value.Parameter public abstract State state();
-
-        @Value.Parameter public abstract List<IConstraint> constraints();
-
-        @Value.Parameter public abstract List<ITermVar> vars();
-
-        public static ConstraintResult of(State state) {
-            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.of());
-        }
-
-        public static ConstraintResult ofConstraints(State state, IConstraint... constraints) {
-            return ofConstraints(state, Arrays.asList(constraints));
-        }
-
-        public static ConstraintResult ofConstraints(State state, Iterable<? extends IConstraint> constraints) {
-            return ConstraintResult.of(state, ImmutableList.copyOf(constraints), ImmutableList.of());
-        }
-
-        public static ConstraintResult ofVars(State state, Iterable<? extends ITermVar> vars) {
-            return ConstraintResult.of(state, ImmutableList.of(), ImmutableList.copyOf(vars));
-        }
-
     }
 
 }

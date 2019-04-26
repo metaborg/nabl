@@ -15,7 +15,7 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.SolverResult;
+import mb.statix.solver.persistent.SolverResult;
 
 public class STX_delays_as_errors extends StatixPrimitive {
 
