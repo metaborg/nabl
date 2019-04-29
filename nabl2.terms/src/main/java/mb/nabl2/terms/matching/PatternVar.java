@@ -41,7 +41,7 @@ class PatternVar extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        return ImmutableSet.of(var);
+        return isWildcard() ? ImmutableSet.of() : ImmutableSet.of(var);
     }
 
     @Override protected MaybeNotInstantiated<Boolean> matchTerm(ITerm term, Transient subst, IUnifier unifier) {
