@@ -188,7 +188,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         
         getWriteLock().lock();
         try {
-            IEdge<IOwnableTerm, ITerm, IOwnableTerm> edge = new Edge<>(this.owner, sourceScope, label, targetScope);
+            IEdge<IOwnableTerm, ITerm, IOwnableTerm> edge = new Edge<>(sourceScope, label, targetScope);
             return edges.put(sourceScope, label, edge);
         } finally {
             getWriteLock().unlock();
@@ -216,7 +216,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         
         getWriteLock().lock();
         try {
-            IEdge<IOwnableTerm, ITerm, List<ITerm>> edge = new Edge<>(this.owner, scope, relation, datumlist);
+            IEdge<IOwnableTerm, ITerm, List<ITerm>> edge = new Edge<>(scope, relation, datumlist);
             return data.put(scope, relation, edge);
         } finally {
             getWriteLock().unlock();
@@ -374,14 +374,12 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             IOwnableScope newScope = parentScopes.get(i);
             for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> e : getEdges().get(oldScope)) {
                 newEdges.put(newScope, e.getKey(), new Edge<IOwnableTerm, ITerm, IOwnableTerm>(
-                        e.getValue().getOwner(),
                         newScope,
                         e.getValue().getLabel(),
                         e.getValue().getTarget()));
             }
             for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> e : getData().get(oldScope)) {
                 newData.put(newScope, e.getKey(), new Edge<IOwnableTerm, ITerm, List<ITerm>>(
-                        e.getValue().getOwner(),
                         newScope,
                         e.getValue().getLabel(),
                         e.getValue().getTarget()));

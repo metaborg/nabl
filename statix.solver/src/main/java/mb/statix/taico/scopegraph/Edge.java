@@ -1,23 +1,16 @@
 package mb.statix.taico.scopegraph;
 
-import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 
 public class Edge<S extends IOwnable, L, T> implements IEdge<S, L, T> {
-    private final IModule owner;
     private final S source;
     private final T target;
     private final L label;
     
-    public Edge(IModule owner, S source, L label, T target) {
-        this.owner = owner;
+    public Edge(S source, L label, T target) {
         this.source = source;
         this.label = label;
         this.target = target;
-    }
-    
-    public IModule getOwner() {
-        return owner;
     }
     
     public S getSource() {
@@ -37,7 +30,6 @@ public class Edge<S extends IOwnable, L, T> implements IEdge<S, L, T> {
         final int prime = 31;
         int result = 1;
         result = prime * result + label.hashCode();
-        result = prime * result + owner.hashCode();
         result = prime * result + source.hashCode();
         result = prime * result + target.hashCode();
         return result;
@@ -55,12 +47,11 @@ public class Edge<S extends IOwnable, L, T> implements IEdge<S, L, T> {
         if (!label.equals(other.label))   return false;
         if (!source.equals(other.source)) return false;
         if (!target.equals(other.target)) return false;
-        if (!owner.equals(other.owner))   return false;
         return true;
     }
     
     @Override
     public String toString() {
-        return "Edge<@" + owner.getId() + ", " + source + " -" + label + "-> " + target + ">";
+        return "Edge<" + source + " -" + label + "-> " + target + ">";
     }
 }
