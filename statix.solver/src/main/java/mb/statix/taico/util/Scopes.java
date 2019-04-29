@@ -2,8 +2,10 @@ package mb.statix.taico.util;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.solver.SolverContext;
 
 public class Scopes {
     /**
@@ -58,5 +60,26 @@ public class Scopes {
      */
     public static IModule getOwner(Scope term, ModuleManager manager) {
         return manager.getModule(term.getResource());
+    }
+    
+    /**
+     * Gets the owner of the given term if it is a scope.
+     * 
+     * @param term
+     *      the scope
+     * @param manager
+     *      the module manager to lookup modules in
+     * 
+     * @return
+     *      the owner of the given scope
+     *      
+     * @throws Delay
+     *      If this request is not allowed.
+     * 
+     * @throws IllegalArgumentException
+     *      If the given term is not a scope.
+     */
+    public static IModule getOwner(Scope term, IModule requester, SolverContext context) throws Delay {
+        return context.getModule(requester, term.getResource());
     }
 }

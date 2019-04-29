@@ -1,10 +1,11 @@
 package mb.statix.taico.incremental;
 
+import java.io.Serializable;
 import java.util.Set;
 
 import mb.statix.taico.module.IModule;
 
-public interface IChangeSet {
+public interface IChangeSet extends Serializable {
     /**
      * @return
      *      all modules

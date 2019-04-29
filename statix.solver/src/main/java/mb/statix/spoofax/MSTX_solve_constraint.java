@@ -31,11 +31,12 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
+import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
-import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 
@@ -84,10 +85,14 @@ public class MSTX_solve_constraint extends StatixPrimitive {
 
     private ITerm solveConstraint(Spec spec, String resource, List<ITermVar> topLevelVars, Set<IConstraint> constraints,
             IDebugContext debug) {
-        final ModuleManager manager = new ModuleManager();
-        final IModule module = new Module(manager, resource, spec);
+        //Create a context and a coordinator
+        final SolverContext context = SolverContext.initialContext(new NonIncrementalStrategy(), spec);
         final ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
-        final MState state = new MState(manager, coordinator, module, spec);
+        context.setCoordinator(coordinator);
+        
+        //Create the top level module and state. It is added to the context automatically.
+        final IModule module = new Module(context, resource, spec);
+        final MState state = new MState(context, module, spec);
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         for(ITermVar var : topLevelVars) {
             final ITermVar nvar = state.freshVar(var.getName());

@@ -34,6 +34,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     
     //Scope graph graph
     private final HashSet<ModuleScopeGraph> children = new HashSet<>();
+    private final HashSet<String> children2 = new HashSet<>();
     
     private final HashSet<IOwnableScope> scopes = new HashSet<>();
     private IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> edges = HashTrieRelation3.Transient.of();
@@ -245,6 +246,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         getWriteLock().lock();
         try {
             children.add(childSg);
+            children2.add(child.getId());
             return childSg;
         } finally {
             getWriteLock().unlock();
@@ -255,7 +257,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     public boolean removeChild(IModule child) {
         getWriteLock().lock();
         try {
-            return children.remove(child.getScopeGraph());
+            return children.remove(child.getScopeGraph()) && children2.remove(child.getId());
         } finally {
             getWriteLock().unlock();
         }
@@ -263,6 +265,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     
     @Override
     public Collection<? extends ModuleScopeGraph> getChildren() {
+        
         return children;
     }
     

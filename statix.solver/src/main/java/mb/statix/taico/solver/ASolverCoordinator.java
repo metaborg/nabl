@@ -86,7 +86,7 @@ public abstract class ASolverCoordinator {
     protected void init(IncrementalStrategy strategy, IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
         this.debug = new PrefixedDebugContext("Coordinator", debug);
         this.rootState = rootState;
-        this.rootState.setCoordinator(this);
+        this.rootState.context().setCoordinator(this);
         this.root = ModuleSolver.topLevelSolver(rootState, constraints, debug);
         this.strategy = strategy;
     }
@@ -141,6 +141,9 @@ public abstract class ASolverCoordinator {
         strategy.clearDirtyModules(changeSet, state.manager());
         //Recreating modules
         recreateModules(modules.keySet(), state.manager());
+        
+        //Switch the phase to 0 after the initialization
+        if (rootState.context().getPhase() == -1) rootState.context().setPhase(0);
         System.err.println("Scheduling");
         scheduleModules(modules);
         
@@ -161,7 +164,7 @@ public abstract class ASolverCoordinator {
         for (IModule module : modules) {
             if (manager.getModule(module.getId()) != null) continue;
             
-            module.reset(this, rootState.spec());
+            module.reset(rootState.spec());
         }
     }
 
@@ -208,7 +211,7 @@ public abstract class ASolverCoordinator {
             
             if (child == null) throw new IllegalStateException("Child " + childName + " could not be found!");
             
-            new MState(rootState.manager(), this, child, rootState.spec());
+            new MState(rootState.context(), child, rootState.spec());
             modules.put(child, entry.getValue());
         }
         return modules;

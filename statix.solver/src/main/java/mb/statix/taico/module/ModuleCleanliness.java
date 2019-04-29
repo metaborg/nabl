@@ -4,6 +4,9 @@ public enum ModuleCleanliness {
     /** Indicates that the module is guaranteed to be dirty. */
     DIRTY,
     
+    /** Indicates that the module is a child of a dirty module. */
+    CHILDOFDIRTY,
+    
     /** Indicates that we are unsure if the module is dirty or not. */
     CLIRTY,
     

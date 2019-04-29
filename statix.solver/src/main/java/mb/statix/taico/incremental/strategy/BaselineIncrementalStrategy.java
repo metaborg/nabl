@@ -5,14 +5,17 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.IMState;
+import mb.statix.taico.solver.SolverContext;
 
 /**
  * Incremental strategy which is naive and simply redoes all modules that have changed and all
@@ -24,7 +27,7 @@ import mb.statix.taico.solver.IMState;
  * However, if any modules are added, we cannot guarantee that they don't affect existing modules,
  * so we redo all modules if modules are added.
  */
-public class BaselineIncrementalStrategy implements IncrementalStrategy {
+public class BaselineIncrementalStrategy extends IncrementalStrategy {
     @Override
     public void clearDirtyModules(IChangeSet changeSet, ModuleManager manager) {
         if (!changeSet.added().isEmpty()) {
@@ -54,5 +57,26 @@ public class BaselineIncrementalStrategy implements IncrementalStrategy {
     @Override
     public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, Set<IConstraint>> constraints, IDebugContext debug) throws InterruptedException {
         return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
+    }
+    
+    @Override
+    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id)
+            throws Delay {
+        IModule module = context.getModuleManager().getModule(id);
+        if (module != null) return module;
+        
+        if (oldContext == null) return null;
+        module = oldContext.getModuleManager().getModule(id);
+        
+        if (module == null) return null;
+        if (module.getFlag() == ModuleCleanliness.CLEAN) return module;
+        
+        return null;
+    }
+    
+    @Override
+    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) throws Delay {
+        //Child access works the same as normal access.
+        return getModule(context, oldContext, requester, childId);
     }
 }

@@ -12,17 +12,15 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableTerm;
+import mb.statix.taico.solver.context.AContextAware;
 
 /**
  * Implementation of mutable state.
  */
-public class MState implements IMState {
-    private final ModuleManager manager;
+public class MState extends AContextAware implements IMState {
     private final IModule owner;
-    private ASolverCoordinator coordinator;
     private Spec spec;
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
     
@@ -33,16 +31,26 @@ public class MState implements IMState {
     
     private ModuleSolver solver;
     
-    public MState(ModuleManager manager, ASolverCoordinator coordinator, IModule owner, Spec spec) {
-        this.manager = manager;
-        this.coordinator = coordinator;
+    /**
+     * Constructor for creating a new state for the given module.
+     * <p>
+     * <b>NOTE</b>: this constructor sets the state of the module to itself.
+     * @param context
+     *      the context
+     * @param owner
+     *      the owner of this state
+     * @param spec
+     *      the specification
+     */
+    public MState(SolverContext context, IModule owner, Spec spec) {
+        super(context);
         this.owner = owner;
         this.spec = spec;
         this.scopeGraph = owner.getScopeGraph();
         this.vars = new HashSet<>();
         this.unifier = PersistentUnifier.Immutable.of();
         
-        owner.setCurrentState(this);
+        context.setState(owner, this);
     }
     
     /**
@@ -56,8 +64,7 @@ public class MState implements IMState {
      *      the new scopeGraph
      */
     protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph) {
-        this.manager = original.manager();
-        this.coordinator = original.coordinator();
+        super(original.context);
         this.owner = original.owner();
         this.spec = original.spec();
         this.scopeGraph = scopeGraph;
@@ -77,19 +84,8 @@ public class MState implements IMState {
         return spec;
     }
     
-    @Override
-    public ModuleManager manager() {
-        return manager;
-    }
-    
-    @Override
-    public ASolverCoordinator coordinator() {
-        return coordinator;
-    }
-    
-    @Override
-    public void setCoordinator(ASolverCoordinator coordinator) {
-        this.coordinator = coordinator;
+    public SolverContext context() {
+        return context;
     }
     
     @Override

@@ -1,5 +1,6 @@
 package mb.statix.taico.module;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -7,22 +8,26 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.google.common.collect.Streams;
+
 import mb.nabl2.terms.ITerm;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
-import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.IMState;
+import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.context.IContextAware;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.util.IOwnable;
 
 /**
  * Interface to represent a module.
  */
-public interface IModule {
+public interface IModule extends IContextAware, Serializable {
     /**
      * @return
      *      the name of this module, could be non unique
@@ -76,7 +81,16 @@ public interface IModule {
      */
     default Stream<IModule> getDescendants() {
         return getChildren().stream()
-                .flatMap(m -> StreamSupport.stream(m.getDescendants().spliterator(), false));
+                .flatMap(m -> StreamSupport.stream(m.getDescendantsIncludingSelf().spliterator(), false));
+    }
+    
+    /**
+     * @return
+     *      all the modules that are descendent from this module, including this module itself
+     */
+    default Stream<IModule> getDescendantsIncludingSelf() {
+        return Streams.concat(Stream.of(this), getChildren().stream()
+                .flatMap(m -> StreamSupport.stream(m.getDescendantsIncludingSelf().spliterator(), false)));
     }
     
     /**
@@ -113,7 +127,7 @@ public interface IModule {
      * @return
      *      the new/old child module
      */
-    default IModule createOrGetChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) {
+    default IModule createOrGetChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) throws Delay {
         //TODO Incrementality breaks if parent or child names are changed
         IModule oldModule = getChild(name);
         if (oldModule == null) {
@@ -128,7 +142,7 @@ public interface IModule {
             //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
             oldModule.setInitialization(constraint);
             //Set the coordinator to our coordinator
-            oldModule.getCurrentState().setCoordinator(getCurrentState().coordinator());
+//            oldModule.getCurrentState().setCoordinator(getCurrentState().coordinator());
             getScopeGraph().addChild(oldModule);
             return oldModule;
         } else {
@@ -143,9 +157,8 @@ public interface IModule {
      * @return
      *      the child of this module
      */
-    default IModule getChild(String name) {
-        String id = ModulePaths.build(getId(), name);
-        return getCurrentState().manager().getModule(id);
+    default IModule getChild(String name) throws Delay {
+        return getCurrentState().context().getChildModuleByName(this, name);
     }
     
     /**
@@ -158,14 +171,14 @@ public interface IModule {
      * @return
      *      the child, or null if no such child exists
      */
-    default IModule getChildAndAdd(String name) {
+    default IModule getChildAndAdd(String name) throws Delay {
         IModule child = getChild(name);
         if (child == null) return null;
         
         child.setParent(this);
-        child.getCurrentState().setCoordinator(getCurrentState().coordinator());
+//        child.getCurrentState().setCoordinator(getCurrentState().coordinator());
         getScopeGraph().addChild(child);
-        getCurrentState().manager().addModule(child);
+        getCurrentState().context().addModule(child);
         return child;
     }
     
@@ -193,19 +206,18 @@ public interface IModule {
      */
     void setInitialization(IConstraint constraint);
 
-    /**
-     * @return
-     *      the state of this module
-     */
-    IMState getCurrentState();
+    // --------------------------------------------------------------------------------------------
+    // Convenience methods
+    // --------------------------------------------------------------------------------------------
     
     /**
-     * Method used once when a module state has been constructed.
+     * Convenience method.
      * 
-     * @param state
-     *      the state of this module
+     * @see SolverContext#getState(IModule)
      */
-    void setCurrentState(IMState state);
+    default IMState getCurrentState() {
+        return getContext().getState(this);
+    }
     
     /**
      * Adds a query with its resolution details to determine the dependencies.
@@ -232,12 +244,18 @@ public interface IModule {
     
     void flag(ModuleCleanliness cleanliness);
     
+    default boolean flagIfClean(ModuleCleanliness cleanliness) {
+        if (getFlag() != ModuleCleanliness.CLEAN) return false;
+        flag(cleanliness);
+        return true;
+    }
+    
     ModuleCleanliness getFlag();
     
     /**
      * Resets the module to a clean module: no children, no scope graph.
      */
-    void reset(ASolverCoordinator coordinator, Spec spec);
+    void reset(Spec spec);
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
     

@@ -13,6 +13,7 @@ import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.solver.SolverContext;
 
 /**
  * (Immutable) Scope implementation with an owner.
@@ -103,6 +104,11 @@ public class OwnableScope extends AScope implements IOwnableScope {
      *      the converted scope
      */
     public static OwnableScope fromScope(ModuleManager manager, Scope scope) {
+        IModule owner = manager.getModule(scope.getResource());
+        return new OwnableScope(owner, scope.getName(), scope.getAttachments());
+    }
+    
+    public static OwnableScope fromScope(SolverContext context, Scope scope) {
         IModule owner = manager.getModule(scope.getResource());
         return new OwnableScope(owner, scope.getName(), scope.getAttachments());
     }

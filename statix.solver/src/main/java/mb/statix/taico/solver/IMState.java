@@ -22,11 +22,30 @@ public interface IMState extends IOwnable {
     
     public Spec spec();
     
-    public ModuleManager manager();
+    /**
+     * @deprecated
+     *      The module manager should not be necessary for direct access. All module requests should
+     *      go via the context.
+     * 
+     * @throws UnsupportedOperationException
+     *      No longer supported.
+     */
+    @Deprecated
+    public default ModuleManager manager() {
+        throw new UnsupportedOperationException("It is not allowed to access the module manager directly");
+//        return context().getModuleManager();
+    }
     
-    public ASolverCoordinator coordinator();
+    public SolverContext context();
     
-    public void setCoordinator(ASolverCoordinator coordinator);
+    /**
+     * Convenience method.
+     * 
+     * @see SolverContext#getCoordinator()
+     */
+    public default ASolverCoordinator coordinator() {
+        return context().getCoordinator();
+    }
     
     public ModuleSolver solver();
     

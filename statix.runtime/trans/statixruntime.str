@@ -263,7 +263,7 @@ rules // multi file analysis
       //Let the incremental algorithm figure out the 
       //(resource, Change) -> MChange
     ; mchanged*   := <map(\ (resource, change) -> <mstx--change(desugar|resource)> change \)> change*
-    ; mchanged-C* := <map(\ change -> (change, C(file-constraint, <map(stx--explode)> [global-scope, <mstx--ast> change])) \)> mchanged*
+    ; mchanged-C* := <map(\ change -> (change, <mstx--build-C(|file-constraint, global-scope)> change) \)> mchanged*
     ; mchanged-C-with-project* := [(mchanged-project, project-C), mchanged-C*]
     
     ; <debug> "Pre solving files"
@@ -316,7 +316,11 @@ rules // multi file analysis
     ; result* := <concat> [[(project-resource, project-result)], file-result, file-result2]
     ; <debug> "Concatenated results"
 
-  mstx--sorter-tuples = ?((name1, _), (name2, _)); <string-lt> (name1, name2)
+  //Builds the init constraint of a file
+  mstx--build-C(|file-constraint, global-scope): change -> C
+    where
+    ast := <mstx--ast> change
+  ; (<?()> ast < C := CTrue() + C := C(file-constraint, <map(stx--explode)> [global-scope, ast]))
 
   mstx-editor-analyze(desugar|incremental-strategy, spec-name, project-constraint, file-constraint):
       AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `mstx-editor-analyze_1_4` called for single-file analysis. Use `mstx-editor-analyze_1_2` instead.")>

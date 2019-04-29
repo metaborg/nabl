@@ -15,21 +15,21 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
-import mb.statix.taico.solver.ASolverCoordinator;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.context.AContextAware;
 import mb.statix.taico.solver.query.QueryDetails;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.
  */
 //TODO This would be a StatixModule or SGModule
-public class Module implements IModule {
+public class Module extends AContextAware implements IModule {
+    private static final long serialVersionUID = 1L;
+    
     private final String name;
-    private final ModuleManager manager;
-    private IModule parent;
+    private String parentId;
     private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
-    private IMState state;
     private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
     private Map<IModule, CResolveQuery> dependants = new HashMap<>();
     private ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
@@ -38,6 +38,8 @@ public class Module implements IModule {
     /**
      * Creates a new top level module.
      * 
+     * @param context
+     *      the solver context
      * @param name
      *      the name of the module
      * @param labels
@@ -47,43 +49,45 @@ public class Module implements IModule {
      * @param relations
      *      the labels on data edges of the scope graph
      */
-    public Module(ModuleManager manager, String name, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
-        this.manager = manager;
+    public Module(SolverContext context, String name, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
+        super(context);
         this.name = name;
-        this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Collections.emptyList());
-        manager.addModule(this);
+        context.addModule(this);
     }
     
     /**
      * Creates a new top level module.
      * 
+     * @param context
+     *      the solver context
      * @param name
      *      the name of the module
      * @param spec
      *      the spec
      */
-    public Module(ModuleManager manager, String name, Spec spec) {
-        this.manager = manager;
+    public Module(SolverContext context, String name, Spec spec) {
+        super(context);
         this.name = name;
-        this.parent = null;
         this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptyList());
-        manager.addModule(this);
+        context.addModule(this);
     }
     
     /**
      * Constructor for creating child modules.
      * 
+     * @param context
+     *      the solver context
      * @param name
      *      the name of the child
      * @param parent
      *      the parent module
      */
-    private Module(ModuleManager manager, String name, IModule parent) {
-        this.manager = manager;
+    private Module(SolverContext context, String name, IModule parent) {
+        super(context);
         this.name = name;
-        this.parent = parent;
-        manager.addModule(this);
+        this.parentId = parent == null ? null : parent.getId();
+        context.addModule(this);
     }
 
     @Override
@@ -93,38 +97,30 @@ public class Module implements IModule {
     
     @Override
     public String getId() {
-        return parent == null ? name : ModulePaths.build(parent.getId(), name);
+        return parentId == null ? name : ModulePaths.build(parentId, name);
     }
     
     @Override
     public IModule getParent() {
-        return parent;
+        System.err.println("Getting parent on module " + this);
+        return parentId == null ? null : context.getModuleUnchecked(parentId);
     }
     
     @Override
     public void setParent(IModule module) {
-        this.parent = module;
+        //TODO Because of how the parent system currently works, we cannot hang modules under different parents.
+        //     This is because we currently do not transitively update the module ids in our children as well.
+        this.parentId = module == null ? null : module.getId();
     }
 
     @Override
     public IMInternalScopeGraph<IOwnableTerm,  ITerm, ITerm, ITerm> getScopeGraph() {
         return scopeGraph;
     }
-    
-    @Override
-    public IMState getCurrentState() {
-        return state;
-    }
-    
-    @Override
-    public void setCurrentState(IMState state) {
-        if (this.state != null) System.out.println("NOTE: The state of module " + name + " is already set");
-        this.state = state;
-    }
 
     @Override
     public synchronized Module createChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) {
-        Module child = new Module(manager, name, this);
+        Module child = new Module(context, name, this);
         child.setInitialization(constraint);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
         return child;
@@ -188,14 +184,18 @@ public class Module implements IModule {
     }
     
     @Override
-    public void reset(ASolverCoordinator coordinator, Spec spec) {
+    public void reset(Spec spec) {
         this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getLabels(), scopeGraph.getEndOfPath(), scopeGraph.getRelations(), scopeGraph.getParentScopes());
         this.queries = new HashMap<>();
         this.dependants = new HashMap<>();
         this.cleanliness = ModuleCleanliness.NEW;
-        new MState(manager, coordinator, this, spec);
-        manager.addModule(this);
+        new MState(context, this, spec);
+        context.addModule(this);
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Object methods
+    // --------------------------------------------------------------------------------------------
     
     @Override
     public boolean equals(Object obj) {
@@ -207,7 +207,7 @@ public class Module implements IModule {
     
     @Override
     public int hashCode() {
-        return name.hashCode() + (parent == null ? 0 : (31 * parent.hashCode()));
+        return name.hashCode() + (parentId == null ? 0 : (31 * parentId.hashCode()));
     }
     
     @Override

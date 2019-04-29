@@ -1,28 +1,38 @@
 package mb.statix.taico.module;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 
 public class ModuleManager {
-    private Map<String, IModule> modules = new HashMap<>();
+    private Map<String, IModule> modules = new ConcurrentHashMap<>();
     private ListMultimap<String, IModule> moduleNames = MultimapBuilder.hashKeys().arrayListValues().build();
     
     public ModuleManager() {}
     
     /**
      * @return
-     *      all the modules registered in this manager (unmodifiable)
+     *      all the modules registered in this manager
      */
-    public synchronized Collection<IModule> getModules() {
-        return Collections.unmodifiableCollection(modules.values());
+    public synchronized Set<IModule> getModules() {
+        return new HashSet<>(modules.values());
+    }
+    
+    /**
+     * @return
+     *      all the modules and their ids
+     */
+    public synchronized Map<String, IModule> getModulesAndIds() {
+        return new HashMap<>(modules);
     }
     
     /**
@@ -53,6 +63,36 @@ public class ModuleManager {
         if (mods.size() == 1) return mods.get(0);
         
         throw new IllegalStateException("[ModuleManager] Module " + name + " is not globally unique, use a full id instead");
+    }
+    
+    /**
+     * @param name
+     *      the name of the module
+     * @param level
+     *      the level on which to find the module
+     * 
+     * @return
+     *      the given module, or null if no module with the given name exists
+     * 
+     * @throws IllegalStateException
+     *      If the given name is not unique on its level
+     */
+    public synchronized IModule getModuleByName(String name, int level) {
+        List<IModule> mods = moduleNames.get(name);
+        List<IModule> filtered = mods.stream().filter(m -> ModulePaths.pathLength(m.getId()) - 1 == level).collect(Collectors.toList());
+        if (filtered.size() > 1) throw new IllegalStateException("[ModuleManager] Module " + name + " is not unique on its level. Use a full id instead");
+        return filtered.isEmpty() ? null : filtered.get(0);
+    }
+    
+    /**
+     * @param id
+     *      the id of the module to check
+     * 
+     * @return
+     *      true if the given module exists, false otherwise
+     */
+    public synchronized boolean hasModule(String id) {
+        return modules.containsKey(id);
     }
     
     /**
@@ -132,5 +172,27 @@ public class ModuleManager {
     public synchronized void retainModules(Collection<IModule> toRetain) {
         modules.values().retainAll(toRetain);
         moduleNames.values().retainAll(toRetain);
+    }
+
+    /**
+     * Gets the modules on a particular level.
+     * For example, a value of 0 yields all top level modules, while a value of 1 would yield all
+     * children of top level modules.
+     * 
+     * @param level
+     *      the level of modules to get
+     * 
+     * @return
+     *      a map from module NAME to module
+     */
+    public synchronized Map<String, IModule> getModulesOnLevel(int level) {
+        Map<String, IModule> levelModules = new HashMap<>();
+        for (Entry<String, IModule> entry : modules.entrySet()) {
+            String id = entry.getKey();
+            if (ModulePaths.pathLength(id) - 1 != level) continue;
+            IModule module = entry.getValue();
+            levelModules.put(module.getName(), module);
+        }
+        return levelModules;
     }
 }

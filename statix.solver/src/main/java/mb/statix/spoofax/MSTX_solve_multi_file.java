@@ -30,6 +30,7 @@ import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 
@@ -61,8 +62,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         
         //We want the "initial" state, but rather we want the previous module manager used for the initial state.
         //TODO IMPORTANT Check if the changes to the module manager applied further on are applied on the project
-        ModuleManager manager = initial.state().manager();
-        
         Set<String> removed = new HashSet<>();
         Set<String> changed = new HashSet<>();
         Set<String> added = new HashSet<>();
@@ -91,19 +90,24 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             order.put(change.getModule(), i++);
             modules.put(change.getModule(), tuple._2());
         }
-        ChangeSet cs = new ChangeSet(manager, removed, changed, added);
+        SolverContext oldContext = initial.state().context();
+        ChangeSet changeSet = new ChangeSet(oldContext, removed, changed, added);
+        
+        SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, changeSet, spec);
+        
         ASolverCoordinator coordinator = MSTX_solve_constraint.CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
-        initial.state().setCoordinator(coordinator);
+        newContext.setCoordinator(coordinator);
+        //TODO IMPORTANT Solver Context
         
         //Do the actual analysis
         Map<String, ISolverResult> results;
         try {
-            results = coordinator.solve(strategy, cs, initial.state(), modules, debug);
+            results = coordinator.solve(strategy, changeSet, initial.state(), modules, debug);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         //TODO This is wrong!
-        System.err.println("Modules in the manager post solve: " + manager.getModules());
+        System.err.println("Modules in the context post solve: " + newContext.getModules());
 
 //        List<ITerm> strategoResults = results.entrySet().stream()
 //                .sorted((a, b) -> a.getKey().compareTo(b.getKey()))

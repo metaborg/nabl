@@ -27,10 +27,12 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IMNameResolution;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.solver.CompletenessResult;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.util.IOwnable;
 
 public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameResolution<S, V, L, R> {
 
+    private final SolverContext context;
     private final IMInternalScopeGraph<S, V, L, R> scopeGraph;
     private final Set.Immutable<L> labels;
     private final Optional<R> relation;
@@ -44,10 +46,11 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
     private final Function2<? super V, R, CompletenessResult> isDataComplete; // default: true
     private final LockManager lockManager;
 
-    public MFastNameResolution(IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
+    public MFastNameResolution(SolverContext context, IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, Function2<? super S, L, CompletenessResult> isEdgeComplete, DataWF<V> dataWF, DataLeq<V> dataEquiv,
             Function2<? super V, R, CompletenessResult> isDataComplete, LockManager lockManager) {
         super();
+        this.context = context;
         this.scopeGraph = scopeGraph;
         this.labels = Set.Immutable.<L>of().__insertAll(scopeGraph.getLabels()).__insert(scopeGraph.getEndOfPath());
         this.relation = relation;
@@ -261,9 +264,9 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
             this.lockManager = lockManager;
             return this;
         }
-
-        public MFastNameResolution<S, V, L, R> build(IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation) {
-            return new MFastNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
+        
+        public MFastNameResolution<S, V, L, R> build(SolverContext context, IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation) {
+            return new MFastNameResolution<>(context, scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
                     dataEquiv, isDataComplete, lockManager);
         }
 

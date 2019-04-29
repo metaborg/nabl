@@ -79,13 +79,14 @@ public abstract class AModuleBoundary extends ARule {
         //We don't always want to statically store the child relation. We want to base this on the current owner.
         List<IOwnableScope> canExtend = new ArrayList<>();
         for (ITerm term : newArgs) {
-            OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(term).orElse(null);
+            //TODO IMPORTANT Is this getModule approach wanted here?
+            OwnableScope scope = OwnableScope.ownableMatcher(state.context()::getModuleUnchecked).match(term).orElse(null);
             if (scope != null) canExtend.add(scope);
         }
         
         String modName = moduleString().build(subst);
         IModule child = state.owner().createOrGetChild(modName, canExtend, new CUser(name(), newArgs));
-        IMState childState = new MState(state.manager(), state.coordinator(), child, state.spec());
+        IMState childState = new MState(state.context(), child, state.spec());
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {

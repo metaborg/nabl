@@ -3,50 +3,56 @@ package mb.statix.taico.incremental;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
+import mb.statix.taico.solver.SolverContext;
 
+//TODO At some point I need to rethink the changeset. Flagging with 3 different flags just doesn't cut it when decisions need to be made
+//     on much more detailed information. Information that is available.
 public class ChangeSet implements IChangeSet {
+    private static final long serialVersionUID = 1L;
+    
     private Set<IModule> all;
     private Set<IModule> removed, changed, unchanged;
-    private Set<IModule> dirty, clirty, clean;
+    private Set<IModule> dirty, clirty, clean, childOfDirty;
     private Set<String> added;
 
-    public ChangeSet(ModuleManager manager, Collection<String> removed, Collection<String> changed) {
-        this(manager, removed, changed, new HashSet<>());
+    public ChangeSet(SolverContext oldContext, Collection<String> removed, Collection<String> changed) {
+        this(oldContext, removed, changed, new HashSet<>());
     }
     
-    public ChangeSet(ModuleManager manager, Collection<String> removed, Collection<String> changed, Collection<String> added) {
-        System.err.println("All modules in the manager: " + manager.getModules());
+    public ChangeSet(SolverContext oldContext, Collection<String> removed, Collection<String> changed, Collection<String> added) {
+        System.err.println("All modules in the context: " + oldContext.getModules());
         
-        this.removed = removed.stream().map(name -> getModule(manager, name)).collect(Collectors.toSet());
-        this.changed = changed.stream().map(name -> getModule(manager, name)).collect(Collectors.toSet());
+        Map<String, IModule> modules = oldContext.getModulesOnLevel(1);
+        this.removed = removed.stream().map(name -> getModule(modules, name)).collect(Collectors.toSet());
+        this.changed = changed.stream().map(name -> getModule(modules, name)).collect(Collectors.toSet());
         this.added = new HashSet<>(added);
         
-        init(manager);
+        init(oldContext);
         validate();
     }
     
-    private IModule getModule(ModuleManager manager, String name) {
+    private IModule getModule(Map<String, IModule> modules, String name) {
         //TODO Use id by using the name of the parent.
-        IModule module = manager.getModuleByName(name);
+        IModule module = modules.get(name);
         if (module == null) throw new IllegalStateException("Encountered module that is unknown: " + name);
         return module;
     }
 
-    private void init(ModuleManager manager) {
+    private void init(SolverContext context) {
         //Mark the initial status of all modules
-        all = new HashSet<>(manager.getModules());
+        all = context.getModules();
         all.forEach(m -> m.flag(ModuleCleanliness.CLEAN));
         
         //Mark all removed modules and descendants as deleted
         removed.forEach(m -> m.flag(ModuleCleanliness.DELETED));
-        removed.stream().flatMap(m -> m.getDescendants()).forEach(m -> m.flag(ModuleCleanliness.DELETED));
+        removed.stream().flatMap(m -> m.getDescendants()).forEach(m -> m.flagIfClean(ModuleCleanliness.DELETED));
 
         //#0 Compute unchanged = all - removed - changed
         unchanged = new HashSet<>(all);
@@ -55,14 +61,19 @@ public class ChangeSet implements IChangeSet {
 
         //#1 Compute dirty = changed U dependsOn(removed)
         dirty = new HashSet<>();
+        childOfDirty = new HashSet<>();
+        
         for (IModule module : changed) {
-            module.flag(ModuleCleanliness.DIRTY);
+            module.flagIfClean(ModuleCleanliness.DIRTY);
             dirty.add(module);
         }
-        removed.stream().flatMap(m -> m.getDependants().keySet().stream()).forEach(module -> {
-            module.flag(ModuleCleanliness.DIRTY);
-            dirty.add(module);
-        });
+        
+        
+        for (IModule module : changed) {
+            module.getDescendants().forEach(m -> m.flagIfClean(ModuleCleanliness.CHILDOFDIRTY));
+        }
+        
+        
 
         //#2 Compute clirty = all modules that depend on dirty or clirty modules
         clirty = new HashSet<>();
@@ -70,18 +81,25 @@ public class ChangeSet implements IChangeSet {
         //I need to flag all modules that depend on the dirty modules (recursively) as possibly dirty (clirty)
         //Using a DFS algorithm with the reverse dependency edges in the graph
         Set<IModule> visited = new HashSet<>(dirty);
+        visited.addAll(childOfDirty);
         visited.addAll(removed);
         LinkedList<IModule> stack = new LinkedList<>(visited);
         while (!stack.isEmpty()) {
             IModule module = stack.pop();
             for (IModule depModule : module.getDependants().keySet()) {
                 if (visited.contains(depModule)) continue;
+                if (depModule.getFlag() != ModuleCleanliness.CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered ");
                 visited.add(depModule);
                 depModule.flag(ModuleCleanliness.CLIRTY);
                 clirty.add(depModule);
                 stack.push(depModule);
             }
         }
+        
+        //All modules that depend upon removed modules are also considered clirty.
+        removed.stream().flatMap(m -> m.getDependants().keySet().stream()).forEach(module -> {
+            if (module.flagIfClean(ModuleCleanliness.CLIRTY)) clirty.add(module);
+        });
 
         //#3 Compute clean = all - dirty - clean
         clean = all.stream().filter(m -> m.getFlag() == ModuleCleanliness.CLEAN).collect(Collectors.toSet());
@@ -141,19 +159,6 @@ public class ChangeSet implements IChangeSet {
             }
             
             checkTreeIntegrity(child);
-        }
-    }
-    
-    private boolean validateParent(IModule module, IModule base, ModuleCleanliness cleanliness) {
-        IModule parent = module.getParent();
-        if (parent == null) return true;
-        switch (parent.getFlag()) {
-            case CLEAN:   return validateParent(parent, base, cleanliness);
-            case DELETED: throw new IllegalStateException(parent.getId() + " has been deleted, but " + base.getId() + " is marked as " + cleanliness + "!");
-            case DIRTY:   throw new IllegalStateException(parent.getId() + " is marked as dirty, but " + base.getId() + " is marked as " + cleanliness + "!");
-            case CLIRTY:  throw new IllegalStateException(parent.getId() + " is marked as clirty, but " + base.getId() + " is marked as " + cleanliness + "!");
-            case NEW:     throw new IllegalStateException(parent.getId() + " is marked as new, which should not be possible (tree structure outdated)!");
-            default:      throw new IllegalStateException(parent.getId() + " has an unknown flag: " + parent.getFlag());
         }
     }
     
