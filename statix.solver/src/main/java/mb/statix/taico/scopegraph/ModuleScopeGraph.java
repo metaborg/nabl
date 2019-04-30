@@ -129,6 +129,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label, lockManager);
         } else {
+            //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
             return Scopes.getOwner(scope, owner).getScopeGraph().getEdges(scope, label, lockManager);
         }
     }
@@ -138,6 +139,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveData(scope, label, lockManager);
         } else {
+            //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
             return Scopes.getOwner(scope, owner).getScopeGraph().getData(scope, label, lockManager);
         }
     }

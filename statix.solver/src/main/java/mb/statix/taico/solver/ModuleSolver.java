@@ -256,6 +256,9 @@ public class ModuleSolver implements IOwnable {
             proxyDebug.commit();
             entry.delay(d);
             delays += 1;
+        } catch (Exception ex) {
+            System.err.println("FATAL: Exception encountered while solving!");
+            ex.printStackTrace();
         }
         return true;
     }
@@ -279,7 +282,13 @@ public class ModuleSolver implements IOwnable {
         if (state.getOwner() != getOwner()) debug.warn("Received isComplete query on {} for state of {}", getOwner(), state.getOwner());
 
         Scope scope = Scopes.getScope(scopeTerm);
-        IModule scopeOwner = state.manager().getModule(scope.getResource());
+        
+        IModule scopeOwner;
+        try {
+            scopeOwner = state.context().getModule(state.getOwner(), scope.getResource());
+        } catch (Delay d) {
+            return CompletenessResult.of(false, getOwner()).withDelay(d);
+        }
         if (scopeOwner == null) throw new IllegalStateException("Encountered scope without owning module: " + scope);
         
         CompletenessResult result;
@@ -301,6 +310,7 @@ public class ModuleSolver implements IOwnable {
             return r;
         }
         
+        //TODO Unchecked access to children. Should go via context. Requester is in the state
         for (IModule child : getOwner().getChildren()) {
             //TODO OPTIMIZATION Only delegate to children who get passed the scope
             //if (!child.getScopeGraph().getExtensibleScopes().contains(scope)) continue;

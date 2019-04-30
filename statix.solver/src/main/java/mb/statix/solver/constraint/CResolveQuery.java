@@ -131,7 +131,9 @@ public class CResolveQuery implements IConstraint, Serializable {
         }
         final Function2<ITerm, ITerm, CompletenessResult> isComplete = (s, l) -> {
             CompletenessResult result = params.isComplete(s, l, state);
-            if(result.isComplete()) {
+            if(result.delay() != null) {
+                subDebug.info("Completeness of {} {} delayed on module {}", s, l, result.delay().module());
+            } else if(result.isComplete()) {
                 subDebug.info("{} complete in {}", s, l);
             } else {
                 subDebug.info("{} incomplete in {}", s, l);

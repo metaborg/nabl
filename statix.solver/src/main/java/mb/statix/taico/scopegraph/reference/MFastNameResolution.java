@@ -108,8 +108,12 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         }
         final S scope = path.getTarget();
         CompletenessResult result = relation.map(r -> isDataComplete.apply(scope, r)).orElse(null);
-        if(result != null && !result.isComplete()) {
-            throw new IncompleteDataException(scope, relation.get(), result.cause());
+        if(result != null) {
+            if(!result.isComplete()) {
+                throw new IncompleteDataException(scope, relation.get(), result.cause());
+            } else if(result.delay() != null) {
+                throw new ModuleDelayException(result.delay().module());
+            }
         }
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         if(relation.isPresent()) {
@@ -151,6 +155,8 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         CompletenessResult result = isEdgeComplete.apply(path.getTarget(), l);
         if(!result.isComplete()) {
             throw new IncompleteEdgeException(path.getTarget(), l, result.cause());
+        } else if (result.delay() != null) {
+            throw new ModuleDelayException(result.delay().module());
         }
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         try {
