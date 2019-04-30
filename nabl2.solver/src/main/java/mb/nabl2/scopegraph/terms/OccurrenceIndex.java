@@ -86,13 +86,21 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
     // static
 
     public static IMatcher<OccurrenceIndex> matcher() {
-        return M.preserveAttachments(M.cases(
         // @formatter:off
-            M.term(TermIndex.matcher(), (t, i) -> new OccurrenceIndex(i.getResource(), i)),
-            M.term(Scope.matcher(), (t, s) -> new OccurrenceIndex(s.getResource(), s))
-            // @formatter:on
+        return M.preserveAttachments(M.cases(
+            M.term(TermIndex.matcher(), (t, i) -> OccurrenceIndex.of(i)),
+            M.term(Scope.matcher(), (t, s) -> OccurrenceIndex.of(s))
         ));
+        // @formatter:on
 
+    }
+    
+    public static OccurrenceIndex of(TermIndex i) {
+        return new OccurrenceIndex(i.getResource(), i);
+    }
+
+    public static OccurrenceIndex of(Scope s) {
+        return new OccurrenceIndex(s.getResource(), s);
     }
 
 }
