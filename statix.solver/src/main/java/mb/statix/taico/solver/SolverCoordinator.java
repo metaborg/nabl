@@ -36,6 +36,7 @@ public class SolverCoordinator extends ASolverCoordinator {
         solvers.add(solver);
     }
     
+    @Override
     public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug)
         throws InterruptedException {
         init(new NonIncrementalStrategy(), state, constraints, debug);

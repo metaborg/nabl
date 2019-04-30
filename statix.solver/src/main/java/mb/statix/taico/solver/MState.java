@@ -79,6 +79,7 @@ public class MState extends AContextAware implements IMState {
         return context.getSpec();
     }
     
+    @Override
     public SolverContext context() {
         return context;
     }

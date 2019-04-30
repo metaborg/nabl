@@ -46,20 +46,24 @@ public class ModuleConstraintStore implements IConstraintStore {
         this.observer = observer;
     }
     
+    @Override
     public int activeSize() {
         return active.size();
     }
     
+    @Override
     public int delayedSize() {
         return stuckBecauseStuck.size() + stuckOnVar.size() + stuckOnEdge.size();
     }
     
+    @Override
     public void addAll(Iterable<? extends IConstraint> constraints) {
         for (IConstraint constraint : constraints) {
             active.add(constraint);
         }
     }
     
+    @Override
     public void activateStray() {
         for (IConstraint constraint : stuckBecauseStuck) {
             active.add(constraint);
@@ -92,6 +96,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         return activeSize() > 0;
     }
     
+    @Override
     public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         for (ITermVar var : vars) {
             final Collection<IConstraint> activated;
@@ -104,6 +109,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
+    @Override
     public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
         if (Iterables.isEmpty(edges)) return;
         
@@ -152,6 +158,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         addAll(activated);
     }
     
+    @Override
     public Iterable<IConstraintStore.Entry> active(IDebugContext debug) {
         throw new UnsupportedOperationException("Request elements one by one");
     }
@@ -259,6 +266,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         store.registerObserver(edge, this, debug);
     }
     
+    @Override
     public Map<IConstraint, Delay> delayed() {
         Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
         

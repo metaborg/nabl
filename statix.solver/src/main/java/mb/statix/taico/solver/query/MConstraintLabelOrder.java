@@ -47,6 +47,7 @@ public class MConstraintLabelOrder implements LabelOrder<ITerm> {
      * @throws InterruptedException
      *      {@inheritDoc}
      */
+    @Override
     public boolean lt(ITerm l1, ITerm l2) throws ResolutionDelayException, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));

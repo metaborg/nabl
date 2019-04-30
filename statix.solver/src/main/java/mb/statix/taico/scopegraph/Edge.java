@@ -11,14 +11,17 @@ public class Edge<S, L, T> implements IEdge<S, L, T> {
         this.target = target;
     }
     
+    @Override
     public S getSource() {
         return source;
     }
 
+    @Override
     public T getTarget() {
         return target;
     }
     
+    @Override
     public L getLabel() {
         return label;
     }
