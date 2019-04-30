@@ -22,6 +22,8 @@ public class Scopes {
      *      If the given term does not represent a scope.
      */
     public static Scope getScope(ITerm term) {
+        if (term instanceof Scope) return (Scope) term;
+        
         return Scope.matcher().match(term)
                 .orElseThrow(() -> new IllegalArgumentException("The given scope is not a scope!"));
     }
