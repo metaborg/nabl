@@ -91,8 +91,8 @@ public class MSTX_solve_constraint extends StatixPrimitive {
         context.setCoordinator(coordinator);
         
         //Create the top level module and state. It is added to the context automatically.
-        final IModule module = new Module(context, resource, spec);
-        final MState state = new MState(context, module, spec);
+        final IModule module = new Module(context, resource);
+        final MState state = new MState(context, module);
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         for(ITermVar var : topLevelVars) {
             final ITermVar nvar = state.freshVar(var.getName());

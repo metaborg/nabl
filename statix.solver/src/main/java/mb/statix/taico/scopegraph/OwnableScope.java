@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.SolverContext;
@@ -108,8 +109,21 @@ public class OwnableScope extends AScope implements IOwnableScope {
         return new OwnableScope(owner, scope.getName(), scope.getAttachments());
     }
     
-    public static OwnableScope fromScope(SolverContext context, Scope scope) {
-        IModule owner = manager.getModule(scope.getResource());
+    /**
+     * Converts the given scope to an OwnableScope.
+     * 
+     * @param context
+     *      the context
+     * @param requester
+     *      the module requesting the scope
+     * @param scope
+     *      the scope
+     * 
+     * @return
+     *      the converted scope
+     */
+    public static OwnableScope fromScope(SolverContext context, IModule requester, Scope scope) throws Delay {
+        IModule owner = context.getModule(requester, scope.getResource());
         return new OwnableScope(owner, scope.getName(), scope.getAttachments());
     }
 }

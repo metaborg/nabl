@@ -22,6 +22,8 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
+import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CUser;
@@ -29,8 +31,6 @@ import mb.statix.spec.ARule;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleString;
-import mb.statix.taico.scopegraph.IOwnableScope;
-import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MState;
 
@@ -77,16 +77,16 @@ public abstract class AModuleBoundary extends ARule {
         }
         
         //We don't always want to statically store the child relation. We want to base this on the current owner.
-        List<IOwnableScope> canExtend = new ArrayList<>();
+        List<AScope> canExtend = new ArrayList<>();
         for (ITerm term : newArgs) {
             //TODO IMPORTANT Is this getModule approach wanted here?
-            OwnableScope scope = OwnableScope.ownableMatcher(state.context()::getModuleUnchecked).match(term).orElse(null);
+            Scope scope = Scope.matcher().match(term).orElse(null);
             if (scope != null) canExtend.add(scope);
         }
         
         String modName = moduleString().build(subst);
         IModule child = state.owner().createOrGetChild(modName, canExtend, new CUser(name(), newArgs));
-        IMState childState = new MState(state.context(), child, state.spec());
+        IMState childState = new MState(state.context(), child);
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {

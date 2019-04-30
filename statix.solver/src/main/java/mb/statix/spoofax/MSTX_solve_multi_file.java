@@ -27,7 +27,6 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.ChangeSet;
 import mb.statix.taico.incremental.MChange;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
-import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.SolverContext;
@@ -93,7 +92,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         SolverContext oldContext = initial.state().context();
         ChangeSet changeSet = new ChangeSet(oldContext, removed, changed, added);
         
-        SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, changeSet, spec);
+        SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, changeSet, modules, spec);
         
         ASolverCoordinator coordinator = MSTX_solve_constraint.CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
         newContext.setCoordinator(coordinator);

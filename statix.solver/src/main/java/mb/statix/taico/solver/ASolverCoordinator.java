@@ -53,6 +53,14 @@ public abstract class ASolverCoordinator {
     
     /**
      * @return
+     *      the root module
+     */
+    public IModule getRootModule() {
+        return rootState.getOwner();
+    }
+    
+    /**
+     * @return
      *      a map containing all the solver results of solvers that have completed
      */
     public abstract Map<IModule, MSolverResult> getResults();
@@ -211,7 +219,7 @@ public abstract class ASolverCoordinator {
             
             if (child == null) throw new IllegalStateException("Child " + childName + " could not be found!");
             
-            new MState(rootState.context(), child, rootState.spec());
+            new MState(rootState.context(), child);
             modules.put(child, entry.getValue());
         }
         return modules;

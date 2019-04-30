@@ -1,7 +1,5 @@
 package mb.statix.taico.scopegraph;
 
-import mb.statix.taico.util.IOwnable;
-
 /**
  * Interface to represent an edge with a certain label.
  *
@@ -12,7 +10,7 @@ import mb.statix.taico.util.IOwnable;
  * @param <T>
  *      the type of targets
  */
-public interface IEdge<S extends IOwnable, L, T> {
+public interface IEdge<S, L, T> {
     S getSource();
     L getLabel();
     T getTarget();

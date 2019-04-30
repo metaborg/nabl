@@ -16,12 +16,16 @@ import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
+import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.util.IOwnable;
+import mb.statix.taico.util.Scopes;
 import mb.statix.util.Capsules;
 
-public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>, IOwnable {
+public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm>, IOwnable {
     private static AtomicInteger idCounter = new AtomicInteger();
     //Constants for this module
     private final IModule owner;
@@ -29,16 +33,16 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     private final ITerm endOfPath;
     private final Immutable<? extends ITerm> relations;
     /** Scopes from parent that you can extend. Used for checking if an edge addition is valid. */
-    private final Immutable<? extends IOwnableScope> canExtend;
-    private List<? extends IOwnableScope> parentScopes;
+    private final Immutable<? extends AScope> canExtend;
+    private List<? extends AScope> parentScopes;
     
     //Scope graph graph
     private final HashSet<ModuleScopeGraph> children = new HashSet<>();
     private final HashSet<String> children2 = new HashSet<>();
     
-    private final HashSet<IOwnableScope> scopes = new HashSet<>();
-    private IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> edges = HashTrieRelation3.Transient.of();
-    private IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
+    private final HashSet<AScope> scopes = new HashSet<>();
+    private IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, AScope>> edges = HashTrieRelation3.Transient.of();
+    private IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
 
     protected int scopeCounter;
     protected int id;
@@ -54,7 +58,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             Iterable<? extends ITerm> labels,
             ITerm endOfPath,
             Iterable<? extends ITerm> relations,
-            List<? extends IOwnableScope> canExtend) {
+            List<? extends AScope> canExtend) {
         this(idCounter.getAndIncrement(), owner, labels, endOfPath, relations, canExtend);
     }
     
@@ -64,7 +68,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
             Iterable<? extends ITerm> labels,
             ITerm endOfPath,
             Iterable<? extends ITerm> relations,
-            List<? extends IOwnableScope> canExtend) {
+            List<? extends AScope> canExtend) {
         this.id = id;
         this.owner = owner;
         this.labels = labels instanceof Immutable ? (Immutable<? extends ITerm>) labels : Capsules.newSet(labels);
@@ -96,52 +100,52 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public IRelation3<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData() {
+    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> getData() {
         return data;
     }
     
     @Override
-    public IRelation3<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges() {
+    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, AScope>> getEdges() {
         return edges;
     }
     
-    public Set<IOwnableScope> getScopes() {
+    public Set<AScope> getScopes() {
         return scopes;
     }
     
     @Override
-    public Immutable<? extends IOwnableScope> getExtensibleScopes() {
+    public Immutable<? extends AScope> getExtensibleScopes() {
         return canExtend;
     }
     
     @Override
-    public List<? extends IOwnableScope> getParentScopes() {
+    public List<? extends AScope> getParentScopes() {
         return parentScopes;
     }
 
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges(IOwnableTerm scope, ITerm label, LockManager lockManager) {
+    public Set<IEdge<AScope, ITerm, AScope>> getEdges(AScope scope, ITerm label, LockManager lockManager) throws Delay {
         //TODO Should be possible without passing a scope, but rather something specifying the parent scope number that was passed.
-        if (scope.getOwner() == owner) {
+        if (owner.getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label, lockManager);
         } else {
-            return scope.getOwner().getScopeGraph().getEdges(scope, label, lockManager);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getEdges(scope, label, lockManager);
         }
     }
     
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData(IOwnableTerm scope, ITerm label, LockManager lockManager) {
-        if (scope.getOwner() == owner) {
+    public Set<IEdge<AScope, ITerm, List<ITerm>>> getData(AScope scope, ITerm label, LockManager lockManager) throws Delay {
+        if (owner.getId().equals(scope.getResource())) {
             return getTransitiveData(scope, label, lockManager);
         } else {
-            return scope.getOwner().getScopeGraph().getData(scope, label, lockManager);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getData(scope, label, lockManager);
         }
     }
     
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getTransitiveEdges(IOwnableTerm scope, ITerm label, LockManager lockManager) {
+    public Set<IEdge<AScope, ITerm, AScope>> getTransitiveEdges(AScope scope, ITerm label, LockManager lockManager) {
         lockManager.acquire(getReadLock());
-        Set<IEdge<IOwnableTerm, ITerm, IOwnableTerm>> set = new HashSet<>(getEdges().get(scope, label));
+        Set<IEdge<AScope, ITerm, AScope>> set = new HashSet<>(getEdges().get(scope, label));
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (ModuleScopeGraph child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
@@ -152,9 +156,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
 
     @Override
-    public Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> getTransitiveData(IOwnableTerm scope, ITerm label, LockManager lockManager) {
+    public Set<IEdge<AScope, ITerm, List<ITerm>>> getTransitiveData(AScope scope, ITerm label, LockManager lockManager) {
         lockManager.acquire(getReadLock());
-        Set<IEdge<IOwnableTerm, ITerm, List<ITerm>>> set = new HashSet<>(getData().get(scope, label));
+        Set<IEdge<AScope, ITerm, List<ITerm>>> set = new HashSet<>(getData().get(scope, label));
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (ModuleScopeGraph child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
@@ -165,18 +169,18 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public IOwnableTerm createScope(String base) {
+    public AScope createScope(String base) {
         System.err.println("[" + owner.getId() + "] Creating scope " + base);
         int i = ++scopeCounter;
         
         String name = base.replaceAll("-", "_") + "-" + i;
-        IOwnableScope scope = new OwnableScope(owner, name);
+        AScope scope = Scope.of(owner.getId(), name);
         scopes.add(scope);
         return scope;
     }
 
     @Override
-    public boolean addEdge(IOwnableTerm sourceScope, ITerm label, IOwnableTerm targetScope) {
+    public boolean addEdge(AScope sourceScope, ITerm label, AScope targetScope) {
         if (!getScopes().contains(sourceScope) && !getExtensibleScopes().contains(sourceScope)) {
             throw new IllegalArgumentException(
                     "addEdge directed to wrong scope graph: "
@@ -188,7 +192,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         
         getWriteLock().lock();
         try {
-            IEdge<IOwnableTerm, ITerm, IOwnableTerm> edge = new Edge<>(sourceScope, label, targetScope);
+            IEdge<AScope, ITerm, AScope> edge = new Edge<>(sourceScope, label, targetScope);
             return edges.put(sourceScope, label, edge);
         } finally {
             getWriteLock().unlock();
@@ -196,9 +200,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
 
     @Override
-    public boolean addDatum(IOwnableTerm scope, ITerm relation, Iterable<ITerm> datum) {
-        if (scope.getOwner() != this.owner) {
-            System.out.println("Adding datum edge from unowned scope (" + scope.getOwner() + ") in " + this.owner);
+    public boolean addDatum(AScope scope, ITerm relation, Iterable<ITerm> datum) {
+        if (!scope.getResource().equals(this.owner.getId())) {
+            System.out.println("Adding datum edge from unowned scope (@" + scope.getResource() + ") in " + this.owner);
         }
         if (!getScopes().contains(scope) && !getExtensibleScopes().contains(scope)) {
             throw new IllegalArgumentException(
@@ -216,7 +220,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
         
         getWriteLock().lock();
         try {
-            IEdge<IOwnableTerm, ITerm, List<ITerm>> edge = new Edge<>(scope, relation, datumlist);
+            IEdge<AScope, ITerm, List<ITerm>> edge = new Edge<>(scope, relation, datumlist);
             return data.put(scope, relation, edge);
         } finally {
             getWriteLock().unlock();
@@ -224,13 +228,14 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public ModuleScopeGraph createChild(IModule module, List<IOwnableScope> canExtend) {
+    public ModuleScopeGraph createChild(IModule module, List<AScope> canExtend) {
         currentModification++;
         ModuleScopeGraph child = new ModuleScopeGraph(module, labels, endOfPath, relations, canExtend);
         
         getWriteLock().lock();
         try {
             children.add(child);
+            children2.add(child.getOwner().getId());
             return child;
         } finally {
             getWriteLock().unlock();
@@ -265,7 +270,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     
     @Override
     public Collection<? extends ModuleScopeGraph> getChildren() {
-        
         return children;
     }
     
@@ -300,7 +304,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public synchronized void updateToCopy(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> copyI, boolean checkConcurrency) {
+    public synchronized void updateToCopy(IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> copyI, boolean checkConcurrency) {
         if (this == copyI) return;
         if (!(copyI instanceof ModuleScopeGraph)) throw new IllegalArgumentException("The copy must be a module scope graph");
         ModuleScopeGraph copy = (ModuleScopeGraph) copyI;
@@ -360,26 +364,25 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
 //        //return msg;
 //    }
     
-    @SuppressWarnings("unchecked")
     @Deprecated
     @Override
-    public synchronized void substitute(List<? extends IOwnableTerm> newScopes) {
-        List<? extends IOwnableScope> oldScopes = parentScopes;
-        parentScopes = (List<? extends IOwnableScope>) newScopes;
+    public synchronized void substitute(List<? extends AScope> newScopes) {
+        List<? extends AScope> oldScopes = parentScopes;
+        parentScopes = newScopes;
         //scopes should be stored as strings in the sets to avoid substitution
-        IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> newEdges = HashTrieRelation3.Transient.of();
-        IRelation3.Transient<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> newData = HashTrieRelation3.Transient.of();
+        IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, AScope>> newEdges = HashTrieRelation3.Transient.of();
+        IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> newData = HashTrieRelation3.Transient.of();
         for (int i = 0; i < oldScopes.size(); i++) {
-            IOwnableScope oldScope = oldScopes.get(i);
-            IOwnableScope newScope = parentScopes.get(i);
-            for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> e : getEdges().get(oldScope)) {
-                newEdges.put(newScope, e.getKey(), new Edge<IOwnableTerm, ITerm, IOwnableTerm>(
+            AScope oldScope = oldScopes.get(i);
+            AScope newScope = parentScopes.get(i);
+            for (Entry<ITerm, IEdge<AScope, ITerm, AScope>> e : getEdges().get(oldScope)) {
+                newEdges.put(newScope, e.getKey(), new Edge<AScope, ITerm, AScope>(
                         newScope,
                         e.getValue().getLabel(),
                         e.getValue().getTarget()));
             }
-            for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> e : getData().get(oldScope)) {
-                newData.put(newScope, e.getKey(), new Edge<IOwnableTerm, ITerm, List<ITerm>>(
+            for (Entry<ITerm, IEdge<AScope, ITerm, List<ITerm>>> e : getData().get(oldScope)) {
+                newData.put(newScope, e.getKey(), new Edge<AScope, ITerm, List<ITerm>>(
                         newScope,
                         e.getValue().getLabel(),
                         e.getValue().getTarget()));
@@ -390,14 +393,14 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public IMExternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> externalGraph() {
+    public IMExternalScopeGraph<AScope, ITerm, ITerm, ITerm> externalGraph() {
         ModuleScopeGraph msg = new ModuleScopeGraph(owner, labels, endOfPath, relations, parentScopes);
-        for (IOwnableScope scope : parentScopes) {
-            for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> e : getEdges().get(scope)) {
+        for (AScope scope : parentScopes) {
+            for (Entry<ITerm, IEdge<AScope, ITerm, AScope>> e : getEdges().get(scope)) {
                 msg.addEdge(scope, e.getKey(), e.getValue().getTarget());
             }
             
-            for (Entry<ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> e : getData().get(scope)) {
+            for (Entry<ITerm, IEdge<AScope, ITerm, List<ITerm>>> e : getData().get(scope)) {
                 msg.addDatum(scope, e.getKey(), e.getValue().getTarget());
             }
         }
@@ -411,7 +414,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<IOwnableTerm, ITer
     }
     
     @Override
-    public TrackingModuleScopeGraph trackingGraph(Map<IModule, ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm>> trackers) {
+    public TrackingModuleScopeGraph trackingGraph(Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm>> trackers) {
         return new TrackingModuleScopeGraph(this, trackers);
     }
     

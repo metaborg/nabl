@@ -1,19 +1,16 @@
 package mb.statix.taico.incremental.strategy;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
-
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
 
@@ -28,28 +25,28 @@ import mb.statix.taico.solver.SolverContext;
  * so we redo all modules if modules are added.
  */
 public class BaselineIncrementalStrategy extends IncrementalStrategy {
-    @Override
-    public void clearDirtyModules(IChangeSet changeSet, ModuleManager manager) {
-        if (!changeSet.added().isEmpty()) {
-            //We cannot guarantee that these additions don't influence existing results, so we will flag everything as dirty (except for the top module)
-            manager.retainModules(manager.topLevelModules());
-            return;
-        }
-        
-        //TODO: redo dirty and clirty, with clean in the context
-        Set<IModule> redo = Sets.union(changeSet.dirty(), changeSet.clirty());
-        if (redo.isEmpty()) return;
-
-        //Delete all modules that need to be redone as well as their children
-        for (IModule module : redo) {
-            //Invariant: global scope never changes
-            if (ModulePaths.pathSegments(module.getId(), 2).length == 1) {
-                throw new IllegalStateException("Top module is in the set to redo. This should not be correct!");
-            }
-            
-            manager.purgeModules(module);
-        }
-    }
+//    @Override
+//    public void clearDirtyModules(IChangeSet changeSet, ModuleManager manager) {
+//        if (!changeSet.added().isEmpty()) {
+//            //We cannot guarantee that these additions don't influence existing results, so we will flag everything as dirty (except for the top module)
+//            manager.retainModules(manager.topLevelModules());
+//            return;
+//        }
+//        
+//        //TODO: redo dirty and clirty, with clean in the context
+//        Set<IModule> redo = Sets.union(changeSet.dirty(), changeSet.clirty());
+//        if (redo.isEmpty()) return;
+//
+//        //Delete all modules that need to be redone as well as their children
+//        for (IModule module : redo) {
+//            //Invariant: global scope never changes
+//            if (ModulePaths.pathSegments(module.getId(), 2).length == 1) {
+//                throw new IllegalStateException("Top module is in the set to redo. This should not be correct!");
+//            }
+//            
+//            manager.purgeModules(module);
+//        }
+//    }
     
     /**
      * Reanalyzes the modules that are not marked as clean.
@@ -60,8 +57,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id)
-            throws Delay {
+    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) {
         IModule module = context.getModuleManager().getModule(id);
         if (module != null) return module;
         
@@ -75,8 +71,31 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) throws Delay {
+    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
         //Child access works the same as normal access.
         return getModule(context, oldContext, requester, childId);
+    }
+    
+    @Override
+    public Map<IModule, Set<IConstraint>> createModulesForPhase(SolverContext context,
+            Map<String, Set<IConstraint>> moduleConstraints) {
+        Map<IModule, Set<IConstraint>> newModules = new HashMap<>();
+        for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
+            IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
+            
+            if (oldModule == null || oldModule.getFlag() != ModuleCleanliness.CLEAN) {
+                IModule module = createFileModule(context, entry);
+                newModules.put(module, entry.getValue());
+            } else {
+                //Old module is clean, we don't have to do anything
+            }
+        }
+        
+        return newModules;
+    }
+    
+    @Override
+    public boolean endOfPhase(SolverContext context) {
+        return false;
     }
 }

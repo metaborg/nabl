@@ -11,13 +11,12 @@ import java.util.stream.StreamSupport;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.IOwnableScope;
-import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.context.IContextAware;
@@ -73,7 +72,7 @@ public interface IModule extends IContextAware, Serializable {
      * @return
      *      the scope graph of this module
      */
-    IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> getScopeGraph();
+    IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> getScopeGraph();
     
     /**
      * @return
@@ -107,7 +106,7 @@ public interface IModule extends IContextAware, Serializable {
      * @return
      *      the child
      */
-    IModule createChild(String name, List<IOwnableScope> canExtend, IConstraint constraint);
+    IModule createChild(String name, List<AScope> canExtend, IConstraint constraint);
     
     /**
      * If the module with the given name already existed as a child of this module, that module is
@@ -127,7 +126,7 @@ public interface IModule extends IContextAware, Serializable {
      * @return
      *      the new/old child module
      */
-    default IModule createOrGetChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) throws Delay {
+    default IModule createOrGetChild(String name, List<AScope> canExtend, IConstraint constraint) throws Delay {
         //TODO Incrementality breaks if parent or child names are changed
         IModule oldModule = getChild(name);
         if (oldModule == null) {
@@ -227,7 +226,7 @@ public interface IModule extends IContextAware, Serializable {
      * @param details
      *      the details relevant for dependencies related to this query
      */
-    void addQuery(CResolveQuery query, QueryDetails<IOwnableTerm, ITerm, ITerm> details);
+    void addQuery(CResolveQuery query, QueryDetails<AScope, ITerm, ITerm> details);
     
     
     /**
@@ -238,7 +237,7 @@ public interface IModule extends IContextAware, Serializable {
      */
     Set<? extends IModule> getDependencies();
     
-    void addDependant(IModule module, CResolveQuery query);
+    void addDependant(String module, CResolveQuery query);
     
     Map<IModule, CResolveQuery> getDependants();
     

@@ -39,11 +39,10 @@ import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
 
 public class ModuleSolver implements IOwnable {
-    private ModuleSolver parent;
-    private IMState state;
-    private ModuleConstraintStore constraints;
-    private MCompleteness completeness;
-    private PrefixedDebugContext debug;
+    private final IMState state;
+    private final ModuleConstraintStore constraints;
+    private final MCompleteness completeness;
+    private final PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
     private boolean separateSolver;
     
@@ -76,13 +75,12 @@ public class ModuleSolver implements IOwnable {
      */
     public static ModuleSolver topLevelSolver(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
-        return new ModuleSolver(null, state, constraints, (s, l, st) -> CompletenessResult.of(true, null), topDebug);
+        return new ModuleSolver(state, constraints, (s, l, st) -> CompletenessResult.of(true, null), topDebug);
     }
     
-    private ModuleSolver(ModuleSolver parent, IMState state, Iterable<IConstraint> constraints, ICompleteness isComplete, PrefixedDebugContext debug) {
-        this.parent = parent;
+    private ModuleSolver(IMState state, Iterable<IConstraint> constraints, ICompleteness isComplete, PrefixedDebugContext debug) {
         this.state = state;
-        this.constraints = new ModuleConstraintStore(state.manager(), constraints, debug);
+        this.constraints = new ModuleConstraintStore(constraints, debug);
         this.completeness = new MCompleteness(state.owner(), constraints);
         this.isComplete = isComplete;
         this.debug = debug;
@@ -107,7 +105,7 @@ public class ModuleSolver implements IOwnable {
      */
     public ModuleSolver childSolver(IMState state, Iterable<IConstraint> constraints) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
-        ModuleSolver solver = new ModuleSolver(this, state, constraints, this.isComplete, debug);
+        ModuleSolver solver = new ModuleSolver(state, constraints, this.isComplete, debug);
         
         this.state.coordinator().addSolver(solver);
         
@@ -141,7 +139,7 @@ public class ModuleSolver implements IOwnable {
             ICompleteness isComplete,
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
-        ModuleSolver solver = new ModuleSolver(null, state, constraints, isComplete, debug2);
+        ModuleSolver solver = new ModuleSolver(state, constraints, isComplete, debug2);
         solver.separateSolver = true;
         while (solver.solveStep());
         return solver.finishSolver();
@@ -150,14 +148,6 @@ public class ModuleSolver implements IOwnable {
     @Override
     public IModule getOwner() {
         return state.owner();
-    }
-    
-    /**
-     * @return
-     *      the parent solver of this solver, or null if this is the top level solver
-     */
-    public ModuleSolver getParent() {
-        return parent;
     }
     
     public MCompleteness getCompleteness() {
@@ -178,16 +168,6 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
-     * Reports if any progress has been made since the last check.
-     * 
-     * @return
-     *      true if progress has been made, false otherwise
-     */
-    protected boolean checkAndResetProgress() {
-        return constraints.checkProgressAndReset();
-    }
-    
-    /**
      * The solver is guaranteed to be done if it has no more constraints.
      * It should be able to be done even if there are child solvers still solving.
      * 
@@ -201,21 +181,6 @@ public class ModuleSolver implements IOwnable {
      */
     public boolean isDone() {
         return constraints.isDone();
-    }
-    
-    /**
-     * @return
-     *      true if this solver is stuck waiting, false otherwise
-     */
-    public boolean isStuck() {
-        return constraints.isStuck();
-    }
-    
-    /**
-     * This method notifies this solver of progress that has been made by other solvers.
-     */
-    public void externalProgress() {
-        constraints.externalProgress();
     }
     
     /**

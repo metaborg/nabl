@@ -20,10 +20,11 @@ public class Delay extends SolverException {
 
     private final Set.Immutable<ITermVar> vars;
     private final Set.Immutable<CriticalEdge> criticalEdges;
+    private final String module;
     private transient LockManager lockManager;
 
     public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges) {
-        this(vars, criticalEdges, null);
+        this(vars, criticalEdges, null, null);
     }
     
     /**
@@ -33,13 +34,16 @@ public class Delay extends SolverException {
      *      an iterable of variables
      * @param criticalEdges
      *      an iterable of critical edges
+     * @param module
+     *      the module, can be null
      * @param lockManager
      *      the lock manager
      */
-    public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges, LockManager lockManager) {
+    public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges, String module, LockManager lockManager) {
         super("delayed");
         this.vars = CapsuleUtil.toSet(vars);
         this.criticalEdges = CapsuleUtil.toSet(criticalEdges);
+        this.module = module;
         this.lockManager = lockManager;
     }
 
@@ -61,6 +65,14 @@ public class Delay extends SolverException {
      */
     public Set.Immutable<CriticalEdge> criticalEdges() {
         return criticalEdges;
+    }
+    
+    /**
+     * @return
+     *      the module that must be completed before the thrower can complete
+     */
+    public String module() {
+        return module;
     }
     
     /**
@@ -90,7 +102,7 @@ public class Delay extends SolverException {
         final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
         this.criticalEdges.stream().filter(ce -> scopeSet.contains(ce.scope()))
                 .forEach(retainedCriticalEdges::__insert);
-        return new Delay(retainedVars, retainedCriticalEdges.freeze(), this.lockManager);
+        return new Delay(retainedVars, retainedCriticalEdges.freeze(), this.module, this.lockManager);
     }
 
     public Delay removeAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
@@ -103,7 +115,7 @@ public class Delay extends SolverException {
     }
 
     public static Delay of() {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of(), null);
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(), null, null);
     }
 
     /**
@@ -129,7 +141,7 @@ public class Delay extends SolverException {
      * 		the delay
      */
     public static Delay ofVars(Iterable<ITermVar> vars) {
-        return new Delay(vars, Set.Immutable.of(), null);
+        return new Delay(vars, Set.Immutable.of(), null, null);
     }
 
     /**
@@ -142,7 +154,7 @@ public class Delay extends SolverException {
      *      the delay
      */
     public static Delay ofCriticalEdge(CriticalEdge edge) {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge), null);
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge), null, null);
     }
     
     /**
@@ -157,7 +169,20 @@ public class Delay extends SolverException {
      *      the delay
      */
     public static Delay ofCriticalEdge(CriticalEdge edge, LockManager lockManager) {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge), lockManager);
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge), null, lockManager);
+    }
+    
+    /**
+     * Builds a Delay exception for the given module.
+     * 
+     * @param module
+     *      the module that we are waiting on
+     * 
+     * @return
+     *      the delay
+     */
+    public static Delay ofModule(String module) {
+        return new Delay(Set.Immutable.of(), Set.Immutable.of(), module, null);
     }
 
 }

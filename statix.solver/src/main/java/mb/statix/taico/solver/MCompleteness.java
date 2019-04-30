@@ -28,7 +28,7 @@ import mb.statix.util.Capsules;
  * signatures, but is mutable.
  */
 public class MCompleteness implements IOwnable {
-    private final IModule owner;
+    private final IModule owner; //Safe
     private final Set<IConstraint> incomplete = new HashSet<>();
 
     public MCompleteness(IModule owner) {
@@ -38,10 +38,6 @@ public class MCompleteness implements IOwnable {
     public MCompleteness(IModule owner, Iterable<IConstraint> incomplete) {
         this.owner = owner;
         Iterables.addAll(this.incomplete, incomplete);
-    }
-    
-    public static MCompleteness topLevelCompleteness(IModule owner) {
-        return new MCompleteness(owner);
     }
     
     /**
@@ -71,7 +67,7 @@ public class MCompleteness implements IOwnable {
         boolean complete;
         synchronized (this) {
             complete = incomplete.stream()
-                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getCurrentState().spec())))
+                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getContext().getSpec())))
                     .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
         }
         return CompletenessResult.of(complete, owner);

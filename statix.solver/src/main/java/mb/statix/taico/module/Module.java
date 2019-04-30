@@ -4,16 +4,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.IOwnableScope;
-import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
@@ -29,32 +30,11 @@ public class Module extends AContextAware implements IModule {
     
     private final String name;
     private String parentId;
-    private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
-    private Map<CResolveQuery, QueryDetails<IOwnableTerm, ITerm, ITerm>> queries = new HashMap<>();
-    private Map<IModule, CResolveQuery> dependants = new HashMap<>();
-    private ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
+    private IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph;
+    private Map<CResolveQuery, QueryDetails<AScope, ITerm, ITerm>> queries = new HashMap<>();
+    private Map<String, CResolveQuery> dependants = new ConcurrentHashMap<>();
+    protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
-    
-    /**
-     * Creates a new top level module.
-     * 
-     * @param context
-     *      the solver context
-     * @param name
-     *      the name of the module
-     * @param labels
-     *      the labels on edges of the scope graph
-     * @param endOfPath
-     *      the label that indicates the end of a path
-     * @param relations
-     *      the labels on data edges of the scope graph
-     */
-    public Module(SolverContext context, String name, Iterable<ITerm> labels, ITerm endOfPath, Iterable<ITerm> relations) {
-        super(context);
-        this.name = name;
-        this.scopeGraph = new ModuleScopeGraph(this, labels, endOfPath, relations, Collections.emptyList());
-        context.addModule(this);
-    }
     
     /**
      * Creates a new top level module.
@@ -66,11 +46,28 @@ public class Module extends AContextAware implements IModule {
      * @param spec
      *      the spec
      */
-    public Module(SolverContext context, String name, Spec spec) {
+    public Module(SolverContext context, String name) {
+        this(context, name, true);
+    }
+    
+    /**
+     * Protected constructor for {@link DelegatingModule}.
+     * 
+     * @param context
+     *      the context
+     * @param name
+     *      the name of the module
+     * @param addToContext
+     *      if true, adds to the context, otherwise, doesn't alter the context
+     */
+    protected Module(SolverContext context, String name, boolean addToContext) {
         super(context);
+        
+        Spec spec = context.getSpec();
+        
         this.name = name;
         this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptyList());
-        context.addModule(this);
+        if (addToContext) context.addModule(this);
     }
     
     /**
@@ -114,12 +111,12 @@ public class Module extends AContextAware implements IModule {
     }
 
     @Override
-    public IMInternalScopeGraph<IOwnableTerm,  ITerm, ITerm, ITerm> getScopeGraph() {
+    public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> getScopeGraph() {
         return scopeGraph;
     }
 
     @Override
-    public synchronized Module createChild(String name, List<IOwnableScope> canExtend, IConstraint constraint) {
+    public Module createChild(String name, List<AScope> canExtend, IConstraint constraint) {
         Module child = new Module(context, name, this);
         child.setInitialization(constraint);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
@@ -155,22 +152,23 @@ public class Module extends AContextAware implements IModule {
     
     @Override
     public Set<IModule> getDependencies() {
-        return queries.values().stream().flatMap(d -> d.getReachedModules().stream()).collect(Collectors.toSet());
+        return queries.values().stream().flatMap(d -> d.getReachedModules().stream()).map(d -> context.getModuleUnchecked(d)).collect(Collectors.toSet());
     }
     
     @Override
-    public void addQuery(CResolveQuery query, QueryDetails<IOwnableTerm, ITerm, ITerm> details) {
+    public void addQuery(CResolveQuery query, QueryDetails<AScope, ITerm, ITerm> details) {
         queries.put(query, details);
     }
     
     @Override
-    public void addDependant(IModule module, CResolveQuery query) {
+    public void addDependant(String module, CResolveQuery query) {
         dependants.put(module, query);
     }
     
     @Override
     public Map<IModule, CResolveQuery> getDependants() {
-        return dependants;
+        return dependants.entrySet().stream()
+                .collect(Collectors.toMap(e -> context.getModuleUnchecked(e.getKey()), Entry::getValue));
     }
     
     @Override
@@ -189,7 +187,7 @@ public class Module extends AContextAware implements IModule {
         this.queries = new HashMap<>();
         this.dependants = new HashMap<>();
         this.cleanliness = ModuleCleanliness.NEW;
-        new MState(context, this, spec);
+        new MState(context, this);
         context.addModule(this);
     }
     

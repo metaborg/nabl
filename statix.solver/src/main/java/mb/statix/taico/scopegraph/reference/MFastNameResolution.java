@@ -22,15 +22,15 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.path.Paths;
+import mb.statix.solver.Delay;
 import mb.statix.taico.scopegraph.IEdge;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.IMNameResolution;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.solver.CompletenessResult;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.util.IOwnable;
 
-public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameResolution<S, V, L, R> {
+public class MFastNameResolution<S extends V, V, L, R> implements IMNameResolution<S, V, L, R> {
 
     private final SolverContext context;
     private final IMInternalScopeGraph<S, V, L, R> scopeGraph;
@@ -107,20 +107,24 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
             return Set.Immutable.of();
         }
         final S scope = path.getTarget();
-        CompletenessResult result = relation.map(r -> isDataComplete.apply((V) scope, r)).orElse(null);
+        CompletenessResult result = relation.map(r -> isDataComplete.apply(scope, r)).orElse(null);
         if(result != null && !result.isComplete()) {
             throw new IncompleteDataException(scope, relation.get(), result.cause());
         }
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         if(relation.isPresent()) {
-            for(IEdge<S, R, List<V>> edge : scopeGraph.getData(path.getTarget(), relation.get(), lockManager)) {
-                List<V> datum = edge.getTarget();
-                if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                    env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
+            try {
+                for(IEdge<S, R, List<V>> edge : scopeGraph.getData(path.getTarget(), relation.get(), lockManager)) {
+                    List<V> datum = edge.getTarget();
+                    if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
+                        env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
+                    }
                 }
+            } catch (Delay d) {
+                throw new ModuleDelayException(d.module());
             }
         } else {
-            final List<V> datum = ImmutableList.of((V) scope);
+            final List<V> datum = ImmutableList.of(scope);
             if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                 env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
             }
@@ -149,12 +153,16 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
             throw new IncompleteEdgeException(path.getTarget(), l, result.cause());
         }
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
-        for(IEdge<S, L, S> element : scopeGraph.getEdges(path.getTarget(), l, lockManager)) {
-            final S nextScope = element.getTarget();
-            final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
-            if(p.isPresent()) {
-                env.__insertAll(env(newRe.get(), p.get(), specifics));
+        try {
+            for(IEdge<S, L, S> element : scopeGraph.getEdges(path.getTarget(), l, lockManager)) {
+                final S nextScope = element.getTarget();
+                final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
+                if(p.isPresent()) {
+                    env.__insertAll(env(newRe.get(), p.get(), specifics));
+                }
             }
+        } catch (Delay d) {
+            throw new ModuleDelayException(d.module());
         }
         return env.freeze();
     }
@@ -215,11 +223,11 @@ public class MFastNameResolution<S extends IOwnable, V, L, R> implements IMNameR
     // builder                                                               //
     //////////////////////////////////////////////////////////////////S/////////
 
-    public static <S extends IOwnable, V, L, R> Builder<S, V, L, R> builder() {
-        return new Builder<>();
+    public static <S extends V, V, L, R> Builder<S, V, L, R> builder() {
+        return new Builder<>(); 
     }
 
-    public static class Builder<S extends IOwnable, V, L, R> {
+    public static class Builder<S extends V, V, L, R> {
 
         private LabelWF<L> labelWF = LabelWF.ANY();
         private LabelOrder<L> labelOrder = LabelOrder.NONE();

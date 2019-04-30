@@ -5,11 +5,11 @@ import java.util.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.util.IOwnable;
 
 public interface IMState extends IOwnable {
@@ -70,13 +70,11 @@ public interface IMState extends IOwnable {
 
     // --- scopes ---
 
-    public default IOwnableTerm freshScope(String base) {
-        synchronized (this) {
-            return scopeGraph().createScope(base);
-        }
+    public default AScope freshScope(String base) {
+        return scopeGraph().createScope(base);
     }
 
-    public default Set<? extends IOwnableTerm> scopes() {
+    public default Set<? extends AScope> scopes() {
         return scopeGraph().getScopes();
     }
 
@@ -86,7 +84,7 @@ public interface IMState extends IOwnable {
     
     public void setUnifier(IUnifier.Immutable unifier);
 
-    public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph();
+    public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph();
     
     // --- other ---
     /**

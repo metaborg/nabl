@@ -11,9 +11,8 @@ import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
-import mb.statix.taico.util.IOwnable;
 
-public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExternalScopeGraph<S, V, L, R> {
+public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S, V, L, R> {
     /**
      * @param sourceScope
      *      the source scope
@@ -95,7 +94,7 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      * @return
      *      the new scope graph
      */
-    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, List<IOwnableScope> canExtend);
+    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, List<S> canExtend);
     
     /**
      * Adds the given module as a child to this scope graph.
@@ -160,7 +159,7 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      * @return
      *      the list of parent scopes, in the order we received them
      */
-    List<? extends IOwnableScope> getParentScopes();
+    List<? extends S> getParentScopes();
     
     /**
      * Creates a deep copy of this scope graph.
@@ -198,7 +197,7 @@ public interface IMInternalScopeGraph<S extends IOwnable, V, L, R> extends IMExt
      * @return
      *      a new tracking graph for this scope graph
      */
-    ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<IModule, ITrackingScopeGraph<S, V, L, R>> trackers);
+    ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<String, ITrackingScopeGraph<S, V, L, R>> trackers);
     
     /**
      * @return

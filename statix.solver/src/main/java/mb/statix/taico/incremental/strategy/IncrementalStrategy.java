@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.function.Function;
 
 import org.metaborg.util.functions.Function1;
@@ -14,6 +14,7 @@ import org.metaborg.util.functions.Function1;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -22,18 +23,12 @@ import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.scopegraph.IOwnableScope;
-import mb.statix.taico.scopegraph.OwnableScope;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.IMState;
-import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
 
 public abstract class IncrementalStrategy {
-    public abstract void clearDirtyModules(IChangeSet changeSet, ModuleManager manager);
-    
     /**
      * Reanalyzes modules in an incremental fashion depending on the strategy.
      * 
@@ -99,8 +94,9 @@ public abstract class IncrementalStrategy {
     public abstract IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) throws Delay;
     
     //---------------------------------------------------------------------------------------------
-    public abstract void initializePhase(SolverContext context);
-    
+    // Phasing
+    //---------------------------------------------------------------------------------------------
+
     /**
      * Creates / reuses the modules from the given map from module name to constraints.
      * This method assumes that each module has 0 or 1 constraint. If there is no constraint, the
@@ -142,10 +138,36 @@ public abstract class IncrementalStrategy {
      * @param context
      *      the context
      * @param entry
-     *      the 
+     *      the (modifiable) entry
+     * 
      * @return
+     *      the created module
+     * @throws Delay 
      */
     protected IModule createFileModule(SolverContext context, Entry<String, Set<IConstraint>> entry) {
+        String childName = entry.getKey();
+        if (entry.getValue().size() != 1) {
+            throw new IllegalArgumentException("Module " + childName + " does not have exactly 1 initialization constraint: " + entry.getValue());
+        }
+
+        IConstraint initConstraint = getInitConstraint(entry.getValue());
+        List<AScope> scopes = getScopes(initConstraint);
+        
+        IModule rootOwner = context.getRootModule();
+        child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
+        
+        return child;
+    }
+    
+    /**
+     * Fixes the init constraints for the given entry.
+     * 
+     * @param context
+     *      the context
+     * @param entry
+     *      the entry
+     */
+    protected void fixInitConstraint(SolverContext context, Entry<String, Set<IConstraint>> entry) {
         String childName = entry.getKey();
         if (entry.getValue().size() > 1) {
             throw new IllegalArgumentException("Module " + childName + " has more than one initialization constraint: " + entry.getValue());
@@ -153,33 +175,70 @@ public abstract class IncrementalStrategy {
 
         //Retrieve the child
         IModule child;
-        if (entry.getValue().isEmpty()) {
-            //Scope substitution does not have to occur here, since the global scope remains constant.
-            //If there is no constraint available, use the initialization constraint for the child
-            //Find the root module and get its child
-            child = context.getModuleManager().getModuleByName(childName, 1);
-            if (context.getModulesOnLevel(0).size() != 1) throw new IllegalStateException("Expected 1 root level module, found: " + context.getModulesOnLevel(0));
-            
-            child = context.getModulesOnLevel(0).values().stream().findFirst()
-                    .map(m -> context.getModuleUnchecked(ModulePaths.build(m.getId(), childName)))
-                    .orElse(null);
-            if (child != null) entry.setValue(Collections.singleton(child.getInitialization()));
-        } else {
-            IConstraint initConstraint = getInitConstraint(entry.getValue());
-            //TODO Instead get this from the old value?
-            List<IOwnableScope> scopes = getScopes(context.getModuleManager(), initConstraint);
-            
-            IModule rootOwner;
-            child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
-        }
+        if (!entry.getValue().isEmpty()) return;
 
-        if (child == null) throw new IllegalStateException("Child " + childName + " could not be found!");
-        return child;
+        //Scope substitution does not have to occur here, since the global scope remains constant.
+        //If there is no constraint available, use the initialization constraint for the child
+        //Find the root module and get its child
+        child = context.getModuleByName(childName, 1);
+        if (child != null) entry.setValue(Collections.singleton(child.getInitialization()));
 
-        new MState(context, child, context.getSpec());
-        modules.put(child, entry.getValue());
+//        else {
+//            IConstraint initConstraint = getInitConstraint(entry.getValue());
+//            List<AScope> scopes = getScopes(initConstraint);
+//            
+//            IModule rootOwner;
+//            child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
+//        }
     }
     
+    /**
+     * @param context
+     * @param entry
+     * @return
+     *      either a newly created module, or null if this 
+     */
+    protected IModule createInitModule(SolverContext context, Entry<String, Set<IConstraint>> entry) {
+        String childName = entry.getKey();
+        IModule child = context.getModuleByName(childName, 1);
+        if (child == null) {
+            return createNewFileModule(context, childName, entry.getValue());
+        }
+        
+        //We can safely return the old child if it is clean
+        if (child.getFlag() == ModuleCleanliness.CLEAN) return null;
+        
+        //TODO This is where the different strategies will diverge.
+    }
+    
+    /**
+     * Creates a new file module. Strategies can override this method to change the behavior.
+     * <p>
+     * This method also creates a state for the module.
+     * 
+     * @param context
+     *      the context
+     * @param name
+     *      the name of the module
+     * @param constraints
+     *      the constraints for the module
+     * 
+     * @return
+     *      the created module
+     */
+    protected IModule createNewFileModule(SolverContext context, String name, Set<IConstraint> constraints) {
+        IConstraint initConstraint = getInitConstraint(constraints);
+        List<AScope> scopes = getScopes(initConstraint);
+        IModule module = context.createChild(context.getRootModule(), name, scopes, initConstraint);
+        new MState(context, module);
+        return module;
+    }
+    
+    /**
+     * Retrieves the single init constraint from the set of constraints.
+     * @param constraints
+     * @return
+     */
     protected IConstraint getInitConstraint(Set<IConstraint> constraints) {
         IConstraint initConstraint = null;
         for (IConstraint constraint : constraints) {
@@ -193,25 +252,25 @@ public abstract class IncrementalStrategy {
      * Determines the scopes in the arguments of the given constraint.
      * If the given constraint is not a CUser constraint, this method returns an empty list.
      * 
-     * @param manager
-     *      the manager to get modules from
      * @param constraint
      *      the constraint
      * 
      * @return
      *      the list of scopes in the given constraint
      */
-    protected List<IOwnableScope> getScopes(ModuleManager manager, IConstraint constraint) {
+    protected List<AScope> getScopes(IConstraint constraint) {
         if (!(constraint instanceof CUser)) return Collections.emptyList();
         CUser user = (CUser) constraint;
         
-        List<IOwnableScope> scopes = new ArrayList<>();
+        List<AScope> scopes = new ArrayList<>();
         for (ITerm term : user.args()) {
             Scope scope = Scope.matcher().match(term).orElse(null);
-            if (scope != null) scopes.add(OwnableScope.fromScope(manager, scope));
+            if (scope != null) scopes.add(scope);
         }
         return scopes;
     }
+    
+    //---------------------------------------------------------------------------------------------
     
     /**
      * @return

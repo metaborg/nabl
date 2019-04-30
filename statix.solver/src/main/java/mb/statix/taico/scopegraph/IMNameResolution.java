@@ -3,7 +3,6 @@ package mb.statix.taico.scopegraph;
 import java.util.Set;
 
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.taico.util.IOwnable;
 
 /**
  * Interface to represent a particular name resolution algorithm.
@@ -17,7 +16,7 @@ import mb.statix.taico.util.IOwnable;
  * @param <R>
  *      the type of relations
  */
-public interface IMNameResolution<S extends IOwnable, V, L, R> {
+public interface IMNameResolution<S extends V, V, L, R> {
 
     /**
      * Attempts to resolve a name in the given scope.

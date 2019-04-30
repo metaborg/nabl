@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import io.usethesource.capsule.Set;
+import mb.statix.solver.Delay;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMExternalScopeGraph<S extends IOwnable, V, L, R> extends IOwnable {
+public interface IMExternalScopeGraph<S, V, L, R> extends IOwnable {
     
     L getEndOfPath();
     Set.Immutable<? extends L> getLabels();
@@ -26,7 +27,7 @@ public interface IMExternalScopeGraph<S extends IOwnable, V, L, R> extends IOwna
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<S, L, S>> getEdges(S scope, L label, LockManager lockManager);
+    java.util.Set<IEdge<S, L, S>> getEdges(S scope, L label, LockManager lockManager) throws Delay;
     
     /**
      * Gets the collection of data edges from the given scope with the given label.
@@ -41,7 +42,7 @@ public interface IMExternalScopeGraph<S extends IOwnable, V, L, R> extends IOwna
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<S, R, List<V>>> getData(S scope, R label, LockManager lockManager);
+    java.util.Set<IEdge<S, R, List<V>>> getData(S scope, R label, LockManager lockManager) throws Delay;
     
     /**
      * @return

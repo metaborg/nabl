@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -22,12 +21,8 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.scopegraph.OwnableScope;
-import mb.statix.taico.util.IOwnable;
 
 public class ModuleConstraintStore implements IConstraintStore {
-    private final ModuleManager manager;
     private final Queue<IConstraint> active;
     private final Queue<IConstraint> stuckBecauseStuck;
     private final Multimap<ITermVar, IConstraint> stuckOnVar;
@@ -36,11 +31,9 @@ public class ModuleConstraintStore implements IConstraintStore {
     private final Multimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
     
     private volatile IObserver<ModuleConstraintStore> observer;
-    private boolean progress;
-    private AtomicBoolean progressCheck = new AtomicBoolean();
+    private volatile boolean progress;
     
-    public ModuleConstraintStore(ModuleManager manager, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
-        this.manager = manager;
+    public ModuleConstraintStore(Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.active = new LinkedBlockingQueue<>();
         this.stuckBecauseStuck = new LinkedList<>();
         this.stuckOnVar = HashMultimap.create();
@@ -97,20 +90,6 @@ public class ModuleConstraintStore implements IConstraintStore {
      */
     public boolean canProgress() {
         return activeSize() > 0;
-    }
-    
-    /**
-     * Check after a full cycle.
-     * 
-     * @return
-     *      true if there are no constraints is stuck waiting, false otherwise
-     */
-    public boolean isStuck() {
-        return !progress && activeSize() == 0 && delayedSize() != 0;
-    }
-    
-    public void externalProgress() {
-        progress = true;
     }
     
     public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
@@ -201,16 +180,6 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     /**
-     * Checks if progress has been made since the last time this method was called.
-     * 
-     * @return
-     *      true if progress was made, false otherwise
-     */
-    public boolean checkProgressAndReset() {
-        return progressCheck.getAndSet(false);
-    }
-    
-    /**
      * Gets an active constraint from this store.
      * 
      * @param debug
@@ -258,7 +227,6 @@ public class ModuleConstraintStore implements IConstraintStore {
                 synchronized (ModuleConstraintStore.this) {
                     progress = true;
                 }
-                progressCheck.set(true);
             }
         };
     }
@@ -279,11 +247,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (edge.cause() != null) {
             owner = edge.cause();
         } else {
-            System.err.println("ENCOUNTERED CRITIAL EDGE WITHOUT OWNER (" + edge + ")! USING SCOPE OWNER!");
-            owner = OwnableScope.ownableMatcher(manager::getModule)
-                    .match(edge.scope())
-                    .map(IOwnable::getOwner)
-                    .orElseThrow(() -> new IllegalStateException("Scope of critical edge does not have an owning module: " + edge.scope()));
+            throw new IllegalStateException("Encountered critical edge without owner: " + edge);
         }
 
         //TODO Static state access

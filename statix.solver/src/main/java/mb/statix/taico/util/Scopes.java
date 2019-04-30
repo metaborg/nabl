@@ -1,6 +1,7 @@
 package mb.statix.taico.util;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.terms.IScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
@@ -63,12 +64,27 @@ public class Scopes {
     }
     
     /**
+     * Gets the owner of the given scope without checking the access.
+     * 
+     * @param context
+     *      the context
+     * @param term
+     *      the scope
+     * 
+     * @return
+     *      the owner of the given scope
+     */
+    public static IModule getOwnerUnchecked(SolverContext context, IScope term) {
+        return context.getModuleUnchecked(term.getResource());
+    }
+    
+    /**
      * Gets the owner of the given term if it is a scope.
      * 
      * @param term
      *      the scope
-     * @param manager
-     *      the module manager to lookup modules in
+     * @param requester
+     *      the requester of the owner
      * 
      * @return
      *      the owner of the given scope
@@ -79,7 +95,7 @@ public class Scopes {
      * @throws IllegalArgumentException
      *      If the given term is not a scope.
      */
-    public static IModule getOwner(Scope term, IModule requester, SolverContext context) throws Delay {
-        return context.getModule(requester, term.getResource());
+    public static IModule getOwner(IScope scope, IModule requester) throws Delay {
+        return requester.getContext().getModule(requester, scope.getResource());
     }
 }

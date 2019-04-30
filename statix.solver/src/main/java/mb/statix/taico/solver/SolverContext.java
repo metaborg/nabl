@@ -1,14 +1,21 @@
 package mb.statix.taico.solver;
 
 import java.io.Serializable;
+import java.lang.ref.WeakReference;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.collect.Sets;
+
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
@@ -30,11 +37,14 @@ public class SolverContext implements Serializable {
     private transient ASolverCoordinator coordinator;
     private transient SolverContext oldContext;
     private transient IChangeSet changeSet;
+    private transient Map<String, Set<IConstraint>> initConstraints;
     
-    private Set<IContextAware> contextObservers = ConcurrentHashMap.newKeySet();
+    //TODO Weak keys
+    private Set<WeakReference<IContextAware>> contextObservers = ConcurrentHashMap.newKeySet();
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
     private Map<IModule, MState> states = new ConcurrentHashMap<>();
     private volatile int phase = -1;
+    
     
     private SolverContext(IncrementalStrategy strategy, Spec spec) {
         this.strategy = strategy;
@@ -47,13 +57,56 @@ public class SolverContext implements Serializable {
      * @return
      *      the old context
      */
-    public SolverContext getOldContext() {
-        return oldContext;
+    public Optional<SolverContext> getOldContext() {
+        return Optional.ofNullable(oldContext);
     }
     
-    // --------------------------------------------------------------------------------------------
-    // Spec
-    // --------------------------------------------------------------------------------------------
+    /**
+     * @return
+     *      the constraints
+     */
+    public Map<String, Set<IConstraint>> getInitialConstraints() {
+        return initConstraints;
+    }
+    
+    /**
+     * Retrieves the initialization constraints for the modules for which they were not provided.
+     * 
+     * @param context
+     *      the context
+     * @param moduleConstraints
+     *      a map from module NAMES to constraints
+     * 
+     * @return
+     *      the given map
+     * 
+     * @throws IllegalArgumentException
+     *      If an entry has more than one constraint in the set.
+     * @throws IllegalStateException
+     *      If the module represented by an entry was not present in the previous analysis but has
+     *      no initialization constraints.
+     */
+    protected Map<String, Set<IConstraint>> fixInitConstraints(Map<String, Set<IConstraint>> moduleConstraints) {
+        for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
+            String childName = entry.getKey();
+            if (entry.getValue().size() > 1) {
+                throw new IllegalArgumentException("Module " + childName + " has more than one initialization constraint: " + entry.getValue());
+            }
+
+            if (!entry.getValue().isEmpty()) continue;
+
+            //Scope substitution does not have to occur here, since the global scope remains constant.
+            //If there is no constraint available, use the initialization constraint for the child
+            IModule child = oldContext == null ? null : oldContext.manager.getModuleByName(childName, 1);
+            if (child == null) {
+                throw new IllegalStateException("Encountered a module without initialization that was not present in the previous context: " + childName);
+            }
+
+            entry.setValue(Collections.singleton(child.getInitialization()));
+        }
+        return moduleConstraints;
+    }
+    
     public Spec getSpec() {
         return spec;
     }
@@ -80,7 +133,7 @@ public class SolverContext implements Serializable {
     public IModule getChildModuleByName(IModule requester, String name) throws Delay {
         String id = ModulePaths.build(requester.getId(), name);
         
-        if (phase == -1) return _getModule(id);
+        if (phase == -1) return getModuleUnchecked(id);
         
         return strategy.getChildModule(this, oldContext, requester, id);
     }
@@ -99,11 +152,14 @@ public class SolverContext implements Serializable {
      *      If the given name is not unique on its level
      */
     public IModule getModuleByName(String name, int level) {
-        return manager.getModuleByName(name, level);
+        IModule module = manager.getModuleByName(name, level);
+        if (module != null) return module;
+        
+        return oldContext == null ? null : oldContext.manager.getModuleByName(name, level);
     }
     
     public IModule getModule(IModule requester, String id) throws Delay {
-        if (phase == -1) return _getModule(id);
+        if (phase == -1) return getModuleUnchecked(id);
         
         //TODO Also do the first part based on the strategy, to allow the strategy to delay.
         return strategy.getModule(this, oldContext, requester, id);
@@ -118,31 +174,21 @@ public class SolverContext implements Serializable {
      * 
      * @return
      *      the module with the given id, or null if no such module exists nor existed
-     * 
-     * @deprecated
-     *      It should never be necessary to use this method.
      */
-    @Deprecated
     public IModule getModuleUnchecked(String id) {
-        return _getModule(id);
-    }
-    
-    /**
-     * Gets the module with the given id, without checking with the strategy. If the given module
-     * exists or existed in the previous context, it is returned.
-     * 
-     * @param id
-     *      the id of the module
-     * 
-     * @return
-     *      the module with the given id, or null if no such module exists nor existed
-     */
-    private IModule _getModule(String id) {
         IModule module = manager.getModule(id);
         if (module != null) return module;
         
         if (oldContext == null) return null;
         return oldContext.manager.getModule(id);
+    }
+    
+    /**
+     * @return
+     *      the root module
+     */
+    public IModule getRootModule() {
+        return coordinator.getRootModule();
     }
     
     /**
@@ -163,7 +209,7 @@ public class SolverContext implements Serializable {
      * @return
      *      the new/old child module
      */
-    public IModule createChild(IModule parent, String name, List<IOwnableScope> canExtend, IConstraint constraint) {
+    public IModule createChild(IModule parent, String name, List<AScope> canExtend, IConstraint constraint) {
         //TODO Incrementality breaks if parent or child names are changed
         String id = ModulePaths.build(parent.getId(), name);
         
@@ -179,11 +225,8 @@ public class SolverContext implements Serializable {
         if (oldModule.getFlag() == ModuleCleanliness.CLEAN) {
             //Update the edges to the new scopes and add it as a child of the current scope graph.
             oldModule.getScopeGraph().substitute(canExtend);
-            oldModule.setParent(this);
             //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
             oldModule.setInitialization(constraint);
-            //Set the coordinator to our coordinator
-            oldModule.getCurrentState().setCoordinator(getCurrentState().coordinator());
             getScopeGraph().addChild(oldModule);
             return oldModule;
         } else {
@@ -218,6 +261,7 @@ public class SolverContext implements Serializable {
      * @see ModuleManager#getModulesOnLevel(int)
      */
     public Map<String, IModule> getModulesOnLevel(int level) {
+        //TODO IMPORTANT does not include old modules
         return manager.getModulesOnLevel(level);
     }
     
@@ -300,7 +344,7 @@ public class SolverContext implements Serializable {
      *      the observer to register
      */
     public void register(IContextAware contextAware) {
-        contextObservers.add(contextAware);
+        contextObservers.add(new WeakReference<>(contextAware));
     }
     
     /**
@@ -312,10 +356,11 @@ public class SolverContext implements Serializable {
      */
     protected void transferContextObservers(SolverContext target) {
         //TODO Parallel + clear
-        Iterator<IContextAware> it = contextObservers.iterator();
+        Iterator<WeakReference<IContextAware>> it = contextObservers.iterator();
         while (it.hasNext()) {
-            IContextAware observer = it.next();
-            observer.setContext(target);
+            WeakReference<IContextAware> old = it.next();
+            IContextAware observer = old.get();
+            if (observer != null) observer.setContext(target);
             it.remove();
         }
     }
@@ -340,6 +385,7 @@ public class SolverContext implements Serializable {
         
         oldContext = null;
         changeSet = null;
+        //TODO probably need more here
     }
     
     // --------------------------------------------------------------------------------------------
@@ -392,10 +438,13 @@ public class SolverContext implements Serializable {
      * @return
      *      the new solver context
      */
-    public static SolverContext incrementalContext(IncrementalStrategy strategy, SolverContext previousContext, IChangeSet changeSet, Spec spec) {
+    public static SolverContext incrementalContext(
+            IncrementalStrategy strategy, SolverContext previousContext, IChangeSet changeSet,
+            Map<String, Set<IConstraint>> initConstraints, Spec spec) {
         SolverContext newContext = new SolverContext(strategy, spec);
-        newContext.oldContext = previousContext;
+        newContext.oldContext = previousContext; //TODO Ensure that changes are committed
         newContext.changeSet = changeSet;
+        newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
         previousContext.transferContextObservers(newContext);
         
         return newContext;

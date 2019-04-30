@@ -1,8 +1,6 @@
 package mb.statix.taico.scopegraph;
 
-import mb.statix.taico.util.IOwnable;
-
-public class Edge<S extends IOwnable, L, T> implements IEdge<S, L, T> {
+public class Edge<S, L, T> implements IEdge<S, L, T> {
     private final S source;
     private final T target;
     private final L label;

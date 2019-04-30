@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.taico.module.IModule;
 
 /**
  * Interface for storing query details.
@@ -18,11 +17,11 @@ import mb.statix.taico.module.IModule;
  *      the type of data edge labels (relations)
  */
 public interface IQueryDetails<S, L, R> {
-    Map<IModule, Map<S, L>> getRelevantEdges();
+    Map<String, Map<S, L>> getRelevantEdges();
     
-    Map<IModule, Map<S, R>> getRelevantData();
+    Map<String, Map<S, R>> getRelevantData();
     
-    Collection<? extends IModule> getReachedModules();
+    Collection<String> getReachedModules();
     
     List<ITerm> getQueryResult();
 }

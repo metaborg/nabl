@@ -57,7 +57,7 @@ public interface ISolverResult {
             vars.addAll(d.vars());
             scopes.addAll(d.criticalEdges());
         });
-        return new Delay(vars.build(), scopes.build(), null);
+        return new Delay(vars.build(), scopes.build(), null, null);
     }
     
     /**

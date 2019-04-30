@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.Relations;
 
@@ -23,7 +24,7 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     }
 
     @Override
-    public ModuleScopeGraph createChild(IModule module, List<IOwnableScope> canExtend) {
+    public ModuleScopeGraph createChild(IModule module, List<AScope> canExtend) {
         throw new UnsupportedOperationException("Creating children in delegate scope graphs (during entails) is currently not supported.");
     }
 
@@ -43,22 +44,22 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     }
 
     @Override
-    public IRelation3<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, IOwnableTerm>> getEdges() {
+    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, AScope>> getEdges() {
         return Relations.union(original.getEdges(), super.getEdges());
     }
 
     @Override
-    public IRelation3<IOwnableTerm, ITerm, IEdge<IOwnableTerm, ITerm, List<ITerm>>> getData() {
+    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> getData() {
         return Relations.union(original.getData(), super.getData());
     }
 
     @Override
-    public Set<IOwnableScope> getScopes() {
+    public Set<AScope> getScopes() {
         return clearScopes ? super.getScopes() : Sets.union(original.getScopes(), super.getScopes());
     }
 
     @Override
-    public void updateToCopy(IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> copy, boolean checkConcurrency) {
+    public void updateToCopy(IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> copy, boolean checkConcurrency) {
         throw new UnsupportedOperationException("Updating to copies is currently not supported for delegating scope graphs.");
     }
 }

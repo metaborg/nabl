@@ -3,10 +3,7 @@ package mb.statix.taico.scopegraph;
 import java.util.Collection;
 import java.util.Map;
 
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.util.IOwnable;
-
-public interface ITrackingScopeGraph<S extends IOwnable, V, L, R> extends IMInternalScopeGraph<S, V, L, R> {
+public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S, V, L, R> {
     /**
      * A map with the scopes and the labels that were requested as data on the scope graph
      * of this tracker alone. This does not include any child or parent trackers.
@@ -32,7 +29,7 @@ public interface ITrackingScopeGraph<S extends IOwnable, V, L, R> extends IMInte
      * @return
      *      the map of all requested edges
      */
-    Map<IModule, Map<S, L>> aggregateTrackedEdges();
+    Map<String, Map<S, L>> aggregateTrackedEdges();
     
     /**
      * A map with, per module, the scopes and the relations that were requested as data on this
@@ -41,7 +38,7 @@ public interface ITrackingScopeGraph<S extends IOwnable, V, L, R> extends IMInte
      * @return
      *      the map of all requested data
      */
-    Map<IModule, Map<S, R>> aggregateTrackedData();
+    Map<String, Map<S, R>> aggregateTrackedData();
     
     /**
      * The directly reached modules, including their children.
@@ -49,7 +46,7 @@ public interface ITrackingScopeGraph<S extends IOwnable, V, L, R> extends IMInte
      * @return
      *      all modules that were reached by this tracking graph
      */
-    Collection<? extends IModule> getReachedModules();
+    Collection<String> getReachedModules();
     
     @Override
     Collection<? extends ITrackingScopeGraph<S, V, L, R>> getChildren();

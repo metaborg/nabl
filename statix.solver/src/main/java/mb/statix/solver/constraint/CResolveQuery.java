@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.metaborg.util.functions.Function2;
 
 import mb.nabl2.terms.ITerm;
@@ -23,6 +22,8 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
+import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
@@ -34,16 +35,13 @@ import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Type;
 import mb.statix.spoofax.MSTX_solve_constraint;
 import mb.statix.spoofax.StatixTerms;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
-import mb.statix.taico.scopegraph.OwnableScope;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.scopegraph.reference.MFastNameResolution;
 import mb.statix.taico.solver.CompletenessResult;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.query.IMQueryFilter;
 import mb.statix.taico.solver.query.IMQueryMin;
 import mb.statix.taico.solver.query.QueryDetails;
@@ -122,7 +120,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
             throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
-        final OwnableScope scope = OwnableScope.ownableMatcher(state.manager()::getModule).match(scopeTerm, unifier)
+        final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         final IDebugContext subDebug;
@@ -144,13 +142,13 @@ public class CResolveQuery implements IConstraint, Serializable {
         IMQueryFilter filter = this.filter.toMutable();
         IMQueryMin min = this.min.toMutable();
         
-        ITrackingScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
+        ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
         final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths;
         
         LockManager lockManager = new LockManager(state.owner());
         try {
             // @formatter:off
-            final MFastNameResolution<IOwnableTerm, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<IOwnableTerm, ITerm, ITerm, ITerm>builder()
+            final MFastNameResolution<AScope, ITerm, ITerm, ITerm> nameResolution = MFastNameResolution.<AScope, ITerm, ITerm, ITerm>builder()
                     .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
                     .withDataWF(filter(relation(), type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
                     .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
@@ -158,7 +156,7 @@ public class CResolveQuery implements IConstraint, Serializable {
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
                     .withLockManager(lockManager)
-                    .build(trackingGraph, relation());
+                    .build(state.context(), trackingGraph, relation());
             // @formatter:on
 
             paths = nameResolution.resolve(scope);
@@ -197,7 +195,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         }
         
         //Register this query
-        QueryDetails<IOwnableTerm, ITerm, ITerm> details = new QueryDetails<>(
+        QueryDetails<AScope, ITerm, ITerm> details = new QueryDetails<AScope, ITerm, ITerm>(
                 trackingGraph.aggregateTrackedEdges(),
                 trackingGraph.aggregateTrackedData(),
                 trackingGraph.getReachedModules(),
@@ -205,8 +203,8 @@ public class CResolveQuery implements IConstraint, Serializable {
         state.owner().addQuery(this, details);
         
         //Add reverse dependencies
-        for (IModule module : trackingGraph.getReachedModules()) {
-            module.addDependant(state.owner(), this);
+        for (String module : trackingGraph.getReachedModules()) {
+            state.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
         }
         
         final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);

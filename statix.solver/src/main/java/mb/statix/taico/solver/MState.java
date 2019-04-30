@@ -10,10 +10,10 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.statix.scopegraph.terms.AScope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.IOwnableTerm;
 import mb.statix.taico.solver.context.AContextAware;
 
 /**
@@ -21,8 +21,7 @@ import mb.statix.taico.solver.context.AContextAware;
  */
 public class MState extends AContextAware implements IMState {
     private final IModule owner;
-    private Spec spec;
-    private IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph;
+    private IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph;
     
     private int varCounter;
     private Set<ITermVar> vars;
@@ -39,13 +38,10 @@ public class MState extends AContextAware implements IMState {
      *      the context
      * @param owner
      *      the owner of this state
-     * @param spec
-     *      the specification
      */
-    public MState(SolverContext context, IModule owner, Spec spec) {
+    public MState(SolverContext context, IModule owner) {
         super(context);
         this.owner = owner;
-        this.spec = spec;
         this.scopeGraph = owner.getScopeGraph();
         this.vars = new HashSet<>();
         this.unifier = PersistentUnifier.Immutable.of();
@@ -63,10 +59,9 @@ public class MState extends AContextAware implements IMState {
      * @param scopeGraph
      *      the new scopeGraph
      */
-    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph) {
+    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph) {
         super(original.context);
         this.owner = original.owner();
-        this.spec = original.spec();
         this.scopeGraph = scopeGraph;
         this.vars = vars;
         this.varCounter = original.varCounter;
@@ -81,7 +76,7 @@ public class MState extends AContextAware implements IMState {
     
     @Override
     public Spec spec() {
-        return spec;
+        return context.getSpec();
     }
     
     public SolverContext context() {
@@ -127,12 +122,12 @@ public class MState extends AContextAware implements IMState {
     // --- scopes ---
 
     @Override
-    public synchronized IOwnableTerm freshScope(String base) {
+    public AScope freshScope(String base) {
         return scopeGraph.createScope(base);
     }
 
     @Override
-    public Set<? extends IOwnableTerm> scopes() {
+    public Set<? extends AScope> scopes() {
         return scopeGraph.getScopes();
     }
 
@@ -149,7 +144,7 @@ public class MState extends AContextAware implements IMState {
     }
 
     @Override
-    public IMInternalScopeGraph<IOwnableTerm, ITerm, ITerm, ITerm> scopeGraph() {
+    public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph() {
         return scopeGraph;
     }
 
