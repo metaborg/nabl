@@ -20,6 +20,8 @@ import mb.statix.taico.solver.context.AContextAware;
  * Implementation of mutable state.
  */
 public class MState extends AContextAware implements IMState {
+    private static final long serialVersionUID = 1L;
+    
     private final IModule owner;
     private IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph;
     
@@ -28,7 +30,7 @@ public class MState extends AContextAware implements IMState {
     
     private volatile IUnifier.Immutable unifier;
     
-    private ModuleSolver solver;
+    private transient ModuleSolver solver;
     
     /**
      * Constructor for creating a new state for the given module.

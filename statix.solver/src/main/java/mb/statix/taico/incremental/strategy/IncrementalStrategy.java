@@ -97,11 +97,14 @@ public abstract class IncrementalStrategy {
 
     /**
      * Creates / reuses the modules from the given map from module name to constraints.
-     * This method assumes that each module has 0 or 1 constraint. If there is no constraint, the
-     * initialization constraint for the module will be retrieved from the previous context.
-     * If there is one constraint, it will be used as initialization reason for the module.
+     * This method assumes that each module has 1 constraint which will be used as initialization
+     * reason for the module.
      * <p>
-     * A state is also created for each module.
+     * All modules in the returned map will have a solver created for them, all modules that are
+     * not in the map will be available, but won't be actively solving themselves.
+     * <p>
+     * Implementors should use {@link #createFileModule(SolverContext, String, Set)} and
+     * {@link #reuseOldModule(SolverContext, IModule)} to create or reuse modules.
      * 
      * @param context
      *      the context
@@ -141,6 +144,7 @@ public abstract class IncrementalStrategy {
      * @throws Delay 
      */
     protected IModule createFileModule(SolverContext context, String childName, Set<IConstraint> initConstraints) {
+        System.err.println("[IS] Creating file module for " + childName);
         if (initConstraints.size() != 1) {
             throw new IllegalArgumentException("Module " + childName + " does not have exactly 1 initialization constraint: " + initConstraints);
         }
@@ -152,6 +156,22 @@ public abstract class IncrementalStrategy {
         IModule child = rootOwner.createChild(childName, scopes, initConstraint);
         new MState(context, child);
         return child;
+    }
+    
+    /**
+     * Reuses an old module for a new analysis.
+     * This method creates a state and a dummy solver for the given module.
+     * 
+     * @param context
+     *      the context
+     * @param oldModule
+     *      the old module
+     */
+    protected void reuseOldModule(SolverContext context, IModule oldModule) {
+        System.err.println("[IS] Reusing old module " + oldModule);
+        MState state = new MState(context, oldModule);
+        //TODO Is the root solver set at this point?
+        context.getRootModule().getCurrentState().solver().noopSolver(state);
     }
     
     /**

@@ -1,5 +1,6 @@
 package mb.statix.taico.solver;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -109,6 +110,21 @@ public class ModuleSolver implements IOwnable {
         
         this.state.coordinator().addSolver(solver);
         
+        return solver;
+    }
+    
+    /**
+     * Creates a solver for the given state that does not do any solving.
+     * 
+     * @param state
+     *      the state
+     * 
+     * @return
+     *      the new solver
+     */
+    public ModuleSolver noopSolver(IMState state) {
+        PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
+        ModuleSolver solver = new ModuleSolver(state, Collections.emptyList(), this.isComplete, debug);
         return solver;
     }
     

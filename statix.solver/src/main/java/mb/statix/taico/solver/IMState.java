@@ -1,5 +1,6 @@
 package mb.statix.taico.solver;
 
+import java.io.Serializable;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
@@ -11,7 +12,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMState extends IOwnable {
+public interface IMState extends IOwnable, Serializable {
     public IModule owner();
     
     @Override

@@ -81,13 +81,15 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
             Map<String, Set<IConstraint>> moduleConstraints) {
         Map<IModule, Set<IConstraint>> newModules = new HashMap<>();
         for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
+            System.err.println("[BI] Encountered entry for " + entry.getKey());
             IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
             
             if (oldModule == null || oldModule.getFlag() != ModuleCleanliness.CLEAN) {
                 IModule module = createFileModule(context, entry.getKey(), entry.getValue());
                 newModules.put(module, entry.getValue());
             } else {
-                //Old module is clean, we don't have to do anything
+                //Old module is clean, we can reuse it
+                reuseOldModule(context, oldModule);
             }
         }
         

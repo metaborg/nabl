@@ -215,7 +215,9 @@ public interface IModule extends IContextAware, Serializable {
      * @see SolverContext#getState(IModule)
      */
     default IMState getCurrentState() {
-        return getContext().getState(this);
+        IMState state = getContext().getState(this);
+        if (state == null) System.err.println("State of " + this + " is null!");
+        return state;
     }
     
     /**

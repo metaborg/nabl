@@ -29,6 +29,7 @@ import mb.statix.taico.incremental.MChange;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
@@ -94,7 +95,8 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         SolverContext oldContext = initial.state().context();
         ChangeSet changeSet = new ChangeSet(oldContext, removed, changed, added);
         
-        SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, changeSet, modules, spec);
+        SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
+//        newContext.setState(initial.state().getOwner(), initial.state());
         
         ASolverCoordinator coordinator = MSTX_solve_constraint.CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
         newContext.setCoordinator(coordinator);
@@ -107,6 +109,8 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        
+        newContext.commitChanges();
         //TODO This is wrong!
         System.err.println("Modules in the context post solve: " + newContext.getModules());
 

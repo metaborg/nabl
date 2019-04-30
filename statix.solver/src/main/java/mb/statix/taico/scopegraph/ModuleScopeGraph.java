@@ -51,7 +51,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     
     protected final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
-    protected volatile int currentModification;
+    protected volatile transient int currentModification;
     
     public ModuleScopeGraph(
             IModule owner,
@@ -109,6 +109,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         return edges;
     }
     
+    @Override
     public Set<AScope> getScopes() {
         return scopes;
     }
@@ -171,12 +172,12 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
     
     @Override
-    public AScope createScope(String base) {
+    public Scope createScope(String base) {
         System.err.println("[" + owner.getId() + "] Creating scope " + base);
         int i = ++scopeCounter;
         
         String name = base.replaceAll("-", "_") + "-" + i;
-        AScope scope = Scope.of(owner.getId(), name);
+        Scope scope = Scope.of(owner.getId(), name);
         scopes.add(scope);
         return scope;
     }

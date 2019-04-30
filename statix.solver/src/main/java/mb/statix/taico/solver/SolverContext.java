@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
@@ -36,7 +37,7 @@ public class SolverContext implements Serializable {
     //TODO Weak keys
     private Set<WeakReference<IContextAware>> contextObservers = ConcurrentHashMap.newKeySet();
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
-    private Map<IModule, MState> states = new ConcurrentHashMap<>();
+    private Map<IModule, IMState> states = new ConcurrentHashMap<>();
     private volatile int phase = -1;
     
     
@@ -226,7 +227,7 @@ public class SolverContext implements Serializable {
      * @return
      *      the state associated with the given module in the current context
      */
-    public MState getState(IModule module) {
+    public IMState getState(IModule module) {
         return states.get(module);
     }
     
@@ -238,8 +239,8 @@ public class SolverContext implements Serializable {
      * @param state
      *      the state
      */
-    public void setState(IModule module, MState state) {
-        MState old = states.put(module, state);
+    public void setState(IModule module, IMState state) {
+        IMState old = states.put(module, state);
         if (old != null) System.err.println("Overridden state of " + module + " in context " + hashCode());
     }
     
@@ -389,14 +390,15 @@ public class SolverContext implements Serializable {
      *      the new solver context
      */
     public static SolverContext incrementalContext(
-            IncrementalStrategy strategy, SolverContext previousContext, IChangeSet changeSet,
-            Map<String, Set<IConstraint>> initConstraints, Spec spec) {
+            IncrementalStrategy strategy, SolverContext previousContext, IMState previousRootState,
+            IChangeSet changeSet, Map<String, Set<IConstraint>> initConstraints, Spec spec) {
         SolverContext newContext = new SolverContext(strategy, spec);
         newContext.oldContext = previousContext; //TODO Ensure that changes are committed
         newContext.changeSet = changeSet;
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
         previousContext.transferContextObservers(newContext);
-        
+        newContext.setState(previousRootState.getOwner(), previousRootState);
+        ModuleSolver.topLevelSolver(previousRootState, Collections.emptyList(), new NullDebugContext());
         return newContext;
     }
 }
