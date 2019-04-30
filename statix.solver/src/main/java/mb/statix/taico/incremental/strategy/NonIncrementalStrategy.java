@@ -39,7 +39,7 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
             Map<String, Set<IConstraint>> moduleConstraints) {
         Map<IModule, Set<IConstraint>> newModules = new HashMap<>();
         for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
-            IModule module = createFileModule(context, entry);
+            IModule module = createFileModule(context, entry.getKey(), entry.getValue());
             newModules.put(module, entry.getValue());
         }
         

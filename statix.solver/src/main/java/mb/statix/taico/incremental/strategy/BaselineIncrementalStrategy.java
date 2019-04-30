@@ -84,7 +84,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
             IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
             
             if (oldModule == null || oldModule.getFlag() != ModuleCleanliness.CLEAN) {
-                IModule module = createFileModule(context, entry);
+                IModule module = createFileModule(context, entry.getKey(), entry.getValue());
                 newModules.put(module, entry.getValue());
             } else {
                 //Old module is clean, we don't have to do anything

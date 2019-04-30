@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -23,7 +22,6 @@ import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
@@ -130,10 +128,8 @@ public abstract class IncrementalStrategy {
     public abstract boolean endOfPhase(SolverContext context);
     
     /**
-     * Creates a new file module from the given entry.
-     * 
-     * This method will use {@link Entry#setValue(Object)} to alter the entry with the correct
-     * initialization constraint if necessary.
+     * Creates a new file module from the given module and initconstraints.
+     * Strategies can override this method to change the behavior.
      * 
      * @param context
      *      the context
@@ -144,94 +140,18 @@ public abstract class IncrementalStrategy {
      *      the created module
      * @throws Delay 
      */
-    protected IModule createFileModule(SolverContext context, Entry<String, Set<IConstraint>> entry) {
-        String childName = entry.getKey();
-        if (entry.getValue().size() != 1) {
-            throw new IllegalArgumentException("Module " + childName + " does not have exactly 1 initialization constraint: " + entry.getValue());
+    protected IModule createFileModule(SolverContext context, String childName, Set<IConstraint> initConstraints) {
+        if (initConstraints.size() != 1) {
+            throw new IllegalArgumentException("Module " + childName + " does not have exactly 1 initialization constraint: " + initConstraints);
         }
 
-        IConstraint initConstraint = getInitConstraint(entry.getValue());
+        IConstraint initConstraint = getInitConstraint(initConstraints);
         List<AScope> scopes = getScopes(initConstraint);
         
         IModule rootOwner = context.getRootModule();
-        child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
-        
+        IModule child = rootOwner.createChild(childName, scopes, initConstraint);
+        new MState(context, child);
         return child;
-    }
-    
-    /**
-     * Fixes the init constraints for the given entry.
-     * 
-     * @param context
-     *      the context
-     * @param entry
-     *      the entry
-     */
-    protected void fixInitConstraint(SolverContext context, Entry<String, Set<IConstraint>> entry) {
-        String childName = entry.getKey();
-        if (entry.getValue().size() > 1) {
-            throw new IllegalArgumentException("Module " + childName + " has more than one initialization constraint: " + entry.getValue());
-        }
-
-        //Retrieve the child
-        IModule child;
-        if (!entry.getValue().isEmpty()) return;
-
-        //Scope substitution does not have to occur here, since the global scope remains constant.
-        //If there is no constraint available, use the initialization constraint for the child
-        //Find the root module and get its child
-        child = context.getModuleByName(childName, 1);
-        if (child != null) entry.setValue(Collections.singleton(child.getInitialization()));
-
-//        else {
-//            IConstraint initConstraint = getInitConstraint(entry.getValue());
-//            List<AScope> scopes = getScopes(initConstraint);
-//            
-//            IModule rootOwner;
-//            child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
-//        }
-    }
-    
-    /**
-     * @param context
-     * @param entry
-     * @return
-     *      either a newly created module, or null if this 
-     */
-    protected IModule createInitModule(SolverContext context, Entry<String, Set<IConstraint>> entry) {
-        String childName = entry.getKey();
-        IModule child = context.getModuleByName(childName, 1);
-        if (child == null) {
-            return createNewFileModule(context, childName, entry.getValue());
-        }
-        
-        //We can safely return the old child if it is clean
-        if (child.getFlag() == ModuleCleanliness.CLEAN) return null;
-        
-        //TODO This is where the different strategies will diverge.
-    }
-    
-    /**
-     * Creates a new file module. Strategies can override this method to change the behavior.
-     * <p>
-     * This method also creates a state for the module.
-     * 
-     * @param context
-     *      the context
-     * @param name
-     *      the name of the module
-     * @param constraints
-     *      the constraints for the module
-     * 
-     * @return
-     *      the created module
-     */
-    protected IModule createNewFileModule(SolverContext context, String name, Set<IConstraint> constraints) {
-        IConstraint initConstraint = getInitConstraint(constraints);
-        List<AScope> scopes = getScopes(initConstraint);
-        IModule module = context.createChild(context.getRootModule(), name, scopes, initConstraint);
-        new MState(context, module);
-        return module;
     }
     
     /**

@@ -2,20 +2,15 @@ package mb.statix.taico.solver;
 
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.Sets;
-
-import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
@@ -25,7 +20,6 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.scopegraph.IOwnableScope;
 import mb.statix.taico.solver.context.IContextAware;
 
 public class SolverContext implements Serializable {
@@ -115,7 +109,6 @@ public class SolverContext implements Serializable {
     // Modules
     // --------------------------------------------------------------------------------------------
     
-    @Deprecated
     public ModuleManager getModuleManager() {
         return manager;
     }
@@ -189,49 +182,6 @@ public class SolverContext implements Serializable {
      */
     public IModule getRootModule() {
         return coordinator.getRootModule();
-    }
-    
-    /**
-     * If the module with the given name already existed as a child of this module, that module is
-     * returned. Otherwise, this method returns a new child module of this module.
-     * 
-     * @param name
-     *      the name of the module to create or get
-     * @param canExtend
-     *      the list of scopes from this module and parents that the child can extend, in the order
-     *      they are encountered in the rule
-     * @param moduleBoundary
-     *      the name of the module boundary which caused this modules creation
-     * @param args
-     *      the arguments with which the module boundary was called (TODO IMPORTANT substitute scopes)
-     *      (TODO does this preserve declarations (references) correctly?)
-     * 
-     * @return
-     *      the new/old child module
-     */
-    public IModule createChild(IModule parent, String name, List<AScope> canExtend, IConstraint constraint) {
-        //TODO Incrementality breaks if parent or child names are changed
-        String id = ModulePaths.build(parent.getId(), name);
-        
-        IModule oldModule = getChildModuleByName(parent, name);
-        if (oldModule == null) {
-            System.err.println("[" + parent.getId() + "] Creating new child " + name);
-            return createChild(name, canExtend, constraint);
-        }
-        //If the module is new, we throw an exception
-        //Invariant: we can only create each module once
-        if (manager.hasModule(oldModule.getId()))
-        
-        if (oldModule.getFlag() == ModuleCleanliness.CLEAN) {
-            //Update the edges to the new scopes and add it as a child of the current scope graph.
-            oldModule.getScopeGraph().substitute(canExtend);
-            //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
-            oldModule.setInitialization(constraint);
-            getScopeGraph().addChild(oldModule);
-            return oldModule;
-        } else {
-            return createChild(name, canExtend, constraint);
-        }
     }
     
     /**

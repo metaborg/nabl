@@ -1,32 +1,24 @@
 package mb.statix.taico.solver;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
-import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleManager;
-import mb.statix.taico.scopegraph.IOwnableScope;
-import mb.statix.taico.scopegraph.OwnableScope;
 
 public abstract class ASolverCoordinator {
     protected ModuleSolver root;
@@ -144,11 +136,7 @@ public abstract class ASolverCoordinator {
             throws InterruptedException {
         init(strategy, state, Collections.emptyList(), debug);
         
-        Map<IModule, Set<IConstraint>> modules = createModules(constraints);
-        System.err.println("Clearing dirty modules");
-        strategy.clearDirtyModules(changeSet, state.manager());
-        //Recreating modules
-        recreateModules(modules.keySet(), state.manager());
+        Map<IModule, Set<IConstraint>> modules = strategy.createModulesForPhase(rootState.context(), constraints);
         
         //Switch the phase to 0 after the initialization
         if (rootState.context().getPhase() == -1) rootState.context().setPhase(0);
@@ -158,91 +146,6 @@ public abstract class ASolverCoordinator {
         runToCompletion();
         
         return collectResults(modules.keySet());
-    }
-    
-    /**
-     * Resets modules that are marked for reanalysis.
-     * 
-     * @param modules
-     *      the modules for which solvers will be created
-     * @param manager
-     *      the module manager
-     */
-    protected void recreateModules(Set<IModule> modules, ModuleManager manager) {
-        for (IModule module : modules) {
-            if (manager.getModule(module.getId()) != null) continue;
-            
-            module.reset(rootState.spec());
-        }
-    }
-
-    /**
-     * Creates / gets the modules from the given map from module name to constraints.
-     * This method assumes that each module has exactly one constraint, which will be used
-     * as initialization reason for the module.
-     * 
-     * A state is also created for each module.
-     * 
-     * @param moduleConstraints
-     *      the map from module name to the initialization constraints
-     * 
-     * @return
-     *      a map from module to initialization constraints
-     */
-    protected Map<IModule, Set<IConstraint>> createModules(Map<String, Set<IConstraint>> moduleConstraints) {
-        IModule rootOwner = root.getOwner();
-        Map<IModule, Set<IConstraint>> modules = new HashMap<>();
-        for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
-            String childName = entry.getKey();
-            if (entry.getValue().size() > 1) {
-                throw new IllegalArgumentException("Module " + childName + " has more than one initialization constraint: " + entry.getValue());
-            }
-            
-            //Retrieve the child
-            IModule child;
-            if (entry.getValue().isEmpty()) {
-                //Scope substitution does not have to occur here, since the global scope remains constant.
-                //If there is no constraint available, use the initialization constraint for the child
-                child = rootOwner.getChildAndAdd(childName);
-                if (child != null) entry.setValue(Collections.singleton(child.getInitialization()));
-            } else {
-                IConstraint initConstraint = null;
-                List<IOwnableScope> scopes = new ArrayList<>();
-                for (IConstraint constraint : entry.getValue()) {
-                    initConstraint = constraint;
-                    if (!(constraint instanceof CUser)) break;
-                    scopes = getScopes(rootState.manager(), (CUser) constraint);
-                }
-                
-                child = rootOwner.createOrGetChild(childName, scopes, initConstraint);
-            }
-            
-            if (child == null) throw new IllegalStateException("Child " + childName + " could not be found!");
-            
-            new MState(rootState.context(), child);
-            modules.put(child, entry.getValue());
-        }
-        return modules;
-    }
-    
-    /**
-     * Determines the scopes in the arguments of the given CUser constraint.
-     * 
-     * @param manager
-     *      the manager to get modules from
-     * @param user
-     *      the constraint
-     * 
-     * @return
-     *      the list of scopes in the given constraint
-     */
-    private List<IOwnableScope> getScopes(ModuleManager manager, CUser user) {
-        List<IOwnableScope> scopes = new ArrayList<>();
-        for (ITerm term : user.args()) {
-            Scope scope = Scope.matcher().match(term).orElse(null);
-            if (scope != null) scopes.add(OwnableScope.fromScope(manager, scope));
-        }
-        return scopes;
     }
     
     /**
