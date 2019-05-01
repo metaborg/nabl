@@ -8,6 +8,9 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Predicate2;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
@@ -17,6 +20,7 @@ import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
+import mb.nabl2.scopegraph.terms.OccurrenceIndex;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
@@ -37,6 +41,22 @@ public abstract class Solution implements ISolution {
     @Value.Parameter @Override public abstract IProperties.Immutable<TermIndex, ITerm, ITerm> astProperties();
 
     @Value.Parameter @Override public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
+
+    @Value.Lazy @Override public Multimap<OccurrenceIndex, Occurrence> astDecls() {
+        final ImmutableMultimap.Builder<OccurrenceIndex, Occurrence> astDecls = ImmutableMultimap.builder();
+        scopeGraph().getAllDecls().forEach(o -> {
+            astDecls.put(o.getIndex(), o);
+        });
+        return astDecls.build();
+    }
+
+    @Value.Lazy @Override public Multimap<OccurrenceIndex, Occurrence> astRefs() {
+        final ImmutableMultimap.Builder<OccurrenceIndex, Occurrence> astRefs = ImmutableMultimap.builder();
+        scopeGraph().getAllRefs().forEach(o -> {
+            astRefs.put(o.getIndex(), o);
+        });
+        return astRefs.build();
+    }
 
     @Override public IEsopNameResolution<Scope, Label, Occurrence> nameResolution() {
         return nameResolution((s, l) -> true);
@@ -68,8 +88,8 @@ public abstract class Solution implements ISolution {
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
-                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(),
-                Messages.Immutable.of(), Collections.emptySet());
+                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
+                Collections.emptySet());
     }
 
 }

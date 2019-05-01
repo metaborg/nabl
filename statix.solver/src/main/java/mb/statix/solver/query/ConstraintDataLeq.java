@@ -14,11 +14,11 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -26,14 +26,14 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
 
     private final Rule constraint;
     private final State state;
-    private final Completeness completeness;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
     private volatile Boolean alwaysTrue;
 
-    public ConstraintDataLeq(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintDataLeq(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
         this.debug = debug;
     }
 
@@ -42,11 +42,11 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
         final ITerm term1 = B.newTuple(datum1);
         final ITerm term2 = B.newTuple(datum2);
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(term1, term2), state).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
+            if(Solver.entails(result._1(), result._3(), isComplete, result._2(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
                 }
@@ -64,8 +64,9 @@ public class ConstraintDataLeq implements DataLeq<ITerm> {
     }
 
     @Override public boolean alwaysTrue() throws InterruptedException {
-        if (alwaysTrue != null) return alwaysTrue.booleanValue();
-        
+        if(alwaysTrue != null)
+            return alwaysTrue.booleanValue();
+
         return alwaysTrue = constraint.isAlways(state.spec()).orElse(false);
     }
 

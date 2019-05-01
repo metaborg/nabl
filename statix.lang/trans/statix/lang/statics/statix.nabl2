@@ -48,7 +48,27 @@ rules
     new s',
     Lang{x} <- s, Lang{x} ===> s', @x.decl := Lang{x},
     Lang{x} -> s, Lang{x} <=== s',
+    TopLevelSections[[ sections ^ (s') ]].
+
+  TopLevelSections[[ sections ^ (s) ]] :=
+
+    C{ResolveFilterWf()} <- s',
+    C{ResolveFilterWf()} : PRED([OCCURRENCE(), LIST(LABEL())]) !!,
+    C{ResolveFilterWf()}.ind := InductiveC() !!,
+    C{ResolveFilterWf()}.kind := DeclaredC() !!,
+
+    C{ResolveFilterEq()} <- s',
+    C{ResolveFilterEq()} : PRED([OCCURRENCE(), OCCURRENCE()]) !!,
+    C{ResolveFilterEq()}.ind := InductiveC() !!,
+    C{ResolveFilterEq()}.kind := DeclaredC() !!,
+
+    C{ResolveMinOrd()} <- s',
+    C{ResolveMinOrd()} : PRED([OCCURRENCE(), LABEL(), LABEL()]) !!,
+    C{ResolveMinOrd()}.ind := InductiveC() !!,
+    C{ResolveMinOrd()}.kind := DeclaredC() !!,
+
     Sections[[ sections ^ (s') ]].
+
 
   Sections[[ sections ^ (s') ]] :=
     Map1[[ sections ^ (s') ]],
@@ -144,7 +164,7 @@ rules
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Term(Build)[[ outarg ^ (s_body) : outty ]].
+    Build[[ outarg ^ (s_body) : outty ]].
 
   [[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
@@ -159,6 +179,7 @@ rules
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
     d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
+    intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
@@ -187,6 +208,7 @@ rules
 
   Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Inline notation can only be used for functional relations.",
+    intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
     Term(V)[[ st ^ (s) : SCOPE() ]].

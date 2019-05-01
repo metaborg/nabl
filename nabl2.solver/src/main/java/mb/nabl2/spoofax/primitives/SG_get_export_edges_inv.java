@@ -17,10 +17,10 @@ public class SG_get_export_edges_inv extends ScopeGraphEdgePrimitive<Scope> {
     @Override protected IMatcher<Scope> getSourceMatcher() {
         return Scope.matcher();
     }
-    
+
     @Override protected IRelation3<Scope, Label, ? extends ITerm>
             getEdges(IScopeGraph<Scope, Label, Occurrence> scopeGraph) {
         return scopeGraph.getExportEdges().inverse();
     }
-    
+
 }

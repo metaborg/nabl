@@ -1,0 +1,37 @@
+module base-patterns
+
+language StatixLang
+
+test simple module name [[
+  module test
+]] parse succeeds
+
+test compound module name [[
+  module test/test
+]] parse succeeds
+
+test simple sort name [[
+  module test
+  signature
+    sorts Exp
+]] parse succeeds
+
+test dashed sort name [[
+  module test
+  signature
+    sorts Exp-Sort
+]] parse succeeds
+
+test mixed dashes in sort name [[
+  module test
+  signature
+    sorts Exp_-Sort
+]] parse succeeds
+
+test dashed constructor name [[
+  module test
+  signature
+    sorts Exp constructors
+      Exp-Plhdr : Exp
+]] parse succeeds
+

@@ -1,5 +1,6 @@
 package mb.nabl2.terms.matching;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.Lists;
 
@@ -20,7 +21,8 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 
-public abstract class Pattern {
+public abstract class Pattern implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     public abstract Set<ITermVar> getVars();
 
@@ -79,6 +81,7 @@ public abstract class Pattern {
      */
     private static class LeftRightOrder implements java.util.Comparator<Pattern> {
 
+        @Override
         public int compare(Pattern p1, Pattern p2) {
             return compare(p1, p2, new AtomicInteger(), new HashMap<>(), new HashMap<>());
         }

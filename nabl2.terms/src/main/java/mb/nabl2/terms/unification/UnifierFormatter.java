@@ -15,6 +15,7 @@ public class UnifierFormatter implements TermFormatter {
         this.depth = depth;
     }
 
+    @Override
     public String format(ITerm term) {
         return unifier.toString(term, depth);
     }

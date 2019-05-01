@@ -1,5 +1,6 @@
 package mb.statix.solver.query;
 
+import java.util.List;
 import java.util.Set;
 
 import org.metaborg.util.log.Level;
@@ -11,11 +12,11 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -23,26 +24,26 @@ public class ConstraintLabelOrder implements LabelOrder<ITerm> {
 
     private final Rule constraint;
     private final State state;
-    private final Completeness completeness;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintLabelOrder(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintLabelOrder(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
         this.debug = debug;
     }
 
-    public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
+    @Override public boolean lt(ITerm l1, ITerm l2) throws ResolutionException, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Check order {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
         }
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
             if((result = constraint.apply(ImmutableList.of(l1, l2), state).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug.subContext()).isPresent()) {
+            if(Solver.entails(result._1(), result._3(), isComplete, result._2(), debug.subContext()).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Ordered {} < {}", state.unifier().toString(l1), state.unifier().toString(l2));
                 }

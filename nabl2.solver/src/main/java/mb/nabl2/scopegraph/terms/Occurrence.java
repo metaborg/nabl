@@ -71,15 +71,14 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
         return sb.toString();
     }
 
-    @Override
-    public int compareTo(final IOccurrence other) {
+    @Override public int compareTo(final IOccurrence other) {
         int diffNamespace = getNamespace().getName().compareTo(other.getNamespace().getName());
-        if (diffNamespace != 0) {
+        if(diffNamespace != 0) {
             return diffNamespace;
         }
 
         int diffName = getName().toString().compareTo(other.getName().toString());
-        if (diffName != 0) {
+        if(diffName != 0) {
             return diffName;
         }
 

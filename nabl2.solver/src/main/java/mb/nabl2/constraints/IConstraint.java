@@ -44,8 +44,8 @@ public interface IConstraint {
 
         T casePoly(IPolyConstraint constraint);
 
+        // @formatter:off
         static <T> Cases<T> of(
-            // @formatter:off
             Function<IAstConstraint,T> onAst,
             Function<IBaseConstraint,T> onBase,
             Function<IEqualityConstraint,T> onEquality,
@@ -55,8 +55,7 @@ public interface IConstraint {
             Function<ISetConstraint,T> onSet,
             Function<ISymbolicConstraint,T> onSym,
             Function<IPolyConstraint,T> onPoly
-            // @formatter:on
-        ) {
+        ) /* @formatter:on */ {
             return new Cases<T>() {
 
                 @Override public T caseAst(IAstConstraint constraint) {
@@ -75,7 +74,7 @@ public interface IConstraint {
                     return onScopeGraph.apply(constraint);
                 }
 
-                public T caseNameResolution(INameResolutionConstraint constraint) {
+                @Override public T caseNameResolution(INameResolutionConstraint constraint) {
                     return onNameResolution.apply(constraint);
                 }
 
@@ -178,7 +177,7 @@ public interface IConstraint {
                         return(onScopeGraph != null ? onScopeGraph.apply(constraint) : otherwise.apply(constraint));
                     }
 
-                    public T caseNameResolution(INameResolutionConstraint constraint) {
+                    @Override public T caseNameResolution(INameResolutionConstraint constraint) {
                         return(onNameResolution != null ? onNameResolution.apply(constraint)
                                 : otherwise.apply(constraint));
                     }
@@ -228,8 +227,8 @@ public interface IConstraint {
 
         T casePoly(IPolyConstraint constraint) throws E;
 
+        // @formatter:off
         static <T, E extends Throwable> CheckedCases<T, E> of(
-            // @formatter:off
             CheckedFunction1<IAstConstraint,T,E> onAst,
             CheckedFunction1<IBaseConstraint,T,E> onBase,
             CheckedFunction1<IEqualityConstraint,T,E> onEquality,
@@ -239,8 +238,7 @@ public interface IConstraint {
             CheckedFunction1<ISetConstraint,T,E> onSet,
             CheckedFunction1<ISymbolicConstraint,T,E> onSym,
             CheckedFunction1<IPolyConstraint,T,E> onPoly
-            // @formatter:on
-        ) {
+        ) /* @formatter:on */ {
             return new CheckedCases<T, E>() {
 
                 @Override public T caseAst(IAstConstraint constraint) throws E {
@@ -259,7 +257,7 @@ public interface IConstraint {
                     return onScopeGraph.apply(constraint);
                 }
 
-                public T caseNameResolution(INameResolutionConstraint constraint) throws E {
+                @Override public T caseNameResolution(INameResolutionConstraint constraint) throws E {
                     return onNameResolution.apply(constraint);
                 }
 
@@ -281,6 +279,7 @@ public interface IConstraint {
 
             };
         }
+
 
         static <T, E extends Throwable> Builder<T, E> builder() {
             return new Builder<>();
@@ -363,7 +362,7 @@ public interface IConstraint {
                         return(onScopeGraph != null ? onScopeGraph.apply(constraint) : otherwise.apply(constraint));
                     }
 
-                    public T caseNameResolution(INameResolutionConstraint constraint) throws E {
+                    @Override public T caseNameResolution(INameResolutionConstraint constraint) throws E {
                         return(onNameResolution != null ? onNameResolution.apply(constraint)
                                 : otherwise.apply(constraint));
                     }

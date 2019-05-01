@@ -1,25 +1,17 @@
 package mb.statix.solver.constraint;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.log.Level;
-
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.ConstraintResult;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
 
-public class CEqual implements IConstraint {
+public class CEqual implements IConstraint, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final ITerm term1;
     private final ITerm term2;
@@ -36,6 +28,14 @@ public class CEqual implements IConstraint {
         this.cause = cause;
     }
 
+    public ITerm term1() {
+        return term1;
+    }
+
+    public ITerm term2() {
+        return term2;
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -44,35 +44,16 @@ public class CEqual implements IConstraint {
         return new CEqual(term1, term2, cause);
     }
 
-    @Override public CEqual apply(ISubstitution.Immutable subst) {
-        return new CEqual(subst.apply(term1), subst.apply(term2), cause);
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseEqual(this);
     }
 
-    @Override public Optional<ConstraintResult> solve(State state, ConstraintContext params) throws Delay {
-        IDebugContext debug = params.debug();
-        IUnifier.Immutable unifier = state.unifier();
-        try {
-            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
-            if((result = unifier.unify(term1, term2, params::isRigid).orElse(null)) != null) {
-                if(debug.isEnabled(Level.Info)) {
-                    debug.info("Unification succeeded: {}", result.result());
-                }
-                final State newState = state.withUnifier(result.unifier());
-                return Optional.of(ConstraintResult.ofVars(newState, result.result().varSet()));
-            } else {
-                if(debug.isEnabled(Level.Info)) {
-                    debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
-                }
-                return Optional.empty();
-            }
-        } catch(OccursException e) {
-            if(debug.isEnabled(Level.Info)) {
-                debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
-            }
-            return Optional.empty();
-        } catch(RigidVarsException e) {
-            throw Delay.ofVars(e.vars());
-        }
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+        return cases.caseEqual(this);
+    }
+
+    @Override public CEqual apply(ISubstitution.Immutable subst) {
+        return new CEqual(subst.apply(term1), subst.apply(term2), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

@@ -5,6 +5,7 @@ import static mb.nabl2.terms.Terms.TUPLE_OP;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
@@ -452,6 +453,10 @@ public class TermMatch {
 
         default <R> IMatcher<R> map(Function<T, R> fun) {
             return (term, unifier) -> this.match(term, unifier).<R>map(fun);
+        }
+
+        default IMatcher<T> filter(Predicate<T> pred) {
+            return (term, unifier) -> this.match(term, unifier).filter(pred);
         }
 
         default <R> IMatcher<R> flatMap(Function<T, Optional<R>> fun) {

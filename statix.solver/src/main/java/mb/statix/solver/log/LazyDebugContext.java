@@ -28,7 +28,7 @@ public class LazyDebugContext implements IDebugContext {
         return debug.getDepth() + offset;
     }
 
-    public boolean isEnabled(Level level) {
+    @Override public boolean isEnabled(Level level) {
         return debug.isEnabled(level);
     }
 

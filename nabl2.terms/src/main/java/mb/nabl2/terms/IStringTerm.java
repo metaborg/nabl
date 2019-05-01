@@ -6,6 +6,7 @@ public interface IStringTerm extends ITerm {
 
     String getValue();
 
+    @Override
     IStringTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

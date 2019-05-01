@@ -12,11 +12,11 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -24,23 +24,23 @@ public class ConstraintDataWF implements DataWF<ITerm> {
 
     private final Rule constraint;
     private final State state;
-    private final Completeness completeness;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
+    public ConstraintDataWF(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
         this.debug = debug;
     }
 
-    public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+    @Override public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
         try {
-            final Tuple3<State, Set<ITermVar>, Set<IConstraint>> result;
+            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
             if((result = constraint.apply(datum, state).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(result._1(), result._3(), completeness, result._2(), debug).isPresent()) {
+            if(Solver.entails(result._1(), result._3(), isComplete, result._2(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
                 }

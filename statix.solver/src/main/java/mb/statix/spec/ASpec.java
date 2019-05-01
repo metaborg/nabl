@@ -2,11 +2,11 @@ package mb.statix.spec;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
@@ -33,7 +33,7 @@ public abstract class ASpec {
         return rules.stream()
                 .filter(r1 -> rules.stream()
                         .anyMatch(r2 -> !r1.equals(r2) && ARule.leftRightPatternOrdering.compare(r1, r2) == 0))
-                .collect(Collectors.toList());
+                .collect(ImmutableList.toImmutableList());
     }
 
     @Value.Parameter public abstract IAlphabet<ITerm> labels();

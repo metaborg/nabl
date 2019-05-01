@@ -81,7 +81,7 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
         ));
     }
 
-    public boolean update(Collection<ITermVar> vars) {
+    @Override public boolean update(Collection<ITermVar> vars) {
         return false;
     }
 

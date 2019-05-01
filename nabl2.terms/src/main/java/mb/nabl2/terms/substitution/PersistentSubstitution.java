@@ -3,11 +3,13 @@ package mb.nabl2.terms.substitution;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
+
+import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
@@ -40,7 +42,10 @@ public abstract class PersistentSubstitution implements ISubstitution {
     @Override public ITerm apply(ITerm term) {
         // @formatter:off
         return term.match(Terms.cases(
-            appl -> B.newAppl(appl.getOp(), appl.getArgs().stream().map(this::apply).collect(Collectors.toList()), appl.getAttachments()),
+            appl -> {
+                final List<ITerm> args = appl.getArgs().stream().map(this::apply).collect(ImmutableList.toImmutableList());
+                return B.newAppl(appl.getOp(), args, appl.getAttachments());
+            },
             list -> apply(list),
             string -> string,
             integer -> integer,
@@ -99,7 +104,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
-        public ISubstitution.Transient melt() {
+        @Override public ISubstitution.Transient melt() {
             return new PersistentSubstitution.Transient(subst.asTransient());
         }
 
@@ -142,7 +147,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
             other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
         }
 
-        public ISubstitution.Immutable freeze() {
+        @Override public ISubstitution.Immutable freeze() {
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 

@@ -6,7 +6,7 @@ public class NaBL2Config implements Serializable {
     private static final long serialVersionUID = 42L;
 
     public static final NaBL2Config DEFAULT = new NaBL2Config(false, NaBL2DebugConfig.NONE);
-    
+
     private final boolean incremental;
     private final NaBL2DebugConfig debug;
 

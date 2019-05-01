@@ -1,27 +1,18 @@
 package mb.statix.solver;
 
-import org.metaborg.util.functions.Predicate1;
-
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 
 public class ConstraintContext {
 
-    private final Completeness completeness;
-    private final Predicate1<ITermVar> isRigid;
-    private final Predicate1<ITerm> isClosed;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintContext(Completeness completeness, IDebugContext debug) {
-        this(completeness, v -> false, s -> false, debug);
-    }
-
-    public ConstraintContext(Completeness completeness, Predicate1<ITermVar> isRigid, Predicate1<ITerm> isClosed,
-            IDebugContext debug) {
-        this.completeness = completeness;
-        this.isRigid = isRigid;
-        this.isClosed = isClosed;
+    public ConstraintContext(IsComplete isComplete, IDebugContext debug) {
+        this.isComplete = isComplete;
         this.debug = debug;
     }
 
@@ -29,16 +20,16 @@ public class ConstraintContext {
         return debug;
     }
 
-    public Completeness completeness() {
-        return completeness;
+    public boolean isComplete(Scope scope, ITerm label, State state) {
+        return isComplete.test(scope, label, state);
     }
 
-    public boolean isRigid(ITermVar var) {
-        return isRigid.test(var);
+    public boolean isRigid(ITermVar var, State state) {
+        return !state.vars().contains(var);
     }
 
-    public boolean isClosed(ITerm scope) {
-        return isClosed.test(scope);
+    public boolean isClosed(Scope scope, State state) {
+        return !state.scopes().contains(scope);
     }
 
 }

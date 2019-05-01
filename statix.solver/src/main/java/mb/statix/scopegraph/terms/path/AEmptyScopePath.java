@@ -15,15 +15,15 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AEmptyScopePath<V, L> implements IScopePath<V, L> {
+abstract class AEmptyScopePath<S, L> implements IScopePath<S, L> {
 
-    @Value.Parameter public abstract V getScope();
+    @Value.Parameter public abstract S getScope();
 
-    @Override public V getSource() {
+    @Override public S getSource() {
         return getScope();
     }
 
-    @Override public V getTarget() {
+    @Override public S getTarget() {
         return getScope();
     }
 
@@ -31,11 +31,11 @@ abstract class AEmptyScopePath<V, L> implements IScopePath<V, L> {
         return 0;
     }
 
-    @Value.Lazy @Override public PSequence<V> scopes() {
+    @Value.Lazy @Override public PSequence<S> scopes() {
         return PSequence.of(getScope());
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
+    @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
         return Set.Immutable.of(getScope());
     }
 
@@ -43,7 +43,7 @@ abstract class AEmptyScopePath<V, L> implements IScopePath<V, L> {
         return PSequence.of();
     }
 
-    @Override public Iterator<IStep<V, L>> iterator() {
+    @Override public Iterator<IStep<S, L>> iterator() {
         return Collections.emptyIterator();
     }
 

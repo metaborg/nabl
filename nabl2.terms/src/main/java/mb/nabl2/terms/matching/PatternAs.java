@@ -2,8 +2,7 @@ package mb.nabl2.terms.matching;
 
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -15,6 +14,7 @@ import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.IUnifier;
 
 class PatternAs extends Pattern {
+    private static final long serialVersionUID = 1L;
 
     private final PatternVar var;
     private final Pattern pattern;

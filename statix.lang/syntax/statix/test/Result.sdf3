@@ -12,11 +12,14 @@ template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
+sorts
+
+  SolverResult
+
 context-free syntax
 
   TestResult = <
-    substitution
-      <{SubstEntry "\n"}*>
+    <Solution>
 
     errors
       <{EditorMessage "\n"}*>
@@ -26,6 +29,13 @@ context-free syntax
 
     notes
       <{EditorMessage "\n"}*>
+  >
+
+  Solution.Solution = <
+    substitution
+      <{SubstEntry "\n"}*>
+
+    <SolverResult>
   >
 
   SubstEntry = [[Var] |-> [Term]]

@@ -12,7 +12,21 @@ imports
 
 signature
   constructors
-    C : String * List(Term) -> Constraint
+
+    ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
+    FileAnalysis    : Constraint -> AnalysisResult
+
+    Solution : List(Var, Term) * SolverResult -> Solution
+
+    // Term duplicates from statix.lang
+    Var   : String -> Term
+    Scope : String * String -> Term
+
+    // Constraint duplicates from statix.lang
+    CNew  : List(Term) -> Constraint
+    CTrue : Constraint
+    CConj : Constraint * Constraint -> Constraint
+    C     : String * List(Term) -> Constraint
 
 rules
 
@@ -22,45 +36,123 @@ rules
  <+ <stx-editor-analyze(id|spec-name, init-constraint)> (<id>, "", "")
   )
 
-rules
+rules // single file analysis
 
   stx-editor-analyze(|spec-name, init-constraint) =
     stx-editor-analyze(id|spec-name, init-constraint)
 
-  // editor analyze for stratego analyzer
   stx-editor-analyze(desugar|spec-name, init-constraint):
-      (ast, path, project-path) -> (ast', error*, warning*, note*)
-    with resource := $[[project-path]/[path]];
-         (ast', a, error*, warning*, note*) :=
-             <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast)
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
+    ; solve-result* := <stx--solve-constraint(|spec, level)> C*
+    ; result* := <zip({ : \
+        ((resource, ast'), (a, error*, warning*, note*)) ->
+            (resource, Full(ast', a, error*, warning*, note*))
+      \})> (resource-ast'*, solve-result*)
 
-  // editor analyze for constraint analyzer
   stx-editor-analyze(desugar|spec-name, init-constraint):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast', a, error*, warning*, note*)
-    with (ast', a, error*, warning*, note*) :=
-             <stx--editor-analyze(desugar|spec-name, init-constraint)> (resource, ast)
+      AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
 
-  stx-editor-analyze(desugar|spec-name, init-constraint) =
-    debug(!"stx-editor-analyze "); fail
-
-  stx--editor-analyze(desugar|spec-name, init-constraint):
-      (resource, ast) -> (ast', a, error*, warning*, note*)
-    with spec := <stx--find-spec(|spec-name)>;
-         ast' := <desugar;stx--index-ast(|resource)> ast;
-         C    := C(init-constraint, [<stx--explode> ast']);
-         level := <stx--log-level>;
-         (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([], C)
-
-rules
+rules // single file elaboration
 
   stx-editor-elaborate(desugar|spec-name, init-constraint):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast'', a, error*, warning*, note*)
-    with ast' := <desugar;stx--index-ast(|resource)> ast
-       ; (ast'', a, error*, warning*, note*) :=
-             <stx--evaluate(|spec-name, init-constraint)> [ast']
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; V := Var("out")
+    ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
+    ; solve-result* := <stx--solve-constraint(|spec, level)> C*
+    ; result* := <zip({ ast'': \
+        ((resource, ast'), (a@Solution(subst, _), error*, warning*, note*)) ->
+            (resource, Full(ast'', a, error*, warning*, note*))
+          with ast'' := <substitute(stx--is-var);stx--implode> (subst, V)
+      \})> (resource-ast'*, solve-result*)
 
-  stx-editor-elaborate(desugar|spec-name, init-constraint) =
-    debug(!"stx-editor-elaborate "); fail
+rules // multi file analysis
+
+  stx-editor-analyze(|spec-name, project-constraint, file-constraint) =
+    stx-editor-analyze(id|spec-name, project-constraint, file-constraint)
+
+  stx-editor-analyze(desugar|spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      switch !project-change
+        case ?Added(_) + ?Changed(_, _):
+          //
+          // 1. create global scope
+          //
+          global-scope-var := Var("s")
+        ; (Solution(global-scope-subst, global-scope-state), _, _, _) :=
+              <stx--solve-constraint(|spec, level)> ([global-scope-var], CNew([global-scope-var]))
+        ; global-scope := <lookup> (global-scope-var, global-scope-subst)
+          //
+          // 2. partially solve project constraint
+          //
+        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope])
+        ; [initial-project-state] := <stx--solve-multi-file(|global-scope-state, level)> [(project-resource, project-C)]
+        case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
+          id
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+      //
+      // 3. Partially solve file constraints
+      //
+    ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-constraint, <map(stx--explode)> [global-scope, ast'])) \)> resource-ast'*
+    ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
+    ; file-result* := <zip({ file-state', error*, warning*, note*, file-analysis: \
+        ((resource, ast'), file-state) ->
+            (resource, Full(ast', file-analysis, error*, warning*, note*))
+          with (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
+             ; file-analysis := FileAnalysis(file-state')
+      \})> (resource-ast'*, file-state*)
+      //
+      // 4. Combine and solve all partial solution
+      //
+    ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
+    ; final-project-state := <stx--solve-multi-project(|initial-project-state, level)> [file-state*, cached-state*]
+    ; (final-project-state', error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
+    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state')
+    ; switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-result := Full(project-ast, project-analysis, error*, warning*, note*)
+        case ?Cached(_):
+          project-result := Update(project-analysis, error*, warning*, note*)
+      end
+    ; result* := [(project-resource, project-result)|file-result*]
+
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [(String, Constraint)] -> [SolverResult]
+  stx--solve-multi-file(|state,level) = prim("STX_solve_multi_file", state, level)
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [SolverResult] -> SolverResult
+  stx--solve-multi-project(|state,level) = prim("STX_solve_multi_project", state, level)
+
+  // @type SolverResult -> SolverResult
+  stx--delays-as-errors = prim("STX_delays_as_errors")
+
+  // @type SolverResult -> (SolverResult, [Error], [Warning], [Note])
+  stx--extract-messages = prim("STX_extract_messages")
+
+rules
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, a, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
@@ -72,8 +164,8 @@ rules
        ; V     := Var("out")
        ; C     := C(constraint, [T*, V])
        ; level := <stx--log-level>
-       ; (a, error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
-       ; out := <substitute(stx--is-var);stx--implode> (a, V)
+       ; (a@Solution(subst, _), error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; out := <substitute(stx--is-var);stx--implode> (subst, V)
 
 rules
 
@@ -88,7 +180,7 @@ rules
                <ReadFromFile> spec-file
             })
 
-  // solve-constraint : ([Var], Constraint, LogLevel) -> (Solution, [Error], [Warning], [Note])
+  // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
 
 rules
@@ -158,7 +250,15 @@ rules
   stx--implode: _ -> <id>
     with warn(|"Cannot implode internal term representation")
 
+
+  stx--conj: [C|C*] -> CConj(C, <stx--conj> C*)
+  stx--conj: [C] -> C
+  stx--conj: [] -> CTrue()
+
 rules
 
   prettyprint-Statix-Int =
     ![S(<is-int;int-to-string>)]
+
+  prettyprint-Statix-SolverResult =
+    ![S(<write-to-string>)]

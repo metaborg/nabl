@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
@@ -23,12 +22,12 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
@@ -36,21 +35,17 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
 
     private final List<IConstraint> constraints;
     private final State state;
-    private final Set<ITermVar> rigidVars;
-    private final Set<ITerm> closedScopes;
-    private final Completeness completeness;
+    private final IsComplete isComplete;
     private final IDebugContext debug;
 
     private final IListTerm labels;
     private final IListTerm tail;
 
-    private ConstraintLabelWF(Collection<IConstraint> constraints, State state, Set<ITermVar> rigidVars,
-            Set<ITerm> closedScopes, Completeness completeness, IDebugContext debug, IListTerm labels, IListTerm tail) {
+    private ConstraintLabelWF(Collection<IConstraint> constraints, State state, IsComplete isComplete,
+            IDebugContext debug, IListTerm labels, IListTerm tail) {
         this.constraints = ImmutableList.copyOf(constraints);
         this.state = state;
-        this.rigidVars = rigidVars;
-        this.closedScopes = closedScopes;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
         this.debug = debug;
         this.labels = labels;
         this.tail = tail;
@@ -60,21 +55,19 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Try step {} after {}", state.unifier().toString(l), state.unifier().toString(labels));
         }
-        final Tuple2<ITermVar, State> newTail = state.freshVar("lbls");
+        final Tuple2<ITermVar, State> newTail = state.freshRigidVar("lbls");
         final Result<IUnifier.Immutable> unifyResult;
+        final ITermVar tailVar = newTail._1();
         try {
-            if((unifyResult = newTail._2().unifier().unify(tail, B.newCons(l, newTail._1())).orElse(null)) == null) {
-                throw new ResolutionException("Instantiation tail failed unexpectedly.");
+            if((unifyResult = newTail._2().unifier().unify(tail, B.newCons(l, tailVar)).orElse(null)) == null) {
+                throw new ResolutionException("Instantiating tail failed unexpectedly.");
             }
         } catch(OccursException e) {
-            throw new ResolutionException("Instantiation tail failed unexpectedly.");
+            throw new ResolutionException("Instantiating tail failed unexpectedly.");
         }
         final IUnifier.Immutable newUnifier = unifyResult.unifier();
-        final State newState = newTail._2().withUnifier(newUnifier);
-        final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v) || newTail._1().equals(v);
-        final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
-        final SolverResult result =
-                Solver.solve(newState, constraints, completeness, isRigid, isClosed, debug.subContext());
+        State newState = newTail._2().withUnifier(newUnifier);
+        final SolverResult result = Solver.solve(newState, constraints, isComplete, debug.subContext());
         if(result.hasErrors()) {
             if(debug.isEnabled(Level.Info)) {
                 debug.info("Cannot step {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
@@ -82,13 +75,13 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
             return Optional.empty();
         } else {
             final Delay d = result.delay();
-            if(result.delays().isEmpty() || d.vars().equals(ImmutableSet.of(newTail._1()))) { // stuck on the tail
+            if(result.delays().isEmpty() || d.vars().equals(ImmutableSet.of(tailVar))) { // stuck on the tail
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Stepped {} after {}", newUnifier.toString(l), newUnifier.toString(labels));
                 }
                 final Set<IConstraint> newConstraints = result.delays().keySet();
-                return Optional.of(new ConstraintLabelWF(newConstraints, result.state(), rigidVars, closedScopes,
-                        result.completeness(), debug, labels, newTail._1()));
+                return Optional
+                        .of(new ConstraintLabelWF(newConstraints, result.state(), isComplete, debug, labels, tailVar));
             } else { // stuck on the context
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Stepping {} after {} delayed", newUnifier.toString(l), newUnifier.toString(labels));
@@ -112,10 +105,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         }
         final IUnifier.Immutable newUnifier = unifyResult.unifier();
         final State newState = state.withUnifier(newUnifier);
-        final Predicate1<ITermVar> isRigid = v -> rigidVars.contains(v);
-        final Predicate1<ITerm> isClosed = s -> closedScopes.contains(s);
-        final SolverResult result =
-                Solver.solve(newState, constraints, completeness, isRigid, isClosed, debug.subContext());
+        final SolverResult result = Solver.solve(newState, constraints, isComplete, debug.subContext());
         if(result.hasErrors()) {
             if(debug.isEnabled(Level.Info)) {
                 debug.info("Not well-formed {}", newUnifier.toString(labels));
@@ -131,9 +121,11 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         }
     }
 
-    public static ConstraintLabelWF of(Rule constraint, State state, Completeness completeness, IDebugContext debug) {
-        final Tuple2<ITermVar, State> lbls = state.freshVar("lbls");
-        final Tuple3<State, Set<ITermVar>, Set<IConstraint>> inst;
+    public static ConstraintLabelWF of(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
+        // duplicate logic from entails, because we call solve directly in step()
+        final State _state = state.clearVarsAndScopes();
+        final Tuple2<ITermVar, State> lbls = _state.freshVar("lbls");
+        final Tuple3<State, Set<ITermVar>, List<IConstraint>> inst;
         try {
             if((inst = constraint.apply(ImmutableList.of(lbls._1()), lbls._2()).orElse(null)) == null) {
                 throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");
@@ -141,8 +133,7 @@ public class ConstraintLabelWF implements LabelWF<ITerm> {
         } catch(Delay e) {
             throw new IllegalArgumentException("Label well-formedness cannot be instantiated.", e);
         }
-        return new ConstraintLabelWF(inst._3(), inst._1(), state.vars(), state.scopes(), completeness, debug, lbls._1(),
-                lbls._1());
+        return new ConstraintLabelWF(inst._3(), inst._1(), isComplete, debug, lbls._1(), lbls._1());
     }
 
 }

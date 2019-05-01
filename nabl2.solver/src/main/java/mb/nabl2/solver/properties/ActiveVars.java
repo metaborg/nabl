@@ -71,11 +71,10 @@ public class ActiveVars implements IConstraintSetProperty {
 
     private static Multiset<ITermVar> getActiveVars(IConstraint constraint) {
         final Multiset<ITermVar> vars = HashMultiset.create();
-        constraint
-                .match(IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::getActiveVars, ActiveVars::emptyActiveVars, ActiveVars::getActiveVars,
-                        ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::emptyActiveVars,
-                        ActiveVars::getActiveVars))
+        constraint.match(
+                IConstraint.Cases.of(ActiveVars::getActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
+                        ActiveVars::emptyActiveVars, ActiveVars::getActiveVars, ActiveVars::getActiveVars,
+                        ActiveVars::getActiveVars, ActiveVars::emptyActiveVars, ActiveVars::getActiveVars))
                 .stream().map(ITerm::getVars).forEach(vars::addAll);
         return vars;
     }

@@ -72,14 +72,11 @@ public class Statix implements Callable<Void> {
     private IMessagePrinter messagePrinter;
     private TransformActionContrib evalAction;
 
-    public Void call() throws MetaborgException, IOException {
+    @Override public Void call() throws MetaborgException, IOException {
         S = new Spoofax();
         cli = new CLIUtils(S);
         lang = loadLanguage();
         project = cli.getOrCreateCWDProject();
-        if(!S.contextService.available(lang)) {
-            throw new MetaborgException("Cannot create project context.");
-        }
         context = S.contextService.get(project.location(), project, lang);
         final PrintStream msgStream = System.out;
         messagePrinter = new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, msgStream);
@@ -148,11 +145,11 @@ public class Statix implements Callable<Void> {
             throw new MetaborgException("Parsing not available.");
         }
         final ISpoofaxParseUnit parseUnit = S.syntaxService.parse(inputUnit);
-        if(!parseUnit.valid()) {
-            throw new MetaborgException("Parsing failed.");
-        }
         for(IMessage message : parseUnit.messages()) {
             messagePrinter.print(message, false);
+        }
+        if(!parseUnit.valid()) {
+            throw new MetaborgException("Parsing failed.");
         }
         if(!parseUnit.success()) {
             logger.info("{} has syntax errors", inputUnit.source());
@@ -162,18 +159,18 @@ public class Statix implements Callable<Void> {
     }
 
     private Optional<ISpoofaxAnalyzeUnit> analyze(ISpoofaxParseUnit parseUnit) throws MetaborgException {
-        if(!S.analysisService.available(lang) || !S.contextService.available(lang)) {
+        if(!S.analysisService.available(lang)) {
             throw new MetaborgException("Analysis not available.");
         }
         final ISpoofaxAnalyzeUnit analysisUnit;
         try(IClosableLock lock = context.write()) {
             analysisUnit = S.analysisService.analyze(parseUnit, context).result();
         }
-        if(!analysisUnit.valid()) {
-            throw new MetaborgException("Analysis failed.");
-        }
         for(IMessage message : analysisUnit.messages()) {
             messagePrinter.print(message, false);
+        }
+        if(!analysisUnit.valid()) {
+            throw new MetaborgException("Analysis failed.");
         }
         if(!analysisUnit.success()) {
             logger.info("{} has type errors.", parseUnit.source());
@@ -199,6 +196,9 @@ public class Statix implements Callable<Void> {
         final ITransformConfig config = new TransformConfig(true);
         final ISpoofaxTransformUnit<ISpoofaxAnalyzeUnit> transformUnit =
                 S.transformService.transform(analysisUnit, context, action, config);
+        for(IMessage message : transformUnit.messages()) {
+            messagePrinter.print(message, false);
+        }
         if(!transformUnit.valid()) {
             throw new MetaborgException("Failed to transform " + analysisUnit.source());
         }
@@ -233,6 +233,8 @@ public class Statix implements Callable<Void> {
                 continue;
             }
             final ISpoofaxAnalyzeUnit analysisUnit = maybeAnalysisUnit.get();
+            final String typing = transform(analysisUnit, evalAction);
+            terminal.writer().println(typing);
         }
     }
 

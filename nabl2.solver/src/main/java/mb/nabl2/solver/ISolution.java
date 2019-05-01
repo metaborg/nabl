@@ -5,12 +5,15 @@ import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate2;
 
+import com.google.common.collect.Multimap;
+
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
+import mb.nabl2.scopegraph.terms.OccurrenceIndex;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
@@ -30,6 +33,10 @@ public interface ISolution {
 
     IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
+    Multimap<OccurrenceIndex, Occurrence> astRefs();
+
+    Multimap<OccurrenceIndex, Occurrence> astDecls();
+    
     ISolution withScopeGraph(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph);
 
     IEsopNameResolution<Scope, Label, Occurrence> nameResolution();

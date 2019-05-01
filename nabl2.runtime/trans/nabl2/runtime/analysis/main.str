@@ -2,8 +2,6 @@ module nabl2/runtime/analysis/main
 
 imports
 
-  libspoofax/analysis/constraint
-
   nabl2/api
  
   signatures/nabl2/shared/common/-
@@ -34,7 +32,9 @@ rules
 
 rules // single file analysis
 
-  nabl2--analyze(pre):
+  nabl2--analyze(pre) = constraint-analysis-compat(nabl2--analyze-compat(pre))
+
+  nabl2--analyze-compat(pre):
       AnalyzeUnit(resource, ast) -> UnitResult(ast', a', error*, warning*, note*)
     with config := <nabl2--analysis-config>;
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
@@ -62,7 +62,7 @@ rules // single file analysis
 
 rules // multi file analysis
 
-  nabl2--analyze(pre):
+  nabl2--analyze-compat(pre):
       AnalyzeInitial(resource) -> InitialResult(initial-result)
     with config := <nabl2--analysis-config>;
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
@@ -76,7 +76,7 @@ rules // multi file analysis
          end;
          initial-result := (params, initial-analysis')
 
-  nabl2--analyze(pre):
+  nabl2--analyze-compat(pre):
       AnalyzeUnit(resource, ast, initial-result) -> UnitResult(ast', unit-analysis')
     with (params, initial-analysis) := initial-result;
          initial-custom := <nabl2--get-custom-analysis <+ !None()> initial-analysis
@@ -91,7 +91,7 @@ rules // multi file analysis
            unit-analysis' := unit-analysis
          end
 
-  nabl2--analyze(pre):
+  nabl2--analyze-compat(pre):
       AnalyzeFinal(resource, initial-result, unit-analysis*) -> FinalResult(final-analysis', error*, warning*, note*)
     with (params, initial-analysis) := initial-result;
          initial-custom := <nabl2--get-custom-analysis <+ !None()> initial-analysis;

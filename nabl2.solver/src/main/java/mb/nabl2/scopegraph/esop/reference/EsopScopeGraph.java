@@ -117,7 +117,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         // ------------------------------------------------------------
 
-        public EsopScopeGraph.Transient<S, L, O, V> melt() {
+        @Override public EsopScopeGraph.Transient<S, L, O, V> melt() {
             return new EsopScopeGraph.Transient<>(decls.melt(), refs.melt(), directEdges.melt(), assocEdges.melt(),
                     importEdges.melt(), incompleteDirectEdges.melt(), incompleteImportEdges.melt());
         }
@@ -271,7 +271,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         // -------------------------
 
-        public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
+        @Override public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
             boolean progress = false;
             progress |= reduce(incompleteDirectEdges, fs, this::addDirectEdge);
             progress |= reduce(incompleteImportEdges, fo, this::addImportEdge);
@@ -292,7 +292,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         // ------------------------------------------------------------
 
-        public EsopScopeGraph.Immutable<S, L, O, V> freeze() {
+        @Override public EsopScopeGraph.Immutable<S, L, O, V> freeze() {
             return new EsopScopeGraph.Immutable<>(decls.freeze(), refs.freeze(), directEdges.freeze(),
                     assocEdges.freeze(), importEdges.freeze(), incompleteDirectEdges.freeze(),
                     incompleteImportEdges.freeze());

@@ -11,11 +11,11 @@ import mb.nabl2.terms.ITerm;
 @Serial.Version(value = 42L)
 public abstract class SymbolicConstraints implements ISymbolicConstraints {
 
-    @Value.Parameter public abstract Set.Immutable<ITerm> getFacts();
+    @Override @Value.Parameter public abstract Set.Immutable<ITerm> getFacts();
 
-    @Value.Parameter public abstract Set.Immutable<ITerm> getGoals();
+    @Override @Value.Parameter public abstract Set.Immutable<ITerm> getGoals();
 
-    public SymbolicConstraints map(Function1<ITerm, ITerm> mapper) {
+    @Override public SymbolicConstraints map(Function1<ITerm, ITerm> mapper) {
         Set.Transient<ITerm> facts = Set.Transient.of();
         getFacts().stream().forEach(f -> facts.__insert(mapper.apply(f)));
 

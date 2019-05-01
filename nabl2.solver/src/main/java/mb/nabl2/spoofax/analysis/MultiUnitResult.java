@@ -19,12 +19,12 @@ public abstract class MultiUnitResult implements IResult {
         return true;
     }
 
-    @Value.Parameter public abstract List<IConstraint> constraints();
+    @Override @Value.Parameter public abstract List<IConstraint> constraints();
 
     @Override @Value.Parameter public abstract ISolution solution();
 
     @Override @Value.Parameter public abstract Optional<ITerm> customAnalysis();
 
     @Override @Value.Parameter public abstract Fresh.Immutable fresh();
-    
+
 }

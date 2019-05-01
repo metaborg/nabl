@@ -139,8 +139,8 @@ public abstract class MessageContent implements IMessageContent {
     }
 
     public static IMatcher<MessageContent> matcher() {
+        // @formatter:off
         return M.<MessageContent>cases(
-            // @formatter:off
             M.appl0(DEFAULT, (t) -> ImmutableDefaultMessage.of()),
             M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> ImmutableCompoundMessage.of(ps)),
             M.string(s -> ImmutableTextMessage.of(s.getValue())),
@@ -149,17 +149,17 @@ public abstract class MessageContent implements IMessageContent {
                 ImmutableTermMessage.of(t),
                 ImmutableTextMessage.of(" (error message was malformed)")
             )))
-            // @formatter:on
         );
+        // @formatter:on
     }
 
     public static IMatcher<MessageContent> partMatcher() {
+        // @formatter:off
         return M.<MessageContent>cases(
-            // @formatter:off
             M.appl1(TEXT, M.stringValue(), (t,s) -> ImmutableTextMessage.of(s)),
             M.appl1(TERM, M.term(), (t,s) -> ImmutableTermMessage.of(s))
-            // @formatter:on
         );
+        // @formatter:on
     }
 
     public static MessageContent of(String text) {

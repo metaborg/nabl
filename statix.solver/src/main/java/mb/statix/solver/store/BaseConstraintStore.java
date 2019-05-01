@@ -1,15 +1,17 @@
 package mb.statix.solver.store;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITermVar;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -20,110 +22,114 @@ import mb.statix.solver.log.IDebugContext;
 
 public class BaseConstraintStore implements IConstraintStore {
 
-    private final Set<IConstraint> active;
-    private final Set<IConstraint> stuckBecauseStuck;
-    private final Multimap<ITermVar, IConstraint> stuckOnVar;
-    private final Multimap<CriticalEdge, IConstraint> stuckOnEdge;
+    final IDebugContext debug;
+    private final Deque<IConstraint> active;
+    private final Multimap<ITermVar, Delayed> stuckOnVar;
+    private final Multimap<CriticalEdge, Delayed> stuckOnEdge;
 
-    public BaseConstraintStore(Iterable<? extends IConstraint> constraints, IDebugContext debug) {
-        this.active = Sets.newConcurrentHashSet();
-        this.stuckBecauseStuck = Sets.newHashSet();
+    public BaseConstraintStore(IDebugContext debug) {
+        this.debug = debug;
+        this.active = new ConcurrentLinkedDeque<>();
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
-        addAll(constraints);
     }
 
-    public int activeSize() {
+    @Override public int activeSize() {
         return active.size();
     }
 
-    public int delayedSize() {
-        return stuckBecauseStuck.size() + stuckOnVar.size() + stuckOnEdge.size();
+    @Override public int delayedSize() {
+        return stuckOnVar.size() + stuckOnEdge.size();
     }
 
-    public void addAll(Iterable<? extends IConstraint> constraints) {
-        for(IConstraint constraint : constraints) {
-            active.add(constraint);
-        }
+    @Override public void add(IConstraint constraint) {
+        active.push(constraint);
     }
 
-    public void activateStray() {
-        addAll(stuckBecauseStuck);
-        stuckBecauseStuck.clear();
+    @Override public IConstraint remove() throws NoSuchElementException {
+        return active.poll();
     }
 
-    public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
-        for(ITermVar var : vars) {
-            final Collection<IConstraint> activated = stuckOnVar.removeAll(var);
-            stuckOnVar.values().removeAll(activated);
-            debug.info("activating {}", activated);
-            addAll(activated);
-        }
-    }
-
-    public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
-        for(CriticalEdge edge : edges) {
-            final Collection<IConstraint> activated = stuckOnEdge.removeAll(edge);
-            stuckOnEdge.values().removeAll(activated);
-            debug.info("activating {}", activated);
-            addAll(activated);
-        }
-    }
-
-    public Iterable<Entry> active(IDebugContext debug) {
-        return new Iterable<IConstraintStore.Entry>() {
-            public Iterator<Entry> iterator() {
-                final Iterator<IConstraint> it = active.iterator();
-                return new Iterator<IConstraintStore.Entry>() {
-
-                    public boolean hasNext() {
-                        return it.hasNext();
-                    }
-
-                    public Entry next() {
-                        final IConstraint c = it.next();
-                        return new Entry() {
-
-                            public void remove() {
-                                it.remove();
-                            }
-
-                            public void delay(Delay d) {
-                                it.remove();
-                                if(!d.vars().isEmpty()) {
-                                    debug.info("delayed {} on vars {}", c, d.vars());
-                                    for(ITermVar var : d.vars()) {
-                                        stuckOnVar.put(var, c);
-                                    }
-                                } else if(!d.criticalEdges().isEmpty()) {
-                                    debug.info("delayed {} on critical edges {}", c, d.criticalEdges());
-                                    for(CriticalEdge edge : d.criticalEdges()) {
-                                        stuckOnEdge.put(edge, c);
-                                    }
-                                } else {
-                                    debug.warn("delayed for no apparent reason ");
-                                    stuckBecauseStuck.add(c);
-                                }
-                            }
-
-                            public IConstraint constraint() {
-                                return c;
-                            }
-
-                        };
-                    }
-
-                };
+    @Override public void delay(IConstraint constraint, Delay delay) {
+        final Delayed delayed = new Delayed(constraint);
+        if(!delay.vars().isEmpty()) {
+            debug.info("delayed {} on vars {}", constraint, delay.vars());
+            for(ITermVar var : delay.vars()) {
+                stuckOnVar.put(var, delayed);
             }
-        };
+        } else if(!delay.criticalEdges().isEmpty()) {
+            debug.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            for(CriticalEdge edge : delay.criticalEdges()) {
+                stuckOnEdge.put(edge, delayed);
+            }
+        } else {
+            throw new IllegalArgumentException("delayed for no apparent reason");
+        }
     }
 
-    public Map<IConstraint, Delay> delayed() {
-        Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
-        stuckBecauseStuck.stream().forEach(c -> delayed.put(c, Delay.of()));
-        stuckOnVar.entries().stream().forEach(e -> delayed.put(e.getValue(), Delay.ofVar(e.getKey())));
-        stuckOnEdge.entries().stream().forEach(e -> delayed.put(e.getValue(), Delay.ofCriticalEdge(e.getKey())));
+    @Override public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
+        for(ITermVar var : vars) {
+            final Collection<Delayed> activated = stuckOnVar.removeAll(var);
+            for(Delayed delayed : activated) {
+                if(delayed.activate()) {
+                    final IConstraint constraint = delayed.constraint;
+                    debug.info("activating {}", constraint);
+                    add(constraint);
+                }
+            }
+        }
+    }
+
+    @Override public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
+        for(CriticalEdge edge : edges) {
+            final Collection<Delayed> activated = stuckOnEdge.removeAll(edge);
+            for(Delayed delayed : activated) {
+                if(delayed.activate()) {
+                    final IConstraint constraint = delayed.constraint;
+                    debug.info("activating {}", constraint);
+                    add(constraint);
+                }
+            }
+        }
+    }
+
+    @Override public Map<IConstraint, Delay> delayed() {
+        final Multimap<IConstraint, ITermVar> varStuck = HashMultimap.create();
+        stuckOnVar.entries().stream().filter(e -> !e.getValue().activated)
+                .forEach(e -> varStuck.put(e.getValue().constraint, e.getKey()));
+
+        final Multimap<IConstraint, CriticalEdge> edgeStuck = HashMultimap.create();
+        stuckOnEdge.entries().stream().filter(e -> !e.getValue().activated)
+                .forEach(e -> edgeStuck.put(e.getValue().constraint, e.getKey()));
+
+        final Set<IConstraint> stuck = new HashSet<>();
+        stuck.addAll(varStuck.keys());
+        stuck.addAll(edgeStuck.keys());
+
+        final Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
+        stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c))));
         return delayed.build();
+    }
+
+    private static class Delayed {
+
+        public final IConstraint constraint;
+
+        private boolean activated = false;
+
+        public Delayed(IConstraint constraint) {
+            this.constraint = constraint;
+        }
+
+        public boolean activate() {
+            if(activated) {
+                return false;
+            } else {
+                activated = true;
+                return true;
+            }
+        }
+
     }
 
 }

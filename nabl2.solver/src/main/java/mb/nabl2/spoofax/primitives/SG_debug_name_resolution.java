@@ -23,10 +23,10 @@ public class SG_debug_name_resolution extends AnalysisPrimitive {
         }
         final ISolution sol = result.solution();
         return Optional.of(NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution()));
-//        return result.solution().filter(sol -> unit.isPrimary()).map(sol -> {
-//            return TermSimplifier.focus(unit.resource(),
-//                    NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution()));
-//        });
+        //        return result.solution().filter(sol -> unit.isPrimary()).map(sol -> {
+        //            return TermSimplifier.focus(unit.resource(),
+        //                    NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution()));
+        //        });
     }
 
 }

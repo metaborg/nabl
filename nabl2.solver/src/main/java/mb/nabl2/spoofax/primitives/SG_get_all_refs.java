@@ -16,7 +16,8 @@ public class SG_get_all_refs extends AnalysisPrimitive {
         super(SG_get_all_refs.class.getSimpleName());
     }
 
-    @Override public Optional<? extends ITerm> call(ISolution solution, ITerm term, List<ITerm> terms) throws InterpreterException {
+    @Override public Optional<? extends ITerm> call(ISolution solution, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
         return Optional.of(B.newList(solution.scopeGraph().getAllRefs()));
     }
 

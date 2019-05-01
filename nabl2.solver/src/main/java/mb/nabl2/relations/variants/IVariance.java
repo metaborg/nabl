@@ -9,8 +9,8 @@ public interface IVariance {
 
     <T> T match(Cases<T> cases);
 
-    public static <T> Cases<T> cases(Function0<T> onInvariant, Function1<IRelationName,T> onConvariant,
-            Function1<IRelationName,T> onContravariant) {
+    public static <T> Cases<T> cases(Function0<T> onInvariant, Function1<IRelationName, T> onConvariant,
+            Function1<IRelationName, T> onContravariant) {
         return new Cases<T>() {
 
             @Override public T caseInvariant() {

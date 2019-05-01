@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
@@ -21,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -34,7 +31,7 @@ import mb.nabl2.regexp.impl.RegExpBuilder;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.terms.Relation;
+import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -111,14 +108,14 @@ public class StatixTerms {
     }
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
-        return M.appl2("C", M.stringValue(), M.listElems(pattern()), (h, name, patterns) -> {
+        return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
             return ImmutableTuple2.of(name, patterns);
         });
     }
 
-    public static IMatcher<Set<IConstraint>> constraints(IAlphabet<ITerm> labels) {
+    public static IMatcher<List<IConstraint>> constraints(IAlphabet<ITerm> labels) {
         return (t, u) -> {
-            final ImmutableSet.Builder<IConstraint> constraints = ImmutableSet.builder();
+            final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
             return M.casesFix(m -> Iterables2.from(
             // @formatter:off
                 M.appl2("CConj", m, m, (c, t1, t2) -> {
@@ -184,7 +181,7 @@ public class StatixTerms {
                     constraints.add(new CPathScopes(p, rt));
                     return Unit.unit;
                 }),
-                M.appl2("C", M.stringValue(), M.listElems(term()), (c, name, args) -> {
+                M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
                     constraints.add(new CUser(name, args));
                     return Unit.unit;
                 }),
@@ -196,13 +193,22 @@ public class StatixTerms {
         };
     }
 
-    public static IMatcher<Optional<ITerm>> queryTarget() {
-        return M.cases(
+    private static IMatcher<String> constraintName() {
         // @formatter:off
+        return M.cases(
+            M.stringValue(),
+            M.appl().filter(t -> t.getArity() == 0).map(t -> t.getOp())
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<Optional<ITerm>> queryTarget() {
+        // @formatter:off
+        return M.cases(
             M.appl0("NoTarget", t -> Optional.empty()),
             M.appl1("RelTarget", relation(), (t, rel) -> Optional.of(rel))
-            // @formatter:on
         );
+        // @formatter:on
     }
 
     public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
@@ -508,7 +514,16 @@ public class StatixTerms {
     }
 
     private static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(Collectors.toList());
+        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
     }
 
+    public static IListTerm explicateList(Iterable<? extends ITerm> terms) {
+        return B.newList(explicate(terms));
+    }
+
+    public static IListTerm
+            explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
+        return B.newList(Iterables2.stream(entries).map(e -> B.newTuple(explicate(e.getKey()), explicate(e.getValue())))
+                .collect(ImmutableList.toImmutableList()));
+    }
 }

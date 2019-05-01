@@ -5,46 +5,34 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
-import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.Level;
-import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.Solver;
 import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.log.LoggerDebugContext;
-import mb.statix.solver.log.NullDebugContext;
-import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixPrimitive {
-    private static final ILogger logger = LoggerUtils.logger(STX_solve_constraint.class);
 
     @Inject public STX_solve_constraint() {
         super(STX_solve_constraint.class.getSimpleName(), 2);
@@ -57,32 +45,38 @@ public class STX_solve_constraint extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final String levelString =
-                M.stringValue().match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected log level."));
-        final @Nullable Level level = levelString.equalsIgnoreCase("None") ? null : Level.parse(levelString);
-        final IDebugContext debug = level != null ? new LoggerDebugContext(logger, level) : new NullDebugContext();
+        final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final Tuple2<List<ITermVar>, Set<IConstraint>> vars_constraint = M
-                .tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
-                        (t, vs, c) -> ImmutableTuple2.of(vs, c))
-                .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
+        final IMatcher<Tuple2<List<ITermVar>, List<IConstraint>>> constraintMatcher =
+                M.tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
+                        (t, vs, c) -> ImmutableTuple2.of(vs, c));
+        final Function1<Tuple2<List<ITermVar>, List<IConstraint>>, ITerm> solveConstraint =
+                vars_constraint -> solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), debug);
+        // @formatter:off
+        return M.cases(
+            constraintMatcher.map(solveConstraint::apply),
+            M.listElems(constraintMatcher).map(vars_constraints -> {
+                return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList()));
+            })
+        ).match(term);
+        // @formatter:on
+    }
 
+    private ITerm solveConstraint(Spec spec, List<ITermVar> topLevelVars, Collection<IConstraint> constraints,
+            IDebugContext debug) {
         State state = State.of(spec);
-        final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        for(ITermVar var : vars_constraint._1()) {
-            final Tuple2<ITermVar, State> var_state = state.freshVar(var.getName());
-            state = var_state._2();
-            subst.put(var, var_state._1());
-            subst.put(var_state._1(), var);
-        }
-        final ISubstitution.Immutable isubst = subst.freeze();
-        final Set<IConstraint> constraints =
-                vars_constraint._2().stream().map(c -> c.apply(isubst)).collect(Collectors.toSet());
+
+        final Tuple2<Immutable, State> freshVarsAndState = freshenToplevelVariables(topLevelVars, state);
+        final ISubstitution.Immutable subst = freshVarsAndState._1();
+        state = freshVarsAndState._2();
+
+        constraints = constraints.stream().map(c -> c.apply(subst)).collect(ImmutableList.toImmutableList());
+
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(state, constraints, new Completeness(), debug);
+            resultConfig = Solver.solve(state, constraints, debug);
         } catch(InterruptedException e) {
-            throw new InterpreterException(e);
+            throw new RuntimeException(e);
         }
         final State resultState = resultConfig.state();
         final IUnifier.Immutable unifier = resultState.unifier();
@@ -97,66 +91,16 @@ public class STX_solve_constraint extends StatixPrimitive {
             unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
         }
 
-        List<ITerm> vsubst = Lists.newArrayList();
-        for(ITermVar var : vars_constraint._1()) {
-            final ITerm key = isubst.apply(var);
-            final ITerm value = unifier.findRecursive(key);
-            final ITerm varTerm = isubst.apply(value);
-            if(!var.equals(varTerm)) {
-                vsubst.add(B.newTuple(StatixTerms.explicate(var), StatixTerms.explicate(varTerm)));
-            }
-        }
-        final ITerm solution = B.newList(vsubst);
+        final ITerm substTerm =
+                StatixTerms.explicateMapEntries(toplevelSubstitution(topLevelVars, subst, resultState).entrySet());
+        final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableList.of()));
+        final ITerm solveResultTerm = B.newAppl("Solution", substTerm, solverTerm);
         final IListTerm errors = B.newList(errorList);
         final IListTerm warnings = B.EMPTY_LIST;
         final IListTerm notes = B.EMPTY_LIST;
-        final ITerm resultTerm = B.newTuple(solution, errors, warnings, notes);
-        return Optional.of(resultTerm);
-    }
+        final ITerm resultTerm = B.newTuple(solveResultTerm, errors, warnings, notes);
 
-    private void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> overlappingRules = spec.overlappingRules();
-        if(!overlappingRules.isEmpty()) {
-            logger.error("+-------------------------+");
-            logger.error("| FOUND OVERLAPPING RULES |");
-            logger.error("+-------------------------+");
-            for(Map.Entry<String, Collection<Rule>> entry : overlappingRules.asMap().entrySet()) {
-                logger.error("| Overlapping rules for: {}", entry.getKey());
-                for(Rule rule : entry.getValue()) {
-                    logger.error("| * {}", rule);
-                }
-            }
-            logger.error("+-------------------------+");
-        }
-    }
-
-    private ITerm makeMessage(String prefix, IConstraint constraint, IUnifier.Immutable unifier) {
-        final ITerm astTerm = findClosestASTTerm(constraint, unifier);
-        final StringBuilder message = new StringBuilder();
-        message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
-                .append("\n");
-        formatTrace(constraint, unifier, message);
-        return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
-    }
-
-    private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
-        return Iterables2.stream(constraint.terms()).map(unifier::findTerm).filter(t -> TermIndex.get(t).isPresent())
-                .findAny().orElseGet(() -> {
-                    return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
-                });
-    }
-
-    private ITerm makeOriginTerm(ITerm term) {
-        return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
-    }
-
-    private static void formatTrace(@Nullable IConstraint constraint, IUnifier.Immutable unifier, StringBuilder sb) {
-        while(constraint != null) {
-            sb.append("<br>");
-            sb.append("&gt;&nbsp;");
-            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
-            constraint = constraint.cause().orElse(null);
-        }
+        return resultTerm;
     }
 
 }

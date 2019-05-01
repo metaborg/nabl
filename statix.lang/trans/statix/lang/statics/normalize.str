@@ -109,37 +109,37 @@ rules
 
 
   replace-cop(|a): NewOp() -> v
-    with v := Var(<newname> "new")
+    with v := <make-fresh-var> "new"
 
   cop-to-c(|a): (NewOp(), v) -> CNew([v])
 
 
   replace-cop(|a): TermIdOp(_) -> v
-    with v := Var(<newname> "termId")
+    with v := <make-fresh-var> "termId"
 
   cop-to-c(|a): (TermIdOp(t), v) -> CTermId(t, v)
 
 
   replace-cop(|a): PathSrcOp(_) -> v
-    with v := Var(<newname> "src")
+    with v := <make-fresh-var> "src"
 
   cop-to-c(|a): (PathSrcOp(t), v) -> CPathSrc(t, v)
 
 
   replace-cop(|a): PathDstOp(_) -> v
-    with v := Var(<newname> "dst")
+    with v := <make-fresh-var> "dst"
 
   cop-to-c(|a): (PathDstOp(t), v) -> CPathDst(t, v)
 
 
   replace-cop(|a): PathScopesOp(_) -> v
-    with v := Var(<newname> "scopes")
+    with v := <make-fresh-var> "scopes"
 
   cop-to-c(|a): (PathScopesOp(t), v) -> CPathScopes(t, v)
 
 
   replace-cop(|a): PathLabelsOp(_) -> v
-    with v := Var(<newname> "labels")
+    with v := <make-fresh-var> "labels"
 
   cop-to-c(|a): (PathLabelsOp(t), v) -> CPathLabels(t, v)
 
@@ -236,7 +236,7 @@ rules
          new-bvs := <map(Snd)> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
-  replace-wld: Wld() -> Var(<newname> "wld")
+  replace-wld: Wld() -> <make-fresh-var> "wld"
 
 rules
 
@@ -323,32 +323,28 @@ rules
 
   explicate-resolve(|a):
       Module(x, section*) -> Module(x, section'*)
-    with (section'*, wf, eq, ord) := <explicate-resolve-sections(|a)> section*
+    with section'* := <explicate-resolve-sections(|a)> section*
 
-  explicate-resolve-sections(|a): section* -> (section''*, wf, eq, ord)
+  explicate-resolve-sections(|a): section* -> section''*
     with query* := <collect-all(?NamespaceQuery(_, _, _), conc)> section*;
          ns* := <collect-all(?NsDecl(<id>, _), conc)> section*;
-         wf := <newname> "resolveFilterWf";
-         wf-rule* := <wf-rules(|a, wf, query*)> ns*;
-         eq := <newname> "resolveFilterEq";
-         eq-rule* := <eq-rules(|a, eq, query*)> ns*;
-         ord := <newname> "resolveMinOrd";
-         ord-rule* := <ord-rules(|a, ord, query*)> ns*;
-         section'* := <bottomup(try(try(remove-resolve-queries);
-                                  try(normalize-resolves(|wf, eq, ord)))
-                                 )> section*;
+         wf-rule* := <wf-rules(|a, query*)> ns*;
+         eq-rule* := <eq-rules(|a, query*)> ns*;
+         ord-rule* := <ord-rules(|a, query*)> ns*;
+         section'* := <bottomup(try( try(remove-resolve-queries)
+                                   ;  try(normalize-resolves)
+                                   )
+                               )> section*;
          new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
          section''* := <conc> (section'*, new-section*)
 
-  wf-rules(|a, wf, query*): ns* -> [decl|rule*]
-    with decl := CDecl(InductiveC(), wf, SimpleType([OccurrenceSort(), ListSort(LabelSort())]));
-         rule* := <map(wf-rule(|a, wf, query*))> ns*
+  wf-rules(|a, query*) = map(wf-rule(|a, query*))
 
-  wf-rule(|a, wf, query*): ns -> Rule(C(wf, [r, lbls]), bvs, body)
+  wf-rule(|a, query*): ns -> Rule(C(ResolveFilterWf(), [r, lbls]), bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
          r := Occurrence(ns, ts, p);
-         lbls := Var(<newname> "lbls");
+         lbls := <make-fresh-var> "lbls";
          if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (filter, [lbls])
          else
@@ -357,32 +353,28 @@ rules
          end
 
 
-  eq-rules(|a, eq, query*): ns* -> [decl|rule*]
-    with decl := CDecl(InductiveC(), eq, SimpleType([OccurrenceSort(), OccurrenceSort()]));
-         rule* := <map(eq-rule(|a, eq))> ns*
+  eq-rules(|a, query*) = map(eq-rule(|a))
 
-  eq-rule(|a, eq): ns -> Rule(C(eq, [r, d]), us, body)
+  eq-rule(|a): ns -> Rule(C(ResolveFilterEq(), [r, d]), us, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          ts := <make-fresh-vars(|"t")> tys;
          us := <make-fresh-vars(|"u")> tys;
          [pr, pd] := <map(!Wld())> [(),()];
          r := Occurrence(ns, ts, pr);
-         d := Var(<newname> "d");
+         d := <make-fresh-var> "d";
          eq-d := CEqual(d, Occurrence(ns, us, pd));
          eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
          body := CConj(eq-d, <list-to-conj> eqs)
 
 
-  ord-rules(|a, ord, query*): ns* -> [decl|rule*]
-    with decl := CDecl(InductiveC(), ord, SimpleType([OccurrenceSort(), LabelSort(), LabelSort()]));
-         rule* := <map(ord-rule(|a, ord, query*))> ns*
+  ord-rules(|a, query*) = map(ord-rule(|a, query*))
 
-  ord-rule(|a, ord, query*): ns -> Rule(C(ord, [r, l1, l2]), bvs, body)
+  ord-rule(|a, query*): ns -> Rule(C(ResolveMinOrd(), [r, l1, l2]), bvs, body)
     with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          [p|ts] := <map(!Wld())> [()|tys];
          r := Occurrence(ns, ts, p);
-         l1 := Var(<newname> "l1");
-         l2 := Var(<newname> "l2");
+         l1 := <make-fresh-var> "l1";
+         l2 := <make-fresh-var> "l2";
          if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
            (bvs, body) := <apply-lambda> (min, [l1, l2])
          else
@@ -398,23 +390,25 @@ rules
   remove-resolve-query = NameResolution(filter(not(?NamespaceQuery(_, _, _))))
 
 
-  normalize-resolves(|wf, eq, ord) = bottomup(try(normalize-resolve(|wf, eq, ord)))
+  normalize-resolves = bottomup(try(normalize-resolve))
 
-  normalize-resolve(|wf, eq, ord): ResolveFilter(rt) -> Filter(wf-c, eq-c)
-    with lbls := Var(<newname> "lbls");
-         wf-c := LLam([lbls], [], C(wf, [rt, lbls]));
-         d := Var(<newname> "d");
-         eq-c := LLam([d], [], C(eq, [rt, d]))
+  normalize-resolve: ResolveFilter(rt) -> Filter(wf-c, eq-c)
+    with lbls := <make-fresh-var> "lbls";
+         wf-c := LLam([lbls], [], C(ResolveFilterWf(), [rt, lbls]));
+         d := <make-fresh-var> "d";
+         eq-c := LLam([d], [], C(ResolveFilterEq(), [rt, d]))
 
-  normalize-resolve(|wf, eq, ord): ResolveMin(rt) -> Min(ord-c, eq-c)
-    with l1 := Var(<newname> "l1");
-         l2 := Var(<newname> "l2");
-         ord-c := LLam([l1, l2], [], C(ord, [rt, l1, l2]));
+  normalize-resolve: ResolveMin(rt) -> Min(ord-c, eq-c)
+    with l1 := <make-fresh-var> "l1";
+         l2 := <make-fresh-var> "l2";
+         ord-c := LLam([l1, l2], [], C(ResolveMinOrd(), [rt, l1, l2]));
          eq-c  := LLam([Wld(), Wld()], [], CTrue())
 
 rules
 
   make-fresh-vars(|x) = map(!Var(<newname> x))
+
+  make-fresh-var = !Var(<newname>)
 
   make-seq-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
 

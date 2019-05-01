@@ -24,7 +24,7 @@ public interface IMessages {
 
     interface Immutable extends IMessages {
 
-        Set.Immutable<IMessageInfo> getAll();
+        @Override Set.Immutable<IMessageInfo> getAll();
 
         IMessages.Transient melt();
 
