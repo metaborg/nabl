@@ -382,6 +382,14 @@ public class TermMatch {
                     this::empty, this::empty, this::empty, var -> Optional.of(f.apply(var))));
         }
 
+        /**
+         * Ensures the matched term is ground and returns the fully instantiated term.
+         */
+        public IMatcher<ITerm> ground(IMatcher<? extends ITerm> m) {
+            return (t, u) -> m.match(t, u)
+                    .flatMap(t2 -> u.isGround(t2) ? Optional.of(u.findRecursive(t2)) : Optional.empty());
+        }
+
         // optionals
 
         public <R> IMatcher<R> flatten(IMatcher<Optional<R>> m) {
