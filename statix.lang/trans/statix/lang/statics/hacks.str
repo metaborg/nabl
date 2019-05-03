@@ -9,6 +9,14 @@ imports
 
 rules
 
+  op-name: (x, ts) -> $[[x]/[<int-to-string> n]]
+    with n := < is-list; length
+              + ?ConstOp(_); !0
+              + ?ArrowOp(<id>, _); length
+              > ts
+
+rules
+
   lifts-some: (lifts, _, msginfo) -> CTrue(msginfo)
     where <getfirst(?ListLift())> lifts
 
