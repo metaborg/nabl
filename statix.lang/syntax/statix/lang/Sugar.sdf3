@@ -76,10 +76,6 @@ lexical syntax
 
 context-free syntax
 
-  // built-in relations for declarations
-
-  RelRef.Decl = "decl"
-
 syntax
 
   // short-hand for querying relations
@@ -159,8 +155,6 @@ syntax
  * Sorts & Constructors                                           *
  ******************************************************************/
 
-context-free syntax
-
-  // convenient sort aliases
-
-  SortDecl.SortAlias = <<SortId> = <SortRef>>
+/******************************************************************
+ * Terms                                                          *
+ ******************************************************************/

@@ -246,8 +246,8 @@ public class StatixTerms {
     public static IMatcher<Type> type() {
         // @formatter:off
         return M.cases(
-            M.appl1("SimpleType", M.listElems(), (ty, intys) -> Type.of(intys, Collections.emptyList())),
-            M.appl2("FunType", M.listElems(), M.listElems(), (ty, intys, outtys) -> Type.of(intys, outtys))
+            M.appl1("PRED", M.listElems(), (ty, intys) -> Type.of(intys, Collections.emptyList())),
+            M.appl2("FUN", M.listElems(), M.listElems(), (ty, intys, outtys) -> Type.of(intys, outtys))
         );
         // @formatter:on
     }

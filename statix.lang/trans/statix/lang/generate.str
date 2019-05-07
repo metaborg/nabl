@@ -20,14 +20,11 @@ rules
     with if <nabl2-analysis-has-errors> a then
            result := None()
          else
-           filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
-           spec     := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
+           filename := <src-gen-file(|"statix/", ".spec.aterm")> ast;
+           spec     := <spec-ast-to-aterm(|a)> (name, ext);
            result   := (filename, spec)
          end
  
-  generate-aterm:
-    (_, _, Test(_, _, _), path, project-path) -> None()
-
 rules
 
   src-gen-file(|sub-dir, ext): name -> filename
@@ -38,11 +35,31 @@ rules
 
 rules
 
-  spec-ast-to-aterm: (ast, ext) -> spec
-    with rule* := <collect-all(?Rule(_, _, _))> ast;
-         label* := <collect-all(?Labels(<id>));concat> ast;
-         rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
-         spec := (label*, rel*, rule*, ext)
+  spec-ast-to-aterm(|a): (ast, ext) -> spec
+    with s_mod := <nabl2-get-ast-property(|a,"scope")> ast
+       ; d* := <nabl2-get-visible-decls(|a)> s_mod
+       ; lbl* := <filter(lbl-to-aterm(|a));strip-annos> d*
+       ; rel* := <filter(rel-to-aterm(|a));strip-annos> d*
+       ; rule* := <filter(rule-to-aterm(|a));strip-annos;eliminate-all> d*
+       ; spec := (lbl*, rel*, rule*, ext)
+
+  lbl-to-aterm(|a): d -> ast
+    where "Lbl" := <nabl2-get-occurrence-ns> d
+    with
+      ast := <nabl2-get-property(|a, "ast")> d
+
+  rel-to-aterm(|a): d -> (ast, ty)
+    where "Rel" := <nabl2-get-occurrence-ns> d
+    with
+      ast := <nabl2-get-property(|a, "ast")> d
+    ; ty  := <nabl2-get-type(|a)> d
+
+  rule-to-aterm(|a): d -> ast
+    where "Rule" := <nabl2-get-occurrence-ns> d
+    with
+      ast := <nabl2-get-property(|a, "ast")> d
+
+rules
 
   eliminate-all =
     eliminate-ascribe

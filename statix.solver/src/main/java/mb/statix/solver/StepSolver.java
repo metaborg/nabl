@@ -523,17 +523,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         final ITerm relation = c.relation();
         final List<ITerm> datumTerms = c.datumTerms();
 
-        final Type type = state.spec().relations().get(relation);
-        if(type == null) {
-            params.debug().error("Ignoring data for unknown relation {}", relation);
-            return Optional.empty();
-        }
-        if(type.getArity() != datumTerms.size()) {
-            params.debug().error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(),
-                    relation);
-            return Optional.empty();
-        }
-
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
             throw Delay.ofVars(unifier.getVars(scopeTerm));
@@ -544,11 +533,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             return Optional.empty();
         }
 
-        final ITerm key =
-                B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList()));
-        if(!unifier.isGround(key)) {
-            throw Delay.ofVars(unifier.getVars(key));
-        }
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                 state.scopeGraph().addDatum(scope, relation, datumTerms);
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));

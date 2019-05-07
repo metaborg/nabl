@@ -470,17 +470,6 @@ public class GreedySolver {
                 final ITerm relation = c.relation();
                 final List<ITerm> datumTerms = c.datumTerms();
 
-                final Type type = state.spec().relations().get(relation);
-                if(type == null) {
-                    params.debug().error("Ignoring data for unknown relation {}", relation);
-                    return fail(c, state);
-                }
-                if(type.getArity() != datumTerms.size()) {
-                    params.debug().error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(),
-                            type.getArity(), relation);
-                    return fail(c, state);
-                }
-
                 final IUnifier.Immutable unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
                     return delay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)));
@@ -491,11 +480,6 @@ public class GreedySolver {
                     return fail(c, state);
                 }
 
-                final ITerm key = B.newTuple(
-                        datumTerms.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList()));
-                if(!unifier.isGround(key)) {
-                    return delay(c, state, Delay.ofVars(unifier.getVars(key)));
-                }
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                         state.scopeGraph().addDatum(scope, relation, datumTerms);
                 return success(c, state.withScopeGraph(scopeGraph), ImmutableList.of(), ImmutableList.of(), fuel);

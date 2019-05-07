@@ -106,7 +106,9 @@ context-free syntax
 
   Rel.Rel = RelationId
 
-  RelRef = Rel
+  RelRef      = Rel
+  RelRef.Decl = "decl"
+
 
 syntax
 
@@ -241,6 +243,7 @@ context-free syntax
   > {longest-match}
 
   SortDecl.SortDecl  = SortId
+  SortDecl.SortAlias = <<SortId> = <SortRef>>
 
   Sort.SimpleSort = SortId
 

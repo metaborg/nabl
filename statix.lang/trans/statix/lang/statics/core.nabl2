@@ -1,4 +1,4 @@
-module statix/lang/statics/statix
+module statix/lang/statics/core
 
 imports
 
@@ -19,7 +19,8 @@ signature
 
   namespaces
     C
-    Lang
+    Rule
+    Mod
     Lbl
     Ns
     NsQ
@@ -41,14 +42,14 @@ rules
   init ^ (s) :=
     new s.
 
+
 /******************************************************************
  * Modules                                                        *
  ******************************************************************/
 
-  [[ Module(x, sections) ^ (s) ]] :=
-    new s',
-    Lang{x} <- s, Lang{x} ===> s', @x.decl := Lang{x},
-    Lang{x} -> s, Lang{x} <=== s',
+  [[ m@Module(x, sections) ^ (s) ]] :=
+    new s', @m.scope := s',
+    Mod{x} <- s, Mod{x} =I=> s',
     TopLevelSections[[ sections ^ (s') ]].
 
   TopLevelSections[[ sections ^ (s) ]] :=
@@ -77,6 +78,7 @@ rules
   [[ Rules(rs) ^ (s) ]] :=
     Map1[[ rs ^ (s) ]].
 
+
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
@@ -86,8 +88,8 @@ rules
 
   [[ CDecl(ind, x, type) ^ (s) ]] :=
     [[ ind ]],
-    [[ type ^ (s) : ty ]],                     // types
-    C{x} <- s, @x.decl := C{x},                // decl
+    [[ type ^ (s) : ty ]],
+    C{x} <- s, @x.decl := C{x},
     C{x} : ty !!,
     C{x}.ind := ind !!,
     C{x}.kind := DeclaredC() !!.
@@ -95,62 +97,23 @@ rules
   [[ InductiveC() ]].
   [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
-  [[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
-    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
-    d : ty, ty != FUN(_, _) | error "Use `c maps c(...) = ...` for functional constraints." @x,
-    d.ind := ind,
-
-    tys is `in-types` of ty,
-    lifts <`lifts-some`? () | error "At least one argument must be lifted.",
-    tys' is `lift-types` of (lifts, tys),
-
-    C{x} <- s, @x.decl := C{x},
-    C{x} : PRED(tys') !!,
-    C{x}.ind := ind !!,
-    C{x}.kind := DerivedC() !!.
-
-  [[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
-    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
-    d : ty, ty != PRED(_) | error "Use `c maps c(...)` for non-functional constraints." @x,
-    d.ind := ind,
-
-    intys is `in-types` of ty,
-    outtys is `out-types` of ty,
-    inlifts <`lifts-some`? () | error "At least one input argument must be lifted.",
-    outlifts is `lift-to-lifts` of outlift,
-    intys' is `lift-types` of (inlifts, intys),
-    outtys' is `lift-types` of (outlifts, outtys),
-
-    C{x} <- s, @x.decl := C{x},
-    C{x} : FUN(intys', outtys') !!,
-    C{x}.ind := ind !!,
-    C{x}.kind := DerivedC() !!.
-
-  [[ Rule(h, bvs, body) ^ (s) ]] :=
-    new s_rule, s_rule ---> s,
+  [[ r@Rule(h, bvs, body) ^ (s) ]] :=
+    Rule{x} <- s, Rule{x}.ast := r,
+    new s_rule, s_rule -P-> s,
     distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    RuleHead[[ h ^ (s_rule, s_body) ]],
-    new s_body, s_body ---> s_rule,
+    RuleHead[[ h ^ (s_rule, s_body, x) ]],
+    new s_body, s_body -P-> s_rule,
     distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
     (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
     Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
     [[ body ^ (s_body) ]].
 
-  RuleHead[[ C(x, args) ^ (s_rule, _) ]] :=
+  RuleHead[[ C(x, args) ^ (s_rule, s_body, y) ]] := x == y,
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
     tys is `in-types` of ty,
     Map1T(Match)[[ args ^ (s_rule) : tys ]].
-
-  RuleHead[[ F(x, inargs, outarg) ^ (s_rule, s_body) ]] :=
-    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
-    d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
-    d : ty, ty != PRED(_) | error "Use `c(...) | ...` for non-functional constraints." @x,
-    intys is `in-types` of ty,
-    outty is `out-type` of ty,
-    Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Build[[ outarg ^ (s_body) : outty ]].
 
   [[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
@@ -158,56 +121,12 @@ rules
     tys is `inout-types` of ty,
     Map1T(Build)[[ args ^ (s) : tys ]].
 
-  [[ LC(x) ^ (s) : ty ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
-    d : ty.
+  [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
+    new s', s' -P-> s,
+    Map1T(Match)[[ ps ^ (s') : tys ]],
+    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
+    [[ c ^ (s') ]].
 
-  Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
-    d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
-    intys is `in-types` of ty,
-    outty is `out-type` of ty,
-    Map1T(Term(V))[[ args ^ (s) : intys ]].
-
-/******************************************************************
- * Relations                                                      *
- ******************************************************************/
-
-  [[ Relations(rdecls) ^ (s) ]] :=
-    Map1[[ rdecls ^ (s) ]].
-
-  [[ RelDecl(rel, type) ^ (s) ]] :=
-    [[ type ^ (s) : ty ]],
-    RelDecl[[ rel ^ (s) : ty ]].
-
-  [[ CTellRel(rel, ts, st) ^ (s) ]] :=
-    RelRef[[ rel ^ (s) : ty ]],
-    tys is `inout-types` of ty,
-    Map1T(Build)[[ ts ^ (s): tys ]],
-    Build[[ st ^ (s) : SCOPE() ]].
-
-  [[ CAskRel(rel, ts, st) ^ (s) ]] :=
-    RelRef[[ rel ^ (s) : ty ]],
-    tys is `inout-types` of ty,
-    Map1T(Build)[[ ts ^ (s): tys ]],
-    Build[[ st ^ (s) : SCOPE() ]].
-
-  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
-    RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Inline notation can only be used for functional relations.",
-    intys is `in-types` of ty,
-    outty is `out-type` of ty,
-    Map1T(Term(V))[[ ts ^ (s) : intys ]],
-    Term(V)[[ st ^ (s) : SCOPE() ]].
-
-  RelDecl[[ Rel(x) ^ (s) : ty ]] :=
-    Rel{x} <- s, @x.decl := Rel{x},
-    Rel{x} : ty !.
-
-  RelRef[[ Rel(x) ^ (s) : ty ]] :=
-    Rel{x} -> s, Rel{x} |-> d, @x.decl := d,
-    d : ty.
-
-  RelRef[[ Decl() ^ (s) : PRED([OCCURRENCE()]) ]].
 
 /******************************************************************
  * Base Constraints                                               *
@@ -236,20 +155,34 @@ rules
     Build[[ t1 ^ (s) : ty ]],
     Build[[ t2 ^ (s) : ty ]].
 
-  [[ LTrue() ^ (_) : PRED(_) ]].
 
-  [[ LFalse() ^ (_) : PRED(_) ]].
+/******************************************************************
+ * Relations                                                      *
+ ******************************************************************/
 
-  [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
-    new s', s' ---> s,
-    Map1T(Match)[[ ps ^ (s') : tys ]],
-    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
-    [[ c ^ (s') ]].
+  [[ Relations(rdecls) ^ (s) ]] :=
+    Map1[[ rdecls ^ (s) ]].
 
-  Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
+  [[ RelDecl(rel, type) ^ (s) ]] :=
+    [[ type ^ (s) : ty ]],
+    RelDecl[[ rel ^ (s) : ty ]].
 
-  Term(V)[[ TermIdOp(t) ^ (s) : TERM_ID() ]] :=
-    Term(V)[[ t ^ (s) : _ ]].
+  RelDecl[[ r@Rel(x) ^ (s) : ty ]] :=
+    Rel{x} <- s, @x.decl := Rel{x}, Rel{x}.ast := r,
+    Rel{x} : ty !.
+
+  [[ CTellRel(rel, ts, st) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : ty ]],
+    tys is `inout-types` of ty,
+    Map1T(Build)[[ ts ^ (s): tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
+  RelRef[[ Rel(x) ^ (s) : ty ]] :=
+    Rel{x} -> s, Rel{x} |-> d, @x.decl := d,
+    d : ty.
+
+  RelRef[[ Decl() ^ (s) : PRED([OCCURRENCE()]) ]].
+
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -269,23 +202,8 @@ rules
   [[ Labels(lbls) ^ (s) ]] :=
     Map1(LabelDecl)[[ lbls ^ (s) ]].
 
-  LabelDecl[[ Rel(x) ^ (s) ]] :=
-    Lbl{x} <- s, @x.decl := Lbl{x},
-    Rel{x} <- s.
-
-  [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
-    Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
-    NsQ{x} <- s,
-    [[ filter ^ (s, NsQ{x}) ]],
-    [[ min ^ (s, NsQ{x}) ]].
-
-  [[ NamespaceFilter(re) ^ (s, d) ]] :=
-    d.wf := re,
-    LabelRE[[ re ^ (s) ]].
-
-  [[ NamespaceMin(prs) ^ (s,d ) ]] :=
-    d.ord := prs,
-    Map1[[ prs ^ (s) ]].
+  LabelDecl[[ l@Label(x) ^ (s) ]] :=
+    Lbl{x} <- s, @x.decl := Lbl{x}, Lbl{x}.ast := l.
 
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
@@ -294,12 +212,6 @@ rules
   [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
     Build[[ p1 ^ (s) : LABEL() ]],
     Build[[ p2 ^ (s) : LABEL() ]],
-    Map1[[ prs ^ (s) ]].
-
-  [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
-    LabelRE[[ re ^ (s) ]].
-
-  [[ LPathLt(prs) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
     Map1[[ prs ^ (s) ]].
 
   [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
@@ -323,10 +235,6 @@ rules
   LabelRE[[ Or(re1, re2) ^ (s) ]] :=
     LabelRE[[ re1 ^ (s) ]],
     LabelRE[[ re2 ^ (s) ]].
-
-  LabelDecl[[ Label(x) ^ (s) ]] :=
-    Lbl{x} <- s, @x.decl := Lbl{x},
-    Rel{x} <- s, Rel{x} : PRED([SCOPE()]).
 
   LabelRef[[ Label(x) ^ (s) ]] :=
     Lbl{x} -> s, Lbl{x} |-> d, @x.decl := d.
@@ -354,15 +262,6 @@ rules
     Build[[ pt ^ (s) : PATH() ]],
     Build[[ lt ^ (s) : LIST(LABEL()) ]].
 
-  Term(V)[[ PathSrcOp(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathScopesOp(t) ^ (s) : LIST(SCOPE()) ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathLabelsOp(t) ^ (s) : LIST(LABEL()) ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathDstOp(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
     Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
     d : NS(tys),
@@ -372,6 +271,7 @@ rules
   Pos(V)[[ NoId() ^ (s) : TERM_ID() ]].
   Pos(V)[[ t ^ (s) : ty ]] :=
     Term(V)[[ t ^ (s) : ty ]].
+
 
 /******************************************************************
  * Resolve & Query
@@ -402,13 +302,6 @@ rules
     Map1[[ prs ^ (s) ]],
     [[ lt ^ (s) : PRED([ty, ty]) ]].
 
-  [[ rf@ResolveFilter(r@Occurrence(ns, _, _)) ^ (s, ty) ]] :=
-    Build[[ r ^ (s) : ty ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @rf.decl := d.
-
-  [[ rm@ResolveMin(r@Occurrence(ns, _, _)) ^ (s, ty) ]] :=
-    Build[[ r ^ (s) : ty ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @rm.decl := d.
 
 /******************************************************************
  * Sorts & Constructors                                           *
@@ -471,7 +364,10 @@ rules
     Map1T(SortRef)[[ insorts ^ (s) : intys ]],
     Map1T(SortRef)[[ outsorts ^ (s) : outtys ]].
 
-rules
+
+/******************************************************************
+ * Terms                                                          *
+ ******************************************************************/
 
   Match[[ t ^ (s) : ty ]] :=
     Term(NonUniqueVarDecl)[[ t ^ (s) : ty ]].
