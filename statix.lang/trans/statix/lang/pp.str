@@ -2,6 +2,7 @@ module statix/lang/pp
 
 imports
 
+  nabl2/api
   libstratego-gpp
   libspoofax/sdf/pp
   libspoofax/editor/refactoring/-
@@ -25,6 +26,16 @@ rules
     ; pp
     ; !V([], <id>)
     ; box2text-string(|120)
+
+
+  nabl2-prettyprint-hook   = prettyprint-Statix-IType
+  prettyprint-Statix-IType = nabl2-prettyprint-term
+
+  nabl2-prettyprint-hook    = prettyprint-Statix-TTypes
+  prettyprint-Statix-TTypes = nabl2-prettyprint-term
+
+  nabl2-prettyprint-hook   = prettyprint-Statix-TType
+  prettyprint-Statix-TType = nabl2-prettyprint-term
 
 rules
 

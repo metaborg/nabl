@@ -11,10 +11,12 @@ sorts
 
 context-free syntax
 
-  IType.PRED = [[{TType " * "}*]]
-  IType.FUN  = [[{TType " * "}*] -> [{TType " * "}*]]
-  IType.NS   = [[{TType " * "}*]]
-  IType.OP   = [[{TType " * "}*] -> [TType]]
+  IType.PRED = [[TTypes]]
+  IType.FUN  = [[TTypes] -> [TTypes]]
+  IType.NS   = [[TTypes]]
+  IType.OP   = [[TTypes] -> [TType]]
+
+  TTypes = {TType " * "}*
 
   TType.SORT       = <<NaBL2Occurrence>>
   TType.INT        = <int>
@@ -25,4 +27,4 @@ context-free syntax
   TType.TERM_ID    = <termId>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
-  TType.TUPLE      = <(<{TType " * "}*>)>
+  TType.TUPLE      = <(<TTypes>)>
