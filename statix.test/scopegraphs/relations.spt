@@ -28,7 +28,7 @@ test query multiple items in the same scope succeeds [[
 test multiple data for same key gives multiple results [[
   resolve {s i j k}
     new s, !r[7, j] in s, !r[7, i] in s,
-    query r filter true and { 7 } in s |-> [_, _]
+    query r filter ~0 and { 7 } in s |-> [_, _]
   signature
     relations
       r : int -> int
@@ -38,7 +38,7 @@ test multiple data for same key gives multiple results [[
 test match path labels with regular expression [[
   resolve {s1 s2}
     new s1 s2, s1 -P-> s2, !r[7] in s2,
-    query r filter pathMatch[P*] in s1 |-> [_]
+    query r filter P* in s1 |-> [_]
   signature
     name-resolution
       labels P
@@ -52,7 +52,7 @@ test match exact steps with regular expression [[
     new s1 s2 s3,
     s1 -P-> s2, !r[7] in s2,
     s2 -P-> s3, !r[9] in s3,
-    query r filter pathMatch[P P] in s1 |-> [(_, 9)]
+    query r filter P P in s1 |-> [(_, 9)]
   signature
     name-resolution
       labels P
@@ -64,7 +64,7 @@ test match exact steps with regular expression [[
 test reject path with regular expression [[
   resolve {s1 s2 s3}
     new s1 s2 s3, s1 -P-> s2, s2 -P-> s3, !r[7] in s3,
-    query r filter pathMatch[P] in s1 |-> []
+    query r filter P in s1 |-> []
   signature
     name-resolution
       labels P
@@ -90,7 +90,7 @@ test query one reachable and one unreachable item [[
     new s1 s2 s3,
     s1 -P-> s2, !r[7] in s2,
     s2 -P-> s3, !r[1] in s3,
-    query r filter pathMatch[P] in s1 |-> [(_, 7)]
+    query r filter P in s1 |-> [(_, 7)]
   signature
     name-resolution
       labels P
@@ -104,7 +104,7 @@ test one item shadowing another [[
     new s1 s2 s3,
     s1 -P-> s2, !r[4] in s2,
     s1 -Q-> s3, !r[7] in s3,
-    query r min pathLt[Q < P] and true in s1 |-> [(_, 7)]
+    query r min Q < P and true in s1 |-> [(_, 7)]
   signature
     name-resolution
       labels P Q
@@ -116,7 +116,7 @@ test one item shadowing another [[
 test query complete relation with another incomplete relation [[
   resolve {s1 x}
     new s1, !r1[4, 5] in s1,
-    query r1 filter true and { 4 } in s1 |-> [(_, (4, x))],
+    query r1 filter ~0 and { 4 } in s1 |-> [(_, (4, x))],
     !r2[x, 6] in s1
   signature
     relations
@@ -129,7 +129,7 @@ test query via specific edge to instantiate more incomplete edge [[
   resolve {s1 s2 s3}
     new s1 s2,
     s1 -P-> s2, !r[4, new] in s2,
-    query r filter true and { 4 } min pathLt[P < Q] and true in s1 |-> [(_, (4, s3))],
+    query r filter ~0 and { 4 } min P < Q and true in s1 |-> [(_, (4, s3))],
     s1 -Q-> s3
   signature
     relations
@@ -144,7 +144,7 @@ test query ignores non-wellformed incomplete relation [[
     new s1 s2 s3,
     s1 -P-> s2, !r[x] in s2,
     s2 -P-> s3, !r[4] in s3,
-    query r filter pathMatch[P P] in s1 |-> [(_, x)]
+    query r filter P P in s1 |-> [(_, x)]
   signature
     relations
       r : int
@@ -157,7 +157,7 @@ test query ignores non-wellformed incomplete edge [[
   resolve {s1 s2 s3}
     new s1 s2,
     s1 -P-> s2, !r[4, new] in s2,
-    query r filter pathMatch[P*] and { 4 } in s1 |-> [(_, (4, s3))],
+    query r filter P* and { 4 } in s1 |-> [(_, (4, s3))],
     s1 -Q-> s3
   signature
     relations
@@ -317,7 +317,7 @@ test predicate path projections succeed [[
   resolve {s1 s2 s3 p}
     new s1 s2 s3,
     s1 -P-> s2, s2 -P-> s3,
-    query () min pathLt[P < $] and true in s1 |-> [p],
+    query () min P < $ and true in s1 |-> [p],
     src(p, s1), dst(p, s3), scopes(p, [s1, s2, s3])
   signature
     name-resolution
@@ -329,7 +329,7 @@ test functional path projections succeed [[
   resolve {s1 s2 s3 p}
     new s1 s2 s3,
     s1 -P-> s2, s2 -P-> s3,
-    query () min pathLt[P < $] and true in s1 |-> [p],
+    query () min P < $ and true in s1 |-> [p],
     src(p) == s1, dst(p) == s3, scopes(p) == [s1, s2, s3]
   signature
     name-resolution
@@ -340,7 +340,7 @@ test functional path projections succeed [[
 test end-of-path label for shortest path [[
   resolve {s1 s2 s3 p}
     new s1 s2 s3, s1 -P-> s2, s2 -P-> s3,
-    query () min pathLt[$ < P] and true in s1 |-> [p],
+    query () min $ < P and true in s1 |-> [p],
     dst(p) == s1
   signature
     name-resolution
@@ -354,7 +354,7 @@ test end-of-path label for shortest path [[
 test end-of-path label for longest path [[
   resolve {s1 s2 s3 p}
     new s1 s2 s3, s1 -P-> s2, s2 -P-> s3,
-    query () min pathLt[P < $] and true in s1 |-> [p],
+    query () min P < $ and true in s1 |-> [p],
     dst(p) == s3
   signature
     name-resolution
@@ -370,8 +370,8 @@ test labels projections succeed [[
     new s1 s2 s3 s4,
     s1 -P-> s2,
     s3 -P-> s4,
-    query () min pathLt[P < $] and true in s1 |-> [p1],
-    query () min pathLt[P < $] and true in s3 |-> [p2],
+    query () min P < $ and true in s1 |-> [p1],
+    query () min P < $ and true in s3 |-> [p2],
     eq(labels(p1), labels(p2))
   signature
     name-resolution

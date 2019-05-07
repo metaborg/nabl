@@ -34,8 +34,10 @@ rules
 rules
 
   desugar-decl-shorthands = topdown(try(desugar-decl-shorthand))
+
   desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
     with decl := <with-origin(|c)> Decl()
+
   desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
     with decl := <with-origin(|c)> Decl();
          c1 := <with-origin(|c)> CTellRel(decl, [dt], st);
@@ -44,13 +46,15 @@ rules
 rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
-  desugar-ref-shorthand: c@CResolveDecl(rt, st, pst) -> c'
+
+  desugar-ref-shorthand: c@CResolveRef(rt, st, pst) -> c'
     with decl       := <with-origin(|c)> Decl();
          rel-target := <with-origin(|c)> RelTarget(decl);
          filter     := <with-origin(|rt)> ResolveFilter(rt);
          min        := <with-origin(|rt)> ResolveMin(rt);
          c'         := CResolveQuery(rel-target, filter, min, st, pst)
-  desugar-ref-shorthand: CResolveRel(rel, rt, st, pst) -> c'
+
+  desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst) -> c'
     with rel-target := <with-origin(|rel)> RelTarget(rel);
          filter     := <with-origin(|rt)> ResolveFilter(rt);
          min        := <with-origin(|rt)> ResolveMin(rt);
@@ -60,13 +64,13 @@ rules
 
   desugar-queries = topdown(try(desugar-query))
 
-  desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
-  desugar-query: Filter(l) -> Filter(l, LTrue())
-  desugar-query: NoNamespaceFilter() -> NamespaceFilter(LTrue())
+  desugar-query: NoFilter() -> Filter(Neg(Empty()), LTrue())
+  desugar-query: Filter(wf) -> Filter(wf, LTrue())
+  desugar-query: NoNamespaceFilter() -> NamespaceFilter(Neg(Empty()))
 
-  desugar-query: NoMin() -> Min(LFalse(), LFalse())
-  desugar-query: Min(l) -> Min(l, LFalse())
-  desugar-query: NoNamespaceMin() -> NamespaceMin(LFalse())
+  desugar-query: NoMin() -> Min([], LFalse())
+  desugar-query: Min(ord) -> Min(ord, LFalse())
+  desugar-query: NoNamespaceMin() -> NamespaceMin([])
 
 rules
 

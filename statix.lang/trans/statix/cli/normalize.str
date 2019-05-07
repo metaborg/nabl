@@ -28,7 +28,3 @@ rules
          body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
 
   explicate-cmaps(|a): Eval(vs, body){a*} -> Eval(vs, body){a*}
-
-  explicate-resolve(|a):
-      Eval(vs, body) -> Eval(vs, body')
-    with body' := <normalize-resolves> body

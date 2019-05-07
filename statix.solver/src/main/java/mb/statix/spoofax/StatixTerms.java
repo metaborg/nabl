@@ -212,14 +212,14 @@ public class StatixTerms {
     }
 
     public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
-        return M.appl2("Filter", hoconstraint(labels), hoconstraint(labels), (f, pathConstraint, dataConstraint) -> {
-            return new QueryFilter(pathConstraint, dataConstraint);
+        return M.appl2("Filter", labelRE(new RegExpBuilder<>(labels)), hoconstraint(labels), (f, wf, dataConstraint) -> {
+            return new QueryFilter(wf, dataConstraint);
         });
     }
 
     public static IMatcher<IQueryMin> queryMin(IAlphabet<ITerm> labels) {
-        return M.appl2("Min", hoconstraint(labels), hoconstraint(labels), (m, pathConstraint, dataConstraint) -> {
-            return new QueryMin(pathConstraint, dataConstraint);
+        return M.appl2("Min", labelLt(), hoconstraint(labels), (m, ord, dataConstraint) -> {
+            return new QueryMin(ord, dataConstraint);
         });
     }
 

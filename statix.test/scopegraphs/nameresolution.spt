@@ -39,7 +39,7 @@ test resolution policy filter forces a step [[
       Var : string
     name-resolution
       labels P
-      resolve Var filter pathMatch[P]
+      resolve Var filter P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -53,7 +53,7 @@ test resolution policy filter cannot reach declaration [[
       Var : string
     name-resolution
       labels P
-      resolve Var filter pathMatch[P]
+      resolve Var filter P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -68,7 +68,7 @@ test resolution policy min is applied [[
       Var : string
     name-resolution
       labels P Q
-      resolve Var min pathLt[Q < P]
+      resolve Var min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -83,7 +83,7 @@ test refer explicitly to resolution policy filter succeeds [[
       Var : string
     name-resolution
       labels P Q
-      resolve Var filter pathMatch[P]
+      resolve Var filter P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -98,7 +98,7 @@ test refer explicitly to resolution policy min succeeds [[
       Var : string
     name-resolution
       labels P Q
-      resolve Var min pathLt[Q < P]
+      resolve Var min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -131,6 +131,6 @@ test resolve occurrence relations with resolution policy succeeds [[
       Var : string
     name-resolution
       labels P Q
-      resolve Var filter pathMatch[P (P|Q)*] min pathLt[Q < P]
+      resolve Var filter P (P|Q)* min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()

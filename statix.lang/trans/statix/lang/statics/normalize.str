@@ -36,8 +36,8 @@ rules
   normalize-2(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize higer-order constraints...");
     normalize-ho-constraints(|a);
-    nabl2-custom-analysis-info-msg(|"| Explicate namespace queries...");
-    explicate-resolve(|a)
+    nabl2-custom-analysis-info-msg(|"| Normalize namespace queries...");
+    normalize-resolves(|a)
 
   normalize-3(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize as patterns...");
@@ -178,12 +178,11 @@ rules
          out_ts := <drop(|n)> ts;
 
          rel-target := RelTarget(rel);
-         wf         := LPathMatch(Epsilon());
          [u|us]     := <make-fresh-vars(|"u")> [()|intys];
          eq         := CEqual(u, <build-terms(|intys)> us);
          eqs        := <zip(!CEqual(<Fst>, <Snd>))> (in_ts, us);
          match      := LLam([u], us, CConj(eq, <list-to-conj> eqs));
-         filter     := Filter(wf, match);
+         filter     := Filter(Epsilon(), match);
          min        := <desugar-query> NoMin();
 
          [p|wlds] := <map(!Wld())> [()|intys];
@@ -321,88 +320,18 @@ rules
 
 rules
 
-  explicate-resolve(|a):
-      Module(x, section*) -> Module(x, section'*)
-    with section'* := <explicate-resolve-sections(|a)> section*
+  normalize-resolves(|a) = bottomup(try(normalize-resolve(|a)))
 
-  explicate-resolve-sections(|a): section* -> section''*
-    with query* := <collect-all(?NamespaceQuery(_, _, _), conc)> section*;
-         ns* := <collect-all(?NsDecl(<id>, _), conc)> section*;
-         wf-rule* := <wf-rules(|a, query*)> ns*;
-         eq-rule* := <eq-rules(|a, query*)> ns*;
-         ord-rule* := <ord-rules(|a, query*)> ns*;
-         section'* := <bottomup(try( try(remove-resolve-queries)
-                                   ;  try(normalize-resolves)
-                                   )
-                               )> section*;
-         new-section* := [Rules([wf-rule*, eq-rule*, ord-rule*])];
-         section''* := <conc> (section'*, new-section*)
-
-  wf-rules(|a, query*) = map(wf-rule(|a, query*))
-
-  wf-rule(|a, query*): ns -> Rule(C(ResolveFilterWf(), [r, lbls]), bvs, body)
-    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         [p|ts] := <map(!Wld())> [()|tys];
-         r := Occurrence(ns, ts, p);
-         lbls := <make-fresh-var> "lbls";
-         if NamespaceFilter(filter) := <getfirst(\ NamespaceQuery(ns', nsf, _) -> nsf where <strip-annos;eq> (ns, ns') \)> query* then
-           (bvs, body) := <apply-lambda> (filter, [lbls])
-         else
-           bvs := [];
-           body := CTrue()
-         end
-
-
-  eq-rules(|a, query*) = map(eq-rule(|a))
-
-  eq-rule(|a): ns -> Rule(C(ResolveFilterEq(), [r, d]), us, body)
-    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         ts := <make-fresh-vars(|"t")> tys;
+  normalize-resolve(|a): rf@ResolveFilter(Occurrence(ns, ts, _)) -> Filter(wf, lam)
+    with wf := <nabl2-get-ast-property(|a,"decl");nabl2-get-property(|a, "wf")> rf;
+         NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
          us := <make-fresh-vars(|"u")> tys;
-         [pr, pd] := <map(!Wld())> [(),()];
-         r := Occurrence(ns, ts, pr);
-         d := <make-fresh-var> "d";
-         eq-d := CEqual(d, Occurrence(ns, us, pd));
-         eqs := <zip(!CEqual(<Fst>, <Snd>))> (ts, us);
-         body := CConj(eq-d, <list-to-conj> eqs)
+         d := Occurrence(ns, us, Wld());
+         lam := LLam([d], [], CEqual(<build-terms(|tys)> us, <build-terms(|tys)> ts))
 
-
-  ord-rules(|a, query*) = map(ord-rule(|a, query*))
-
-  ord-rule(|a, query*): ns -> Rule(C(ResolveMinOrd(), [r, l1, l2]), bvs, body)
-    with NS(tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
-         [p|ts] := <map(!Wld())> [()|tys];
-         r := Occurrence(ns, ts, p);
-         l1 := <make-fresh-var> "l1";
-         l2 := <make-fresh-var> "l2";
-         if NamespaceMin(min) := <getfirst(\ NamespaceQuery(ns', _, nsm) -> nsm where <strip-annos;eq> (ns, ns') \)> query* then
-           (bvs, body) := <apply-lambda> (min, [l1, l2])
-         else
-           bvs := [];
-           body := CFalse()
-         end
-
-
-  remove-resolve-queries = bottomup(try(remove-resolve-query))
-
-  remove-resolve-query = Rules(filter(not(?NamespaceQuery(_, _, _))))
-
-  remove-resolve-query = NameResolution(filter(not(?NamespaceQuery(_, _, _))))
-
-
-  normalize-resolves = bottomup(try(normalize-resolve))
-
-  normalize-resolve: ResolveFilter(rt) -> Filter(wf-c, eq-c)
-    with lbls := <make-fresh-var> "lbls";
-         wf-c := LLam([lbls], [], C(ResolveFilterWf(), [rt, lbls]));
-         d := <make-fresh-var> "d";
-         eq-c := LLam([d], [], C(ResolveFilterEq(), [rt, d]))
-
-  normalize-resolve: ResolveMin(rt) -> Min(ord-c, eq-c)
-    with l1 := <make-fresh-var> "l1";
-         l2 := <make-fresh-var> "l2";
-         ord-c := LLam([l1, l2], [], C(ResolveMinOrd(), [rt, l1, l2]));
-         eq-c  := LLam([Wld(), Wld()], [], CTrue())
+  normalize-resolve(|a): rm@ResolveMin(_) -> Min(ord, lam)
+    with ord := <nabl2-get-ast-property(|a,"decl");nabl2-get-property(|a, "ord")> rm;
+         lam := LLam([Wld(), Wld()], [], CTrue())
 
 rules
 

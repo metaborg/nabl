@@ -22,6 +22,7 @@ signature
     Lang
     Lbl
     Ns
+    NsQ
     Op
     Rel
     Sort
@@ -51,39 +52,24 @@ rules
     TopLevelSections[[ sections ^ (s') ]].
 
   TopLevelSections[[ sections ^ (s) ]] :=
-
-    C{ResolveFilterWf()} <- s',
-    C{ResolveFilterWf()} : PRED([OCCURRENCE(), LIST(LABEL())]) !!,
-    C{ResolveFilterWf()}.ind := InductiveC() !!,
-    C{ResolveFilterWf()}.kind := DeclaredC() !!,
-
-    C{ResolveFilterEq()} <- s',
-    C{ResolveFilterEq()} : PRED([OCCURRENCE(), OCCURRENCE()]) !!,
-    C{ResolveFilterEq()}.ind := InductiveC() !!,
-    C{ResolveFilterEq()}.kind := DeclaredC() !!,
-
-    C{ResolveMinOrd()} <- s',
-    C{ResolveMinOrd()} : PRED([OCCURRENCE(), LABEL(), LABEL()]) !!,
-    C{ResolveMinOrd()}.ind := InductiveC() !!,
-    C{ResolveMinOrd()}.kind := DeclaredC() !!,
-
     Sections[[ sections ^ (s') ]].
-
 
   Sections[[ sections ^ (s') ]] :=
     Map1[[ sections ^ (s') ]],
+    distinct/name D(s')/C    | error $[Duplicate constraint [NAME]] @NAMES,
+    distinct/name D(s')/Lbl  | error $[Duplicate label [NAME]] @NAMES,
+    distinct/name D(s')/Ns   | error $[Duplicate namespace [NAME]] @NAMES,
+    distinct/name D(s')/NsQ  | error $[Duplicate namespace query [NAME]] @NAMES,
+    distinct/name D(s')/Op   | error $[Duplicate constructor [NAME]] @NAMES,
+    distinct/name D(s')/Rel  | error $[Duplicate relation [NAME]] @NAMES,
+    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES,
     (D(s')/C    lsect/name (W(s')/C    minus D(s')/C   )) subseteq 0 | error $[Duplicate constraint [NAME]] @NAMES,
-    distinct/name D(s')/C | error $[Duplicate constraint [NAME]] @NAMES,
     (D(s')/Lbl  lsect/name (W(s')/Lbl  minus D(s')/Lbl )) subseteq 0 | error $[Duplicate label [NAME]] @NAMES,
-    distinct/name D(s')/Lbl | error $[Duplicate label [NAME]] @NAMES,
     (D(s')/Ns   lsect/name (W(s')/Ns   minus D(s')/Ns  )) subseteq 0 | error $[Duplicate namespace [NAME]] @NAMES,
-    distinct/name D(s')/Ns | error $[Duplicate namespace [NAME]] @NAMES,
+    (D(s')/NsQ  lsect/name (W(s')/NsQ  minus D(s')/NsQ )) subseteq 0 | error $[Duplicate namespace query [NAME]] @NAMES,
     (D(s')/Op   lsect/name (W(s')/Op   minus D(s')/Op  )) subseteq 0 | error $[Duplicate constructor [NAME]] @NAMES,
-    distinct/name D(s')/Op | error $[Duplicate constructor [NAME]] @NAMES,
     (D(s')/Rel  lsect/name (W(s')/Rel  minus D(s')/Rel )) subseteq 0 | error $[Duplicate relation [NAME]] @NAMES,
-    distinct/name D(s')/Rel | error $[Duplicate relation [NAME]] @NAMES,
-    (D(s')/Sort lsect/name (W(s')/Sort minus D(s')/Sort)) subseteq 0 | error $[Duplicate sort [NAME]] @NAMES,
-    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES.
+    (D(s')/Sort lsect/name (W(s')/Sort minus D(s')/Sort)) subseteq 0 | error $[Duplicate sort [NAME]] @NAMES.
 
   [[ Signature(sigs) ^ (s) ]] :=
     Map1[[ sigs ^ (s) ]].
@@ -288,15 +274,18 @@ rules
     Rel{x} <- s.
 
   [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
-    Ns{x} -> s, Ns{x} |-> d, @x.decl := Ns{x},
-    [[ filter ^ (s) ]],
-    [[ min ^ (s) ]].
+    Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
+    NsQ{x} <- s,
+    [[ filter ^ (s, NsQ{x}) ]],
+    [[ min ^ (s, NsQ{x}) ]].
 
-  [[ NamespaceFilter(lp) ^ (s) ]] :=
-    [[ lp ^ (s) : PRED([LIST(LABEL())]) ]].
+  [[ NamespaceFilter(re) ^ (s, d) ]] :=
+    d.wf := re,
+    LabelRE[[ re ^ (s) ]].
 
-  [[ NamespaceMin(lp) ^ (s) ]] :=
-    [[ lp ^ (s) : PRED([LABEL(), LABEL()]) ]].
+  [[ NamespaceMin(prs) ^ (s,d ) ]] :=
+    d.ord := prs,
+    Map1[[ prs ^ (s) ]].
 
   [[ CPathMatch(re, p) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
@@ -405,19 +394,21 @@ rules
     inoutty is `inout-type` of rty,
     outty == TUPLE([PATH(), inoutty]).
 
-  [[ Filter(lp, lt) ^ (s, ty) ]] :=
-    [[ lp ^ (s) : PRED([LIST(LABEL())]) ]],
+  [[ Filter(re, lt) ^ (s, ty) ]] :=
+    LabelRE[[ re ^ (s) ]],
     [[ lt ^ (s) : PRED([ty]) ]].
 
-  [[ Min(lp, lt) ^ (s, ty) ]] :=
-    [[ lp ^ (s) : PRED([LABEL(), LABEL()]) ]],
+  [[ Min(prs, lt) ^ (s, ty) ]] :=
+    Map1[[ prs ^ (s) ]],
     [[ lt ^ (s) : PRED([ty, ty]) ]].
 
-  [[ ResolveFilter(t) ^ (s, ty) ]] :=
-    Build[[ t ^ (s) : ty ]].
+  [[ rf@ResolveFilter(r@Occurrence(ns, _, _)) ^ (s, ty) ]] :=
+    Build[[ r ^ (s) : ty ]],
+    NsQ{ns} -> s, NsQ{ns} |-> d, @rf.decl := d.
 
-  [[ ResolveMin(t) ^ (s, ty) ]] :=
-    Build[[ t ^ (s) : ty ]].
+  [[ rm@ResolveMin(r@Occurrence(ns, _, _)) ^ (s, ty) ]] :=
+    Build[[ r ^ (s) : ty ]],
+    NsQ{ns} -> s, NsQ{ns} |-> d, @rm.decl := d.
 
 /******************************************************************
  * Sorts & Constructors                                           *

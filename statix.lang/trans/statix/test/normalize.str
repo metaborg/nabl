@@ -31,8 +31,3 @@ rules
     with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
          rule* := <map(cmap-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, [Rules(rule*)])
-
-  explicate-resolve(|a):
-      Test(bvs, body, section*) -> Test(bvs, body', section'*)
-    with section'* := <explicate-resolve-sections(|a)> section*;
-         body' := <bottomup(try(normalize-resolves))> body

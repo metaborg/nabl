@@ -10,3 +10,12 @@ template options
   keyword -/- [a-zA-Z0-9\_\-\']
 
 context-free syntax
+
+  QueryFilter.Filter = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
+  QueryMin.Min       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+
+  QueryFilter.Filter = < filter pathMatch[<LabelRE>] and <HoConstraint>> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
+  QueryMin.Min       = < min pathLt[<LabelPairs>] and <HoConstraint>>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+
+  NamespaceFilter.NamespaceFilter = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
+  NamespaceMin.NamespaceMin       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
