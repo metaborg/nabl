@@ -441,8 +441,9 @@ rules
     Map1[[ ctors ^ (s) ]].
 
   [[ OpDecl(x, sort) ^ (s) ]] :=
-    Op{x} <- s, @x.decl := Op{x},
-    Op{x} : ty !!,
+    x' is `op-name` of (x, sort),
+    Op{x'@x} <- s, @x.decl := Op{x'@x},
+    Op{x'@x} : ty !!,
     OpSort[[ sort ^ (s) : ty ]].
 
   OpSort[[ ConstOp(sort) ^ (s) : OP([], ty) ]] :=
@@ -518,7 +519,8 @@ rules
   Term(V)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
-    Op{x} -> s, Op{x} |-> d, @x.decl := Op{x},
+    x' is `op-name` of (x, args),
+    Op{x'@x} -> s, Op{x'@x} |-> d, @x.decl := d,
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
   Term(V)[[ Str(_) ^ (_) : STRING() ]].

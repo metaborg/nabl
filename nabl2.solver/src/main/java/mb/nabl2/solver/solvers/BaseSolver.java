@@ -29,6 +29,7 @@ import mb.nabl2.solver.SolverException;
 import mb.nabl2.solver.components.AstComponent;
 import mb.nabl2.solver.components.BaseComponent;
 import mb.nabl2.solver.components.EqualityComponent;
+import mb.nabl2.solver.components.ExternalRelationComponent;
 import mb.nabl2.solver.components.ScopeGraphComponent;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.stratego.TermIndex;
@@ -60,6 +61,7 @@ public class BaseSolver {
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final ScopeGraphComponent scopeGraphSolver = new ScopeGraphComponent(core, scopeGraph);
+        final ExternalRelationComponent relationSolver = new ExternalRelationComponent(core);
 
         try {
             ISolver component =
@@ -69,6 +71,7 @@ public class BaseSolver {
                     .onBase(baseSolver::solve)
                     .onEquality(equalitySolver::solve)
                     .onScopeGraph(scopeGraphSolver::solve)
+                    .onRelation(relationSolver::solve)
                     .otherwise(ISolver.defer())
                     // @formatter:on
                     );

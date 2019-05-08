@@ -1,7 +1,6 @@
 ---
 id: org.metaborg:statix.example:${metaborgVersion}
 name: StatixExample
-metaborgVersion: 2.5.3
 dependencies:
   compile:
   - org.metaborg:statix.lang:${metaborgVersion}

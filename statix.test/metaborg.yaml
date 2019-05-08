@@ -1,7 +1,6 @@
 ---
 id: org.metaborg:statix.test:${metaborgVersion}
 name: StatixTest
-metaborgVersion: 2.5.3
 dependencies:
   compile:
   - org.metaborg:statix.lang:${metaborgVersion}
