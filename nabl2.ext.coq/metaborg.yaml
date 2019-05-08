@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:org.metaborg.meta.nabl2.ext.coq:${metaborgVersion}
 name: NaBL2ExtCoq
-metaborgVersion: 2.6.0-SNAPSHOT
+metaborgVersion: 2.5.4
 
 dependencies:
   compile:
