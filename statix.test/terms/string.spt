@@ -28,12 +28,12 @@ test string constraint argument [[
 test unifying equal strings succeeds [[
   resolve "Spoofax" == "Spoofax"
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test unifying inequal strings fails [[
   resolve "Spoofax" == "Stratego"
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test matching same string succeeds [[
   resolve c("Statix")
@@ -41,7 +41,7 @@ test matching same string succeeds [[
     c : string
     c("Statix").
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test matching inequal string fails [[
   resolve c("NaBL2")
@@ -49,4 +49,4 @@ test matching inequal string fails [[
     c : string
     c("Statix").
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()

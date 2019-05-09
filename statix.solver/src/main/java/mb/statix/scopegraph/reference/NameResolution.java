@@ -19,7 +19,6 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     private final IScopeGraph<S, L, D> scopeGraph;
     private final Set<L> labels;
-    private final Optional<L> relation;
 
     private final LabelWF<L> labelWF; // default: true
     private final LabelOrder<L> labelOrder; // default: false
@@ -29,13 +28,12 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
     private final DataLeq<D> dataEquiv; // default: false
     private final Predicate2<S, L> isDataComplete; // default: true
 
-    public NameResolution(IScopeGraph<S, L, D> scopeGraph, Optional<L> relation, LabelWF<L> labelWF,
-            LabelOrder<L> labelOrder, Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv,
-            Predicate2<S, L> isDataComplete) {
+    public NameResolution(IScopeGraph<S, L, D> scopeGraph, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+            Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, L> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
-        this.labels = ImmutableSet.<L>builder().addAll(scopeGraph.getLabels()).add(scopeGraph.getEndOfPath()).build();
-        this.relation = relation;
+        this.labels = ImmutableSet.<L>builder().addAll(scopeGraph.getEdgeLabels()).addAll(scopeGraph.getDataLabels())
+                .add(scopeGraph.getNoDataLabel()).build();
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
         this.isEdgeComplete = isEdgeComplete;
@@ -112,29 +110,41 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     private Set<IResolutionPath<S, L, D>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
-        return l.equals(scopeGraph.getEndOfPath()) ? env_EOP(re, path) : env_nonEOP(l, re, path);
+        final Optional<LabelWF<L>> newRe = re.step(l);
+        if(!newRe.isPresent()) {
+            return ImmutableSet.of();
+        } else {
+            re = newRe.get();
+        }
+        if(scopeGraph.getEdgeLabels().contains(l)) {
+            return env_nonEOP(l, re, path);
+        } else if(scopeGraph.getDataLabels().contains(l) || scopeGraph.getNoDataLabel().equals(l)) {
+            return env_EOP(l, re, path);
+        } else {
+            throw new IllegalStateException("Encountered unknown label " + l);
+        }
     }
 
-    private Set<IResolutionPath<S, L, D>> env_EOP(LabelWF<L> re, IScopePath<S, L> path)
+    private Set<IResolutionPath<S, L, D>> env_EOP(L l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
             return ImmutableSet.of();
         }
         final S scope = path.getTarget();
-        if(relation.map(r -> !isDataComplete.test(scope, r)).orElse(false)) {
-            throw new IncompleteDataException(scope, relation.get());
+        if(!isDataComplete.test(scope, l)) {
+            throw new IncompleteDataException(scope, l);
         }
         final ImmutableSet.Builder<IResolutionPath<S, L, D>> env = ImmutableSet.builder();
-        if(relation.isPresent()) {
-            for(List<D> datum : scopeGraph.getData().get(path.getTarget(), relation.get())) {
-                if(dataWF.wf(datum)) {
-                    env.add(Paths.resolve(path, relation, datum));
-                }
-            }
-        } else {
+        if(l.equals(scopeGraph.getNoDataLabel())) {
             final List<D> datum = ImmutableList.of(scope);
             if(dataWF.wf(datum)) {
-                env.add(Paths.resolve(path, relation, datum));
+                env.add(Paths.resolve(path, l, datum));
+            }
+        } else {
+            for(List<D> datum : scopeGraph.getData().get(path.getTarget(), l)) {
+                if(dataWF.wf(datum)) {
+                    env.add(Paths.resolve(path, l, datum));
+                }
             }
         }
         return env.build();
@@ -142,10 +152,6 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     private Set<IResolutionPath<S, L, D>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
-        final Optional<LabelWF<L>> newRe = re.step(l);
-        if(!newRe.isPresent()) {
-            return ImmutableSet.of();
-        }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
@@ -153,7 +159,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         for(S nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(newRe.get(), p.get()));
+                env.addAll(env(re, p.get()));
             }
         }
         return env.build();
@@ -203,8 +209,8 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
             return this;
         }
 
-        public NameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, Optional<L> relation) {
-            return new NameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv,
+        public NameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph) {
+            return new NameResolution<>(scopeGraph, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv,
                     isDataComplete);
         }
 

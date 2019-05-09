@@ -49,12 +49,12 @@ rules
   desugar-ref-shorthand: c@CResolveRef(rt, st, pst) -> c'
     with decl       := <with-origin(|c)> Decl();
          filter     := <with-origin(|rt)> Filter(ResolveMatch(rt, decl), OccurrenceMatch(rt));
-         min        := <with-origin(|rt)> Min(ResolveLt(rt, decl), LFalse());
+         min        := <with-origin(|rt)> Min(ResolveLt(rt, decl), LTrue());
          c'         := CResolveQuery(filter, min, st, pst)
 
   desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst) -> c'
     with filter     := <with-origin(|rt)> Filter(ResolveMatch(rt, rel), OccurrenceMatch(rt));
-         min        := <with-origin(|rt)> Min(ResolveLt(rt, rel), LFalse());
+         min        := <with-origin(|rt)> Min(ResolveLt(rt, rel), LTrue());
          c'         := CResolveQuery(filter, min, st, pst)
 
   target-to-re: NoTarget()     -> Epsilon()

@@ -20,7 +20,7 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
-public class ConstraintDataWF implements DataWF<ITerm> {
+class ConstraintDataWF implements DataWF<ITerm> {
 
     private final Rule constraint;
     private final State state;

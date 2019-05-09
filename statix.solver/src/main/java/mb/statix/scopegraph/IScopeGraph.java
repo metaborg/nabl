@@ -7,11 +7,11 @@ import mb.nabl2.util.collections.IRelation3;
 
 public interface IScopeGraph<S, L, D> {
 
-    Set.Immutable<L> getLabels();
+    Set.Immutable<L> getEdgeLabels();
 
-    L getEndOfPath();
+    L getNoDataLabel();
 
-    Set.Immutable<L> getRelations();
+    Set.Immutable<L> getDataLabels();
 
     Set<S> getAllScopes();
 

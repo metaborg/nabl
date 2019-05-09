@@ -9,7 +9,9 @@ imports
 
 rules
 
-  all-vars = collect-all(?Var(_))
+  is-var = ?Var(_)
+
+  all-vars = collect-all(is-var)
 
 rules
 

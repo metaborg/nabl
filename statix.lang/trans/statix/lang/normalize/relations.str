@@ -17,13 +17,12 @@ rules
   // normalize functional relations
   // after lambda's, after normalizing queries
 
-  normalize-functional-relations = ?(a, <id>);
+  normalize-functional-relations(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize functional relations...");
     bottomup(
       try(normalize-functional-reldecl)
     ; try(normalize-functional-query(|a))
-    );
-    !(a, <id>)
+    )
 
 
   normalize-functional-reldecl:
@@ -39,17 +38,18 @@ rules
          lord' := <normalize-functional-ord(|ty)> lord
 
   normalize-functional-wf(|ty):
-      LLam([p], vs, c) -> LLam([p'], vs', c')
+      LLam([p], vs, c){a*} -> LLam([p'], vs', c'){a*}
    with (p', new-vs, c*) := <normalize-functional-pattern(|ty)> p;
         vs' := <conc> (vs, new-vs);
         c' := <list-to-conj(|c)> c*
 
   normalize-functional-ord(|ty):
-      LLam([p1, p2], vs, c) -> LLam([p1', p2'], vs', c')
+      LLam([p1, p2], vs, c){a*} -> LLam([p1', p2'], vs', c'){a*}
    with (p1', new-vs1, c1*) := <normalize-functional-pattern(|ty)> p1;
         (p2', new-vs2, c2*) := <normalize-functional-pattern(|ty)> p2;
         vs' := <concat> [vs, new-vs1, new-vs2];
         c' := <conc;list-to-conj(|c)> (c1*, c2*)
+
 
   normalize-functional-pattern(|ty): p -> (p', vs, c*)
     with in_tys  := <in-types> ty;

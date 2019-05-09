@@ -14,7 +14,7 @@ imports
   signatures/statix/lang/-
 
   statix/lang/statics/-
-  statix/lang/normalize/-
+  statix/lang/normalize
 
   pp
 
@@ -34,49 +34,31 @@ rules // Analysis
                       })> ast*
 
   editor--analyze:
-      (resource, ast) -> (ast'', result, error*, warning*, note*)
+      (resource, ast) -> (analyzed-ast, result, error*, warning*, note*)
     with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
-         ast' := <desugar-all> ast;
+         desugared-ast := <desugar-all> ast;
          nabl2-custom-analysis-info-msg(|"Desugared AST.");
 
          nabl2-custom-analysis-info-msg(|"Normalizing AST...");
-         < step( analyze(|resource)
-               , normalize-mapping-constraints
-               ; normalize-functional-constraints
-               ; normalize-ho-constraints
-               ; normalize-resolves
-               ; normalize-queries
-         , step( analyze(|resource)
-               , normalize-functional-relations
-               ; normalize-terms
-               , analyze(|resource)
-         ))> ast';
-         ?(ast'', a', e*, w*, n*);
+         (analyzed-ast, a, e*, w*, n*) :=
+            <analyze(|resource)> desugared-ast;
+         (normalized-ast, a') :=
+            <normalize(analyze(|resource)|a)> analyzed-ast;
 
          nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
-         or-e* := <detect-overlapping-rules> ast';
+         or-e* := <detect-overlapping-rules> analyzed-ast;
 
          nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast'';
+         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> normalized-ast;
 
-         result := <nabl2--set-custom-analysis(|a')> ext*;
+         result := <nabl2--set-custom-analysis(|a)> (normalized-ast, a', ext*);
          error*   := [e*, ext-e*, or-e*];
          warning* := [w*, ext-w*];
          note*    := [n*, ext-n*]
 
-  analyze(|resource) = try(Snd); // accept ast or (a, ast)
+  analyze(|resource) =
     nabl2-custom-analysis-info-msg(|"| Analyzing...");
     nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)
-
-  step(a,s,k) =
-    a;
-    if ?(ast, a, [], _, _) then
-      nabl2-custom-analysis-info-msg(|"| Transforming...");
-      <keep-origin(s)> (a, ast);
-      k
-    else
-      nabl2-custom-analysis-info-msg(|"| ERRORS DURING TRANSFORMATION")
-    end
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term

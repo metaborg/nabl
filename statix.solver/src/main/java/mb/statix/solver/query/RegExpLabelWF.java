@@ -2,14 +2,12 @@ package mb.statix.solver.query;
 
 import java.util.Optional;
 
-import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
-import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 
-public class RegExpLabelWF implements LabelWF<ITerm> {
+class RegExpLabelWF implements LabelWF<ITerm> {
 
     private final IRegExpMatcher<ITerm> re;
 
@@ -30,8 +28,12 @@ public class RegExpLabelWF implements LabelWF<ITerm> {
         return re.isAccepting();
     }
 
-    public static RegExpLabelWF of(IRegExp<ITerm> re) {
-        return new RegExpLabelWF(RegExpMatcher.create(re));
+    @Override public String toString() {
+        return re.toString();
+    }
+
+    public static RegExpLabelWF of(IRegExpMatcher<ITerm> re) {
+        return new RegExpLabelWF(re);
     }
 
 }

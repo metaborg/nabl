@@ -17,12 +17,11 @@ rules
   // normalize namespace based resolve stand-ins
   // before functional relations
 
-  normalize-resolves = ?(a, <id>);
+  normalize-resolves(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize namespace-based queries...");
     bottomup(
       try(normalize-resolve(|a))
-    );
-    !(a, <id>)
+    )
 
   normalize-resolve(|a): t@ResolveMatch(Occurrence(ns, ts, _), rel) -> wf'
     with wf := <norm-get-ast-decl-property(|a, "wf")> t;
@@ -43,13 +42,12 @@ rules
   // normalize queries
   // before functional relations, before wildcards
 
-  normalize-queries = ?(a, <id>);
+  normalize-queries(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize queries...");
     bottomup(
       try(normalize-query(|a))
     ; try(normalize-query-ops(|a))
-    );
-    !(a, <id>)
+    )
 
 
   normalize-query(|a): CAskRel(rel, ts, st) -> c

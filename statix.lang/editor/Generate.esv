@@ -2,10 +2,10 @@ module Generate
 
 language
 
-//  on save : generate-aterm
+  on save : generate-aterm
 
 menus
   
   menu: "Generate" (openeditor)
     
-    action: "Generate ATerms" = generate-aterm
+    action: "Generate ATerm" = generate-aterm

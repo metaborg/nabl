@@ -1,0 +1,23 @@
+module statix/lang/normalize
+
+imports
+
+  statix/lang/normalize/-
+
+rules
+
+  normalize(analyze|a) =
+    nabl2-custom-analysis-info-msg(|"Normalizing AST...");
+    normalize-mapping-constraints(|a);
+    normalize-functional-constraints(|a);
+    normalize-ho-constraints(|a);
+    normalize-resolves(|a);
+    normalize-queries(|a);
+    { a: analyze; ?(<id>, a, _, _, _);
+    normalize-functional-relations(|a)
+  };{ a: analyze; ?(<id>, a, _, _, _);
+    normalize-lambda-patterns(|a);
+    normalize-terms(|a)
+  };{ a: analyze; ?(<id>, a, _, _, _);
+    !(<id>, a)
+  }

@@ -16,14 +16,13 @@ rules
 
   // normalize functional constraints to predicate constraints
 
-  normalize-functional-constraints = ?(a, <id>);
+  normalize-functional-constraints(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize functional constraints...");
     bottomup(
       try(normalize-functional-cdecl)
     ; try(normalize-functional-head(|a))
     ; try(normalize-functional-cops(|a))
-    );
-    !(a, <id>)
+    )
 
 
   normalize-functional-cdecl:

@@ -120,9 +120,7 @@ rules
     Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
     d : ty.
 
-  LabelRef[[ t@EOP() ^ (s) : ty ]] :=
-    Lbl{EOP()} -> s, Lbl{EOP()} |-> d, @t.decl := d,
-    d : ty.
+  LabelRef[[ EOP() ^ (s) : EDGE() ]].
 
 
   RE(L)[[ l@Decl() ^ (s) : ty ]] :=

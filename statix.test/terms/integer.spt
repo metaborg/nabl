@@ -28,12 +28,12 @@ test integer constraint argument [[
 test unifying equal integers succeeds [[
   resolve 12 == 12
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test unifying inequal integers fails [[
   resolve 12 == 7
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test matching same integer succeeds [[
   resolve c(12)
@@ -41,7 +41,7 @@ test matching same integer succeeds [[
     c : int
     c(12).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test matching inequal integer fails [[
   resolve c(7)
@@ -49,4 +49,4 @@ test matching inequal integer fails [[
     c : int
     c(9).
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()

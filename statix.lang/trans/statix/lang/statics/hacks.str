@@ -57,7 +57,7 @@ rules
   path-wf-to-data-ord: EDGE() -> PRED([SCOPE(), SCOPE()])
   path-wf-to-data-ord: DATA(ty) -> PRED([<in-type> ty, <in-type> ty])
 
-  path-wf-to-result: EDGE() -> PATH()
+  path-wf-to-result: EDGE() -> TUPLE([PATH(), /*LABEL(),*/ SCOPE()])
   path-wf-to-result: DATA(ty) -> TUPLE([PATH(), /*LABEL(),*/ <inout-type> ty]) // FIXME label
 
 rules

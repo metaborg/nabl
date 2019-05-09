@@ -10,7 +10,7 @@ test predicate constraint lifting all arguments [[
 
     cs maps c(list(*), list(*))
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test predicate constraint lifting some arguments [[
   resolve cs(2, []), cs(1, [1, 1])
@@ -20,7 +20,7 @@ test predicate constraint lifting some arguments [[
 
     cs maps c(*, list(*))
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test functional constraint lifting all arguments [[
   resolve {xs' ys'}
@@ -35,7 +35,7 @@ test functional constraint lifting all arguments [[
     eq : int * int
     eq(i, i).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test functional constraint lifting some input and some output arguments [[
   resolve {xs' x'}
@@ -49,7 +49,7 @@ test functional constraint lifting some input and some output arguments [[
     eq : int * int
     eq(i, i).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test functional constraint lifting some input and all output arguments [[
   resolve {t1 t2}
@@ -62,7 +62,7 @@ test functional constraint lifting some input and all output arguments [[
     eq : (int * int) * (int * int)
     eq(is, is).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test functional constraint lifting only input arguments [[
   resolve {x} fs([2, 2], x), eq(x, 2)
@@ -74,7 +74,7 @@ test functional constraint lifting only input arguments [[
     eq : int * int
     eq(i, i).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test functional constraint lifting only output arguments [[
   resolve fs([2], _)
@@ -91,4 +91,4 @@ test output variable in lifted constraint not treated as guard [[
     f : int -> int
     f(x) = x.
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()

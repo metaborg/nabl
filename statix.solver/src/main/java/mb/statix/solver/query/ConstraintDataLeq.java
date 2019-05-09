@@ -22,7 +22,7 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
-public class ConstraintDataLeq implements DataLeq<ITerm> {
+class ConstraintDataLeq implements DataLeq<ITerm> {
 
     private final Rule constraint;
     private final State state;

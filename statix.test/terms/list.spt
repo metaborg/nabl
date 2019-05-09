@@ -32,22 +32,22 @@ test integer constraint argument [[
 test unifying equal empty lists succeeds [[
   resolve [] == []
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test unifying equal singleton lists succeeds [[
   resolve [7] == [7]
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test unifying equal lists with inequal construction succeeds [[[
   resolve [7|[8,9]] == [7,8,9]
 ]]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test unifying inequal lists fails [[
   resolve [] == [7]
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test matching same empty list succeeds [[
   resolve c([])
@@ -55,7 +55,7 @@ test matching same empty list succeeds [[
     c : list(int)
     c([]).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test matching same singleton list succeeds [[
   resolve c([7])
@@ -63,7 +63,7 @@ test matching same singleton list succeeds [[
     c : list(int)
     c([7]).
 ]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test matching same list with inequal construction succeeds [[[
   resolve c([7|[8,9]])
@@ -71,7 +71,7 @@ test matching same list with inequal construction succeeds [[[
     c : list(int)
     c([7,8|[9]]).
 ]]] analysis succeeds
-   //run evaluate-test to SUCCEEDS()
+   run evaluate-test to SUCCEEDS()
 
 test matching empty list with singleton list fails [[
   resolve c([])
@@ -79,7 +79,7 @@ test matching empty list with singleton list fails [[
     c : list(int)
     c([7]).
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test matching singleton list with empty list fails [[
   resolve c([7])
@@ -87,7 +87,7 @@ test matching singleton list with empty list fails [[
     c : list(int)
     c([]).
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test matching long list with singleton list fails [[
   resolve c([7, 8])
@@ -95,7 +95,7 @@ test matching long list with singleton list fails [[
     c : list(int)
     c([7]).
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test matching singleton list with long list fails [[
   resolve c([7])
@@ -103,4 +103,4 @@ test matching singleton list with long list fails [[
     c : list(int)
     c([7, 8]).
 ]] analysis succeeds
-   //run evaluate-test to FAILS()
+   run evaluate-test to FAILS()

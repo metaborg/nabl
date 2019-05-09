@@ -38,4 +38,9 @@ menus
 
     separator
 
+    action: "Show normalized AST"   = show-normalized-aterm
+    action: "Format normalized AST" = format-normalized
+
+    separator
+
     action: "Show explicated AST"   = show-explicated-aterm

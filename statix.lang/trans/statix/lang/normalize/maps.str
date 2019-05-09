@@ -16,8 +16,8 @@ rules
 
   // replace functional and predicate maps to explicit constraints and rules
 
-  normalize-mapping-constraints:
-      (a, Module(x, section*){a*}) -> (a, Module(x, section''*){a*})
+  normalize-mapping-constraints(|a):
+      Module(x, section*){a*} -> Module(x, section''*){a*}
     with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
     with (section'*, maps) := <collect-map(replace-map(|a))> section*;
          rule* := <map(map-to-rules(|a)); concat> maps;

@@ -34,8 +34,6 @@ import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
@@ -71,7 +69,6 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.Rule;
-import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
 
 public class GreedySolver {
@@ -373,22 +370,10 @@ public class GreedySolver {
             }
 
             @Override public State caseResolveQuery(CResolveQuery c) throws InterruptedException {
-                final Optional<ITerm> relation = c.relation();
                 final IQueryFilter filter = c.filter();
                 final IQueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm resultTerm = c.resultTerm();
-
-                final Type type;
-                if(relation.isPresent()) {
-                    type = state.spec().relations().get(relation.get());
-                    if(type == null) {
-                        debug.error("Ignoring query for unknown relation {}", relation.get());
-                        return fail(c, state);
-                    }
-                } else {
-                    type = StatixTerms.SCOPE_REL_TYPE;
-                }
 
                 final IUnifier.Immutable unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
@@ -405,23 +390,17 @@ public class GreedySolver {
                     // @formatter:off
                     final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
                                 .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
-                                .withDataWF(filter(relation, type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
+                                .withDataWF(filter.getDataWF(state, params::isComplete, subDebug))
                                 .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
-                                .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params::isComplete, subDebug), subDebug))
+                                .withDataEquiv(min.getDataEquiv(state, params::isComplete, subDebug))
                                 .withEdgeComplete(isComplete)
                                 .withDataComplete(isComplete)
-                                .build(state.scopeGraph(), relation);
+                                .build(state.scopeGraph());
                     // @formatter:on
                     final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
-                    final List<ITerm> pathTerms;
-                    if(relation.isPresent()) {
-                        pathTerms =
-                                paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                                        .collect(ImmutableList.toImmutableList());
-                    } else {
-                        pathTerms = paths.stream().map(p -> B.newBlob(p.getPath()))
-                                .collect(ImmutableList.toImmutableList());
-                    }
+                    final List<ITerm> pathTerms =
+                            paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
+                                    .collect(ImmutableList.toImmutableList());
                     return success(c, state, ImmutableList.of(),
                             ImmutableList.of(new CEqual(B.newList(pathTerms), resultTerm, c)), fuel);
                 } catch(IncompleteDataException e) {
@@ -559,38 +538,6 @@ public class GreedySolver {
             }
 
         });
-    }
-
-    private DataWF<ITerm> filter(Optional<ITerm> relation, Type type, DataWF<ITerm> filter, IDebugContext debug) {
-        return new DataWF<ITerm>() {
-            @Override public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
-                return filter.wf(filter(relation, type, datum, debug));
-            }
-        };
-    }
-
-    private DataLeq<ITerm> filter(Optional<ITerm> relation, Type type, DataLeq<ITerm> filter, IDebugContext debug) {
-        return new DataLeq<ITerm>() {
-
-            @Override public boolean leq(List<ITerm> d1, List<ITerm> d2)
-                    throws ResolutionException, InterruptedException {
-                return filter.leq(filter(relation, type, d1, debug), filter(relation, type, d2, debug));
-            }
-
-            @Override public boolean alwaysTrue() throws InterruptedException {
-                return filter.alwaysTrue();
-            }
-
-        };
-    }
-
-    private List<ITerm> filter(Optional<ITerm> relation, Type type, List<ITerm> datum, IDebugContext debug)
-            throws ResolutionException {
-        if(datum.size() != type.getArity()) {
-            debug.error("Ignoring {}-ary data for {}-ary relation {}", datum.size(), type.getArity(), relation);
-            throw new ResolutionException("Wrong data arity.");
-        }
-        return datum.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList());
     }
 
 }

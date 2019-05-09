@@ -6,7 +6,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
 
-public class RelationLabelOrder implements LabelOrder<ITerm> {
+class RelationLabelOrder implements LabelOrder<ITerm> {
 
     private final IRelation.Immutable<ITerm> labelOrd;
 

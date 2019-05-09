@@ -1,7 +1,7 @@
 package mb.statix.spec;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -36,11 +36,13 @@ public abstract class ASpec {
                 .collect(ImmutableList.toImmutableList());
     }
 
+    @Value.Parameter public abstract Set<ITerm> edgeLabels();
+
+    @Value.Parameter public abstract Set<ITerm> relationLabels();
+
+    @Value.Parameter public abstract ITerm noRelationLabel();
+
     @Value.Parameter public abstract IAlphabet<ITerm> labels();
-
-    @Value.Parameter public abstract ITerm endOfPath();
-
-    @Value.Parameter public abstract Map<ITerm, Type> relations();
 
     @Value.Parameter public abstract Multimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
 

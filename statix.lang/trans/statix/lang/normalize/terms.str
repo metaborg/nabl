@@ -17,13 +17,12 @@ rules
   // normalization for a bunch of context-free things that appear in terms
   // none of these depend on analysis
 
-  normalize-terms = ?(a, <id>);
+  normalize-terms(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
     bottomup(
       try(normalize-occurrence-position(|a))
     ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
-    );
-    !(a, <id>)
+    )
 
 
   normalize-occurrence-position(|a):

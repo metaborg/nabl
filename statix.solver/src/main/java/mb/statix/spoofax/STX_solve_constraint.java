@@ -47,9 +47,8 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<Tuple2<List<ITermVar>, List<IConstraint>>> constraintMatcher =
-                M.tuple2(M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
-                        (t, vs, c) -> ImmutableTuple2.of(vs, c));
+        final IMatcher<Tuple2<List<ITermVar>, List<IConstraint>>> constraintMatcher = M.tuple2(
+                M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(), (t, vs, c) -> ImmutableTuple2.of(vs, c));
         final Function1<Tuple2<List<ITermVar>, List<IConstraint>>, ITerm> solveConstraint =
                 vars_constraint -> solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), debug);
         // @formatter:off

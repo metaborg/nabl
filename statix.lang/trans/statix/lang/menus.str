@@ -9,7 +9,6 @@ imports
 
 rules // Debugging
 
-  // Prints the abstract syntax ATerm of a selection.
   show-parsed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path;
          result   := ast
@@ -21,19 +20,17 @@ rules // Debugging
 
 rules // Debugging
 
-  // Prints the abstract syntax ATerm of a selection.
   show-desugared-aterm: (_, _, ast, path, project-path) -> (filename, result)
-    with filename := <guarantee-extension(|"aterm")> path;
+    with filename := <guarantee-extension(|"desugared.aterm")> path;
          result   := <desugar-all> ast
 
   format-desugared: (_, _, ast, path, project-path) -> (filename, result)
     with ext      := <get-extension> path;
-         filename := <guarantee-extension(|$[formatted.[ext]])> path;
+         filename := <guarantee-extension(|$[desugared.[ext]])> path;
          result   := <desugar-all;pp-Statix-string> ast
 
 rules // Debugging
 
-  // Prints the analyzed annotated abstract syntax ATerm of a selection.
   show-analyzed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path;
          result   := <nabl2-simplify-ast-indices> ast
@@ -42,6 +39,24 @@ rules // Debugging
     with ext      := <get-extension> path;
          filename := <guarantee-extension(|$[analyzed.[ext]])> path;
          result   := <pp-Statix-string> ast
+
+rules // Debugging
+
+  show-normalized-aterm: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-normalized-ast>
+    with filename := <guarantee-extension(|"normalized.aterm")> path;
+         result   := <nabl2-simplify-ast-indices> ast
+
+  format-normalized: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-normalized-ast>
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[normalized.[ext]])> path;
+         result   := <pp-Statix-string> ast
+
+  get-normalized-ast: (_, _, ast, path, project-path) -> ast'
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with (ast', _, _) := <nabl2-get-custom-analysis> a
 
 rules // Debugging
 

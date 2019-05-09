@@ -15,7 +15,6 @@ import mb.statix.solver.query.IQueryMin;
 public class CResolveQuery implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final @Nullable ITerm relation;
     private final IQueryFilter filter;
     private final IQueryMin min;
     private final ITerm scopeTerm;
@@ -23,23 +22,17 @@ public class CResolveQuery implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
 
-    public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
-            ITerm resultTerm) {
-        this(relation, filter, min, scopeTerm, resultTerm, null);
+    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
+        this(filter, min, scopeTerm, resultTerm, null);
     }
 
-    public CResolveQuery(Optional<ITerm> relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm,
-            ITerm resultTerm, @Nullable IConstraint cause) {
-        this.relation = relation.orElse(null);
+    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+            @Nullable IConstraint cause) {
         this.filter = filter;
         this.min = min;
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
-    }
-
-    public Optional<ITerm> relation() {
-        return Optional.ofNullable(relation);
     }
 
     public IQueryFilter filter() {
@@ -63,7 +56,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
-        return new CResolveQuery(relation(), filter, min, scopeTerm, resultTerm, cause);
+        return new CResolveQuery(filter, min, scopeTerm, resultTerm, cause);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -75,15 +68,13 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
-        return new CResolveQuery(relation(), filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause);
+        return new CResolveQuery(filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
+                cause);
     }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("query ");
-        sb.append(relation());
-        sb.append(" ");
         sb.append(filter.toString(termToString));
         sb.append(" ");
         sb.append(min.toString(termToString));

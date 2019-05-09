@@ -16,32 +16,68 @@ rules
 
   // normalize all higher-order constraint forms to lambda's
 
-  normalize-ho-constraints = ?(a, <id>);
+  normalize-ho-constraints(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize higher-order constraints...");
     bottomup(
       try(replace-ho-constraint(|a))
-    );
-    !(a, <id>)
+    )
 
 
-  replace-ho-constraint(|a): l@LTrue() -> LLam(ps, [], CTrue())
+  replace-ho-constraint(|a): l@LTrue(){a*} -> LLam(ps, [], CTrue()){a*}
     with ty := <norm-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
          ps := <sort-args;map(!Wld())> sort
 
-  replace-ho-constraint(|a): l@LFalse() -> LLam(ps, [], CFalse())
+  replace-ho-constraint(|a): l@LFalse(){a*} -> LLam(ps, [], CFalse()){a*}
     with ty := <norm-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
          ps := <sort-args;map(!Wld())> sort
 
-  replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C(x, ps))
+  replace-ho-constraint(|a): l@LC(x){a*} -> LLam(ps, [], C(x, ps)){a*}
     with ty := <norm-get-ast-decl-type(|a)> x;
          sort := <type-to-sort> ty;
          ps := <sort-args;make-seq-vars(|"t")> sort
 
-  replace-ho-constraint(|a): l@LPathMatch(re) -> LLam([p], [], CPathMatch(re, p))
+  replace-ho-constraint(|a): l@LPathMatch(re){a*} -> LLam([p], [], CPathMatch(re, p)){a*}
     with p := Var("ls")
 
-  replace-ho-constraint(|a): l@LPathLt(ord) -> LLam([l1, l2], [], CPathLt(ord, l1, l2))
+  replace-ho-constraint(|a): l@LPathLt(ord){a*} -> LLam([l1, l2], [], CPathLt(ord, l1, l2)){a*}
     with l1 := Var("l1");
          l2 := Var("l2")
+
+rules
+
+  // Detect most general patterns and replace them with a single wildcard.
+  // This allows the solver to determine that some predicates are always true
+  // without knowing anything about the types. For example { _ :- true } is
+  // always true. But given the type (T * U) the lambda { (_, _) :- true } is
+  // also always true. However, that is impossible to conclude without knowing
+  // the type.
+
+  normalize-lambda-patterns(|a) =
+    nabl2-custom-analysis-info-msg(|"| Normalize lambda patterns...");
+    bottomup(
+      try(generalize-lambda-pattern(|a))
+    )
+
+  generalize-lambda-pattern(|a):
+       t@LLam(ps, vs, c) -> LLam(ps'', vs, c)
+     with tys := <norm-get-ast-type(|a);in-types> t
+        ; c-vars := <collect-all(is-var, union, skip-lambda)> c
+        ; used-vars := <raw-diff> (c-vars, vs)
+        ; wld-vars := <raw-diff> (<all-vars> ps, used-vars)
+        ; wld-sbs := <map(\ v -> (v, Wld()) \)> wld-vars
+        ; ps' := <substitute(is-var)> (wld-sbs, ps)
+        ; ps'' := <zip(most-general-pattern<+Snd)> (ps', tys)
+
+  most-general-pattern: (Wld(), _) -> Wld()
+  most-general-pattern: (Tuple(ps), TUPLE(tys)) -> p
+    where ps' := <zip(most-general-pattern<+Fst)> (ps, tys)
+    with if <map(?Wld())> ps' then
+           p := Wld()
+         else
+           p := Tuple(ps')
+         end
+  most-general-pattern: (p, _) -> p
+
+  skip-lambda: LLam(_, _, _) -> []

@@ -10,8 +10,8 @@ imports
 
 rules // maps
 
-  normalize-mapping-constraints:
-    (a, Eval(vs, body){a*}) -> (a, Eval(vs, body){a*})
+  normalize-mapping-constraints(|a):
+    Eval(vs, body){a*} -> Eval(vs, body){a*}
 
 rules // util
 

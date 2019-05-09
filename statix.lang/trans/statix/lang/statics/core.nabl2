@@ -55,11 +55,9 @@ rules
 
   TopLevelSections[[ sections ^ (s) ]] :=
 
-    // sugar (but cannot split this rule)
     Lbl{Decl()} <- s,
     Lbl{Decl()} : DATA(PRED([OCCURRENCE()])),
-    Lbl{EOP()} <- s,
-    Lbl{EOP()} : EDGE(),
+    Lbl{Decl()}.ast := Decl(),
   
     Sections[[ sections ^ (s') ]].
 
