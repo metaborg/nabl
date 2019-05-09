@@ -51,10 +51,10 @@ rules
 
 rules
 
-  path-wf-to-data-wf: EDGE() -> PRED([])
+  path-wf-to-data-wf: EDGE() -> PRED([SCOPE()])
   path-wf-to-data-wf: DATA(ty) -> PRED([<in-type> ty])
 
-  path-wf-to-data-ord: EDGE() -> PRED([])
+  path-wf-to-data-ord: EDGE() -> PRED([SCOPE(), SCOPE()])
   path-wf-to-data-ord: DATA(ty) -> PRED([<in-type> ty, <in-type> ty])
 
   path-wf-to-result: EDGE() -> PATH()

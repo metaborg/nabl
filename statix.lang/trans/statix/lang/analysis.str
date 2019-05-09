@@ -44,12 +44,13 @@ rules // Analysis
                , normalize-mapping-constraints
                ; normalize-functional-constraints
                ; normalize-ho-constraints
-//             ; normalize-resolves
+               ; normalize-resolves
+         , step( analyze(|resource)
 //             ; normalize-functional-relations
-//             ; normalize-queries
+               , normalize-queries
                ; normalize-terms
                , analyze(|resource)
-         )> ast';
+         ))> ast';
          ?(ast'', a', e*, w*, n*);
 
          nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
@@ -69,7 +70,7 @@ rules // Analysis
 
   step(a,s,k) =
     a;
-    if ?(ast, a, [], _, _) then
+    if ?(ast, a, e*, _, _) then
       nabl2-custom-analysis-info-msg(|"| Transforming...");
       <keep-origin(s)> (a, ast);
       k

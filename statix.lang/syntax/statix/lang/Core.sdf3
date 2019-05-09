@@ -149,6 +149,7 @@ context-free syntax
 
   LabelPairs          = <<{LabelPair ", "}*>>
   LabelPair.LabelPair = [[LabelRef] < [LabelRef]]
+  LabelOrd            = LabelPairs
 
   LabelRE.Empty      = <0>
   LabelRE.Epsilon    = <e>
@@ -188,7 +189,7 @@ syntax
   OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" Position-CF LAYOUT?-CF "}"
 
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
-  Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
+  Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
 
   Constraint-CF.CTellEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
 
@@ -217,7 +218,7 @@ context-free syntax
    ]
 
   QueryFilter.Filter = < filter <LabelRE> and <HoConstraint>>
-  QueryMin.Min       = < min <LabelPairs> and <HoConstraint>>
+  QueryMin.Min       = < min <LabelOrd> and <HoConstraint>>
 
 lexical syntax
 

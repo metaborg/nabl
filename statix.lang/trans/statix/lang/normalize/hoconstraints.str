@@ -23,17 +23,17 @@ rules
 
 
   replace-ho-constraint(|a): l@LTrue() -> LLam(ps, [], CTrue())
-    with ty := <nabl2-get-ast-type(|a)> l;
+    with ty := <norm-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
          ps := <sort-args;map(!Wld())> sort
 
   replace-ho-constraint(|a): l@LFalse() -> LLam(ps, [], CFalse())
-    with ty := <nabl2-get-ast-type(|a)> l;
+    with ty := <norm-get-ast-type(|a)> l;
          sort := <type-to-sort> ty;
          ps := <sort-args;map(!Wld())> sort
 
   replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C(x, ps))
-    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+    with ty := <norm-get-ast-decl-type(|a)> x;
          sort := <type-to-sort> ty;
          ps := <sort-args;make-seq-vars(|"t")> sort
 

@@ -33,7 +33,7 @@ rules
 
   normalize-functional-head(|a):
       Rule(F(x, in_ts, out_t), bvs, body){a*} -> Rule(C(x, ts), bvs', body'){a*}
-    with FUN(intys, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+    with FUN(intys, outtys) := <norm-get-ast-decl-type(|a)> x;
          out_ts := <make-fresh-vars(|"out")> outtys;
          new-bvs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
          bvs' := <conc> (bvs, new-bvs);
@@ -44,11 +44,11 @@ rules
     normalize-in-rules(replace-functional-cop(|a),id,functional-cop-to-c(|a))
 
   replace-functional-cop(|a): COp(x, in_ts) -> out_t
-    with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+    with FUN(_, outtys) := <norm-get-ast-decl-type(|a)> x;
          out_ts := <make-fresh-vars(|x)> outtys;
          out_t := <build-terms(|outtys)> out_ts
 
   functional-cop-to-c(|a): (COp(x, in_ts), out_t) -> C(x, ts)
-    with FUN(_, outtys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+    with FUN(_, outtys) := <norm-get-ast-decl-type(|a)> x;
          out_ts := <match-terms(|outtys)> out_t;
          ts := <conc> (in_ts, out_ts)

@@ -102,10 +102,7 @@ rules
     Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
     NsQ{x} <- s,
     [[ filter ^ (s, NsQ{x}) ]],
-    new s', s' -P-> s,
-    Lbl{EOP()} <- s',
-    Lbl{EOP()} : DATA(PRED([])),
-    [[ min ^ (s', NsQ{x}) ]].
+    [[ min ^ (s, NsQ{x}) ]].
 
   [[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,
@@ -113,8 +110,11 @@ rules
 
   [[ NamespaceMin(prs) ^ (s,d ) ]] :=
     d.ord := prs,
-    Map1[[ prs ^ (s) ]].
+    Map1(EdgeLabelPair)[[ prs ^ (s) ]].
 
+  EdgeLabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
+    LabelRef[[ lbl1 ^ (s) : EDGE() ]],
+    LabelRef[[ lbl2 ^ (s) : EDGE() ]].
 
   LabelRef[[ t@Decl() ^ (s) : ty ]] :=
     Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
@@ -144,8 +144,8 @@ rules
   [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
     LabelRE[[ re ^ (s) : EDGE() ]].
 
-  [[ LPathLt(prs) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
-    Map1[[ prs ^ (s) ]].
+  [[ LPathLt(ord) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
+    LabelOrd[[ ord ^ (s) ]].
 
 
 /******************************************************************
@@ -158,17 +158,14 @@ rules
     LabelRef[[ rel ^ (s) : DATA(ty) ]],
     [OCCURRENCE()] is `in-types` of ty.
 
-  LabelPairs[[ t@ResolveLt(r@Occurrence(ns, _, _), rel) ^ (s) ]] :=
+  LabelOrd[[ t@ResolveLt(r@Occurrence(ns, _, _), rel) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
     NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d,
     LabelRef[[ rel ^ (s) : DATA(ty) ]],
     [OCCURRENCE()] is `in-types` of ty.
 
-  [[ OccurrenceMatch(r, rel) ^ (s) : lty ]] :=
-    Build[[ r ^ (s) : OCCURRENCE() ]],
-    LabelRef[[ rel ^ (s) : DATA(ty) ]],
-    [OCCURRENCE()] is `in-types` of ty,
-    lty is `path-wf-to-data-wf` of DATA(ty).
+  [[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
+    Build[[ r ^ (s) : OCCURRENCE() ]].
 
 
 /******************************************************************

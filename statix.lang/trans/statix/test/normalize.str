@@ -18,7 +18,7 @@ rules // maps
     with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
     with (section'*, maps) := <collect-map(replace-map(|a))> section*;
          rule* := <map(map-to-rules(|a)); concat> maps;
-         section''* := <conc> (section'*, [Rules(rule*)])
+         section''* := <conc> (section'*, <rules-to-sections> rule*)
 
 rules // util
 

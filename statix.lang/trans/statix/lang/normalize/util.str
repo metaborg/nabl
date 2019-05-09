@@ -13,6 +13,30 @@ imports
 
 rules
 
+  norm-get-ast-type(|a) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-type(|a)
+
+  norm-get-ast-property(|a,prop) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-property(|a,prop)
+
+  norm-get-ast-decl-type(|a) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-property(|a,"decl")
+  ; nabl2-get-type(|a)
+
+  norm-get-ast-decl-property(|a,prop) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-property(|a,"decl")
+  ; nabl2-get-property(|a,prop)
+
+rules
+
   // replace : old:Term -> new:Term
   // to-c : (old:Term, new:Term) -> Constraint
 
@@ -26,7 +50,7 @@ rules
   normalize-in-rules(replace,add-vars,to-c):
       LLam(ts, bvs, body){a*} -> LLam(ts, bvs', body''){a*}
     with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body'' := <filter(to-c);list-to-conj(|body)> bmaps;
+         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 

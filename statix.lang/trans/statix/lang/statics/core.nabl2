@@ -58,6 +58,8 @@ rules
     // sugar (but cannot split this rule)
     Lbl{Decl()} <- s,
     Lbl{Decl()} : DATA(PRED([OCCURRENCE()])),
+    Lbl{EOP()} <- s,
+    Lbl{EOP()} : EDGE(),
   
     Sections[[ sections ^ (s') ]].
 
@@ -202,10 +204,10 @@ rules
     LabelRE[[ re ^ (s) : _ ]],
     Build[[ p ^ (s) : LIST(LABEL()) ]].
 
-  [[ CPathLt(prs, p1, p2) ^ (s) ]] :=
+  [[ CPathLt(ord, p1, p2) ^ (s) ]] :=
     Build[[ p1 ^ (s) : LABEL() ]],
     Build[[ p2 ^ (s) : LABEL() ]],
-    Map1[[ prs ^ (s) ]].
+    LabelOrd[[ ord ^ (s) ]].
 
   [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
     LabelRef[[ lbl1 ^ (s) : _ ]],
@@ -294,13 +296,13 @@ rules
     lty is `path-wf-to-data-wf` of ty,
     [[ lt ^ (s) : lty ]].
 
-  [[ Min(prs, lt) ^ (s, ty) ]] :=
-    LabelPairs[[ prs ^ (s) ]],
+  [[ Min(ord, lt) ^ (s, ty) ]] :=
+    LabelOrd[[ ord ^ (s) ]],
     lty is `path-wf-to-data-ord` of ty,
     [[ lt ^ (s) : lty ]].
 
-  LabelPairs[[ [] ^ (s) ]].
-  LabelPairs[[ prs@[_|_] ^ (s) ]] :=
+  LabelOrd[[ [] ^ (s) ]].
+  LabelOrd[[ prs@[_|_] ^ (s) ]] :=
     Map1[[ prs ^ (s) ]].
 
 /******************************************************************

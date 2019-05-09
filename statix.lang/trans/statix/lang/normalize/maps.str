@@ -21,13 +21,14 @@ rules
     with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
     with (section'*, maps) := <collect-map(replace-map(|a))> section*;
          rule* := <map(map-to-rules(|a)); concat> maps;
-         section''* := <conc> (section'*, [Rules(rule*)])
+         section''* := <conc> (section'*, <rules-to-sections> rule*)
 
+  rules-to-sections = ?[] <+ !Rules(<id>)
+  
 
   replace-map(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
-    with d := <nabl2-get-ast-property(|a,"decl")> x;
-         ind := <nabl2-get-property(|a,"ind")> d;
-         sort := <nabl2-get-type(|a);type-to-sort> d
+    with ind := <norm-get-ast-decl-property(|a,"ind")> x;
+         sort := <norm-get-ast-decl-type(|a);type-to-sort> x
 
   map-to-rules(|a): (CDeriveMap(x, y, lift*), _) -> [base-rule, elem-rule]
     with base-rule := <cmap-base-rule> (x, y, lift*);
@@ -43,9 +44,8 @@ rules
 
 
   replace-map(|a): FDeriveMap(x, _, _, _) -> CDecl(ind, x, sort)
-    with d := <nabl2-get-ast-property(|a,"decl")> x;
-         ind := <nabl2-get-property(|a,"ind")> d;
-         sort := <nabl2-get-type(|a);type-to-sort> d
+    with ind := <norm-get-ast-decl-property(|a,"ind")> x;
+         sort := <norm-get-ast-decl-type(|a);type-to-sort> x
 
   map-to-rules(|a): (FDeriveMap(x, y, in-lift*, out-lift), _) -> [base-rule, elem-rule]
     with out-lift* := <lift-to-lifts> out-lift;

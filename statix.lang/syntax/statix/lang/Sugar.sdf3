@@ -126,7 +126,7 @@ context-free syntax
 syntax
 
   HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
-  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "]"
+  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "]"
 
 /******************************************************************
  * Resolve & Query
@@ -141,7 +141,7 @@ context-free syntax
 
 
   QueryMin.NoMin =
-  QueryMin.Min   = < min <LabelPairs>>
+  QueryMin.Min   = < min <LabelOrd>>
 
   Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term]]
   Constraint.CResolveRefWithRel = [[LabelRef] of [Occurrence] in [Term] |-> [Term]]
@@ -150,9 +150,9 @@ syntax
 
   LabelRE-CF.ResolveMatch = "resolveMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF  "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
 
-  LabelPairs-CF.ResolveLt = "resolveLt" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
+  LabelOrd-CF.ResolveLt = "resolveLt" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
 
-  HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
+  HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
 
 
 /******************************************************************
