@@ -10,7 +10,7 @@ test query single item in the same scope succeeds [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test query multiple items in the same scope succeeds [[
   resolve {s}
@@ -23,7 +23,7 @@ test query multiple items in the same scope succeeds [[
     eq : int * int
     eq(x, x).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test multiple data for same key gives multiple results [[
   resolve {s i j k}
@@ -33,7 +33,7 @@ test multiple data for same key gives multiple results [[
     relations
       r : int -> int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match path labels with regular expression [[
   resolve {s1 s2}
@@ -45,7 +45,7 @@ test match path labels with regular expression [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match exact steps with regular expression [[
   resolve {s1 s2 s3}
@@ -59,7 +59,7 @@ test match exact steps with regular expression [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test reject path with regular expression [[
   resolve {s1 s2 s3}
@@ -71,7 +71,7 @@ test reject path with regular expression [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test default accepts all paths [[
   resolve {s1 s2 s3}
@@ -83,7 +83,7 @@ test default accepts all paths [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test query one reachable and one unreachable item [[
   resolve {s1 s2 s3}
@@ -97,7 +97,7 @@ test query one reachable and one unreachable item [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test one item shadowing another [[
   resolve {s1 s2 s3}
@@ -111,7 +111,7 @@ test one item shadowing another [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test query complete relation with another incomplete relation [[
   resolve {s1 x}
@@ -123,7 +123,7 @@ test query complete relation with another incomplete relation [[
       r1 : int -> int
       r2 : int -> int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test query via specific edge to instantiate more incomplete edge [[
   resolve {s1 s2 s3}
@@ -137,7 +137,7 @@ test query via specific edge to instantiate more incomplete edge [[
     name-resolution
       labels P Q
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test query ignores non-wellformed incomplete relation [[
   resolve {s1 s2 s3 x}
@@ -151,7 +151,7 @@ test query ignores non-wellformed incomplete relation [[
     name-resolution
       labels P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test query ignores non-wellformed incomplete edge [[
   resolve {s1 s2 s3}
@@ -165,7 +165,7 @@ test query ignores non-wellformed incomplete edge [[
     name-resolution
       labels P Q
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test adding same data multiple times is idempotent [[
   resolve {s1}
@@ -175,7 +175,7 @@ test adding same data multiple times is idempotent [[
     relations
       r : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test same data in different scopes does not shadow by default [[
   resolve {s1 s2 s3}
@@ -189,7 +189,7 @@ test same data in different scopes does not shadow by default [[
     name-resolution
       labels P Q
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test default filter allows all paths and all data [[
   resolve {s1 s2 s3 s4}
@@ -205,7 +205,7 @@ test default filter allows all paths and all data [[
     name-resolution
       labels P Q
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ask predicate relation for existing tuple succeeds [[
   resolve {s} new s,
@@ -215,7 +215,7 @@ test ask predicate relation for existing tuple succeeds [[
     relations
       r : int * int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ask predicate relation does not follow edges [[
   resolve {s1 s2} new s1 s2,
@@ -227,7 +227,7 @@ test ask predicate relation does not follow edges [[
     name-resolution
       labels P
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test ask predicate relation with free value fails [[
   resolve {s} new s,
@@ -237,52 +237,52 @@ test ask predicate relation with free value fails [[
     relations
       r : int * int
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test ask functional relation for existing tuple succeeds [[
   resolve {s} new s,
     !r[1, 1] in s, !r[2, 3] in s,
-    ?r[2, 3] in s
+    ?r[2] in s == 3
   signature
     relations
       r : int -> int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ask functional relation with free input value fails [[
   resolve {s} new s,
     !r[1, 1] in s, !r[2, 3] in s,
-    ?r[_, 3] in s
+    ?r[_] in s == 3
   signature
     relations
       r : int -> int
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test ask functional relation with free output value succeeds [[
   resolve {s} new s,
     !r[1, 1] in s, !r[2, 3] in s,
-    ?r[1, _] in s
+    ?r[1] in s == _
   signature
     relations
       r : int -> int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ask functional relation for non-existing input fails [[
   resolve {s} new s,
     !r[1, 1] in s, !r[2, 3] in s,
-    ?r[3, _] in s
+    ?r[3] in s == _
   signature
     relations
       r : int -> int
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test ask functional relation unifies output value [[
   resolve {s i j} new s,
     !r[2, i] in s,
-    ?r[2, j] in s,
+    ?r[2] in s == j,
     eq(i, j)
   signature
     relations
@@ -291,7 +291,7 @@ test ask functional relation unifies output value [[
     eq : int * int
     eq(x, x).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ask functional relation inline succeeds [[
   resolve {s}
@@ -301,7 +301,7 @@ test ask functional relation inline succeeds [[
     relations
       r : int -> int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ask functional relation inline succeeds [[
   resolve {s}
@@ -311,7 +311,7 @@ test ask functional relation inline succeeds [[
     relations
       r : int -> int * int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test predicate path projections succeed [[
   resolve {s1 s2 s3 p}
@@ -323,7 +323,7 @@ test predicate path projections succeed [[
     name-resolution
       labels P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
  
 test functional path projections succeed [[
   resolve {s1 s2 s3 p}
@@ -335,7 +335,7 @@ test functional path projections succeed [[
     name-resolution
       labels P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
  
 test end-of-path label for shortest path [[
   resolve {s1 s2 s3 p}
@@ -349,7 +349,7 @@ test end-of-path label for shortest path [[
     eq : list(label) * list(label)
     eq(ls, ls).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
  
 test end-of-path label for longest path [[
   resolve {s1 s2 s3 p}
@@ -363,7 +363,7 @@ test end-of-path label for longest path [[
     eq : list(label) * list(label)
     eq(ls, ls).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
  
 test labels projections succeed [[
   resolve {s1 s2 s3 s4 p1 p2}
@@ -380,5 +380,5 @@ test labels projections succeed [[
     eq : list(label) * list(label)
     eq(ls, ls).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
  

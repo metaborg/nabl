@@ -6,7 +6,7 @@ imports
 
 sorts
 
-  IType // internal types
+  IType // internal type
   TType // term type
 
 context-free syntax
@@ -15,6 +15,8 @@ context-free syntax
   IType.FUN  = [[TTypes] -> [TTypes]]
   IType.NS   = [[TTypes]]
   IType.OP   = [[TTypes] -> [TType]]
+  IType.EDGE = <edge>
+  IType.DATA = <data(<IType>)>
 
   TTypes = {TType " * "}*
 
@@ -28,3 +30,4 @@ context-free syntax
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
+

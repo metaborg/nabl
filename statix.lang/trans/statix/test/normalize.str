@@ -2,32 +2,29 @@ module statix/test/normalize
 
 imports
 
+  nabl2/api
+
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/normalize/maps
+  statix/lang/normalize/util
 
   signatures/statix/test/-
 
-rules
+rules // maps
 
-  normalize-functional-cop(|a):
-      Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
-    with (body', bmaps) := <collect-map(replace-cop(|a), not-in-lambda)> body;
-         body'' := <map(cop-to-c(|a));list-to-conj(|body')> bmaps;
-         new-bvs := <map(Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
-
-  normalize-wildcard:
-      Test(bvs, body, section*){a*} -> Test(bvs', body', section*){a*}
-    with (body', bmaps) := <collect-map(replace-wld, not-in-lambda)> body;
-         new-bvs := <map(Snd)> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
-
-  normalize-as-pattern:
-      Test(bvs, body, section*){a*} -> Test(bvs, body'', section*){a*}
-    with (body', bmaps) := <collect-map(replace-as, not-in-lambda)> body;
-         body'' := <map(as-to-constraint);list-to-conj(|body')> bmaps
-
-  explicate-cmaps(|a): Test(bvs, body, section*){a*} -> Test(bvs, body, section''*){a*}
-    with (section'*, maps) := <collect-map(replace-cmap(|a))> section*;
-         rule* := <map(cmap-to-rules(|a)); concat> maps;
+  normalize-mapping-constraints:
+      (a, Test(bvs, body, section*){a*}) -> (a, Test(bvs, body, section''*){a*})
+    with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
+    with (section'*, maps) := <collect-map(replace-map(|a))> section*;
+         rule* := <map(map-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, [Rules(rule*)])
+
+rules // util
+
+  normalize-in-rules(replace,add-vars,to-c):
+      Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
+    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)

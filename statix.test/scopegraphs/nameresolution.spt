@@ -13,7 +13,7 @@ test resolve reference with same name in the same scope succeeds [[
       labels P
       resolve Var
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test resolve reference with different name in the same scope fails [[
   resolve {s}
@@ -26,7 +26,7 @@ test resolve reference with different name in the same scope fails [[
       labels P
       resolve Var
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test resolution policy filter forces a step [[
   resolve {s1 s2}
@@ -41,7 +41,7 @@ test resolution policy filter forces a step [[
       labels P
       resolve Var filter P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test resolution policy filter cannot reach declaration [[
   resolve {s1 s2}
@@ -55,7 +55,7 @@ test resolution policy filter cannot reach declaration [[
       labels P
       resolve Var filter P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test resolution policy min is applied [[
   resolve {s1 s2 s3}
@@ -70,14 +70,14 @@ test resolution policy min is applied [[
       labels P Q
       resolve Var min Q < P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test refer explicitly to resolution policy filter succeeds [[
   resolve {s1 s2}
     new s1 s2, s1 -P-> s2,
     s1 -> Var{"x"@s1},
     s2 -> Var{"x"@s2},
-    query decl resolveFilter[Var{_@-}] in s1 |-> [(_, Var{_@s2})]
+    query filter resolveMatch[Var{_@-}, decl] in s1 |-> [(_, Var{_@s2})]
   signature
     namespaces
       Var : string
@@ -85,14 +85,14 @@ test refer explicitly to resolution policy filter succeeds [[
       labels P Q
       resolve Var filter P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test refer explicitly to resolution policy min succeeds [[
   resolve {s1 s2 s3}
     new s1 s2 s3,
     s1 -P-> s2, s2 -> Var{"x"@s2},
     s1 -Q-> s3, s3 -> Var{"x"@s3},
-    query decl resolveMin[Var{_@-}] in s1 |-> [(_, Var{_@s3})]
+    query filter decl min resolveLt[Var{_@-}, decl] in s1 |-> [(_, Var{_@s3})]
   signature
     namespaces
       Var : string
@@ -100,7 +100,7 @@ test refer explicitly to resolution policy min succeeds [[
       labels P Q
       resolve Var min Q < P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test resolve occurrence relations in the same scope succeeds [[
   resolve {s}
@@ -115,7 +115,7 @@ test resolve occurrence relations in the same scope succeeds [[
       labels P
       resolve Var
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test resolve occurrence relations with resolution policy succeeds [[
   resolve {s1 s2 s3 s4}
@@ -133,4 +133,4 @@ test resolve occurrence relations with resolution policy succeeds [[
       labels P Q
       resolve Var filter P (P|Q)* min Q < P
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()

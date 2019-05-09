@@ -47,7 +47,7 @@ test nullary namespace succeeds [[
     namespaces
       Var :
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unary namespace succeeds [[
   resolve Var{1@_} == _
@@ -55,7 +55,7 @@ test unary namespace succeeds [[
     namespaces
       Var : int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test binary namespace succeeds [[
   resolve Var{"x" 1 @_} == _
@@ -63,7 +63,7 @@ test binary namespace succeeds [[
     namespaces
       Var : string * int
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unify equal occurrences succeeds [[
   resolve Var{"x"@_} == Var{"x"@_}
@@ -71,7 +71,7 @@ test unify equal occurrences succeeds [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unify inequal occurrences with same namespace succeeds [[
   resolve Var{"x"@_} == Var{"y"@_}
@@ -79,7 +79,7 @@ test unify inequal occurrences with same namespace succeeds [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test unify  occurrences with inequal namespace and equal name succeeds [[
   resolve Var1{"x"@_} == Var2{"y"@_}
@@ -88,7 +88,7 @@ test unify  occurrences with inequal namespace and equal name succeeds [[
       Var1 : string
       Var2 : string
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test unify occurrences with inequal positions fails [[
   resolve {s1 s2} new s1 s2, Var{"x"@s1} == Var{"x"@s2}
@@ -96,7 +96,7 @@ test unify occurrences with inequal positions fails [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test unify occurrences without positions succeeds [[
   resolve Var{"x"@-} == Var{"x"@-}
@@ -104,7 +104,7 @@ test unify occurrences without positions succeeds [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unify occurrences with and without positions fails [[
   resolve {s} new s, Var{"x"@s} == Var{"x"@-}
@@ -112,7 +112,7 @@ test unify occurrences with and without positions fails [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test unify occurrences without position and wildcard position succeeds [[
   resolve Var{"x"@_} == Var{"x"@-}
@@ -120,7 +120,7 @@ test unify occurrences without position and wildcard position succeeds [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match occurrence without position succeeds [[
   resolve c(Var{"x" @-})
@@ -131,7 +131,7 @@ test match occurrence without position succeeds [[
     c : occurrence
     c(Var{x@-}).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match occurrence with position succeeds [[
   resolve {s} new s, c(Var{"x" @s})
@@ -142,7 +142,7 @@ test match occurrence with position succeeds [[
     c : occurrence
     c(Var{x@_}).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match occurrence with different name fails [[
   resolve c(Var{"x" @-})
@@ -153,7 +153,7 @@ test match occurrence with different name fails [[
     c : occurrence
     c(Var{"y" @-}).
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test occurrence positions of same scope are equal [[
   resolve {s} new s, Var{"x"@s} == Var{"x"@s}
@@ -161,7 +161,7 @@ test occurrence positions of same scope are equal [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test occurrence positions of different scopes are equal [[
   resolve {s1 s2} new s1 s2, Var{"x"@s1} == Var{"x"@s2}
@@ -169,7 +169,7 @@ test occurrence positions of different scopes are equal [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test occurrence positions of same term are equal [[
   resolve {x} x == "x", Var{x@x} == Var{x@x}
@@ -177,7 +177,7 @@ test occurrence positions of same term are equal [[
     namespaces
       Var : string
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test occurrence positions of different terms are inequal [[
   resolve {x1 x2 p1 p2}
@@ -190,4 +190,4 @@ test occurrence positions of different terms are inequal [[
     eq : occurrence * occurrence
     eq(Var{x@p}, Var{x@p}).
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()

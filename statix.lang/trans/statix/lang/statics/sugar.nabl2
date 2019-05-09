@@ -48,7 +48,7 @@ rules
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Build[[ outarg ^ (s_body) : outty ]].
+    Match[[ outarg ^ (s_rule) : outty ]].
 
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
@@ -81,13 +81,13 @@ rules
  ******************************************************************/
 
   [[ CAskRel(rel, ts, st) ^ (s) ]] :=
-    RelRef[[ rel ^ (s) : ty ]],
+    LabelRef[[ rel ^ (s) : DATA(ty) ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
     tys is `inout-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
   Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
-    RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Inline notation can only be used for functional relations.",
+    LabelRef[[ rel ^ (s) : DATA(ty) ]], ty != PRED(_) | error "Use predicate notation for non-functional relations.",
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
@@ -97,21 +97,40 @@ rules
 /******************************************************************
  * Scope Graph                                                    *
  ******************************************************************/
-
  
   [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
     Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
     NsQ{x} <- s,
     [[ filter ^ (s, NsQ{x}) ]],
-    [[ min ^ (s, NsQ{x}) ]].
+    new s', s' -P-> s,
+    Lbl{EOP()} <- s',
+    Lbl{EOP()} : DATA(PRED([])),
+    [[ min ^ (s', NsQ{x}) ]].
 
   [[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,
-    LabelRE[[ re ^ (s) ]].
+    LabelRE[[ re ^ (s) : EDGE() ]].
 
   [[ NamespaceMin(prs) ^ (s,d ) ]] :=
     d.ord := prs,
     Map1[[ prs ^ (s) ]].
+
+
+  LabelRef[[ t@Decl() ^ (s) : ty ]] :=
+    Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
+    d : ty.
+
+  LabelRef[[ t@EOP() ^ (s) : ty ]] :=
+    Lbl{EOP()} -> s, Lbl{EOP()} |-> d, @t.decl := d,
+    d : ty.
+
+
+  RE(L)[[ l@Decl() ^ (s) : ty ]] :=
+    L[[ l ^ (s) : ty ]].
+
+  RE(L)[[ l@EOP() ^ (s) : ty ]] :=
+    L[[ l ^ (s) : ty ]].
+
 
   Term(V)[[ PathSrcOp(t) ^ (s) : SCOPE() ]] :=
     Term(V)[[ t ^ (s) : PATH() ]].
@@ -123,7 +142,7 @@ rules
     Term(V)[[ t ^ (s) : PATH() ]].
 
   [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
-    LabelRE[[ re ^ (s) ]].
+    LabelRE[[ re ^ (s) : EDGE() ]].
 
   [[ LPathLt(prs) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
     Map1[[ prs ^ (s) ]].
@@ -133,13 +152,23 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  [[ rf@ResolveFilter(r@Occurrence(ns, _, _)) ^ (s, ty) ]] :=
-    Build[[ r ^ (s) : ty ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @rf.decl := d.
+  RE(L)[[ t@ResolveMatch(r@Occurrence(ns, _, _), rel) ^ (s) : DATA(ty) ]] :=
+    Build[[ r ^ (s) : OCCURRENCE() ]],
+    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d,
+    LabelRef[[ rel ^ (s) : DATA(ty) ]],
+    [OCCURRENCE()] is `in-types` of ty.
 
-  [[ rm@ResolveMin(r@Occurrence(ns, _, _)) ^ (s, ty) ]] :=
-    Build[[ r ^ (s) : ty ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @rm.decl := d.
+  LabelPairs[[ t@ResolveLt(r@Occurrence(ns, _, _), rel) ^ (s) ]] :=
+    Build[[ r ^ (s) : OCCURRENCE() ]],
+    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d,
+    LabelRef[[ rel ^ (s) : DATA(ty) ]],
+    [OCCURRENCE()] is `in-types` of ty.
+
+  [[ OccurrenceMatch(r, rel) ^ (s) : lty ]] :=
+    Build[[ r ^ (s) : OCCURRENCE() ]],
+    LabelRef[[ rel ^ (s) : DATA(ty) ]],
+    [OCCURRENCE()] is `in-types` of ty,
+    lty is `path-wf-to-data-wf` of DATA(ty).
 
 
 /******************************************************************

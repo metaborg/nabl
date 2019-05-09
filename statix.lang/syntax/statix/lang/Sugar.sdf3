@@ -80,9 +80,9 @@ syntax
 
   // short-hand for querying relations
 
-  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CAskRel  = "?" LabelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
-  Term-CF.AskRelOp = "?" RelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Term-CF.AskRelOp = "?" LabelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
 context-free priorities
 
@@ -113,7 +113,7 @@ context-free syntax
   NamespaceMin.NoNamespaceMin = 
 
   Constraint.CTellDecl        = [[Term] -> [Occurrence]]
-  Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [RelRef] [Term]]
+  Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [LabelRef] [Term]]
 
   Term.PathSrcOp    = <src(<Term>)>
   Term.PathDstOp    = <dst(<Term>)>
@@ -144,12 +144,16 @@ context-free syntax
   QueryMin.Min   = < min <LabelPairs>>
 
   Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term]]
-  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term]]
+  Constraint.CResolveRefWithRel = [[LabelRef] of [Occurrence] in [Term] |-> [Term]]
 
 syntax
 
-  QueryFilter-CF.ResolveFilter = LAYOUT?-CF "resolveFilter" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
-  QueryMin-CF.ResolveMin       = LAYOUT?-CF "resolveMin" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
+  LabelRE-CF.ResolveMatch = "resolveMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF  "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
+
+  LabelPairs-CF.ResolveLt = "resolveLt" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
+
+  HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "," LAYOUT?-CF LabelRef-CF LAYOUT?-CF "]"
+
 
 /******************************************************************
  * Sorts & Constructors                                           *

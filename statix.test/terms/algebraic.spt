@@ -63,7 +63,7 @@ signature
     None : MaybeInt
     Some : int -> MaybeInt
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unify equal 'some' constructors succeeds [[
 resolve {i} Some(1) == Some(i)
@@ -72,7 +72,7 @@ signature
     None : MaybeInt
     Some : int -> MaybeInt
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unify inequal constructors fails [[
 resolve None() == Some(_)
@@ -81,7 +81,7 @@ signature
     None : MaybeInt
     Some : int -> MaybeInt
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test unify inequal constructor arguments fails [[
 resolve Some(1) == Some(2)
@@ -90,7 +90,7 @@ signature
     None : MaybeInt
     Some : int -> MaybeInt
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   //run evaluate-test to FAILS()
 
 test match constructor succeeds [[
 resolve c(None())
@@ -102,4 +102,4 @@ rules
   c : MaybeInt
   c(None()).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()

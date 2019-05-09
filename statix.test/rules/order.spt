@@ -33,7 +33,7 @@ rules
   f(1, 2) :- true.
   f(_, 2) :- false.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match left-specific rule [[
 resolve f(1, 4)
@@ -44,7 +44,7 @@ rules
   f(1, 2) :- false.
   f(_, _) :- false.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match right-specific rule [[
 resolve f(3, 2)
@@ -55,7 +55,7 @@ rules
   f(1, 2) :- false.
   f(_, _) :- false.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match least specific rule [[
 resolve f(3, 1)
@@ -66,7 +66,7 @@ rules
   f(1, _) :- false.
   f(_, _) :- true.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match left-specific rule with as-patterns [[
 resolve f([3], [1])
@@ -75,7 +75,7 @@ rules
   f(_, x@[_]) :- false.
   f(x@[_], _) :- true.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test match right-specific rule with as-patterns [[
 resolve f([], [1])
@@ -84,4 +84,4 @@ rules
   f(_, x@[_]) :- true.
   f(x@[_], _) :- false.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()

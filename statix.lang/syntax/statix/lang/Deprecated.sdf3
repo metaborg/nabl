@@ -11,11 +11,20 @@ template options
 
 context-free syntax
 
-  QueryFilter.Filter = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
-  QueryMin.Min       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+  Constraint.CResolveQuery = [
+    query [QueryTarget-dep]
+     [QueryFilter]
+     [QueryMin]
+      in [Term] |-> [Term]] {deprecated}
 
-  QueryFilter.Filter = < filter pathMatch[<LabelRE>] and <HoConstraint>> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
-  QueryMin.Min       = < min pathLt[<LabelPairs>] and <HoConstraint>>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+  QueryTarget-dep.NoTarget  = "()"
+  QueryTarget-dep.RelTarget = LabelRef
 
-  NamespaceFilter.NamespaceFilter = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
-  NamespaceMin.NamespaceMin       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+  QueryFilter.Filter_dep = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
+  QueryMin.Min_dep       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+
+  QueryFilter.Filter_dep = < filter pathMatch[<LabelRE>] and <HoConstraint>> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
+  QueryMin.Min_dep       = < min pathLt[<LabelPairs>] and <HoConstraint>>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+
+  NamespaceFilter.NamespaceFilter_dep = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
+  NamespaceMin.NamespaceMin_dep       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}

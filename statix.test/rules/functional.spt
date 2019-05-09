@@ -60,7 +60,7 @@ test nullary output succeeds [[
     f : int -> ()
     f(i) = ().
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unary output succeeds [[
   resolve f(1) == 1
@@ -68,7 +68,7 @@ test unary output succeeds [[
     f : int -> int
     f(i) = i.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test unary tuple output matches value succeeds [[
   resolve f(1) == 1
@@ -76,7 +76,7 @@ test unary tuple output matches value succeeds [[
     f : int -> (int)
     f(i) = i.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test ternary output tuple succeeds [[
   resolve f(1) == (1, 1)
@@ -84,7 +84,7 @@ test ternary output tuple succeeds [[
     f : int -> int * int
     f(i) = (i, i).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test output variable succeeds [[
   resolve f(1) == (1, 1)
@@ -92,7 +92,7 @@ test output variable succeeds [[
     f : int -> int * int
     f(i) = r :- r == (i, i).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test predicate use of functional constraint succeeds [[
   resolve f(1, 1, 1)
@@ -100,7 +100,7 @@ test predicate use of functional constraint succeeds [[
     f : int -> int * int
     f(i) = (i, i).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test output variable not treated as guard [[
   resolve f(1, _)
@@ -108,7 +108,7 @@ test output variable not treated as guard [[
     f : int -> int
     f(x) = x.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test wildcards in head input succeeds [[
 resolve f(2) == _
@@ -116,7 +116,7 @@ rules
   f : int -> int
   f(_) = 42.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test wildcards in head output succeeds [[
 resolve f(3) == 2
@@ -124,7 +124,7 @@ rules
   f : int -> int
   f(3) = _.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test as-pattern in head input visible in output succeeds [[
 resolve f(1, 2) == 1
@@ -132,7 +132,7 @@ rules
   f : int * int -> int
   f(i@1, j) = i.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()
 
 test as-pattern in head input visible in body succeeds [[
 resolve f(1, 2) == 1
@@ -140,4 +140,4 @@ rules
   f : int * int -> int
   f(i@_, j) = k :- i == k.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   //run evaluate-test to SUCCEEDS()

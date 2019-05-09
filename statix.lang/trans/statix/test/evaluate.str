@@ -41,7 +41,7 @@ rules
   evaluate: ast@Test(bvs, body, _) -> result
     with a      := <nabl2-get-ast-analysis> ast;
          ext    := <nabl2-get-custom-analysis> a;
-         spec   := <spec-ast-to-aterm(|a);debug> (ast, ext);
+         spec   := <spec-ast-to-aterm(|a)> (ast, ext);
          level  := <stx--log-level>;
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
          result := <stx--solve-constraint(|spec, level)> (bvs, body')

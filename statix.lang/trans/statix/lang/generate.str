@@ -14,7 +14,7 @@ imports
 rules
 
   generate-aterm:
-    (_, _, ast@Module(name, _), path, project-path) -> result
+      (_, _, ast@Module(name, _), path, project-path) -> result
     where a   := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           ext := <nabl2-get-custom-analysis> a
     with if <nabl2-analysis-has-errors> a then
@@ -38,18 +38,18 @@ rules
   spec-ast-to-aterm(|a): (ast, ext) -> spec
     with s_mod := <nabl2-get-ast-property(|a,"scope")> ast
        ; d* := <nabl2-get-visible-decls(|a)> s_mod
-       ; lbl* := <filter(lbl-to-aterm(|a));strip-annos> d*
-       ; rel* := <filter(rel-to-aterm(|a));strip-annos> d*
+       ; edge* := <filter(edge-to-aterm(|a));strip-annos> d*
+       ; data* := <filter(data-to-aterm(|a));strip-annos> d*
        ; rule* := <filter(rule-to-aterm(|a));strip-annos;eliminate-all> d*
-       ; spec := (lbl*, rel*, rule*, ext)
+       ; spec := (edge*, data*, rule*, ext)
 
-  lbl-to-aterm(|a): d -> ast
-    where "Lbl" := <nabl2-get-occurrence-ns> d
+  edge-to-aterm(|a): d -> ast
+    where "Edge" := <nabl2-get-occurrence-ns> d
     with
       ast := <nabl2-get-property(|a, "ast")> d
 
-  rel-to-aterm(|a): d -> (ast, ty)
-    where "Rel" := <nabl2-get-occurrence-ns> d
+  data-to-aterm(|a): d -> (ast, ty)
+    where "Data" := <nabl2-get-occurrence-ns> d
     with
       ast := <nabl2-get-property(|a, "ast")> d
     ; ty  := <nabl2-get-type(|a)> d

@@ -1,0 +1,81 @@
+module statix/lang/normalize/terms
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalization for a bunch of context-free things that appear in terms
+  // none of these depend on analysis
+
+  normalize-terms = ?(a, <id>);
+    nabl2-custom-analysis-info-msg(|"| Normalize terms...");
+    bottomup(
+      try(normalize-occurrence-position(|a))
+    ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
+    );
+    !(a, <id>)
+
+
+  normalize-occurrence-position(|a):
+      Occurrence(ns, ts, p) -> Occurrence(ns, ts, p')
+    with ty := <nabl2-get-ast-type(|a)> p
+    where <not(?TERM_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
+    with p' := TermIdOp(p)
+
+
+  replace-term: Wld() -> <make-fresh-var> "wld"
+  
+  term-to-c: (Wld(), _) -> <fail>
+
+
+  replace-term: As(v, t) -> v
+
+  term-to-c: (As(v, t), _) -> CEqual(v, t)
+
+  term-no-add = ?As(_, _)
+
+
+  replace-term: NewOp() -> v
+    with v := <make-fresh-var> "new"
+
+  term-to-c: (NewOp(), v) -> CNew([v])
+
+
+  replace-term: PathSrcOp(_) -> v
+    with v := <make-fresh-var> "src"
+
+  term-to-c: (PathSrcOp(t), v) -> CPathSrc(t, v)
+
+
+  replace-term: PathDstOp(_) -> v
+    with v := <make-fresh-var> "dst"
+
+  term-to-c: (PathDstOp(t), v) -> CPathDst(t, v)
+
+
+  replace-term: PathScopesOp(_) -> v
+    with v := <make-fresh-var> "stermes"
+
+  term-to-c: (PathScopesOp(t), v) -> CPathScopes(t, v)
+
+
+  replace-term: PathLabelsOp(_) -> v
+    with v := <make-fresh-var> "labels"
+
+  term-to-c: (PathLabelsOp(t), v) -> CPathLabels(t, v)
+
+
+  replace-term: TermIdOp(_) -> v
+    with v := <make-fresh-var> "termId"
+
+  term-to-c: (TermIdOp(t), v) -> CTermId(t, v)

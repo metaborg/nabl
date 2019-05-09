@@ -55,7 +55,7 @@ context-free syntax
 
   UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
 
-  HoConstraint.LLam = <{ <{Term ", "}+> :- <LocalVars> <Constraint> }>
+  HoConstraint.LLam = <{ <{Term ", "}*> :- <LocalVars> <Constraint> }>
 
 lexical syntax
 
@@ -100,19 +100,13 @@ context-free syntax
       <{RelDecl "\n"}*>
   > {longest-match}
 
-  RelDecl.RelDecl = <<Rel> : <Type>>
+  RelDecl.RelDecl = <<Label> : <Type>>
 
   Rule = <relation <RelDecl>>
 
-  Rel.Rel = RelationId
-
-  RelRef      = Rel
-  RelRef.Decl = "decl"
-
-
 syntax
 
-  Constraint-CF.CTellRel = "!" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CTellRel = "!" LabelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
 lexical syntax
 
@@ -143,8 +137,9 @@ context-free syntax
 
   Label.Label = RelationId
 
-  LabelRef     = Label
-  LabelRef.EOP = "$"
+  LabelRef      = Label
+  LabelRef.Decl = "decl"
+  LabelRef.EOP  = "$"
 
   // namespaces
 
@@ -152,13 +147,13 @@ context-free syntax
 
   Rule = <namespace <NsDecl>>
 
-  LabelPairs          = <<{LabelPair ","}*>>
+  LabelPairs          = <<{LabelPair ", "}*>>
   LabelPair.LabelPair = [[LabelRef] < [LabelRef]]
 
   LabelRE.Empty      = <0>
   LabelRE.Epsilon    = <e>
 //LabelRE.Any        = <.>
-  LabelRE            = Label
+  LabelRE            = LabelRef
   LabelRE.Closure    = <<LabelRE>*>
   LabelRE.Neg        = <~<LabelRE>>
   LabelRE.Concat     = <<LabelRE> <LabelRE>>     {right}
@@ -214,10 +209,12 @@ lexical syntax
 
 context-free syntax
 
-  Constraint.CResolveQuery = [query [QueryTarget][QueryFilter][QueryMin] in [Term] |-> [Term]]
-
-  QueryTarget.NoTarget  = "()"
-  QueryTarget.RelTarget = RelRef
+  Constraint.CResolveQuery = [
+    query
+     [QueryFilter]
+     [QueryMin]
+      in [Term] |-> [Term]
+   ]
 
   QueryFilter.Filter = < filter <LabelRE> and <HoConstraint>>
   QueryMin.Min       = < min <LabelPairs> and <HoConstraint>>

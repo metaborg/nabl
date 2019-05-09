@@ -1,0 +1,45 @@
+module statix/lang/normalize/hoconstraints
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalize all higher-order constraint forms to lambda's
+
+  normalize-ho-constraints = ?(a, <id>);
+    nabl2-custom-analysis-info-msg(|"| Normalize higher-order constraints...");
+    bottomup(try(replace-ho-constraint(|a)));
+    !(a, <id>)
+
+
+  replace-ho-constraint(|a): l@LTrue() -> LLam(ps, [], CTrue())
+    with ty := <nabl2-get-ast-type(|a)> l;
+         sort := <type-to-sort> ty;
+         ps := <sort-args;map(!Wld())> sort
+
+  replace-ho-constraint(|a): l@LFalse() -> LLam(ps, [], CFalse())
+    with ty := <nabl2-get-ast-type(|a)> l;
+         sort := <type-to-sort> ty;
+         ps := <sort-args;map(!Wld())> sort
+
+  replace-ho-constraint(|a): l@LC(x) -> LLam(ps, [], C(x, ps))
+    with ty := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> x;
+         sort := <type-to-sort> ty;
+         ps := <sort-args;make-seq-vars(|"t")> sort
+
+  replace-ho-constraint(|a): l@LPathMatch(re) -> LLam([p], [], CPathMatch(re, p))
+    with p := Var("ls")
+
+  replace-ho-constraint(|a): l@LPathLt(ord) -> LLam([l1, l2], [], CPathLt(ord, l1, l2))
+    with l1 := Var("l1");
+         l2 := Var("l2")

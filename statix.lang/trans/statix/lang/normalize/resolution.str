@@ -1,0 +1,95 @@
+module statix/lang/normalize/resolution
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalize namespace based resolve stand-ins
+  // before functional relations
+
+  normalize-resolves = ?(a, <id>);
+    nabl2-custom-analysis-info-msg(|"| Normalize namespace-based queries...");
+    bottomup(try(normalize-resolve(|a)));
+    !(a, <id>)
+
+  normalize-resolve(|a): t@ResolveMatch(Occurrence(ns, ts, _), rel) -> wf'
+    with wf := <nabl2-get-ast-property(|a,"decl");nabl2-get-property(|a, "wf")> t;
+         wf' := Concat(wf, rel)
+
+  normalize-resolve(|a): t@ResolveLt(_, rel) -> ord'
+    with ord := <nabl2-get-ast-property(|a,"decl");nabl2-get-property(|a, "ord")> t;
+         ord' := <topdown(try(?EOP();!rel))> ord
+
+  normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _), rel) -> lam
+    with DATA([_|r_tys]) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> rel;
+         NS(ns_tys) := <nabl2-get-ast-property(|a,"decl");nabl2-get-type(|a)> ns;
+         us := <make-fresh-vars(|"u")> ns_tys;
+         d := Occurrence(ns, us, Wld());
+         wlds := <map(!Wld())> r_tys;
+         p := <build-terms(|[()|r_tys])> [d|wlds];
+         lam := LLam([p], [], CEqual(<build-terms(|ns_tys)> us, <build-terms(|ns_tys)> ts))
+  
+rules
+
+  // normalize functional relations (eliminate askrelop)
+  // after lambda's, before normalizing queries
+
+  normalize-functional-relations = ?(a, <id>);
+    nabl2-custom-analysis-info-msg(|"| Normalize functional relations...");
+    !(a, <id>)
+
+
+  replace-cop(|a): AskRelOp(rel, in_ts, st) -> out_t
+    with outtys := <nabl2-get-ast-type(|a);out-types> rel;
+         out_ts := <make-fresh-vars(|"t")> outtys;
+         out_t := <build-terms(|outtys)> out_ts
+
+  cop-to-c(|a): (op@AskRelOp(rel, in_ts, st), out_t) -> c
+    with outtys := <nabl2-get-ast-type(|a);out-types> rel;
+         out_ts := <match-terms(|outtys)> out_t;
+         ts := <conc> (in_ts, out_ts);
+         c := CAskRel(rel, ts, st)
+
+rules
+
+  // normalize queries
+
+  normalize-queries = ?(a, <id>);
+    nabl2-custom-analysis-info-msg(|"| Normalize queries...");
+    bottomup(try(normalize-query(|a)));
+    !(a, <id>)
+
+
+  normalize-query(|a): c@CAskRel(rel, ts, st) -> c'
+    with ty     := <nabl2-get-ast-type(|a)> rel;
+         intys  := <in-types> ty;
+         outtys := <out-types> ty;
+         tys    := <conc> (intys, outtys);
+
+         n      := <length> intys;
+         in_ts  := <take(|n)> ts;
+         out_ts := <drop(|n)> ts;
+
+         // query rel { (u1 ... un ... _) :- (u1 ... un) == in_ts } as [(_ ... out_ts)]
+         [u|us]     := <make-fresh-vars(|"u")> [()|intys];
+         eq         := CEqual(u, <build-terms(|intys)> us);
+         eqs        := <zip(!CEqual(<Fst>, <Snd>))> (in_ts, us);
+         match      := LLam([u], us, CConj(eq, <list-to-conj> eqs));
+         filter     := Filter(rel, match);
+         min        := <desugar-query> NoMin();
+
+         [p|wlds] := <map(!Wld())> [()|intys];
+         t        := <conc;build-terms(|tys)> (wlds, out_ts);
+         pts      := List([Tuple([p, t])]);
+         c'       := CResolveQuery(filter, min, st, pts)
+

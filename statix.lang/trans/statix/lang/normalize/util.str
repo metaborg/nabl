@@ -1,0 +1,81 @@
+module statix/lang/normalize/util
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  // replace : old:Term -> new:Term
+  // to-c : (old:Term, new:Term) -> Constraint
+
+  normalize-in-rules(replace,add-vars,to-c):
+      Rule(head, bvs, body){a*} -> Rule(head, bvs', body''){a*}
+    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  normalize-in-rules(replace,add-vars,to-c):
+      LLam(ts, bvs, body){a*} -> LLam(ts, bvs', body''){a*}
+    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body'' := <filter(to-c);list-to-conj(|body)> bmaps;
+         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  not-in-lambda = not(?LLam(_, _, _))
+
+rules
+
+  make-fresh-vars(|x) = map(!Var(<newname> x))
+
+  make-fresh-var = !Var(<newname>)
+
+  make-seq-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
+
+  list-to-conj(|tl): []     -> tl
+  list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
+
+  list-to-conj: []     -> CTrue()
+  list-to-conj: [C]    -> C
+  list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+
+  apply-lambda: (LLam(ps, bvs, body), ts) -> (bvs, body')
+    with body' := <strip-annos;substitute(?Var(_))> (ps, ts, body)
+
+  type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
+  type-to-sort: INT()        -> IntSort()
+  type-to-sort: STRING()     -> StringSort()
+  type-to-sort: PATH()       -> PathSort()
+  type-to-sort: LABEL()      -> LabelSort()
+  type-to-sort: OCCURRENCE() -> OccurrenceSort()
+  type-to-sort: SCOPE()      -> ScopeSort()
+  type-to-sort: TERM_ID()    -> TermIdSort()
+  type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)
+  type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
+
+  type-to-sort: PRED(tys)          -> SimpleType(<map(type-to-sort)> tys)
+  type-to-sort: FUN(intys, outtys) -> FunType(<map(type-to-sort)> intys, <map(type-to-sort)> outtys)
+
+  sort-args: SimpleType(args) -> args
+
+  match-terms(|tys): t -> ts
+    with if [_] := tys then
+           ts := <![<id>]> t
+         else
+           ts := <?Tuple(<id>)> t
+         end
+
+  build-terms(|tys): ts -> t
+    with if [_] := tys then
+           t := <?[<id>]> ts
+         else
+           t := <!Tuple(<id>)> ts
+         end
