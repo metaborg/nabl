@@ -41,7 +41,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
     public static IMatcher<ResolutionParameters> matcher() {
         return (term, unifier) -> IMatcher
                 .flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
-                    RegExpBuilder<Label> builder = new RegExpBuilder<>(labels);
+                    RegExpBuilder<Label> builder = new RegExpBuilder<>();
                     return matchWf(builder).match(wfTerm, unifier).<ResolutionParameters>map(
                             wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
                 })).match(term, unifier);
@@ -82,7 +82,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
 
     public static ResolutionParameters getDefault() {
         IAlphabet<Label> labels = new FiniteAlphabet<>(Label.D, Label.P, Label.I);
-        RegExpBuilder<Label> R = new RegExpBuilder<>(labels);
+        RegExpBuilder<Label> R = new RegExpBuilder<>();
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(Label.P)), R.closure(R.symbol(Label.I)));
         final IRelation.Transient<Label> order;
         try {
