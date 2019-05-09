@@ -91,11 +91,11 @@ rules
   sort-args: SimpleType(args) -> args
 
   match-terms(|tys): t -> ts
-    with if [_] := tys then
-           ts := <![<id>]> t
-         else
-           ts := <?Tuple(<id>)> t
-         end
+    where if [_] := tys then
+            ts := <![<id>]> t
+          else
+            ts := <?Tuple(<id>)> t
+          end
 
   build-terms(|tys): ts -> t
     with if [_] := tys then

@@ -45,9 +45,9 @@ rules // Analysis
                ; normalize-functional-constraints
                ; normalize-ho-constraints
                ; normalize-resolves
+               ; normalize-queries
          , step( analyze(|resource)
-//             ; normalize-functional-relations
-               , normalize-queries
+               , normalize-functional-relations
                ; normalize-terms
                , analyze(|resource)
          ))> ast';
@@ -70,7 +70,7 @@ rules // Analysis
 
   step(a,s,k) =
     a;
-    if ?(ast, a, e*, _, _) then
+    if ?(ast, a, [], _, _) then
       nabl2-custom-analysis-info-msg(|"| Transforming...");
       <keep-origin(s)> (a, ast);
       k

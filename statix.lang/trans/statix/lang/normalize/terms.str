@@ -19,8 +19,10 @@ rules
 
   normalize-terms = ?(a, <id>);
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
-    bottomup(try(normalize-occurrence-position(|a)));
-    bottomup(try(normalize-in-rules(replace-term,not(term-no-add),term-to-c)));
+    bottomup(
+      try(normalize-occurrence-position(|a))
+    ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
+    );
     !(a, <id>)
 
 

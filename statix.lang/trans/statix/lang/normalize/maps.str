@@ -23,7 +23,7 @@ rules
          rule* := <map(map-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, <rules-to-sections> rule*)
 
-  rules-to-sections = ?[] <+ !Rules(<id>)
+  rules-to-sections = ?[] <+ ![Rules(<id>)]
   
 
   replace-map(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)

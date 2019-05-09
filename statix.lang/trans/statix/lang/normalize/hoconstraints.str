@@ -18,7 +18,9 @@ rules
 
   normalize-ho-constraints = ?(a, <id>);
     nabl2-custom-analysis-info-msg(|"| Normalize higher-order constraints...");
-    bottomup(try(replace-ho-constraint(|a)));
+    bottomup(
+      try(replace-ho-constraint(|a))
+    );
     !(a, <id>)
 
 
