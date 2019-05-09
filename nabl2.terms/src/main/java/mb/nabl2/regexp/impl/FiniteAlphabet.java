@@ -2,7 +2,6 @@ package mb.nabl2.regexp.impl;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
         this(Arrays.asList(symbols));
     }
 
-    public FiniteAlphabet(Collection<S> alphabet) {
+    public FiniteAlphabet(Iterable<S> alphabet) {
         this.symbols = ImmutableList.copyOf(ImmutableSet.copyOf(alphabet));
     }
 
@@ -62,6 +61,10 @@ public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
         if(!symbols.equals(other.symbols))
             return false;
         return true;
+    }
+    
+    @Override public String toString() {
+        return symbols.toString();
     }
     
 }

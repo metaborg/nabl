@@ -1,16 +1,20 @@
 package mb.nabl2.regexp;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import mb.nabl2.regexp.impl.RegExps;
+
 public class Deriver<S> implements IRegExp.ICases<S, IRegExp<S>> {
 
-    private final S symbol;
+    private final @Nullable S symbol;
     private final IRegExpBuilder<S> builder;
 
-    public Deriver(S symbol, IRegExpBuilder<S> builder) {
+    public Deriver(@Nullable S symbol, IRegExpBuilder<S> builder) {
         this.symbol = symbol;
         this.builder = builder;
     }
 
-    public S getSymbol() {
+    public @Nullable S getSymbol() {
         return symbol;
     }
 
@@ -32,7 +36,7 @@ public class Deriver<S> implements IRegExp.ICases<S, IRegExp<S>> {
 
     @Override public IRegExp<S> concat(IRegExp<S> left, IRegExp<S> right) {
         IRegExp<S> newLeft = builder.concat(left.match(this), right);
-        if(left.isNullable()) {
+        if(RegExps.isNullable(left)) {
             return builder.or(newLeft, right.match(this));
         } else {
             return newLeft;
@@ -53,10 +57,6 @@ public class Deriver<S> implements IRegExp.ICases<S, IRegExp<S>> {
 
     @Override public IRegExp<S> complement(IRegExp<S> re) {
         return builder.complement(re.match(this));
-    }
-
-    @Override public IRegExp<S> apply(IRegExp<S> t) {
-        return t.match(this);
     }
 
 }
