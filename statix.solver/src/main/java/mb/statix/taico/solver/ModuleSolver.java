@@ -81,7 +81,7 @@ public class ModuleSolver implements IOwnable {
     
     private ModuleSolver(IMState state, Iterable<IConstraint> constraints, ICompleteness isComplete, PrefixedDebugContext debug) {
         this.state = state;
-        this.constraints = new ModuleConstraintStore(constraints, debug);
+        this.constraints = new ModuleConstraintStore(state.context(), state.owner().getId(), constraints, debug);
         this.completeness = new MCompleteness(state.owner(), constraints);
         this.isComplete = isComplete;
         this.debug = debug;

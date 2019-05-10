@@ -1,6 +1,5 @@
 package mb.statix.taico.scopegraph;
 
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -109,9 +108,9 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
     
     /**
      * @return
-     *      a collection of all the children of this scope graph
+     *      an iterable of all the children of this scope graph
      */
-    Collection<? extends IMInternalScopeGraph<S, V, L, R>> getChildren();
+    Iterable<? extends IMInternalScopeGraph<S, V, L, R>> getChildren();
     
     /**
      * Removes the given child module.
@@ -160,26 +159,6 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      *      the list of parent scopes, in the order we received them
      */
     List<? extends S> getParentScopes();
-    
-    /**
-     * Creates a deep copy of this scope graph.
-     */
-    IMInternalScopeGraph<S, V, L, R> deepCopy();
-    
-    /**
-     * Updates this scope graph to the state of the given copy.
-     * 
-     * @param copy
-     *      the copy of this scope graph
-     * @param checkConcurrency
-     *      
-     * 
-     * @throws IllegalArgumentException
-     *      If the given scope graph is not a copy of this one.
-     * @throws ConcurrentModificationException
-     *      If this scope graph has been updated after the copy was created.
-     */
-    void updateToCopy(IMInternalScopeGraph<S, V, L, R> copy, boolean checkConcurrency);
     
     /**
      * @return

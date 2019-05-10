@@ -39,7 +39,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
         trackers.put(getOwner().getId(), this);
         
         
-        for (ModuleScopeGraph child : original.getChildren()) {
+        for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : original.getChildren()) {
             TrackingModuleScopeGraph tmsg = (TrackingModuleScopeGraph) trackers.computeIfAbsent(child.getOwner().getId(), m -> child.trackingGraph(trackers));
             trackedChildren.add(tmsg);
             trackers.put(child.getOwner().getId(), tmsg);
@@ -81,7 +81,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     public Collection<? extends TrackingModuleScopeGraph> getChildren() {
         if (original.currentModification != this.currentModification) {
             //Add missing children
-            for (ModuleScopeGraph child : original.getChildren()) {
+            for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : original.getChildren()) {
                 if (!trackedChildren.contains(child)) {
                     TrackingModuleScopeGraph tmsg = (TrackingModuleScopeGraph) trackers.computeIfAbsent(child.getOwner().getId(), m -> child.trackingGraph(trackers));
                     trackedChildren.add(tmsg);
@@ -95,17 +95,6 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     @Override
     public void purgeChildren() {
         throw new UnsupportedOperationException("Scope graphs should not be purged while tracking them!");
-    }
-
-    @Override
-    public ModuleScopeGraph deepCopy() {
-        return original.deepCopy().trackingGraph(trackers);
-    }
-
-    @Override
-    public void updateToCopy(IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> copy,
-            boolean checkConcurrency) {
-        original.updateToCopy(copy, checkConcurrency);
     }
     
     @Override

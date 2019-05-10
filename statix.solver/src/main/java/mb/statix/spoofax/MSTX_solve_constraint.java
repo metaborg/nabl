@@ -44,7 +44,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
     public static final boolean MODULES_OVERRIDE = true;
     public static final boolean OVERRIDE_LOGLEVEL = true;
     public static final String LOGLEVEL = "info"; //"debug" "none"
-    public static final boolean CONCURRENT = true;
+    public static final boolean CONCURRENT = false;
     public static final boolean QUERY_DEBUG = false;
     public static final boolean CLEAN = false;
 

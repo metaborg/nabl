@@ -1,7 +1,6 @@
 package mb.statix.taico.solver;
 
 import java.io.Serializable;
-import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,7 +34,8 @@ public class SolverContext implements Serializable {
     private transient Map<String, Set<IConstraint>> initConstraints;
     
     //TODO Weak keys
-    private Set<WeakReference<IContextAware>> contextObservers = ConcurrentHashMap.newKeySet();
+//    private transient Set<WeakReference<IContextAware>> contextObservers = ConcurrentHashMap.newKeySet(); //Will be written, custom write method
+    private transient Set<IContextAware> contextObservers = ConcurrentHashMap.newKeySet();
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
     private Map<IModule, IMState> states = new ConcurrentHashMap<>();
     private volatile int phase = -1;
@@ -295,7 +295,8 @@ public class SolverContext implements Serializable {
      *      the observer to register
      */
     public void register(IContextAware contextAware) {
-        contextObservers.add(new WeakReference<>(contextAware));
+//        contextObservers.add(new WeakReference<>(contextAware));
+        contextObservers.add(contextAware);
     }
     
     /**
@@ -307,11 +308,17 @@ public class SolverContext implements Serializable {
      */
     protected void transferContextObservers(SolverContext target) {
         //TODO Parallel + clear
-        Iterator<WeakReference<IContextAware>> it = contextObservers.iterator();
+//        Iterator<WeakReference<IContextAware>> it = contextObservers.iterator();
+//        while (it.hasNext()) {
+//            WeakReference<IContextAware> old = it.next();
+//            IContextAware observer = old.get();
+//            if (observer != null) observer.setContext(target);
+//            it.remove();
+//        }
+        Iterator<IContextAware> it = contextObservers.iterator();
         while (it.hasNext()) {
-            WeakReference<IContextAware> old = it.next();
-            IContextAware observer = old.get();
-            if (observer != null) observer.setContext(target);
+            IContextAware observer = it.next();
+            observer.setContext(target);
             it.remove();
         }
     }
@@ -353,6 +360,26 @@ public class SolverContext implements Serializable {
                 + ", phase=" + phase
                 + ", solverResults=" + solverResults + "]";
     }
+    
+//    private void writeObject(ObjectOutputStream out) throws IOException {
+//        Set<IContextAware> contextObservers = new HashSet<>();
+//        for (WeakReference<IContextAware> wr : this.contextObservers) {
+//            IContextAware observer = wr.get();
+//            if (observer != null) contextObservers.add(observer);
+//        }
+//        out.defaultWriteObject();
+//        out.writeObject(contextObservers);
+//    }
+//    
+//    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+//        //TODO IMPORTANT CRITICAL Unable to read like this, the weak references might be cleared directly.
+//        in.defaultReadObject();
+//        Set<IContextAware> contextObservers = (Set<IContextAware>) in.readObject();
+//        this.contextObservers = ConcurrentHashMap.newKeySet();
+//        for (IContextAware observer : contextObservers) {
+//            this.contextObservers.add(new WeakReference<>(observer));
+//        }
+//    }
     
     // --------------------------------------------------------------------------------------------
     // Creation

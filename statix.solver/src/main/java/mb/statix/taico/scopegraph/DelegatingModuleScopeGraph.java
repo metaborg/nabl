@@ -57,9 +57,4 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     public Set<AScope> getScopes() {
         return clearScopes ? super.getScopes() : Sets.union(original.getScopes(), super.getScopes());
     }
-
-    @Override
-    public void updateToCopy(IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> copy, boolean checkConcurrency) {
-        throw new UnsupportedOperationException("Updating to copies is currently not supported for delegating scope graphs.");
-    }
 }

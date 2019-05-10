@@ -1,5 +1,6 @@
 package mb.statix.taico.solver.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -15,30 +16,43 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.context.AContextAware;
+import mb.statix.taico.util.Vars;
 
-public class ModuleConstraintStore implements IConstraintStore {
+public class ModuleConstraintStore extends AContextAware implements IConstraintStore {
+    private final String owner;
     private final Queue<IConstraint> active;
     private final Queue<IConstraint> stuckBecauseStuck;
     private final Multimap<ITermVar, IConstraint> stuckOnVar;
     private final Multimap<CriticalEdge, IConstraint> stuckOnEdge;
     
     private final Multimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
+    private final Multimap<ITermVar, ModuleConstraintStore> varObservers;
     
     private volatile IObserver<ModuleConstraintStore> observer;
     private volatile boolean progress;
     
-    public ModuleConstraintStore(Iterable<? extends IConstraint> constraints, IDebugContext debug) {
+    private final Object variableLock = new Object();
+    
+    public ModuleConstraintStore(SolverContext context, String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
+        super(context);
+        this.owner = owner;
         this.active = new LinkedBlockingQueue<>();
         this.stuckBecauseStuck = new LinkedList<>();
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
         this.edgeObservers = HashMultimap.create();
+        this.varObservers = HashMultimap.create();
         addAll(constraints);
     }
     
@@ -98,15 +112,58 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     @Override
     public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
-        for (ITermVar var : vars) {
-            final Collection<IConstraint> activated;
-            synchronized (stuckOnVar) {
-                activated = stuckOnVar.removeAll(var);
-                stuckOnVar.values().removeAll(activated);
+        if (Iterables.isEmpty(vars)) return;
+        
+        synchronized (variableLock) {
+            for (ITermVar termVar : vars) {
+                activateFromVar(termVar, debug);
             }
-            debug.info("activating {}", activated);
-            addAll(activated);
         }
+        
+        Set<ModuleConstraintStore> stores = new HashSet<>();
+        synchronized (varObservers) {
+            //Activate all observers
+            for (ITermVar termVar : vars) {
+                for (ModuleConstraintStore store : varObservers.removeAll(termVar)) {
+                    //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
+                    System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
+                    store.activateFromVar(termVar, debug); //Activate but don't propagate
+                    //Only notify if it is currently not doing anything (probably)
+                    if (store.activeSize() == 1) stores.add(store);
+                }
+            }
+            
+            //Notify each store only once
+            for (ModuleConstraintStore store : stores) {
+                if (store.observer != null) store.observer.notify(this);
+            }
+        }
+    }
+    
+    public void activateFromVar(ITermVar var, IDebugContext debug) {
+        Collection<IConstraint> activated;
+        synchronized (stuckOnVar) {
+            activated = stuckOnVar.removeAll(var);
+            stuckOnVar.values().removeAll(activated);
+        }
+        
+        //If the owner of the variable is not our owner, then we will apply the substitution on the activation of the var.
+        if (!var.getResource().equals(owner)) {
+            IModule varOwner = context.getModuleUnchecked(var.getResource());
+            IUnifier.Immutable unifier = varOwner.getCurrentState().unifier();
+            ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(var, unifier.findRecursive(var));
+            System.err.println("Applying substitution: " + subst);
+            Collection<IConstraint> newActivated = new ArrayList<>();
+            for (IConstraint constraint : activated) {
+                IConstraint newConstraint = constraint.apply(subst);
+                System.out.println("Transformed " + constraint + " to " + newConstraint);
+                newActivated.add(newConstraint);
+            }
+            activated = newActivated;
+        }
+        
+        debug.info("activating {}", activated);
+        addAll(activated);
     }
     
     @Override
@@ -122,11 +179,11 @@ public class ModuleConstraintStore implements IConstraintStore {
             //Activate all observers
             for (CriticalEdge edge : edges) {
                 for (ModuleConstraintStore store : edgeObservers.removeAll(edge)) {
-                    //Only notify if it is currently not doing anything
-                    if (store.activeSize() == 0) stores.add(store);
-                    System.err.println("Delegating activation of edge " + edge);
+                    //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
+                    System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
                     store.activateFromEdge(edge, debug); //Activate but don't propagate
-                    
+                    //Only notify if it is currently not doing anything (probably)
+                    if (store.activeSize() == 1) stores.add(store);
                 }
             }
             
@@ -134,12 +191,6 @@ public class ModuleConstraintStore implements IConstraintStore {
             for (ModuleConstraintStore store : stores) {
                 if (store.observer != null) store.observer.notify(this);
             }
-        }
-    }
-    
-    public void registerObserver(CriticalEdge edge, ModuleConstraintStore store, IDebugContext debug) {
-        synchronized (edgeObservers) {
-            edgeObservers.put(edge, store);
         }
     }
     
@@ -156,6 +207,18 @@ public class ModuleConstraintStore implements IConstraintStore {
             debug.info("no constraints were activated");
         }
         addAll(activated);
+    }
+    
+    public void registerObserver(CriticalEdge edge, ModuleConstraintStore store, IDebugContext debug) {
+        synchronized (edgeObservers) {
+            edgeObservers.put(edge, store);
+        }
+    }
+    
+    public void registerObserver(ITermVar termVar, ModuleConstraintStore store, IDebugContext debug) {
+        synchronized (varObservers) {
+            varObservers.put(termVar, store);
+        }
     }
     
     @Override
@@ -191,6 +254,7 @@ public class ModuleConstraintStore implements IConstraintStore {
      * 
      * @param debug
      *      the debug context
+     * 
      * @return
      *      an entry
      */
@@ -210,7 +274,9 @@ public class ModuleConstraintStore implements IConstraintStore {
                     if (!d.vars().isEmpty()) {
                         debug.info("delayed {} on vars {}", constraint, d.vars());
                         for (ITermVar var : d.vars()) {
-                            stuckOnVar.put(var, constraint);
+                            if (!resolveStuckOnOtherModule(var, constraint, debug)) {
+                                stuckOnVar.put(var, constraint);
+                            }
                         }
                     } else if (!d.criticalEdges().isEmpty()) {
                         debug.info("delayed {} on critical edges {}", constraint, d.criticalEdges());
@@ -238,6 +304,30 @@ public class ModuleConstraintStore implements IConstraintStore {
         };
     }
     
+    private boolean resolveStuckOnOtherModule(ITermVar termVar, IConstraint constraint, IDebugContext debug) {
+        //Not stuck on another module
+        if (owner.equals(termVar.getResource())) return false;
+        
+        IModule varOwner = Vars.getOwnerUnchecked(context, termVar);
+        ModuleConstraintStore varStore = varOwner.getCurrentState().solver().getStore();
+        
+        synchronized (varStore.variableLock) {
+            IUnifier.Immutable unifier = varOwner.getCurrentState().unifier();
+            if (!unifier.isGround(termVar)) {
+                System.err.println(owner + ": Registering as observer on " + varOwner + " for " + termVar);
+                registerAsObserver(termVar, debug);
+                return true;
+            }
+            
+            System.err.println(owner + ": Applying substitution for ground variable " + termVar + " with " + unifier.findRecursive(termVar));
+            //Otherwise, substitute the variable in the constraint
+            ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(termVar, unifier.findRecursive(termVar));
+            IConstraint newConstraint = constraint.apply(subst);
+            active.add(newConstraint);
+            return true;
+        }
+    }
+    
     /**
      * Registers this store as an observer of the given critical edge.
      * The registration is made with the store of the solver of the owner of the scope of the given
@@ -249,21 +339,46 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the debug context
      */
     private void registerAsObserver(CriticalEdge edge, IDebugContext debug) {
-        IModule owner;
-        
-        if (edge.cause() != null) {
-            owner = edge.cause();
-        } else {
+        if (edge.cause() == null) {
             throw new IllegalStateException("Encountered critical edge without owner: " + edge);
         }
+        
+        IModule owner = edge.cause();
+        
+        //A module doesn't have to register on itself
+        if (this.owner.equals(owner.getId())) return;
 
         //TODO Static state access
         ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
-        //A module shouldn't have to register on itself
-        if (store == this) return;
+        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
         
         debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
         store.registerObserver(edge, this, debug);
+    }
+    
+    /**
+     * Registers this store as an observer of the given term variable.
+     * The registration is made with the store of the solver of the owner of the given term
+     * variable.
+     * 
+     * @param termVar
+     *      the term variable
+     * @param context
+     *      the solver context
+     * @param debug
+     *      the debug context
+     */
+    private void registerAsObserver(ITermVar termVar, IDebugContext debug) {
+        IModule varOwner = Vars.getOwnerUnchecked(context, termVar);
+        //A module doesn't have to register on itself
+        if (this.owner.equals(varOwner.getId())) return;
+
+        //TODO Static state access
+        ModuleConstraintStore store = varOwner.getCurrentState().solver().getStore();
+        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
+        
+        debug.info("Registering as observer on {}, waiting on var {}", varOwner, termVar);
+        store.registerObserver(termVar, this, debug);
     }
     
     @Override

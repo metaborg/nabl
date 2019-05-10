@@ -29,7 +29,6 @@ import mb.statix.taico.incremental.MChange;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.solver.ASolverCoordinator;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
@@ -52,7 +51,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .reset();
         final Spec spec = initial.state().spec();
 
-        final IDebugContext debug = getDebugContext(terms.get(2));
+        final IDebugContext debug = getDebugContext(MSTX_solve_constraint.OVERRIDE_LOGLEVEL ? B.newString(MSTX_solve_constraint.LOGLEVEL) : terms.get(2));
 
         final IMatcher<Tuple2<MChange, Set<IConstraint>>> constraintMatcher = M.tuple2(
                 MChange.matcher(),

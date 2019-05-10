@@ -2,7 +2,6 @@ package mb.statix.taico.solver;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -160,53 +159,5 @@ public class MState extends AContextAware implements IMState {
     @Override
     public MState delegate() {
         return delegate(vars(), false);
-    }
-    
-    /**
-     * Creates a copy of this mutable state. The copy uses the same mutable scope graph, but all
-     * other aspects are cloned.
-     * 
-     * <p>Any modifications made directly on the clone will not end up in the original state.</p>
-     * 
-     * @deprecated 
-     *      Prefer {@link #delegate()} or {@link #delegate(Set, boolean)} over a copy.
-     * 
-     * @return
-     *      a copy of this mutable state
-     */
-    @Deprecated
-    public synchronized MState copy() {
-        return new MState(this, new HashSet<>(vars()), scopeGraph().deepCopy());
-    }
-    
-    /**
-     * Updates this state to the given state.
-     * The given state must be a clone from this state, and this state must not have been modified
-     * after the copy.
-     * 
-     * @param state
-     *      the state to update to
-     * 
-     * @throws IllegalArgumentException
-     *      If the given state is not a copy of this state.
-     * @throws ConcurrentModificationException
-     *      If this state was modified after the copy was made.
-     */
-    public synchronized void updateTo(MState state) {
-        if (state == this) return;
-        if (this.owner != state.owner) throw new IllegalArgumentException("Cannot update to an unrelated state");
-        
-        System.err.println("Updating state of " + this.owner + " to copy");
-
-        if (!state.vars.containsAll(this.vars)) {
-            throw new ConcurrentModificationException("The original state was modified after the copy was made but before the updates were applied! (vars)");
-        } else if (this.varCounter > state.varCounter) {
-            throw new ConcurrentModificationException("The original state was modified after the copy was made but before the updates were applied! (varCounter)");
-        }
-        
-        this.scopeGraph.updateToCopy(state.scopeGraph, false);
-        this.unifier = state.unifier;
-        this.varCounter = state.varCounter;
-        this.vars = state.vars;
     }
 }

@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.metaborg.util.iterators.Iterables2;
+
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
@@ -62,7 +64,7 @@ public interface IModule extends IContextAware, Serializable {
      *      the children of this module
      */
     default Set<IModule> getChildren() {
-        return getScopeGraph().getChildren().stream().map(IOwnable::getOwner).collect(Collectors.toSet());
+        return Iterables2.stream(getScopeGraph().getChildren()).map(IOwnable::getOwner).collect(Collectors.toSet());
     }
     
     /**
@@ -127,6 +129,7 @@ public interface IModule extends IContextAware, Serializable {
      *      the new/old child module
      */
     default IModule createOrGetChild(String name, List<AScope> canExtend, IConstraint constraint) throws Delay {
+        //TODO This method might no longer be neccessary, or it might not need to check for the old module flag.
         //TODO Incrementality breaks if parent or child names are changed
         IModule oldModule = getChild(name);
         if (oldModule == null) {
@@ -140,8 +143,6 @@ public interface IModule extends IContextAware, Serializable {
             oldModule.setParent(this);
             //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
             oldModule.setInitialization(constraint);
-            //Set the coordinator to our coordinator
-//            oldModule.getCurrentState().setCoordinator(getCurrentState().coordinator());
             getScopeGraph().addChild(oldModule);
             return oldModule;
         } else {
@@ -259,20 +260,4 @@ public interface IModule extends IContextAware, Serializable {
     void reset(Spec spec);
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
-    
-//    /**
-//     * Creates a copy of this module with the given manager, the same id as this module and the
-//     * given new parent as well as the scopes that need to be substituted.
-//     * 
-//     * @param newManager
-//     *      the new manager
-//     * @param newParent
-//     *      the new parent module (transitive copying)
-//     * @param newScopes
-//     *      the scopes of the parent that will substitute the old parent scopes
-//     * 
-//     * @return
-//     *      the copied module
-//     */
-//    IModule copy(ModuleManager newManager, IModule newParent, List<IOwnableScope> newScopes);
 }
