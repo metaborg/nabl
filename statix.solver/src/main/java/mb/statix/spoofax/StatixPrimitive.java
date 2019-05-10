@@ -193,7 +193,11 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");
-            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
+            String c = constraint.toString(Solver.shallowTermFormatter(unifier));
+            c = c.replaceAll("&", "&amp;");
+            c = c.replaceAll("<", "&lt;");
+            c = c.replaceAll(">", "&gt;");
+            sb.append(c);
             constraint = constraint.cause().orElse(null);
         }
     }
