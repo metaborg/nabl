@@ -33,7 +33,6 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
@@ -50,12 +49,8 @@ import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
 import mb.statix.solver.constraint.CPathLt;
 import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -272,35 +267,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
     }
 
-    @Override public Optional<ConstraintResult> casePathDst(CPathDst c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm dstTerm = c.dstTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(path.getTarget(), dstTerm, c)));
-    }
-
-    @Override public Optional<ConstraintResult> casePathLabels(CPathLabels c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm labelsTerm = c.labelsTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(B.newList(path.labels()), labelsTerm, c)));
-    }
-
     @Override public Optional<ConstraintResult> casePathLt(CPathLt c) throws SolverException {
         final IRelation.Immutable<ITerm> lt = c.lt();
         final ITerm label1Term = c.label1Term();
@@ -359,34 +325,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         // @formatter:on
     }
 
-    @Override public Optional<ConstraintResult> casePathScopes(CPathScopes c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm scopesTerm = c.scopesTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(B.newList(path.scopes()), scopesTerm, c)));
-    }
-
-    @Override public Optional<ConstraintResult> casePathSrc(CPathSrc c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm srcTerm = c.srcTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(path.getSource(), srcTerm, c)));
-    }
-
     @Override public Optional<ConstraintResult> caseResolveQuery(CResolveQuery c) throws SolverException {
         final IQueryFilter filter = c.filter();
         final IQueryMin min = c.min();
@@ -423,8 +361,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             // @formatter:on
             final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms =
-                    paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                            .collect(ImmutableList.toImmutableList());
+                    paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
             return Optional.of(ConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {

@@ -172,21 +172,22 @@ context-free priorities
 
 context-free syntax
 
-  Constraint.CPathSrc    = <src(<Term>, <Term>)>
-  Constraint.CPathDst    = <dst(<Term>, <Term>)>
-  Constraint.CPathScopes = <scopes(<Term>, <Term>)>
-  Constraint.CPathLabels = <labels(<Term>, <Term>)>
-
   Term = Occurrence
+  Term = Path
 
   Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
+  Path       = PathLit
 
   Position.NoId = "-"
   Position      = Var
 
+
 syntax
 
   OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" Position-CF LAYOUT?-CF "}"
+
+  PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
+  PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
 
   Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
@@ -197,9 +198,7 @@ lexical syntax
 
   NamespaceId = UCID
 
-  Keyword = "src" | "dst" | "scopes" | "labels"
-          | "pathMatch" | "pathLt"
-          | "resolveFilter" | "resolveMin"
+  Keyword = "pathMatch" | "pathLt"
 
   RelationId = "e" {reject}                     // ambiguous with empty regex
   RelationId = "resolve" | "labels" {reject}    // ambiguous with signature keywords

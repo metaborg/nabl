@@ -32,7 +32,6 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
@@ -48,12 +47,8 @@ import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
 import mb.statix.solver.constraint.CPathLt;
 import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -251,36 +246,6 @@ public class GreedySolver {
                 return success(c, newState, ImmutableList.of(), constraints, fuel);
             }
 
-            @Override public State casePathDst(CPathDst c) throws InterruptedException {
-                final ITerm pathTerm = c.pathTerm();
-                final ITerm dstTerm = c.dstTerm();
-
-                final IUnifier unifier = state.unifier();
-                if(!(unifier.isGround(pathTerm))) {
-                    return delay(c, state, Delay.ofVars(unifier.getVars(pathTerm)));
-                }
-                @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                        M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                                () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-                return success(c, state, ImmutableList.of(), ImmutableList.of(new CEqual(path.getTarget(), dstTerm, c)),
-                        fuel);
-            }
-
-            @Override public State casePathLabels(CPathLabels c) throws InterruptedException {
-                final ITerm pathTerm = c.pathTerm();
-                final ITerm labelsTerm = c.labelsTerm();
-
-                final IUnifier unifier = state.unifier();
-                if(!(unifier.isGround(pathTerm))) {
-                    return delay(c, state, Delay.ofVars(unifier.getVars(pathTerm)));
-                }
-                @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                        M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                                () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-                return success(c, state, ImmutableList.of(),
-                        ImmutableList.of(new CEqual(B.newList(path.labels()), labelsTerm, c)), fuel);
-            }
-
             @Override public State casePathLt(CPathLt c) throws InterruptedException {
                 final IRelation.Immutable<ITerm> lt = c.lt();
                 final ITerm label1Term = c.label1Term();
@@ -339,36 +304,6 @@ public class GreedySolver {
                 // @formatter:on
             }
 
-            @Override public State casePathScopes(CPathScopes c) throws InterruptedException {
-                final ITerm pathTerm = c.pathTerm();
-                final ITerm scopesTerm = c.scopesTerm();
-
-                final IUnifier unifier = state.unifier();
-                if(!(unifier.isGround(pathTerm))) {
-                    return delay(c, state, Delay.ofVars(unifier.getVars(pathTerm)));
-                }
-                @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                        M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                                () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-                return success(c, state, ImmutableList.of(),
-                        ImmutableList.of(new CEqual(B.newList(path.scopes()), scopesTerm, c)), fuel);
-            }
-
-            @Override public State casePathSrc(CPathSrc c) throws InterruptedException {
-                final ITerm pathTerm = c.pathTerm();
-                final ITerm srcTerm = c.srcTerm();
-
-                final IUnifier unifier = state.unifier();
-                if(!(unifier.isGround(pathTerm))) {
-                    return delay(c, state, Delay.ofVars(unifier.getVars(pathTerm)));
-                }
-                @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                        M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                                () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-                return success(c, state, ImmutableList.of(), ImmutableList.of(new CEqual(path.getSource(), srcTerm, c)),
-                        fuel);
-            }
-
             @Override public State caseResolveQuery(CResolveQuery c) throws InterruptedException {
                 final IQueryFilter filter = c.filter();
                 final IQueryMin min = c.min();
@@ -399,8 +334,7 @@ public class GreedySolver {
                     // @formatter:on
                     final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
                     final List<ITerm> pathTerms =
-                            paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                                    .collect(ImmutableList.toImmutableList());
+                            paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
                     return success(c, state, ImmutableList.of(),
                             ImmutableList.of(new CEqual(B.newList(pathTerms), resultTerm, c)), fuel);
                 } catch(IncompleteDataException e) {

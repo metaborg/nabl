@@ -40,17 +40,17 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.path.IScopePath;
+import mb.statix.scopegraph.path.IStep;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
 import mb.statix.solver.constraint.CPathLt;
 import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -67,6 +67,8 @@ public class StatixTerms {
 
     public static final String SCOPE_OP = "Scope";
     public static final String OCCURRENCE_OP = "Occurrence";
+    public static final String PATH_EMPTY_OP = "PathEmpty";
+    public static final String PATH_STEP_OP = "PathStep";
     public static final String SCOPEID_OP = "ScopeId";
     public static final String TERMID_OP = "TermId";
     public static final String NOID_OP = "NoId";
@@ -153,22 +155,6 @@ public class StatixTerms {
                 }),
                 M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
                     constraints.add(new CPathLt(lt, l1, l2));
-                    return Unit.unit;
-                }),
-                M.appl2("CPathSrc", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathSrc(p, rt));
-                    return Unit.unit;
-                }),
-                M.appl2("CPathDst", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathDst(p, rt));
-                    return Unit.unit;
-                }),
-                M.appl2("CPathLabels", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathLabels(p, rt));
-                    return Unit.unit;
-                }),
-                M.appl2("CPathScopes", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathScopes(p, rt));
                     return Unit.unit;
                 }),
                 M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
@@ -287,6 +273,14 @@ public class StatixTerms {
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
+            }),
+            M.appl1(PATH_EMPTY_OP, term(), (t, s) -> {
+                List<ITerm> applArgs = ImmutableList.of(s);
+                return B.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
+            }),
+            M.appl3(PATH_STEP_OP, term(), term(), term(), (t, p, l, s) -> {
+                List<ITerm> applArgs = ImmutableList.of(p, l, s);
+                return B.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
             })
         ));
         // @formatter:on
@@ -354,6 +348,14 @@ public class StatixTerms {
             M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(m), positionPattern(), (t, ns, args, pos) -> {
                 List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
                 return P.newAppl(OCCURRENCE_OP, applArgs);
+            }),
+            M.appl1(PATH_EMPTY_OP, m, (t, s) -> {
+                List<Pattern> applArgs = ImmutableList.of(s);
+                return P.newAppl(PATH_EMPTY_OP, applArgs);
+            }),
+            M.appl3(PATH_STEP_OP, m, m, m, (t, p, l, s) -> {
+                List<Pattern> applArgs = ImmutableList.of(p, l, s);
+                return P.newAppl(PATH_STEP_OP, applArgs);
             })
         ));
         // @formatter:on
@@ -393,7 +395,9 @@ public class StatixTerms {
                     case SCOPE_OP:
                     case SCOPEID_OP:
                     case TERMID_OP:
-                    case NOID_OP: {
+                    case NOID_OP:
+                    case PATH_EMPTY_OP:
+                    case PATH_STEP_OP: {
                         return B.newAppl(appl.getOp(), appl.getArgs());
                     }
                     case OCCURRENCE_OP: {
@@ -467,4 +471,17 @@ public class StatixTerms {
         return B.newList(Iterables2.stream(entries).map(e -> B.newTuple(explicate(e.getKey()), explicate(e.getValue())))
                 .collect(ImmutableList.toImmutableList()));
     }
+
+    public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path) {
+        return B.newTuple(explicate(path.getPath()), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    }
+
+    public static ITerm explicate(IScopePath<Scope, ITerm> path) {
+        ITerm pathTerm = B.newAppl(PATH_EMPTY_OP, path.getSource());
+        for(IStep<Scope, ITerm> step : path) {
+            pathTerm = B.newAppl(PATH_STEP_OP, pathTerm, step.getLabel(), step.getTarget());
+        }
+        return pathTerm;
+    }
+
 }

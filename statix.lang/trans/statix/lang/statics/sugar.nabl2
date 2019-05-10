@@ -130,15 +130,6 @@ rules
     L[[ l ^ (s) : ty ]].
 
 
-  Term(V)[[ PathSrcOp(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathScopesOp(t) ^ (s) : LIST(SCOPE()) ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathLabelsOp(t) ^ (s) : LIST(LABEL()) ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-  Term(V)[[ PathDstOp(t) ^ (s) : SCOPE() ]] :=
-    Term(V)[[ t ^ (s) : PATH() ]].
-
   [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
     LabelRE[[ re ^ (s) : EDGE() ]].
 

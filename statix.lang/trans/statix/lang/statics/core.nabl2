@@ -251,22 +251,6 @@ rules
     LabelRef[[ lbl ^ (s) : EDGE() ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
-  [[ CPathSrc(pt, st) ^ (s) ]] :=
-    Build[[ pt ^ (s) : PATH() ]],
-    Build[[ st ^ (s) : SCOPE() ]].
-
-  [[ CPathDst(pt, dt) ^ (s) ]] :=
-    Build[[ pt ^ (s) : PATH() ]],
-    Build[[ dt ^ (s) : SCOPE() ]].
-
-  [[ CPathScopes(pt, st) ^ (s) ]] :=
-    Build[[ pt ^ (s) : PATH() ]],
-    Build[[ st ^ (s) : LIST(SCOPE()) ]].
-
-  [[ CPathLabels(pt, lt) ^ (s) ]] :=
-    Build[[ pt ^ (s) : PATH() ]],
-    Build[[ lt ^ (s) : LIST(LABEL()) ]].
-
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
     Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
     d : NS(tys),
@@ -276,6 +260,14 @@ rules
   Pos(V)[[ NoId() ^ (s) : TERM_ID() ]].
   Pos(V)[[ t ^ (s) : ty ]] :=
     Term(V)[[ t ^ (s) : ty ]].
+
+  Term(V)[[ PathEmpty(st) ^ (s) : PATH() ]] :=
+    Term(V)[[ st ^ (s) : SCOPE() ]].
+
+  Term(V)[[ PathStep(pt, lt, st) ^ (s) : PATH() ]] :=
+    Term(V)[[ pt ^ (s) : PATH() ]],
+    Term(V)[[ lt ^ (s) : LABEL() ]],
+    Term(V)[[ st ^ (s) : SCOPE() ]].
 
 
 /******************************************************************

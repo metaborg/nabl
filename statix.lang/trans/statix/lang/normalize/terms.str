@@ -50,30 +50,6 @@ rules
   term-to-c: (NewOp(), v) -> CNew([v])
 
 
-  replace-term: PathSrcOp(_) -> v
-    with v := <make-fresh-var> "src"
-
-  term-to-c: (PathSrcOp(t), v) -> CPathSrc(t, v)
-
-
-  replace-term: PathDstOp(_) -> v
-    with v := <make-fresh-var> "dst"
-
-  term-to-c: (PathDstOp(t), v) -> CPathDst(t, v)
-
-
-  replace-term: PathScopesOp(_) -> v
-    with v := <make-fresh-var> "stermes"
-
-  term-to-c: (PathScopesOp(t), v) -> CPathScopes(t, v)
-
-
-  replace-term: PathLabelsOp(_) -> v
-    with v := <make-fresh-var> "labels"
-
-  term-to-c: (PathLabelsOp(t), v) -> CPathLabels(t, v)
-
-
   replace-term: TermIdOp(_) -> v
     with v := <make-fresh-var> "termId"
 

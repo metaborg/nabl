@@ -5,5 +5,5 @@ language StatixLang
 // static
 
 test path, label, and scope type ascriptions [[
-  resolve {p lbls s} p:path == _, labels(p, lbls:list(label)), dst(p, s:scope)
+  resolve {p lbls s} p:path == _, lbls:list(label) == _
 ]] analysis succeeds

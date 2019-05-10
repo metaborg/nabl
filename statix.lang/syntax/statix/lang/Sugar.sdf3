@@ -84,11 +84,6 @@ syntax
 
   Term-CF.AskRelOp = "?" LabelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
-context-free priorities
-
-  { Term.PathSrcOp Term.PathScopesOp Term.PathLabelsOp Term.PathDstOp } >
-  { Term.AskRelOp }
-
 lexical syntax
 
   RelationId = "decl" {reject}
@@ -114,11 +109,6 @@ context-free syntax
 
   Constraint.CTellDecl        = [[Term] -> [Occurrence]]
   Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [LabelRef] [Term]]
-
-  Term.PathSrcOp    = <src(<Term>)>
-  Term.PathDstOp    = <dst(<Term>)>
-  Term.PathScopesOp = <scopes(<Term>)>
-  Term.PathLabelsOp = <labels(<Term>)>
 
 //LabelRE = <<LabelRE>?>
 //LabelRE = <<LabelRE>+>
@@ -154,6 +144,9 @@ syntax
 
   HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
 
+lexical syntax
+
+  Keyword = "resolveMatch" | "resolveLt"
 
 /******************************************************************
  * Sorts & Constructors                                           *

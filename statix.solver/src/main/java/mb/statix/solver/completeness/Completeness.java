@@ -62,12 +62,8 @@ public class Completeness implements ICompleteness {
             onFalse -> null,
             onInequal -> null,
             onNew -> null,
-            onPathDst -> null,
-            onPathLabels -> null,
             onPathLt -> null,
             onPathMatch -> null,
-            onPathScopes -> null,
-            onPathSrc -> null,
             onResolveQuery -> null,
             onTellEdge -> {
                 criticalEdge.apply(onTellEdge.sourceTerm(), onTellEdge.label());
