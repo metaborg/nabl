@@ -7,7 +7,7 @@ test predicate path projections succeed [[
     new s1 s2 s3,
     s1 -P-> s2, s2 -P-> s3,
     query () min P < $ and true in s1 |-> [(p, _)],
-    src(p, s1), dst(p, s3), scopes(p, [s1, s2, s3])
+    src(p) == s1, dst(p) == s3, scopes(p) == [s1, s2, s3]
   signature
     name-resolution
       labels P

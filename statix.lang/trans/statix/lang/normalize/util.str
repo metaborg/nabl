@@ -85,8 +85,8 @@ rules
   type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)
   type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
 
-  type-to-sort: PRED(tys)          -> SimpleType(<map(type-to-sort)> tys)
-  type-to-sort: FUN(intys, outtys) -> FunType(<map(type-to-sort)> intys, <map(type-to-sort)> outtys)
+  type-to-sort: PRED(tys)         -> SimpleType(<map(type-to-sort)> tys)
+  type-to-sort: FUN(intys, outty) -> FunType(<map(type-to-sort)> intys, <type-to-sort> outty)
 
   sort-args: SimpleType(args) -> args
 

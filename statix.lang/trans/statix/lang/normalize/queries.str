@@ -57,17 +57,13 @@ rules
   normalize-query-ops(|a) =
     normalize-in-rules(replace-functional-relop(|a),id,functional-relop-to-c(|a))
 
-  replace-functional-relop(|a): AskRelOp(rel, in_ts, st) -> out_t
-    with DATA(ty) := <norm-get-ast-type(|a)> rel;
-         outtys := <out-types> ty;
-         out_ts := <make-fresh-vars(|"t")> outtys;
-         out_t := <build-terms(|outtys)> out_ts
+  replace-functional-relop(|a): AskRelOp(rel, in_ts, st) -> out_v
+    with DATA(FUN(_, _)) := <norm-get-ast-type(|a)> rel;
+         out_v := <make-fresh-var> "t"
 
-  functional-relop-to-c(|a): (AskRelOp(rel, in_ts, st), out_t) -> c
-    with DATA(ty) := <norm-get-ast-type(|a)> rel;
-         outtys := <out-types> ty;
-         out_ts := <match-terms(|outtys)> out_t;
-         c := <ask-rel-query> (rel, st, in_ts, out_ts)
+  functional-relop-to-c(|a): (AskRelOp(rel, in_ts, st), out_v) -> c
+    with DATA(FUN(_, _)) := <norm-get-ast-type(|a)> rel;
+         c := <ask-rel-query> (rel, st, in_ts, [out_v])
 
 
   ask-rel-query: (rel, st, in_ts, out_ts) -> c

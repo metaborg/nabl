@@ -26,28 +26,26 @@ rules
 
 
   normalize-functional-cdecl:
-      CDecl(ind, x, t@FunType(s1*, s2*)) -> CDecl(ind, x, t')
-    with s* := <conc> (s1*, s2*);
+      CDecl(ind, x, t@FunType(s1*, s2)) -> CDecl(ind, x, t')
+    with s* := <conc> (s1*, [s2]);
          t' := SimpleType(s*)
 
   normalize-functional-head(|a):
       Rule(F(x, in_ts, out_t), bvs, body){a*} -> Rule(C(x, ts), bvs', body'){a*}
-    with FUN(intys, outtys) := <norm-get-ast-decl-type(|a)> x;
-         out_ts := <make-fresh-vars(|"out")> outtys;
+    with FUN(intys, outty) := <norm-get-ast-decl-type(|a)> x;
+         out_v := <make-fresh-var> "out";
          new-bvs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
          bvs' := <conc> (bvs, new-bvs);
-         body' := CConj(body, CEqual(out_t, <build-terms(|outtys)> out_ts));
-         ts := <conc> (in_ts, out_ts)
+         body' := CConj(body, CEqual(out_v, out_t));
+         ts := <conc> (in_ts, [out_v])
 
   normalize-functional-cops(|a) =
     normalize-in-rules(replace-functional-cop(|a),id,functional-cop-to-c(|a))
 
-  replace-functional-cop(|a): COp(x, in_ts) -> out_t
-    with FUN(_, outtys) := <norm-get-ast-decl-type(|a)> x;
-         out_ts := <make-fresh-vars(|x)> outtys;
-         out_t := <build-terms(|outtys)> out_ts
+  replace-functional-cop(|a): COp(x, in_ts) -> out_v
+    with FUN(_, outty) := <norm-get-ast-decl-type(|a)> x;
+         out_v := <make-fresh-var> x
 
-  functional-cop-to-c(|a): (COp(x, in_ts), out_t) -> C(x, ts)
-    with FUN(_, outtys) := <norm-get-ast-decl-type(|a)> x;
-         out_ts := <match-terms(|outtys)> out_t;
-         ts := <conc> (in_ts, out_ts)
+  functional-cop-to-c(|a): (COp(x, in_ts), out_v) -> C(x, ts)
+    with FUN(_, outty) := <norm-get-ast-decl-type(|a)> x;
+         ts := <conc> (in_ts, [out_v])

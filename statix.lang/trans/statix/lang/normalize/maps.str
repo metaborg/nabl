@@ -24,7 +24,7 @@ rules
          section''* := <conc> (section'*, <rules-to-sections> rule*)
 
   rules-to-sections = ?[] <+ ![Rules(<id>)]
-  
+
 
   replace-map(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
     with ind := <norm-get-ast-decl-property(|a,"ind")> x;
@@ -39,8 +39,8 @@ rules
 
   cmap-elem-rule: (x, y, lift*) -> Rule(C(x, ps), [], CConj(call, rec))
     with ps   := <map-with-index(lift-elem-head(|"x"))> lift*;
-         call := C(y, <map-with-index(lift-elem-call(|"x"))> lift*);
-         rec  := C(x, <map-with-index(lift-elem-rec(|"x"))> lift*)
+         call := C(y, <lift-call-elems(|"x")> lift*);
+         rec  := C(x, <lift-rec-elems(|"x")> lift*)
 
 
   replace-map(|a): FDeriveMap(x, _, _, _) -> CDecl(ind, x, sort)
@@ -57,23 +57,41 @@ rules
          outp := <map(lift-base);build-terms(|out-lift*)> out-lift*
 
   fmap-elem-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CConj(call, rec))
-    with inps := <map-with-index(lift-elem-head(|"x"))> in-lift*;
-         outp := <map-with-index(lift-elem-head(|"y"));build-terms(|out-lift*)> out-lift*;
-         call := CEqual(COp(y, <map-with-index(lift-elem-call(|"x"))> in-lift*),
-                        <map-with-index(lift-elem-call(|"y"));build-terms(|out-lift*)> out-lift*);
-         rec  := CEqual(COp(x, <map-with-index(lift-elem-rec(|"x"))> in-lift*),
-                        <map-with-index(lift-elem-rec(|"y"));build-terms(|out-lift*)> out-lift*)
+    with inps := <lift-head-elems(|"x")> in-lift*;
+         outp := <lift-head-elems(|"y");build-terms(|out-lift*)> out-lift*;
+         call := CEqual(COp(y, <lift-call-elems(|"x")> in-lift*),
+                        <lift-call-elems(|"y");build-terms(|out-lift*)> out-lift*);
+         rec  := CEqual(COp(x, <lift-rec-elems(|"x")> in-lift*),
+                        <lift-rec-elems(|"y");build-terms(|out-lift*)> out-lift*)
 
 
   lift-base: IdLift() -> Wld()
   lift-base: ListLift() -> List([])
+  lift-base: TupleLift(lifts) -> Tuple(<map(lift-base)> lifts)
 
-  lift-elem-head(|x): (i, IdLift())     -> <lift-var(|x)> i
-  lift-elem-head(|x): (i, ListLift()) -> ListTail([<lift-var(|x)> i], <lift-var(|$[[x]s])> i)
 
-  lift-elem-call(|x): (i, _) -> <lift-var(|x)> i
+  lift-head-elems(|x) = map-with-index(lift-elem-head(|x))
 
-  lift-elem-rec(|x): (i, IdLift())     -> <lift-var(|x)> i
-  lift-elem-rec(|x): (i, ListLift()) -> <lift-var(|$[[x]s])> i
+  lift-elem-head(|x): (i, IdLift())         -> <lift-var(|x)> i
+  lift-elem-head(|x): (i, ListLift())       -> ListTail([<lift-var(|x)> i], <lift-var(|$[[x]s])> i)
+  lift-elem-head(|x): (i, TupleLift(lifts)) -> Tuple(<lift-head-elems(|<lift-name(|x)> i)> lifts)
 
-  lift-var(|base) = !Var($[[base][<int-to-string>]])
+
+  lift-call-elems(|x) = map-with-index(lift-elem-call(|x))
+
+  lift-elem-call(|x): (i, IdLift())         -> <lift-var(|x)> i
+  lift-elem-call(|x): (i, ListLift())       -> <lift-var(|x)> i
+  lift-elem-call(|x): (i, TupleLift(lifts)) -> Tuple(<lift-call-elems(|<lift-name(|x)> i)> lifts)
+
+
+  lift-rec-elems(|x) = map-with-index(lift-elem-rec(|x))
+
+  lift-elem-rec(|x): (i, IdLift())         -> <lift-var(|x)> i
+  lift-elem-rec(|x): (i, ListLift())       -> <lift-var(|$[[x]s])> i
+  lift-elem-rec(|x): (i, TupleLift(lifts)) -> Tuple(<lift-rec-elems(|<lift-name(|x)> i)> lifts)
+
+
+  lift-var(|x) = !Var(<lift-name(|x)>)
+
+  lift-name(|x) = !$[[x]_[<int-to-string>]]
+  

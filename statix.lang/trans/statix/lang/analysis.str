@@ -42,19 +42,28 @@ rules // Analysis
          nabl2-custom-analysis-info-msg(|"Normalizing AST...");
          (analyzed-ast, a, e*, w*, n*) :=
             <analyze(|resource)> desugared-ast;
-         (normalized-ast, a') :=
-            <normalize(analyze(|resource)|a)> analyzed-ast;
 
-         nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
-         or-e* := <detect-overlapping-rules> analyzed-ast;
+         if [] := e* then
+           (normalized-ast, a') :=
+               <normalize(analyze(|resource)|a)> analyzed-ast;
 
-         nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> normalized-ast;
+           nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
+           or-e* := <detect-overlapping-rules> analyzed-ast;
 
-         result := <nabl2--set-custom-analysis(|a)> (normalized-ast, a', ext*);
-         error*   := [e*, ext-e*, or-e*];
-         warning* := [w*, ext-w*];
-         note*    := [n*, ext-n*]
+           nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
+           (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> normalized-ast;
+
+           result   := <nabl2--set-custom-analysis(|a)> (normalized-ast, a', ext*);
+           error*   := [e*, ext-e*, or-e*];
+           warning* := [w*, ext-w*];
+           note*    := [n*, ext-n*]
+         else
+           result   := a;
+           error*   := e*;
+           warning* := w*;
+           note*    := n*
+         end
+
 
   analyze(|resource) =
     nabl2-custom-analysis-info-msg(|"| Analyzing...");

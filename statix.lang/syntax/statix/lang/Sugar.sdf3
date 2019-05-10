@@ -26,15 +26,12 @@ context-free syntax
   CDecl            = CDerive
 
   CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*])]
-  CDerive.FDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*]) = [LiftTerm]]
+  CDerive.FDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*]) = [Lift]]
 
-  Lift.IdLift   = "*"
-  Lift.ListLift = "list(*)"
-
-  LiftTerm.Tuple0Lift = <()>
-  LiftTerm            = Lift
-  LiftTerm.TupleNLift = <(<Lift>, <{Lift ", "}+>)>
-  LiftTerm            = <(<LiftTerm>)> {bracket}
+  Lift.IdLift     = "*"
+  Lift.ListLift   = "list(*)"
+  Lift.Tuple0Lift = <( )>
+  Lift.TupleNLift = <(<Lift>, <{Lift ", "}+>)>
 
   // rule shorthands
 
@@ -151,6 +148,10 @@ lexical syntax
 /******************************************************************
  * Sorts & Constructors                                           *
  ******************************************************************/
+
+context-free syntax
+
+  Type.FunType    = [[{SortRef " * "}*] -> [SortRef]]
 
 /******************************************************************
  * Terms                                                          *

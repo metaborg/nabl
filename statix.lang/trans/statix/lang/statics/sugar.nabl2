@@ -30,14 +30,13 @@ rules
     d.ind := ind,
 
     intys is `in-types` of ty,
-    outtys is `out-types` of ty,
+    outty is `out-type` of ty,
     inlifts <`lifts-some`? () | error "At least one input argument must be lifted.",
-    outlifts is `lift-to-lifts` of outlift,
     intys' is `lift-types` of (inlifts, intys),
-    outtys' is `lift-types` of (outlifts, outtys),
+    outty' is `lift-type` of (outlift, outty),
 
     C{x} <- s, @x.decl := C{x},
-    C{x} : FUN(intys', outtys') !!,
+    C{x} : FUN(intys', outty') !!,
     C{x}.ind := ind !!,
     C{x}.kind := DerivedC() !!.
 
@@ -82,7 +81,7 @@ rules
 
   [[ CAskRel(rel, ts, st) ^ (s) ]] :=
     LabelRef[[ rel ^ (s) : DATA(ty) ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
-    tys is `inout-types` of ty,
+    tys is `in-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
@@ -160,6 +159,10 @@ rules
 /******************************************************************
  * Sorts & Constructors                                           *
  ******************************************************************/
+
+  [[ FunType(insorts, outsort) ^ (s) : FUN(intys, outty) ]] :=
+    Map1T(SortRef)[[ insorts ^ (s) : intys ]],
+    SortRef[[ outsort ^ (s) : outty ]].
 
 
 /******************************************************************

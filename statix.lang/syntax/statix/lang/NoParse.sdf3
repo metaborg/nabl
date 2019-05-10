@@ -15,4 +15,4 @@ context-free syntax
 
   SortRef.TupleSort = <(<{SortRef " * "}*>)>
 
-  LiftTerm.TupleLift = <(<{Lift ", "}*>)>
+  Lift.TupleLift = <(<{Lift ", "}*>)>

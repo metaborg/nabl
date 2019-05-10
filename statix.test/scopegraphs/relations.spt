@@ -305,10 +305,10 @@ test ask functional relation inline succeeds [[
 
 test ask functional relation inline succeeds [[
   resolve {s}
-    new s, !r[2, 12, 8] in s,
+    new s, !r[2, (12, 8)] in s,
     ?r[2] in s == (12, 8)
   signature
     relations
-      r : int -> int * int
+      r : int -> (int * int)
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()

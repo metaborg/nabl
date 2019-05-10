@@ -115,8 +115,8 @@ rules
 
   [[ C(x, args) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
-    d : ty,
-    tys is `inout-types` of ty,
+    d : ty, ty != FUN(_, _) | error "Use inline notation for functional constraints.",
+    tys is `in-types` of ty,
     Map1T(Build)[[ args ^ (s) : tys ]].
 
   [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
@@ -351,10 +351,6 @@ rules
 
   [[ SimpleType(sorts) ^ (s) : PRED(intys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : intys ]].
-
-  [[ FunType(insorts, outsorts) ^ (s) : FUN(intys, outtys) ]] :=
-    Map1T(SortRef)[[ insorts ^ (s) : intys ]],
-    Map1T(SortRef)[[ outsorts ^ (s) : outtys ]].
 
 
 /******************************************************************

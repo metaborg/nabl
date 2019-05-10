@@ -246,7 +246,7 @@ context-free syntax
 
   SortRef                = Sort
   SortRef.ListSort       = <list(<SortRef>)>
-  SortRef.Tuple0Sort     = <()>
+  SortRef.Tuple0Sort     = <( )>
   SortRef.TupleNSort     = <(<SortRef> * <{SortRef " * "}+>)>
   SortRef.IntSort        = "int"
   SortRef.StringSort     = "string"
@@ -263,7 +263,6 @@ context-free syntax
   OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]
 
   Type.SimpleType = [[{SortRef " * "}*]]
-  Type.FunType    = [[{SortRef " * "}*] -> [{SortRef " * "}+]]
 
 lexical syntax
 
@@ -285,7 +284,7 @@ context-free syntax
   Term.Int        = INT
   Term.List       = <[<{Term ", "}*>]>
   Term.ListTail   = <[<{Term ", "}*>|<Term>]>
-  Term.Tuple0     = <()>
+  Term.Tuple0     = <( )>
   Term.TupleN     = <(<Term>, <{Term ", "}+>)>
   Term.As         = <<Var>@<Term>>
   Term.Ascribe    = <<Term> : <SortRef>>
@@ -301,13 +300,8 @@ context-free priorities
 
 syntax
 
-//Term-CF.ListLength = Term-CF "." "length"
   Term-CF.Op         = OpId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
   Term-CF.Str        = "\"" StrChars-LEX "\""
-//Term-CF.StrBuild   = "$" "[" StrBuild-CF* "]"
-
-  StrBuild-CF.Str2 = StrBuildChars-LEX
-  StrBuild-CF      = "[" LAYOUT?-CF Term-CF LAYOUT?-CF "]"
 
 lexical syntax
 
