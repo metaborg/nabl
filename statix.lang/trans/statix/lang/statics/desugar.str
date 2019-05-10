@@ -65,7 +65,7 @@ rules
          min        := <with-origin(|rt)> Min(ord, lord);
          c'         := CResolveQuery(filter, min, st, pst)
 
-  target-to-re: NoTarget()     -> Epsilon()
+  target-to-re: NoTarget()     -> EOP()
   target-to-re: RelTarget(rel) -> rel
 
 rules

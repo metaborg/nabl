@@ -59,6 +59,10 @@ rules
     Lbl{Decl()} : DATA(PRED([OCCURRENCE()])),
     Lbl{Decl()}.ast := Decl(),
   
+    Lbl{EOP()} <- s,
+    Lbl{EOP()} : DATA(PRED([SCOPE()])),
+    Lbl{EOP()}.ast := EOP(),
+  
     Sections[[ sections ^ (s') ]].
 
   Sections[[ sections ^ (s') ]] :=
@@ -207,7 +211,7 @@ rules
     Build[[ p2 ^ (s) : LABEL() ]],
     LabelOrd[[ ord ^ (s) ]].
 
-  [[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
+  LabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
     LabelRef[[ lbl1 ^ (s) : _ ]],
     LabelRef[[ lbl2 ^ (s) : _ ]].
 
@@ -282,7 +286,7 @@ rules
     Build[[ pst ^ (s) : LIST(resty) ]].
 
   [[ Filter(re, lt) ^ (s, ty) ]] :=
-    LabelRE[[ re ^ (s) : ty ]],
+    LabelRE[[ re ^ (s) : ty ]], ty != EDGE() | error "Query regex should end in a relation of $",
     lty is `path-wf-to-data-wf` of ty,
     [[ lt ^ (s) : lty ]].
 
@@ -293,7 +297,7 @@ rules
 
   LabelOrd[[ [] ^ (s) ]].
   LabelOrd[[ prs@[_|_] ^ (s) ]] :=
-    Map1[[ prs ^ (s) ]].
+    Map1(LabelPair)[[ prs ^ (s) ]].
 
 /******************************************************************
  * Sorts & Constructors                                           *

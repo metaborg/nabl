@@ -2,6 +2,89 @@ module scopegraphs-nameresolution
 
 language StatixLang
 
+
+test query no-data succeeds [[
+  resolve {s}
+    query filter P* $ in s |-> _
+  signature
+    name-resolution
+      labels
+        P
+]] analysis succeeds
+
+test query edge fails [[
+  resolve {s}
+    query filter P* in s |-> _
+  signature
+    name-resolution
+      labels
+        P
+]] analysis fails
+
+test namespace resolve with labels wf succeeds [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P*
+]] analysis succeeds
+
+test namespace resolve with relation wf fails [[
+  resolve true
+  signature
+    relations
+      r : int
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* r
+]] analysis fails
+
+test namespace resolve with no-data wf fails [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* $
+]] analysis fails
+
+test namespace resolve with labels ord succeeds [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels P Q
+      resolve Var min P < Q
+]] analysis succeeds
+
+test namespace resolve with eop placeholder ord succeeds [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels Q
+      resolve Var min $ < Q
+]] analysis succeeds
+
+test namespace resolve with relation ord fails [[
+  resolve true
+  signature
+    relations
+      r : int
+    namespaces
+      Var : string
+    name-resolution
+      labels Q
+      resolve Var min r < Q
+]] analysis fails
+
 test resolve reference with same name in the same scope succeeds [[
   resolve {s}
     new s, s -> Var{"x"@-},

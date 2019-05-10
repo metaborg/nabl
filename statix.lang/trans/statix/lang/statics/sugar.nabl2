@@ -101,7 +101,11 @@ rules
     Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
     NsQ{x} <- s,
     [[ filter ^ (s, NsQ{x}) ]],
-    [[ min ^ (s, NsQ{x}) ]].
+    new s', s' -P-> s,
+    Lbl{EOP()} <- s',
+    Lbl{EOP()} : EDGE(),
+    Lbl{EOP()}.ast := EOP(),
+    [[ min ^ (s', NsQ{x}) ]].
 
   [[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,
@@ -115,11 +119,14 @@ rules
     LabelRef[[ lbl1 ^ (s) : EDGE() ]],
     LabelRef[[ lbl2 ^ (s) : EDGE() ]].
 
+
   LabelRef[[ t@Decl() ^ (s) : ty ]] :=
     Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
     d : ty.
 
-  LabelRef[[ EOP() ^ (s) : EDGE() ]].
+  LabelRef[[ t@EOP() ^ (s) : ty ]] :=
+    Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
+    d : ty.
 
 
   RE(L)[[ l@Decl() ^ (s) : ty ]] :=
