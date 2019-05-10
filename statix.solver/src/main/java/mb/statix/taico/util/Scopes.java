@@ -98,6 +98,6 @@ public class Scopes {
      *      If the given term is not a scope.
      */
     public static IModule getOwner(IScope scope, IModule requester) throws Delay {
-        return requester.getContext().getModule(requester, scope.getResource());
+        return SolverContext.context().getModule(requester, scope.getResource());
     }
 }

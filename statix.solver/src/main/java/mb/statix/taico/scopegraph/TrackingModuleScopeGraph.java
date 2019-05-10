@@ -1,5 +1,7 @@
 package mb.statix.taico.scopegraph;
 
+import static mb.statix.taico.solver.SolverContext.context;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,7 +105,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
             return getTransitiveEdges(scope, label, lockManager);
         } else {
             ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm> tmsg =
-                    trackers.computeIfAbsent(scope.getResource(), o -> getOwner().getContext().getModuleUnchecked(o).getScopeGraph().trackingGraph(trackers));
+                    trackers.computeIfAbsent(scope.getResource(), o -> context().getModuleUnchecked(o).getScopeGraph().trackingGraph(trackers));
             return tmsg.getEdges(scope, label, lockManager);
         }
     }
@@ -114,7 +116,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
             return getTransitiveData(scope, label, lockManager);
         } else {
             ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm> tmsg =
-                    trackers.computeIfAbsent(scope.getResource(), o -> getOwner().getContext().getModuleUnchecked(o).getScopeGraph().trackingGraph(trackers));
+                    trackers.computeIfAbsent(scope.getResource(), o -> context().getModuleUnchecked(o).getScopeGraph().trackingGraph(trackers));
             return tmsg.getData(scope, label, lockManager);
         }
     }
@@ -123,7 +125,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     public Collection<String> getReachedModules() {
         Set<String> modules = new HashSet<>();
         for (String module : trackers.keySet()) {
-            addModules(modules, getOwner().getContext().getModuleUnchecked(module));
+            addModules(modules, context().getModuleUnchecked(module));
         }
         modules.remove(getOwner().getId());
         

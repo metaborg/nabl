@@ -1,8 +1,10 @@
 package mb.statix.taico.solver.concurrent;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.SolverContext;
 
 /**
  * Implementation for a runnable that represents the execution of a single solver.
@@ -19,6 +21,7 @@ public class SolverRunnable implements Runnable {
     private final Consumer<Runnable> schedule;
     private final ProgressCounter progress;
     private final Consumer<ModuleSolver> onSuccess, onFailure;
+    private final Supplier<SolverContext> contextSupplier;
 
     private volatile boolean notified;
     private volatile boolean done;
@@ -32,9 +35,11 @@ public class SolverRunnable implements Runnable {
      *      a consumer to schedule this solver runnable
      * @param progress
      *      a counter to check if we are still making any progress (globally)
+     * @param contextSupplier
+     *      the supplier of the context
      */
-    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress) {
-        this(solver, schedule, progress, m -> {}, m -> {});
+    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress, Supplier<SolverContext> contextSupplier) {
+        this(solver, schedule, progress, m -> {}, m -> {}, contextSupplier);
     }
 
     /**
@@ -48,13 +53,17 @@ public class SolverRunnable implements Runnable {
      *      a callback to execute on successful completion
      * @param onFailure
      *      a callback to execute on failing completion
+     * @param contextSupplier
+     *      the supplier of the context
      */
-    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress, Consumer<ModuleSolver> onSuccess, Consumer<ModuleSolver> onFailure) {
+    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress,
+            Consumer<ModuleSolver> onSuccess, Consumer<ModuleSolver> onFailure, Supplier<SolverContext> contextSupplier) {
         this.solver = solver;
         this.schedule = schedule;
         this.progress = progress;
         this.onSuccess = onSuccess;
         this.onFailure = onFailure;
+        this.contextSupplier = contextSupplier;
     }
 
     @Override
@@ -63,6 +72,10 @@ public class SolverRunnable implements Runnable {
             working = true;
             pending = false;
         }
+        
+        //Set the thread sensitive fields for the current thread
+        SolverContext.setThreadSensitiveSolverContext(contextSupplier.get());
+        SolverContext.setCurrentModule(solver.getOwner());
 
         try {
             do {

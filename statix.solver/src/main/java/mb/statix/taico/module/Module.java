@@ -1,5 +1,7 @@
 package mb.statix.taico.module;
 
+import static mb.statix.taico.solver.SolverContext.context;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -17,15 +19,13 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.MState;
-import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.context.AContextAware;
 import mb.statix.taico.solver.query.QueryDetails;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.
  */
 //TODO This would be a StatixModule or SGModule
-public class Module extends AContextAware implements IModule {
+public class Module implements IModule {
     private static final long serialVersionUID = 1L;
     
     private final String name;
@@ -39,52 +39,43 @@ public class Module extends AContextAware implements IModule {
     /**
      * Creates a new top level module.
      * 
-     * @param context
-     *      the solver context
      * @param name
      *      the name of the module
      * @param spec
      *      the spec
      */
-    public Module(SolverContext context, String name) {
-        this(context, name, true);
+    public Module(String name) {
+        this(name, true);
     }
     
     /**
      * Protected constructor for {@link DelegatingModule}.
      * 
-     * @param context
-     *      the context
      * @param name
      *      the name of the module
      * @param addToContext
      *      if true, adds to the context, otherwise, doesn't alter the context
      */
-    protected Module(SolverContext context, String name, boolean addToContext) {
-        super(context);
-        
-        Spec spec = context.getSpec();
+    protected Module(String name, boolean addToContext) {
+        Spec spec = context().getSpec();
         
         this.name = name;
         this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptyList());
-        if (addToContext) context.addModule(this);
+        if (addToContext) context().addModule(this);
     }
     
     /**
      * Constructor for creating child modules.
      * 
-     * @param context
-     *      the solver context
      * @param name
      *      the name of the child
      * @param parent
      *      the parent module
      */
-    private Module(SolverContext context, String name, IModule parent) {
-        super(context);
+    private Module(String name, IModule parent) {
         this.name = name;
         this.parentId = parent == null ? null : parent.getId();
-        context.addModule(this);
+        context().addModule(this);
     }
 
     @Override
@@ -100,7 +91,7 @@ public class Module extends AContextAware implements IModule {
     @Override
     public IModule getParent() {
         System.err.println("Getting parent on module " + this);
-        return parentId == null ? null : context.getModuleUnchecked(parentId);
+        return parentId == null ? null : context().getModuleUnchecked(parentId);
     }
     
     @Override
@@ -117,7 +108,7 @@ public class Module extends AContextAware implements IModule {
 
     @Override
     public Module createChild(String name, List<AScope> canExtend, IConstraint constraint) {
-        Module child = new Module(context, name, this);
+        Module child = new Module(name, this);
         child.setInitialization(constraint);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
         return child;
@@ -152,7 +143,7 @@ public class Module extends AContextAware implements IModule {
     
     @Override
     public Set<IModule> getDependencies() {
-        return queries.values().stream().flatMap(d -> d.getReachedModules().stream()).map(d -> context.getModuleUnchecked(d)).collect(Collectors.toSet());
+        return queries.values().stream().flatMap(d -> d.getReachedModules().stream()).map(d -> context().getModuleUnchecked(d)).collect(Collectors.toSet());
     }
     
     @Override
@@ -168,7 +159,7 @@ public class Module extends AContextAware implements IModule {
     @Override
     public Map<IModule, CResolveQuery> getDependants() {
         return dependants.entrySet().stream()
-                .collect(Collectors.toMap(e -> context.getModuleUnchecked(e.getKey()), Entry::getValue));
+                .collect(Collectors.toMap(e -> context().getModuleUnchecked(e.getKey()), Entry::getValue));
     }
     
     @Override
@@ -187,8 +178,8 @@ public class Module extends AContextAware implements IModule {
         this.queries = new HashMap<>();
         this.dependants = new HashMap<>();
         this.cleanliness = ModuleCleanliness.NEW;
-        new MState(context, this);
-        context.addModule(this);
+        new MState(this);
+        context().addModule(this);
     }
     
     // --------------------------------------------------------------------------------------------

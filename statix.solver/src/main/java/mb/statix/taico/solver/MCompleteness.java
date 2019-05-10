@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Predicate2;
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.Iterables;
@@ -64,12 +63,16 @@ public class MCompleteness implements IOwnable {
              */
         };
         
-        List<CriticalEdge> edges;
+        Set<IConstraint> causes = new HashSet<>();
+        boolean complete = true;
         synchronized (this) {
-            edges = incomplete.stream()
-                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getContext().getSpec())))
-                    .filter(sl -> equal.test(sl.scope(), sl.label()))
-                    .collect(Collectors.toList());
+            for (IConstraint constraint : incomplete) {
+                for (CriticalEdge edge : Completeness.criticalEdges(constraint, SolverContext.context().getSpec())) {
+                    if (!equal.test(edge.scope(), edge.label())) continue;
+                    complete = false;
+                    causes.add(constraint);
+                }
+            }
         }
         
 //        boolean complete;
@@ -78,7 +81,7 @@ public class MCompleteness implements IOwnable {
 //                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getContext().getSpec())))
 //                    .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
 //        }
-        return CompletenessResult.of(edges.isEmpty(), owner).withDetails(edges);
+        return CompletenessResult.of(complete, owner).withDetails(causes);
     }
 
     public synchronized MCompleteness add(IConstraint constraint) {

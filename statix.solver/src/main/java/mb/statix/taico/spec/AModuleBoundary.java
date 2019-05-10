@@ -86,7 +86,7 @@ public abstract class AModuleBoundary extends ARule {
         
         String modName = moduleString().build(subst);
         IModule child = state.owner().createOrGetChild(modName, canExtend, new CUser(name(), newArgs));
-        IMState childState = new MState(state.context(), child);
+        IMState childState = new MState(child);
         
         final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
         for(ITermVar var : bodyVars()) {

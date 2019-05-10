@@ -42,6 +42,7 @@ import mb.statix.taico.solver.CompletenessResult;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.IMQueryFilter;
 import mb.statix.taico.solver.query.IMQueryMin;
 import mb.statix.taico.solver.query.QueryDetails;
@@ -158,7 +159,7 @@ public class CResolveQuery implements IConstraint, Serializable {
                     .withEdgeComplete(isComplete)
                     .withDataComplete(isComplete)
                     .withLockManager(lockManager)
-                    .build(state.context(), trackingGraph, relation());
+                    .build(trackingGraph, relation());
             // @formatter:on
 
             paths = nameResolution.resolve(scope);
@@ -206,7 +207,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         
         //Add reverse dependencies
         for (String module : trackingGraph.getReachedModules()) {
-            state.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
+            SolverContext.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
         }
         
         final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);

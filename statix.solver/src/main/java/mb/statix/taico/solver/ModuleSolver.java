@@ -81,7 +81,7 @@ public class ModuleSolver implements IOwnable {
     
     private ModuleSolver(IMState state, Iterable<IConstraint> constraints, ICompleteness isComplete, PrefixedDebugContext debug) {
         this.state = state;
-        this.constraints = new ModuleConstraintStore(state.context(), state.owner().getId(), constraints, debug);
+        this.constraints = new ModuleConstraintStore(state.owner().getId(), constraints, debug);
         this.completeness = new MCompleteness(state.owner(), constraints);
         this.isComplete = isComplete;
         this.debug = debug;
@@ -301,7 +301,7 @@ public class ModuleSolver implements IOwnable {
         
         IModule scopeOwner;
         try {
-            scopeOwner = state.context().getModule(state.getOwner(), scope.getResource());
+            scopeOwner = SolverContext.context().getModule(state.getOwner(), scope.getResource());
         } catch (Delay d) {
             return CompletenessResult.of(false, getOwner()).withDelay(d);
         }
@@ -322,7 +322,7 @@ public class ModuleSolver implements IOwnable {
         System.err.println("Completeness of " + getOwner() + " got isCompleteFinal request.");
         CompletenessResult r = completeness.isComplete(scope, label, state);
         if (!r.isComplete()) {
-            System.err.println("Completeness of " + getOwner() + " result: (own completeness) false");
+            System.err.println("Completeness of " + getOwner() + " result: (own completeness) false, because of constraints: " + r.details());
             return r;
         }
         
@@ -449,6 +449,10 @@ public class ModuleSolver implements IOwnable {
     public static abstract class AMSolverResult implements ISolverResult {
 
         @Value.Parameter public abstract IMState state();
+        
+        @Value.Default public SolverContext context() {
+            return SolverContext.context();
+        }
 
         @Value.Parameter public abstract Set<IConstraint> errors();
 

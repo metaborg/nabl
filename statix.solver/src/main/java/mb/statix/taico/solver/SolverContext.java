@@ -3,7 +3,6 @@ package mb.statix.taico.solver;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -20,7 +19,6 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.context.IContextAware;
 
 public class SolverContext implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -33,9 +31,6 @@ public class SolverContext implements Serializable {
     private transient IChangeSet changeSet;
     private transient Map<String, Set<IConstraint>> initConstraints;
     
-    //TODO Weak keys
-//    private transient Set<WeakReference<IContextAware>> contextObservers = ConcurrentHashMap.newKeySet(); //Will be written, custom write method
-    private transient Set<IContextAware> contextObservers = ConcurrentHashMap.newKeySet();
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
     private Map<IModule, IMState> states = new ConcurrentHashMap<>();
     private volatile int phase = -1;
@@ -266,6 +261,7 @@ public class SolverContext implements Serializable {
     
     public void setCoordinator(ASolverCoordinator coordinator) {
         this.coordinator = coordinator;
+        coordinator.setContext(this);
     }
     
     // --------------------------------------------------------------------------------------------
@@ -285,44 +281,9 @@ public class SolverContext implements Serializable {
     }
 
     // --------------------------------------------------------------------------------------------
-    // Context observers
+    // Context transfer
     // --------------------------------------------------------------------------------------------
-    
-    /**
-     * Registers the given {@link IContextAware} as an observer of the context.
-     * 
-     * @param contextAware
-     *      the observer to register
-     */
-    public void register(IContextAware contextAware) {
-//        contextObservers.add(new WeakReference<>(contextAware));
-        contextObservers.add(contextAware);
-    }
-    
-    /**
-     * Transfers all context observers to the given target context.
-     * This updates the context of all the observers to the target context.
-     * 
-     * @param target
-     *      the target context
-     */
-    protected void transferContextObservers(SolverContext target) {
-        //TODO Parallel + clear
-//        Iterator<WeakReference<IContextAware>> it = contextObservers.iterator();
-//        while (it.hasNext()) {
-//            WeakReference<IContextAware> old = it.next();
-//            IContextAware observer = old.get();
-//            if (observer != null) observer.setContext(target);
-//            it.remove();
-//        }
-        Iterator<IContextAware> it = contextObservers.iterator();
-        while (it.hasNext()) {
-            IContextAware observer = it.next();
-            observer.setContext(target);
-            it.remove();
-        }
-    }
-    
+
     /**
      * Commits the changes with regards to the previous solver context.
      * This call copies over any information from the old context that is relevant and then removes
@@ -356,7 +317,6 @@ public class SolverContext implements Serializable {
                 + ", manager=" + manager
                 + ", oldContext=" + oldContext
                 + ", changeSet=" + changeSet
-                + ", contextObservers=" + contextObservers
                 + ", phase=" + phase
                 + ", solverResults=" + solverResults + "]";
     }
@@ -399,6 +359,7 @@ public class SolverContext implements Serializable {
      */
     public static SolverContext initialContext(IncrementalStrategy strategy, Spec spec) {
         SolverContext newContext = new SolverContext(strategy, spec);
+        setSolverContext(newContext);
         return newContext;
     }
 
@@ -423,9 +384,67 @@ public class SolverContext implements Serializable {
         newContext.oldContext = previousContext; //TODO Ensure that changes are committed
         newContext.changeSet = changeSet;
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
-        previousContext.transferContextObservers(newContext);
         newContext.setState(previousRootState.getOwner(), previousRootState);
+        setSolverContext(newContext);
         ModuleSolver.topLevelSolver(previousRootState, Collections.emptyList(), new NullDebugContext());
         return newContext;
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Thread specific accessors
+    // --------------------------------------------------------------------------------------------
+    private static final ThreadLocal<SolverContext> currentContextThreadSensitive = new ThreadLocal<>();
+    private static SolverContext currentContext;
+    
+    private static transient final ThreadLocal<IModule> currentModuleThreadSensitive = new ThreadLocal<>();
+    
+    /**
+     * @return
+     *      the current solver context
+     */
+    public static SolverContext context() {
+        return currentContext;
+    }
+    
+    public static void setSolverContext(SolverContext context) {
+        currentContext = context;
+//        currentContextThreadSensitive.set(context);
+    }
+    
+    public static void setThreadSensitiveSolverContext(SolverContext context) {
+        currentContextThreadSensitive.set(context);
+    }
+    
+    public static SolverContext getThreadSensitiveSolverContext() {
+        return currentContextThreadSensitive.get();
+    }
+    
+    /**
+     * <b>Thread sensitive:</b> this method changes its behavior based on the calling thread.<p>
+     * 
+     * Sets the current module of the calling thread.
+     * 
+     * @param module
+     *      the module
+     */
+    public static void setCurrentModule(IModule module) {
+        currentModuleThreadSensitive.set(module);
+    }
+    
+    /**
+     * <b>Thread sensitive:</b> this method changes its behavior based on the calling thread.<p>
+     * 
+     * The module belonging to the solver of the current thread. If called from a thread not
+     * associated to a solver, this method returns null.
+     * 
+     * @return
+     *      the current module
+     */
+    public static IModule getCurrentModule() {
+        return currentModuleThreadSensitive.get();
+    }
+    
+//    public static SolverContext getThreadSensitiveSolverContext(SolverContext context) {
+//        return currentContextThreadSensitive.get();
+//    }
 }

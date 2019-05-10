@@ -154,7 +154,7 @@ public abstract class IncrementalStrategy {
         
         IModule rootOwner = context.getRootModule();
         IModule child = rootOwner.createChild(childName, scopes, initConstraint);
-        new MState(context, child);
+        new MState(child);
         return child;
     }
     
@@ -169,7 +169,7 @@ public abstract class IncrementalStrategy {
      */
     protected void reuseOldModule(SolverContext context, IModule oldModule) {
         System.err.println("[IS] Reusing old module " + oldModule);
-        MState state = new MState(context, oldModule);
+        MState state = new MState(oldModule);
         //TODO Is the root solver set at this point?
         context.getRootModule().getCurrentState().solver().noopSolver(state);
     }

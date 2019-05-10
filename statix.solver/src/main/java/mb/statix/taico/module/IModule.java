@@ -1,5 +1,7 @@
 package mb.statix.taico.module;
 
+import static mb.statix.taico.solver.SolverContext.context;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -21,14 +23,13 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.context.IContextAware;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.util.IOwnable;
 
 /**
  * Interface to represent a module.
  */
-public interface IModule extends IContextAware, Serializable {
+public interface IModule extends Serializable {
     /**
      * @return
      *      the name of this module, could be non unique
@@ -158,7 +159,7 @@ public interface IModule extends IContextAware, Serializable {
      *      the child of this module
      */
     default IModule getChild(String name) throws Delay {
-        return getCurrentState().context().getChildModuleByName(this, name);
+        return context().getChildModuleByName(this, name);
     }
     
     /**
@@ -178,7 +179,7 @@ public interface IModule extends IContextAware, Serializable {
         child.setParent(this);
 //        child.getCurrentState().setCoordinator(getCurrentState().coordinator());
         getScopeGraph().addChild(child);
-        getCurrentState().context().addModule(child);
+        context().addModule(child);
         return child;
     }
     
@@ -216,7 +217,7 @@ public interface IModule extends IContextAware, Serializable {
      * @see SolverContext#getState(IModule)
      */
     default IMState getCurrentState() {
-        IMState state = getContext().getState(this);
+        IMState state = SolverContext.context().getState(this);
         if (state == null) System.err.println("State of " + this + " is null!");
         return state;
     }

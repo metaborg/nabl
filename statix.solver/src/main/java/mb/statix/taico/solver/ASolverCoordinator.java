@@ -26,6 +26,7 @@ public abstract class ASolverCoordinator {
     
     protected IncrementalStrategy strategy;
     protected IDebugContext debug;
+    protected SolverContext context;
     
     /**
      * @return
@@ -49,6 +50,24 @@ public abstract class ASolverCoordinator {
      */
     public IModule getRootModule() {
         return rootState.getOwner();
+    }
+    
+    /**
+     * Sets the context that is reported to the SolverRunnables.
+     * 
+     * @param context
+     *      the context
+     */
+    public void setContext(SolverContext context) {
+        this.context = context;
+    }
+    
+    /**
+     * @return
+     *      the context that this coordinator is currently coordinating
+     */
+    public SolverContext getContext() {
+        return context;
     }
     
     /**
@@ -86,7 +105,6 @@ public abstract class ASolverCoordinator {
     protected void init(IncrementalStrategy strategy, IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
         this.debug = new PrefixedDebugContext("Coordinator", debug);
         this.rootState = rootState;
-        this.rootState.context().setCoordinator(this);
         this.root = ModuleSolver.topLevelSolver(rootState, constraints, debug);
         this.strategy = strategy;
     }
@@ -136,10 +154,10 @@ public abstract class ASolverCoordinator {
             throws InterruptedException {
         init(strategy, state, Collections.emptyList(), debug);
         
-        Map<IModule, Set<IConstraint>> modules = strategy.createModulesForPhase(rootState.context(), constraints);
+        Map<IModule, Set<IConstraint>> modules = strategy.createModulesForPhase(context, constraints);
         
         //Switch the phase to 0 after the initialization
-        if (rootState.context().getPhase() == -1) rootState.context().setPhase(0);
+        if (context.getPhase() == -1) context.setPhase(0);
         System.err.println("Scheduling");
         scheduleModules(modules);
         

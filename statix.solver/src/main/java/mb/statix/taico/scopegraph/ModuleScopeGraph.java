@@ -19,6 +19,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
 import mb.statix.util.Capsules;
@@ -267,7 +268,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     
     @Override
     public Iterable<? extends IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm>> getChildren() {
-        return children2.stream().map(s -> owner.getContext().getModuleUnchecked(s).getScopeGraph())::iterator;
+        return children2.stream().map(s -> SolverContext.context().getModuleUnchecked(s).getScopeGraph())::iterator;
     }
     
     @Override

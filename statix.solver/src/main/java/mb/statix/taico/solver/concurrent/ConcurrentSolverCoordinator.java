@@ -54,7 +54,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     
     @Override
     public void addSolver(ModuleSolver solver) {
-        SolverRunnable runner = new SolverRunnable(solver, executors::submit, progressCounter, this::finishSolver, this::finishSolver);
+        SolverRunnable runner = new SolverRunnable(solver, executors::submit, progressCounter, this::finishSolver, this::finishSolver, this::getContext);
         solver.getStore().setStoreObserver(store -> runner.notifyOfWork());
         solvers.put(solver, runner);
         runner.schedule();

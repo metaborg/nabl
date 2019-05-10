@@ -41,6 +41,19 @@ public class Vars {
     }
     
     /**
+     * Gets the owner of the given term variable without checking the access.
+     * 
+     * @param termVar
+     *      the variable
+     * 
+     * @return
+     *      the owner of the given term variable
+     */
+    public static IModule getOwnerUnchecked(ITermVar termVar) {
+        return SolverContext.context().getModuleUnchecked(termVar.getResource());
+    }
+    
+    /**
      * Gets the owner of the given term variable.
      * 
      * @param termVar
@@ -55,6 +68,6 @@ public class Vars {
      *      If this request is not allowed.
      */
     public static IModule getOwner(ITermVar termVar, IModule requester) throws Delay {
-        return requester.getContext().getModule(requester, termVar.getResource());
+        return SolverContext.context().getModule(requester, termVar.getResource());
     }
 }

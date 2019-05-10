@@ -91,19 +91,21 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             order.put(change.getModule(), i++);
             modules.put(change.getModule(), tuple._2());
         }
-        SolverContext oldContext = initial.state().context();
+        SolverContext oldContext = initial.context();
         ChangeSet changeSet = new ChangeSet(oldContext, removed, changed, added);
         
         SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
 //        newContext.setState(initial.state().getOwner(), initial.state());
         
         ASolverCoordinator coordinator = MSTX_solve_constraint.CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
-        newContext.setCoordinator(coordinator);
+        newContext.setCoordinator(coordinator); //Sets the coordinator on the context and the context on the coordinator
+        
         //TODO IMPORTANT Solver Context
         
         //Do the actual analysis
         Map<String, ISolverResult> results;
         try {
+            //TODO Add the context as an argument to the coordinator?
             results = coordinator.solve(strategy, changeSet, initial.state(), modules, debug);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

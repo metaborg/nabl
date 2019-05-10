@@ -20,9 +20,9 @@ public interface IMState extends IOwnable, Serializable {
         return owner();
     }
     
-    public Spec spec();
-    
-    public SolverContext context();
+    public default Spec spec() {
+        return SolverContext.context().getSpec();
+    }
     
     /**
      * Convenience method.
@@ -30,7 +30,7 @@ public interface IMState extends IOwnable, Serializable {
      * @see SolverContext#getCoordinator()
      */
     public default ASolverCoordinator coordinator() {
-        return context().getCoordinator();
+        return SolverContext.context().getCoordinator();
     }
     
     public ModuleSolver solver();

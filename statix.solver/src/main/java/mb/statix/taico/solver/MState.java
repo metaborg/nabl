@@ -2,6 +2,7 @@ package mb.statix.taico.solver;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -10,15 +11,13 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.terms.AScope;
-import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.solver.context.AContextAware;
 
 /**
  * Implementation of mutable state.
  */
-public class MState extends AContextAware implements IMState {
+public class MState implements IMState, Serializable {
     private static final long serialVersionUID = 1L;
     
     private final IModule owner;
@@ -35,19 +34,17 @@ public class MState extends AContextAware implements IMState {
      * Constructor for creating a new state for the given module.
      * <p>
      * <b>NOTE</b>: this constructor sets the state of the module to itself.
-     * @param context
-     *      the context
+     * 
      * @param owner
      *      the owner of this state
      */
-    public MState(SolverContext context, IModule owner) {
-        super(context);
+    public MState(IModule owner) {
         this.owner = owner;
         this.scopeGraph = owner.getScopeGraph();
         this.vars = new HashSet<>();
         this.unifier = PersistentUnifier.Immutable.of();
         
-        context.setState(owner, this);
+        SolverContext.context().setState(owner, this);
     }
     
     /**
@@ -61,7 +58,6 @@ public class MState extends AContextAware implements IMState {
      *      the new scopeGraph
      */
     protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph) {
-        super(original.context);
         this.owner = original.owner();
         this.scopeGraph = scopeGraph;
         this.vars = vars;
@@ -73,16 +69,6 @@ public class MState extends AContextAware implements IMState {
     @Override
     public IModule owner() {
         return owner;
-    }
-    
-    @Override
-    public Spec spec() {
-        return context.getSpec();
-    }
-    
-    @Override
-    public SolverContext context() {
-        return context;
     }
     
     @Override

@@ -1,12 +1,10 @@
 package mb.statix.taico.solver;
 
-import java.util.List;
+import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.immutables.value.Value;
 
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.module.IModule;
@@ -22,7 +20,7 @@ public abstract class ACompletenessResult {
         return null;
     }
     
-    @Value.Default @Nullable public List<CriticalEdge> details() {
+    @Value.Default @Nullable public Set<IConstraint> details() {
         return null;
     }
 }

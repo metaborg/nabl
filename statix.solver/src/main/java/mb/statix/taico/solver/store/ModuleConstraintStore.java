@@ -1,5 +1,7 @@
 package mb.statix.taico.solver.store;
 
+import static mb.statix.taico.solver.SolverContext.context;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,11 +27,9 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.context.AContextAware;
 import mb.statix.taico.util.Vars;
 
-public class ModuleConstraintStore extends AContextAware implements IConstraintStore {
+public class ModuleConstraintStore implements IConstraintStore {
     private final String owner;
     private final Queue<IConstraint> active;
     private final Queue<IConstraint> stuckBecauseStuck;
@@ -44,8 +44,7 @@ public class ModuleConstraintStore extends AContextAware implements IConstraintS
     
     private final Object variableLock = new Object();
     
-    public ModuleConstraintStore(SolverContext context, String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
-        super(context);
+    public ModuleConstraintStore(String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.owner = owner;
         this.active = new LinkedBlockingQueue<>();
         this.stuckBecauseStuck = new LinkedList<>();
@@ -149,7 +148,7 @@ public class ModuleConstraintStore extends AContextAware implements IConstraintS
         
         //If the owner of the variable is not our owner, then we will apply the substitution on the activation of the var.
         if (!var.getResource().equals(owner)) {
-            IModule varOwner = context.getModuleUnchecked(var.getResource());
+            IModule varOwner = context().getModuleUnchecked(var.getResource());
             IUnifier.Immutable unifier = varOwner.getCurrentState().unifier();
             ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(var, unifier.findRecursive(var));
             System.err.println("Applying substitution: " + subst);
@@ -308,7 +307,7 @@ public class ModuleConstraintStore extends AContextAware implements IConstraintS
         //Not stuck on another module
         if (owner.equals(termVar.getResource())) return false;
         
-        IModule varOwner = Vars.getOwnerUnchecked(context, termVar);
+        IModule varOwner = Vars.getOwnerUnchecked(termVar);
         ModuleConstraintStore varStore = varOwner.getCurrentState().solver().getStore();
         
         synchronized (varStore.variableLock) {
@@ -369,7 +368,7 @@ public class ModuleConstraintStore extends AContextAware implements IConstraintS
      *      the debug context
      */
     private void registerAsObserver(ITermVar termVar, IDebugContext debug) {
-        IModule varOwner = Vars.getOwnerUnchecked(context, termVar);
+        IModule varOwner = Vars.getOwnerUnchecked(termVar);
         //A module doesn't have to register on itself
         if (this.owner.equals(varOwner.getId())) return;
 
