@@ -1,7 +1,5 @@
 package mb.statix.solver.query;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.List;
 import java.util.Set;
 
@@ -37,24 +35,21 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         this.debug = debug;
     }
 
-    @Override public boolean leq(List<ITerm> datum1, List<ITerm> datum2)
-            throws ResolutionException, InterruptedException {
-        final ITerm term1 = B.newTuple(datum1);
-        final ITerm term2 = B.newTuple(datum2);
+    @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
         try {
             final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
-            if((result = constraint.apply(ImmutableList.of(term1, term2), state).orElse(null)) == null) {
+            if((result = constraint.apply(ImmutableList.of(datum1, datum2), state).orElse(null)) == null) {
                 return false;
             }
             if(Solver.entails(result._1(), result._3(), isComplete, result._2(), debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} shadows {}", state.unifier().toString(term1), state.unifier().toString(term2));
+                    debug.info("{} shadows {}", state.unifier().toString(datum1), state.unifier().toString(datum2));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} does not shadow {}", state.unifier().toString(term1),
-                            state.unifier().toString(term2));
+                    debug.info("{} does not shadow {}", state.unifier().toString(datum1),
+                            state.unifier().toString(datum2));
                 }
                 return false;
             }

@@ -1,12 +1,10 @@
 package mb.statix.scopegraph.reference;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import mb.statix.scopegraph.INameResolution;
@@ -136,12 +134,12 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         }
         final ImmutableSet.Builder<IResolutionPath<S, L, D>> env = ImmutableSet.builder();
         if(l.equals(scopeGraph.getNoDataLabel())) {
-            final List<D> datum = ImmutableList.of(scope);
+            final D datum = scope;
             if(dataWF.wf(datum)) {
                 env.add(Paths.resolve(path, l, datum));
             }
         } else {
-            for(List<D> datum : scopeGraph.getData().get(path.getTarget(), l)) {
+            for(D datum : scopeGraph.getData().get(path.getTarget(), l)) {
                 if(dataWF.wf(datum)) {
                     env.add(Paths.resolve(path, l, datum));
                 }

@@ -1,12 +1,10 @@
 package mb.statix.scopegraph.reference;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
@@ -105,13 +103,13 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         }
         final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
         if(l.equals(scopeGraph.getNoDataLabel())) {
-            final List<D> datum = ImmutableList.of(scope);
+            final D datum = scope;
             if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                 env.__insert(Paths.resolve(path, l, datum));
             }
         } else {
-            final java.util.Set<List<D>> data = scopeGraph.getData().get(path.getTarget(), l);
-            for(List<D> datum : data) {
+            final java.util.Set<D> data = scopeGraph.getData().get(path.getTarget(), l);
+            for(D datum : data) {
                 if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                     env.__insert(Paths.resolve(path, l, datum));
                 }
@@ -120,7 +118,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         return env.freeze();
     }
 
-    private boolean notShadowed(List<D> datum, Set.Immutable<IResolutionPath<S, L, D>> specifics)
+    private boolean notShadowed(D datum, Set.Immutable<IResolutionPath<S, L, D>> specifics)
             throws ResolutionException, InterruptedException {
         for(IResolutionPath<S, L, D> p : specifics) {
             if(dataEquiv.leq(p.getDatum(), datum)) {

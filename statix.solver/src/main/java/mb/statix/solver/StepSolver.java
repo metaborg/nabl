@@ -407,7 +407,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
     @Override public Optional<ConstraintResult> caseTellRel(CTellRel c) throws SolverException {
         final ITerm scopeTerm = c.scopeTerm();
         final ITerm relation = c.relation();
-        final List<ITerm> datumTerms = c.datumTerms();
+        final ITerm datumTerm = c.datumTerm();
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
@@ -420,7 +420,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
 
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addDatum(scope, relation, datumTerms);
+                state.scopeGraph().addDatum(scope, relation, datumTerm);
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 

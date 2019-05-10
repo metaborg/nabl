@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.metaborg.util.log.Level;
 
+import com.google.common.collect.ImmutableList;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.Tuple3;
@@ -34,10 +36,10 @@ class ConstraintDataWF implements DataWF<ITerm> {
         this.debug = debug;
     }
 
-    @Override public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
+    @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
         try {
             final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
-            if((result = constraint.apply(datum, state).orElse(null)) == null) {
+            if((result = constraint.apply(ImmutableList.of(datum), state).orElse(null)) == null) {
                 return false;
             }
             if(Solver.entails(result._1(), result._3(), isComplete, result._2(), debug).isPresent()) {

@@ -2,8 +2,6 @@ package mb.statix.scopegraph.terms.path;
 
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableList;
-
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -20,9 +18,8 @@ public final class Paths {
         return EmptyScopePath.of(scope);
     }
 
-    public static <S, L, D> IResolutionPath<S, L, D> resolve(IScopePath<S, L> path, L label,
-            Iterable<D> datum) {
-        return ResolutionPath.of(path, label, ImmutableList.copyOf(datum));
+    public static <S, L, D> IResolutionPath<S, L, D> resolve(IScopePath<S, L> path, L label, D datum) {
+        return ResolutionPath.of(path, label, datum);
     }
 
     public static <S, L> Optional<IScopePath<S, L>> append(IScopePath<S, L> left, IScopePath<S, L> right) {

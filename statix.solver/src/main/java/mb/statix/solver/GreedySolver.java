@@ -381,7 +381,7 @@ public class GreedySolver {
             @Override public State caseTellRel(CTellRel c) throws InterruptedException {
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm relation = c.relation();
-                final List<ITerm> datumTerms = c.datumTerms();
+                final ITerm datum = c.datumTerm();
 
                 final IUnifier.Immutable unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
@@ -394,7 +394,7 @@ public class GreedySolver {
                 }
 
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
-                        state.scopeGraph().addDatum(scope, relation, datumTerms);
+                        state.scopeGraph().addDatum(scope, relation, datum);
                 return success(c, state.withScopeGraph(scopeGraph), ImmutableList.of(), ImmutableList.of(), fuel);
             }
 

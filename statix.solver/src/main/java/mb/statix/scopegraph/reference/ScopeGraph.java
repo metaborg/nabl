@@ -1,10 +1,7 @@
 package mb.statix.scopegraph.reference;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -36,10 +33,10 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
         private final L noDataLabel;
 
         private final IRelation3.Immutable<S, L, S> edges;
-        private final IRelation3.Immutable<S, L, List<D>> data;
+        private final IRelation3.Immutable<S, L, D> data;
 
         Immutable(Set.Immutable<L> edgeLabels, Set.Immutable<L> dataLabels, L noDataLabel,
-                IRelation3.Immutable<S, L, S> edges, IRelation3.Immutable<S, L, List<D>> data) {
+                IRelation3.Immutable<S, L, S> edges, IRelation3.Immutable<S, L, D> data) {
             this.edgeLabels = edgeLabels;
             this.dataLabels = dataLabels;
             this.noDataLabel = noDataLabel;
@@ -65,7 +62,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return edges;
         }
 
-        @Override public IRelation3.Immutable<S, L, List<D>> getData() {
+        @Override public IRelation3<S, L, D> getData() {
             return data;
         }
 
@@ -76,9 +73,9 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
                     edges.put(sourceScope, label, targetScope), data);
         }
 
-        @Override public ScopeGraph.Immutable<S, L, D> addDatum(S sourceScope, L relation, Iterable<D> datum) {
+        @Override public ScopeGraph.Immutable<S, L, D> addDatum(S sourceScope, L relation, D datum) {
             return new ScopeGraph.Immutable<>(edgeLabels, dataLabels, noDataLabel, edges,
-                    data.put(sourceScope, relation, ImmutableList.copyOf(datum)));
+                    data.put(sourceScope, relation, datum));
         }
 
         @Override public IScopeGraph.Immutable<S, L, D> addAll(IScopeGraph<S, L, D> other) {
@@ -158,10 +155,10 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
         private final L noDataLabel;
 
         private final IRelation3.Transient<S, L, S> edges;
-        private final IRelation3.Transient<S, L, List<D>> data;
+        private final IRelation3.Transient<S, L, D> data;
 
         Transient(Set.Immutable<L> edgeLabels, Set.Immutable<L> dataLabels, L noDataLabel,
-                IRelation3.Transient<S, L, S> edges, IRelation3.Transient<S, L, List<D>> data) {
+                IRelation3.Transient<S, L, S> edges, IRelation3.Transient<S, L, D> data) {
             this.edgeLabels = edgeLabels;
             this.dataLabels = dataLabels;
             this.noDataLabel = noDataLabel;
@@ -187,7 +184,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return edges;
         }
 
-        @Override public IRelation3<S, L, List<D>> getData() {
+        @Override public IRelation3<S, L, D> getData() {
             return data;
         }
 
@@ -197,8 +194,8 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return edges.put(sourceScope, label, targetScope);
         }
 
-        @Override public boolean addDatum(S scope, L relation, Iterable<D> datum) {
-            return data.put(scope, relation, ImmutableList.copyOf(datum));
+        @Override public boolean addDatum(S scope, L relation, D datum) {
+            return data.put(scope, relation, datum);
         }
 
         @Override public boolean addAll(IScopeGraph<S, L, D> other) {
