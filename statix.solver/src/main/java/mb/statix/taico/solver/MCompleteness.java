@@ -64,13 +64,21 @@ public class MCompleteness implements IOwnable {
              */
         };
         
-        boolean complete;
+        List<CriticalEdge> edges;
         synchronized (this) {
-            complete = incomplete.stream()
+            edges = incomplete.stream()
                     .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getContext().getSpec())))
-                    .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
+                    .filter(sl -> equal.test(sl.scope(), sl.label()))
+                    .collect(Collectors.toList());
         }
-        return CompletenessResult.of(complete, owner);
+        
+//        boolean complete;
+//        synchronized (this) {
+//            complete = incomplete.stream()
+//                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getContext().getSpec())))
+//                    .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
+//        }
+        return CompletenessResult.of(edges.isEmpty(), owner).withDetails(edges);
     }
 
     public synchronized MCompleteness add(IConstraint constraint) {
