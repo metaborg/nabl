@@ -389,8 +389,6 @@ rules
   Term(V)[[ ListTail(ts, t) ^ (s) : LIST(ty) ]] :=
     Map1t(Term(V))[[ ts ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : LIST(ty) ]].
-//Term(V)[[ ListLength(t) ^ (s): INT() ]] :=
-//  Term(V)[[ t ^ (s) : LIST(_) ]].
   Term(V)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
@@ -399,8 +397,6 @@ rules
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
   Term(V)[[ Str(_) ^ (_) : STRING() ]].
-//Term(V)[[ StrBuild(ts) ^ (s) : STRING() ]] :=
-//  Map1T(Term(V))[[ ts ^ (s) : _ ]].
   Term(V)[[ Int(_) ^ (_) : INT() ]].
   Term(V)[[ As(v, t) ^ (s) : ty ]] :=
     V[[ v ^ (s) : ty ]],
