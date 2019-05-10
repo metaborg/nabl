@@ -48,13 +48,21 @@ rules
 
   desugar-ref-shorthand: c@CResolveRef(rt, st, pst) -> c'
     with decl       := <with-origin(|c)> Decl();
-         filter     := <with-origin(|rt)> Filter(ResolveMatch(rt, decl), OccurrenceMatch(rt));
-         min        := <with-origin(|rt)> Min(ResolveLt(rt, decl), LTrue());
+         match      := <with-origin(|rt)> ResolveMatch(rt, decl);
+         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter     := <with-origin(|rt)> Filter(match, lmatch);
+         ord        := <with-origin(|rt)> ResolveLt(rt, decl);
+         lord       := <with-origin(|rt)> LTrue();
+         min        := <with-origin(|rt)> Min(ord, lord);
          c'         := CResolveQuery(filter, min, st, pst)
 
   desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst) -> c'
-    with filter     := <with-origin(|rt)> Filter(ResolveMatch(rt, rel), OccurrenceMatch(rt));
-         min        := <with-origin(|rt)> Min(ResolveLt(rt, rel), LTrue());
+    with match      := <with-origin(|rt)> ResolveMatch(rt, rel);
+         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter     := <with-origin(|rt)> Filter(match, lmatch);
+         ord        := <with-origin(|rt)> ResolveLt(rt, rel);
+         lord       := <with-origin(|rt)> LTrue();
+         min        := <with-origin(|rt)> Min(ord, lord);
          c'         := CResolveQuery(filter, min, st, pst)
 
   target-to-re: NoTarget()     -> Epsilon()
