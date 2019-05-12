@@ -313,10 +313,6 @@ lexical syntax
   StrChar    = ~[\"\\\t\r\n]
   StrChar    =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
 
-  StrBuildChars = StrBuildChar+
-  StrBuildChar  = ~[\[\]\\\t\r\n]
-  StrBuildChar  =  "\\[" | "\\]" | "\\\\" | "\\t" | "\\r" | "\\n"
-
 lexical restrictions
 
   StrChars -/- ~[\"]
