@@ -81,6 +81,8 @@ public class CResolveQuery implements IConstraint, Serializable {
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("query ");
+        sb.append(relation);
+        sb.append(" ");
         sb.append(filter.toString(termToString));
         sb.append(" ");
         sb.append(min.toString(termToString));
