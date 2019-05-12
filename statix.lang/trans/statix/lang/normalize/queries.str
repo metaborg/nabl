@@ -23,13 +23,11 @@ rules
       try(normalize-resolve(|a))
     )
 
-  normalize-resolve(|a): t@ResolveMatch(Occurrence(ns, ts, _), rel) -> wf'
-    with wf := <norm-get-ast-decl-property(|a, "wf")> t;
-         wf' := Concat(wf, rel)
+  normalize-resolve(|a): t@ResolveMatch(_) -> wf
+    with wf := <norm-get-ast-decl-property(|a, "wf")> t
 
-  normalize-resolve(|a): t@ResolveLt(_, rel) -> ord'
-    with ord := <norm-get-ast-decl-property(|a, "ord")> t;
-         ord' := <topdown(try(?EOP();!rel))> ord
+  normalize-resolve(|a): t@ResolveLt(_) -> ord
+    with ord := <norm-get-ast-decl-property(|a, "ord")> t
 
   normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _)) -> lam
     with NS(tys) := <norm-get-ast-decl-type(|a)> ns;
@@ -58,11 +56,11 @@ rules
     normalize-in-rules(replace-functional-relop(|a),id,functional-relop-to-c(|a))
 
   replace-functional-relop(|a): AskRelOp(rel, in_ts, st) -> out_v
-    with DATA(FUN(_, _)) := <norm-get-ast-type(|a)> rel;
+    with FUN(_, _) := <norm-get-ast-type(|a)> rel;
          out_v := <make-fresh-var> "t"
 
   functional-relop-to-c(|a): (AskRelOp(rel, in_ts, st), out_v) -> c
-    with DATA(FUN(_, _)) := <norm-get-ast-type(|a)> rel;
+    with FUN(_, _) := <norm-get-ast-type(|a)> rel;
          c := <ask-rel-query> (rel, st, in_ts, [out_v])
 
 
@@ -74,7 +72,7 @@ rules
 
          p        := <build-terms(|in_ts)> us;
          match    := LLam([p], [], eq);
-         filter   := Filter(rel, match);
+         filter   := Filter(Epsilon(), match);
 
          min      := Min([], LLam([Wld(), Wld()], [], CFalse()));
 
@@ -82,4 +80,4 @@ rules
          t        := <conc;build-terms(|ts)> (in_wlds, out_ts);
          pts      := List([Tuple([Wld(), t])]);
 
-         c        := CResolveQuery(filter, min, st, pts)
+         c        := CResolveQuery(rel, filter, min, st, pts)

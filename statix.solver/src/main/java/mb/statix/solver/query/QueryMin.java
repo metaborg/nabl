@@ -38,9 +38,9 @@ public class QueryMin implements IQueryMin, Serializable {
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("min pathLt[");
+        sb.append("min ");
         sb.append(labelOrd);
-        sb.append("] and ");
+        sb.append(" and ");
         sb.append(dataOrd.toString(termToString));
         return sb.toString();
     }

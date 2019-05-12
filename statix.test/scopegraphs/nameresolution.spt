@@ -5,21 +5,12 @@ language StatixLang
 
 test query no-data succeeds [[
   resolve {s}
-    query filter P* $ in s |-> _
+    query () filter P* in s |-> _
   signature
     name-resolution
       labels
         P
 ]] analysis succeeds
-
-test query edge fails [[
-  resolve {s}
-    query filter P* in s |-> _
-  signature
-    name-resolution
-      labels
-        P
-]] analysis fails
 
 test namespace resolve with labels wf succeeds [[
   resolve true
@@ -41,16 +32,6 @@ test namespace resolve with relation wf fails [[
     name-resolution
       labels P
       resolve Var filter P* r
-]] analysis fails
-
-test namespace resolve with no-data wf fails [[
-  resolve true
-  signature
-    namespaces
-      Var : string
-    name-resolution
-      labels P
-      resolve Var filter P* $
 ]] analysis fails
 
 test namespace resolve with labels ord succeeds [[
@@ -160,7 +141,7 @@ test refer explicitly to resolution policy filter succeeds [[
     new s1 s2, s1 -P-> s2,
     s1 -> Var{"x"@s1},
     s2 -> Var{"x"@s2},
-    query filter resolveMatch[Var{_@-}, decl] in s1 |-> [(_, Var{_@s2})]
+    query decl filter resolveMatch[Var{_@-}] in s1 |-> [(_, Var{_@s2})]
   signature
     namespaces
       Var : string
@@ -175,7 +156,7 @@ test refer explicitly to resolution policy min succeeds [[
     new s1 s2 s3,
     s1 -P-> s2, s2 -> Var{"x"@s2},
     s1 -Q-> s3, s3 -> Var{"x"@s3},
-    query filter ~0 decl min resolveLt[Var{_@-}, decl] and true in s1 |-> [(_, Var{_@s3})]
+    query decl filter ~0 min resolveLt[Var{_@-}] and true in s1 |-> [(_, Var{_@s3})]
   signature
     namespaces
       Var : string

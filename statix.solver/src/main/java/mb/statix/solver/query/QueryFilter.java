@@ -44,9 +44,9 @@ public class QueryFilter implements IQueryFilter, Serializable {
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("filter pathWf[");
+        sb.append("filter ");
         sb.append(pathWf);
-        sb.append("] and ");
+        sb.append(" and ");
         sb.append(dataWf.toString(termToString));
         return sb.toString();
     }

@@ -19,7 +19,8 @@ signature
 
   namespaces
     C      // constraint
-    Lbl    // edge or data label
+    Rel    // data label
+    Edge   // edge label
     Mod    // module
     Ns     // namespace
     NsQ    // namespace query
@@ -40,39 +41,35 @@ signature
 rules
 
   init ^ (s) :=
-    new s.
+    new s,
+  
+    // sugar
 
+    Rel{Decl()} <- s,
+    Rel{Decl()} : PRED([OCCURRENCE()]),
+    Rel{Decl()}.ast := Decl().
+  
 
 /******************************************************************
  * Modules                                                        *
  ******************************************************************/
 
   [[ m@Module(x, sections) ^ (s) ]] :=
-    new s', @m.scope := s',
+    new s', s' -P-> s, @m.scope := s',
     Mod{x} <- s, Mod{x} =I=> s',
     distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
-    TopLevelSections[[ sections ^ (s') ]].
-
-  TopLevelSections[[ sections ^ (s) ]] :=
-
-    Lbl{Decl()} <- s,
-    Lbl{Decl()} : DATA(PRED([OCCURRENCE()])),
-    Lbl{Decl()}.ast := Decl(),
-  
-    Lbl{EOP()} <- s,
-    Lbl{EOP()} : DATA(PRED([SCOPE()])),
-    Lbl{EOP()}.ast := EOP(),
-  
     Sections[[ sections ^ (s') ]].
 
   Sections[[ sections ^ (s') ]] :=
     Map1[[ sections ^ (s') ]],
     distinct/name D(s')/C    | error $[Duplicate constraint [NAME]] @NAMES,
-    distinct/name D(s')/Lbl  | error $[Duplicate label [NAME]] @NAMES,
+    distinct/name D(s')/Rel  | error $[Duplicate relation [NAME]] @NAMES,
+    distinct/name D(s')/Edge | error $[Duplicate edge [NAME]] @NAMES,
     distinct/name D(s')/Ns   | error $[Duplicate namespace [NAME]] @NAMES,
     distinct/name D(s')/NsQ  | error $[Duplicate namespace query [NAME]] @NAMES,
     distinct/name D(s')/Op   | error $[Duplicate constructor [NAME]] @NAMES,
-    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES.
+    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES,
+    (D(s')/Rel isect/name D(s')/Edge) subseteq 0 | error $[Relation and edge label with same name [NAME]] @NAMES.
 
   [[ Signature(sigs) ^ (s) ]] :=
     Map1[[ sigs ^ (s) ]].
@@ -170,11 +167,17 @@ rules
     RelDecl[[ rel ^ (s) : ty ]].
 
   RelDecl[[ r@Label(x) ^ (s) : ty ]] :=
-    Lbl{x} <- s, @x.decl := Lbl{x}, Lbl{x}.ast := r,
-    Lbl{x} : DATA(ty) !.
+    Rel{x} <- s, @x.decl := Rel{x}, Rel{x}.ast := r,
+    Rel{x} : ty !.
+
+  RelRef[[ l@Label(x) ^ (s) : ty ]] :=
+    Rel{x} -> s, Rel{x} |-> d, @l.decl := d,
+    d : ty.
+
+  RelRef[[ l@EOP() ^ (s) : PRED([SCOPE()]) ]].
 
   [[ CTellRel(rel, ts, st) ^ (s) ]] :=
-    LabelRef[[ rel ^ (s) : DATA(ty) ]],
+    RelRef[[ rel ^ (s) : ty ]],
     tys is `inout-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
@@ -196,14 +199,20 @@ rules
     Map1[[ params ^ (s) ]].
 
   [[ Labels(lbls) ^ (s) ]] :=
-    Map1(LabelDecl)[[ lbls ^ (s) ]].
+    Map1(EdgeDecl)[[ lbls ^ (s) ]].
 
-  LabelDecl[[ l@Label(x) ^ (s) ]] :=
-    Lbl{x} <- s, @x.decl := Lbl{x}, Lbl{x}.ast := l,
-    Lbl{x} : EDGE() !.
+  EdgeDecl[[ l@Label(x) ^ (s) ]] :=
+    Edge{x} <- s, @x.decl := Edge{x}, Edge{x}.ast := l.
+
+
+  EdgeRef[[ l@Label(x) ^ (s) ]] :=
+    Edge{x} -> s, Edge{x} |-> d, @l.decl := d.
+
+  EdgeRef[[ l@EOP() ^ (s) ]].
+
 
   [[ CPathMatch(re, p) ^ (s) ]] :=
-    LabelRE[[ re ^ (s) : _ ]],
+    LabelRE[[ re ^ (s) ]],
     Build[[ p ^ (s) : LIST(LABEL()) ]].
 
   [[ CPathLt(ord, p1, p2) ^ (s) ]] :=
@@ -212,47 +221,39 @@ rules
     LabelOrd[[ ord ^ (s) ]].
 
   LabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
-    LabelRef[[ lbl1 ^ (s) : _ ]],
-    LabelRef[[ lbl2 ^ (s) : _ ]].
+    EdgeRef[[ lbl1 ^ (s) ]],
+    EdgeRef[[ lbl2 ^ (s) ]].
 
 
-  LabelRE[[ re ^ (s) : ty ]] :=
-    RE(LabelRef)[[ re ^ (s) : ty ]].
+  LabelRE[[ Empty() ^ (s) ]].
 
-  LabelRef[[ t@Label(x) ^ (s) : ty ]] :=
-    Lbl{x} -> s, Lbl{x} |-> d, @t.decl := d,
-    d : ty.
+  LabelRE[[ Epsilon() ^ (s) ]].
 
+  LabelRE[[ l@Label(_) ^ (s) ]] :=
+    EdgeRef[[ l ^ (s) ]].
 
-  RE(L)[[ Empty() ^ (s) : EDGE() ]].
+  LabelRE[[ Closure(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
 
-  RE(L)[[ Epsilon() ^ (s) : EDGE() ]].
+  LabelRE[[ Neg(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
 
-  RE(L)[[ l@Label(_) ^ (s) : ty ]] :=
-    L[[ l ^ (s) : ty ]].
+  LabelRE[[ Concat(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
 
-  RE(L)[[ Closure(re) ^ (s) : EDGE() ]] :=
-    RE(L)[[ re ^ (s) : EDGE() ]].
+  LabelRE[[ And(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
 
-  RE(L)[[ Neg(re) ^ (s) : EDGE() ]] :=
-    RE(L)[[ re ^ (s) : EDGE() ]].
-
-  RE(L)[[ Concat(re1, re2) ^ (s) : ty ]] :=
-    RE(L)[[ re1 ^ (s) : EDGE() ]],
-    RE(L)[[ re2 ^ (s) : ty ]].
-
-  RE(L)[[ And(re1, re2) ^ (s) : ty ]] :=
-    RE(L)[[ re1 ^ (s) : ty ]],
-    RE(L)[[ re2 ^ (s) : ty ]].
-
-  RE(L)[[ Or(re1, re2) ^ (s) : ty ]] :=
-    RE(L)[[ re1 ^ (s) : ty ]],
-    RE(L)[[ re2 ^ (s) : ty ]].
+  LabelRE[[ Or(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
 
 
   [[ CTellEdge(t1, lbl, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : SCOPE() ]],
-    LabelRef[[ lbl ^ (s) : EDGE() ]],
+    EdgeRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
@@ -278,21 +279,21 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  [[ CResolveQuery(filter, min, st, pst) ^ (s) ]] :=
-    [[ filter ^ (s, ty) ]],
-    [[ min ^ (s, ty) ]],
+  [[ CResolveQuery(rel, filter, min, st, pst) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : ty ]],
+    inty is `in-type` of ty,
+    [[ filter ^ (s, PRED([inty])) ]],
+    [[ min ^ (s, PRED([inty, inty])) ]],
     Build[[ st ^ (s) : SCOPE() ]],
-    resty is `path-wf-to-result` of ty,
-    Build[[ pst ^ (s) : LIST(resty) ]].
+    inoutty is `inout-type` of ty,
+    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]].
 
-  [[ Filter(re, lt) ^ (s, ty) ]] :=
-    LabelRE[[ re ^ (s) : ty ]], ty != EDGE() | error "Query regex should end in a relation of $",
-    lty is `path-wf-to-data-wf` of ty,
+  [[ Filter(re, lt) ^ (s, lty) ]] :=
+    LabelRE[[ re ^ (s) ]],
     [[ lt ^ (s) : lty ]].
 
-  [[ Min(ord, lt) ^ (s, ty) ]] :=
+  [[ Min(ord, lt) ^ (s, lty) ]] :=
     LabelOrd[[ ord ^ (s) ]],
-    lty is `path-wf-to-data-ord` of ty,
     [[ lt ^ (s) : lty ]].
 
   LabelOrd[[ [] ^ (s) ]].

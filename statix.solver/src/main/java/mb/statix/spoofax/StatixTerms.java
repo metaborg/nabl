@@ -144,9 +144,9 @@ public class StatixTerms {
                     constraints.add(new CTellRel(scope, rel, args));
                     return Unit.unit;
                 }),
-                M.appl4("CResolveQuery", queryFilter(), queryMin(), term(), term(),
-                        (c, filter, min, scope, result) -> {
-                    constraints.add(new CResolveQuery(filter, min, scope, result));
+                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
+                        (c, relation, filter, min, scope, result) -> {
+                    constraints.add(new CResolveQuery(relation, filter, min, scope, result));
                     return Unit.unit;
                 }),
                 M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {

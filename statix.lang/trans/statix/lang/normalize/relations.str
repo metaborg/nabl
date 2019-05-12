@@ -31,9 +31,9 @@ rules
          t' := SimpleType(s*)
 
   normalize-functional-query(|a):
-      CResolveQuery(Filter(wf, lwf), Min(ord, lord), st, pts)
-      -> CResolveQuery(Filter(wf, lwf'), Min(ord, lord'), st, pts)
-    where DATA(FUN(in_tys, out_ty)) := <norm-get-ast-type(|a)> wf
+      CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts)
+      -> CResolveQuery(rel, Filter(wf, lwf'), Min(ord, lord'), st, pts)
+    where FUN(in_tys, out_ty) := <norm-get-ast-type(|a)> rel
     with lwf' := <normalize-functional-wf(|in_tys,out_ty)> lwf;
          lord' := <normalize-functional-ord(|in_tys,out_ty)> lord
 

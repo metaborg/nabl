@@ -44,14 +44,12 @@ rules
        ; spec := (edge*, data*, EOP(), rule*, ext)
 
   edge-to-aterm(|a): d -> ast
-    where "Lbl"  := <nabl2-get-occurrence-ns> d;
-          EDGE() := <nabl2-get-type(|a)> d
+    where "Edge" := <nabl2-get-occurrence-ns> d
     with
       ast := <nabl2-get-property(|a, "ast")> d
 
   data-to-aterm(|a): d -> ast
-    where "Lbl"   := <nabl2-get-occurrence-ns> d;
-          DATA(_) := <nabl2-get-type(|a)> d
+    where "Rel" := <nabl2-get-occurrence-ns> d
     with
       ast := <nabl2-get-property(|a, "ast")> d
 

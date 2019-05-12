@@ -11,15 +11,6 @@ template options
 
 context-free syntax
 
-  Constraint.CResolveQuery = [
-    query [QueryTarget-dep]
-     [QueryFilter]
-     [QueryMin]
-      in [Term] |-> [Term]] {deprecated}
-
-  QueryTarget-dep.NoTarget  = "()"
-  QueryTarget-dep.RelTarget = LabelRef
-
   QueryFilter.Filter_dep = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
   QueryMin.Min_dep       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
 

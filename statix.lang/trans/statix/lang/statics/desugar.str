@@ -47,26 +47,23 @@ rules
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
 
   desugar-ref-shorthand: c@CResolveRef(rt, st, pst) -> c'
-    with decl       := <with-origin(|c)> Decl();
-         match      := <with-origin(|rt)> ResolveMatch(rt, decl);
+    with rel        := <with-origin(|c)> Decl();
+         match      := <with-origin(|rt)> ResolveMatch(rt);
          lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
          filter     := <with-origin(|rt)> Filter(match, lmatch);
-         ord        := <with-origin(|rt)> ResolveLt(rt, decl);
+         ord        := <with-origin(|rt)> ResolveLt(rt);
          lord       := <with-origin(|rt)> LTrue();
          min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(filter, min, st, pst)
+         c'         := CResolveQuery(rel, filter, min, st, pst)
 
   desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst) -> c'
-    with match      := <with-origin(|rt)> ResolveMatch(rt, rel);
+    with match      := <with-origin(|rt)> ResolveMatch(rt);
          lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
          filter     := <with-origin(|rt)> Filter(match, lmatch);
-         ord        := <with-origin(|rt)> ResolveLt(rt, rel);
+         ord        := <with-origin(|rt)> ResolveLt(rt);
          lord       := <with-origin(|rt)> LTrue();
          min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(filter, min, st, pst)
-
-  target-to-re: NoTarget()     -> EOP()
-  target-to-re: RelTarget(rel) -> rel
+         c'         := CResolveQuery(rel, filter, min, st, pst)
 
 rules
 
@@ -85,12 +82,6 @@ rules
   desugar-query: Min_dep(ord, l) -> Min(ord, l)
   desugar-query: NamespaceMin_dep(ord) -> NamespaceMin(ord)
   desugar-query: NoNamespaceMin() -> NamespaceMin([])
-
-  desugar-query:
-    CResolveQuery(target, filter, min, st, pst)
-    -> CResolveQuery(Filter(Concat(re, target-re), m), min, st, pst)
-    with Filter(re, m) := filter
-       ; target-re := <target-to-re> target
 
 rules
 

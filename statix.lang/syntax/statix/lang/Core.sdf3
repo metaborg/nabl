@@ -102,11 +102,13 @@ context-free syntax
 
   RelDecl.RelDecl = <<Label> : <Type>>
 
+  RelRef = Label
+
   Rule = <relation <RelDecl>>
 
 syntax
 
-  Constraint-CF.CTellRel = "!" LabelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CTellRel = "!" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
 lexical syntax
 
@@ -137,9 +139,8 @@ context-free syntax
 
   Label.Label = RelationId
 
-  LabelRef      = Label
-  LabelRef.Decl = "decl"
-  LabelRef.EOP  = "$"
+  EdgeRef     = Label
+  EdgeRef.EOP = "$"
 
   // namespaces
 
@@ -148,13 +149,13 @@ context-free syntax
   Rule = <namespace <NsDecl>>
 
   LabelPairs          = <<{LabelPair ", "}*>>
-  LabelPair.LabelPair = [[LabelRef] < [LabelRef]]
+  LabelPair.LabelPair = [[EdgeRef] < [EdgeRef]]
   LabelOrd            = LabelPairs
 
   LabelRE.Empty      = <0>
   LabelRE.Epsilon    = <e>
 //LabelRE.Any        = <.>
-  LabelRE            = LabelRef
+  LabelRE            = Label
   LabelRE.Closure    = <<LabelRE>*>
   LabelRE.Neg        = <~<LabelRE>>
   LabelRE.Concat     = <<LabelRE> <LabelRE>>     {right}
@@ -210,11 +211,14 @@ lexical syntax
 context-free syntax
 
   Constraint.CResolveQuery = [
-    query
+    query [QueryTarget]
      [QueryFilter]
      [QueryMin]
       in [Term] |-> [Term]
    ]
+
+  QueryTarget.EOP = "()"
+  QueryTarget     = RelRef
 
   QueryFilter.Filter = < filter <LabelRE> and <HoConstraint>>
   QueryMin.Min       = < min <LabelOrd> and <HoConstraint>>

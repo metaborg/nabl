@@ -129,7 +129,7 @@ test query via specific edge to instantiate more incomplete edge [[
   resolve {s1 s2 s3}
     new s1 s2,
     s1 -P-> s2, !r[4, new] in s2,
-    query filter ~0 r and { 4 } min P < Q and true in s1 |-> [(_, (4, s3))],
+    query r filter ~0 and { 4 } min P < Q and true in s1 |-> [(_, (4, s3))],
     s1 -Q-> s3
   signature
     relations

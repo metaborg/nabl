@@ -7,6 +7,11 @@ imports
 rules
 
 /******************************************************************
+ * Modules                                                        *
+ ******************************************************************/
+
+
+/******************************************************************
  * User Constraints                                               *
  ******************************************************************/
 
@@ -79,14 +84,18 @@ rules
  * Relations                                                      *
  ******************************************************************/
 
+  RelRef[[ l@Decl() ^ (s) : ty ]] :=
+    Rel{l} -> s, Rel{l} |-> d, @l.decl := d,
+    d : ty.
+
   [[ CAskRel(rel, ts, st) ^ (s) ]] :=
-    LabelRef[[ rel ^ (s) : DATA(ty) ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
+    RelRef[[ rel ^ (s) : ty ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
     tys is `in-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
   Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
-    LabelRef[[ rel ^ (s) : DATA(ty) ]], ty != PRED(_) | error "Use predicate notation for non-functional relations.",
+    RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Use predicate notation for non-functional relations.",
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
@@ -101,43 +110,19 @@ rules
     Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
     NsQ{x} <- s,
     [[ filter ^ (s, NsQ{x}) ]],
-    new s', s' -P-> s,
-    Lbl{EOP()} <- s',
-    Lbl{EOP()} : EDGE(),
-    Lbl{EOP()}.ast := EOP(),
-    [[ min ^ (s', NsQ{x}) ]].
+    [[ min ^ (s, NsQ{x}) ]].
 
   [[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,
-    LabelRE[[ re ^ (s) : EDGE() ]].
+    LabelRE[[ re ^ (s) ]].
 
   [[ NamespaceMin(prs) ^ (s,d ) ]] :=
     d.ord := prs,
-    Map1(EdgeLabelPair)[[ prs ^ (s) ]].
-
-  EdgeLabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
-    LabelRef[[ lbl1 ^ (s) : EDGE() ]],
-    LabelRef[[ lbl2 ^ (s) : EDGE() ]].
-
-
-  LabelRef[[ t@Decl() ^ (s) : ty ]] :=
-    Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
-    d : ty.
-
-  LabelRef[[ t@EOP() ^ (s) : ty ]] :=
-    Lbl{t} -> s, Lbl{t} |-> d, @t.decl := d,
-    d : ty.
-
-
-  RE(L)[[ l@Decl() ^ (s) : ty ]] :=
-    L[[ l ^ (s) : ty ]].
-
-  RE(L)[[ l@EOP() ^ (s) : ty ]] :=
-    L[[ l ^ (s) : ty ]].
+    Map1(LabelPair)[[ prs ^ (s) ]].
 
 
   [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
-    LabelRE[[ re ^ (s) : EDGE() ]].
+    LabelRE[[ re ^ (s) ]].
 
   [[ LPathLt(ord) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
     LabelOrd[[ ord ^ (s) ]].
@@ -147,17 +132,13 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  RE(L)[[ t@ResolveMatch(r@Occurrence(ns, _, _), rel) ^ (s) : DATA(ty) ]] :=
+  LabelRE[[ t@ResolveMatch(r@Occurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d,
-    LabelRef[[ rel ^ (s) : DATA(ty) ]],
-    [OCCURRENCE()] is `in-types` of ty.
+    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
 
-  LabelOrd[[ t@ResolveLt(r@Occurrence(ns, _, _), rel) ^ (s) ]] :=
+  LabelOrd[[ t@ResolveLt(r@Occurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d,
-    LabelRef[[ rel ^ (s) : DATA(ty) ]],
-    [OCCURRENCE()] is `in-types` of ty.
+    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
 
   [[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]].

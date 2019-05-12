@@ -326,6 +326,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
     }
 
     @Override public Optional<ConstraintResult> caseResolveQuery(CResolveQuery c) throws SolverException {
+        final ITerm relation = c.relation();
         final IQueryFilter filter = c.filter();
         final IQueryMin min = c.min();
         final ITerm scopeTerm = c.scopeTerm();
@@ -357,7 +358,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         .withDataEquiv(min.getDataEquiv(state, params::isComplete, subDebug))
                         .withEdgeComplete(isComplete)
                         .withDataComplete(isComplete)
-                        .build(state.scopeGraph());
+                        .build(state.scopeGraph(), relation);
             // @formatter:on
             final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms =

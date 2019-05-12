@@ -15,8 +15,6 @@ context-free syntax
   IType.FUN  = [[TTypes] -> [TType]]
   IType.NS   = [[TTypes]]
   IType.OP   = [[TTypes] -> [TType]]
-  IType.EDGE = <edge>
-  IType.DATA = <data(<IType>)>
 
   TTypes = {TType " * "}*
 
