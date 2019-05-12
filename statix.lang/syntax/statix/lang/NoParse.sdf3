@@ -3,16 +3,21 @@ module statix/lang/NoParse // DO NOT INCLUDE IN OTHER SYNTAX FILES
 imports
 
   statix/lang/Common
+  statix/lang/Core
   statix/lang/Sugar
 
 template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
-context-free syntax
+context-free syntax // desugared terms
 
   Term.Tuple = <(<{Term ", "}*>)>
 
   SortRef.TupleSort = <(<{SortRef " * "}*>)>
 
   Lift.TupleLift = <(<{Lift ", "}*>)>
+
+context-free syntax // runtime terms
+
+  Term = Label // for printing labels in paths
