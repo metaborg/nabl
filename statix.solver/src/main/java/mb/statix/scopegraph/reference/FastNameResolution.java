@@ -32,7 +32,6 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
 
     public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
             Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, L> isDataComplete) {
-        super();
         this.scopeGraph = scopeGraph;
         this.relation = relation;
         this.labels =
