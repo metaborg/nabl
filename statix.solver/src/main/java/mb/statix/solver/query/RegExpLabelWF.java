@@ -7,7 +7,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 
-class RegExpLabelWF implements LabelWF<ITerm> {
+public class RegExpLabelWF implements LabelWF<ITerm> {
 
     private final IRegExpMatcher<ITerm> re;
 

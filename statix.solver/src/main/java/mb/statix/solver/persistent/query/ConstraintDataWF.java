@@ -1,25 +1,22 @@
-package mb.statix.solver.query;
+package mb.statix.solver.persistent.query;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-
-import java.util.List;
-import java.util.Set;
 
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
-import mb.statix.solver.State;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.State;
+import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Rule;
 
 class ConstraintDataWF implements DataWF<ITerm> {
@@ -37,19 +34,20 @@ class ConstraintDataWF implements DataWF<ITerm> {
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
+        final IUnifier unifier = state.unifier();
         try {
-            final Tuple3<State, Set<ITermVar>, List<IConstraint>> result;
-            if((result = constraint.apply(ImmutableList.of(datum), state).orElse(null)) == null) {
+            final IConstraint result;
+            if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(result._1(), result._3(), isComplete, result._2(), debug).isPresent()) {
+            if(Solver.entails(state, result, isComplete, debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                    debug.info("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Not well-formed {}", state.unifier().toString(B.newTuple(datum)));
+                    debug.info("Not well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
                 return false;
             }

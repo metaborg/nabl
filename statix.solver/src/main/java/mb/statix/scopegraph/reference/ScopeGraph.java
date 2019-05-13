@@ -14,6 +14,18 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
     protected ScopeGraph() {
     }
 
+    @Override public abstract IRelation3<S, L, S> getEdges();
+
+    @Override public java.util.Set<S> getEdges(S scope, L label) {
+        return getEdges().get(scope, label);
+    }
+
+    @Override public abstract IRelation3<S, L, D> getData();
+
+    @Override public java.util.Set<D> getData(S scope, L relation) {
+        return getData().get(scope, relation);
+    }
+
     @Override public Set.Immutable<S> getAllScopes() {
         Set.Transient<S> allScopes = Set.Transient.of();
         allScopes.__insertAll(getEdges().keySet());
@@ -58,7 +70,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
 
         // ------------------------------------------------------------
 
-        @Override public IRelation3.Immutable<S, L, S> getEdges() {
+        @Override public IRelation3<S, L, S> getEdges() {
             return edges;
         }
 

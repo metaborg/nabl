@@ -27,15 +27,15 @@ class IntPattern extends Pattern {
         return ImmutableSet.of();
     }
 
-    @Override protected MaybeNotInstantiated<Boolean> matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
         // @formatter:off
-        return unifier.findTerm(term).match(Terms.<MaybeNotInstantiated<Boolean>>cases()
+        return unifier.findTerm(term).match(Terms.<MaybeNotInstantiatedBool>cases()
             .integer(intTerm -> {
-                return MaybeNotInstantiated.ofResult(intTerm.getValue() == value);
+                return MaybeNotInstantiatedBool.ofResult(intTerm.getValue() == value);
             }).var(v -> {
-                return MaybeNotInstantiated.ofNotInstantiated(v);
+                return MaybeNotInstantiatedBool.ofNotInstantiated(v);
             }).otherwise(t -> {
-                return MaybeNotInstantiated.ofResult(false);
+                return MaybeNotInstantiatedBool.ofResult(false);
             })
         );
         // @formatter:on
