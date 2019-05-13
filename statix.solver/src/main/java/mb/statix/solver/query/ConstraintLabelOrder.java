@@ -20,7 +20,7 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
-public class ConstraintLabelOrder implements LabelOrder<ITerm> {
+class ConstraintLabelOrder implements LabelOrder<ITerm> {
 
     private final Rule constraint;
     private final State state;

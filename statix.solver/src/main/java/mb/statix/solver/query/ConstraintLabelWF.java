@@ -31,7 +31,7 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
-public class ConstraintLabelWF implements LabelWF<ITerm> {
+class ConstraintLabelWF implements LabelWF<ITerm> {
 
     private final List<IConstraint> constraints;
     private final State state;

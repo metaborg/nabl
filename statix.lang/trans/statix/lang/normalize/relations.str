@@ -1,0 +1,65 @@
+module statix/lang/normalize/relations
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalize functional relations
+  // after lambda's, after normalizing queries
+
+  normalize-functional-relations(|a) =
+    nabl2-custom-analysis-info-msg(|"| Normalize functional relations...");
+    bottomup(
+      try(normalize-functional-reldecl)
+    ; try(normalize-functional-query(|a))
+    )
+
+
+  normalize-functional-reldecl:
+      RelDecl(x, FunType(s1*, s2)) -> RelDecl(x, t')
+    with s* := <conc> (s1*, [s2]);
+         t' := SimpleType(s*)
+
+  normalize-functional-query(|a):
+      CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts)
+      -> CResolveQuery(rel, Filter(wf, lwf'), Min(ord, lord'), st, pts)
+    where FUN(in_tys, out_ty) := <norm-get-ast-type(|a)> rel
+    with lwf' := <normalize-functional-wf(|in_tys,out_ty)> lwf;
+         lord' := <normalize-functional-ord(|in_tys,out_ty)> lord
+
+  normalize-functional-wf(|in_tys,out_ty):
+      LLam([p], vs, c){a*} -> LLam([p'], vs', c'){a*}
+   with (p', new-vs, c*) := <normalize-functional-pattern(|in_tys,out_ty)> p;
+        vs' := <conc> (vs, new-vs);
+        c' := <list-to-conj(|c)> c*
+
+  normalize-functional-ord(|in_tys,out_ty):
+      LLam([p1, p2], vs, c){a*} -> LLam([p1', p2'], vs', c'){a*}
+   with (p1', new-vs1, c1*) := <normalize-functional-pattern(|in_tys,out_ty)> p1;
+        (p2', new-vs2, c2*) := <normalize-functional-pattern(|in_tys,out_ty)> p2;
+        vs' := <concat> [vs, new-vs1, new-vs2];
+        c' := <conc;list-to-conj(|c)> (c1*, c2*)
+
+
+  normalize-functional-pattern(|in_tys,out_ty): p -> (p', vs, c*)
+    with tys     := <conc> (in_tys, [out_ty]);
+         if in_ts := <match-terms(|in_tys)> p then
+           p' := <conc;build-terms(|tys)> (in_ts, [Wld()]);
+           vs := [];
+           c* := []
+         else
+           us := <make-fresh-vars(|"u")> in_tys;
+           p' := <conc;build-terms(|tys)> (us, [Wld()]);
+           vs := <all-vars> p;
+           c* := [CEqual(<build-terms(|in_tys)> us, p)]
+         end

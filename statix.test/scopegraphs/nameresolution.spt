@@ -2,6 +2,70 @@ module scopegraphs-nameresolution
 
 language StatixLang
 
+
+test query no-data succeeds [[
+  resolve {s}
+    query () filter P* in s |-> _
+  signature
+    name-resolution
+      labels
+        P
+]] analysis succeeds
+
+test namespace resolve with labels wf succeeds [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P*
+]] analysis succeeds
+
+test namespace resolve with relation wf fails [[
+  resolve true
+  signature
+    relations
+      r : int
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* r
+]] analysis fails
+
+test namespace resolve with labels ord succeeds [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels P Q
+      resolve Var min P < Q
+]] analysis succeeds
+
+test namespace resolve with eop placeholder ord succeeds [[
+  resolve true
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels Q
+      resolve Var min $ < Q
+]] analysis succeeds
+
+test namespace resolve with relation ord fails [[
+  resolve true
+  signature
+    relations
+      r : int
+    namespaces
+      Var : string
+    name-resolution
+      labels Q
+      resolve Var min r < Q
+]] analysis fails
+
 test resolve reference with same name in the same scope succeeds [[
   resolve {s}
     new s, s -> Var{"x"@-},
@@ -39,7 +103,7 @@ test resolution policy filter forces a step [[
       Var : string
     name-resolution
       labels P
-      resolve Var filter pathMatch[P]
+      resolve Var filter P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -53,7 +117,7 @@ test resolution policy filter cannot reach declaration [[
       Var : string
     name-resolution
       labels P
-      resolve Var filter pathMatch[P]
+      resolve Var filter P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -68,7 +132,7 @@ test resolution policy min is applied [[
       Var : string
     name-resolution
       labels P Q
-      resolve Var min pathLt[Q < P]
+      resolve Var min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -77,13 +141,13 @@ test refer explicitly to resolution policy filter succeeds [[
     new s1 s2, s1 -P-> s2,
     s1 -> Var{"x"@s1},
     s2 -> Var{"x"@s2},
-    query decl resolveFilter[Var{_@-}] in s1 |-> [(_, Var{_@s2})]
+    query decl filter resolveMatch[Var{_@-}] in s1 |-> [(_, Var{_@s2})]
   signature
     namespaces
       Var : string
     name-resolution
       labels P Q
-      resolve Var filter pathMatch[P]
+      resolve Var filter P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -92,13 +156,13 @@ test refer explicitly to resolution policy min succeeds [[
     new s1 s2 s3,
     s1 -P-> s2, s2 -> Var{"x"@s2},
     s1 -Q-> s3, s3 -> Var{"x"@s3},
-    query decl resolveMin[Var{_@-}] in s1 |-> [(_, Var{_@s3})]
+    query decl filter ~0 min resolveLt[Var{_@-}] and true in s1 |-> [(_, Var{_@s3})]
   signature
     namespaces
       Var : string
     name-resolution
       labels P Q
-      resolve Var min pathLt[Q < P]
+      resolve Var min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
@@ -131,6 +195,6 @@ test resolve occurrence relations with resolution policy succeeds [[
       Var : string
     name-resolution
       labels P Q
-      resolve Var filter pathMatch[P (P|Q)*] min pathLt[Q < P]
+      resolve Var filter P (P|Q)* min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()

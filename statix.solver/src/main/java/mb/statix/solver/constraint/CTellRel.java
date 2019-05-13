@@ -47,6 +47,10 @@ public class CTellRel implements IConstraint, Serializable {
         return datumTerms;
     }
 
+    public ITerm datumTerm() {
+        return B.newTuple(datumTerms);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }

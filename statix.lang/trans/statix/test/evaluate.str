@@ -38,10 +38,11 @@ rules
            result := FAILS()
          end
 
-  evaluate: ast@Test(bvs, body, _) -> result
+  evaluate: ast@Test(_, _, _) -> result
     with a      := <nabl2-get-ast-analysis> ast;
-         ext    := <nabl2-get-custom-analysis> a;
-         spec   := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
+         (ast', a', ext) := <nabl2-get-custom-analysis> a;
+         Test(bvs, body, _) := ast';
+         spec   := <spec-ast-to-aterm(|a')> (ast', ext);
          level  := <stx--log-level>;
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
          result := <stx--solve-constraint(|spec, level)> (bvs, body')

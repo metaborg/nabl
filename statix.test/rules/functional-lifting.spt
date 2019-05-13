@@ -2,30 +2,10 @@ module rules-lifting
 
 language StatixLang
 
-test predicate constraint lifting all arguments [[
-  resolve cs([], []), cs([1], [1])
-  rules
-    c : int * int
-    c(i, i).
-
-    cs maps c(list(*), list(*))
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test predicate constraint lifting some arguments [[
-  resolve cs(2, []), cs(1, [1, 1])
-  rules
-    c : int * int
-    c(i, i).
-
-    cs maps c(*, list(*))
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
 test functional constraint lifting all arguments [[
-  resolve {xs' ys'}
-    fs([], xs'), eqs(xs', []),
-    fs([1], ys'), eqs(ys', [1])
+  resolve
+     eqs(fs([]), []),
+     eqs(fs([1]), [1])
   rules
     fs maps f(list(*)) = list(*)
     f : int -> int
@@ -42,7 +22,7 @@ test functional constraint lifting some input and some output arguments [[
     fs([2, 3], 7) == (xs', x'), eqs(xs', [2, 3]), eq(x', 7)
   rules
     fs maps f(list(*), *) = (list(*), *)
-    f : int * int -> int * int
+    f : int * int -> (int * int)
     f(i, x) =  (i, x).
   rules
     eqs maps eq(list(*), list(*))
@@ -53,7 +33,7 @@ test functional constraint lifting some input and some output arguments [[
 
 test functional constraint lifting some input and all output arguments [[
   resolve {t1 t2}
-    fs([2, 3], 8, [t1, t2]), eq(t1, (2, 8)), eq(t2, (3, 8))
+    fs([2, 3], 8) == [t1, t2], eq(t1, (2, 8)), eq(t2, (3, 8))
   rules
     fs maps f(list(*), *) = list(*)
     f : int * int -> (int * int)
@@ -65,7 +45,7 @@ test functional constraint lifting some input and all output arguments [[
    run evaluate-test to SUCCEEDS()
 
 test functional constraint lifting only input arguments [[
-  resolve {x} fs([2, 2], x), eq(x, 2)
+  resolve {x} fs([2, 2]) == x, eq(x, 2)
   rules
     fs maps f(list(*)) = *
     f : int -> int
@@ -85,10 +65,20 @@ test functional constraint lifting only output arguments [[
 ]] analysis fails
 
 test output variable in lifted constraint not treated as guard [[
-  resolve fs([1], _)
+  resolve fs([1]) ==  _
   rules
     fs maps f(list(*)) = list(*)
     f : int -> int
     f(x) = x.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test predicate constraint lifting inside a tuple [[
+  resolve fs([1, 1], 2) == ([2, 2], 1)
+  rules
+    f : int * int -> (int * int)
+    f(i, j) = (j, i).
+
+    fs maps f(list(*), *) = (list(*), *)
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()

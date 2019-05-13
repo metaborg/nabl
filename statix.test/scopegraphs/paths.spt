@@ -1,0 +1,108 @@
+module scopegraph-paths
+
+language StatixLang
+
+test predicate path projections succeed [[
+  resolve {s1 s2 s3 s4 p p1 p2}
+    new s1 s2 s3,
+    s1 -P-> s2, s2 -P-> s3,
+    query () min P < $ and true in s1 |-> [(p, _)],
+    src(p) == s1, dst(p) == s3, scopes(p) == [s1, s2, s3]
+  signature
+    name-resolution
+      labels P
+  rules
+    src : path -> scope
+    src(_PathEmpty(s)) = s.
+    src(_PathStep(p, _, _)) = src(p).
+  rules
+    dst : path -> scope
+    dst(_PathEmpty(s)) = s.
+    dst(_PathStep(_, _, s)) = s.
+  rules
+    scopes : path -> list(scope)
+    scopes(p) = scopes_acc(p, []).
+    scopes_acc : path * list(scope) -> list(scope)
+    scopes_acc(_PathEmpty(s), acc) = [s|acc].
+    scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test functional path projections succeed [[
+  resolve {s1 s2 s3 s4 p p1 p2}
+    new s1 s2 s3,
+    s1 -P-> s2, s2 -P-> s3,
+    query () min P < $ and true in s1 |-> [(p, _)],
+    src(p) == s1, dst(p) == s3, scopes(p) == [s1, s2, s3]
+  signature
+    name-resolution
+      labels P
+  rules
+    src : path -> scope
+    src(_PathEmpty(s)) = s.
+    src(_PathStep(p, _, _)) = src(p).
+  rules
+    dst : path -> scope
+    dst(_PathEmpty(s)) = s.
+    dst(_PathStep(_, _, s)) = s.
+  rules
+    scopes : path -> list(scope)
+    scopes(p) = scopes_acc(p, []).
+    scopes_acc : path * list(scope) -> list(scope)
+    scopes_acc(_PathEmpty(s), acc) = [s|acc].
+    scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test end-of-path label for shortest path [[
+  resolve {s1 s2 s3 s4 p p1 p2}
+    new s1 s2 s3, s1 -P-> s2, s2 -P-> s3,
+    query () min $ < P and true in s1 |-> [(p, _)],
+    dst(p) == s1
+  signature
+    name-resolution
+      labels P
+  rules
+    dst : path -> scope
+    dst(_PathEmpty(s)) = s.
+    dst(_PathStep(_, _, s)) = s.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test end-of-path label for longest path [[
+  resolve {s1 s2 s3 s4 p p1 p2}
+    new s1 s2 s3, s1 -P-> s2, s2 -P-> s3,
+    query () min P < $ and true in s1 |-> [(p, _)],
+    dst(p) == s3
+  signature
+    name-resolution
+      labels P
+  rules
+    dst : path -> scope
+    dst(_PathEmpty(s)) = s.
+    dst(_PathStep(_, _, s)) = s.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+ 
+test labels projections succeed [[
+  resolve {s1 s2 s3 s4 p p1 p2}
+    new s1 s2 s3 s4,
+    s1 -P-> s2,
+    s3 -P-> s4,
+    query () min P < $ and true in s1 |-> [(p1, _)],
+    query () min P < $ and true in s3 |-> [(p2, _)],
+    eq(labels(p1), labels(p2))
+  signature
+    name-resolution
+      labels P
+  rules
+    eq : list(label) * list(label)
+    eq(i, i).
+  rules
+    labels : path -> list(label)
+    labels(p) = labels_acc(p, []).
+    labels_acc : path * list(label) -> list(label)
+    labels_acc(_PathEmpty(_), acc) = [].
+    labels_acc(_PathStep(p, l, _), acc) = labels_acc(p, [l|acc]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

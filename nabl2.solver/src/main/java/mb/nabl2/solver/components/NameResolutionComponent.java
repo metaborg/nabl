@@ -80,7 +80,7 @@ public class NameResolutionComponent extends ASolver {
 
     public void update() throws InterruptedException {
         scopeGraph.reduce(this::findScope, this::findOccurrence);
-        nameResolution.resolveAll(scopeGraph.getAllRefs());
+        nameResolution.resolveAll(scopeGraph.getRefs().keySet());
     }
 
     public NameResolutionResult finish() {

@@ -1,0 +1,97 @@
+module statix/lang/normalize/maps
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // replace functional and predicate maps to explicit constraints and rules
+
+  normalize-mapping-constraints(|a):
+      Module(x, section*){a*} -> Module(x, section''*){a*}
+    with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
+    with (section'*, maps) := <collect-map(replace-map(|a))> section*;
+         rule* := <map(map-to-rules(|a)); concat> maps;
+         section''* := <conc> (section'*, <rules-to-sections> rule*)
+
+  rules-to-sections = ?[] <+ ![Rules(<id>)]
+
+
+  replace-map(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
+    with ind := <norm-get-ast-decl-property(|a,"ind")> x;
+         sort := <norm-get-ast-decl-type(|a);type-to-sort> x
+
+  map-to-rules(|a): (CDeriveMap(x, y, lift*), _) -> [base-rule, elem-rule]
+    with base-rule := <cmap-base-rule> (x, y, lift*);
+         elem-rule := <cmap-elem-rule> (x, y, lift*)
+
+  cmap-base-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue())
+    with ps := <map(lift-base)> lift*
+
+  cmap-elem-rule: (x, y, lift*) -> Rule(C(x, ps), [], CConj(call, rec))
+    with ps   := <map-with-index(lift-elem-head(|"x"))> lift*;
+         call := C(y, <lift-call-elems(|"x")> lift*);
+         rec  := C(x, <lift-rec-elems(|"x")> lift*)
+
+
+  replace-map(|a): FDeriveMap(x, _, _, _) -> CDecl(ind, x, sort)
+    with ind := <norm-get-ast-decl-property(|a,"ind")> x;
+         sort := <norm-get-ast-decl-type(|a);type-to-sort> x
+
+  map-to-rules(|a): (FDeriveMap(x, y, in-lift*, out-lift), _) -> [base-rule, elem-rule]
+    with out-lift* := <lift-to-lifts> out-lift;
+         base-rule := <fmap-base-rule> (x, y, in-lift*, out-lift*);
+         elem-rule := <fmap-elem-rule> (x, y, in-lift*, out-lift*)
+
+  fmap-base-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue())
+    with inps := <map(lift-base)> in-lift*;
+         outp := <map(lift-base);build-terms(|out-lift*)> out-lift*
+
+  fmap-elem-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CConj(call, rec))
+    with inps := <lift-head-elems(|"x")> in-lift*;
+         outp := <lift-head-elems(|"y");build-terms(|out-lift*)> out-lift*;
+         call := CEqual(COp(y, <lift-call-elems(|"x")> in-lift*),
+                        <lift-call-elems(|"y");build-terms(|out-lift*)> out-lift*);
+         rec  := CEqual(COp(x, <lift-rec-elems(|"x")> in-lift*),
+                        <lift-rec-elems(|"y");build-terms(|out-lift*)> out-lift*)
+
+
+  lift-base: IdLift() -> Wld()
+  lift-base: ListLift() -> List([])
+  lift-base: TupleLift(lifts) -> Tuple(<map(lift-base)> lifts)
+
+
+  lift-head-elems(|x) = map-with-index(lift-elem-head(|x))
+
+  lift-elem-head(|x): (i, IdLift())         -> <lift-var(|x)> i
+  lift-elem-head(|x): (i, ListLift())       -> ListTail([<lift-var(|x)> i], <lift-var(|$[[x]s])> i)
+  lift-elem-head(|x): (i, TupleLift(lifts)) -> Tuple(<lift-head-elems(|<lift-name(|x)> i)> lifts)
+
+
+  lift-call-elems(|x) = map-with-index(lift-elem-call(|x))
+
+  lift-elem-call(|x): (i, IdLift())         -> <lift-var(|x)> i
+  lift-elem-call(|x): (i, ListLift())       -> <lift-var(|x)> i
+  lift-elem-call(|x): (i, TupleLift(lifts)) -> Tuple(<lift-call-elems(|<lift-name(|x)> i)> lifts)
+
+
+  lift-rec-elems(|x) = map-with-index(lift-elem-rec(|x))
+
+  lift-elem-rec(|x): (i, IdLift())         -> <lift-var(|x)> i
+  lift-elem-rec(|x): (i, ListLift())       -> <lift-var(|$[[x]s])> i
+  lift-elem-rec(|x): (i, TupleLift(lifts)) -> Tuple(<lift-rec-elems(|<lift-name(|x)> i)> lifts)
+
+
+  lift-var(|x) = !Var(<lift-name(|x)>)
+
+  lift-name(|x) = !$[[x]_[<int-to-string>]]
+  

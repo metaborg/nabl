@@ -26,7 +26,6 @@ import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.spec.Spec;
 
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
@@ -40,12 +39,11 @@ public class STX_solve_multi_file extends StatixPrimitive {
 
         final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
-        final Spec spec = initial.state().spec();
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<Tuple2<String, List<IConstraint>>> constraintMatcher = M.tuple2(M.stringValue(),
-                StatixTerms.constraints(spec.labels()), (t, r, c) -> ImmutableTuple2.of(r, c));
+        final IMatcher<Tuple2<String, List<IConstraint>>> constraintMatcher =
+                M.tuple2(M.stringValue(), StatixTerms.constraints(), (t, r, c) -> ImmutableTuple2.of(r, c));
         final Function1<Tuple2<String, List<IConstraint>>, ITerm> solveConstraint =
                 resource_constraints -> solveConstraint(initial.state().withResource(resource_constraints._1()),
                         resource_constraints._2(), debug);

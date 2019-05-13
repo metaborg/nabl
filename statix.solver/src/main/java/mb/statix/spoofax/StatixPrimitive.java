@@ -169,12 +169,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onFalse -> ImmutableList.of(),
             onInequal -> ImmutableList.of(),
             onNew -> ImmutableList.of(),
-            onPathDst -> ImmutableList.of(),
-            onPathLabels -> ImmutableList.of(),
             onPathLt -> ImmutableList.of(),
             onPathMatch -> ImmutableList.of(),
-            onPathScopes -> ImmutableList.of(),
-            onPathSrc -> ImmutableList.of(),
             onResolveQuery -> ImmutableList.of(),
             onTellEdge -> ImmutableList.of(),
             onTellRel -> ImmutableList.of(),
@@ -197,7 +193,11 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");
-            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
+            String c = constraint.toString(Solver.shallowTermFormatter(unifier));
+            c = c.replaceAll("&", "&amp;");
+            c = c.replaceAll("<", "&lt;");
+            c = c.replaceAll(">", "&gt;");
+            sb.append(c);
             constraint = constraint.cause().orElse(null);
         }
     }

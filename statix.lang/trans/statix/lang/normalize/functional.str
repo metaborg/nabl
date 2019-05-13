@@ -1,0 +1,51 @@
+module statix/lang/normalize/functional
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalize functional constraints to predicate constraints
+
+  normalize-functional-constraints(|a) =
+    nabl2-custom-analysis-info-msg(|"| Normalize functional constraints...");
+    bottomup(
+      try(normalize-functional-cdecl)
+    ; try(normalize-functional-head(|a))
+    ; try(normalize-functional-cops(|a))
+    )
+
+
+  normalize-functional-cdecl:
+      CDecl(ind, x, t@FunType(s1*, s2)) -> CDecl(ind, x, t')
+    with s* := <conc> (s1*, [s2]);
+         t' := SimpleType(s*)
+
+  normalize-functional-head(|a):
+      Rule(F(x, in_ts, out_t), bvs, body){a*} -> Rule(C(x, ts), bvs', body'){a*}
+    with FUN(intys, outty) := <norm-get-ast-decl-type(|a)> x;
+         out_v := <make-fresh-var> "out";
+         new-bvs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
+         bvs' := <conc> (bvs, new-bvs);
+         body' := CConj(body, CEqual(out_v, out_t));
+         ts := <conc> (in_ts, [out_v])
+
+  normalize-functional-cops(|a) =
+    normalize-in-rules(replace-functional-cop(|a),id,functional-cop-to-c(|a))
+
+  replace-functional-cop(|a): COp(x, in_ts) -> out_v
+    with FUN(_, outty) := <norm-get-ast-decl-type(|a)> x;
+         out_v := <make-fresh-var> x
+
+  functional-cop-to-c(|a): (COp(x, in_ts), out_v) -> C(x, ts)
+    with FUN(_, outty) := <norm-get-ast-decl-type(|a)> x;
+         ts := <conc> (in_ts, [out_v])

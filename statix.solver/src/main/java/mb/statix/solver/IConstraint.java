@@ -11,12 +11,8 @@ import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
 import mb.statix.solver.constraint.CPathLt;
 import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -61,17 +57,9 @@ public interface IConstraint {
 
         R caseNew(CNew c);
 
-        R casePathDst(CPathDst c);
-
-        R casePathLabels(CPathLabels c);
-
         R casePathLt(CPathLt c);
 
         R casePathMatch(CPathMatch c);
-
-        R casePathScopes(CPathScopes c);
-
-        R casePathSrc(CPathSrc c);
 
         R caseResolveQuery(CResolveQuery c);
 
@@ -101,17 +89,9 @@ public interface IConstraint {
 
         R caseNew(CNew c) throws E;
 
-        R casePathDst(CPathDst c) throws E;
-
-        R casePathLabels(CPathLabels c) throws E;
-
         R casePathLt(CPathLt c) throws E;
 
         R casePathMatch(CPathMatch c) throws E;
-
-        R casePathScopes(CPathScopes c) throws E;
-
-        R casePathSrc(CPathSrc c) throws E;
 
         R caseResolveQuery(CResolveQuery c) throws E;
 

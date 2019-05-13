@@ -117,7 +117,7 @@ public abstract class AState {
     }
 
     @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
-        return ScopeGraph.Immutable.of(spec().labels(), spec().endOfPath(), spec().relations().keySet());
+        return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
     }
 
 }

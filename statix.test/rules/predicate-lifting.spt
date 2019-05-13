@@ -1,0 +1,33 @@
+module rules-lifting
+
+language StatixLang
+
+test predicate constraint lifting all arguments [[
+  resolve cs([], []), cs([1], [1])
+  rules
+    c : int * int
+    c(i, i).
+
+    cs maps c(list(*), list(*))
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test predicate constraint lifting some arguments [[
+  resolve cs(2, []), cs(1, [1, 1])
+  rules
+    c : int * int
+    c(i, i).
+
+    cs maps c(*, list(*))
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test predicate constraint lifting inside a tuple [[
+  resolve cs(2, (3, [])), cs(1, (1, [1, 1]))
+  rules
+    c : int * (int * int)
+    c(i, (i, i)).
+
+    cs maps c(*, (*, list(*)))
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

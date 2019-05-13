@@ -33,10 +33,7 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
@@ -52,12 +49,8 @@ import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
 import mb.statix.solver.constraint.CPathLt;
 import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
@@ -73,7 +66,6 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.Rule;
-import mb.statix.spec.Type;
 import mb.statix.spoofax.StatixTerms;
 
 public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintResult>, SolverException> {
@@ -275,35 +267,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
     }
 
-    @Override public Optional<ConstraintResult> casePathDst(CPathDst c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm dstTerm = c.dstTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(path.getTarget(), dstTerm, c)));
-    }
-
-    @Override public Optional<ConstraintResult> casePathLabels(CPathLabels c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm labelsTerm = c.labelsTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(B.newList(path.labels()), labelsTerm, c)));
-    }
-
     @Override public Optional<ConstraintResult> casePathLt(CPathLt c) throws SolverException {
         final IRelation.Immutable<ITerm> lt = c.lt();
         final ITerm label1Term = c.label1Term();
@@ -362,51 +325,12 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         // @formatter:on
     }
 
-    @Override public Optional<ConstraintResult> casePathScopes(CPathScopes c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm scopesTerm = c.scopesTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(B.newList(path.scopes()), scopesTerm, c)));
-    }
-
-    @Override public Optional<ConstraintResult> casePathSrc(CPathSrc c) throws SolverException {
-        final ITerm pathTerm = c.pathTerm();
-        final ITerm srcTerm = c.srcTerm();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(pathTerm))) {
-            throw Delay.ofVars(unifier.getVars(pathTerm));
-        }
-        @SuppressWarnings("unchecked") final IScopePath<ITerm, ITerm> path =
-                M.blobValue(IScopePath.class).match(pathTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected path, got " + unifier.toString(pathTerm)));
-        return Optional.of(ConstraintResult.ofConstraints(state, new CEqual(path.getSource(), srcTerm, c)));
-    }
-
     @Override public Optional<ConstraintResult> caseResolveQuery(CResolveQuery c) throws SolverException {
-        final Optional<ITerm> relation = c.relation();
+        final ITerm relation = c.relation();
         final IQueryFilter filter = c.filter();
         final IQueryMin min = c.min();
         final ITerm scopeTerm = c.scopeTerm();
         final ITerm resultTerm = c.resultTerm();
-
-        final Type type;
-        if(relation.isPresent()) {
-            type = state.spec().relations().get(relation.get());
-            if(type == null) {
-                params.debug().error("Ignoring query for unknown relation {}", relation.get());
-                return Optional.empty();
-            }
-        } else {
-            type = StatixTerms.SCOPE_REL_TYPE;
-        }
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
@@ -429,21 +353,16 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             // @formatter:off
             final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
                         .withLabelWF(filter.getLabelWF(state, params::isComplete, subDebug))
-                        .withDataWF(filter(relation, type, filter.getDataWF(state, params::isComplete, subDebug), subDebug))
+                        .withDataWF(filter.getDataWF(state, params::isComplete, subDebug))
                         .withLabelOrder(min.getLabelOrder(state, params::isComplete, subDebug))
-                        .withDataEquiv(filter(relation, type, min.getDataEquiv(state, params::isComplete, subDebug), subDebug))
+                        .withDataEquiv(min.getDataEquiv(state, params::isComplete, subDebug))
                         .withEdgeComplete(isComplete)
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
             // @formatter:on
             final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
-            final List<ITerm> pathTerms;
-            if(relation.isPresent()) {
-                pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                        .collect(ImmutableList.toImmutableList());
-            } else {
-                pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(ImmutableList.toImmutableList());
-            }
+            final List<ITerm> pathTerms =
+                    paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
             return Optional.of(ConstraintResult.ofConstraints(state, C));
         } catch(IncompleteDataException e) {
@@ -461,38 +380,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         } catch(InterruptedException e) {
             throw new SolverInterrupted(e);
         }
-    }
-
-    private DataWF<ITerm> filter(Optional<ITerm> relation, Type type, DataWF<ITerm> filter, IDebugContext debug) {
-        return new DataWF<ITerm>() {
-            @Override public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
-                return filter.wf(filter(relation, type, datum, debug));
-            }
-        };
-    }
-
-    private DataLeq<ITerm> filter(Optional<ITerm> relation, Type type, DataLeq<ITerm> filter, IDebugContext debug) {
-        return new DataLeq<ITerm>() {
-
-            @Override public boolean leq(List<ITerm> d1, List<ITerm> d2)
-                    throws ResolutionException, InterruptedException {
-                return filter.leq(filter(relation, type, d1, debug), filter(relation, type, d2, debug));
-            }
-
-            @Override public boolean alwaysTrue() throws InterruptedException {
-                return filter.alwaysTrue();
-            }
-
-        };
-    }
-
-    private List<ITerm> filter(Optional<ITerm> relation, Type type, List<ITerm> datum, IDebugContext debug)
-            throws ResolutionException {
-        if(datum.size() != type.getArity()) {
-            debug.error("Ignoring {}-ary data for {}-ary relation {}", datum.size(), type.getArity(), relation);
-            throw new ResolutionException("Wrong data arity.");
-        }
-        return datum.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList());
     }
 
     @Override public Optional<ConstraintResult> caseTellEdge(CTellEdge c) throws SolverException {
@@ -521,18 +408,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
     @Override public Optional<ConstraintResult> caseTellRel(CTellRel c) throws SolverException {
         final ITerm scopeTerm = c.scopeTerm();
         final ITerm relation = c.relation();
-        final List<ITerm> datumTerms = c.datumTerms();
-
-        final Type type = state.spec().relations().get(relation);
-        if(type == null) {
-            params.debug().error("Ignoring data for unknown relation {}", relation);
-            return Optional.empty();
-        }
-        if(type.getArity() != datumTerms.size()) {
-            params.debug().error("Ignoring {}-ary data for {}-ary relation {}", datumTerms.size(), type.getArity(),
-                    relation);
-            return Optional.empty();
-        }
+        final ITerm datumTerm = c.datumTerm();
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
@@ -544,13 +420,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             return Optional.empty();
         }
 
-        final ITerm key =
-                B.newTuple(datumTerms.stream().limit(type.getInputArity()).collect(ImmutableList.toImmutableList()));
-        if(!unifier.isGround(key)) {
-            throw Delay.ofVars(unifier.getVars(key));
-        }
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
-                state.scopeGraph().addDatum(scope, relation, datumTerms);
+                state.scopeGraph().addDatum(scope, relation, datumTerm);
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 

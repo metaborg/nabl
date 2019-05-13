@@ -3,6 +3,7 @@ module nabl2/runtime/analysis/query
 imports
 
   libspoofax/analysis/constraint
+  nabl2/runtime/analysis/constraint-compat
 
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-

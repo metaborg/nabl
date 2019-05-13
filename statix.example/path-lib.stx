@@ -1,0 +1,31 @@
+module path-lib
+
+rules
+
+  src : path -> scope
+  src(_PathEmpty(s)) = s.
+  src(_PathStep(p, _, _)) = src(p).
+
+rules
+
+  dst : path -> scope
+  dst(_PathEmpty(s)) = s.
+  dst(_PathStep(_, _, s)) = s.
+
+rules
+
+  scopes : path -> list(scope)
+  scopes(p) = scopes_acc(p, []).
+
+  scopes_acc : path * list(scope) -> list(scope)
+  scopes_acc(_PathEmpty(s), acc) = [s|acc].
+  scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
+
+rules
+
+  labels : path -> list(label)
+  labels(p) = labels_acc(p, []).
+
+  labels_acc : path * list(label) -> list(label)
+  labels_acc(_PathEmpty(_), acc) = [].
+  labels_acc(_PathStep(p, l, _), acc) = labels_acc(p, [l|acc]).
