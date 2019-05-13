@@ -6,11 +6,6 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.solver.State;
-import mb.statix.solver.completeness.IsComplete;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
 public class QueryMin implements IQueryMin, Serializable {
@@ -28,12 +23,12 @@ public class QueryMin implements IQueryMin, Serializable {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }
 
-    @Override public LabelOrder<ITerm> getLabelOrder(State state, IsComplete isComplete, IDebugContext debug) {
-        return new RelationLabelOrder(labelOrd);
+    @Override public IRelation<ITerm> getLabelOrder() {
+        return labelOrd;
     }
 
-    @Override public DataLeq<ITerm> getDataEquiv(State state, IsComplete isComplete, IDebugContext debug) {
-        return new ConstraintDataLeq(dataOrd, state, isComplete, debug);
+    @Override public Rule getDataEquiv() {
+        return dataOrd;
     }
 
     @Override public String toString(TermFormatter termToString) {

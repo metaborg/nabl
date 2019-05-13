@@ -8,11 +8,6 @@ import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.solver.State;
-import mb.statix.solver.completeness.IsComplete;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Rule;
 
 public class QueryFilter implements IQueryFilter, Serializable {
@@ -34,12 +29,12 @@ public class QueryFilter implements IQueryFilter, Serializable {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }
 
-    @Override public LabelWF<ITerm> getLabelWF(State state, IsComplete isComplete, IDebugContext debug) {
-        return RegExpLabelWF.of(pathWf);
+    @Override public IRegExpMatcher<ITerm> getLabelWF() {
+        return pathWf;
     }
 
-    @Override public DataWF<ITerm> getDataWF(State state, IsComplete isComplete, IDebugContext debug) {
-        return new ConstraintDataWF(dataWf, state, isComplete, debug);
+    @Override public Rule getDataWF() {
+        return dataWf;
     }
 
     @Override public String toString(TermFormatter termToString) {

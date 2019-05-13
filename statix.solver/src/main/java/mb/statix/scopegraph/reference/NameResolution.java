@@ -156,7 +156,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
         final ImmutableSet.Builder<IResolutionPath<S, L, D>> env = ImmutableSet.builder();
-        for(S nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
+        for(S nextScope : scopeGraph.getEdges(path.getTarget(), l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
                 env.addAll(env(re, p.get()));

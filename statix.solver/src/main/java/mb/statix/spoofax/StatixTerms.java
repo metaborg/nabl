@@ -11,7 +11,6 @@ import java.util.Optional;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -38,6 +37,7 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -45,7 +45,9 @@ import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
+import mb.statix.solver.constraint.CExists;
 import mb.statix.solver.constraint.CFalse;
 import mb.statix.solver.constraint.CInequal;
 import mb.statix.solver.constraint.CNew;
@@ -55,6 +57,7 @@ import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
+import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
@@ -94,8 +97,8 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule() {
-        return M.appl3("Rule", head(), M.listElems(varTerm()), constraints(), (r, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), bvs, bc);
+        return M.appl3("Rule", head(), M.listElems(varTerm()), constraint(), (r, h, bvs, bc) -> {
+            return Rule.of(h._1(), h._2(), new CExists(bvs, bc));
         });
     }
 
@@ -105,67 +108,55 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<List<IConstraint>> constraints() {
+    public static IMatcher<IConstraint> constraint() {
         return (t, u) -> {
-            final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-            return M.casesFix(m -> Iterables2.from(
+            return M.<IConstraint>casesFix(m -> Iterables2.from(
             // @formatter:off
-                M.appl2("CConj", m, m, (c, t1, t2) -> {
-                    return Unit.unit;
+                M.appl2("CConj", m, m, (c, c1, c2) -> {
+                    return new CConj(c1, c2);
                 }),
                 M.appl0("CTrue", (c) -> {
-                    return Unit.unit;
+                    return new CTrue();
                 }),
                 M.appl0("CFalse", (c) -> {
-                    constraints.add(new CFalse());
-                    return Unit.unit;
+                    return new CFalse();
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CEqual(t1, t2));
-                    return Unit.unit;
+                    return new CEqual(t1, t2);
                 }),
                 M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CInequal(t1, t2));
-                    return Unit.unit;
+                    return new CInequal(t1, t2);
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
-                    constraints.add(new CNew(ts));
-                    return Unit.unit;
+                    return new CNew(ts);
                 }),
                 M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CTermId(t1, t2));
-                    return Unit.unit;
+                    return new CTermId(t1, t2);
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
-                    constraints.add(new CTellEdge(sourceScope, label, targetScope));
-                    return Unit.unit;
+                    return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    constraints.add(new CTellRel(scope, rel, args));
-                    return Unit.unit;
+                    return new CTellRel(scope, rel, args);
                 }),
                 M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
-                        (c, relation, filter, min, scope, result) -> {
-                    constraints.add(new CResolveQuery(relation, filter, min, scope, result));
-                    return Unit.unit;
+                        (c, rel, filter, min, scope, result) -> {
+                    return new CResolveQuery(rel, filter, min, scope, result);
                 }),
                 M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
-                    constraints.add(new CPathMatch(re, lbls));
-                    return Unit.unit;
+                    return new CPathMatch(re, lbls);
                 }),
                 M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
-                    constraints.add(new CPathLt(lt, l1, l2));
-                    return Unit.unit;
+                    return new CPathLt(lt, l1, l2);
                 }),
                 M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
-                    constraints.add(new CUser(name, args));
-                    return Unit.unit;
+                    return new CUser(name, args);
                 }),
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
                 // @formatter:on
-            )).match(t, u).map(v -> constraints.build());
+            )).match(t, u);
         };
     }
 
@@ -191,8 +182,8 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> hoconstraint() {
-        return M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraints(),
-                (t, ps, vs, c) -> Rule.of("", ps, vs, c));
+        return M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(),
+                (t, ps, vs, c) -> Rule.of("", ps, new CExists(vs, c)));
     }
 
     public static IMatcher<Multimap<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
@@ -466,9 +457,10 @@ public class StatixTerms {
         return B.newList(explicate(terms));
     }
 
-    public static IListTerm
-            explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
-        return B.newList(Iterables2.stream(entries).map(e -> B.newTuple(explicate(e.getKey()), explicate(e.getValue())))
+    public static IListTerm explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries,
+            IUnifier unifier) {
+        return B.newList(Iterables2.stream(entries)
+                .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
                 .collect(ImmutableList.toImmutableList()));
     }
 

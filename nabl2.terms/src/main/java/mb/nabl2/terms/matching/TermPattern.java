@@ -127,7 +127,7 @@ public class TermPattern {
         }
 
         public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(final Iterable<Pattern> patterns,
-                final Iterable<ITerm> terms, IUnifier unifier) {
+                final Iterable<? extends ITerm> terms, IUnifier unifier) {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
         }
 

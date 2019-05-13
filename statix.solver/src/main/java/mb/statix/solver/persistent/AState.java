@@ -1,4 +1,4 @@
-package mb.statix.solver;
+package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
@@ -17,15 +17,16 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.IState;
 import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class AState {
+public abstract class AState implements IState {
 
-    @Value.Parameter public abstract Spec spec();
+    @Override @Value.Parameter public abstract Spec spec();
 
-    @Value.Default public String resource() {
+    @Override @Value.Default public String resource() {
         return "";
     }
 
@@ -54,10 +55,6 @@ public abstract class AState {
         return State.copyOf(this).with__vars(Set.Immutable.of()).with__scopes(Set.Immutable.of());
     }
 
-    public State retainVarsAndClearScopes(Set.Immutable<ITermVar> vars) {
-        return State.copyOf(this).with__vars(Set.Immutable.intersect(vars(), vars)).with__scopes(Set.Immutable.of());
-    }
-
     // --- variables ---
 
     @Value.Default int __varCounter() {
@@ -84,7 +81,7 @@ public abstract class AState {
         return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).build());
     }
 
-    public Set.Immutable<ITermVar> vars() {
+    @Override public Set.Immutable<ITermVar> vars() {
         return __vars();
     }
 
@@ -106,17 +103,17 @@ public abstract class AState {
         return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());
     }
 
-    public Set.Immutable<Scope> scopes() {
+    @Override public Set.Immutable<Scope> scopes() {
         return __scopes();
     }
 
     // --- solution ---
 
-    @Value.Default public IUnifier.Immutable unifier() {
+    @Override @Value.Default public IUnifier.Immutable unifier() {
         return PersistentUnifier.Immutable.of();
     }
 
-    @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
+    @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
     }
 

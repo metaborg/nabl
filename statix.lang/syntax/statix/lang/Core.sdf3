@@ -316,5 +316,3 @@ lexical syntax
 lexical restrictions
 
   StrChars -/- ~[\"]
-
-  StrBuildChars -/- ~[\[\]]

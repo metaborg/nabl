@@ -116,6 +116,10 @@ public abstract class PersistentSubstitution implements ISubstitution {
             return new PersistentSubstitution.Immutable(Map.Immutable.of(var, term));
         }
 
+        public static ISubstitution.Immutable of(java.util.Map<ITermVar, ? extends ITerm> subst) {
+            return new PersistentSubstitution.Immutable(Map.Immutable.<ITermVar, ITerm>of().__putAll(subst));
+        }
+
     }
 
     public static class Transient extends PersistentSubstitution implements ISubstitution.Transient {

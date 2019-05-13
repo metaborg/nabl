@@ -1,5 +1,6 @@
 package mb.statix.spec;
 
+import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Comparator;
@@ -13,22 +14,21 @@ import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
+import mb.statix.solver.constraint.CExists;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -42,32 +42,31 @@ public abstract class ARule {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(ImmutableSet.toImmutableSet());
     }
 
-    @Value.Parameter public abstract Set<ITermVar> bodyVars();
-
-    @Value.Parameter public abstract List<IConstraint> body();
+    @Value.Parameter public abstract IConstraint body();
 
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
-        State state = State.of(spec);
-        List<ITerm> args = Lists.newArrayList();
-        for(@SuppressWarnings("unused") Pattern param : params()) {
-            final Tuple2<ITermVar, State> stateAndVar = state.freshVar("arg");
-            args.add(stateAndVar._1());
-            state = stateAndVar._2();
+        // 1. Create arguments
+        final ImmutableList.Builder<ITermVar> argsBuilder = ImmutableList.builder();
+        for(int i = 0; i < params().size(); i++) {
+            argsBuilder.add(B.newVar("", "arg" + Integer.toString(i)));
         }
-        Tuple3<State, Set<ITermVar>, List<IConstraint>> stateAndInst;
+        final ImmutableList<ITermVar> args = argsBuilder.build();
+
+        // 2. Instantiate body
+        final IConstraint instBody;
         try {
-            if((stateAndInst = apply(args, state).orElse(null)) == null) {
+            if((instBody = apply(args, PersistentUnifier.Immutable.of()).orElse(null)) == null) {
                 return Optional.of(false);
             }
         } catch(Delay e) {
             return Optional.of(false);
         }
-        state = stateAndInst._1();
-        final Set<ITermVar> instVars = stateAndInst._2();
-        final List<IConstraint> instBody = stateAndInst._3();
+
+        // 3. Solve constraint
         try {
-            Optional<SolverResult> solverResult =
-                    Solver.entails(state, instBody, (s, l, st) -> true, instVars, new NullDebugContext());
+            final IConstraint constraint = new CExists(args, instBody);
+            final Optional<SolverResult> solverResult =
+                    Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext());
             if(solverResult.isPresent()) {
                 return Optional.of(true);
             } else {
@@ -79,36 +78,26 @@ public abstract class ARule {
     }
 
     public Rule apply(ISubstitution.Immutable subst) {
-        final ISubstitution.Immutable bodySubst = subst.removeAll(paramVars()).removeAll(bodyVars());
-        final List<IConstraint> newBody =
-                body().stream().map(c -> c.apply(bodySubst)).collect(ImmutableList.toImmutableList());
-        return Rule.of(name(), params(), bodyVars(), newBody);
+        final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
+        return Rule.of(name(), params(), newBody);
     }
 
-    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state) throws Delay {
-        return apply(args, state, null);
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier) throws Delay {
+        return apply(args, unifier, null);
     }
 
-    public Optional<Tuple3<State, Set<ITermVar>, List<IConstraint>>> apply(List<ITerm> args, State state, @Nullable IConstraint cause) throws Delay {
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier, @Nullable IConstraint cause)
+            throws Delay {
         final ISubstitution.Transient subst;
-        final Optional<ISubstitution.Immutable> matchResult = P.match(params(), args, state.unifier()).matchOrThrow(r -> r, vars -> {
-            throw Delay.ofVars(vars);
-        });
+        final Optional<ISubstitution.Immutable> matchResult =
+                P.match(params(), args, unifier).matchOrThrow(r -> r, vars -> {
+                    throw Delay.ofVars(vars);
+                });
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
             return Optional.empty();
         }
-        State newState = state;
-        final ImmutableSet.Builder<ITermVar> freshBodyVars = ImmutableSet.builder();
-        for(ITermVar var : bodyVars()) {
-            final Tuple2<ITermVar, State> vs = newState.freshVar(var.getName());
-            subst.put(var, vs._1());
-            freshBodyVars.add(vs._1());
-            newState = vs._2();
-        }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final List<IConstraint> newBody =
-                body().stream().map(c -> c.apply(isubst).withCause(cause)).collect(ImmutableList.toImmutableList());
-        return Optional.of(ImmutableTuple3.of(newState, freshBodyVars.build(), newBody));
+        return Optional.of(body().apply(isubst));
     }
 
     public String toString(TermFormatter termToString) {
@@ -118,19 +107,9 @@ public abstract class ARule {
         } else {
             sb.append(name()).append("(").append(params()).append(")");
         }
-        if(!body().isEmpty()) {
-            sb.append(" :- ");
-            if(!bodyVars().isEmpty()) {
-                sb.append("{").append(bodyVars()).append("} ");
-            }
-            sb.append(IConstraint.toString(body(), termToString.removeAll(bodyVars())));
-        }
-        if(name().isEmpty()) {
-            sb.append(" }");
-        } else {
-            sb.append(".");
-
-        }
+        sb.append(" :- ");
+        sb.append(body().toString(termToString));
+        sb.append(".");
         return sb.toString();
     }
 

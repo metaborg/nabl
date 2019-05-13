@@ -16,10 +16,11 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
-import mb.statix.solver.SolverResult;
-import mb.statix.solver.State;
+import mb.statix.solver.constraint.Constraints;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
 
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
@@ -44,14 +45,14 @@ public class STX_solve_multi_project extends StatixPrimitive {
         State state = initial.state();
         for(SolverResult result : results) {
             state = state.add(result.state());
-            constraints.addAll(result.delays().keySet());
+            constraints.add(result.delayed());
             errors.addAll(result.errors());
         }
 
         final SolverResult resultConfig;
         try {
             final double t0 = System.currentTimeMillis();
-            resultConfig = Solver.solve(state, constraints, (s, l, st) -> true, debug);
+            resultConfig = Solver.solve(state, Constraints.conjoin(constraints), (s, l, st) -> true, debug);
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Project analyzed in {} s", (dt / 1_000d));
         } catch(InterruptedException e) {

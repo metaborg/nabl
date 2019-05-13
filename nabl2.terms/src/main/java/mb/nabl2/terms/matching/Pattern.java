@@ -32,38 +32,40 @@ public abstract class Pattern implements Serializable {
 
     public MaybeNotInstantiated<Optional<Immutable>> match(ITerm term, IUnifier unifier) {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        return matchTerm(term, subst, unifier).map(u -> u ? Optional.of(subst.freeze()) : Optional.empty());
+        return matchTerm(term, subst, unifier).match(u -> {
+            return MaybeNotInstantiated.ofResult(u ? Optional.of(subst.freeze()) : Optional.empty());
+        }, e -> MaybeNotInstantiated.ofNotInstantiated(e));
     }
 
-    protected abstract MaybeNotInstantiated<Boolean> matchTerm(ITerm term, ISubstitution.Transient subst,
+    protected abstract MaybeNotInstantiatedBool matchTerm(ITerm term, ISubstitution.Transient subst,
             IUnifier unifier);
 
-    protected static MaybeNotInstantiated<Boolean> matchTerms(final Iterable<Pattern> patterns,
+    protected static MaybeNotInstantiatedBool matchTerms(final Iterable<Pattern> patterns,
             final Iterable<ITerm> terms, ISubstitution.Transient subst, IUnifier unifier) {
         final Iterator<Pattern> itPattern = patterns.iterator();
         final Iterator<ITerm> itTerm = terms.iterator();
         final List<ITermVar> stuckVars = Lists.newArrayList();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
-                return MaybeNotInstantiated.ofResult(false);
+                return MaybeNotInstantiatedBool.ofResult(false);
             }
-            final MaybeNotInstantiated<Boolean> result = itPattern.next().matchTerm(itTerm.next(), subst, unifier);
+            final MaybeNotInstantiatedBool result = itPattern.next().matchTerm(itTerm.next(), subst, unifier);
             final boolean canStillMatch = result.match(m -> m, vars -> {
                 // continue the match, it might still fail, but collect stuck vars
                 stuckVars.addAll(vars);
                 return true;
             });
             if(!canStillMatch) {
-                return MaybeNotInstantiated.ofResult(false);
+                return MaybeNotInstantiatedBool.ofResult(false);
             }
         }
         if(itTerm.hasNext()) {
-            return MaybeNotInstantiated.ofResult(false);
+            return MaybeNotInstantiatedBool.ofResult(false);
         }
         if(stuckVars.isEmpty()) {
-            return MaybeNotInstantiated.ofResult(true);
+            return MaybeNotInstantiatedBool.ofResult(true);
         } else {
-            return MaybeNotInstantiated.ofNotInstantiated(stuckVars);
+            return MaybeNotInstantiatedBool.ofNotInstantiated(stuckVars);
         }
     }
 

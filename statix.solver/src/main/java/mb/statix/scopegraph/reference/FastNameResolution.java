@@ -135,7 +135,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
         final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
-        for(S nextScope : scopeGraph.getEdges().get(path.getTarget(), l)) {
+        for(S nextScope : scopeGraph.getEdges(path.getTarget(), l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
                 env.__insertAll(env(re, p.get(), specifics));
