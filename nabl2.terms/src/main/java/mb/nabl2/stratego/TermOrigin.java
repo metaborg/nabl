@@ -10,6 +10,7 @@ import org.spoofax.jsglr.client.imploder.ImploderAttachment;
 import org.spoofax.terms.attachments.OriginAttachment;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 
 import mb.nabl2.terms.ITerm;
 
@@ -29,6 +30,13 @@ public abstract class TermOrigin {
 
     public IToken getRightToken() {
         return getImploderAttachment().getRightToken();
+    }
+
+    public ITerm put(ITerm term) {
+        final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
+        attachments.putAll(term.getAttachments());
+        attachments.put(TermOrigin.class, this);
+        return term.withAttachments(attachments.build());
     }
 
     @Override public String toString() {

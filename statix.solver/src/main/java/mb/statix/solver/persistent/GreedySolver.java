@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.stratego.TermIndex;
+import mb.nabl2.stratego.TermOrigin;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -450,13 +451,17 @@ public class GreedySolver {
                 final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
                 if(maybeScope.isPresent()) {
                     final AScope scope = maybeScope.get();
-                    eq = new CEqual(idTerm, B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs()));
+                    final ITerm scopeId1 = B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs());
+                    final ITerm scopeId2 = TermOrigin.get(term).map(o -> o.put(scopeId1)).orElse(term);
+                    eq = new CEqual(idTerm, scopeId2);
                     return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
                 } else {
                     final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
                         final TermIndex index = maybeIndex.get();
-                        eq = new CEqual(idTerm, StatixTerms.explicate(index));
+                        final ITerm termId1 = StatixTerms.explicate(index);
+                        final ITerm termId2 = TermOrigin.get(term).map(o -> o.put(termId1)).orElse(term);
+                        eq = new CEqual(idTerm, termId2);
                         return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
                     } else {
                         return fail(c, state);

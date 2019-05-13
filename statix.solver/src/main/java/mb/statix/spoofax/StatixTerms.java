@@ -383,7 +383,7 @@ public class StatixTerms {
 
     public static IMatcher<TermIndex> termId() {
         return M.appl2(TERMID_OP, M.stringValue(), M.integerValue(), (t, s, i) -> {
-            return TermIndex.of(s, i);
+            return (TermIndex) TermIndex.of(s, i).withAttachments(t.getAttachments());
         });
     }
 
@@ -486,7 +486,8 @@ public class StatixTerms {
     }
 
     public static ITerm explicate(TermIndex index) {
-        return B.newAppl(TERMID_OP, B.newString(index.getResource()), B.newInt(index.getId()));
+        return B.newAppl(TERMID_OP, ImmutableList.of(B.newString(index.getResource()), B.newInt(index.getId())),
+                index.getAttachments());
     }
 
 }

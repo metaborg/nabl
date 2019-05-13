@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.stratego.TermIndex;
+import mb.nabl2.stratego.TermOrigin;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -475,13 +476,17 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
         if(maybeScope.isPresent()) {
             final AScope scope = maybeScope.get();
-            eq = new CEqual(idTerm, B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs()));
+            final ITerm scopeId1 = B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs());
+            final ITerm scopeId2 = TermOrigin.get(term).map(o -> o.put(scopeId1)).orElse(term);
+            eq = new CEqual(idTerm, scopeId2);
             return Optional.of(ConstraintResult.ofConstraints(state, eq));
         } else {
             final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
             if(maybeIndex.isPresent()) {
                 final TermIndex index = maybeIndex.get();
-                eq = new CEqual(idTerm, StatixTerms.explicate(index));
+                final ITerm termId1 = StatixTerms.explicate(index);
+                final ITerm termId2 = TermOrigin.get(term).map(o -> o.put(termId1)).orElse(term);
+                eq = new CEqual(idTerm, termId2);
                 return Optional.of(ConstraintResult.ofConstraints(state, eq));
             } else {
                 return Optional.empty();

@@ -10,6 +10,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
@@ -28,6 +29,13 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     @Override @Value.Parameter public abstract String getResource();
 
     @Override @Value.Parameter public abstract int getId();
+
+    public ITerm put(ITerm term) {
+        final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
+        attachments.putAll(term.getAttachments());
+        attachments.put(TermIndex.class, this);
+        return term.withAttachments(attachments.build());
+    }
 
     // IApplTerm implementation
 
