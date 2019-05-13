@@ -115,14 +115,14 @@ public class StatixTerms {
                 M.appl2("CConj", m, m, (c, c1, c2) -> {
                     return new CConj(c1, c2);
                 }),
-                M.appl0("CTrue", (c) -> {
-                    return new CTrue();
+                M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
+                    return new CEqual(t1, t2);
+                }),
+                M.appl2("CExists", M.listElems(varTerm()), constraint(), (c, vs, body) -> {
+                    return new CExists(vs, body);
                 }),
                 M.appl0("CFalse", (c) -> {
                     return new CFalse();
-                }),
-                M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    return new CEqual(t1, t2);
                 }),
                 M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
                     return new CInequal(t1, t2);
@@ -130,8 +130,15 @@ public class StatixTerms {
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return new CNew(ts);
                 }),
-                M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
-                    return new CTermId(t1, t2);
+                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
+                    return new CPathLt(lt, l1, l2);
+                }),
+                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
+                    return new CPathMatch(re, lbls);
+                }),
+                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
+                        (c, rel, filter, min, scope, result) -> {
+                    return new CResolveQuery(rel, filter, min, scope, result);
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
@@ -139,15 +146,11 @@ public class StatixTerms {
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
                     return new CTellRel(scope, rel, args);
                 }),
-                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
-                        (c, rel, filter, min, scope, result) -> {
-                    return new CResolveQuery(rel, filter, min, scope, result);
+                M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
+                    return new CTermId(t1, t2);
                 }),
-                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
-                    return new CPathMatch(re, lbls);
-                }),
-                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
-                    return new CPathLt(lt, l1, l2);
+                M.appl0("CTrue", (c) -> {
+                    return new CTrue();
                 }),
                 M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
                     return new CUser(name, args);
@@ -161,12 +164,7 @@ public class StatixTerms {
     }
 
     private static IMatcher<String> constraintName() {
-        // @formatter:off
-        return M.cases(
-            M.stringValue(),
-            M.appl().filter(t -> t.getArity() == 0).map(t -> t.getOp())
-        );
-        // @formatter:on
+        return M.stringValue();
     }
 
     public static IMatcher<IQueryFilter> queryFilter() {
