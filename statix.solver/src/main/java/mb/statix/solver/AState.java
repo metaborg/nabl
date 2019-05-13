@@ -6,6 +6,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
@@ -14,6 +15,8 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.collections.HashTrieRelation3;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
@@ -118,6 +121,10 @@ public abstract class AState {
 
     @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
+    }
+
+    @Value.Default public IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties() {
+        return HashTrieRelation3.Immutable.of();
     }
 
 }

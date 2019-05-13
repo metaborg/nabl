@@ -55,6 +55,7 @@ import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
+import mb.statix.solver.constraint.CTermProperty;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
@@ -108,20 +109,17 @@ public class StatixTerms {
     public static IMatcher<List<IConstraint>> constraints() {
         return (t, u) -> {
             final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-            return M.casesFix(m -> Iterables2.from(
             // @formatter:off
+            return M.casesFix(m -> Iterables2.from(
                 M.appl2("CConj", m, m, (c, t1, t2) -> {
-                    return Unit.unit;
-                }),
-                M.appl0("CTrue", (c) -> {
-                    return Unit.unit;
-                }),
-                M.appl0("CFalse", (c) -> {
-                    constraints.add(new CFalse());
                     return Unit.unit;
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
                     constraints.add(new CEqual(t1, t2));
+                    return Unit.unit;
+                }),
+                M.appl0("CFalse", (c) -> {
+                    constraints.add(new CFalse());
                     return Unit.unit;
                 }),
                 M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
@@ -132,8 +130,17 @@ public class StatixTerms {
                     constraints.add(new CNew(ts));
                     return Unit.unit;
                 }),
-                M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CTermId(t1, t2));
+                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
+                    constraints.add(new CPathLt(lt, l1, l2));
+                    return Unit.unit;
+                }),
+                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
+                    constraints.add(new CPathMatch(re, lbls));
+                    return Unit.unit;
+                }),
+                M.appl5("CResolveQuery", label(), queryFilter(), queryMin(), term(), term(),
+                        (c, relation, filter, min, scope, result) -> {
+                    constraints.add(new CResolveQuery(relation, filter, min, scope, result));
                     return Unit.unit;
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
@@ -144,17 +151,15 @@ public class StatixTerms {
                     constraints.add(new CTellRel(scope, rel, args));
                     return Unit.unit;
                 }),
-                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
-                        (c, relation, filter, min, scope, result) -> {
-                    constraints.add(new CResolveQuery(relation, filter, min, scope, result));
+                M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
+                    constraints.add(new CTermId(t1, t2));
                     return Unit.unit;
                 }),
-                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
-                    constraints.add(new CPathMatch(re, lbls));
+                M.appl3("CTermProperty", term(), label(), term(), (c, idTerm, property, valueTerm) -> {
+                    constraints.add(new CTermProperty(idTerm, property, valueTerm));
                     return Unit.unit;
                 }),
-                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
-                    constraints.add(new CPathLt(lt, l1, l2));
+                M.appl0("CTrue", (c) -> {
                     return Unit.unit;
                 }),
                 M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
@@ -164,8 +169,8 @@ public class StatixTerms {
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
-                // @formatter:on
             )).match(t, u).map(v -> constraints.build());
+            // @formatter:on
         };
     }
 

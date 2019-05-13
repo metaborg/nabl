@@ -175,6 +175,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onTellEdge -> ImmutableList.of(),
             onTellRel -> ImmutableList.of(),
             onTermId -> ImmutableList.of(),
+            onTermProperty -> ImmutableList.of(),
             onTrue -> ImmutableList.of(),
             onUser -> onUser.args()
         );

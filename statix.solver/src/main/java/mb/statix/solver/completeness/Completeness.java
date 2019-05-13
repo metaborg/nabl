@@ -74,6 +74,7 @@ public class Completeness implements ICompleteness {
                 return null;
             },
             onTermId -> null,
+            onTermProperty -> null,
             onTrue -> null,
             onUser -> {
                 spec.scopeExtensions().get(onUser.name()).stream()

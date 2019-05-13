@@ -17,6 +17,7 @@ import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
+import mb.statix.solver.constraint.CTermProperty;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 
@@ -69,6 +70,8 @@ public interface IConstraint {
 
         R caseTermId(CTermId c);
 
+        R caseTermProperty(CTermProperty c);
+
         R caseTrue(CTrue c);
 
         R caseUser(CUser c);
@@ -100,6 +103,8 @@ public interface IConstraint {
         R caseTellRel(CTellRel c) throws E;
 
         R caseTermId(CTermId c) throws E;
+
+        R caseTermProperty(CTermProperty c) throws E;
 
         R caseTrue(CTrue c) throws E;
 

@@ -30,6 +30,7 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -53,6 +54,7 @@ import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
 import mb.statix.solver.constraint.CTermId;
+import mb.statix.solver.constraint.CTermProperty;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
@@ -412,16 +414,42 @@ public class GreedySolver {
                 if(maybeScope.isPresent()) {
                     final AScope scope = maybeScope.get();
                     eq = new CEqual(idTerm, B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs()));
+                    return success(c, state, ImmutableList.of(), ImmutableList.of(eq), fuel);
                 } else {
                     final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
                         final TermIndex index = maybeIndex.get();
                         eq = new CEqual(idTerm, B.newAppl(StatixTerms.TERMID_OP, index.getArgs()));
+                        return success(c, state, ImmutableList.of(), ImmutableList.of(eq), fuel);
                     } else {
-                        eq = new CEqual(idTerm, B.newAppl(StatixTerms.NOID_OP));
+                        return fail(c, state);
                     }
                 }
-                return success(c, state, ImmutableList.of(), ImmutableList.of(eq), fuel);
+            }
+
+            @Override public State caseTermProperty(CTermProperty c) throws InterruptedException {
+                final ITerm idTerm = c.idTerm();
+                final ITerm prop = c.property();
+                final ITerm value = c.value();
+
+                final IUnifier unifier = state.unifier();
+                if(!(unifier.isGround(idTerm))) {
+                    return delay(c, state, Delay.ofVars(unifier.getVars(idTerm)));
+                }
+                final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
+                if(maybeIndex.isPresent()) {
+                    final TermIndex index = maybeIndex.get();
+                    final IRelation3.Transient<TermIndex, ITerm, ITerm> props = state.termProperties().melt();
+                    if(!props.contains(index, prop)) {
+                        props.put(index, prop, value);
+                        final State newState = state.withTermProperties(props.freeze());
+                        return success(c, newState, ImmutableList.of(), ImmutableList.of(), fuel);
+                    } else {
+                        return fail(c, state);
+                    }
+                } else {
+                    return fail(c, state);
+                }
             }
 
             @Override public State caseTrue(CTrue c) throws InterruptedException {

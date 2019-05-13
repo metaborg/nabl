@@ -22,6 +22,7 @@ public final class Constraints {
                 Function1<CTellEdge,R> onTellEdge,
                 Function1<CTellRel,R> onTellRel,
                 Function1<CTermId,R> onTermId,
+                Function1<CTermProperty,R> onTermProperty,
                 Function1<CTrue,R> onTrue,
                 Function1<CUser,R> onUser
             ) {
@@ -67,6 +68,10 @@ public final class Constraints {
                 return onTermId.apply(c);
             }
 
+            @Override public R caseTermProperty(CTermProperty c) {
+                return onTermProperty.apply(c);
+            }
+
             @Override public R caseTrue(CTrue c) {
                 return onTrue.apply(c);
             }
@@ -91,6 +96,7 @@ public final class Constraints {
                 CheckedFunction1<CTellEdge, R, E> onTellEdge,
                 CheckedFunction1<CTellRel, R, E> onTellRel,
                 CheckedFunction1<CTermId, R, E> onTermId,
+                CheckedFunction1<CTermProperty, R, E> onTermProperty,
                 CheckedFunction1<CTrue, R, E> onTrue,
                 CheckedFunction1<CUser, R, E> onUser
             ) {
@@ -134,6 +140,10 @@ public final class Constraints {
 
             @Override public R caseTermId(CTermId c) throws E {
                 return onTermId.apply(c);
+            }
+
+            @Override public R caseTermProperty(CTermProperty c) throws E {
+                return onTermProperty.apply(c);
             }
 
             @Override public R caseTrue(CTrue c) throws E {
