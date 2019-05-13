@@ -16,4 +16,4 @@ context-free syntax
   Term.TermId  = <@<String>-<Int>>
   Term.ScopeId = <#<String>-<Int>>
 
-  Position = Term
+  TermOrId = Term

@@ -20,16 +20,17 @@ rules
   normalize-terms(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
     bottomup(
-      try(normalize-occurrence-position(|a))
+      try(normalize-term-ids(|a))
     ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
     )
 
 
-  normalize-occurrence-position(|a):
-      Occurrence(ns, ts, p) -> Occurrence(ns, ts, p')
-    with ty := <norm-get-ast-type(|a)> p
+  normalize-term-ids(|a) = Occurrence(id, id, normalize-term-or-id(|a))
+  normalize-term-ids(|a) = CTermProperty(normalize-term-or-id(|a), id, id)
+
+  normalize-term-or-id(|a): t -> TermIdOp(t)
+    with ty := <norm-get-ast-type(|a)> t
     where <not(?TERM_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
-    with p' := TermIdOp(p)
 
 
   replace-term: Wld() -> <make-fresh-var> "wld"

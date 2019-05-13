@@ -481,7 +481,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
             if(maybeIndex.isPresent()) {
                 final TermIndex index = maybeIndex.get();
-                eq = new CEqual(idTerm, B.newAppl(StatixTerms.TERMID_OP, index.getArgs()));
+                eq = new CEqual(idTerm, StatixTerms.explicate(index));
                 return Optional.of(ConstraintResult.ofConstraints(state, eq));
             } else {
                 return Optional.empty();
@@ -498,7 +498,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         if(!(unifier.isGround(idTerm))) {
             throw Delay.ofVars(unifier.getVars(idTerm));
         }
-        final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
+        final Optional<TermIndex> maybeIndex = StatixTerms.termId().match(idTerm, unifier);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
             final IRelation3.Transient<TermIndex, ITerm, ITerm> props = state.termProperties().melt();

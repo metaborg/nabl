@@ -83,11 +83,26 @@ context-free syntax
   Constraint.CEqual   = [[Term] == [Term]]
   Constraint.CInequal = [[Term] != [Term]]
 
-  Constraint.CTermId = <termId(<Term>, <Term>)>
+lexical syntax
+
+  Keyword = "true" | "false" | "new"
+
+
+/******************************************************************
+ * AST Constraints                                                *
+ ******************************************************************/
+
+context-free syntax
+
+  Constraint.CTermId       = <termId(<Term>, <Term>)>
+  Constraint.CTermProperty = <@<TermOrId>.<ID> := <Term>>
+
+  TermOrId = Var
 
 lexical syntax
 
-  Keyword = "true" | "false" | "new" | "termId"
+  Keyword = "termId"
+
 
 /******************************************************************
  * Relations                                                      *
@@ -179,13 +194,13 @@ context-free syntax
   Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
   Path       = PathLit
 
-  Position.NoId = "-"
-  Position      = Var
+  OccurrencePosition.NoId = "-"
+  OccurrencePosition      = TermOrId
 
 
 syntax
 
-  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" Position-CF LAYOUT?-CF "}"
+  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" OccurrencePosition-CF LAYOUT?-CF "}"
 
   PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"

@@ -30,6 +30,7 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
+import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -380,6 +381,12 @@ public class StatixTerms {
         // @formatter:on
     }
 
+    public static IMatcher<TermIndex> termId() {
+        return M.appl2(TERMID_OP, M.stringValue(), M.integerValue(), (t, s, i) -> {
+            return TermIndex.of(s, i);
+        });
+    }
+
     public static ITerm explicate(ITerm term) {
         // @formatter:off
         return term.match(Terms.cases(
@@ -476,6 +483,10 @@ public class StatixTerms {
             pathTerm = B.newAppl(PATH_STEP_OP, pathTerm, step.getLabel(), step.getTarget());
         }
         return pathTerm;
+    }
+
+    public static ITerm explicate(TermIndex index) {
+        return B.newAppl(TERMID_OP, B.newString(index.getResource()), B.newInt(index.getId()));
     }
 
 }

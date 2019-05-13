@@ -142,10 +142,6 @@ rules
   [[ CNew(vs) ^ (s) ]] :=
     Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
 
-  [[ CTermId(t1, t2) ^ (s) ]] :=
-    Build[[ t1 ^ (s) : _ ]],
-    Build[[ t2 ^ (s) : TERM_ID() ]].
-
   [[ CEqual(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
     Build[[ t2 ^ (s) : ty ]].
@@ -154,6 +150,23 @@ rules
     Build[[ t1 ^ (s) : ty ]],
     Build[[ t2 ^ (s) : ty ]].
 
+
+/******************************************************************
+ * AST Constraints                                                *
+ ******************************************************************/
+
+
+  [[ CTermId(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : _ ]],
+    Build[[ t2 ^ (s) : TERM_ID() ]].
+
+  [[ CTermProperty(t1, l, t2) ^ (s) ]] :=
+    TermOrId(Build)[[ t1 ^ (s) : _ ]],
+    Build[[ t2 ^ (s) : _ ]].
+
+  // only call this with a wildcard for ty!
+  TermOrId(V)[[ t ^ (s) : ty ]] :=
+    V[[ t ^ (s) : ty ]].
 
 /******************************************************************
  * Relations                                                      *
@@ -260,11 +273,12 @@ rules
     Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
     d : NS(tys),
     Map1T(Term(V))[[ ts ^ (s) : tys ]],
-    Pos(V)[[ pos ^ (s) : _ ]].
+    OccurrencePos(Term(V))[[ pos ^ (s) : _ ]].
 
-  Pos(V)[[ NoId() ^ (s) : TERM_ID() ]].
-  Pos(V)[[ t ^ (s) : ty ]] :=
-    Term(V)[[ t ^ (s) : ty ]].
+  // only call this with a wildcard for ty
+  OccurrencePos(T)[[ NoId() ^ (s) : TERM_ID() ]].
+  OccurrencePos(T)[[ t ^ (s) : ty ]] :=
+    TermOrId(T)[[ t ^ (s) : ty ]].
 
   Term(V)[[ PathEmpty(st) ^ (s) : PATH() ]] :=
     Term(V)[[ st ^ (s) : SCOPE() ]].

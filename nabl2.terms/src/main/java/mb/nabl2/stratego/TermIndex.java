@@ -77,4 +77,8 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
         return Optional.ofNullable(attachments.getInstance(TermIndex.class));
     }
 
+    public static TermIndex of(String resource, int id) {
+        return ImmutableTermIndex.of(resource, id);
+    }
+
 }
