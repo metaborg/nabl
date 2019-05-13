@@ -576,12 +576,12 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
         return isGround(term.getVars().elementSet(), Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private boolean isGround(final Set<ITermVar> vars, final Set<ITermVar> stack,
+    protected boolean isGround(final Set<ITermVar> vars, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         return vars.stream().allMatch(var -> isGround(var, stack, visited));
     }
 
-    private boolean isGround(final ITermVar var, final Set<ITermVar> stack,
+    protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         final boolean ground;
         final ITermVar rep = findRep(var);
@@ -831,13 +831,13 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
 
         private static final long serialVersionUID = 42L;
 
-        private final boolean finite;
+        protected final boolean finite;
 
-        private final Ref<Map.Immutable<ITermVar, ITermVar>> reps;
-        private final Map.Immutable<ITermVar, Integer> ranks;
-        private final Map.Immutable<ITermVar, ITerm> terms;
+        protected final Ref<Map.Immutable<ITermVar, ITermVar>> reps;
+        protected final Map.Immutable<ITermVar, Integer> ranks;
+        protected final Map.Immutable<ITermVar, ITerm> terms;
 
-        Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
+        protected Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = new Ref<>(reps);
@@ -943,13 +943,13 @@ public abstract class PersistentUnifier implements IUnifier, Serializable {
 
         private static final long serialVersionUID = 42L;
 
-        private final boolean finite;
+        protected final boolean finite;
 
-        private final Map.Transient<ITermVar, ITermVar> reps;
-        private final Map.Transient<ITermVar, Integer> ranks;
-        private final Map.Transient<ITermVar, ITerm> terms;
+        protected final Map.Transient<ITermVar, ITermVar> reps;
+        protected final Map.Transient<ITermVar, Integer> ranks;
+        protected final Map.Transient<ITermVar, ITerm> terms;
 
-        Transient(final boolean finite, final Map.Transient<ITermVar, ITermVar> reps,
+        protected Transient(final boolean finite, final Map.Transient<ITermVar, ITermVar> reps,
                 final Map.Transient<ITermVar, Integer> ranks, final Map.Transient<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = reps;

@@ -31,6 +31,7 @@ import mb.statix.taico.solver.ICompleteness;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.unifier.DistributedUnifier;
 
 public class MConstraintLabelWF implements LabelWF<ITerm> {
 
@@ -67,7 +68,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
             throw new ResolutionException("Instantiating tail failed unexpectedly.");
         }
         final IUnifier.Immutable newUnifier = unifyResult.unifier();
-        newState.setUnifier(newUnifier);
+        newState.setUnifier((DistributedUnifier.Immutable) newUnifier);
         final MSolverResult result = ModuleSolver.solveSeparately(newState, constraints, isComplete, debug.subContext());
         if(result.hasErrors()) {
             if(debug.isEnabled(Level.Info)) {
@@ -103,7 +104,7 @@ public class MConstraintLabelWF implements LabelWF<ITerm> {
         } catch(OccursException e) {
             throw new ResolutionException("Instantiation tail failed unexpectedly.");
         }
-        final IUnifier.Immutable newUnifier = unifyResult.unifier();
+        final DistributedUnifier.Immutable newUnifier = (DistributedUnifier.Immutable) unifyResult.unifier();
         final IMState newState = state.delegate();
         newState.setUnifier(newUnifier);
         final MSolverResult result = ModuleSolver.solveSeparately(newState, constraints, isComplete, debug.subContext());

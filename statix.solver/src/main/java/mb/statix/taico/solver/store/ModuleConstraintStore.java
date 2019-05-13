@@ -316,14 +316,19 @@ public class ModuleConstraintStore implements IConstraintStore {
                 System.err.println(owner + ": Registering as observer on " + varOwner + " for " + termVar);
                 registerAsObserver(termVar, debug);
                 return true;
+            } else {
+                System.err.println(termVar + " Is ground according to the unifier!");
+                registerAsObserver(termVar, debug);
+                return true;
+//                active.add(constraint);
             }
             
-            System.err.println(owner + ": Applying substitution for ground variable " + termVar + " with " + unifier.findRecursive(termVar));
-            //Otherwise, substitute the variable in the constraint
-            ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(termVar, unifier.findRecursive(termVar));
-            IConstraint newConstraint = constraint.apply(subst);
-            active.add(newConstraint);
-            return true;
+//            System.err.println(owner + ": Applying substitution for ground variable " + termVar + " with " + unifier.findRecursive(termVar));
+//            //Otherwise, substitute the variable in the constraint
+//            ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(termVar, unifier.findRecursive(termVar));
+//            IConstraint newConstraint = constraint.apply(subst);
+//            active.add(newConstraint);
+//            return true;
         }
     }
     

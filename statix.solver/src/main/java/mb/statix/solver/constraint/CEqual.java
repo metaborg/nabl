@@ -15,9 +15,10 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.IMState;
+import mb.statix.taico.unifier.DistributedUnifier;
 
 /**
  * Implementation for an equality constraint.
@@ -81,7 +82,7 @@ public class CEqual implements IConstraint, Serializable {
                     debug.info("Unification succeeded: {}", result.result());
                 }
                 //TODO CONSTRAINT-CONCURRENCY Concurrency point for unifier modifications
-                state.setUnifier(result.unifier());
+                state.setUnifier((DistributedUnifier.Immutable) result.unifier());
                 return Optional.of(MConstraintResult.ofVars(result.result().varSet()));
             } else {
                 if(debug.isEnabled(Level.Info)) {

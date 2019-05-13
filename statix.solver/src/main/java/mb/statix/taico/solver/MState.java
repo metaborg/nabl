@@ -8,11 +8,10 @@ import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.unifier.DistributedUnifier;
 
 /**
  * Implementation of mutable state.
@@ -26,7 +25,7 @@ public class MState implements IMState, Serializable {
     private int varCounter;
     private Set<ITermVar> vars;
     
-    private volatile IUnifier.Immutable unifier;
+    private volatile DistributedUnifier.Immutable unifier;
     
     private transient ModuleSolver solver;
     
@@ -42,7 +41,7 @@ public class MState implements IMState, Serializable {
         this.owner = owner;
         this.scopeGraph = owner.getScopeGraph();
         this.vars = new HashSet<>();
-        this.unifier = PersistentUnifier.Immutable.of();
+        this.unifier = DistributedUnifier.Immutable.of(owner.getId());
         
         SolverContext.context().setState(owner, this);
     }
@@ -122,12 +121,12 @@ public class MState implements IMState, Serializable {
     // --- solution ---
 
     @Override
-    public IUnifier.Immutable unifier() {
+    public DistributedUnifier.Immutable unifier() {
         return unifier;
     }
     
     @Override
-    public void setUnifier(IUnifier.Immutable unifier) {
+    public void setUnifier(DistributedUnifier.Immutable unifier) {
         this.unifier = unifier;
     }
 

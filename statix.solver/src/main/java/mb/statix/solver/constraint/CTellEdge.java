@@ -6,15 +6,19 @@ import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.util.Vars;
 
 /**
  * Implementation for a tell edge constraint.

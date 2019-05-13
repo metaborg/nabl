@@ -85,6 +85,7 @@ public class SolverCoordinator extends ASolverCoordinator {
                 }
                 this.debug.log(Level.Trace, "[{}] going to try solve a step", solver.getOwner().getId());
                 //If any progress can be made, store that information
+                SolverContext.setCurrentModule(solver.getOwner());
                 if (solver.solveStep()) {
                     this.debug.log(Level.Debug, "[{}] solved one step", solver.getOwner().getId());
                     anyProgress = true;

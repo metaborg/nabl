@@ -10,6 +10,7 @@ import mb.statix.scopegraph.terms.AScope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.IOwnable;
 
 public interface IMState extends IOwnable, Serializable {
@@ -66,9 +67,9 @@ public interface IMState extends IOwnable, Serializable {
 
     // --- solution ---
 
-    public IUnifier.Immutable unifier();
+    public DistributedUnifier.Immutable unifier();
     
-    public void setUnifier(IUnifier.Immutable unifier);
+    public void setUnifier(DistributedUnifier.Immutable unifier);
 
     public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph();
     
