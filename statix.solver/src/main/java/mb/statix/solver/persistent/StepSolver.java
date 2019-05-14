@@ -20,12 +20,12 @@ import com.google.common.collect.Maps;
 
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.relations.IRelation;
-import mb.nabl2.stratego.TermIndex;
-import mb.nabl2.stratego.TermOrigin;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;

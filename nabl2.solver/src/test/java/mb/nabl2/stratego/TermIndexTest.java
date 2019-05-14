@@ -13,6 +13,7 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.ImmutableTermIndex;
 
 public class TermIndexTest {
 

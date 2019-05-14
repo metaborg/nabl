@@ -6,9 +6,9 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;

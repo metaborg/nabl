@@ -13,8 +13,8 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
 import mb.nabl2.stratego.ConstraintTerms;
-import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoTerms;
 
 public abstract class NaBL2Primitive extends AbstractPrimitive {
 

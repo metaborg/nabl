@@ -25,9 +25,9 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 
-import mb.nabl2.stratego.StrategoTerms;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoTerms;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.constraint.Constraints;
