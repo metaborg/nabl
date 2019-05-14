@@ -1,4 +1,4 @@
-package mb.nabl2.stratego;
+package mb.nabl2.terms.stratego;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
@@ -10,6 +10,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
@@ -29,6 +30,13 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
 
     @Override @Value.Parameter public abstract int getId();
 
+    public ITerm put(ITerm term) {
+        final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
+        attachments.putAll(term.getAttachments());
+        attachments.put(TermIndex.class, this);
+        return term.withAttachments(attachments.build());
+    }
+
     // IApplTerm implementation
 
     @Override public String getOp() {
@@ -47,6 +55,8 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     @Override protected TermIndex check() {
         return this;
     }
+
+    @Override public abstract TermIndex withAttachments(ImmutableClassToInstanceMap<Object> value);
 
     // Object implementation
 
@@ -75,6 +85,14 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
 
     public static Optional<TermIndex> get(ClassToInstanceMap<Object> attachments) {
         return Optional.ofNullable(attachments.getInstance(TermIndex.class));
+    }
+
+    public static ITerm copy(ITerm src, ITerm dst) {
+        return get(src).map(o -> o.put(dst)).orElse(dst);
+    }
+
+    public static TermIndex of(String resource, int id) {
+        return ImmutableTermIndex.of(resource, id);
     }
 
 }

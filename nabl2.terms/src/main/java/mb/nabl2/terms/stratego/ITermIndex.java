@@ -1,4 +1,4 @@
-package mb.nabl2.stratego;
+package mb.nabl2.terms.stratego;
 
 public interface ITermIndex {
 

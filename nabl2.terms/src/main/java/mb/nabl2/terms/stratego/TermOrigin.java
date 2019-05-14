@@ -1,4 +1,4 @@
-package mb.nabl2.stratego;
+package mb.nabl2.terms.stratego;
 
 import java.util.Optional;
 
@@ -10,6 +10,7 @@ import org.spoofax.jsglr.client.imploder.ImploderAttachment;
 import org.spoofax.terms.attachments.OriginAttachment;
 
 import com.google.common.collect.ClassToInstanceMap;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 
 import mb.nabl2.terms.ITerm;
 
@@ -29,6 +30,13 @@ public abstract class TermOrigin {
 
     public IToken getRightToken() {
         return getImploderAttachment().getRightToken();
+    }
+
+    public ITerm put(ITerm term) {
+        final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
+        attachments.putAll(term.getAttachments());
+        attachments.put(TermOrigin.class, this);
+        return term.withAttachments(attachments.build());
     }
 
     @Override public String toString() {
@@ -51,6 +59,10 @@ public abstract class TermOrigin {
         return get(term.getAttachments());
     }
 
+    public static ITerm copy(ITerm src, ITerm dst) {
+        return get(src).map(o -> o.put(dst)).orElse(dst);
+    }
+
     public static Optional<TermOrigin> get(ClassToInstanceMap<Object> attachments) {
         return Optional.ofNullable(attachments.getInstance(TermOrigin.class));
     }
@@ -60,6 +72,10 @@ public abstract class TermOrigin {
     public static Optional<TermOrigin> get(IStrategoTerm term) {
         return Optional.ofNullable(ImploderAttachment.get(OriginAttachment.tryGetOrigin(term)))
                 .map(ia -> ImmutableTermOrigin.of(ia));
+    }
+
+    public static void copy(IStrategoTerm src, IStrategoTerm dst) {
+        get(src).ifPresent(o -> o.put(dst));
     }
 
     public void put(IStrategoTerm term) {

@@ -57,7 +57,7 @@ public class STX_solve_constraint extends StatixPrimitive {
     }
 
     private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug) {
-        mb.statix.solver.persistent.State state = State.of(spec);
+        final State state = State.of(spec);
 
         final SolverResult resultConfig;
         try {

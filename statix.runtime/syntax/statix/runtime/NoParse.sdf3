@@ -10,10 +10,8 @@ lexical syntax
 
 context-free syntax
 
-  Term.Scope   = <#<String>-<String>>
+  Term.Scope     = <#<String>-<String>>
+  Term.NoId      = <@->
+  Term.TermIndex = <@<String>-<Int>>
 
-  Term.NoId    = <@->
-  Term.TermId  = <@<String>-<Int>>
-  Term.ScopeId = <#<String>-<Int>>
-
-  Position = Term
+  TermOrId = Term

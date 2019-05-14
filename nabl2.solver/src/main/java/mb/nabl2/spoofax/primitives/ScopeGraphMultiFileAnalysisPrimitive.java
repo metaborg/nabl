@@ -23,8 +23,8 @@ import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.stratego.ConstraintTerms;
-import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoTerms;
 
 public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
 

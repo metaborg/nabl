@@ -1,4 +1,4 @@
-package mb.nabl2.stratego;
+package mb.nabl2.terms.stratego;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -36,31 +36,35 @@ public class StrategoTermIndices {
         }
 
         private IStrategoTerm index(final IStrategoTerm term) {
+            // @formatter:off
             IStrategoTerm result = StrategoTerms.match(term,
-                    // @formatter:off
-                    StrategoTerms.<IStrategoTerm>cases(
-                        appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
-                        tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
-                        list -> index(list),
-                        integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
-                        real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
-                        string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
-                        blob -> new StrategoBlob(blob.value())
-                    ));
-                    // @formatter:on
-            result = put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
+                StrategoTerms.<IStrategoTerm>cases(
+                    appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
+                    tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
+                    list -> index(list),
+                    integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
+                    real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
+                    string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
+                    blob -> new StrategoBlob(blob.value())
+                ));
+            // @formatter:on
+            final TermIndex index = ImmutableTermIndex.of(resource, ++currentId);
+            TermOrigin.get(term).ifPresent(o -> o.put(index));
+            result = put(index, result, termFactory);
             termFactory.copyAttachments(term, result);
             return result;
         }
 
         private IStrategoList index(final IStrategoList list) {
             IStrategoList result;
-            if (list.isEmpty()) {
+            if(list.isEmpty()) {
                 result = termFactory.makeList(new IStrategoTerm[0], list.getAnnotations());
             } else {
                 result = termFactory.makeListCons(index(list.head()), index(list.tail()), list.getAnnotations());
             }
-            result = (IStrategoList) put(ImmutableTermIndex.of(resource, ++currentId), result, termFactory);
+            final TermIndex index = ImmutableTermIndex.of(resource, ++currentId);
+            TermOrigin.get(list).ifPresent(o -> o.put(index));
+            result = (IStrategoList) put(index, result, termFactory);
             termFactory.copyAttachments(list, result);
             return result;
         }
@@ -87,9 +91,8 @@ public class StrategoTermIndices {
         }
 
         private IStrategoTerm erase(final IStrategoTerm term) {
-            IStrategoTerm result = StrategoTerms.match(term,
-                    StrategoTerms.<IStrategoTerm>cases(
-                            // @formatter:off
+            IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm>cases(
+            // @formatter:off
                             appl -> termFactory.makeAppl(appl.getConstructor(), erase(appl.getAllSubterms()),
                                     appl.getAnnotations()),
                             tuple -> termFactory.makeTuple(erase(tuple.getAllSubterms()), tuple.getAnnotations()),
@@ -99,7 +102,7 @@ public class StrategoTermIndices {
                             string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
                             blob -> new StrategoBlob(blob.value())
                     // @formatter:on
-                    ));
+            ));
             result = remove(result, termFactory);
             termFactory.copyAttachments(term, result);
             assert !get(result).isPresent();
@@ -108,7 +111,7 @@ public class StrategoTermIndices {
 
         private IStrategoList erase(final IStrategoList list) {
             IStrategoList result;
-            if (list.isEmpty()) {
+            if(list.isEmpty()) {
                 result = termFactory.makeList(new IStrategoTerm[0], list.getAnnotations());
             } else {
                 result = termFactory.makeListCons(erase(list.head()), erase(list.tail()), list.getAnnotations());
@@ -128,45 +131,49 @@ public class StrategoTermIndices {
     // indices of terms
 
     public static Optional<TermIndex> get(IStrategoTerm term) {
-        for (IStrategoTerm anno : term.getAnnotations()) {
+        for(IStrategoTerm anno : term.getAnnotations()) {
             Optional<TermIndex> index = match(anno);
-            if (index.isPresent()) {
+            if(index.isPresent()) {
                 return index;
             }
         }
         return Optional.empty();
     }
 
-    public static <T extends IStrategoTerm> T put(ITermIndex index, T term, ITermFactory factory) {
-        @SuppressWarnings({ "unchecked" })
-        T result = (T) factory.annotateTerm(term,
+    public static <T extends IStrategoTerm> T put(TermIndex index, T term, ITermFactory factory) {
+        @SuppressWarnings({ "unchecked" }) T result = (T) factory.annotateTerm(term,
                 factory.makeListCons(build(index, factory), removeFromAnnoList(term.getAnnotations(), factory)));
         return result;
     }
 
     public static <T extends IStrategoTerm> T remove(T term, ITermFactory factory) {
-        @SuppressWarnings({ "unchecked" })
-        T result = (T) factory.annotateTerm(term, removeFromAnnoList(term.getAnnotations(), factory));
+        @SuppressWarnings({ "unchecked" }) T result =
+                (T) factory.annotateTerm(term, removeFromAnnoList(term.getAnnotations(), factory));
         return result;
     }
 
     // index terms
 
-    public static IStrategoTerm build(ITermIndex index, ITermFactory factory) {
-        IStrategoConstructor ctor = factory.makeConstructor(OP, ARITY);
-        return factory.makeAppl(ctor, factory.makeString(index.getResource()), factory.makeInt(index.getId()));
+    public static IStrategoTerm build(TermIndex index, ITermFactory factory) {
+        final IStrategoConstructor ctor = factory.makeConstructor(OP, ARITY);
+        final IStrategoTerm indexTerm =
+                factory.makeAppl(ctor, factory.makeString(index.getResource()), factory.makeInt(index.getId()));
+        TermOrigin.get(index).ifPresent(o -> o.put(indexTerm));
+        return indexTerm;
     }
 
     public static Optional<TermIndex> match(IStrategoTerm term) {
-        if (!(Tools.isTermAppl(term) && Tools.hasConstructor((IStrategoAppl) term, OP, ARITY))) {
+        if(!(Tools.isTermAppl(term) && Tools.hasConstructor((IStrategoAppl) term, OP, ARITY))) {
             return Optional.empty();
         }
         IStrategoTerm resourceTerm = term.getSubterm(0);
         IStrategoTerm idTerm = term.getSubterm(1);
-        if (!(Tools.isTermString(resourceTerm) && Tools.isTermInt(idTerm))) {
+        if(!(Tools.isTermString(resourceTerm) && Tools.isTermInt(idTerm))) {
             return Optional.empty();
         }
-        return Optional.of(ImmutableTermIndex.of(Tools.asJavaString(resourceTerm), Tools.asJavaInt(idTerm)));
+        final TermIndex index1 = ImmutableTermIndex.of(Tools.asJavaString(resourceTerm), Tools.asJavaInt(idTerm));
+        final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
+        return Optional.of(index2);
     }
 
     private static IStrategoList removeFromAnnoList(IStrategoList list, ITermFactory factory) {

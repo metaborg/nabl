@@ -1,4 +1,4 @@
-package mb.nabl2.stratego;
+package mb.nabl2.terms.stratego;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -13,6 +13,7 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.ImmutableTermIndex;
 
 public class TermIndexTest {
 

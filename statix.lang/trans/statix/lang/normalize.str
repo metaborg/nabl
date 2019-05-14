@@ -2,6 +2,8 @@ module statix/lang/normalize
 
 imports
 
+  nabl2/api
+
   statix/lang/normalize/-
 
 rules

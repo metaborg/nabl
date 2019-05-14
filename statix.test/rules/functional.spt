@@ -1,4 +1,4 @@
-module rules-functional
+module rules/functional
 
 language StatixLang
 

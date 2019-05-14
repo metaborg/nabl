@@ -1,4 +1,4 @@
-package mb.nabl2.spoofax.primitives;
+package mb.nabl2.terms.stratego.primitives;
 
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
@@ -6,7 +6,7 @@ import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
-import mb.nabl2.stratego.StrategoTermIndices;
+import mb.nabl2.terms.stratego.StrategoTermIndices;
 
 public class SG_set_ast_index extends AbstractPrimitive {
 

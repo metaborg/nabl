@@ -1,4 +1,4 @@
-module scopegraphs-construction
+module scopegraphs/construction
 
 language StatixLang
 

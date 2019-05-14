@@ -2,12 +2,17 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Map;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+
+import com.google.common.collect.ImmutableMap;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
@@ -115,6 +120,10 @@ public abstract class AState implements IState {
 
     @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
+    }
+
+    @Value.Default public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
+        return ImmutableMap.of();
     }
 
 }

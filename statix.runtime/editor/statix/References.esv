@@ -1,0 +1,6 @@
+module nabl2/References
+
+references
+
+  reference _ : stx-editor-resolve
+  hover _     : stx-editor-hover

@@ -1,0 +1,24 @@
+module statix/runtime/services
+
+imports
+
+  libspoofax/analysis/constraint
+
+  statix/runtime/analysis
+  statix/runtime/ast
+
+signature
+  constructors
+    Ref : AstProperty
+
+rules
+
+  stx-editor-resolve:
+      (node, position, ast, path, project-path) -> r
+    where
+      <stx--get-ast-index> node
+    ; Solution(_, a) := <stx--get-ast-analysis> node
+    ; r := <stx--get-ast-property(|a,Ref())> node
+
+  stx-editor-hover:
+      (node, position, ast, path, project-path) -> <fail>

@@ -1,4 +1,4 @@
-module scopegraph-relations
+module scopegraph/relations
 
 language StatixLang
 

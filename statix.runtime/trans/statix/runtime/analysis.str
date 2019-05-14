@@ -1,0 +1,188 @@
+module statix/runtime/analysis
+
+imports
+
+  libstratego-lib
+
+  libspoofax/analysis/constraint
+  libspoofax/core/language
+
+  statix/runtime/ast
+  statix/runtime/constraints
+  statix/runtime/terms
+  statix/runtime/pp
+
+signature
+  constructors
+
+    ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
+    FileAnalysis    : Constraint -> AnalysisResult
+
+    Solution : List(Var, Term) * SolverResult -> Solution
+
+rules
+
+  stx-analyze(|spec-name, init-constraint) =
+    with(warn-msg(|"Using 'stx-analyze' is deprecated, use 'stx-editor-analyze' instead."));
+  ( stx-editor-analyze(id|spec-name, init-constraint)
+ <+ <stx-editor-analyze(id|spec-name, init-constraint)> (<id>, "", "")
+  )
+
+rules // single file analysis
+
+  stx-editor-analyze(|spec-name, init-constraint) =
+    stx-editor-analyze(id|spec-name, init-constraint)
+
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
+    ; solve-result* := <stx--solve-constraint(|spec, level)> C*
+    ; result* := <zip({ : \
+        ((resource, ast'), (a, error*, warning*, note*)) ->
+            (resource, Full(ast', a, error*, warning*, note*))
+      \})> (resource-ast'*, solve-result*)
+
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
+
+rules // single file elaboration
+
+  stx-editor-elaborate(desugar|spec-name, init-constraint):
+      AnalyzeSingle(change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; V := Var("out")
+    ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
+    ; solve-result* := <stx--solve-constraint(|spec, level)> C*
+    ; result* := <zip({ ast'': \
+        ((resource, ast'), (a@Solution(subst, _), error*, warning*, note*)) ->
+            (resource, Full(ast'', a, error*, warning*, note*))
+          with ast'' := <substitute(stx--is-var);stx--implode> (subst, V)
+      \})> (resource-ast'*, solve-result*)
+
+rules // multi file analysis
+
+  stx-editor-analyze(|spec-name, project-constraint, file-constraint) =
+    stx-editor-analyze(id|spec-name, project-constraint, file-constraint)
+
+  stx-editor-analyze(desugar|spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; level := <stx--log-level>
+    with
+      switch !project-change
+        case ?Added(_) + ?Changed(_, _):
+          //
+          // 1. create global scope
+          //
+          global-scope-var := Var("s")
+        ; (Solution(global-scope-subst, global-scope-state), _, _, _) :=
+              <stx--solve-constraint(|spec, level)> ([global-scope-var], CNew([global-scope-var]))
+        ; global-scope := <lookup> (global-scope-var, global-scope-subst)
+          //
+          // 2. partially solve project constraint
+          //
+        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope])
+        ; [initial-project-state] := <stx--solve-multi-file(|global-scope-state, level)> [(project-resource, project-C)]
+        case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
+          id
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+      //
+      // 3. Partially solve file constraints
+      //
+    ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-constraint, <map(stx--explode)> [global-scope, ast'])) \)> resource-ast'*
+    ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
+    ; file-result* := <zip({ file-state', error*, warning*, note*, file-analysis: \
+        ((resource, ast'), file-state) ->
+            (resource, Full(ast', file-analysis, error*, warning*, note*))
+          with (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
+             ; file-analysis := FileAnalysis(file-state')
+      \})> (resource-ast'*, file-state*)
+      //
+      // 4. Combine and solve all partial solution
+      //
+    ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
+    ; final-project-state := <stx--solve-multi-project(|initial-project-state, level)> [file-state*, cached-state*]
+    ; (final-project-state', error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
+    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state')
+    ; switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-result := Full(project-ast, project-analysis, error*, warning*, note*)
+        case ?Cached(_):
+          project-result := Update(project-analysis, error*, warning*, note*)
+      end
+    ; result* := [(project-resource, project-result)|file-result*]
+
+  stx-editor-analyze(desugar|spec-name, init-constraint):
+      AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [(String, Constraint)] -> [SolverResult]
+  stx--solve-multi-file(|state,level) = prim("STX_solve_multi_file", state, level)
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [SolverResult] -> SolverResult
+  stx--solve-multi-project(|state,level) = prim("STX_solve_multi_project", state, level)
+
+  // @type SolverResult -> SolverResult
+  stx--delays-as-errors = prim("STX_delays_as_errors")
+
+  // @type SolverResult -> (SolverResult, [Error], [Warning], [Note])
+  stx--extract-messages = prim("STX_extract_messages")
+
+rules
+
+  stx-evaluate(|spec-name, constraint): in* -> out
+    where (out, a, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
+
+  stx--evaluate(|spec-name, constraint):
+      in* -> (out, a, error*, warning*, note*)
+    with spec  := <stx--find-spec(|spec-name)>
+       ; T*    := <map(stx--explode)> in*
+       ; V     := Var("out")
+       ; C     := C(constraint, [T*, V])
+       ; level := <stx--log-level>
+       ; (a@Solution(subst, _), error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; out := <substitute(stx--is-var);stx--implode> (subst, V)
+
+rules
+
+  stx--log-level = stx--is-debug-custom-enabled < !"Info" + !"None"
+
+  stx--find-spec(|name) =
+    language-components;
+    getfirst({ loc, spec-file:
+               ?(_, _, _, loc);
+               spec-file := $[[loc]/src-gen/statix/[name].spec.aterm];
+               <file-exists> spec-file;
+               <ReadFromFile> spec-file
+            })
+
+  // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
+  stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
+
+rules
+
+  stx--get-resource-analysis =
+    get-resource-constraint-analysis
+
+  stx--get-ast-analysis =
+    stx--get-ast-resource
+  ; stx--get-resource-analysis
+
+  stx--is-debug-custom-enabled =
+    prim("SG_is_debug_custom_enabled")

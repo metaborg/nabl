@@ -45,6 +45,8 @@ import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.constraint.CAstId;
+import mb.statix.solver.constraint.CAstProperty;
 import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CExists;
@@ -56,7 +58,6 @@ import mb.statix.solver.constraint.CPathMatch;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CTermId;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.query.IQueryFilter;
@@ -69,11 +70,10 @@ import mb.statix.spec.Spec;
 public class StatixTerms {
 
     public static final String SCOPE_OP = "Scope";
+    public static final String TERMINDEX_OP = "TermIndex";
     public static final String OCCURRENCE_OP = "Occurrence";
     public static final String PATH_EMPTY_OP = "PathEmpty";
     public static final String PATH_STEP_OP = "PathStep";
-    public static final String SCOPEID_OP = "ScopeId";
-    public static final String TERMID_OP = "TermId";
     public static final String NOID_OP = "NoId";
 
     public static IMatcher<Spec> spec() {
@@ -110,8 +110,14 @@ public class StatixTerms {
 
     public static IMatcher<IConstraint> constraint() {
         return (t, u) -> {
-            return M.<IConstraint>casesFix(m -> Iterables2.from(
             // @formatter:off
+            return M.<IConstraint>casesFix(m -> Iterables2.from(
+                M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
+                    return new CAstId(t1, t2);
+                }),
+                M.appl3("CAstProperty", term(), label(), term(), (c, idTerm, property, valueTerm) -> {
+                    return new CAstProperty(idTerm, property, valueTerm);
+                }),
                 M.appl2("CConj", m, m, (c, c1, c2) -> {
                     return new CConj(c1, c2);
                 }),
@@ -146,9 +152,6 @@ public class StatixTerms {
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
                     return new CTellRel(scope, rel, args);
                 }),
-                M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
-                    return new CTermId(t1, t2);
-                }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
                 }),
@@ -158,8 +161,8 @@ public class StatixTerms {
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
-                // @formatter:on
             )).match(t, u);
+            // @formatter:on
         };
     }
 
@@ -256,8 +259,7 @@ public class StatixTerms {
             }),
             listTerm(),
             // SCOPE_OP -- has no syntax
-            // SCOPEID_OP -- has no syntax
-            // TERMID_OP -- has no syntax
+            // TERMINDEX_OP -- has no syntax
             // NOID_OP -- has no syntax
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
@@ -382,12 +384,11 @@ public class StatixTerms {
             appl -> {
                 switch(appl.getOp()) {
                     case SCOPE_OP:
-                    case SCOPEID_OP:
-                    case TERMID_OP:
+                    case TERMINDEX_OP:
                     case NOID_OP:
                     case PATH_EMPTY_OP:
                     case PATH_STEP_OP: {
-                        return B.newAppl(appl.getOp(), appl.getArgs());
+                        return appl;
                     }
                     case OCCURRENCE_OP: {
                         final ITerm ns = appl.getArgs().get(0);
