@@ -1,4 +1,4 @@
-package mb.nabl2.spoofax.primitives;
+package mb.nabl2.terms.stratego.primitives;
 
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;

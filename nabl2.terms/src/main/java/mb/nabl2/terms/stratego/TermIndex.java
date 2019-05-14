@@ -56,6 +56,8 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
         return this;
     }
 
+    @Override public abstract TermIndex withAttachments(ImmutableClassToInstanceMap<Object> value);
+
     // Object implementation
 
     @Override public boolean equals(Object other) {
