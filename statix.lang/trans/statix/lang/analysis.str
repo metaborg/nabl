@@ -9,7 +9,7 @@ imports
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
-  nabl2/runtime/analysis/query // for private set-custom-analysis
+  nabl2/runtime/transform/query // for private set-custom-analysis
 
   signatures/statix/lang/-
 
@@ -44,8 +44,8 @@ rules // Analysis
             <analyze(|resource)> desugared-ast;
 
          if [] := e* then
-           (normalized-ast, a') :=
-               <normalize(analyze(|resource)|a)> analyzed-ast;
+           (normalized-ast, a', _, _, _) := 
+               <normalize(|a);analyze(|resource)> analyzed-ast;
 
            nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
            or-e* := <detect-overlapping-rules> analyzed-ast;

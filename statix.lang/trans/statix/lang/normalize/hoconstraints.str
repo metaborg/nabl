@@ -16,32 +16,29 @@ rules
 
   // normalize all higher-order constraint forms to lambda's
 
-  normalize-ho-constraints(|a) =
+  normalize-ho-constraints =
     nabl2-custom-analysis-info-msg(|"| Normalize higher-order constraints...");
     bottomup(
-      try(replace-ho-constraint(|a))
+      try(replace-ho-constraint)
     )
 
 
-  replace-ho-constraint(|a): l@LTrue(){a*} -> LLam(ps, [], CTrue()){a*}
-    with ty := <norm-get-ast-type(|a)> l;
-         sort := <type-to-sort> ty;
-         ps := <sort-args;map(!Wld())> sort
+  replace-ho-constraint: l@LTrue(){a*} ->   LLam(ps, [], CTrue()){a*}
+    with PRED(tys) := <norm-get-ast-type> l;
+         ps := <make-wildcards> tys
 
-  replace-ho-constraint(|a): l@LFalse(){a*} -> LLam(ps, [], CFalse()){a*}
-    with ty := <norm-get-ast-type(|a)> l;
-         sort := <type-to-sort> ty;
-         ps := <sort-args;map(!Wld())> sort
+  replace-ho-constraint: l@LFalse(){a*} -> LLam(ps, [], CFalse()){a*}
+    with PRED(tys) := <norm-get-ast-type> l;
+         ps := <make-wildcards> tys
 
-  replace-ho-constraint(|a): l@LC(x){a*} -> LLam(ps, [], C(x, ps)){a*}
-    with ty := <norm-get-ast-decl-type(|a)> x;
-         sort := <type-to-sort> ty;
-         ps := <sort-args;make-seq-vars(|"t")> sort
+  replace-ho-constraint: l@LC(x){a*} -> LLam(ps, [], C(x, ps)){a*}
+    with PRED(tys) := <norm-get-ast-type> l;
+         ps := <make-seq-vars(|"t")> tys
 
-  replace-ho-constraint(|a): l@LPathMatch(re){a*} -> LLam([p], [], CPathMatch(re, p)){a*}
+  replace-ho-constraint: l@LPathMatch(re){a*} -> LLam([p], [], CPathMatch(re, p)){a*}
     with p := Var("ls")
 
-  replace-ho-constraint(|a): l@LPathLt(ord){a*} -> LLam([l1, l2], [], CPathLt(ord, l1, l2)){a*}
+  replace-ho-constraint: l@LPathLt(ord){a*} -> LLam([l1, l2], [], CPathLt(ord, l1, l2)){a*}
     with l1 := Var("l1");
          l2 := Var("l2")
 
@@ -54,33 +51,35 @@ rules
   // also always true. However, that is impossible to conclude without knowing
   // the type.
 
-  normalize-lambda-patterns(|a) =
+  normalize-lambda-patterns =
     nabl2-custom-analysis-info-msg(|"| Normalize lambda patterns...");
     bottomup(
-      try(generalize-lambda-pattern(|a))
+      try(generalize-lambda-pattern)
     )
 
-  generalize-lambda-pattern(|a):
-       t@LLam(ps, vs, c) -> LLam(ps'', vs, c)
+  generalize-lambda-pattern:
+       t@LLam(ps, vs, c){a*} -> LLam(ps'', vs, c){a*}
      where <is-linear> ps // non-linear patterns ore not most-general!
-     with tys := <norm-get-ast-type(|a);in-types> t
+     with tys := <norm-get-ast-type;in-types> t
         ; c-vars := <collect-all(is-var, union, skip-lambda)> c
         ; used-vars := <raw-diff> (c-vars, vs)
         ; wld-vars := <raw-diff> (<all-vars> ps, used-vars)
-        ; wld-sbs := <map(\ v -> (v, Wld()) \)> wld-vars
+        ; wld-tys := <map(norm-get-ast-type)> wld-vars
+        ; wld-wlds := <make-wildcards> wld-tys
+        ; wld-sbs := <zip> (wld-vars, wld-wlds)
         ; ps' := <substitute(is-var)> (wld-sbs, ps)
         ; ps'' := <zip(most-general-pattern<+Snd)> (ps', tys)
 
   is-linear = <eq> (<collect-all(is-var, conc);length>, <collect-all(is-var, raw-union);length>)
 
-  most-general-pattern: (Wld(), _) -> Wld()
-  most-general-pattern: (Tuple(ps), TUPLE(tys)) -> p
+  most-general-pattern: (Wld(){a*}, _) -> Wld(){a*}
+  most-general-pattern: (Tuple(ps){a*}, TUPLE(tys)) -> p{a*}
     where ps' := <zip(most-general-pattern<+Fst)> (ps, tys)
     with if <map(?Wld())> ps' then
            p := Wld()
          else
            p := Tuple(ps')
          end
-  most-general-pattern: (p, _) -> p
+  most-general-pattern: (p{a*}, _) -> p{a*}
 
   skip-lambda: LLam(_, _, _) -> []

@@ -17,24 +17,27 @@ rules
   // normalize functional relations
   // after lambda's, after normalizing queries
 
-  normalize-functional-relations(|a) =
+  normalize-functional-relations =
     nabl2-custom-analysis-info-msg(|"| Normalize functional relations...");
     bottomup(
       try(normalize-functional-reldecl)
-    ; try(normalize-functional-query(|a))
+    ; try(normalize-functional-query)
     )
 
 
   normalize-functional-reldecl:
-      RelDecl(x, FunType(s1*, s2)) -> RelDecl(x, t')
-    with s* := <conc> (s1*, [s2]);
-         t' := SimpleType(s*)
+      RelDecl(x, t) -> RelDecl(x, t')
+    where FunType(_, _) := t
+    with ty' := <norm-get-ast-type;fun-to-pred-type> t;
+         t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
-  normalize-functional-query(|a):
+  normalize-functional-query:
       CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts)
-      -> CResolveQuery(rel, Filter(wf, lwf'), Min(ord, lord'), st, pts)
-    where FUN(in_tys, out_ty) := <norm-get-ast-type(|a)> rel
-    with lwf' := <normalize-functional-wf(|in_tys,out_ty)> lwf;
+      -> CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts)
+    where ty@FUN(in_tys, out_ty) := <norm-get-ast-type> rel
+    with ty' := <fun-to-pred-type> ty;
+         rel' := <norm-set-ast-type(|ty')> rel;
+         lwf' := <normalize-functional-wf(|in_tys,out_ty)> lwf;
          lord' := <normalize-functional-ord(|in_tys,out_ty)> lord
 
   normalize-functional-wf(|in_tys,out_ty):
@@ -52,14 +55,15 @@ rules
 
 
   normalize-functional-pattern(|in_tys,out_ty): p -> (p', vs, c*)
-    with tys     := <conc> (in_tys, [out_ty]);
+    with tys := <conc> (in_tys, [out_ty]);
+         wld := <make-wildcard> out_ty;
          if in_ts := <match-terms(|in_tys)> p then
-           p' := <conc;build-terms(|tys)> (in_ts, [Wld()]);
+           p' := <conc;build-terms(|tys)> (in_ts, [wld]);
            vs := [];
            c* := []
          else
            us := <make-fresh-vars(|"u")> in_tys;
-           p' := <conc;build-terms(|tys)> (us, [Wld()]);
+           p' := <conc;build-terms(|tys)> (us, [wld]);
            vs := <all-vars> p;
            c* := [CEqual(<build-terms(|in_tys)> us, p)]
          end

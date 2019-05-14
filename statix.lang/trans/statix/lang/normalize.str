@@ -8,18 +8,14 @@ imports
 
 rules
 
-  normalize(analyze|a) = {:
+  normalize(|a) =
     nabl2-custom-analysis-info-msg(|"Normalizing AST...")
-  ; normalize-mapping-constraints(|a)
-  ; normalize-functional-constraints(|a)
-  ; normalize-ho-constraints(|a)
+  ; nabl2-add-anno-types(|a)
+//; normalize-mapping-constraints(|a) // FIXME generate type AST there
+  ; normalize-functional-constraints
+  ; normalize-ho-constraints
   ; normalize-resolves(|a)
-  ; normalize-queries(|a)
-  };{ a: analyze; ?(<id>, a, _, _, _)
-  ; normalize-functional-relations(|a)
-  };{ a: analyze; ?(<id>, a, _, _, _)
-  ; normalize-lambda-patterns(|a)
-  ; normalize-terms(|a)
-  };{ a: analyze; ?(<id>, a, _, _, _)
-  ; !(<id>, a)
-  }
+  ; normalize-queries
+  ; normalize-functional-relations
+  ; normalize-lambda-patterns
+  ; normalize-terms

@@ -13,10 +13,15 @@ imports
 
 rules
 
-  norm-get-ast-type(|a) =
-    not(nabl2-get-ast-index)
-  < fatal-err(|"Missing AST index")
-  + nabl2-get-ast-type(|a)
+  norm-get-ast-type =
+    nabl2-get-anno-type
+ <+ fatal-err(|"Missing AST type")
+
+  norm-set-ast-type(|ty) =
+    nabl2-set-anno-type(|ty)
+
+  norm-copy-ast-type(|t) =
+    nabl2-copy-anno-type(|t)
 
   norm-get-ast-property(|a,prop) =
     not(nabl2-get-ast-index)
@@ -34,6 +39,9 @@ rules
   < fatal-err(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
   ; nabl2-get-property(|a,prop)
+
+  norm-preserve-ast-type(s) =
+    nabl2-preserve-anno-type(s)
 
 rules
 
@@ -58,11 +66,17 @@ rules
 
 rules
 
-  make-fresh-vars(|x) = map(!Var(<newname> x))
+  make-fresh-vars(|x) = map(make-fresh-var(|x))
 
-  make-fresh-var = !Var(<newname>)
+  make-fresh-var(|x) = <norm-set-ast-type(|<id>)> Var(<newname> x)
 
-  make-seq-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
+  make-wildcards = map(make-wildcard)
+
+  make-wildcard = <norm-set-ast-type(|<id>)> Wld()
+
+  make-seq-vars(|x) = ?[ty] < ![<norm-set-ast-type(|ty)> Var(x)] + map-with-index(make-seq-var)
+
+  make-seq-var(|x) = <norm-set-ast-type(|<Snd>)> Var($[[x][<Fst;int-to-string>]])
 
   list-to-conj(|tl): []     -> tl
   list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
@@ -70,9 +84,6 @@ rules
   list-to-conj: []     -> CTrue()
   list-to-conj: [C]    -> C
   list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
-
-  apply-lambda: (LLam(ps, bvs, body), ts) -> (bvs, body')
-    with body' := <strip-annos;substitute(?Var(_))> (ps, ts, body)
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()
@@ -88,7 +99,13 @@ rules
   type-to-sort: PRED(tys)         -> SimpleType(<map(type-to-sort)> tys)
   type-to-sort: FUN(intys, outty) -> FunType(<map(type-to-sort)> intys, <type-to-sort> outty)
 
-  sort-args: SimpleType(args) -> args
+  fun-to-pred-type:
+      FUN(intys, outty) -> PRED(<conc> (intys, [outty]))
+
+  fun-to-pred-type:
+      FunType(insorts, outsort) -> SimpleType(<conc> (insorts, [outsort]))
+
+  sort-args': SimpleType(args) -> args
 
   match-terms(|tys): t -> ts
     where if [_] := tys then
@@ -97,9 +114,12 @@ rules
             ts := <?Tuple(<id>)> t
           end
 
-  build-terms(|tys): ts -> t
-    with if [_] := tys then
+  build-terms(|tys): ts -> <norm-set-ast-type(|ty)> t
+    with ty := <build-types> tys;
+         if [_] := tys then
            t := <?[<id>]> ts
          else
            t := <!Tuple(<id>)> ts
          end
+
+  build-types = ?[<id>] <+ !TUPLE(<id>)
