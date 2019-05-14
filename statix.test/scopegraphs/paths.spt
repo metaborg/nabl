@@ -1,4 +1,4 @@
-module scopegraph-paths
+module scopegraph/paths
 
 language StatixLang
 

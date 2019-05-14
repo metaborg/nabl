@@ -1,4 +1,4 @@
-module rules-lifting
+module rules/lifting
 
 language StatixLang
 

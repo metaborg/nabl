@@ -1,4 +1,4 @@
-module base-patterns
+module syntax/identifiers
 
 language StatixLang
 

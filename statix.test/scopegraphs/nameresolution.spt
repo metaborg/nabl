@@ -1,4 +1,4 @@
-module scopegraphs-nameresolution
+module scopegraphs/nameresolution
 
 language StatixLang
 

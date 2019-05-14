@@ -1,4 +1,4 @@
-module scopegraphs-extension
+module scopegraphs/extension
 
 language StatixLang
 

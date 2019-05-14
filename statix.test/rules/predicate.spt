@@ -1,4 +1,4 @@
-module rules-predicate
+module rules/predicate
 
 language StatixLang
 
