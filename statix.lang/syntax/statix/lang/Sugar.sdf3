@@ -60,12 +60,16 @@ context-free syntax
   HoConstraint.LTrue  = "true"
   HoConstraint.LFalse = "false"
 
-  Term.NewOp    = "new"
-  Term.TermIdOp = <termId(<Term>)>
+  Term.NewOp   = "new"
+  Term.AstIdOp = <astId(<Term>)>
+
+  AstProperty.Ref = "ref"
 
 lexical syntax
 
   VARID = "new" {reject}
+
+  AstPropertyId = "ref" {reject}
 
 /******************************************************************
  * Relations                                                      *

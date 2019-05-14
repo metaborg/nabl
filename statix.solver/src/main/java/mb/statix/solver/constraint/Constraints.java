@@ -30,8 +30,8 @@ public final class Constraints {
                 Function1<CResolveQuery,R> onResolveQuery,
                 Function1<CTellEdge,R> onTellEdge,
                 Function1<CTellRel,R> onTellRel,
-                Function1<CTermId,R> onTermId,
-                Function1<CTermProperty,R> onTermProperty,
+                Function1<CAstId,R> onTermId,
+                Function1<CAstProperty,R> onTermProperty,
                 Function1<CTrue,R> onTrue,
                 Function1<CUser,R> onUser
             ) {
@@ -81,11 +81,11 @@ public final class Constraints {
                 return onTellRel.apply(c);
             }
 
-            @Override public R caseTermId(CTermId c) {
+            @Override public R caseTermId(CAstId c) {
                 return onTermId.apply(c);
             }
 
-            @Override public R caseTermProperty(CTermProperty c) {
+            @Override public R caseTermProperty(CAstProperty c) {
                 return onTermProperty.apply(c);
             }
 
@@ -114,8 +114,8 @@ public final class Constraints {
                 CheckedFunction1<CResolveQuery, R, E> onResolveQuery,
                 CheckedFunction1<CTellEdge, R, E> onTellEdge,
                 CheckedFunction1<CTellRel, R, E> onTellRel,
-                CheckedFunction1<CTermId, R, E> onTermId,
-                CheckedFunction1<CTermProperty, R, E> onTermProperty,
+                CheckedFunction1<CAstId, R, E> onTermId,
+                CheckedFunction1<CAstProperty, R, E> onTermProperty,
                 CheckedFunction1<CTrue, R, E> onTrue,
                 CheckedFunction1<CUser, R, E> onUser
             ) {
@@ -165,11 +165,11 @@ public final class Constraints {
                 return onTellRel.apply(c);
             }
 
-            @Override public R caseTermId(CTermId c) throws E {
+            @Override public R caseTermId(CAstId c) throws E {
                 return onTermId.apply(c);
             }
 
-            @Override public R caseTermProperty(CTermProperty c) throws E {
+            @Override public R caseTermProperty(CAstProperty c) throws E {
                 return onTermProperty.apply(c);
             }
 

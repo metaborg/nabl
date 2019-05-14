@@ -81,7 +81,7 @@ rules
  * AST Constraints                                                *
  ******************************************************************/
 
-  Term(V)[[ TermIdOp(t) ^ (s) : TERM_ID() ]] :=
+  Term(V)[[ AstIdOp(t) ^ (s) : AST_ID() ]] :=
     Term(V)[[ t ^ (s) : _ ]].
 
 

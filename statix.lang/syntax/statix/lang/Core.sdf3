@@ -94,14 +94,19 @@ lexical syntax
 
 context-free syntax
 
-  Constraint.CTermId       = <termId(<Term>, <Term>)>
-  Constraint.CTermProperty = <@<TermOrId>.<ID> := <Term>>
+  Constraint.CAstId       = <astId(<Term>, <Term>)>
+  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> := <Term>>
+
+  AstProperty.Prop = AstPropertyId
 
   TermOrId = Var
 
 lexical syntax
 
-  Keyword = "termId"
+  AstPropertyId = ID
+  AstPropertyId = Keyword {reject}
+
+  Keyword = "astId"
 
 
 /******************************************************************
@@ -273,7 +278,7 @@ context-free syntax
   SortRef.LabelSort      = "label"
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
-  SortRef.TermIdSort     = "termId"
+  SortRef.AstIdSort      = "astId"
   SortRef                = <(<SortRef>)> {bracket}
 
   OpDecl.OpDecl  = <<OpId> : <OpSort>>
@@ -286,7 +291,7 @@ context-free syntax
 lexical syntax
 
   SortId = STRID
-  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "termId" {reject}
+  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "astId" {reject}
 
   OpId = STRID
 

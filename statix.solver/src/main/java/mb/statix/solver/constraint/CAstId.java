@@ -10,7 +10,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CTermId implements IConstraint, Serializable {
+public class CAstId implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm term;
@@ -18,17 +18,17 @@ public class CTermId implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
 
-    public CTermId(ITerm term, ITerm idTerm) {
+    public CAstId(ITerm term, ITerm idTerm) {
         this(term, idTerm, null);
     }
 
-    public CTermId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
+    public CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
         this.term = term;
         this.idTerm = idTerm;
         this.cause = cause;
     }
 
-    public ITerm term() {
+    public ITerm astTerm() {
         return term;
     }
 
@@ -40,8 +40,8 @@ public class CTermId implements IConstraint, Serializable {
         return Optional.ofNullable(cause);
     }
 
-    @Override public CTermId withCause(@Nullable IConstraint cause) {
-        return new CTermId(term, idTerm, cause);
+    @Override public CAstId withCause(@Nullable IConstraint cause) {
+        return new CAstId(term, idTerm, cause);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -52,8 +52,8 @@ public class CTermId implements IConstraint, Serializable {
         return cases.caseTermId(this);
     }
 
-    @Override public CTermId apply(ISubstitution.Immutable subst) {
-        return new CTermId(subst.apply(term), subst.apply(idTerm), cause);
+    @Override public CAstId apply(ISubstitution.Immutable subst) {
+        return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

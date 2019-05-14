@@ -52,6 +52,8 @@ import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
+import mb.statix.solver.constraint.CAstId;
+import mb.statix.solver.constraint.CAstProperty;
 import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CExists;
@@ -63,8 +65,6 @@ import mb.statix.solver.constraint.CPathMatch;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CTermId;
-import mb.statix.solver.constraint.CTermProperty;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
@@ -464,8 +464,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
     }
 
-    @Override public Optional<ConstraintResult> caseTermId(CTermId c) throws SolverException {
-        final ITerm term = c.term();
+    @Override public Optional<ConstraintResult> caseTermId(CAstId c) throws SolverException {
+        final ITerm term = c.astTerm();
         final ITerm idTerm = c.idTerm();
 
         final IUnifier unifier = state.unifier();
@@ -476,17 +476,13 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
         if(maybeScope.isPresent()) {
             final AScope scope = maybeScope.get();
-            final ITerm scopeId1 = B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs());
-            final ITerm scopeId2 = TermOrigin.get(term).map(o -> o.put(scopeId1)).orElse(term);
-            eq = new CEqual(idTerm, scopeId2);
+            eq = new CEqual(idTerm, scope);
             return Optional.of(ConstraintResult.ofConstraints(state, eq));
         } else {
             final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
             if(maybeIndex.isPresent()) {
-                final TermIndex index = maybeIndex.get();
-                final ITerm termId1 = StatixTerms.explicate(index);
-                final ITerm termId2 = TermOrigin.get(term).map(o -> o.put(termId1)).orElse(term);
-                eq = new CEqual(idTerm, termId2);
+                final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
+                eq = new CEqual(idTerm, indexTerm);
                 return Optional.of(ConstraintResult.ofConstraints(state, eq));
             } else {
                 return Optional.empty();
@@ -494,7 +490,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
     }
 
-    @Override public Optional<ConstraintResult> caseTermProperty(CTermProperty c) throws SolverException {
+    @Override public Optional<ConstraintResult> caseTermProperty(CAstProperty c) throws SolverException {
         final ITerm idTerm = c.idTerm();
         final ITerm prop = c.property();
         final ITerm value = c.value();
@@ -503,7 +499,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         if(!(unifier.isGround(idTerm))) {
             throw Delay.ofVars(unifier.getVars(idTerm));
         }
-        final Optional<TermIndex> maybeIndex = StatixTerms.termId().match(idTerm, unifier);
+        final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
             final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);

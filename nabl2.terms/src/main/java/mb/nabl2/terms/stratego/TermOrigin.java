@@ -59,6 +59,10 @@ public abstract class TermOrigin {
         return get(term.getAttachments());
     }
 
+    public static ITerm copy(ITerm src, ITerm dst) {
+        return get(src).map(o -> o.put(dst)).orElse(dst);
+    }
+
     public static Optional<TermOrigin> get(ClassToInstanceMap<Object> attachments) {
         return Optional.ofNullable(attachments.getInstance(TermOrigin.class));
     }
@@ -68,6 +72,10 @@ public abstract class TermOrigin {
     public static Optional<TermOrigin> get(IStrategoTerm term) {
         return Optional.ofNullable(ImploderAttachment.get(OriginAttachment.tryGetOrigin(term)))
                 .map(ia -> ImmutableTermOrigin.of(ia));
+    }
+
+    public static void copy(IStrategoTerm src, IStrategoTerm dst) {
+        get(src).ifPresent(o -> o.put(dst));
     }
 
     public void put(IStrategoTerm term) {

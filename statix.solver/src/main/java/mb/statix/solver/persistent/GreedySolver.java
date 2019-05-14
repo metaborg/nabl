@@ -52,6 +52,8 @@ import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
+import mb.statix.solver.constraint.CAstId;
+import mb.statix.solver.constraint.CAstProperty;
 import mb.statix.solver.constraint.CConj;
 import mb.statix.solver.constraint.CEqual;
 import mb.statix.solver.constraint.CExists;
@@ -63,8 +65,6 @@ import mb.statix.solver.constraint.CPathMatch;
 import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.solver.constraint.CTellEdge;
 import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CTermId;
-import mb.statix.solver.constraint.CTermProperty;
 import mb.statix.solver.constraint.CTrue;
 import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
@@ -439,8 +439,8 @@ public class GreedySolver {
                         ImmutableMap.of(), fuel);
             }
 
-            @Override public State caseTermId(CTermId c) throws InterruptedException {
-                final ITerm term = c.term();
+            @Override public State caseTermId(CAstId c) throws InterruptedException {
+                final ITerm term = c.astTerm();
                 final ITerm idTerm = c.idTerm();
 
                 final IUnifier unifier = state.unifier();
@@ -451,17 +451,13 @@ public class GreedySolver {
                 final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
                 if(maybeScope.isPresent()) {
                     final AScope scope = maybeScope.get();
-                    final ITerm scopeId1 = B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs());
-                    final ITerm scopeId2 = TermOrigin.get(term).map(o -> o.put(scopeId1)).orElse(scopeId1);
-                    eq = new CEqual(idTerm, scopeId2);
+                    eq = new CEqual(idTerm, scope);
                     return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
                 } else {
                     final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
-                        final TermIndex index = maybeIndex.get();
-                        final ITerm termId1 = StatixTerms.explicate(index);
-                        final ITerm termId2 = TermOrigin.get(term).map(o -> o.put(termId1)).orElse(termId1);
-                        eq = new CEqual(idTerm, termId2);
+                        final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
+                        eq = new CEqual(idTerm, indexTerm);
                         return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
                     } else {
                         return fail(c, state);
@@ -469,7 +465,7 @@ public class GreedySolver {
                 }
             }
 
-            @Override public State caseTermProperty(CTermProperty c) throws InterruptedException {
+            @Override public State caseTermProperty(CAstProperty c) throws InterruptedException {
                 final ITerm idTerm = c.idTerm();
                 final ITerm prop = c.property();
                 final ITerm value = c.value();
@@ -478,7 +474,7 @@ public class GreedySolver {
                 if(!(unifier.isGround(idTerm))) {
                     return delay(c, state, Delay.ofVars(unifier.getVars(idTerm)));
                 }
-                final Optional<TermIndex> maybeIndex = StatixTerms.termId().match(idTerm, unifier);
+                final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
                 if(maybeIndex.isPresent()) {
                     final TermIndex index = maybeIndex.get();
                     final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);

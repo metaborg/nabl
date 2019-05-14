@@ -1,4 +1,4 @@
-module base/ast
+module base/astproperties
 
 language StatixLang
 

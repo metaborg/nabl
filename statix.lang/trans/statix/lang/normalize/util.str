@@ -81,7 +81,7 @@ rules
   type-to-sort: LABEL()      -> LabelSort()
   type-to-sort: OCCURRENCE() -> OccurrenceSort()
   type-to-sort: SCOPE()      -> ScopeSort()
-  type-to-sort: TERM_ID()    -> TermIdSort()
+  type-to-sort: AST_ID()     -> AstIdSort()
   type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)
   type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
 

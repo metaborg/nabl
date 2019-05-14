@@ -156,11 +156,11 @@ rules
  ******************************************************************/
 
 
-  [[ CTermId(t1, t2) ^ (s) ]] :=
+  [[ CAstId(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : _ ]],
-    Build[[ t2 ^ (s) : TERM_ID() ]].
+    Build[[ t2 ^ (s) : AST_ID() ]].
 
-  [[ CTermProperty(t1, l, t2) ^ (s) ]] :=
+  [[ CAstProperty(t1, l, t2) ^ (s) ]] :=
     TermOrId(Build)[[ t1 ^ (s) : _ ]],
     Build[[ t2 ^ (s) : _ ]].
 
@@ -276,7 +276,7 @@ rules
     OccurrencePos(Term(V))[[ pos ^ (s) : _ ]].
 
   // only call this with a wildcard for ty
-  OccurrencePos(T)[[ NoId() ^ (s) : TERM_ID() ]].
+  OccurrencePos(T)[[ NoId() ^ (s) : AST_ID() ]].
   OccurrencePos(T)[[ t ^ (s) : ty ]] :=
     TermOrId(T)[[ t ^ (s) : ty ]].
 
@@ -359,7 +359,7 @@ rules
   SortRef[[ PathSort() ^ (_) : PATH() ]].
   SortRef[[ LabelSort() ^ (_) : LABEL() ]].
   SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
-  SortRef[[ TermIdSort() ^ (_) : TERM_ID() ]].
+  SortRef[[ AstIdSort() ^ (_) : AST_ID() ]].
   SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=

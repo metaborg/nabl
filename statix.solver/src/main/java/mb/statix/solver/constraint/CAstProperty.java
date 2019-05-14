@@ -10,7 +10,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CTermProperty implements IConstraint, Serializable {
+public class CAstProperty implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm idTerm;
@@ -19,11 +19,11 @@ public class CTermProperty implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
 
-    public CTermProperty(ITerm idTerm, ITerm property, ITerm value) {
+    public CAstProperty(ITerm idTerm, ITerm property, ITerm value) {
         this(idTerm, property, value, null);
     }
 
-    public CTermProperty(ITerm idTerm, ITerm property, ITerm value, @Nullable IConstraint cause) {
+    public CAstProperty(ITerm idTerm, ITerm property, ITerm value, @Nullable IConstraint cause) {
         this.idTerm = idTerm;
         this.property = property;
         this.value = value;
@@ -46,8 +46,8 @@ public class CTermProperty implements IConstraint, Serializable {
         return Optional.ofNullable(cause);
     }
 
-    @Override public CTermProperty withCause(@Nullable IConstraint cause) {
-        return new CTermProperty(idTerm, property, value, cause);
+    @Override public CAstProperty withCause(@Nullable IConstraint cause) {
+        return new CAstProperty(idTerm, property, value, cause);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -58,8 +58,8 @@ public class CTermProperty implements IConstraint, Serializable {
         return cases.caseTermProperty(this);
     }
 
-    @Override public CTermProperty apply(ISubstitution.Immutable subst) {
-        return new CTermProperty(subst.apply(idTerm), property, subst.apply(value), cause);
+    @Override public CAstProperty apply(ISubstitution.Immutable subst) {
+        return new CAstProperty(subst.apply(idTerm), property, subst.apply(value), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

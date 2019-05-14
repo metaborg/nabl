@@ -20,17 +20,17 @@ rules
   normalize-terms(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
     bottomup(
-      try(normalize-term-ids(|a))
+      try(normalize-ast-ids(|a))
     ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
     )
 
 
-  normalize-term-ids(|a) = Occurrence(id, id, normalize-term-or-id(|a))
-  normalize-term-ids(|a) = CTermProperty(normalize-term-or-id(|a), id, id)
+  normalize-ast-ids(|a) = Occurrence(id, id, normalize-term-or-id(|a))
+  normalize-ast-ids(|a) = CAstProperty(normalize-term-or-id(|a), id, id)
 
-  normalize-term-or-id(|a): t -> TermIdOp(t)
+  normalize-term-or-id(|a): t -> AstIdOp(t)
     with ty := <norm-get-ast-type(|a)> t
-    where <not(?TERM_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
+    where <not(?AST_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
 
 
   replace-term: Wld() -> <make-fresh-var> "wld"
@@ -51,7 +51,7 @@ rules
   term-to-c: (NewOp(), v) -> CNew([v])
 
 
-  replace-term: TermIdOp(_) -> v
-    with v := <make-fresh-var> "termId"
+  replace-term: AstIdOp(_) -> v
+    with v := <make-fresh-var> "astId"
 
-  term-to-c: (TermIdOp(t), v) -> CTermId(t, v)
+  term-to-c: (AstIdOp(t), v) -> CAstId(t, v)
