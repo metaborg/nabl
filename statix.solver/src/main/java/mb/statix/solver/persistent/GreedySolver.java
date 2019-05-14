@@ -452,7 +452,7 @@ public class GreedySolver {
                 if(maybeScope.isPresent()) {
                     final AScope scope = maybeScope.get();
                     final ITerm scopeId1 = B.newAppl(StatixTerms.SCOPEID_OP, scope.getArgs());
-                    final ITerm scopeId2 = TermOrigin.get(term).map(o -> o.put(scopeId1)).orElse(term);
+                    final ITerm scopeId2 = TermOrigin.get(term).map(o -> o.put(scopeId1)).orElse(scopeId1);
                     eq = new CEqual(idTerm, scopeId2);
                     return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
                 } else {
@@ -460,7 +460,7 @@ public class GreedySolver {
                     if(maybeIndex.isPresent()) {
                         final TermIndex index = maybeIndex.get();
                         final ITerm termId1 = StatixTerms.explicate(index);
-                        final ITerm termId2 = TermOrigin.get(term).map(o -> o.put(termId1)).orElse(term);
+                        final ITerm termId2 = TermOrigin.get(term).map(o -> o.put(termId1)).orElse(termId1);
                         eq = new CEqual(idTerm, termId2);
                         return success(c, state, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(), fuel);
                     } else {
