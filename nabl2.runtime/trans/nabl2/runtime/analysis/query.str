@@ -11,7 +11,7 @@ imports
 
   pp/nabl2/runtime/common/-
   signatures/nabl2/runtime/common/-
-
+  
 signature
 
   constructors
@@ -85,12 +85,6 @@ rules
     nabl2--get-ast-index;
     ?TermIndex(<id>, _);
     nabl2--get-resource-analysis
-
-  nabl2--get-resource-analysis =
-    get-resource-constraint-analysis
-
-  nabl2--get-resource-partial-analysis =
-    get-resource-partial-constraint-analysis
 
   nabl2--analysis-has-errors =
     ?a; prim("SG_analysis_has_errors", a)
