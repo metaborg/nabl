@@ -1,0 +1,24 @@
+module statix/api
+
+rules // analysis
+
+  stx-editor-analyze(|spec-name, init-constraint) = fail
+  stx-editor-analyze(desugar|spec-name, init-constraint) = fail
+  stx-editor-analyze(desugar|spec-name, init-constraint) = fail
+
+  stx-editor-elaborate(desugar|spec-name, init-constraint) = fail
+
+  stx-editor-analyze(|spec-name, project-constraint, file-constraint) = fail
+  stx-editor-analyze(desugar|spec-name, project-constraint, file-constraint) = fail
+  stx-editor-analyze(desugar|spec-name, init-constraint) = fail
+
+  stx-evaluate(|spec-name, constraint) = fail
+
+rules // ast
+
+  stx-index-ast(|source) = fail
+
+rules // services
+
+  stx-editor-resolve = fail
+  stx-editor-hover = fail

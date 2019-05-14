@@ -1,0 +1,9 @@
+module statix/runtime/services
+
+rules
+
+  stx-editor-resolve:
+      (node, position, ast, path, project-path) -> <fail>
+
+  stx-editor-hover:
+      (node, position, ast, path, project-path) -> <fail>

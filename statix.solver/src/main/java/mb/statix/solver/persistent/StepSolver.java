@@ -31,8 +31,8 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -506,10 +506,12 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         final Optional<TermIndex> maybeIndex = StatixTerms.termId().match(idTerm, unifier);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
-            final IRelation3.Transient<TermIndex, ITerm, ITerm> props = state.termProperties().melt();
-            if(!props.contains(index, prop)) {
-                props.put(index, prop, value);
-                final State newState = state.withTermProperties(props.freeze());
+            final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);
+            if(!state.termProperties().containsKey(key)) {
+                final ImmutableMap.Builder<Tuple2<TermIndex, ITerm>, ITerm> props = ImmutableMap.builder();
+                props.putAll(state.termProperties());
+                props.put(key, value);
+                final State newState = state.withTermProperties(props.build());
                 return Optional.of(ConstraintResult.of(newState));
             } else {
                 return Optional.empty();
