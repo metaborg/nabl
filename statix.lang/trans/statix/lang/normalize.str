@@ -11,7 +11,7 @@ rules
   normalize(|a) =
     nabl2-custom-analysis-info-msg(|"Normalizing AST...")
   ; nabl2-add-anno-types(|a)
-//; normalize-mapping-constraints(|a) // FIXME generate type AST there
+  ; normalize-mapping-constraints(|a)
   ; normalize-functional-constraints
   ; normalize-ho-constraints
   ; normalize-resolves(|a)

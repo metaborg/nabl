@@ -31,10 +31,10 @@ rules
 
   normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _)){a*} -> lam{a*}
     with NS(tys) := <norm-get-ast-decl-type(|a)> ns;
-         us := <make-fresh-vars(|"u")> tys;
-         w := <make-wildcard> AST_ID();
-         d := <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, w);
-         lam := LLam([d], [], CEqual(<build-terms(|tys)> us, <build-terms(|tys)> ts))
+         us := <mk-fresh-Vars(|"u")> tys;
+         w := <mk-Wld(|AST_ID())>;
+         d := <mk-Occurrence>(ns, us, <mk-Wld(|AST_ID())>);
+         lam := <mk-LLam>([d], [], CEqual(<mk-Tuple>(us), <mk-Tuple>(ts)))
   
 rules
 
@@ -59,36 +59,25 @@ rules
 
   replace-functional-relop: t@AskRelOp(rel, in_ts, st){a*} -> out_v{a*}
     with ty := <norm-get-ast-type> t
-    with out_v := <make-fresh-var(|"t")> ty
+    with out_v := <mk-fresh-Var(|ty)>("t")
 
   functional-relop-to-c: (AskRelOp(rel, in_ts, st), out_v) -> c
     with FUN(intys, outty) := <norm-get-ast-type> rel
        ; c := <ask-rel-query(|intys, outty)> (rel, st, in_ts, [out_v])
 
 
-  ask-rel-query(|intys, outty): (rel, st, in_ts, out_ts) -> c // FIXME Create some types here!
-    with tys      := <conc> (intys, [outty]);
-         inty     := <build-types> intys;
-         ty       := <build-types> tys;
-         ts       := <conc> (in_ts, out_ts);
+  ask-rel-query(|intys, outty): (rel, st, in_ts, out_ts) -> c
+    with us       := <mk-fresh-Vars(|"u")> intys;
+         eq       := CEqual(<mk-Tuple>(us), <mk-Tuple>(in_ts));
+         in_v     := <mk-Tuple>(us);
+         match    := <mk-LLam>([in_v], [], eq);
+         filter   := Filter(Epsilon(), match)
 
-         us       := <make-fresh-vars(|"u")> intys;
-         eq       := CEqual(<build-terms(|intys)> us, <build-terms(|intys)> in_ts);
-
-         in_v     := <build-terms(|intys)> us;
-         match    := <norm-set-ast-type(|PRED([inty]))> LLam([in_v], [], eq);
-         filter   := Filter(Epsilon(), match);
-
-         in_wlds  := <make-wildcards> intys;
-         in_wld   := <build-terms(|intys)> in_wlds;
-         ord      := <norm-set-ast-type(|PRED([inty, inty]))> LLam([in_wld, in_wld], [], CFalse());
-         min      := Min([], ord);
-
-         t        := <conc;build-terms(|tys)> (in_wlds, out_ts);
-         p_ty     := PATH();
-         p        := <make-wildcard> p_ty;
-         pt_ty    := TUPLE([p_ty, ty]);
-         pt       := <norm-set-ast-type(|pt_ty)> Tuple([p, t]);
-         pts      := <norm-set-ast-type(|LIST(pt_ty))> List([pt]);
-
-         c        := CResolveQuery(rel, filter, min, st, pts)
+    with in_wlds  := <mk-Wlds> intys;
+         in_wld   := <mk-Tuple>(in_wlds);
+         ord      := <mk-LLam>([in_wld, in_wld], [], CFalse());
+         min      := Min([], ord)
+    with t        := <conc;mk-Tuple>(in_wlds, out_ts);
+         pt       := <mk-Tuple>([<mk-Wld(|PATH())>, t]);
+         pts      := <mk-List>([pt])
+    with c        := CResolveQuery(rel, filter, min, st, pts)

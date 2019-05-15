@@ -36,7 +36,7 @@ rules
 
   replace-term: t@Wld() -> v
     with ty := <norm-get-ast-type> t
-       ; v := <make-fresh-var(|"wld")> ty
+       ; v := <mk-fresh-Var(|ty)>("wld")
   
   term-to-c: (Wld(), _) -> <fail>
 
@@ -50,13 +50,13 @@ rules
 
   replace-term: t@NewOp() -> v
     with ty := <norm-get-ast-type> t
-       ; v := <make-fresh-var(|"new")> 
+       ; v := <mk-fresh-Var(|ty)>("new")
 
   term-to-c: (NewOp(), v) -> CNew([v])
 
 
   replace-term: t@AstIdOp(_) -> v
     with ty := <norm-get-ast-type> t
-       ; v := <make-fresh-var(|"astId")> 
+       ; v := <mk-fresh-Var(|ty)>("astId")
 
   term-to-c: (AstIdOp(t), v) -> CAstId(t, v)

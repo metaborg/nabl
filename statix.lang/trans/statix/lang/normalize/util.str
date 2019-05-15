@@ -64,19 +64,57 @@ rules
 
   not-in-lambda = not(?LLam(_, _, _))
 
+rules // smart constructors for typed terms
+
+  mk-Wld(|ty): _ -> <norm-set-ast-type(|ty)> Wld()
+
+  mk-Wlds = map(\ ty -> <mk-Wld(|ty)> \)
+
+  mk-fresh-Var(|ty) = newname; mk-Var(|ty)
+
+  mk-fresh-Vars(|x) = map(\ ty -> <mk-fresh-Var(|ty)> x \)
+
+  mk-Var(|ty): x -> <norm-set-ast-type(|ty)> Var(x)
+
+  mk-seq-Vars(|x) = map-with-index(\ (i, ty) -> <mk-Var(|ty)> $[[x][<int-to-string> i]] \)
+
+  mk-Op(|ty): (x, ts) -> <norm-set-ast-type(|ty)> Op(x, ts)
+
+  mk-Tuple: ts -> <norm-set-ast-type(|ty)> t
+    with if [t] := ts then
+           ty := <norm-get-ast-type> t
+         else
+           t := Tuple(ts);
+           ty := TUPLE(<map(norm-get-ast-type)> ts)
+         end
+
+  mk-TUPLE: tys -> ty
+    with if [ty] := tys then
+           id
+         else
+           ty := TUPLE(tys)
+         end
+
+  mk-Nil(|ty): _ -> <norm-set-ast-type(|LIST(ty))> List([])
+
+  mk-List: ts -> <norm-set-ast-type(|ty)> List(ts)
+    with tys := <map(norm-get-ast-type)> ts;
+         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         ty := LIST(ty')
+
+  mk-ListTail: (ts, t) -> <norm-set-ast-type(|ty)> ListTail(ts, t)
+    with tys := <map(norm-get-ast-type)> ts;
+         LIST(ty') := <norm-get-ast-type> t;
+         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         ty := LIST(ty')
+
+  mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
+    with tys := <map(norm-get-ast-type)> ps;
+         ty := PRED(tys)
+
+  mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, p)
+
 rules
-
-  make-fresh-vars(|x) = map(make-fresh-var(|x))
-
-  make-fresh-var(|x) = <norm-set-ast-type(|<id>)> Var(<newname> x)
-
-  make-wildcards = map(make-wildcard)
-
-  make-wildcard = <norm-set-ast-type(|<id>)> Wld()
-
-  make-seq-vars(|x) = ?[ty] < ![<norm-set-ast-type(|ty)> Var(x)] + map-with-index(make-seq-var)
-
-  make-seq-var(|x) = <norm-set-ast-type(|<Snd>)> Var($[[x][<Fst;int-to-string>]])
 
   list-to-conj(|tl): []     -> tl
   list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
@@ -104,22 +142,3 @@ rules
 
   fun-to-pred-type:
       FunType(insorts, outsort) -> SimpleType(<conc> (insorts, [outsort]))
-
-  sort-args': SimpleType(args) -> args
-
-  match-terms(|tys): t -> ts
-    where if [_] := tys then
-            ts := <![<id>]> t
-          else
-            ts := <?Tuple(<id>)> t
-          end
-
-  build-terms(|tys): ts -> <norm-set-ast-type(|ty)> t
-    with ty := <build-types> tys;
-         if [_] := tys then
-           t := <?[<id>]> ts
-         else
-           t := <!Tuple(<id>)> ts
-         end
-
-  build-types = ?[<id>] <+ !TUPLE(<id>)
