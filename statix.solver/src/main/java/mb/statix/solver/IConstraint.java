@@ -7,21 +7,21 @@ import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.solver.constraint.CConj;
-import mb.statix.solver.constraint.CEqual;
-import mb.statix.solver.constraint.CExists;
-import mb.statix.solver.constraint.CFalse;
-import mb.statix.solver.constraint.CInequal;
-import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathLt;
-import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CResolveQuery;
-import mb.statix.solver.constraint.CTellEdge;
-import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CAstId;
-import mb.statix.solver.constraint.CAstProperty;
-import mb.statix.solver.constraint.CTrue;
-import mb.statix.solver.constraint.CUser;
+import mb.statix.constraints.CAstId;
+import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CConj;
+import mb.statix.constraints.CEqual;
+import mb.statix.constraints.CExists;
+import mb.statix.constraints.CFalse;
+import mb.statix.constraints.CInequal;
+import mb.statix.constraints.CNew;
+import mb.statix.constraints.CPathLt;
+import mb.statix.constraints.CPathMatch;
+import mb.statix.constraints.CResolveQuery;
+import mb.statix.constraints.CTellEdge;
+import mb.statix.constraints.CTellRel;
+import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CUser;
 
 public interface IConstraint {
 

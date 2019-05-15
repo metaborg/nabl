@@ -1,4 +1,4 @@
-package mb.statix.solver.constraint;
+package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
@@ -10,59 +10,57 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CAstId implements IConstraint, Serializable {
+public class CConj implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final ITerm term;
-    private final ITerm idTerm;
+    private final IConstraint left;
+    private final IConstraint right;
 
     private final @Nullable IConstraint cause;
 
-    public CAstId(ITerm term, ITerm idTerm) {
-        this(term, idTerm, null);
+    public CConj(IConstraint left, IConstraint right) {
+        this(left, right, null);
     }
 
-    public CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
-        this.term = term;
-        this.idTerm = idTerm;
+    public CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
+        this.left = left;
+        this.right = right;
         this.cause = cause;
     }
 
-    public ITerm astTerm() {
-        return term;
+    public IConstraint left() {
+        return left;
     }
 
-    public ITerm idTerm() {
-        return idTerm;
+    public IConstraint right() {
+        return right;
     }
 
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
-    @Override public CAstId withCause(@Nullable IConstraint cause) {
-        return new CAstId(term, idTerm, cause);
+    @Override public CConj withCause(@Nullable IConstraint cause) {
+        return new CConj(left, right, cause);
     }
 
     @Override public <R> R match(Cases<R> cases) {
-        return cases.caseTermId(this);
+        return cases.caseConj(this);
     }
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseTermId(this);
+        return cases.caseConj(this);
     }
 
-    @Override public CAstId apply(ISubstitution.Immutable subst) {
-        return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
+    @Override public CConj apply(ISubstitution.Immutable subst) {
+        return new CConj(left.apply(subst), right.apply(subst), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("termId(");
-        sb.append(termToString.format(term));
+        sb.append(left.toString(termToString));
         sb.append(", ");
-        sb.append(termToString.format(idTerm));
-        sb.append(")");
+        sb.append(right.toString(termToString));
         return sb.toString();
     }
 

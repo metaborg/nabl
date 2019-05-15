@@ -1,4 +1,4 @@
-package mb.statix.solver.constraint;
+package mb.statix.constraints;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 

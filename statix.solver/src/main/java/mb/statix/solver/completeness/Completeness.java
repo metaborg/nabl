@@ -14,11 +14,11 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.constraint.Constraints;
 import mb.statix.spec.Spec;
 
 public class Completeness implements ICompleteness {

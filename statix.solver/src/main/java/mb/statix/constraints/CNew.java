@@ -1,4 +1,4 @@
-package mb.statix.solver.constraint;
+package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.List;
