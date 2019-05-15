@@ -16,36 +16,39 @@ rules
 
   // normalize functional constraints to predicate constraints
 
-  normalize-functional-constraints(|a) =
+  normalize-functional-constraints =
     nabl2-custom-analysis-info-msg(|"| Normalize functional constraints...");
     bottomup(
       try(normalize-functional-cdecl)
-    ; try(normalize-functional-head(|a))
-    ; try(normalize-functional-cops(|a))
+    ; try(normalize-functional-head)
+    ; try(normalize-functional-cops)
     )
 
 
   normalize-functional-cdecl:
-      CDecl(ind, x, t@FunType(s1*, s2)) -> CDecl(ind, x, t')
-    with s* := <conc> (s1*, [s2]);
-         t' := SimpleType(s*)
+      CDecl(ind, x, t) -> CDecl(ind, x, t')
+    where FunType(_, _) := t
+    with ty' := <norm-get-ast-type;fun-to-pred-type> t;
+         t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
-  normalize-functional-head(|a):
-      Rule(F(x, in_ts, out_t), bvs, body){a*} -> Rule(C(x, ts), bvs', body'){a*}
-    with FUN(intys, outty) := <norm-get-ast-decl-type(|a)> x;
-         out_v := <make-fresh-var> "out";
+  normalize-functional-head:
+      Rule(h, bvs, body){a*} -> Rule(h', bvs', body'){a*}
+    where F(x, in_ts, out_t) := h
+    with ty@FUN(_, out_ty) := <norm-get-ast-type> h;
+         out_v := <mk-fresh-Var(|out_ty)>("out");
          new-bvs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
          bvs' := <conc> (bvs, new-bvs);
          body' := CConj(body, CEqual(out_v, out_t));
-         ts := <conc> (in_ts, [out_v])
+         ts := <conc> (in_ts, [out_v]);
+         ty' := <fun-to-pred-type> ty;
+         h' := <norm-set-ast-type(|ty')> C(x, ts)
 
-  normalize-functional-cops(|a) =
-    normalize-in-rules(replace-functional-cop(|a),id,functional-cop-to-c(|a))
+  normalize-functional-cops =
+    normalize-in-rules(replace-functional-cop,id,functional-cop-to-c)
 
-  replace-functional-cop(|a): COp(x, in_ts) -> out_v
-    with FUN(_, outty) := <norm-get-ast-decl-type(|a)> x;
-         out_v := <make-fresh-var> x
+  replace-functional-cop: t@COp(x, in_ts){a*} -> out_v{a*}
+    with ty := <norm-get-ast-type> t
+       ; out_v := <mk-fresh-Var(|ty)>(x)
 
-  functional-cop-to-c(|a): (COp(x, in_ts), out_v) -> C(x, ts)
-    with FUN(_, outty) := <norm-get-ast-decl-type(|a)> x;
-         ts := <conc> (in_ts, [out_v])
+  functional-cop-to-c: (COp(x, in_ts), out_v) -> C(x, ts)
+    with ts := <conc> (in_ts, [out_v])

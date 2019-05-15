@@ -17,23 +17,26 @@ rules
   // normalization for a bunch of context-free things that appear in terms
   // none of these depend on analysis
 
-  normalize-terms(|a) =
+  normalize-terms =
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
     bottomup(
-      try(normalize-ast-ids(|a))
+      try(normalize-ast-ids)
     ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
     )
 
 
-  normalize-ast-ids(|a) = Occurrence(id, id, normalize-term-or-id(|a))
-  normalize-ast-ids(|a) = CAstProperty(normalize-term-or-id(|a), id, id)
+  normalize-ast-ids = Occurrence(id, id, normalize-term-or-id)
+  normalize-ast-ids = CAstProperty(normalize-term-or-id, id, id)
 
-  normalize-term-or-id(|a): t -> AstIdOp(t)
-    with ty := <norm-get-ast-type(|a)> t
+  normalize-term-or-id: t -> t'
+    with ty := <norm-get-ast-type> t
     where <not(?AST_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
+    with t' := <norm-set-ast-type(|AST_ID())> AstIdOp(t)
 
 
-  replace-term: Wld() -> <make-fresh-var> "wld"
+  replace-term: t@Wld() -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("wld")
   
   term-to-c: (Wld(), _) -> <fail>
 
@@ -45,13 +48,15 @@ rules
   term-no-add = ?As(_, _)
 
 
-  replace-term: NewOp() -> v
-    with v := <make-fresh-var> "new"
+  replace-term: t@NewOp() -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("new")
 
   term-to-c: (NewOp(), v) -> CNew([v])
 
 
-  replace-term: AstIdOp(_) -> v
-    with v := <make-fresh-var> "astId"
+  replace-term: t@AstIdOp(_) -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("astId")
 
   term-to-c: (AstIdOp(t), v) -> CAstId(t, v)

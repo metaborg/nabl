@@ -28,70 +28,107 @@ rules
 
   replace-map(|a): CDeriveMap(x, _, _) -> CDecl(ind, x, sort)
     with ind := <norm-get-ast-decl-property(|a,"ind")> x;
-         sort := <norm-get-ast-decl-type(|a);type-to-sort> x
+         ty := <norm-get-ast-decl-type(|a)> x;
+         sort := <type-to-sort;norm-set-ast-type(|ty)> ty
 
   map-to-rules(|a): (CDeriveMap(x, y, lift*), _) -> [base-rule, elem-rule]
-    with base-rule := <cmap-base-rule> (x, y, lift*);
-         elem-rule := <cmap-elem-rule> (x, y, lift*)
+    with ty@PRED(tys) := <norm-get-ast-decl-type(|a)> x;
+         ty_lift* := <zip> (tys, lift*);
+         base-rule := <cmap-base-rule(|ty)> (x, y, ty_lift*);
+         elem-rule := <cmap-elem-rule(|ty)> (x, y, ty_lift*)
 
-  cmap-base-rule: (x, y, lift*) -> Rule(C(x, ps), [], CTrue())
-    with ps := <map(lift-base)> lift*
+  cmap-base-rule(|ty): (x, y, ty_lift*) -> Rule(h, [], CTrue())
+    with ps := <map(lift-base)> ty_lift*;
+         h  := C(x, ps)
 
-  cmap-elem-rule: (x, y, lift*) -> Rule(C(x, ps), [], CConj(call, rec))
-    with ps   := <map-with-index(lift-elem-head(|"x"))> lift*;
-         call := C(y, <lift-call-elems(|"x")> lift*);
-         rec  := C(x, <lift-rec-elems(|"x")> lift*)
+  cmap-elem-rule(|ty): (x, y, ty_lift*) -> Rule(h, [], CConj(call, rec))
+    with ps   := <lift-head-elems(|"x")> ty_lift*;
+         call := C(y, <lift-call-elems(|"x")> ty_lift*);
+         rec  := C(x, <lift-rec-elems(|"x")> ty_lift*);
+         h    := <norm-set-ast-type(|ty)> C(x, ps)
 
 
   replace-map(|a): FDeriveMap(x, _, _, _) -> CDecl(ind, x, sort)
     with ind := <norm-get-ast-decl-property(|a,"ind")> x;
-         sort := <norm-get-ast-decl-type(|a);type-to-sort> x
+         ty := <norm-get-ast-decl-type(|a)> x;
+         sort := <type-to-sort;norm-set-ast-type(|ty)> ty
 
   map-to-rules(|a): (FDeriveMap(x, y, in-lift*, out-lift), _) -> [base-rule, elem-rule]
-    with out-lift* := <lift-to-lifts> out-lift;
-         base-rule := <fmap-base-rule> (x, y, in-lift*, out-lift*);
-         elem-rule := <fmap-elem-rule> (x, y, in-lift*, out-lift*)
+    with ty@FUN(intys, outty) := <norm-get-ast-decl-type(|a)> x;
+         FUN(_, elem_outty) := <norm-get-ast-decl-type(|a)> y;
+         in-ty_lift* := <zip> (intys, in-lift*);
+         out-ty_lift := (outty, out-lift);
+         base-rule := <fmap-base-rule(|ty, elem_outty)> (x, y, in-ty_lift*, out-ty_lift);
+         elem-rule := <fmap-elem-rule(|ty, elem_outty)> (x, y, in-ty_lift*, out-ty_lift)
 
-  fmap-base-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CTrue())
-    with inps := <map(lift-base)> in-lift*;
-         outp := <map(lift-base);build-terms(|out-lift*)> out-lift*
+  fmap-base-rule(|ty, elem_outty): (x, y, in-ty_lift*, out-ty_lift) -> Rule(h, [], CTrue())
+    with inps := <map(lift-base)> in-ty_lift*;
+         outp := <lift-base> out-ty_lift;
+         h    := <norm-set-ast-type(|ty)> F(x, inps, outp)
 
-  fmap-elem-rule: (x, y, in-lift*, out-lift*) -> Rule(F(x, inps, outp), [], CConj(call, rec))
-    with inps := <lift-head-elems(|"x")> in-lift*;
-         outp := <lift-head-elems(|"y");build-terms(|out-lift*)> out-lift*;
-         call := CEqual(COp(y, <lift-call-elems(|"x")> in-lift*),
-                        <lift-call-elems(|"y");build-terms(|out-lift*)> out-lift*);
-         rec  := CEqual(COp(x, <lift-rec-elems(|"x")> in-lift*),
-                        <lift-rec-elems(|"y");build-terms(|out-lift*)> out-lift*)
+  fmap-elem-rule(|ty, elem_outty): (x, y, in-ty_lift*, out-ty_lift) -> Rule(h, [], CConj(call, rec))
+    with FUN(_, rec_outty) := ty;
+         inps     := <lift-head-elems(|"x")> in-ty_lift*;
+         outp     := <lift-elem-head(|"y")> (1, out-ty_lift);
+         in-call  := <lift-call-elems(|"x")> in-ty_lift*;
+         out-call := <lift-elem-call(|"y")> (1, out-ty_lift);
+         call-op  := <norm-set-ast-type(|elem_outty)> COp(y, in-call);
+         call     := CEqual(call-op, out-call);
+         in-rec   := <lift-rec-elems(|"x")> in-ty_lift*;
+         out-rec  := <lift-elem-rec(|"y")> (1, out-ty_lift);
+         rec-op   := <norm-set-ast-type(|rec_outty)> COp(x, in-rec);
+         rec      := CEqual(rec-op, out-rec);
+         h        := <norm-set-ast-type(|ty)> F(x, inps, outp)
 
-
-  lift-base: IdLift() -> Wld()
-  lift-base: ListLift() -> List([])
-  lift-base: TupleLift(lifts) -> Tuple(<map(lift-base)> lifts)
+  lift-base:
+      (ty, IdLift())
+      -> <mk-Wld(|ty)>
+  lift-base:
+      (LIST(ty), ListLift())
+      -> <mk-Nil(|ty)>
+  lift-base:
+      (TUPLE(tys), TupleLift(lifts))
+      -> <mk-Tuple>(<zip(lift-base)> (tys, lifts))
 
 
   lift-head-elems(|x) = map-with-index(lift-elem-head(|x))
 
-  lift-elem-head(|x): (i, IdLift())         -> <lift-var(|x)> i
-  lift-elem-head(|x): (i, ListLift())       -> ListTail([<lift-var(|x)> i], <lift-var(|$[[x]s])> i)
-  lift-elem-head(|x): (i, TupleLift(lifts)) -> Tuple(<lift-head-elems(|<lift-name(|x)> i)> lifts)
+  lift-elem-head(|x):
+      (i, (ty, IdLift()))
+      -> <lift-Var(|ty, x)> i
+  lift-elem-head(|x):
+      (i, (LIST(ty), ListLift()))
+      -> <mk-ListTail>([<lift-Var(|ty,x)> i], <lift-Var(|LIST(ty), $[[x]s])> i)
+  lift-elem-head(|x):
+      (i, (TUPLE(tys), TupleLift(lifts)))
+      -> <mk-Tuple>(<zip;lift-head-elems(|<lift-name(|x)> i)> (tys, lifts))
 
 
   lift-call-elems(|x) = map-with-index(lift-elem-call(|x))
 
-  lift-elem-call(|x): (i, IdLift())         -> <lift-var(|x)> i
-  lift-elem-call(|x): (i, ListLift())       -> <lift-var(|x)> i
-  lift-elem-call(|x): (i, TupleLift(lifts)) -> Tuple(<lift-call-elems(|<lift-name(|x)> i)> lifts)
+  lift-elem-call(|x):
+      (i, (ty, IdLift()))
+      -> <lift-Var(|ty, x)> i
+  lift-elem-call(|x):
+      (i, (LIST(ty), ListLift()))
+      -> <lift-Var(|ty,x)> i
+  lift-elem-call(|x):
+      (i, (TUPLE(tys), TupleLift(lifts)))
+      -> <mk-Tuple>(<zip;lift-call-elems(|<lift-name(|x)> i)> (tys, lifts))
 
 
   lift-rec-elems(|x) = map-with-index(lift-elem-rec(|x))
 
-  lift-elem-rec(|x): (i, IdLift())         -> <lift-var(|x)> i
-  lift-elem-rec(|x): (i, ListLift())       -> <lift-var(|$[[x]s])> i
-  lift-elem-rec(|x): (i, TupleLift(lifts)) -> Tuple(<lift-rec-elems(|<lift-name(|x)> i)> lifts)
-
-
-  lift-var(|x) = !Var(<lift-name(|x)>)
+  lift-elem-rec(|x):
+      (i, (ty, IdLift()))
+      -> <lift-Var(|ty, x)> i
+  lift-elem-rec(|x):
+      (i, (LIST(ty), ListLift()))
+      -> <lift-Var(|LIST(ty), $[[x]s])> i
+  lift-elem-rec(|x):
+      (i, (TUPLE(tys), TupleLift(lifts)))
+      -> <mk-Tuple>(<zip;lift-rec-elems(|<lift-name(|x)> i)> (tys, lifts))
 
   lift-name(|x) = !$[[x]_[<int-to-string>]]
-  
+
+  lift-Var(|ty,x) = lift-name(|x); mk-Var(|ty)

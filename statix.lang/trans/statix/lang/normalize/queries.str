@@ -23,61 +23,61 @@ rules
       try(normalize-resolve(|a))
     )
 
-  normalize-resolve(|a): t@ResolveMatch(_) -> wf
+  normalize-resolve(|a): t@ResolveMatch(_){a*} -> wf{a*}
     with wf := <norm-get-ast-decl-property(|a, "wf")> t
 
-  normalize-resolve(|a): t@ResolveLt(_) -> ord
+  normalize-resolve(|a): t@ResolveLt(_){a*} -> ord{a*}
     with ord := <norm-get-ast-decl-property(|a, "ord")> t
 
-  normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _)) -> lam
+  normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _)){a*} -> lam{a*}
     with NS(tys) := <norm-get-ast-decl-type(|a)> ns;
-         us := <make-fresh-vars(|"u")> tys;
-         d := Occurrence(ns, us, Wld());
-         lam := LLam([d], [], CEqual(<build-terms(|tys)> us, <build-terms(|tys)> ts))
+         us := <mk-fresh-Vars(|"u")> tys;
+         w := <mk-Wld(|AST_ID())>;
+         d := <mk-Occurrence>(ns, us, <mk-Wld(|AST_ID())>);
+         lam := <mk-LLam>([d], [], CEqual(<mk-Tuple>(us), <mk-Tuple>(ts)))
   
 rules
 
   // normalize queries
   // before functional relations, before wildcards
 
-  normalize-queries(|a) =
+  normalize-queries =
     nabl2-custom-analysis-info-msg(|"| Normalize queries...");
     bottomup(
-      try(normalize-query(|a))
-    ; try(normalize-query-ops(|a))
+      try(normalize-query)
+    ; try(normalize-query-ops)
     )
 
 
-  normalize-query(|a): CAskRel(rel, ts, st) -> c
-    with c := <ask-rel-query> (rel, st, ts, [])
+  normalize-query: CAskRel(rel, ts, st) -> c
+    with PRED(tys) := <norm-get-ast-type> rel
+       ; c := <ask-rel-query(|tys, [])> (rel, st, ts, [])
 
 
-  normalize-query-ops(|a) =
-    normalize-in-rules(replace-functional-relop(|a),id,functional-relop-to-c(|a))
+  normalize-query-ops =
+    normalize-in-rules(replace-functional-relop,id,functional-relop-to-c)
 
-  replace-functional-relop(|a): AskRelOp(rel, in_ts, st) -> out_v
-    with FUN(_, _) := <norm-get-ast-type(|a)> rel;
-         out_v := <make-fresh-var> "t"
+  replace-functional-relop: t@AskRelOp(rel, in_ts, st){a*} -> out_v{a*}
+    with ty := <norm-get-ast-type> t
+    with out_v := <mk-fresh-Var(|ty)>("t")
 
-  functional-relop-to-c(|a): (AskRelOp(rel, in_ts, st), out_v) -> c
-    with FUN(_, _) := <norm-get-ast-type(|a)> rel;
-         c := <ask-rel-query> (rel, st, in_ts, [out_v])
+  functional-relop-to-c: (AskRelOp(rel, in_ts, st), out_v) -> c
+    with FUN(intys, outty) := <norm-get-ast-type> rel
+       ; c := <ask-rel-query(|intys, outty)> (rel, st, in_ts, [out_v])
 
 
-  ask-rel-query: (rel, st, in_ts, out_ts) -> c
-    with ts       := <conc> (in_ts, out_ts);
+  ask-rel-query(|intys, outty): (rel, st, in_ts, out_ts) -> c
+    with us       := <mk-fresh-Vars(|"u")> intys;
+         eq       := CEqual(<mk-Tuple>(us), <mk-Tuple>(in_ts));
+         in_v     := <mk-Tuple>(us);
+         match    := <mk-LLam>([in_v], [], eq);
+         filter   := Filter(Epsilon(), match)
 
-         us       := <make-fresh-vars(|"u")> in_ts;
-         eq       := CEqual(<build-terms(|in_ts)> us, <build-terms(|in_ts)> in_ts);
-
-         p        := <build-terms(|in_ts)> us;
-         match    := LLam([p], [], eq);
-         filter   := Filter(Epsilon(), match);
-
-         min      := Min([], LLam([Wld(), Wld()], [], CFalse()));
-
-         in_wlds  := <map(!Wld())> in_ts;
-         t        := <conc;build-terms(|ts)> (in_wlds, out_ts);
-         pts      := List([Tuple([Wld(), t])]);
-
-         c        := CResolveQuery(rel, filter, min, st, pts)
+    with in_wlds  := <mk-Wlds> intys;
+         in_wld   := <mk-Tuple>(in_wlds);
+         ord      := <mk-LLam>([in_wld, in_wld], [], CFalse());
+         min      := Min([], ord)
+    with t        := <conc;mk-Tuple>(in_wlds, out_ts);
+         pt       := <mk-Tuple>([<mk-Wld(|PATH())>, t]);
+         pts      := <mk-List>([pt])
+    with c        := CResolveQuery(rel, filter, min, st, pts)

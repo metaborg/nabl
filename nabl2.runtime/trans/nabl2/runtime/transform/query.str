@@ -1,9 +1,7 @@
-module nabl2/runtime/analysis/query 
+module nabl2/runtime/transform/query 
 
 imports
 
-  libspoofax/analysis/constraint
-  nabl2/runtime/analysis/constraint-compat
 
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
@@ -11,12 +9,12 @@ imports
 
   pp/nabl2/runtime/common/-
   signatures/nabl2/runtime/common/-
+  nabl2/runtime/analysis/constraint-compat
+  nabl2/runtime/transform/-
   
 signature
 
   constructors
-
-    AnalysisToken : Analysis
 
 rules
 

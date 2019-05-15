@@ -100,14 +100,14 @@ rules
     Rule{x} <- s, Rule{x}.ast := r,
     new s_rule, s_rule -P-> s,
     distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    RuleHead[[ h ^ (s_rule, s_body, x) ]],
+    RuleHead[[ h ^ (s_rule, s_body, x) : _ ]],
     new s_body, s_body -P-> s_rule,
     distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
     (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
     Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
     [[ body ^ (s_body) ]].
 
-  RuleHead[[ C(x, args) ^ (s_rule, s_body, y) ]] := x == y,
+  RuleHead[[ C(x, args) ^ (s_rule, s_body, y) : ty ]] := x == y,
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,

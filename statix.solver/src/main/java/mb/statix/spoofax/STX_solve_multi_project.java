@@ -15,8 +15,8 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.constraint.Constraints;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;

@@ -9,7 +9,7 @@ imports
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
-  nabl2/runtime/analysis/query // for private set-custom-analysis
+  nabl2/runtime/transform/query // for private set-custom-analysis
 
   signatures/statix/lang/-
 
@@ -39,19 +39,23 @@ rules // Analysis
          desugared-ast := <desugar-all> ast;
          nabl2-custom-analysis-info-msg(|"Desugared AST.");
 
-         nabl2-custom-analysis-info-msg(|"Normalizing AST...");
+         nabl2-custom-analysis-info-msg(|"Analyzing AST...");
          (analyzed-ast, a, e*, w*, n*) :=
             <analyze(|resource)> desugared-ast;
 
          if [] := e* then
-           (normalized-ast, a') :=
-               <normalize(analyze(|resource)|a)> analyzed-ast;
+           (normalized-ast, a', a-e*, _, _) :=
+               <normalize(|a);analyze(|resource)> analyzed-ast;
+           if not([] := a-e*) then
+             fatal-err-msg(|"Normalization introduced errors")
+           end;
 
            nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
            or-e* := <detect-overlapping-rules> analyzed-ast;
 
            nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-           (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> normalized-ast;
+           (ext*, ext-e*, ext-w*, ext-n*) :=
+               <compute-scope-extensions> normalized-ast;
 
            result   := <nabl2--set-custom-analysis(|a)> (normalized-ast, a', ext*);
            error*   := [e*, ext-e*, or-e*];

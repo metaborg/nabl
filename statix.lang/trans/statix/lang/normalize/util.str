@@ -13,10 +13,15 @@ imports
 
 rules
 
-  norm-get-ast-type(|a) =
-    not(nabl2-get-ast-index)
-  < fatal-err(|"Missing AST index")
-  + nabl2-get-ast-type(|a)
+  norm-get-ast-type =
+    nabl2-get-anno-type
+ <+ fatal-err(|"Missing AST type")
+
+  norm-set-ast-type(|ty) =
+    nabl2-set-anno-type(|ty)
+
+  norm-copy-ast-type(|t) =
+    nabl2-copy-anno-type(|t)
 
   norm-get-ast-property(|a,prop) =
     not(nabl2-get-ast-index)
@@ -34,6 +39,9 @@ rules
   < fatal-err(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
   ; nabl2-get-property(|a,prop)
+
+  norm-preserve-ast-type(s) =
+    nabl2-preserve-anno-type(s)
 
 rules
 
@@ -56,13 +64,57 @@ rules
 
   not-in-lambda = not(?LLam(_, _, _))
 
+rules // smart constructors for typed terms
+
+  mk-Wld(|ty): _ -> <norm-set-ast-type(|ty)> Wld()
+
+  mk-Wlds = map(\ ty -> <mk-Wld(|ty)> \)
+
+  mk-fresh-Var(|ty) = newname; mk-Var(|ty)
+
+  mk-fresh-Vars(|x) = map(\ ty -> <mk-fresh-Var(|ty)> x \)
+
+  mk-Var(|ty): x -> <norm-set-ast-type(|ty)> Var(x)
+
+  mk-seq-Vars(|x) = map-with-index(\ (i, ty) -> <mk-Var(|ty)> $[[x][<int-to-string> i]] \)
+
+  mk-Op(|ty): (x, ts) -> <norm-set-ast-type(|ty)> Op(x, ts)
+
+  mk-Tuple: ts -> <norm-set-ast-type(|ty)> t
+    with if [t] := ts then
+           ty := <norm-get-ast-type> t
+         else
+           t := Tuple(ts);
+           ty := TUPLE(<map(norm-get-ast-type)> ts)
+         end
+
+  mk-TUPLE: tys -> ty
+    with if [ty] := tys then
+           id
+         else
+           ty := TUPLE(tys)
+         end
+
+  mk-Nil(|ty): _ -> <norm-set-ast-type(|LIST(ty))> List([])
+
+  mk-List: ts -> <norm-set-ast-type(|ty)> List(ts)
+    with tys := <map(norm-get-ast-type)> ts;
+         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         ty := LIST(ty')
+
+  mk-ListTail: (ts, t) -> <norm-set-ast-type(|ty)> ListTail(ts, t)
+    with tys := <map(norm-get-ast-type)> ts;
+         LIST(ty') := <norm-get-ast-type> t;
+         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         ty := LIST(ty')
+
+  mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
+    with tys := <map(norm-get-ast-type)> ps;
+         ty := PRED(tys)
+
+  mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, p)
+
 rules
-
-  make-fresh-vars(|x) = map(!Var(<newname> x))
-
-  make-fresh-var = !Var(<newname>)
-
-  make-seq-vars(|x) = ?[_] < ![Var(x)] + map-with-index(\ (i, _) -> Var($[[x][<int-to-string> i]]) \)
 
   list-to-conj(|tl): []     -> tl
   list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
@@ -70,9 +122,6 @@ rules
   list-to-conj: []     -> CTrue()
   list-to-conj: [C]    -> C
   list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
-
-  apply-lambda: (LLam(ps, bvs, body), ts) -> (bvs, body')
-    with body' := <strip-annos;substitute(?Var(_))> (ps, ts, body)
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()
@@ -88,18 +137,8 @@ rules
   type-to-sort: PRED(tys)         -> SimpleType(<map(type-to-sort)> tys)
   type-to-sort: FUN(intys, outty) -> FunType(<map(type-to-sort)> intys, <type-to-sort> outty)
 
-  sort-args: SimpleType(args) -> args
+  fun-to-pred-type:
+      FUN(intys, outty) -> PRED(<conc> (intys, [outty]))
 
-  match-terms(|tys): t -> ts
-    where if [_] := tys then
-            ts := <![<id>]> t
-          else
-            ts := <?Tuple(<id>)> t
-          end
-
-  build-terms(|tys): ts -> t
-    with if [_] := tys then
-           t := <?[<id>]> ts
-         else
-           t := <!Tuple(<id>)> ts
-         end
+  fun-to-pred-type:
+      FunType(insorts, outsort) -> SimpleType(<conc> (insorts, [outsort]))
