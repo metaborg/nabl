@@ -25,6 +25,8 @@ import mb.statix.taico.util.Scopes;
 import mb.statix.util.Capsules;
 
 public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm>, IOwnable {
+    private static final long serialVersionUID = 1L;
+    
     private static AtomicInteger idCounter = new AtomicInteger();
     //Constants for this module
     private final IModule owner;
@@ -36,7 +38,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     private List<? extends AScope> parentScopes;
     
     //Scope graph graph
-    private final HashSet<String> children2 = new HashSet<>();
+    private final HashSet<String> children = new HashSet<>();
     
     private final HashSet<AScope> scopes = new HashSet<>();
     private IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, AScope>> edges = HashTrieRelation3.Transient.of();
@@ -170,7 +172,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     
     @Override
     public Scope createScope(String base) {
-        System.err.println("[" + owner.getId() + "] Creating scope " + base);
         int i = ++scopeCounter;
         
         String name = base.replaceAll("-", "_") + "-" + i;
@@ -201,9 +202,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
 
     @Override
     public boolean addDatum(AScope scope, ITerm relation, Iterable<ITerm> datum) {
-        if (!scope.getResource().equals(this.owner.getId())) {
-            System.out.println("Adding datum edge from unowned scope (@" + scope.getResource() + ") in " + this.owner);
-        }
         if (!getScopes().contains(scope) && !getExtensibleScopes().contains(scope)) {
             throw new IllegalArgumentException(
                     "addDatum directed to wrong scope graph: "
@@ -234,7 +232,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         
         getWriteLock().lock();
         try {
-            children2.add(child.getOwner().getId());
+            children.add(child.getOwner().getId());
             return child;
         } finally {
             getWriteLock().unlock();
@@ -249,7 +247,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         
         getWriteLock().lock();
         try {
-            children2.add(child.getId());
+            children.add(child.getId());
             return childSg;
         } finally {
             getWriteLock().unlock();
@@ -260,7 +258,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     public boolean removeChild(IModule child) {
         getWriteLock().lock();
         try {
-            return children2.remove(child.getId());
+            return children.remove(child.getId());
         } finally {
             getWriteLock().unlock();
         }
@@ -268,7 +266,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     
     @Override
     public Iterable<? extends IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm>> getChildren() {
-        return children2.stream().map(s -> SolverContext.context().getModuleUnchecked(s).getScopeGraph())::iterator;
+        return children.stream().map(s -> SolverContext.context().getModuleUnchecked(s).getScopeGraph())::iterator;
     }
     
     @Override
@@ -279,7 +277,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         
         getWriteLock().lock();
         try {
-            children2.clear();
+            children.clear();
         } finally {
             getWriteLock().unlock();
         }

@@ -1,5 +1,7 @@
 package mb.statix.taico.solver;
 
+import static mb.statix.taico.util.TDebug.*;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,12 +34,14 @@ import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
+import mb.statix.taico.util.TDebug;
 
 public class ModuleSolver implements IOwnable {
     private final IMState state;
@@ -216,7 +220,7 @@ public class ModuleSolver implements IOwnable {
         Entry entry = constraints.getActiveConstraint(debug);
         if (entry == null) return false;
     
-        IDebugContext subDebug = proxyDebug.subContext();
+        IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         final IConstraint constraint = entry.constraint();
         if(proxyDebug.isEnabled(Level.Info)) {
             proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
@@ -275,6 +279,7 @@ public class ModuleSolver implements IOwnable {
         } catch (Exception ex) {
             System.err.println("FATAL: Exception encountered while solving!");
             ex.printStackTrace();
+            return false;
         }
         return true;
     }
@@ -294,10 +299,10 @@ public class ModuleSolver implements IOwnable {
      *      the completeness result
      */
     public CompletenessResult isComplete(ITerm scopeTerm, ITerm label, IMState state) {
-        System.err.println(getOwner() + " received isComplete query for " + scopeTerm);
         if (state.getOwner() != getOwner()) debug.warn("Received isComplete query on {} for state of {}", getOwner(), state.getOwner());
 
         Scope scope = Scopes.getScope(scopeTerm);
+        if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " got query for " + scope + "-" + label + ".");
         
         IModule scopeOwner;
         try {
@@ -319,10 +324,9 @@ public class ModuleSolver implements IOwnable {
     }
     
     private CompletenessResult isCompleteFinal(Scope scope, ITerm label, IMState state) {
-        System.err.println("Completeness of " + getOwner() + " got isCompleteFinal request.");
         CompletenessResult r = completeness.isComplete(scope, label, state);
         if (!r.isComplete()) {
-            System.err.println("Completeness of " + getOwner() + " result: (own completeness) false, because of constraints: " + r.details());
+            if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (own completeness) false, because of constraints: " + r.details());
             return r;
         }
         
@@ -333,13 +337,13 @@ public class ModuleSolver implements IOwnable {
             
             CompletenessResult childResult = child.getCurrentState().solver().isCompleteFinal(scope, label, state);
             if (!childResult.isComplete()) {
-                System.err.println("Completeness of " + getOwner() + " result: (child) false");
+                if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (child) false");
                 return childResult;
             }
         }
         
         r = isComplete.apply(scope, label, state);
-        System.err.println("Completeness of " + getOwner() + " result: (isComplete predicate) " + r.isComplete());
+        if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (isComplete predicate) " + r.isComplete());
         return r;
     }
     

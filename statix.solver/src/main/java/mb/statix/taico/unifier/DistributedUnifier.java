@@ -64,11 +64,15 @@ public class DistributedUnifier {
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
             if (owner.equals(var.getResource()) || (target = Vars.getOwnerUnchecked(var)) == null) {
-                return super.isGround(var, stack, visited);
+                return isGroundFinal(var, stack, visited);
             } else {
-                //TODO isGroundFinal
-                return target.getCurrentState().unifier().isGround(var, stack, visited);
+                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
             }
+        }
+        
+        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isGround(var, stack, visited);
         }
         
         @Override public DistributedUnifier.Transient melt() {
@@ -136,11 +140,15 @@ public class DistributedUnifier {
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
             if (owner.equals(var.getResource()) || (target = Vars.getOwnerUnchecked(var)) == null) {
-                return super.isGround(var, stack, visited);
+                return isGroundFinal(var, stack, visited);
             } else {
-                //TODO isGroundFinal
-                return target.getCurrentState().unifier().isGround(var, stack, visited);
+                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
             }
+        }
+        
+        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isGround(var, stack, visited);
         }
         
         @Override public DistributedUnifier.Immutable freeze() {

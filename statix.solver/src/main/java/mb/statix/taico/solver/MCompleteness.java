@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.Iterables;
@@ -18,8 +19,10 @@ import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
+import mb.statix.taico.util.TDebug;
 import mb.statix.util.Capsules;
 
 /**
@@ -63,25 +66,30 @@ public class MCompleteness implements IOwnable {
              */
         };
         
-        Set<IConstraint> causes = new HashSet<>();
-        boolean complete = true;
-        synchronized (this) {
-            for (IConstraint constraint : incomplete) {
-                for (CriticalEdge edge : Completeness.criticalEdges(constraint, SolverContext.context().getSpec())) {
-                    if (!equal.test(edge.scope(), edge.label())) continue;
-                    complete = false;
-                    causes.add(constraint);
+        boolean complete;
+        final Spec spec = SolverContext.context().getSpec();
+        
+        if (TDebug.COMPLETENESS_DETAILS) {
+            Set<IConstraint> causes = new HashSet<>();
+            complete = true;
+            synchronized (this) {
+                for (IConstraint constraint : incomplete) {
+                    for (CriticalEdge edge : Completeness.criticalEdges(constraint, spec)) {
+                        if (!equal.test(edge.scope(), edge.label())) continue;
+                        complete = false;
+                        causes.add(constraint);
+                    }
                 }
             }
+            return CompletenessResult.of(complete, owner).withDetails(causes);
+        } else {
+            synchronized (this) {
+                complete = incomplete.stream()
+                        .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, spec)))
+                        .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
+            }
+            return CompletenessResult.of(complete, owner);
         }
-        
-//        boolean complete;
-//        synchronized (this) {
-//            complete = incomplete.stream()
-//                    .flatMap(c -> Iterables2.stream(Completeness.criticalEdges(c, owner.getContext().getSpec())))
-//                    .noneMatch(sl -> equal.test(sl.scope(), sl.label()));
-//        }
-        return CompletenessResult.of(complete, owner).withDetails(causes);
     }
 
     public synchronized MCompleteness add(IConstraint constraint) {

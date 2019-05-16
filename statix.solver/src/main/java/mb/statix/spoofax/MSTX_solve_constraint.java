@@ -2,11 +2,13 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.taico.util.TOverrides.*;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
@@ -41,13 +43,6 @@ import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 
 public class MSTX_solve_constraint extends StatixPrimitive {
-    public static final boolean MODULES_OVERRIDE = true;
-    public static final boolean OVERRIDE_LOGLEVEL = true;
-    public static final String LOGLEVEL = "info"; //"debug" "none"
-    public static final boolean CONCURRENT = false;
-    public static final boolean QUERY_DEBUG = false;
-    public static final boolean CLEAN = false;
-
     @Inject public MSTX_solve_constraint() {
         super(MSTX_solve_constraint.class.getSimpleName(), 2);
     }
@@ -89,7 +84,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
             IDebugContext debug) {
         //Create a context and a coordinator
         final SolverContext context = SolverContext.initialContext(new NonIncrementalStrategy(), spec);
-        final ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
+        final ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
         context.setCoordinator(coordinator);
         
         //Create the top level module and state. It is added to the context automatically.

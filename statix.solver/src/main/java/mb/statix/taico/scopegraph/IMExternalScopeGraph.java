@@ -1,5 +1,6 @@
 package mb.statix.taico.scopegraph;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 
@@ -8,7 +9,7 @@ import mb.statix.solver.Delay;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMExternalScopeGraph<S, V, L, R> extends IOwnable {
+public interface IMExternalScopeGraph<S, V, L, R> extends IOwnable, Serializable {
     
     L getEndOfPath();
     Set.Immutable<? extends L> getLabels();

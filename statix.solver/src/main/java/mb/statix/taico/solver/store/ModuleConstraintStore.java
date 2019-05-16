@@ -1,8 +1,7 @@
 package mb.statix.taico.solver.store;
 
-import static mb.statix.taico.solver.SolverContext.context;
+import static mb.statix.taico.util.TDebug.*;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -18,8 +17,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
@@ -125,7 +122,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             for (ITermVar termVar : vars) {
                 for (ModuleConstraintStore store : varObservers.removeAll(termVar)) {
                     //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
-                    System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
+                    if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
                     store.activateFromVar(termVar, debug); //Activate but don't propagate
                     //Only notify if it is currently not doing anything (probably)
                     if (store.activeSize() == 1) stores.add(store);
@@ -146,21 +143,6 @@ public class ModuleConstraintStore implements IConstraintStore {
             stuckOnVar.values().removeAll(activated);
         }
         
-        //If the owner of the variable is not our owner, then we will apply the substitution on the activation of the var.
-        if (!var.getResource().equals(owner)) {
-            IModule varOwner = context().getModuleUnchecked(var.getResource());
-            IUnifier.Immutable unifier = varOwner.getCurrentState().unifier();
-            ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(var, unifier.findRecursive(var));
-            System.err.println("Applying substitution: " + subst);
-            Collection<IConstraint> newActivated = new ArrayList<>();
-            for (IConstraint constraint : activated) {
-                IConstraint newConstraint = constraint.apply(subst);
-                System.out.println("Transformed " + constraint + " to " + newConstraint);
-                newActivated.add(newConstraint);
-            }
-            activated = newActivated;
-        }
-        
         debug.info("activating {}", activated);
         addAll(activated);
     }
@@ -179,7 +161,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             for (CriticalEdge edge : edges) {
                 for (ModuleConstraintStore store : edgeObservers.removeAll(edge)) {
                     //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
-                    System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
+                    if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
                     store.activateFromEdge(edge, debug); //Activate but don't propagate
                     //Only notify if it is currently not doing anything (probably)
                     if (store.activeSize() == 1) stores.add(store);
@@ -273,9 +255,8 @@ public class ModuleConstraintStore implements IConstraintStore {
                     if (!d.vars().isEmpty()) {
                         debug.info("delayed {} on vars {}", constraint, d.vars());
                         for (ITermVar var : d.vars()) {
-                            if (!resolveStuckOnOtherModule(var, constraint, debug)) {
-                                stuckOnVar.put(var, constraint);
-                            }
+                            stuckOnVar.put(var, constraint);
+                            resolveStuckOnOtherModule(var, constraint, debug);
                         }
                     } else if (!d.criticalEdges().isEmpty()) {
                         debug.info("delayed {} on critical edges {}", constraint, d.criticalEdges());
@@ -303,32 +284,23 @@ public class ModuleConstraintStore implements IConstraintStore {
         };
     }
     
-    private boolean resolveStuckOnOtherModule(ITermVar termVar, IConstraint constraint, IDebugContext debug) {
+    private void resolveStuckOnOtherModule(ITermVar termVar, IConstraint constraint, IDebugContext debug) {
         //Not stuck on another module
-        if (owner.equals(termVar.getResource())) return false;
+        final IModule varOwner;
+        if (this.owner.equals(termVar.getResource()) || (varOwner = Vars.getOwnerUnchecked(termVar)) == null) return;
         
-        IModule varOwner = Vars.getOwnerUnchecked(termVar);
         ModuleConstraintStore varStore = varOwner.getCurrentState().solver().getStore();
         
         synchronized (varStore.variableLock) {
             IUnifier.Immutable unifier = varOwner.getCurrentState().unifier();
+            //Cannot be removed because of locking stuff
             if (!unifier.isGround(termVar)) {
-                System.err.println(owner + ": Registering as observer on " + varOwner + " for " + termVar);
+                if (STORE_DEBUG) System.err.println(owner + ": Registering as observer on " + varOwner + " for " + termVar);
                 registerAsObserver(termVar, debug);
-                return true;
             } else {
-                System.err.println(termVar + " Is ground according to the unifier!");
-                registerAsObserver(termVar, debug);
-                return true;
-//                active.add(constraint);
+                System.err.println(termVar + " is ground according to the unifier!");
+                active.add(constraint);
             }
-            
-//            System.err.println(owner + ": Applying substitution for ground variable " + termVar + " with " + unifier.findRecursive(termVar));
-//            //Otherwise, substitute the variable in the constraint
-//            ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(termVar, unifier.findRecursive(termVar));
-//            IConstraint newConstraint = constraint.apply(subst);
-//            active.add(newConstraint);
-//            return true;
         }
     }
     

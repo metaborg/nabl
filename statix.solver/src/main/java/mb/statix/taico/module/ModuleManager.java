@@ -1,5 +1,6 @@
 package mb.statix.taico.module;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +14,9 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 
-public class ModuleManager {
+public class ModuleManager implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private Map<String, IModule> modules = new ConcurrentHashMap<>();
     private ListMultimap<String, IModule> moduleNames = MultimapBuilder.hashKeys().arrayListValues().build();
     

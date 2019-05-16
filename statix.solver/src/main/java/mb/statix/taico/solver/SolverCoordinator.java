@@ -67,23 +67,27 @@ public class SolverCoordinator extends ASolverCoordinator {
     @Override
     protected void runToCompletion() throws InterruptedException {
         boolean anyProgress = true;
+        int complete = 0;
+        int failed = 0;
         while (anyProgress && !solvers.isEmpty()) {
-            this.debug.log(Level.Trace, "Begin of main loop");
             anyProgress = false;
             
             //Ensure that changes are not reflected this run
-            
             ModuleSolver[] tempSolvers = solvers.toArray(new ModuleSolver[0]);
+            int solverI = 0;
             for (ModuleSolver solver : tempSolvers) {
-                this.debug.log(Level.Trace, "Checking solver for module {}", solver.getOwner().getId());
+                solverI++;
+                if (solverI % 10 == 0) {
+                    this.debug.info("Solvers in run: " + solverI + "/" + tempSolvers.length + " (C" + complete + "/F" + failed + ")");
+                }
                 //If this solver is done, store its result and continue.
                 if (solver.isDone()) {
+                    complete++;
                     this.debug.log(Level.Debug, "[{}] done, removing...", solver.getOwner().getId());
                     solvers.remove(solver);
                     results.put(solver.getOwner(), solver.finishSolver());
                     continue;
                 }
-                this.debug.log(Level.Trace, "[{}] going to try solve a step", solver.getOwner().getId());
                 //If any progress can be made, store that information
                 SolverContext.setCurrentModule(solver.getOwner());
                 if (solver.solveStep()) {
@@ -91,21 +95,19 @@ public class SolverCoordinator extends ASolverCoordinator {
                     anyProgress = true;
                     
                     //Solve this solver as far as possible
-                    this.debug.log(Level.Trace, "[{}] solving as far as possible", solver.getOwner().getId());
                     while (solver.solveStep());
                 } else {
                     this.debug.log(Level.Debug, "[{}] unable to solve a step", solver.getOwner().getId());
                 }
                 
                 if (solver.hasFailed()) {
+                    failed++;
                     this.debug.log(Level.Debug, "[{}] failed, removing...", solver.getOwner().getId());
                     solvers.remove(solver);
                     results.put(solver.getOwner(), solver.finishSolver());
                     continue;
                 }
             }
-            
-            this.debug.log(Level.Trace, "end of main loop");
         }
         
         LazyDebugContext lazyDebug = new LazyDebugContext(this.debug);

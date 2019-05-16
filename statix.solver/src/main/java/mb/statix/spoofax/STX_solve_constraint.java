@@ -33,6 +33,7 @@ import mb.statix.solver.SolverResult;
 import mb.statix.solver.State;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
+import mb.statix.taico.util.TOverrides;
 
 public class STX_solve_constraint extends StatixPrimitive {
 
@@ -44,7 +45,7 @@ public class STX_solve_constraint extends StatixPrimitive {
             throws InterpreterException {
         
         //TODO Temporary override for convenience
-        if (MSTX_solve_constraint.MODULES_OVERRIDE) {
+        if (TOverrides.MODULES_OVERRIDE) {
             System.err.println("Running modularized solver!");
             ITerm newTerm = M.tuple2(M.term(), M.term(), (a, t1, t2) -> B.newTuple(B.newString("?"), t1, t2)).match(term).get();
             return new MSTX_solve_constraint().call(env, newTerm, terms);

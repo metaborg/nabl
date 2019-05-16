@@ -2,6 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.taico.util.TOverrides.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.spoofax.interpreter.core.IContext;
@@ -41,7 +43,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        if (MSTX_solve_constraint.CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
+        if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         
         final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Invalid incremental strategy: " + terms.get(0)));
@@ -51,7 +53,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .reset();
         final Spec spec = initial.state().spec();
 
-        final IDebugContext debug = getDebugContext(MSTX_solve_constraint.OVERRIDE_LOGLEVEL ? B.newString(MSTX_solve_constraint.LOGLEVEL) : terms.get(2));
+        final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(2));
 
         final IMatcher<Tuple2<MChange, Set<IConstraint>>> constraintMatcher = M.tuple2(
                 MChange.matcher(),
@@ -97,7 +99,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
 //        newContext.setState(initial.state().getOwner(), initial.state());
         
-        ASolverCoordinator coordinator = MSTX_solve_constraint.CONCURRENT ? new ConcurrentSolverCoordinator() : new SolverCoordinator();
+        ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
         newContext.setCoordinator(coordinator); //Sets the coordinator on the context and the context on the coordinator
         
         //TODO IMPORTANT Solver Context

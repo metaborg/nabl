@@ -46,6 +46,7 @@ import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.IMQueryFilter;
 import mb.statix.taico.solver.query.IMQueryMin;
 import mb.statix.taico.solver.query.QueryDetails;
+import mb.statix.taico.util.TDebug;
 
 /**
  * Implementation for a query constraint.
@@ -118,14 +119,14 @@ public class CResolveQuery implements IConstraint, Serializable {
 
         final IUnifier.Immutable unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
+            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
             throw Delay.ofVars(unifier.getVars(scopeTerm));
         }
         final Scope scope = Scope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         final IDebugContext subDebug;
-        if (MSTX_solve_constraint.QUERY_DEBUG) {
+        if (TDebug.QUERY_DEBUG) {
             subDebug = new PrefixedDebugContext("Query", params.debug().subContext());
         } else {
             subDebug = new NullDebugContext(params.debug().getDepth() + 1);
@@ -164,15 +165,15 @@ public class CResolveQuery implements IConstraint, Serializable {
 
             paths = nameResolution.resolve(scope);
         } catch(IncompleteDataException e) {
-            System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
+            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()), lockManager);
         } catch(IncompleteEdgeException e) {
-            System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
+            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), e.getModule()), lockManager);
         } catch(ResolutionDelayException e) {
-            System.err.println("Delaying query for unknown reason");
+            if (TDebug.QUERY_DELAY) System.err.println("Delaying query for unknown reason");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             lockManager.absorb(e.getCause().getLockManager());
             e.getCause().setLockManager(lockManager);
