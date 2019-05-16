@@ -48,7 +48,7 @@ rules
     Rel{Decl()} <- s,
     Rel{Decl()} : PRED([OCCURRENCE()]),
     Rel{Decl()}.ast := Decl().
-  
+
 
 /******************************************************************
  * Modules                                                        *

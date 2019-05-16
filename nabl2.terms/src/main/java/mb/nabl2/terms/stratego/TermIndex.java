@@ -61,7 +61,23 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
     // Object implementation
 
     @Override public boolean equals(Object other) {
-        return super.equals(other);
+        if(other == null) {
+            return false;
+        }
+        if(other == this) {
+            return true;
+        }
+        if(!(other instanceof TermIndex)) {
+            return super.equals(other);
+        }
+        final TermIndex that = (TermIndex) other;
+        if(!getResource().equals(that.getResource())) {
+            return false;
+        }
+        if(getId() != that.getId()) {
+            return false;
+        }
+        return true;
     }
 
     @Override public int hashCode() {

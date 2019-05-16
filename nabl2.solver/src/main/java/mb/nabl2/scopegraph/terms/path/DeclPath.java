@@ -33,6 +33,8 @@ abstract class DeclPath<S extends IScope, L extends ILabel, O extends IOccurrenc
         return getPath().getLabels();
     }
 
+    @Value.Lazy @Override public abstract int hashCode();
+
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
         return Iterables2.empty();
     }

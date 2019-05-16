@@ -35,7 +35,7 @@ rules
          w := <mk-Wld(|AST_ID())>;
          d := <mk-Occurrence>(ns, us, <mk-Wld(|AST_ID())>);
          lam := <mk-LLam>([d], [], CEqual(<mk-Tuple>(us), <mk-Tuple>(ts)))
-  
+
 rules
 
   // normalize queries

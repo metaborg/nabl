@@ -1,0 +1,7 @@
+module nabl2/runtime/analysis/query
+
+// forward to new location
+
+imports
+
+  nabl2/runtime/transform/query

@@ -57,6 +57,8 @@ abstract class NStep<S extends IScope, L extends ILabel, O extends IOccurrence> 
         return cases.caseN(getSource(), getLabel(), getImportPath(), getTarget());
     }
 
+    @Value.Lazy @Override public abstract int hashCode();
+
     @Override public String toString(boolean includeTo, boolean includeFrom) {
         StringBuilder sb = new StringBuilder();
         if(includeFrom) {
