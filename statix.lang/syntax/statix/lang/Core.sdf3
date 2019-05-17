@@ -16,6 +16,13 @@ context-free syntax
     <{Section "\n\n"}*>
   > {longest-match}
 
+  Section.Imports = <
+    imports
+      <{Import "\n"}*>
+  >
+
+  Import.Import = ModuleId
+
   Section.Signature = <
     signature
 

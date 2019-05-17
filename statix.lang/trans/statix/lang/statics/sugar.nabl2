@@ -15,7 +15,7 @@ rules
  * User Constraints                                               *
  ******************************************************************/
 
-  [[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
+  DeclOrRule[[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.decl := d,
     d : ty, ty != FUN(_, _) | error "Use `c maps c(...) = ...` for functional constraints." @x,
     d.ind := ind,
@@ -29,7 +29,7 @@ rules
     C{x}.ind := ind !!,
     C{x}.kind := DerivedC() !!.
 
-  [[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
+  DeclOrRule[[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.decl := d,
     d : ty, ty != PRED(_) | error "Use `c maps c(...)` for non-functional constraints." @x,
     d.ind := ind,
@@ -61,7 +61,7 @@ rules
     outty is `out-type` of ty,
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
-  [[ LC(x) ^ (s) : ty ]] :=
+  HoConstraint[[ LC(x) ^ (s) : ty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
     d : ty.
 
@@ -70,9 +70,9 @@ rules
  * Base Constraints                                               *
  ******************************************************************/
 
-  [[ LTrue() ^ (_) : PRED(_) ]].
+  HoConstraint[[ LTrue() ^ (_) : PRED(_) ]].
 
-  [[ LFalse() ^ (_) : PRED(_) ]].
+  HoConstraint[[ LFalse() ^ (_) : PRED(_) ]].
 
   Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
 
@@ -93,7 +93,7 @@ rules
     Rel{l} -> s, Rel{l} |-> d, @l.decl := d,
     d : ty.
 
-  [[ CAskRel(rel, ts, st) ^ (s) ]] :=
+  Constraint[[ CAskRel(rel, ts, st) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
     tys is `in-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
@@ -111,25 +111,25 @@ rules
  * Scope Graph                                                    *
  ******************************************************************/
  
-  [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
+  DeclOrRule[[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
     Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
     NsQ{x} <- s,
-    [[ filter ^ (s, NsQ{x}) ]],
-    [[ min ^ (s, NsQ{x}) ]].
+    Filter[[ filter ^ (s, NsQ{x}) ]],
+    Min[[ min ^ (s, NsQ{x}) ]].
 
-  [[ NamespaceFilter(re) ^ (s, d) ]] :=
+  Filter[[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,
     LabelRE[[ re ^ (s) ]].
 
-  [[ NamespaceMin(prs) ^ (s,d ) ]] :=
+  Min[[ NamespaceMin(prs) ^ (s,d ) ]] :=
     d.ord := prs,
     Map1(LabelPair)[[ prs ^ (s) ]].
 
 
-  [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
+  HoConstraint[[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
     LabelRE[[ re ^ (s) ]].
 
-  [[ LPathLt(ord) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
+  HoConstraint[[ LPathLt(ord) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
     LabelOrd[[ ord ^ (s) ]].
 
 
@@ -145,7 +145,7 @@ rules
     Build[[ r ^ (s) : OCCURRENCE() ]],
     NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
 
-  [[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
+  HoConstraint[[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]].
 
 
@@ -153,7 +153,7 @@ rules
  * Sorts & Constructors                                           *
  ******************************************************************/
 
-  [[ FunType(insorts, outsort) ^ (s) : FUN(intys, outty) ]] :=
+  Type[[ FunType(insorts, outsort) ^ (s) : FUN(intys, outty) ]] :=
     Map1T(SortRef)[[ insorts ^ (s) : intys ]],
     SortRef[[ outsort ^ (s) : outty ]].
 

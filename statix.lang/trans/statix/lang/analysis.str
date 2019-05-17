@@ -9,7 +9,6 @@ imports
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
-  nabl2/runtime/transform/query // for private set-custom-analysis
 
   signatures/statix/lang/-
 
@@ -18,21 +17,23 @@ imports
 
   pp
 
+signature
+  sorts CustomAnalysis constructors
+    CustomAnalysis : Extensions -> CustomAnalysis
+
 rules // Analysis
 
-  editor-analyze:
-      AnalyzeSingle(change*) -> AnalysisResult(result*)
-    with
-      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; result* := <map({ resource, ast, ast', a', error*, warning*, note*:
-                        ?(resource, ast)
-                      ; ( (ast', a', error*, warning*, note*) :=
-                              <editor--analyze> (resource, ast)
-                        < !(resource, Full(ast', a', error*, warning*, note*))
-                        + !(resource, Failed())
-                        )
-                      })> ast*
+  editor-analyze = nabl2-analyze(desugar-all)
 
+  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> or-e*
+    with or-e* := <detect-overlapping-rules> ast
+
+  nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
+    with ext := []
+       ; e* := <concat> units
+       ; ca  := CustomAnalysis(ext)
+
+/*
   editor--analyze:
       (resource, ast) -> (analyzed-ast, result, error*, warning*, note*)
     with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
@@ -67,11 +68,8 @@ rules // Analysis
            warning* := w*;
            note*    := n*
          end
+*/
 
-
-  analyze(|resource) =
-    nabl2-custom-analysis-info-msg(|"| Analyzing...");
-    nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term

@@ -56,7 +56,7 @@ rules // Debugging
   get-normalized-ast: (_, _, ast, path, project-path) -> ast'
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
-    with (ast', _, _) := <nabl2-get-custom-analysis> a
+    with ast' := <normalize(|a)> ast
 
 rules // Debugging
 

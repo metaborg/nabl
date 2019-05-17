@@ -9,18 +9,20 @@ imports
   nabl2/api
 
   signatures/statix/lang/-
-  statix/lang/statics/-
+  statix/lang/analysis
+  statix/lang/normalize
 
 rules
 
   generate-aterm:
       (_, _, ast@Module(name, _), path, project-path) -> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-    with if <nabl2-analysis-has-errors> a then
+    with if fail ; <nabl2-analysis-has-errors> a then
            result := None()
          else
-           (ast', a', ext) := <nabl2-get-custom-analysis> a;
-           spec     := <spec-ast-to-aterm(|a')> (ast', ext);
+           ast' := <normalize(|a)> ast;
+           CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
+           spec     := <core-ast-to-spec-aterm> (ast', ext);
            filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
            result   := (filename, spec)
          end
@@ -35,28 +37,11 @@ rules
 
 rules
 
-  spec-ast-to-aterm(|a): (ast, ext) -> spec
-    with s_mod := <nabl2-get-ast-property(|a,"scope")> ast
-       ; d* := <nabl2-get-visible-decls(|a)> s_mod
-       ; edge* := <filter(edge-to-aterm(|a));strip-annos> d*
-       ; data* := <filter(data-to-aterm(|a));strip-annos> d*
-       ; rule* := <filter(rule-to-aterm(|a));strip-annos;eliminate-all> d*
-       ; spec := (edge*, data*, EOP(), rule*, ext)
-
-  edge-to-aterm(|a): d -> ast
-    where "Edge" := <nabl2-get-occurrence-ns> d
-    with
-      ast := <nabl2-get-property(|a, "ast")> d
-
-  data-to-aterm(|a): d -> ast
-    where "Rel" := <nabl2-get-occurrence-ns> d
-    with
-      ast := <nabl2-get-property(|a, "ast")> d
-
-  rule-to-aterm(|a): d -> ast
-    where "Rule" := <nabl2-get-occurrence-ns> d
-    with
-      ast := <nabl2-get-property(|a, "ast")> d
+  core-ast-to-spec-aterm: (ast, ext) -> spec
+    with edge* := <collect-all(?Labels(<id>));concat> ast
+       ; data* := [Decl()|<collect-all(?RelDecl(<id>, _))> ast]
+       ; rule* := <collect-all(?Rule(_, _, _))> ast
+       ; spec  := <strip-annos;eliminate-all> (edge*, data*, EOP(), rule*, ext)
 
 rules
 

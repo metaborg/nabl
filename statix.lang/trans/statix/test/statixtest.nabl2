@@ -8,8 +8,8 @@ rules
 
   [[ t@Test(vs, c, sections) ^ (s) ]] :=
     new s', s' -P-> s, @t.scope := s',
-    Sections[[ sections ^ (s') ]],
-    new s'', s'' ---> s',
+    Sections[[ sections ^ (s', s) ]],
+    new s'', s'' -P-> s',
     Map1T(VarDecl)[[ vs ^ (s'') : _ ]],
     distinct/name D(s'')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    [[ c ^ (s'') ]].
+    Constraint[[ c ^ (s'') ]].
