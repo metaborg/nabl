@@ -20,6 +20,7 @@ import org.spoofax.interpreter.terms.ITermFactory;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IListTerm;
@@ -56,20 +57,23 @@ public class StrategoTerms {
             }
         ));
         // @formatter:on
-        if(strategoTerm.getTermType() != IStrategoTerm.BLOB) {
-            strategoTerm = putAttachments(strategoTerm, term.getAttachments());
+        switch(strategoTerm.getTermType()) {
+            case IStrategoTerm.BLOB:
+            case IStrategoTerm.LIST:
+                break;
+            default:
+                strategoTerm = putAttachments(strategoTerm, term.getAttachments());
         }
         return strategoTerm;
     }
 
-    // NB. This function does not preserve locks, it depends on toStratego for that.
     private IStrategoTerm toStrategoList(IListTerm list) {
         final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
         final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
         while(list != null) {
             attachments.push(list.getAttachments());
-            list = list.match(ListTerms.<IListTerm>cases(
             // @formatter:off
+            list = list.match(ListTerms.<IListTerm>cases(
                 cons -> {
                     terms.push(toStratego(cons.getHead()));
                     return cons.getTail();
@@ -80,8 +84,8 @@ public class StrategoTerms {
                 var -> {
                     throw new IllegalArgumentException("Cannot convert specialized terms to Stratego.");
                 }
-                // @formatter:on
             ));
+            // @formatter:on
         }
         IStrategoList strategoList = termFactory.makeList();
         putAttachments(strategoList, attachments.pop());
@@ -119,14 +123,20 @@ public class StrategoTerms {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
         // @formatter:off
         ITerm term = match(sterm, StrategoTerms.cases(
-            appl -> B.newAppl(appl.getConstructor().getName(), Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
-            tuple -> B.newTuple(Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(Collectors.toList())),
+            appl -> {
+                final List<ITerm> args = Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
+                return B.newAppl(appl.getConstructor().getName(), args, attachments);
+            },
+            tuple -> {
+                final List<ITerm> args = Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
+                return B.newTuple(args, attachments);
+            },
             this::fromStrategoList,
-            integer -> B.newInt(integer.intValue()),
+            integer -> B.newInt(integer.intValue(), attachments),
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
-            string -> B.newString(string.stringValue()),
+            string -> B.newString(string.stringValue(), attachments),
             blob -> B.newBlob(blob.value())
-        )).withAttachments(attachments);
+        ));
         // @formatter:on
         return term;
     }

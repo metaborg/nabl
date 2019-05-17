@@ -48,10 +48,10 @@ public class StrategoTermIndices {
                     blob -> new StrategoBlob(blob.value())
                 ));
             // @formatter:on
-            final TermIndex index = ImmutableTermIndex.of(resource, ++currentId);
-            TermOrigin.get(term).ifPresent(o -> o.put(index));
-            result = put(index, result, termFactory);
             termFactory.copyAttachments(term, result);
+            final TermIndex index1 = ImmutableTermIndex.of(resource, ++currentId);
+            final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
+            result = put(index2, result, termFactory);
             return result;
         }
 
@@ -62,10 +62,10 @@ public class StrategoTermIndices {
             } else {
                 result = termFactory.makeListCons(index(list.head()), index(list.tail()), list.getAnnotations());
             }
-            final TermIndex index = ImmutableTermIndex.of(resource, ++currentId);
-            TermOrigin.get(list).ifPresent(o -> o.put(index));
-            result = (IStrategoList) put(index, result, termFactory);
             termFactory.copyAttachments(list, result);
+            final TermIndex index1 = ImmutableTermIndex.of(resource, ++currentId);
+            final TermIndex index2 = (TermIndex) TermOrigin.get(list).map(o -> o.put(index1)).orElse(index1);
+            result = (IStrategoList) put(index2, result, termFactory);
             return result;
         }
 
@@ -103,8 +103,8 @@ public class StrategoTermIndices {
                             blob -> new StrategoBlob(blob.value())
                     // @formatter:on
             ));
-            result = remove(result, termFactory);
             termFactory.copyAttachments(term, result);
+            result = remove(result, termFactory);
             assert !get(result).isPresent();
             return result;
         }
@@ -116,8 +116,8 @@ public class StrategoTermIndices {
             } else {
                 result = termFactory.makeListCons(erase(list.head()), erase(list.tail()), list.getAnnotations());
             }
-            result = (IStrategoList) remove(result, termFactory);
             termFactory.copyAttachments(list, result);
+            result = (IStrategoList) remove(result, termFactory);
             assert !get(result).isPresent();
             return result;
         }
