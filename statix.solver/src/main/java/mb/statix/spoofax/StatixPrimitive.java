@@ -28,6 +28,7 @@ import com.google.common.collect.ListMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
@@ -137,11 +138,14 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onTrue -> Stream.empty(),
             onUser -> onUser.args().stream()
         );
-        // @formatter:on
-        return terms.apply(constraint).map(unifier::findTerm).filter(t -> TermIndex.get(t).isPresent()).findAny()
+        return terms.apply(constraint).map(unifier::findTerm)
+                .filter(t -> TermIndex.get(t).isPresent())
+                .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
+                .findAny()
                 .orElseGet(() -> {
                     return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
                 });
+        // @formatter:on
     }
 
     private ITerm makeOriginTerm(ITerm term) {
