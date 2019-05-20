@@ -17,7 +17,7 @@ rules
       (node, position, ast, path, project-path) -> r
     where
       <stx--get-ast-index> node
-    ; Solution(_, a) := <stx--get-ast-analysis> node
+    ; a := <stx--get-ast-analysis> node
     ; r := <stx--get-ast-property(|a,Ref())> node
 
   stx-editor-hover:
