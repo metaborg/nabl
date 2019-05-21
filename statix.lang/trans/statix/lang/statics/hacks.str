@@ -17,22 +17,15 @@ rules
 
 rules
 
-  lifts-some: (lifts, _, msginfo) -> CTrue(msginfo)
-    where <getfirst(?ListLift())> lifts
-
-rules
-
   inout-type = inout-types; tys-to-ty
   inout-types: PRED(tys)          -> tys
-  inout-types: FUN(intys, outtys) -> <conc> (intys, outtys)
+  inout-types: FUN(intys, outty) -> <conc> (intys, [outty])
 
   in-type = in-types; tys-to-ty
-  in-types: PRED(tys)          -> tys
-  in-types: FUN(intys, outtys) -> intys
+  in-types: PRED(tys)         -> tys
+  in-types: FUN(intys, outty) -> intys
 
-  out-type = out-types; tys-to-ty
-  out-types: PRED(tys)          -> []
-  out-types: FUN(intys, outtys) -> outtys
+  out-type: FUN(intys, outty) -> outty
 
   tys-to-ty: [ty] -> ty
   tys-to-ty: tys  -> TUPLE(tys)
@@ -40,11 +33,15 @@ rules
 
 rules
 
-  lift-to-lifts: TupleLift(lifts) -> lifts
-  lift-to-lifts: lift -> [lift]
-    where not(TupleLift(_) := lift)
+  lifts-some: (lifts, _, msginfo) -> CTrue(msginfo)
+    where <collect-one(?ListLift())> lifts
 
-  lift-types = zip; map(lift-type)
+  lift-to-lifts: IdLift() -> [IdLift()]
+  lift-to-lifts: ListLift() -> [ListLift()]
+  lift-to-lifts: TupleLift(lifts) -> lifts
+
+  lift-types = zip(lift-type)
 
   lift-type: (IdLift(), ty) -> ty
   lift-type: (ListLift(), ty) -> LIST(ty)
+  lift-type: (TupleLift(lifts), TUPLE(tys)) -> TUPLE(<lift-types> (lifts, tys))

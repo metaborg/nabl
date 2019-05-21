@@ -4,11 +4,11 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
-import mb.nabl2.stratego.ImmutableTermIndex;
-import mb.nabl2.stratego.ImmutableTermOrigin;
-import mb.nabl2.stratego.TermIndex;
-import mb.nabl2.stratego.TermOrigin;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.ImmutableTermIndex;
+import mb.nabl2.terms.stratego.ImmutableTermOrigin;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.stratego.TermOrigin;
 
 public class Actions {
 

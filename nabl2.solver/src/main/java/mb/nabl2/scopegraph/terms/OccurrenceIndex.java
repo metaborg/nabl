@@ -9,11 +9,11 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Multiset;
 
 import mb.nabl2.scopegraph.IOccurrenceIndex;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.stratego.TermIndex;
 
 public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializable {
 

@@ -1,0 +1,34 @@
+module nabl2/runtime/transform/explicit-types
+
+imports
+
+  libspoofax/term/annotation
+
+  nabl2/runtime/transform/-
+
+signature
+  constructors
+    NaBL2Type : Term -> Annotation
+    NaBL2Prop : Term * Term -> Annotation
+
+rules
+
+  nabl2-add-anno-types(|a) = topdown(try(nabl2--add-anno-type(|a)))
+
+  nabl2--add-anno-type(|a): t -> <nabl2-set-anno-type(|ty)> t
+    where
+      ty := <nabl2--get-ast-type(|a)> t
+
+  nabl2-remove-anno-type = remove-annotations(?NaBL2Type(_))
+
+  nabl2-set-anno-type(|ty) = replace-annotation(?NaBL2Type(_)|NaBL2Type(ty))
+  
+  nabl2-get-anno-type = get-annotation(?NaBL2Type(<id>))
+
+  nabl2-copy-anno-type(|t) =
+    where(ty := <nabl2-get-anno-type> t)
+  < nabl2-set-anno-type(|ty)
+  + id
+
+  nabl2-preserve-anno-type(s) = ?t; s; nabl2-copy-anno-type(|t)
+  

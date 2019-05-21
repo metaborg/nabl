@@ -59,7 +59,20 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         // Object implementation
 
         @Override public boolean equals(Object other) {
-            return super.equals(other);
+            if(other == null) {
+                return false;
+            }
+            if(other == this) {
+                return true;
+            }
+            if(!(other instanceof NamedRelation)) {
+                return super.equals(other);
+            }
+            final NamedRelation that = (NamedRelation) other;
+            if(!getName().equals(that.getName())) {
+                return false;
+            }
+            return true;
         }
 
         @Override public int hashCode() {
@@ -107,7 +120,20 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         // Object implementation
 
         @Override public boolean equals(Object other) {
-            return super.equals(other);
+            if(other == null) {
+                return false;
+            }
+            if(other == this) {
+                return true;
+            }
+            if(!(other instanceof ExtRelation)) {
+                return super.equals(other);
+            }
+            final ExtRelation that = (ExtRelation) other;
+            if(!getName().equals(that.getName())) {
+                return false;
+            }
+            return true;
         }
 
         @Override public int hashCode() {

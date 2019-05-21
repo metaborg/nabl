@@ -59,9 +59,6 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         if(other == this) {
             return true;
         }
-        if(hashCode() != other.hashCode()) {
-            return false;
-        }
         if(!(other instanceof IApplTerm)) {
             return false;
         }

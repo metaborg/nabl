@@ -36,9 +36,9 @@ import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.spoofax.analysis.ImmutableSingleUnitResult;
 import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.stratego.MessageTerms;
-import mb.nabl2.stratego.StrategoBlob;
-import mb.nabl2.stratego.StrategoTerms;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoBlob;
+import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.unification.PersistentUnifier;
 
 public class SG_solve_single_constraint extends AbstractPrimitive {

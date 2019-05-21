@@ -11,8 +11,8 @@ import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
 import mb.nabl2.solver.SolverCore;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.collections.IProperties;
 
 public class AstComponent extends ASolver {

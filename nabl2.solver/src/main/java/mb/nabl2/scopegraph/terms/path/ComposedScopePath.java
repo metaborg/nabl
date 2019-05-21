@@ -73,7 +73,7 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         return Iterators.concat(getLeft().iterator(), getRight().iterator());
     }
 
-    @Override public int hashCode() {
+    @Value.Lazy @Override public int hashCode() {
         return getLeft().hashCode() + (IntMath.pow(31, getLeft().size()) * getRight().hashCode());
     }
 

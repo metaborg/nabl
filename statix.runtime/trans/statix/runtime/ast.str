@@ -1,0 +1,25 @@
+module statix/runtime/ast
+
+imports
+
+rules
+
+  stx-index-ast(|source) =
+    stx--index-ast(|source)
+
+  stx--erase-ast-indices =
+    prim("SG_erase_ast_indices")
+
+  stx--index-ast(|source) =
+    prim("SG_index_ast", source)
+
+  stx--get-ast-index =
+    prim("SG_get_ast_index")
+
+  stx--set-ast-index(|index) =
+    prim("SG_set_ast_index",index)
+
+  stx--get-ast-resource =
+    prim("SG_get_ast_resource")
+
+  stx--get-ast-property(|a,prop) = prim("STX_get_ast_property",a,prop)

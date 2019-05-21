@@ -1,0 +1,433 @@
+module statix/lang/statics/core
+
+imports
+
+  signatures/statix/lang/-
+
+signature
+
+  sorts
+    SKind
+    CKind
+
+  constructors
+    SimpleSort : SKind
+    SortAlias  : SKind
+
+    DeclaredC : CKind
+    DerivedC  : CKind
+
+  namespaces
+    C      // constraint
+    Rel    // data label
+    Edge   // edge label
+    Mod    // module
+    Ns     // namespace
+    NsQ    // namespace query
+    Op     // term constructor
+    Rule   // constraint rule
+    Sort   // sort
+
+  name resolution
+    labels
+      P // lexical parent
+      I // module import
+    well-formedness
+      P* I?
+    order
+      D < P,
+      I < P
+
+rules
+
+  init ^ (s) :=
+    new s,
+  
+    // sugar
+
+    Rel{Decl()} <- s,
+    Rel{Decl()} : PRED([OCCURRENCE()]),
+    Rel{Decl()}.ast := Decl().
+
+
+/******************************************************************
+ * Modules                                                        *
+ ******************************************************************/
+
+  [[ m@Module(x, sections) ^ (s) ]] :=
+    new s', s' -P-> s, @m.scope := s',
+    Mod{x} <- s, Mod{x} =I=> s',
+    distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
+    Sections[[ sections ^ (s') ]].
+
+  Sections[[ sections ^ (s') ]] :=
+    Map1[[ sections ^ (s') ]],
+    distinct/name D(s')/C    | error $[Duplicate constraint [NAME]] @NAMES,
+    distinct/name D(s')/Rel  | error $[Duplicate relation [NAME]] @NAMES,
+    distinct/name D(s')/Edge | error $[Duplicate edge [NAME]] @NAMES,
+    distinct/name D(s')/Ns   | error $[Duplicate namespace [NAME]] @NAMES,
+    distinct/name D(s')/NsQ  | error $[Duplicate namespace query [NAME]] @NAMES,
+    distinct/name D(s')/Op   | error $[Duplicate constructor [NAME]] @NAMES,
+    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES,
+    (D(s')/Rel isect/name D(s')/Edge) subseteq 0 | error $[Relation and edge label with same name [NAME]] @NAMES.
+
+  [[ Signature(sigs) ^ (s) ]] :=
+    Map1[[ sigs ^ (s) ]].
+
+  [[ Rules(rs) ^ (s) ]] :=
+    Map1[[ rs ^ (s) ]].
+
+
+/******************************************************************
+ * User Constraints                                               *
+ ******************************************************************/
+
+  [[ Constraints(cs) ^ (s) ]] :=
+    Map1[[ cs ^ (s) ]].
+
+  [[ CDecl(ind, x, type) ^ (s) ]] :=
+    [[ ind ]],
+    [[ type ^ (s) : ty ]],
+    C{x} <- s, @x.decl := C{x},
+    C{x} : ty !!,
+    C{x}.ind := ind !!,
+    C{x}.kind := DeclaredC() !!.
+
+  [[ InductiveC() ]].
+  [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
+
+  [[ r@Rule(h, bvs, body) ^ (s) ]] :=
+    Rule{x} <- s, Rule{x}.ast := r,
+    new s_rule, s_rule -P-> s,
+    distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    RuleHead[[ h ^ (s_rule, s_body, x) : _ ]],
+    new s_body, s_body -P-> s_rule,
+    distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
+    (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
+    Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
+    [[ body ^ (s_body) ]].
+
+  RuleHead[[ C(x, args) ^ (s_rule, s_body, y) : ty ]] := x == y,
+    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
+    d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
+    tys is `in-types` of ty,
+    Map1T(Match)[[ args ^ (s_rule) : tys ]].
+
+  [[ C(x, args) ^ (s) ]] :=
+    C{x} -> s, C{x} |-> d, @x.decl := d,
+    d : ty, ty != FUN(_, _) | error "Use inline notation for functional constraints.",
+    tys is `in-types` of ty,
+    Map1T(Build)[[ args ^ (s) : tys ]].
+
+  [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
+    new s', s' -P-> s,
+    Map1T(Match)[[ ps ^ (s') : tys ]],
+    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
+    [[ c ^ (s') ]].
+
+
+/******************************************************************
+ * Base Constraints                                               *
+ ******************************************************************/
+
+  [[ CTrue() ^ (_) ]].
+
+  [[ CFalse() ^ (_) ]].
+
+  [[ CConj(c1, c2) ^ (s) ]] :=
+    [[ c1 ^ (s) ]],
+    [[ c2 ^ (s) ]].
+
+  [[ CNew(vs) ^ (s) ]] :=
+    Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
+
+  [[ CEqual(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty ]],
+    Build[[ t2 ^ (s) : ty ]].
+
+  [[ CInequal(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : ty ]],
+    Build[[ t2 ^ (s) : ty ]].
+
+
+/******************************************************************
+ * AST Constraints                                                *
+ ******************************************************************/
+
+
+  [[ CAstId(t1, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : _ ]],
+    Build[[ t2 ^ (s) : AST_ID() ]].
+
+  [[ CAstProperty(t1, l, t2) ^ (s) ]] :=
+    TermOrId(Build)[[ t1 ^ (s) : _ ]],
+    Build[[ t2 ^ (s) : _ ]].
+
+  // only call this with a wildcard for ty!
+  TermOrId(V)[[ t ^ (s) : ty ]] :=
+    V[[ t ^ (s) : ty ]].
+
+/******************************************************************
+ * Relations                                                      *
+ ******************************************************************/
+
+  [[ Relations(rdecls) ^ (s) ]] :=
+    Map1[[ rdecls ^ (s) ]].
+
+  [[ RelDecl(rel, type) ^ (s) ]] :=
+    [[ type ^ (s) : ty ]],
+    RelDecl[[ rel ^ (s) : ty ]].
+
+  RelDecl[[ r@Label(x) ^ (s) : ty ]] :=
+    Rel{x} <- s, @x.decl := Rel{x}, Rel{x}.ast := r,
+    Rel{x} : ty !.
+
+  RelRef[[ l@Label(x) ^ (s) : ty ]] :=
+    Rel{x} -> s, Rel{x} |-> d, @l.decl := d,
+    d : ty.
+
+  RelRef[[ l@EOP() ^ (s) : PRED([SCOPE()]) ]].
+
+  [[ CTellRel(rel, ts, st) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : ty ]],
+    tys is `inout-types` of ty,
+    Map1T(Build)[[ ts ^ (s): tys ]],
+    Build[[ st ^ (s) : SCOPE() ]].
+
+
+/******************************************************************
+ * Scope Graph                                                    *
+ ******************************************************************/
+
+  [[ Namespaces(nss) ^ (s) ]] :=
+    Map1[[ nss ^ (s) ]].
+
+  [[ NsDecl(x, sorts) ^ (s) ]] :=
+    Ns{x} <- s, @x.decl := Ns{x},
+    Map1T(SortRef)[[ sorts ^ (s) : tys ]],
+    Ns{x} : NS(tys) !.
+
+  [[ NameResolution(params) ^ (s) ]] :=
+    Map1[[ params ^ (s) ]].
+
+  [[ Labels(lbls) ^ (s) ]] :=
+    Map1(EdgeDecl)[[ lbls ^ (s) ]].
+
+  EdgeDecl[[ l@Label(x) ^ (s) ]] :=
+    Edge{x} <- s, @x.decl := Edge{x}, Edge{x}.ast := l.
+
+
+  EdgeRef[[ l@Label(x) ^ (s) ]] :=
+    Edge{x} -> s, Edge{x} |-> d, @l.decl := d.
+
+  EdgeRef[[ l@EOP() ^ (s) ]].
+
+
+  [[ CPathMatch(re, p) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]],
+    Build[[ p ^ (s) : LIST(LABEL()) ]].
+
+  [[ CPathLt(ord, p1, p2) ^ (s) ]] :=
+    Build[[ p1 ^ (s) : LABEL() ]],
+    Build[[ p2 ^ (s) : LABEL() ]],
+    LabelOrd[[ ord ^ (s) ]].
+
+  LabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
+    EdgeRef[[ lbl1 ^ (s) ]],
+    EdgeRef[[ lbl2 ^ (s) ]].
+
+
+  LabelRE[[ Empty() ^ (s) ]].
+
+  LabelRE[[ Epsilon() ^ (s) ]].
+
+  LabelRE[[ l@Label(_) ^ (s) ]] :=
+    EdgeRef[[ l ^ (s) ]].
+
+  LabelRE[[ Closure(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
+
+  LabelRE[[ Neg(re) ^ (s) ]] :=
+    LabelRE[[ re ^ (s) ]].
+
+  LabelRE[[ Concat(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelRE[[ And(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+  LabelRE[[ Or(re1, re2) ^ (s) ]] :=
+    LabelRE[[ re1 ^ (s) ]],
+    LabelRE[[ re2 ^ (s) ]].
+
+
+  [[ CTellEdge(t1, lbl, t2) ^ (s) ]] :=
+    Build[[ t1 ^ (s) : SCOPE() ]],
+    EdgeRef[[ lbl ^ (s) ]],
+    Build[[ t2 ^ (s) : SCOPE() ]].
+
+  Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
+    Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
+    d : NS(tys),
+    Map1T(Term(V))[[ ts ^ (s) : tys ]],
+    OccurrencePos(Term(V))[[ pos ^ (s) : _ ]].
+
+  // only call this with a wildcard for ty
+  OccurrencePos(T)[[ NoId() ^ (s) : AST_ID() ]].
+  OccurrencePos(T)[[ t ^ (s) : ty ]] :=
+    TermOrId(T)[[ t ^ (s) : ty ]].
+
+  Term(V)[[ PathEmpty(st) ^ (s) : PATH() ]] :=
+    Term(V)[[ st ^ (s) : SCOPE() ]].
+
+  Term(V)[[ PathStep(pt, lt, st) ^ (s) : PATH() ]] :=
+    Term(V)[[ pt ^ (s) : PATH() ]],
+    Term(V)[[ lt ^ (s) : LABEL() ]],
+    Term(V)[[ st ^ (s) : SCOPE() ]].
+
+
+/******************************************************************
+ * Resolve & Query
+ ******************************************************************/
+
+  [[ CResolveQuery(rel, filter, min, st, pst) ^ (s) ]] :=
+    RelRef[[ rel ^ (s) : ty ]],
+    inty is `in-type` of ty,
+    [[ filter ^ (s, PRED([inty])) ]],
+    [[ min ^ (s, PRED([inty, inty])) ]],
+    Build[[ st ^ (s) : SCOPE() ]],
+    inoutty is `inout-type` of ty,
+    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]].
+
+  [[ Filter(re, lt) ^ (s, lty) ]] :=
+    LabelRE[[ re ^ (s) ]],
+    [[ lt ^ (s) : lty ]].
+
+  [[ Min(ord, lt) ^ (s, lty) ]] :=
+    LabelOrd[[ ord ^ (s) ]],
+    [[ lt ^ (s) : lty ]].
+
+  LabelOrd[[ [] ^ (s) ]].
+  LabelOrd[[ prs@[_|_] ^ (s) ]] :=
+    Map1(LabelPair)[[ prs ^ (s) ]].
+
+/******************************************************************
+ * Sorts & Constructors                                           *
+ ******************************************************************/
+
+  [[ Sorts(sorts) ^ (s) ]] :=
+    Map1(SortDecl)[[ sorts ^ (s) ]].
+
+  SortDecl[[ SortDecl(x) ^ (s) ]] :=
+    Sort{x} <- s, @x.decl := Sort{x},
+    Sort{x} : SORT(Sort{x}) !!,
+    Sort{x}.kind := SimpleSort().
+
+  SortDecl[[ SortAlias(x, sort) ^ (s) ]] :=
+    Sort{x} <- s, @x.decl := Sort{x},
+    Sort{x} : ty !!,
+    Sort{x}.kind := SortAlias(),
+    SortRef[[ sort ^ (s) : ty ]].
+
+  [[ Constructors(ctors) ^ (s) ]] :=
+    Map1[[ ctors ^ (s) ]].
+
+  [[ OpDecl(x, sort) ^ (s) ]] :=
+    x' is `op-name` of (x, sort),
+    Op{x'@x} <- s, @x.decl := Op{x'@x},
+    Op{x'@x} : ty !!,
+    OpSort[[ sort ^ (s) : ty ]].
+
+  OpSort[[ ConstOp(sort) ^ (s) : OP([], ty) ]] :=
+    RealSortRef[[ sort ^ (s) : ty ]].
+
+  OpSort[[ ArrowOp(args, sort) ^ (s) : OP(tys, ty) ]] :=
+    Map1T(SortRef)[[ args ^ (s) : tys ]],
+    RealSortRef[[ sort ^ (s) : ty ]].
+
+  RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
+    Sort{x} -> s, Sort{x} |-> d, @x.decl := d,
+    d : ty !,
+    d.kind := k, k != SortAlias() | error $[Cannot refer to alias [d]].
+
+  SortRef[[ IntSort() ^ (_) : INT() ]].
+  SortRef[[ StringSort() ^ (_) : STRING() ]].
+  SortRef[[ OccurrenceSort() ^ (_) : OCCURRENCE() ]].
+  SortRef[[ PathSort() ^ (_) : PATH() ]].
+  SortRef[[ LabelSort() ^ (_) : LABEL() ]].
+  SortRef[[ ScopeSort() ^ (_) : SCOPE() ]].
+  SortRef[[ AstIdSort() ^ (_) : AST_ID() ]].
+  SortRef[[ TupleSort(sorts) ^ (s) : TUPLE(tys) ]] :=
+    Map1T(SortRef)[[ sorts ^ (s) : tys ]].
+  SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
+    SortRef[[ sort ^ (s) : ty ]].
+  SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
+    Sort{x} -> s, Sort{x} |-> d, @x.decl := d,
+    d : ty.
+
+  [[ SimpleType(sorts) ^ (s) : PRED(intys) ]] :=
+    Map1T(SortRef)[[ sorts ^ (s) : intys ]].
+
+
+/******************************************************************
+ * Terms                                                          *
+ ******************************************************************/
+
+  Match[[ t ^ (s) : ty ]] :=
+    Term(NonUniqueVarDecl)[[ t ^ (s) : ty ]].
+
+  Build[[ t ^ (s) : ty ]] :=
+    Term(VarRef)[[ t ^ (s) : ty ]].
+
+  NonUniqueVarDecl[[ Var(x) ^ (s) : ty ]] :=
+    Var{x @s} <- s, @x.decl := Var{x @s},
+    Var{x @s} : ty !.
+
+  NonUniqueVarDecl[[ Wld() ^ (_) : _ ]].
+
+  VarDecl[[ Var(x) ^ (s) : ty ]] :=
+    Var{x} <- s, @x.decl := Var{x},
+    Var{x} : ty !.
+
+  VarDecl[[ Wld() ^ (_) : _ ]].
+
+  VarRef[[ Var(x) ^ (s) : ty ]] :=
+    Var{x} -> s, Var{x} |-> d, @x.decl := d,
+    d : ty.
+
+  VarRef[[ Wld() ^ (_) : _ ]].
+
+  Term(V)[[ v@Var(_) ^ (s) : ty ]] :=
+    V[[ v ^ (s) : ty ]].
+  Term(V)[[ Wld() ^ (_) : ty ]].
+  Term(V)[[ List(ts) ^ (s): LIST(ty) ]] :=
+    Map1t(Term(V))[[ ts ^ (s) : ty ]].
+  Term(V)[[ ListTail(ts, t) ^ (s) : LIST(ty) ]] :=
+    Map1t(Term(V))[[ ts ^ (s) : ty ]],
+    Term(V)[[ t ^ (s) : LIST(ty) ]].
+  Term(V)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
+    Map1T(Term(V))[[ ts ^ (s) : tys ]].
+  Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
+    x' is `op-name` of (x, args),
+    Op{x'@x} -> s, Op{x'@x} |-> d, @x.decl := d,
+    d : OP(tys, ty),
+    Map1T(Term(V))[[ args ^ (s) : tys ]].
+  Term(V)[[ Str(_) ^ (_) : STRING() ]].
+  Term(V)[[ Int(_) ^ (_) : INT() ]].
+  Term(V)[[ As(v, t) ^ (s) : ty ]] :=
+    V[[ v ^ (s) : ty ]],
+    Term(V)[[ t ^ (s) : ty ]].
+  Term(V)[[ Ascribe(t, sort) ^ (s) : ty ]] :=
+    SortRef[[ sort ^ (s) : ty ]],
+    Term(V)[[ t ^ (s) : ty ]].
+
+rules
+
+  Map1t(X)[[ [x|xs] ^ (s) : ty ]] :=
+    X[[ x ^ (s) : ty ]],
+    Map1t(X)[[ xs ^ (s) : ty ]].
+
+  Map1t(X)[[ [] ^ (s) : _ ]].

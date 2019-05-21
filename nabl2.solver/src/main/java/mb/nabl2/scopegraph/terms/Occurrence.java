@@ -53,7 +53,26 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
     // Object implementation
 
     @Override public boolean equals(Object other) {
-        return super.equals(other);
+        if(other == null) {
+            return false;
+        }
+        if(other == this) {
+            return true;
+        }
+        if(!(other instanceof Occurrence)) {
+            return super.equals(other);
+        }
+        final Occurrence that = (Occurrence) other;
+        if(!getNamespace().equals(that.getNamespace())) {
+            return false;
+        }
+        if(!getName().equals(that.getName())) {
+            return false;
+        }
+        if(!getIndex().equals(that.getIndex())) {
+            return false;
+        }
+        return true;
     }
 
     @Override public int hashCode() {

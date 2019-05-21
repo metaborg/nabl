@@ -64,7 +64,20 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         // Object implementation
 
         @Override public boolean equals(Object other) {
-            return super.equals(other);
+            if(other == null) {
+                return false;
+            }
+            if(other == this) {
+                return true;
+            }
+            if(!(other instanceof NamedFunction)) {
+                return super.equals(other);
+            }
+            final NamedFunction that = (NamedFunction) other;
+            if(!getName().equals(that.getName())) {
+                return false;
+            }
+            return true;
         }
 
         @Override public int hashCode() {
@@ -112,7 +125,20 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         // Object implementation
 
         @Override public boolean equals(Object other) {
-            return super.equals(other);
+            if(other == null) {
+                return false;
+            }
+            if(other == this) {
+                return true;
+            }
+            if(!(other instanceof ExtFunction)) {
+                return super.equals(other);
+            }
+            final ExtFunction that = (ExtFunction) other;
+            if(!getName().equals(that.getName())) {
+                return false;
+            }
+            return true;
         }
 
         @Override public int hashCode() {

@@ -38,8 +38,8 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
     }
 
     public static IMatcher<Scope> matcher() {
-        return M.preserveAttachments(M.appl2("Scope", M.stringValue(), M.stringValue(),
-                (t, resource, name) -> Scope.of(resource, name)));
+        return M.preserveAttachments(
+                M.appl2("Scope", M.stringValue(), M.stringValue(), (t, resource, name) -> Scope.of(resource, name)));
     }
 
     @Override protected AScope check() {
@@ -49,7 +49,23 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
     // Object implementation
 
     @Override public boolean equals(Object other) {
-        return super.equals(other);
+        if(other == null) {
+            return false;
+        }
+        if(other == this) {
+            return true;
+        }
+        if(!(other instanceof AScope)) {
+            return super.equals(other);
+        }
+        final AScope that = (AScope) other;
+        if(!getResource().equals(that.getResource())) {
+            return false;
+        }
+        if(!getName().equals(that.getName())) {
+            return false;
+        }
+        return true;
     }
 
     @Override public int hashCode() {

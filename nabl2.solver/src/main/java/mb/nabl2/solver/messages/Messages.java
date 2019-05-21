@@ -114,4 +114,8 @@ public abstract class Messages implements IMessages {
         }).collect(Collectors.toSet());
     }
 
+    @Override public String toString() {
+        return messages().toString();
+    }
+
 }

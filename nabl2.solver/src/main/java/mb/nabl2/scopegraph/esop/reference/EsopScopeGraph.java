@@ -30,7 +30,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         allScopes.__insertAll(getDirectEdges().valueSet());
         allScopes.__insertAll(getExportEdges().valueSet());
         allScopes.__insertAll(getImportEdges().keySet());
-        allScopes.__insertAll(incompleteImportEdges().keySet());
+        allScopes.__insertAll(incompleteDirectEdges().keySet());
         allScopes.__insertAll(incompleteImportEdges().keySet());
         return allScopes.freeze();
     }

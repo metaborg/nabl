@@ -1,0 +1,20 @@
+module statix/runtime/constraints
+
+// Constraint duplicates from statix.lang
+
+imports
+
+  statix/runtime/terms
+
+signature
+  constructors
+    CNew  : List(Term) -> Constraint
+    CTrue : Constraint
+    CConj : Constraint * Constraint -> Constraint
+    C     : String * List(Term) -> Constraint
+
+rules
+
+  stx--conj: [C|C*] -> CConj(C, <stx--conj> C*)
+  stx--conj: [C] -> C
+  stx--conj: [] -> CTrue()

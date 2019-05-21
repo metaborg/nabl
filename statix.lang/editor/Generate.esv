@@ -8,4 +8,4 @@ menus
   
   menu: "Generate" (openeditor)
     
-    action: "Generate ATerms" = generate-aterm
+    action: "Generate ATerm" = generate-aterm

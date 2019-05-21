@@ -1,4 +1,4 @@
-module rules-order
+module rules/order
 
 language StatixLang
 

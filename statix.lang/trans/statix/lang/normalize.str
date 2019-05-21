@@ -1,0 +1,21 @@
+module statix/lang/normalize
+
+imports
+
+  nabl2/api
+
+  statix/lang/normalize/-
+
+rules
+
+  normalize(|a) =
+    nabl2-custom-analysis-info-msg(|"Normalizing AST...")
+  ; nabl2-add-anno-types(|a)
+  ; normalize-mapping-constraints(|a)
+  ; normalize-functional-constraints
+  ; normalize-ho-constraints
+  ; normalize-resolves(|a)
+  ; normalize-queries
+  ; normalize-functional-relations
+  ; normalize-lambda-patterns
+  ; normalize-terms

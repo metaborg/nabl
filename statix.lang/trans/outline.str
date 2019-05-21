@@ -69,7 +69,7 @@ rules
 
 rules
 
-  outline-rel(|ast): RelDecl(Rel(x), _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"RelDecl"))>, []))
+  outline-rel(|ast): RelDecl(Label(x), _) -> (x, Node(<keep-origin(pp-partial-Statix-string(|"RelDecl"))>, []))
 
 rules
 

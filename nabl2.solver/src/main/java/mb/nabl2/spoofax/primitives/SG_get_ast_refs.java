@@ -11,8 +11,8 @@ import org.spoofax.interpreter.core.InterpreterException;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.OccurrenceIndex;
 import mb.nabl2.solver.ISolution;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
 
 public class SG_get_ast_refs extends AnalysisPrimitive {
 

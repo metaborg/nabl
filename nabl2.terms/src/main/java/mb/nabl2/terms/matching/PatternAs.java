@@ -53,7 +53,7 @@ class PatternAs extends Pattern {
         return vars.build();
     }
 
-    @Override protected MaybeNotInstantiated<Boolean> matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier);
     }
 

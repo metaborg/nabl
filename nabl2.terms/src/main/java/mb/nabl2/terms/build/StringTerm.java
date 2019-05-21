@@ -38,9 +38,6 @@ abstract class StringTerm extends AbstractTerm implements IStringTerm {
         if(other == null) {
             return false;
         }
-        if(hashCode() != other.hashCode()) {
-            return false;
-        }
         if(!(other instanceof IStringTerm)) {
             return false;
         }

@@ -1,35 +1,33 @@
 package mb.statix.scopegraph;
 
-import java.util.List;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.IRelation3;
 
 public interface IScopeGraph<S, L, D> {
 
-    Set.Immutable<L> getLabels();
+    Set.Immutable<L> getEdgeLabels();
 
-    L getEndOfPath();
+    L getNoDataLabel();
 
-    Set.Immutable<L> getRelations();
+    Set.Immutable<L> getDataLabels();
 
     Set<S> getAllScopes();
 
     IRelation3<S, L, S> getEdges();
 
-    IRelation3<S, L, List<D>> getData();
+    java.util.Set<S> getEdges(S scope, L label);
+
+    IRelation3<S, L, D> getData();
+
+    java.util.Set<D> getData(S scope, L relation);
 
     interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
 
         @Override Set.Immutable<S> getAllScopes();
 
-        @Override IRelation3.Immutable<S, L, S> getEdges();
-
-        @Override IRelation3.Immutable<S, L, List<D>> getData();
-
         Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 
-        Immutable<S, L, D> addDatum(S scope, L relation, Iterable<D> datum);
+        Immutable<S, L, D> addDatum(S scope, L relation, D datum);
 
         Immutable<S, L, D> addAll(IScopeGraph<S, L, D> other);
 
@@ -41,7 +39,7 @@ public interface IScopeGraph<S, L, D> {
 
         boolean addEdge(S sourceScope, L label, S targetScope);
 
-        boolean addDatum(S scope, L relation, Iterable<D> datum);
+        boolean addDatum(S scope, L relation, D datum);
 
         boolean addAll(IScopeGraph<S, L, D> other);
 

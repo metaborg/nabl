@@ -14,20 +14,17 @@ imports
 rules
 
   generate-aterm:
-    (_, _, ast@Module(name, _), path, project-path) -> result
-    where a   := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          ext := <nabl2-get-custom-analysis> a
+      (_, _, ast@Module(name, _), path, project-path) -> result
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
     with if <nabl2-analysis-has-errors> a then
            result := None()
          else
+           (ast', a', ext) := <nabl2-get-custom-analysis> a;
+           spec     := <spec-ast-to-aterm(|a')> (ast', ext);
            filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
-           spec     := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
            result   := (filename, spec)
          end
  
-  generate-aterm:
-    (_, _, Test(_, _, _), path, project-path) -> None()
-
 rules
 
   src-gen-file(|sub-dir, ext): name -> filename
@@ -38,11 +35,30 @@ rules
 
 rules
 
-  spec-ast-to-aterm: (ast, ext) -> spec
-    with rule* := <collect-all(?Rule(_, _, _))> ast;
-         label* := <collect-all(?Labels(<id>));concat> ast;
-         rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
-         spec := (label*, rel*, rule*, ext)
+  spec-ast-to-aterm(|a): (ast, ext) -> spec
+    with s_mod := <nabl2-get-ast-property(|a,"scope")> ast
+       ; d* := <nabl2-get-visible-decls(|a)> s_mod
+       ; edge* := <filter(edge-to-aterm(|a));strip-annos> d*
+       ; data* := <filter(data-to-aterm(|a));strip-annos> d*
+       ; rule* := <filter(rule-to-aterm(|a));strip-annos;eliminate-all> d*
+       ; spec := (edge*, data*, EOP(), rule*, ext)
+
+  edge-to-aterm(|a): d -> ast
+    where "Edge" := <nabl2-get-occurrence-ns> d
+    with
+      ast := <nabl2-get-property(|a, "ast")> d
+
+  data-to-aterm(|a): d -> ast
+    where "Rel" := <nabl2-get-occurrence-ns> d
+    with
+      ast := <nabl2-get-property(|a, "ast")> d
+
+  rule-to-aterm(|a): d -> ast
+    where "Rule" := <nabl2-get-occurrence-ns> d
+    with
+      ast := <nabl2-get-property(|a, "ast")> d
+
+rules
 
   eliminate-all =
     eliminate-ascribe

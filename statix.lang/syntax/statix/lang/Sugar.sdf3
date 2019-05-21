@@ -20,21 +20,18 @@ context-free syntax
   Rule             = <constraint <CDerive>>
   Rule             = CDerive
 
-  Rule.CDecl       = [[CInd]constraint [CName] : [Type]]
-  Rule.CDecl       = [[CInd][CName] : [Type]]
+  Rule.CDecl       = [[CInd]constraint [ConstraintId] : [Type]]
+  Rule.CDecl       = [[CInd][ConstraintId] : [Type]]
 
   CDecl            = CDerive
 
-  CDerive.CDeriveMap = [[CName] maps [CName]([{Lift ", "}*])]
-  CDerive.FDeriveMap = [[CName] maps [CName]([{Lift ", "}*]) = [LiftTerm]]
+  CDerive.CDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*])]
+  CDerive.FDeriveMap = [[ConstraintId] maps [ConstraintId]([{Lift ", "}*]) = [Lift]]
 
-  Lift.IdLift   = "*"
-  Lift.ListLift = "list(*)"
-
-  LiftTerm.Tuple0Lift = <()>
-  LiftTerm            = Lift
-  LiftTerm.TupleNLift = <(<Lift>, <{Lift ", "}+>)>
-  LiftTerm            = <(<LiftTerm>)> {bracket}
+  Lift.IdLift     = "*"
+  Lift.ListLift   = "list(*)"
+  Lift.Tuple0Lift = <( )>
+  Lift.TupleNLift = <(<Lift>, <{Lift ", "}+>)>
 
   // rule shorthands
 
@@ -42,17 +39,17 @@ context-free syntax
     <RuleHead>.
   >
 
-  RuleHead.F = [[CName]([{Term ", "}*]) = [Term]]
+  RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
   LocalVars.NoLocalVars = <>
 
   HoConstraint.LLam = <{ <{Term ", "}+> }>
 
-  HoConstraint.LC = CName
+  HoConstraint.LC = ConstraintId
 
 syntax
 
-  Term-CF.COp = CName-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+  Term-CF.COp = ConstraintId-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
 /******************************************************************
  * Base Constraints                                               *
@@ -63,20 +60,22 @@ context-free syntax
   HoConstraint.LTrue  = "true"
   HoConstraint.LFalse = "false"
 
-  Term.NewOp    = "new"
-  Term.TermIdOp = <termId(<Term>)>
+  Term.NewOp   = "new"
+  Term.AstIdOp = <astId(<Term>)>
+
+  AstProperty.Ref = "ref"
 
 lexical syntax
 
   VARID = "new" {reject}
+
+  AstPropertyId = "ref" {reject}
 
 /******************************************************************
  * Relations                                                      *
  ******************************************************************/
 
 context-free syntax
-
-  // built-in relations for declarations
 
   RelRef.Decl = "decl"
 
@@ -87,11 +86,6 @@ syntax
   Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
   Term-CF.AskRelOp = "?" RelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
-
-context-free priorities
-
-  { Term.PathSrcOp Term.PathScopesOp Term.PathLabelsOp Term.PathDstOp } >
-  { Term.AskRelOp }
 
 lexical syntax
 
@@ -104,18 +98,20 @@ lexical syntax
 
 context-free syntax
 
-  // declaration constraints
+  // default resolution policies
+  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><NamespaceFilter><NamespaceMin>>
 
+  ResolutionParam = NamespaceQuery
+  Rule            = NamespaceQuery
+
+  NamespaceFilter.NamespaceFilter   = < filter <LabelRE>>
   NamespaceFilter.NoNamespaceFilter = 
-  NamespaceMin.NoNamespaceMin       = 
 
-  Constraint.CTellDecl        = [[Term] -> [Term]]
-  Constraint.CTellDeclWithRel = [[Term] -> [Term] with [RelRef] [Term]]
+  NamespaceMin.NamespaceMin   = < min <LabelPairs>>
+  NamespaceMin.NoNamespaceMin = 
 
-  Term.PathSrcOp    = <src(<Term>)>
-  Term.PathDstOp    = <dst(<Term>)>
-  Term.PathScopesOp = <scopes(<Term>)>
-  Term.PathLabelsOp = <labels(<Term>)>
+  Constraint.CTellDecl        = [[Term] -> [Occurrence]]
+  Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [RelRef] [Term]]
 
 //LabelRE = <<LabelRE>?>
 //LabelRE = <<LabelRE>+>
@@ -123,7 +119,7 @@ context-free syntax
 syntax
 
   HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
-  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelPairs-CF LAYOUT?-CF "]"
+  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "]"
 
 /******************************************************************
  * Resolve & Query
@@ -134,13 +130,26 @@ context-free syntax
   // short-hand forms for occurrences using default resolution policies
 
   QueryFilter.NoFilter =
-  QueryFilter.Filter   = < filter <HoConstraint>>
+  QueryFilter.Filter   = < filter <LabelRE>>
+
 
   QueryMin.NoMin =
-  QueryMin.Min   = < min <HoConstraint>>
+  QueryMin.Min   = < min <LabelOrd>>
 
-  Constraint.CResolveDecl        = [[Term] in [Term] |-> [Term]]
-  Constraint.CResolveRel         = [[RelRef] of [Term] in [Term] |-> [Term]]
+  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term]]
+  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term]]
+
+syntax
+
+  LabelRE-CF.ResolveMatch = "resolveMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF  "]"
+
+  LabelOrd-CF.ResolveLt = "resolveLt" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
+
+  HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
+
+lexical syntax
+
+  Keyword = "resolveMatch" | "resolveLt"
 
 /******************************************************************
  * Sorts & Constructors                                           *
@@ -148,6 +157,8 @@ context-free syntax
 
 context-free syntax
 
-  // convenient sort aliases
+  Type.FunType    = [[{SortRef " * "}*] -> [SortRef]]
 
-  SortDecl.SortAlias = <<SortId> = <SortRef>>
+/******************************************************************
+ * Terms                                                          *
+ ******************************************************************/

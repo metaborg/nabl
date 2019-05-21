@@ -73,7 +73,7 @@ test unify equal occurrences succeeds [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test unify inequal occurrences with same namespace succeeds [[
+test unify inequal occurrences with same namespace fails [[
   resolve Var{"x"@_} == Var{"y"@_}
   signature
     namespaces

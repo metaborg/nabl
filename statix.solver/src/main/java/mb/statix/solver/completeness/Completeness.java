@@ -14,12 +14,11 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.State;
-import mb.statix.solver.constraint.Constraints;
 import mb.statix.spec.Spec;
 
 public class Completeness implements ICompleteness {
@@ -58,16 +57,25 @@ public class Completeness implements ICompleteness {
     static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
+            onConj -> {
+                criticalEdges(onConj.left(), spec, criticalEdge);
+                criticalEdges(onConj.right(), spec, criticalEdge);
+                return null;
+            },
             onEqual -> null,
+            onExists -> {
+                criticalEdges(onExists.constraint(), spec, (s, l) -> {
+                    if(!onExists.vars().contains(s)) {
+                        criticalEdge.apply(s, l);
+                    }
+                });
+                return null;
+            },
             onFalse -> null,
             onInequal -> null,
             onNew -> null,
-            onPathDst -> null,
-            onPathLabels -> null,
             onPathLt -> null,
             onPathMatch -> null,
-            onPathScopes -> null,
-            onPathSrc -> null,
             onResolveQuery -> null,
             onTellEdge -> {
                 criticalEdge.apply(onTellEdge.sourceTerm(), onTellEdge.label());
@@ -78,6 +86,7 @@ public class Completeness implements ICompleteness {
                 return null;
             },
             onTermId -> null,
+            onTermProperty -> null,
             onTrue -> null,
             onUser -> {
                 spec.scopeExtensions().get(onUser.name()).stream()
@@ -94,10 +103,10 @@ public class Completeness implements ICompleteness {
         return criticalEdges.build();
     }
 
-    public static List<CriticalEdge> criticalEdges(IConstraint constraint, State state) {
+    public static List<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
         ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
-        criticalEdges(constraint, state.spec(), (scopeTerm, label) -> {
-            AScope.matcher().match(scopeTerm, state.unifier()).ifPresent(scope -> {
+        criticalEdges(constraint, spec, (scopeTerm, label) -> {
+            AScope.matcher().match(scopeTerm, unifier).ifPresent(scope -> {
                 criticalEdges.add(CriticalEdge.of(scope, label));
             });
         });
