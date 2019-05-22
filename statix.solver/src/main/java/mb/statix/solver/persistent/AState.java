@@ -114,15 +114,15 @@ public abstract class AState implements IState {
 
     // --- solution ---
 
-    @Override @Value.Default public IUnifier.Immutable unifier() {
+    @Value.Default @Override public IUnifier.Immutable unifier() {
         return PersistentUnifier.Immutable.of();
     }
 
-    @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
+    @Value.Default @Override public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
     }
 
-    @Value.Default public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
+    @Value.Default @Override public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
         return ImmutableMap.of();
     }
 
