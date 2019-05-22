@@ -31,8 +31,8 @@ signature
 
   name-resolution
     labels P E
-    resolve Class filter pathMatch[P*] min pathLt[$ < P]
-    resolve Var filter pathMatch[P*(E|e)] min pathLt[$ < P, $ < E, E < P]
+    resolve Class filter P* min $ < P
+    resolve Var filter P*(E|e) min $ < P, $ < E, E < P
 
 rules
 
