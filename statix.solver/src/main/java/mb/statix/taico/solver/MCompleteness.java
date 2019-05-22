@@ -17,13 +17,12 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.Completeness;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.TDebug;
-import mb.statix.util.Capsules;
 
 /**
  * Concurrent, mutable version of {@link Completeness}. This version adheres to the original
@@ -117,19 +116,6 @@ public class MCompleteness implements IOwnable {
     public synchronized MCompleteness removeAll(Collection<IConstraint> constraints) {
         incomplete.removeAll(constraints);
         return this;
-    }
-    
-    /**
-     * @deprecated This function does not keep the behavior of the MCompleteness.
-     * 
-     * Converts this module completeness to a normal completeness.
-     * 
-     * @return
-     *      a new completeness 
-     */
-    @Deprecated
-    public Completeness toCompleteness() {
-        return new Completeness(Capsules.newSet(incomplete));
     }
     
     public static List<CriticalEdge> criticalEdges(IConstraint constraint, IMState state) {

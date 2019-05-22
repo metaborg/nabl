@@ -15,10 +15,10 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.IMState;

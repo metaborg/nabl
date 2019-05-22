@@ -11,12 +11,14 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
 import mb.statix.taico.solver.ICompleteness;
@@ -38,26 +40,23 @@ public class MConstraintDataLeq implements DataLeq<ITerm> {
         this.debug = debug;
     }
 
-    @Override public boolean leq(List<ITerm> datum1, List<ITerm> datum2)
+    @Override public boolean leq(ITerm datum1, ITerm datum2)
             throws ResolutionException, InterruptedException {
-        final ITerm term1 = B.newTuple(datum1);
-        final ITerm term2 = B.newTuple(datum2);
+        final IUnifier unifier = state.unifier();
         try {
-            IMState resultState = state.delegate();
-            final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
-            if((result = constraint.apply(ImmutableList.of(term1, term2), resultState).orElse(null)) == null) {
+            final IConstraint result;
+            if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).map(Tuple2::_2).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(resultState, result._2(), isComplete, result._1(), debug).isPresent()) {
+            IMState resultState = state.delegate();
+            if(ModuleSolver.entails(resultState, result, isComplete, debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} shadows {}", resultState.unifier().toString(term1), resultState.unifier().toString(term2));
+                    debug.info("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} does not shadow {}",
-                            resultState.unifier().toString(term1),
-                            resultState.unifier().toString(term2));
+                    debug.info("{} does not shadow {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
                 return false;
             }

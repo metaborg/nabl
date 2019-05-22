@@ -29,7 +29,7 @@ public class STX_extract_messages extends StatixPrimitive {
 
         final ISolverResult result = M.blobValue(ISolverResult.class).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
-        final IUnifier.Immutable unifier = result.unifier();
+        final IUnifier unifier = result.unifier();
 
         final List<ITerm> errorList = Lists.newArrayList();
         if(result.hasErrors()) {

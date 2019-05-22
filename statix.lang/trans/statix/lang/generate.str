@@ -10,24 +10,23 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/normalize
 
 rules
 
   generate-aterm:
-    (_, _, ast@Module(name, _), path, project-path) -> result
-    where a   := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          ext := <nabl2-get-custom-analysis> a
+      (_, _, ast@Module(name, _), path, project-path) -> result
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
     with if <nabl2-analysis-has-errors> a then
            result := None()
          else
+           ast'     := <normalize(|a)> ast;
+           ext      := <nabl2-get-custom-analysis> a;
+           spec     := <spec-ast-to-aterm(|a)> (ast', ext);
            filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
-           spec     := <strip-annos;eliminate-all;spec-ast-to-aterm> (ast, ext);
            result   := (filename, spec)
          end
  
-  generate-aterm:
-    (_, _, Test(_, _, _), path, project-path) -> None()
-
 rules
 
   src-gen-file(|sub-dir, ext): name -> filename
@@ -38,11 +37,13 @@ rules
 
 rules
 
-  spec-ast-to-aterm: (ast, ext) -> spec
-    with rule* := <collect-all(?Rule(_, _, _) + ?ModuleRule(_, _, _, _))> ast;
-         label* := <collect-all(?Labels(<id>));concat> ast;
-         rel* := <collect-all(\ RelDecl(rel, ty) -> (rel, ty) \)> ast;
-         spec := (label*, rel*, rule*, ext)
+  spec-ast-to-aterm(|a): (ast, ext) -> spec
+    with edge* := <collect-all(?Labels(<id>));concat;strip-annos> ast
+       ; data* := [Decl()|<collect-all(?RelDecl(<id>, _));strip-annos> ast]
+       ; rule* := <collect-all(?Rule(_, _, _) + ?ModuleRule(_, _, _, _));strip-annos;eliminate-all> ast
+       ; spec := (edge*, data*, EOP(), rule*, ext)
+
+rules
 
   eliminate-all =
     eliminate-ascribe

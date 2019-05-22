@@ -46,9 +46,9 @@ import mb.nabl2.solver.properties.ActiveDeclTypes;
 import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.solver.properties.HasRelationBuildConstraints;
 import mb.nabl2.solver.properties.PolySafe;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.IProperties;
 

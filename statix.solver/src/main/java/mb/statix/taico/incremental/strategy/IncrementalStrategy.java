@@ -13,12 +13,12 @@ import org.metaborg.util.functions.Function1;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
-import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
@@ -116,7 +116,7 @@ public abstract class IncrementalStrategy {
      * 
      * @see SolverContext#getPhase()
      */
-    public abstract Map<IModule, Set<IConstraint>> createModulesForPhase(SolverContext context, Map<String, Set<IConstraint>> moduleConstraints);
+    public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context, Map<String, IConstraint> moduleConstraints);
     
     /**
      * Called at the end of a phase (all modules are either done, failed or stuck).

@@ -1,0 +1,15 @@
+module statix/runtime/pp
+
+imports
+
+  libstratego-gpp
+
+  pp/statix/runtime/-
+
+rules
+
+  prettyprint-Statix-Int =
+    ![S(<is-int;int-to-string>)]
+
+  prettyprint-Statix-SolverResult =
+    ![S(<write-to-string>)]

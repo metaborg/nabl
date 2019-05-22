@@ -1,0 +1,62 @@
+module statix/lang/normalize/terms
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalization for a bunch of context-free things that appear in terms
+  // none of these depend on analysis
+
+  normalize-terms =
+    nabl2-custom-analysis-info-msg(|"| Normalize terms...");
+    bottomup(
+      try(normalize-ast-ids)
+    ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
+    )
+
+
+  normalize-ast-ids = Occurrence(id, id, normalize-term-or-id)
+  normalize-ast-ids = CAstProperty(normalize-term-or-id, id, id)
+
+  normalize-term-or-id: t -> t'
+    with ty := <norm-get-ast-type> t
+    where <not(?AST_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
+    with t' := <norm-set-ast-type(|AST_ID())> AstIdOp(t)
+
+
+  replace-term: t@Wld() -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("wld")
+  
+  term-to-c: (Wld(), _) -> <fail>
+
+
+  replace-term: As(v, t) -> v
+
+  term-to-c: (As(v, t), _) -> CEqual(v, t)
+
+  term-no-add = ?As(_, _)
+
+
+  replace-term: t@NewOp() -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("new")
+
+  term-to-c: (NewOp(), v) -> CNew([v])
+
+
+  replace-term: t@AstIdOp(_) -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("astId")
+
+  term-to-c: (AstIdOp(t), v) -> CAstId(t, v)

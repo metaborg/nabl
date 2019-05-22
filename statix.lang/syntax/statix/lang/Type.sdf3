@@ -6,15 +6,17 @@ imports
 
 sorts
 
-  IType // internal types
+  IType // internal type
   TType // term type
 
 context-free syntax
 
-  IType.PRED = [[{TType " * "}*]]
-  IType.FUN  = [[{TType " * "}*] -> [{TType " * "}*]]
-  IType.NS   = [[{TType " * "}*]]
-  IType.OP   = [[{TType " * "}*] -> [TType]]
+  IType.PRED = [[TTypes]]
+  IType.FUN  = [[TTypes] -> [TType]]
+  IType.NS   = [[TTypes]]
+  IType.OP   = [[TTypes] -> [TType]]
+
+  TTypes = {TType " * "}*
 
   TType.SORT       = <<NaBL2Occurrence>>
   TType.INT        = <int>
@@ -22,7 +24,8 @@ context-free syntax
   TType.PATH       = <path>
   TType.LABEL      = <label>
   TType.OCCURRENCE = <occurrence>
-  TType.TERM_ID    = <termId>
+  TType.AST_ID     = <astId>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
-  TType.TUPLE      = <(<{TType " * "}*>)>
+  TType.TUPLE      = <(<TTypes>)>
+

@@ -1,24 +1,21 @@
 package mb.statix.scopegraph.path;
 
-import java.util.List;
-import java.util.Optional;
-
 /**
  * Interface to represent a resolution path.
  *
- * @param <V>
- *      the type of scopes and data
+ * @param <S>
+ *      the type of scopes
  * @param <L>
  *      the type of labels
- * @param <R>
- *      the type of relations
+ * @param <D>
+ *      the type of data
  */
-public interface IResolutionPath<V, L, R> extends IPath<V, L> {
+public interface IResolutionPath<S, L, D> extends IPath<S, L> {
 
-    IScopePath<V, L> getPath();
+    IScopePath<S, L> getPath();
 
-    Optional<R> getRelation();
+    L getLabel();
 
-    List<V> getDatum();
+    D getDatum();
 
 }

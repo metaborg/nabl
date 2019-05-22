@@ -1,16 +1,10 @@
 package mb.statix.solver.query;
 
-import org.metaborg.util.functions.Predicate3;
-
+import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.solver.State;
-import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.query.IMQueryFilter;
+import mb.statix.spec.IRule;
 
 /**
  * Interface to represent query filters.
@@ -18,6 +12,10 @@ import mb.statix.taico.solver.query.IMQueryFilter;
  * <pre>filter &lt;pathConstraint&gt; and &lt;dataConstraint&gt;</pre>
  */
 public interface IQueryFilter {
+
+    IRegExpMatcher<ITerm> getLabelWF();
+
+    IRule getDataWF();
 
     /**
      * Creates a copy of this query filter and then applies the given substitution to the copy.
@@ -29,10 +27,6 @@ public interface IQueryFilter {
      *      the new query filter
      */
     IQueryFilter apply(ISubstitution.Immutable subst);
-
-    LabelWF<ITerm> getLabelWF(State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) throws ResolutionException;
-
-    DataWF<ITerm> getDataWF(State state, Predicate3<ITerm, ITerm, State> isComplete, IDebugContext debug) throws ResolutionException;
 
     /**
      * Converts this query filter into string representation, where terms are formatted with the
@@ -47,13 +41,4 @@ public interface IQueryFilter {
      *      the string
      */
     String toString(TermFormatter termToString);
-
-    /**
-     * Converts this query filter to a query filter for mutable state.
-     * This method creates a copy of this filter.
-     * 
-     * @return
-     *      the mutable query filter
-     */
-    IMQueryFilter toMutable();
 }

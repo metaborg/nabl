@@ -49,15 +49,12 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
         return cases.caseVar(this);
     }
 
-    @Override public int hashCode() {
+    @Value.Lazy @Override public int hashCode() {
         return Objects.hash(getResource(), getName());
     }
 
     @Override public boolean equals(Object other) {
         if(other == null) {
-            return false;
-        }
-        if(hashCode() != other.hashCode()) {
             return false;
         }
         if(!(other instanceof ITermVar)) {

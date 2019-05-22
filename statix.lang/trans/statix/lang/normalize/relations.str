@@ -1,0 +1,75 @@
+module statix/lang/normalize/relations
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalize functional relations
+  // after lambda's, after normalizing queries
+
+  normalize-functional-relations =
+    nabl2-custom-analysis-info-msg(|"| Normalize functional relations...");
+    bottomup(
+      try(normalize-functional-reldecl)
+    ; try(normalize-functional-query)
+    )
+
+
+  normalize-functional-reldecl:
+      RelDecl(x, t) -> RelDecl(x, t')
+    where FunType(_, _) := t
+    with ty' := <norm-get-ast-type;fun-to-pred-type> t;
+         t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
+
+  normalize-functional-query:
+      CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts)
+      -> CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts)
+    where ty@FUN(in_tys, out_ty) := <norm-get-ast-type> rel
+    with ty' := <fun-to-pred-type> ty;
+         rel' := <norm-set-ast-type(|ty')> rel;
+         lwf' := <normalize-functional-wf(|in_tys,out_ty)> lwf;
+         lord' := <normalize-functional-ord(|in_tys,out_ty)> lord
+
+  normalize-functional-wf(|in_tys,out_ty): LLam([p], vs, c) -> wf
+   with (p', new-vs, c*) := <normalize-functional-pattern(|in_tys,out_ty)> p;
+        vs' := <conc> (vs, new-vs);
+        c' := <list-to-conj(|c)> c*;
+        wf := <mk-LLam>([p'], vs', c')
+
+  normalize-functional-ord(|in_tys,out_ty): LLam([p1, p2], vs, c) -> ord
+   with (p1', new-vs1, c1*) := <normalize-functional-pattern(|in_tys,out_ty)> p1;
+        (p2', new-vs2, c2*) := <normalize-functional-pattern(|in_tys,out_ty)> p2;
+        vs' := <concat> [vs, new-vs1, new-vs2];
+        c' := <conc;list-to-conj(|c)> (c1*, c2*);
+        ord := <mk-LLam>([p1', p2'], vs', c')
+
+
+  normalize-functional-pattern(|in_tys,out_ty): p -> (p', vs, c*)
+    with wld := <mk-Wld(|out_ty)>;
+         if in_ps := <match-terms(|in_tys)> p then
+           p' := <conc;mk-Tuple>(in_ps, [wld]);
+           vs := [];
+           c* := []
+         else
+           us := <mk-fresh-Vars(|"u")> in_tys;
+           p' := <conc;mk-Tuple>(us, [wld]);
+           vs := <all-vars> p;
+           c* := [CEqual(<mk-Tuple>(us), p)]
+         end
+
+  match-terms(|tys): t -> ts
+    where if [_] := tys then
+            ts := <![<id>]> t
+          else
+            ts := <?Tuple(<id>)> t
+          end

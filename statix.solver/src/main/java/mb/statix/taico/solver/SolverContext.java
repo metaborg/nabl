@@ -1,7 +1,6 @@
 package mb.statix.taico.solver;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -9,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import mb.statix.constraints.CTrue;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
@@ -29,7 +29,7 @@ public class SolverContext implements Serializable {
     private transient ASolverCoordinator coordinator;
     private transient SolverContext oldContext;
     private transient IChangeSet changeSet;
-    private transient Map<String, Set<IConstraint>> initConstraints;
+    private transient Map<String, IConstraint> initConstraints;
     
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
     private Map<IModule, IMState> states = new ConcurrentHashMap<>();
@@ -55,7 +55,7 @@ public class SolverContext implements Serializable {
      * @return
      *      the constraints
      */
-    public Map<String, Set<IConstraint>> getInitialConstraints() {
+    public Map<String, IConstraint> getInitialConstraints() {
         return initConstraints;
     }
     
@@ -70,20 +70,10 @@ public class SolverContext implements Serializable {
      * @return
      *      the given map
      * 
-     * @throws IllegalArgumentException
-     *      If an entry has more than one constraint in the set.
-     * @throws IllegalStateException
-     *      If the module represented by an entry was not present in the previous analysis but has
-     *      no initialization constraints.
      */
-    protected Map<String, Set<IConstraint>> fixInitConstraints(Map<String, Set<IConstraint>> moduleConstraints) {
-        for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
+    protected Map<String, IConstraint> fixInitConstraints(Map<String, IConstraint> moduleConstraints) {
+        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
             String childName = entry.getKey();
-            if (entry.getValue().size() > 1) {
-                throw new IllegalArgumentException("Module " + childName + " has more than one initialization constraint: " + entry.getValue());
-            }
-
-            if (!entry.getValue().isEmpty()) continue;
 
             //Scope substitution does not have to occur here, since the global scope remains constant.
             //If there is no constraint available, use the initialization constraint for the child
@@ -92,7 +82,7 @@ public class SolverContext implements Serializable {
                 throw new IllegalStateException("Encountered a module without initialization that was not present in the previous context: " + childName);
             }
 
-            entry.setValue(Collections.singleton(child.getInitialization()));
+            entry.setValue(child.getInitialization());
         }
         return moduleConstraints;
     }
@@ -379,14 +369,14 @@ public class SolverContext implements Serializable {
      */
     public static SolverContext incrementalContext(
             IncrementalStrategy strategy, SolverContext previousContext, IMState previousRootState,
-            IChangeSet changeSet, Map<String, Set<IConstraint>> initConstraints, Spec spec) {
+            IChangeSet changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
         SolverContext newContext = new SolverContext(strategy, spec);
         newContext.oldContext = previousContext; //TODO Ensure that changes are committed
         newContext.changeSet = changeSet;
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
         newContext.setState(previousRootState.getOwner(), previousRootState);
         setSolverContext(newContext);
-        ModuleSolver.topLevelSolver(previousRootState, Collections.emptyList(), new NullDebugContext());
+        ModuleSolver.topLevelSolver(previousRootState, new CTrue(), new NullDebugContext()); // TODO HVA Is CTrue equal to emtpySet?
         return newContext;
     }
     

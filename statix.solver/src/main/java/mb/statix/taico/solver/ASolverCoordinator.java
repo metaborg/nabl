@@ -1,7 +1,6 @@
 package mb.statix.taico.solver;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -10,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import mb.statix.constraints.CTrue;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -97,15 +97,15 @@ public abstract class ASolverCoordinator {
      *      the incremental strategy
      * @param rootState
      *      the root state
-     * @param constraints
-     *      the constraints of the root module
+     * @param constraint
+     *      the constraint of the root module
      * @param debug
      *      the debug context
      */
-    protected void init(IncrementalStrategy strategy, IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
+    protected void init(IncrementalStrategy strategy, IMState rootState, IConstraint constraint, IDebugContext debug) {
         this.debug = new PrefixedDebugContext("Coordinator", debug);
         this.rootState = rootState;
-        this.root = ModuleSolver.topLevelSolver(rootState, constraints, debug);
+        this.root = ModuleSolver.topLevelSolver(rootState, constraint, debug);
         this.strategy = strategy;
     }
     
@@ -114,8 +114,8 @@ public abstract class ASolverCoordinator {
      * 
      * @param state
      *      the state of the root module
-     * @param constraints
-     *      the constraints to solve
+     * @param constraint
+     *      the constraint to solve
      * @param debug
      *      the debug context to log to
      * 
@@ -125,7 +125,7 @@ public abstract class ASolverCoordinator {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public abstract MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException;
+    public abstract MSolverResult solve(IMState state, IConstraint constraint, IDebugContext debug) throws InterruptedException;
     
     /**
      * Solves the given constraints in a modularized fashion.
@@ -147,14 +147,14 @@ public abstract class ASolverCoordinator {
      * @throws UnsupportedOperationException
      *      If this solver does not support asynchronous solving.
      */
-    public abstract void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
+    public abstract void solveAsync(IMState state, IConstraint constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
     
     
-    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, Set<IConstraint>> constraints, IDebugContext debug)
+    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
-        init(strategy, state, Collections.emptyList(), debug);
+        init(strategy, state, new CTrue(), debug); // TODO HVA Is this equal to the emptySet it was before?
         
-        Map<IModule, Set<IConstraint>> modules = strategy.createModulesForPhase(context, constraints);
+        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, constraints);
         
         //Switch the phase to 0 after the initialization
         if (context.getPhase() == -1) context.setPhase(0);
@@ -172,8 +172,8 @@ public abstract class ASolverCoordinator {
      * @param modules
      *      the modules to schedule
      */
-    protected void scheduleModules(Map<IModule, Set<IConstraint>> modules) {
-        for (Entry<IModule, Set<IConstraint>> entry : modules.entrySet()) {
+    protected void scheduleModules(Map<IModule, IConstraint> modules) {
+        for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             //childSolver sets the solver on the state and adds it
             root.childSolver(entry.getKey().getCurrentState(), entry.getValue());
         }
@@ -221,7 +221,7 @@ public abstract class ASolverCoordinator {
             errors.addAll(result.getValue().errors());
             delays.putAll(result.getValue().delays());
         }
-        return MSolverResult.of(getRootState(), errors, delays);
+        return MSolverResult.of(getRootState(), errors, delays, new HashMap<>());
     }
     
     /**

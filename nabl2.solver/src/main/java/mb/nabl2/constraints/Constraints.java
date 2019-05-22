@@ -6,9 +6,10 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
+
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.ast.AstConstraints;
 import mb.nabl2.constraints.base.BaseConstraints;
@@ -73,7 +74,8 @@ public class Constraints {
     }
 
     public static ITerm buildAll(Collection<IConstraint> constraints) {
-        List<ITerm> constraintTerms = constraints.stream().map(Constraints::build).collect(Collectors.toList());
+        List<ITerm> constraintTerms =
+                constraints.stream().map(Constraints::build).collect(ImmutableList.toImmutableList());
         return B.newAppl("Constraints", (ITerm) B.newList(constraintTerms));
     }
 

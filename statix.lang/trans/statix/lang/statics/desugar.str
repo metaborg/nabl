@@ -18,8 +18,7 @@ rules
     desugar-ref-shorthands;
     desugar-queries;
     desugar-lambdas;
-    desugar-tuples;
-    fix-rules-variables
+    desugar-tuples
 
 rules
 
@@ -34,8 +33,10 @@ rules
 rules
 
   desugar-decl-shorthands = topdown(try(desugar-decl-shorthand))
+
   desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
     with decl := <with-origin(|c)> Decl()
+
   desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
     with decl := <with-origin(|c)> Decl();
          c1 := <with-origin(|c)> CTellRel(decl, [dt], st);
@@ -44,29 +45,43 @@ rules
 rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
-  desugar-ref-shorthand: c@CResolveDecl(rt, st, pst) -> c'
-    with decl       := <with-origin(|c)> Decl();
-         rel-target := <with-origin(|c)> RelTarget(decl);
-         filter     := <with-origin(|rt)> ResolveFilter(rt);
-         min        := <with-origin(|rt)> ResolveMin(rt);
-         c'         := CResolveQuery(rel-target, filter, min, st, pst)
-  desugar-ref-shorthand: CResolveRel(rel, rt, st, pst) -> c'
-    with rel-target := <with-origin(|rel)> RelTarget(rel);
-         filter     := <with-origin(|rt)> ResolveFilter(rt);
-         min        := <with-origin(|rt)> ResolveMin(rt);
-         c'         := CResolveQuery(rel-target, filter, min, st, pst)
+
+  desugar-ref-shorthand: c@CResolveRef(rt, st, pst) -> c'
+    with rel        := <with-origin(|c)> Decl();
+         match      := <with-origin(|rt)> ResolveMatch(rt);
+         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter     := <with-origin(|rt)> Filter(match, lmatch);
+         ord        := <with-origin(|rt)> ResolveLt(rt);
+         lord       := <with-origin(|rt)> LTrue();
+         min        := <with-origin(|rt)> Min(ord, lord);
+         c'         := CResolveQuery(rel, filter, min, st, pst)
+
+  desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst) -> c'
+    with match      := <with-origin(|rt)> ResolveMatch(rt);
+         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter     := <with-origin(|rt)> Filter(match, lmatch);
+         ord        := <with-origin(|rt)> ResolveLt(rt);
+         lord       := <with-origin(|rt)> LTrue();
+         min        := <with-origin(|rt)> Min(ord, lord);
+         c'         := CResolveQuery(rel, filter, min, st, pst)
 
 rules
 
-  desugar-queries = topdown(try(desugar-query))
+  desugar-queries = bottomup(try(desugar-query))
 
-  desugar-query: NoFilter() -> Filter(LTrue(), LTrue())
-  desugar-query: Filter(l) -> Filter(l, LTrue())
-  desugar-query: NoNamespaceFilter() -> NamespaceFilter(LTrue())
+  desugar-query: NoFilter() -> Filter(Neg(Empty()), LTrue())
+  desugar-query: Filter(wf) -> Filter(wf, LTrue())
+  desugar-query: Filter_dep(wf) -> Filter(wf, LTrue())
+  desugar-query: Filter_dep(wf, l) -> Filter(wf, l)
+  desugar-query: NamespaceFilter_dep(wf) -> NamespaceFilter(wf)
+  desugar-query: NoNamespaceFilter() -> NamespaceFilter(Neg(Empty()))
 
-  desugar-query: NoMin() -> Min(LFalse(), LFalse())
-  desugar-query: Min(l) -> Min(l, LFalse())
-  desugar-query: NoNamespaceMin() -> NamespaceMin(LFalse())
+  desugar-query: NoMin() -> Min([], LFalse())
+  desugar-query: Min(ord) -> Min(ord, LFalse())
+  desugar-query: Min_dep(ord) -> Min(ord, LFalse())
+  desugar-query: Min_dep(ord, l) -> Min(ord, l)
+  desugar-query: NamespaceMin_dep(ord) -> NamespaceMin(ord)
+  desugar-query: NoNamespaceMin() -> NamespaceMin([])
 
 rules
 
@@ -86,16 +101,3 @@ rules
   desugar-tuple: Tuple0Lift()      -> TupleLift([])
   desugar-tuple: TupleNLift(x, xs) -> TupleLift([x|xs])
 
-rules
-
-  fix-rules-variables = bottomup(try(fix-rule-variables))
-
-  fix-rule-variables:
-      Rule(hd@F(x, in_ts, out_t), bvs, body) -> Rule(hd, bvs', body)
-    with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
-         bvs'   := <conc> (bvs, out-vs)
-
-  fix-rule-variables:
-      ModuleRule(hd@F(x, in_ts, out_t), modstr, bvs, body) -> ModuleRule(hd, modstr, bvs', body)
-    with out-vs := <diff> (<all-vars> out_t, <all-vars> in_ts);
-         bvs'   := <conc> (bvs, out-vs)

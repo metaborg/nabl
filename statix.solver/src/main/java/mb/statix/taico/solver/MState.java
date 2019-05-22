@@ -3,11 +3,15 @@ package mb.statix.taico.solver;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
@@ -21,6 +25,7 @@ public class MState implements IMState, Serializable {
     
     private final IModule owner;
     private IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph;
+    private Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties;
     
     private int varCounter;
     private Set<ITermVar> vars;
@@ -42,7 +47,7 @@ public class MState implements IMState, Serializable {
         this.scopeGraph = owner.getScopeGraph();
         this.vars = new HashSet<>();
         this.unifier = DistributedUnifier.Immutable.of(owner.getId());
-        
+        this.termProperties = new HashMap<>();
         SolverContext.context().setState(owner, this);
     }
     
@@ -63,6 +68,7 @@ public class MState implements IMState, Serializable {
         this.varCounter = original.varCounter;
         this.unifier = original.unifier();
         this.solver = original.solver();
+        this.termProperties = new HashMap<>();
     }
     
     @Override
@@ -104,6 +110,11 @@ public class MState implements IMState, Serializable {
     @Override
     public Set<ITermVar> vars() {
         return this.vars;
+    }
+    
+    @Override
+    public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
+        return termProperties;
     }
 
     // --- scopes ---

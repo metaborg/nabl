@@ -1,11 +1,13 @@
 package mb.statix.taico.solver;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
@@ -54,6 +56,10 @@ public interface IMState extends IOwnable, Serializable {
     public ITermVar freshRigidVar(String base);
 
     public Set<ITermVar> vars();
+    
+    // --- term properties ---
+    
+    public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties();
 
     // --- scopes ---
 

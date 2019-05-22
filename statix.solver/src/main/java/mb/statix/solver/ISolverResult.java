@@ -1,7 +1,7 @@
 package mb.statix.solver;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -17,7 +17,7 @@ public interface ISolverResult {
      * @return
      *      a set of constraints that encountered errors
      */
-    Set<IConstraint> errors();
+    Collection<IConstraint> errors();
 
     /**
      * @return
@@ -43,6 +43,9 @@ public interface ISolverResult {
      */
     Map<IConstraint, Delay> delays();
 
+    Map<ITermVar, ITermVar> existentials();
+
+    
     /**
      * Creates a new Delay on all the variables and critical edges in the delays of this solver
      * result.

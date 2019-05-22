@@ -1,21 +1,17 @@
 package mb.statix.scopegraph.reference;
 
-import java.util.List;
-
 /**
- * @author taico
- *
- * @param <V>
+ * @param <D>
  *      the type of data
  */
-public interface DataWF<V> {
+public interface DataWF<D> {
 
-    boolean wf(List<V> d) throws ResolutionException, InterruptedException;
+    boolean wf(D d) throws ResolutionException, InterruptedException;
 
     static <V> DataWF<V> ANY() {
         return new DataWF<V>() {
 
-            @Override public boolean wf(List<V> d) {
+            @Override public boolean wf(V d) {
                 return true;
             }
 

@@ -3,6 +3,7 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -59,6 +60,6 @@ public class MSTX_solve_multi_project extends StatixPrimitive {
             errors.addAll(result.errors());
             delays.putAll(result.delays());
         }
-        return MSolverResult.of(state, errors, delays);
+        return MSolverResult.of(state, errors, delays, new HashMap<>());
     }
 }

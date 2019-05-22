@@ -1,0 +1,44 @@
+module statix/lang/statics/modules
+
+imports
+
+  signatures/statix/lang/-
+
+rules
+  
+  //TODO TAICO Fix duplication of Rule code
+  [[ ModuleRule(h, modStr, bvs, body) ^ (s) ]] :=
+    Rule{x} <- s,
+    new s_rule, s_rule -P-> s,
+    distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    RuleHead[[ h ^ (s_rule, s_body, x) : _ ]],
+    new s_body, s_body -P-> s_rule,
+    distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
+    (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
+    Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
+    [[ body ^ (s_body) ]],
+    ModuleString[[ modStr ^ (s_rule) ]].
+  
+  // Check the module string components
+  ModuleString[[ []        ^ (s) ]] :=
+    false | error $[The module identifier cannot be empty!].
+  ModuleString[[ l@[_ | _] ^ (s) ]] :=
+    ModuleStringNOK[[ l ^ (s) ]].
+
+  // Check module string components when a variable has already been encountered.
+  ModuleStringOK[[ []            ^ (s) ]].
+  ModuleStringOK[[ [head | tail] ^ (s) ]] :=
+    Term(VarRef)[[ head ^ (s) : ty ]], //TODO Check that type is a STRING or INT
+    strty is `stringable-type` of ty | error $[Module identifier can only use variables of type string, int or id.],
+    ModuleStringOK[[ tail ^ (s) ]].
+  
+  // Check module string components when the string is constant so far
+  ModuleStringNOK[[ []                ^ (s) ]] :=
+    false | warning $[Module identifier is not unique, as it does not contain variables].
+  ModuleStringNOK[[ [Str(_)   | tail] ^ (s) ]] :=
+    ModuleStringNOK[[ tail ^ (s) ]].
+  ModuleStringNOK[[ [v@Var(_) | tail] ^ (s) ]] :=
+    VarRef[[ v ^ (s) : ty ]], //TODO Check that type is a STRING or INT
+    strty is `stringable-type` of ty | error $[Module identifier can only use variables of type string, int or id.],
+    ModuleStringOK[[ tail ^ (s) ]].
+

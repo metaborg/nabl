@@ -7,14 +7,14 @@ import mb.statix.scopegraph.path.IResolutionPath;
 /**
  * Interface to represent a particular name resolution.
  *
- * @param <V>
- *      the type of scopes and data
+ * @param <S>
+ *      the type of scopes
  * @param <L>
  *      the type of edges
- * @param <R>
- *      the type of relations
+ * @param <D>
+ *      the type of data
  */
-public interface INameResolution<V, L, R> {
+public interface INameResolution<S extends D, L, D> {
 
     /**
      * Attempts to resolve a name in the given scope.
@@ -28,6 +28,6 @@ public interface INameResolution<V, L, R> {
      * @throws Exception
      *      If an error occurs during resolution.
      */
-    Set<IResolutionPath<V, L, R>> resolve(V scope) throws Exception;
+    Set<IResolutionPath<S, L, D>> resolve(S scope) throws Exception;
 
 }

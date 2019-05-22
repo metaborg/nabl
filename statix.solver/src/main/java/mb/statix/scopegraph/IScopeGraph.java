@@ -1,7 +1,5 @@
 package mb.statix.scopegraph;
 
-import java.util.List;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.collections.IRelation3;
 
@@ -17,37 +15,37 @@ import mb.nabl2.util.collections.IRelation3;
  * <li>A set of data lists (scope -relation> data) {@link #getData()}</li>
  * <ul>
  *
- * @param <V>
+ * @param <S>
  *      the type of scopes
  * @param <L>
  *      the type of labels
- * @param <R>
- *      the type of relations
+ * @param <D>
+ *      the type of data
  */
-public interface IScopeGraph<V, L, R> {
+public interface IScopeGraph<S, L, D> {
 
-    Set.Immutable<L> getLabels();
+    Set.Immutable<L> getEdgeLabels();
 
-    L getEndOfPath();
+    L getNoDataLabel();
 
-    Set.Immutable<R> getRelations();
+    Set.Immutable<L> getDataLabels();
 
-    Set<V> getAllScopes();
+    Set<S> getAllScopes();
 
-    IRelation3<V, L, V> getEdges();
+    IRelation3<S, L, S> getEdges();
 
-    IRelation3<V, R, List<V>> getData();
+    java.util.Set<S> getEdges(S scope, L label);
+
+    IRelation3<S, L, D> getData();
+
+    java.util.Set<D> getData(S scope, L relation);
 
     /**
      * @see IScopeGraph
      */
-    interface Immutable<V, L, R> extends IScopeGraph<V, L, R> {
+    interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
 
-        @Override Set.Immutable<V> getAllScopes();
-
-        @Override IRelation3.Immutable<V, L, V> getEdges();
-
-        @Override IRelation3.Immutable<V, R, List<V>> getData();
+        @Override Set.Immutable<S> getAllScopes();
 
         /**
          * Creates a copy of this immutable scope graph with the given edge added.
@@ -62,7 +60,7 @@ public interface IScopeGraph<V, L, R> {
          * @return
          *      the copy with the given edge added
          */
-        Immutable<V, L, R> addEdge(V sourceScope, L label, V targetScope);
+        Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 
         /**
          * Creates a copy of this immutable scope graph with the given data added.
@@ -77,18 +75,18 @@ public interface IScopeGraph<V, L, R> {
          * @return
          *      the copy with the given relation added
          */
-        Immutable<V, L, R> addDatum(V scope, R relation, Iterable<V> datum);
+        Immutable<S, L, D> addDatum(S scope, L relation, D datum);
 
-        Immutable<V, L, R> addAll(IScopeGraph<V, L, R> other);
+        Immutable<S, L, D> addAll(IScopeGraph<S, L, D> other);
 
-        IScopeGraph.Transient<V, L, R> melt();
+        IScopeGraph.Transient<S, L, D> melt();
 
     }
 
     /**
      * @see IScopeGraph
      */
-    interface Transient<V, L, R> extends IScopeGraph<V, L, R> {
+    interface Transient<S, L, D> extends IScopeGraph<S, L, D> {
 
         /**
          * @param sourceScope
@@ -101,7 +99,7 @@ public interface IScopeGraph<V, L, R> {
          * @return
          *      true if this edge was added, false if it already existed
          */
-        boolean addEdge(V sourceScope, L label, V targetScope);
+        boolean addEdge(S sourceScope, L label, S targetScope);
 
         /**
          * @param scope
@@ -114,7 +112,7 @@ public interface IScopeGraph<V, L, R> {
          * @return
          *      true if this scope graph changed as a result of this call, false otherwise
          */
-        boolean addDatum(V scope, R relation, Iterable<V> datum);
+        boolean addDatum(S scope, L relation, D datum);
 
         /**
          * Add all scopes, edges and relations from the given scope graph to this scope graph.
@@ -125,11 +123,11 @@ public interface IScopeGraph<V, L, R> {
          * @return
          *      true if this scope graph changed as a result of this call, false otherwise
          */
-        boolean addAll(IScopeGraph<V, L, R> other);
+        boolean addAll(IScopeGraph<S, L, D> other);
 
         // -----------------------
 
-        IScopeGraph.Immutable<V, L, R> freeze();
+        IScopeGraph.Immutable<S, L, D> freeze();
 
     }
 

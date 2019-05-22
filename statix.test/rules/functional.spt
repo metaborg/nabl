@@ -1,4 +1,4 @@
-module rules-functional
+module rules/functional
 
 language StatixLang
 
@@ -81,7 +81,7 @@ test unary tuple output matches value succeeds [[
 test ternary output tuple succeeds [[
   resolve f(1) == (1, 1)
   rules
-    f : int -> int * int
+    f : int -> (int * int)
     f(i) = (i, i).
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
@@ -89,26 +89,17 @@ test ternary output tuple succeeds [[
 test output variable succeeds [[
   resolve f(1) == (1, 1)
   rules
-    f : int -> int * int
+    f : int -> (int * int)
     f(i) = r :- r == (i, i).
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test predicate use of functional constraint succeeds [[
+test predicate use of functional constraint fails [[
   resolve f(1, 1, 1)
   rules
-    f : int -> int * int
+    f : int -> (int * int)
     f(i) = (i, i).
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test output variable not treated as guard [[
-  resolve f(1, _)
-  rules
-    f : int -> int
-    f(x) = x.
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+]] analysis fails
 
 test wildcards in head input succeeds [[
 resolve f(2) == _

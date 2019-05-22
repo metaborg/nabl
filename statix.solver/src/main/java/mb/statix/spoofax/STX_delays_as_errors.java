@@ -9,11 +9,12 @@ import java.util.Optional;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 
 public class STX_delays_as_errors extends StatixPrimitive {
@@ -27,8 +28,10 @@ public class STX_delays_as_errors extends StatixPrimitive {
 
         final ISolverResult result = M.blobValue(ISolverResult.class).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
-        final ISolverResult newResult =
-                result.withErrors(Sets.union(result.errors(), result.delays().keySet())).withDelays(ImmutableMap.of());
+        final ImmutableList.Builder<IConstraint> errors = ImmutableList.builder();
+        errors.addAll(result.errors());
+        errors.addAll(result.delays().keySet());
+        final ISolverResult newResult = result.withErrors(errors.build()).withDelays(ImmutableMap.of());
         return Optional.of(B.newBlob(newResult));
     }
 

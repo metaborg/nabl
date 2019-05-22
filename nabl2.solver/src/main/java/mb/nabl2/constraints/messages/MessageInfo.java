@@ -7,9 +7,9 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Function1;
 
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.stratego.TermIndex;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

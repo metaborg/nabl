@@ -50,7 +50,23 @@ public abstract class Scope extends AbstractApplTerm implements IScope, IApplTer
     // Object implementation
 
     @Override public boolean equals(Object other) {
-        return super.equals(other);
+        if(other == null) {
+            return false;
+        }
+        if(other == this) {
+            return true;
+        }
+        if(!(other instanceof Scope)) {
+            return super.equals(other);
+        }
+        final Scope that = (Scope) other;
+        if(!getResource().equals(that.getResource())) {
+            return false;
+        }
+        if(!getName().equals(that.getName())) {
+            return false;
+        }
+        return true;
     }
 
     @Override public int hashCode() {

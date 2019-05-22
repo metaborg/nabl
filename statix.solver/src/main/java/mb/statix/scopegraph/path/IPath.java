@@ -6,16 +6,16 @@ import mb.nabl2.util.collections.PSequence;
 /**
  * Interface to represent a path.
  *
- * @param <V>
+ * @param <S>
  *      the type of scopes
  * @param <L>
  *      the type of labels
  */
-public interface IPath<V, L> {
+public interface IPath<S, L> {
 
-    PSequence<V> scopes();
+    PSequence<S> scopes();
 
-    Set.Immutable<V> scopeSet();
+    Set.Immutable<S> scopeSet();
 
     PSequence<L> labels();
 

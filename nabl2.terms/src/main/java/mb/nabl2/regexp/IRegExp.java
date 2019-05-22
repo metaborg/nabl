@@ -4,13 +4,9 @@ import java.util.function.Function;
 
 public interface IRegExp<S> {
 
-    IRegExpBuilder<S> getBuilder();
+    <T> T match(ICases<S, T> cases);
 
-    boolean isNullable();
-
-    <T> T match(ICases<S,T> cases);
-
-    interface ICases<S, T> extends Function<IRegExp<S>,T> {
+    interface ICases<S, T> extends Function<IRegExp<S>, T> {
 
         T emptySet();
 
@@ -27,6 +23,10 @@ public interface IRegExp<S> {
         T and(IRegExp<S> left, IRegExp<S> right);
 
         T complement(IRegExp<S> re);
+
+        @Override default T apply(IRegExp<S> re) {
+            return re.match(this);
+        }
 
     }
 

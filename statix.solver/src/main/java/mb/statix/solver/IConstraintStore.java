@@ -12,17 +12,23 @@ public interface IConstraintStore {
 
     int delayedSize();
 
-    void addAll(Iterable<? extends IConstraint> constraints);
+    void add(IConstraint constraint);
 
-    void activateStray();
+    default void addAll(Iterable<? extends IConstraint> constraints) {
+        for(IConstraint constraint : constraints) {
+            add(constraint);
+        }
+    }
+
+    IConstraint remove();
+
+    void delay(IConstraint constraint, Delay delay);
+
+    Map<IConstraint, Delay> delayed();
 
     void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);
 
     void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug);
-
-    Iterable<Entry> active(IDebugContext debug);
-
-    Map<IConstraint, Delay> delayed();
 
     interface Entry {
 
@@ -33,5 +39,5 @@ public interface IConstraintStore {
         void remove();
 
     }
-
+    
 }

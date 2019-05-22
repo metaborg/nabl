@@ -1,6 +1,6 @@
 package mb.statix.taico.solver.store;
 
-import static mb.statix.taico.util.TDebug.*;
+import static mb.statix.taico.util.TDebug.STORE_DEBUG;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -74,6 +74,21 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     @Override
+    public void add(IConstraint constraint) {
+        active.add(constraint);   
+    }
+    
+    @Override
+    public IConstraint remove() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void delay(IConstraint constraint, Delay delay) {
+        throw new UnsupportedOperationException();
+    }
+    
+    // TODO HVA Used for module boundaries, make special case?
     public void activateStray() {
         for (IConstraint constraint : stuckBecauseStuck) {
             active.add(constraint);
@@ -202,7 +217,6 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
-    @Override
     public Iterable<IConstraintStore.Entry> active(IDebugContext debug) {
         throw new UnsupportedOperationException("Request elements one by one");
     }

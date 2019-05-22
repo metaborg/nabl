@@ -5,7 +5,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -85,16 +84,18 @@ public abstract class MessageContent implements IMessageContent {
         @Value.Parameter abstract List<IMessageContent> getParts();
 
         @Override public CompoundMessage apply(Function1<ITerm, ITerm> f) {
-            return ImmutableCompoundMessage.of(getParts().stream().map(p -> p.apply(f)).collect(Collectors.toList()));
+            return ImmutableCompoundMessage
+                    .of(getParts().stream().map(p -> p.apply(f)).collect(ImmutableList.toImmutableList()));
         }
 
         @Override public IMessageContent withDefault(IMessageContent defaultContent) {
-            return ImmutableCompoundMessage
-                    .of(getParts().stream().map(p -> p.withDefault(defaultContent)).collect(Collectors.toList()));
+            return ImmutableCompoundMessage.of(getParts().stream().map(p -> p.withDefault(defaultContent))
+                    .collect(ImmutableList.toImmutableList()));
         }
 
         @Override public ITerm build() {
-            List<ITerm> parts = getParts().stream().map(IMessageContent::build).collect(Collectors.toList());
+            List<ITerm> parts =
+                    getParts().stream().map(IMessageContent::build).collect(ImmutableList.toImmutableList());
             return B.newAppl(FORMATTED, (ITerm) B.newList(parts));
         }
 

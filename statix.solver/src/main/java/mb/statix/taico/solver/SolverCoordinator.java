@@ -37,9 +37,9 @@ public class SolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug)
+    public MSolverResult solve(IMState state, IConstraint constraint, IDebugContext debug)
         throws InterruptedException {
-        init(new NonIncrementalStrategy(), state, constraints, debug);
+        init(new NonIncrementalStrategy(), state, constraint, debug);
         addSolver(root);
         
         runToCompletion();
@@ -48,8 +48,8 @@ public class SolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
-        init(new NonIncrementalStrategy(), state, constraints, debug);
+    public void solveAsync(IMState state, IConstraint constraint, IDebugContext debug, Consumer<MSolverResult> onFinished) {
+        init(new NonIncrementalStrategy(), state, constraint, debug);
         new Thread(() -> {
             try {
                 runToCompletion();

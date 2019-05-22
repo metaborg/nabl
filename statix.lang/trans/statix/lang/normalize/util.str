@@ -1,0 +1,151 @@
+module statix/lang/normalize/util
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+
+rules
+
+  norm-get-ast-type =
+    nabl2-get-anno-type
+ <+ fatal-err(|"Missing AST type")
+
+  norm-set-ast-type(|ty) =
+    nabl2-set-anno-type(|ty)
+
+  norm-copy-ast-type(|t) =
+    nabl2-copy-anno-type(|t)
+
+  norm-get-ast-property(|a,prop) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-property(|a,prop)
+
+  norm-get-ast-decl-type(|a) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-property(|a,"decl")
+  ; nabl2-get-type(|a)
+
+  norm-get-ast-decl-property(|a,prop) =
+    not(nabl2-get-ast-index)
+  < fatal-err(|"Missing AST index")
+  + nabl2-get-ast-property(|a,"decl")
+  ; nabl2-get-property(|a,prop)
+
+  norm-preserve-ast-type(s) =
+    nabl2-preserve-anno-type(s)
+
+rules
+
+  // replace : old:Term -> new:Term
+  // to-c : (old:Term, new:Term) -> Constraint
+
+  normalize-in-rules(replace,add-vars,to-c):
+      rule{a*} -> rule'{a*}
+    where <?Rule(head, bvs, body) + ?ModuleRule(head, _, bvs, body)> rule
+    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs);
+         switch !rule
+         	case ?Rule(_, _, _):
+				rule' := Rule(head, bvs', body'')
+         	case ?ModuleRule(_, name, _, _):
+				rule' := ModuleRule(head, name, bvs', body'')
+         end
+
+  normalize-in-rules(replace,add-vars,to-c):
+      LLam(ts, bvs, body){a*} -> LLam(ts, bvs', body''){a*}
+    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)
+
+  not-in-lambda = not(?LLam(_, _, _))
+
+rules // smart constructors for typed terms
+
+  mk-Wld(|ty): _ -> <norm-set-ast-type(|ty)> Wld()
+
+  mk-Wlds = map(\ ty -> <mk-Wld(|ty)> \)
+
+  mk-fresh-Var(|ty) = newname; mk-Var(|ty)
+
+  mk-fresh-Vars(|x) = map(\ ty -> <mk-fresh-Var(|ty)> x \)
+
+  mk-Var(|ty): x -> <norm-set-ast-type(|ty)> Var(x)
+
+  mk-seq-Vars(|x) = map-with-index(\ (i, ty) -> <mk-Var(|ty)> $[[x][<int-to-string> i]] \)
+
+  mk-Op(|ty): (x, ts) -> <norm-set-ast-type(|ty)> Op(x, ts)
+
+  mk-Tuple: ts -> <norm-set-ast-type(|ty)> t
+    with if [t] := ts then
+           ty := <norm-get-ast-type> t
+         else
+           t := Tuple(ts);
+           ty := TUPLE(<map(norm-get-ast-type)> ts)
+         end
+
+  mk-TUPLE: tys -> ty
+    with if [ty] := tys then
+           id
+         else
+           ty := TUPLE(tys)
+         end
+
+  mk-Nil(|ty): _ -> <norm-set-ast-type(|LIST(ty))> List([])
+
+  mk-List: ts -> <norm-set-ast-type(|ty)> List(ts)
+    with tys := <map(norm-get-ast-type)> ts;
+         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         ty := LIST(ty')
+
+  mk-ListTail: (ts, t) -> <norm-set-ast-type(|ty)> ListTail(ts, t)
+    with tys := <map(norm-get-ast-type)> ts;
+         LIST(ty') := <norm-get-ast-type> t;
+         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         ty := LIST(ty')
+
+  mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
+    with tys := <map(norm-get-ast-type)> ps;
+         ty := PRED(tys)
+
+  mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, p)
+
+rules
+
+  list-to-conj(|tl): []     -> tl
+  list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
+
+  list-to-conj: []     -> CTrue()
+  list-to-conj: [C]    -> C
+  list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+
+  type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
+  type-to-sort: INT()        -> IntSort()
+  type-to-sort: STRING()     -> StringSort()
+  type-to-sort: PATH()       -> PathSort()
+  type-to-sort: LABEL()      -> LabelSort()
+  type-to-sort: OCCURRENCE() -> OccurrenceSort()
+  type-to-sort: SCOPE()      -> ScopeSort()
+  type-to-sort: AST_ID()     -> AstIdSort()
+  type-to-sort: LIST(ty)     -> ListSort(<type-to-sort> ty)
+  type-to-sort: TUPLE(tys)   -> TupleSort(<map(type-to-sort)> tys)
+
+  type-to-sort: PRED(tys)         -> SimpleType(<map(type-to-sort)> tys)
+  type-to-sort: FUN(intys, outty) -> FunType(<map(type-to-sort)> intys, <type-to-sort> outty)
+
+  fun-to-pred-type:
+      FUN(intys, outty) -> PRED(<conc> (intys, [outty]))
+
+  fun-to-pred-type:
+      FunType(insorts, outsort) -> SimpleType(<conc> (insorts, [outsort]))

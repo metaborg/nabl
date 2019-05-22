@@ -90,7 +90,20 @@ public abstract class Label extends AbstractApplTerm implements ILabel, IApplTer
     // Object implementation
 
     @Override public boolean equals(Object other) {
-        return super.equals(other);
+        if(other == null) {
+            return false;
+        }
+        if(other == this) {
+            return true;
+        }
+        if(!(other instanceof Label)) {
+            return super.equals(other);
+        }
+        final Label that = (Label) other;
+        if(!getName().equals(that.getName())) {
+            return false;
+        }
+        return true;
     }
 
     @Override public int hashCode() {

@@ -12,9 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.constraint.CResolveQuery;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;

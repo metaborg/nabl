@@ -469,6 +469,53 @@ rules // ###### AST Indices ######
    */
   nabl2-simplify-ast-indices = nabl2--simplify-ast-indices
 
+rules // ##### Transformation Utils #####
+
+  /**
+   * Add explicit type annotations on the AST nodes
+   *
+   * @param a : Analysis
+   * @type Term -> Term
+   */
+  nabl2-add-anno-types(|a) = fail
+
+  /**
+   * Remove explicit type annotation
+   *
+   * @type Term -> Term
+   */
+  nabl2-remove-anno-type = fail
+
+  /**
+   * Set explicit type annotation
+   *
+   * @type Term -> Term
+   */
+  nabl2-set-anno-type(|ty) = fail
+  
+  /**
+   * Get type from explicit annotation
+   *
+   * @type Term -> Term
+   */
+  nabl2-get-anno-type = fail
+
+  /**
+   * Copy type from t to current term
+   *
+   * @param t : Term
+   * @type Term -> Term
+   */
+  nabl2-copy-anno-type(|t) = fail
+
+  /**
+   * Preserve type annotation on the transformed term
+   *
+   * @param s : Term -> Term
+   * @type Term -> Term
+   */
+  nabl2-preserve-anno-type(s) = fail
+  
 rules // ###### Editor Integration ######
 
   /**

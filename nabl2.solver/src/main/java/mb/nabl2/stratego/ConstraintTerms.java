@@ -5,11 +5,11 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IListTerm;
@@ -36,7 +36,7 @@ public class ConstraintTerms {
         // @formatter:off
         term = term.match(Terms.cases(
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(Collectors.toList());
+                List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(ImmutableList.toImmutableList());
                 return B.newAppl(appl.getOp(), args);
             },
             list -> specializeList(list),
@@ -47,14 +47,14 @@ public class ConstraintTerms {
         )).withAttachments(term.getAttachments());
         // @formatter:on
         // @formatter:off
-        term = M.<ITerm>cases(
+        term = M.preserveAttachments(M.<ITerm>cases(
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
                     B.newVar(resource, name)),
             M.appl1(LIST_CTOR, M.list(), (t, xs) ->
                     xs),
             M.appl2(LISTTAIL_CTOR, M.listElems(), M.term(), (t, xs, ys) ->
                     B.newListTail(xs, (IListTerm) ys))
-        ).match(term).orElse(term);
+        )).match(term).orElse(term);
         // @formatter:on
         return term;
     }
@@ -101,7 +101,7 @@ public class ConstraintTerms {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(Collectors.toList());
+                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(ImmutableList.toImmutableList());
                 return B.newAppl(appl.getOp(), args);
             },
             list -> explicate(list),

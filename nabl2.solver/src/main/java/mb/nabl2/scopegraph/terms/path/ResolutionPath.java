@@ -50,6 +50,8 @@ abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOcc
         return getPath().getImportPaths();
     }
 
+    @Value.Lazy @Override public abstract int hashCode();
+
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getReference());

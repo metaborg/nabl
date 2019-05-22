@@ -55,12 +55,12 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(2));
 
-        final IMatcher<Tuple2<MChange, Set<IConstraint>>> constraintMatcher = M.tuple2(
+        final IMatcher<Tuple2<MChange, IConstraint>> constraintMatcher = M.tuple2(
                 MChange.matcher(),
-                StatixTerms.constraints(spec.labels()),
+                StatixTerms.constraint(),
                 (t, mc, c) -> ImmutableTuple2.of(mc, c));
         
-        final List<Tuple2<MChange, Set<IConstraint>>> constraints = M.listElems(constraintMatcher).match(term)
+        final List<Tuple2<MChange, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints, but was " + term));
         
         //We want the "initial" state, but rather we want the previous module manager used for the initial state.
@@ -69,9 +69,9 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         Set<String> changed = new HashSet<>();
         Set<String> added = new HashSet<>();
         Map<String, Integer> order = new HashMap<>();
-        Map<String, Set<IConstraint>> modules = new HashMap<>();
+        Map<String, IConstraint> modules = new HashMap<>();
         int i = 0;
-        for (Tuple2<MChange, Set<IConstraint>> tuple : constraints) {
+        for (Tuple2<MChange, IConstraint> tuple : constraints) {
             MChange change = tuple._1();
             switch (change.getChangeType()) {
                 case REMOVED:

@@ -70,6 +70,8 @@ abstract class EStep<S extends IScope, L extends ILabel, O extends IOccurrence> 
         return sb.toString();
     }
 
+    @Value.Lazy @Override public abstract int hashCode();
+
     @Override public String toString() {
         return toString(true, true);
     }

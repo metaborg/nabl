@@ -1,22 +1,21 @@
 package mb.statix.scopegraph.path;
 
 /**
- * @param <V>
+ * @param <S>
  *      the type of scopes
  * @param <L>
  *      the type of labels
  */
-public interface IScopePath<V, L>
-        extends IPath<V, L>, Iterable<IStep<V, L>> {
+public interface IScopePath<S, L> extends IPath<S, L>, Iterable<IStep<S, L>> {
 
-    V getSource();
+    S getSource();
 
-    V getTarget();
+    S getTarget();
 
     default boolean isEmpty() {
         return size() == 0;
     }
-    
+
     int size();
 
     String toString(boolean includeSource, boolean includeTarget);

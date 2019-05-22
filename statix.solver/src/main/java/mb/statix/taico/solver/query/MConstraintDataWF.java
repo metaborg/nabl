@@ -7,14 +7,18 @@ import java.util.Set;
 
 import org.metaborg.util.log.Level;
 
+import com.google.common.collect.ImmutableList;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
 import mb.statix.taico.solver.ICompleteness;
@@ -35,23 +39,22 @@ public class MConstraintDataWF implements DataWF<ITerm> {
         this.debug = debug;
     }
 
-    @Override
-    public boolean wf(List<ITerm> datum) throws ResolutionException, InterruptedException {
-        //TODO IMPORTANT For the separate solvers/entails solvers, the completeness is sometimes obtained via modules, which will not be the completeness in the solver in question.
+    @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
+        final IUnifier unifier = state.unifier();
         try {
-            IMState resultState = state.delegate();
-            final Tuple2<Set<ITermVar>, Set<IConstraint>> result;
-            if((result = constraint.apply(datum, resultState).orElse(null)) == null) {
+            final IConstraint result;
+            if((result = constraint.apply(ImmutableList.of(datum), unifier).map(Tuple2::_2).orElse(null)) == null) {
                 return false;
             }
-            if(ModuleSolver.entails(resultState, result._2(), isComplete, result._1(), debug).isPresent()) {
+            IMState resultState = state.delegate();
+            if(ModuleSolver.entails(resultState, result, isComplete, debug).isPresent()) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Well-formed {}", resultState.unifier().toString(B.newTuple(datum)));
+                    debug.info("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Not well-formed {}", resultState.unifier().toString(B.newTuple(datum)));
+                    debug.info("Not well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
                 return false;
             }
@@ -59,5 +62,5 @@ public class MConstraintDataWF implements DataWF<ITerm> {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
         }
     }
-
+    
 }
