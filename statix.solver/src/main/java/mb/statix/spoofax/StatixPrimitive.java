@@ -8,11 +8,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
@@ -24,25 +23,19 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 
-import mb.nabl2.stratego.StrategoTerms;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.stratego.StrategoTerms;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.Tuple2;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.Solver;
-import mb.statix.solver.State;
-import mb.statix.solver.constraint.Constraints;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.persistent.Solver;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
@@ -76,7 +69,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
         final ITerm term = strategoTerms.fromStratego(sterm);
-        final List<ITerm> terms = sterms.stream().map(strategoTerms::fromStratego).collect(Collectors.toList());
+        final List<ITerm> terms =
+                sterms.stream().map(strategoTerms::fromStratego).collect(ImmutableList.toImmutableList());
         final Optional<? extends ITerm> result = call(env, term, terms);
         return result.map(strategoTerms::toStratego);
     }
@@ -112,48 +106,11 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         return debug;
     }
 
-    ////////////////////////////////////////////
-    // Helper methods for top-level variables //
-    ////////////////////////////////////////////
-
-    /**
-     * Create fresh variables for top-level variables, and return updated state and substitution.
-     */
-    protected Tuple2<ISubstitution.Immutable, State> freshenToplevelVariables(Iterable<ITermVar> vars, State state) {
-        final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        for(ITermVar var : vars) {
-            final Tuple2<ITermVar, State> var_state = state.freshVar(var.getName());
-            state = var_state._2();
-            subst.put(var, var_state._1());
-            subst.put(var_state._1(), var);
-        }
-        return ImmutableTuple2.of(subst.freeze(), state);
-    }
-
-    /**
-     * Create a substitution for the original top-level variables.
-     * 
-     * The returned Map preserves iteration order of vars.
-     */
-    protected Map<ITermVar, ITerm> toplevelSubstitution(Iterable<ITermVar> vars, ISubstitution.Immutable subst,
-            State state) {
-        final ImmutableMap.Builder<ITermVar, ITerm> vsubst = ImmutableMap.builder();
-        for(ITermVar var : vars) {
-            final ITerm key = subst.apply(var);
-            final ITerm value = state.unifier().findRecursive(key);
-            final ITerm varTerm = subst.apply(value);
-            if(!var.equals(varTerm)) {
-                vsubst.put(var, varTerm);
-            }
-        }
-        return vsubst.build();
-    }
-
     ////////////////////////////////////////////////
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected ITerm makeMessage(String prefix, IConstraint constraint, IUnifier.Immutable unifier) {
+    protected ITerm makeMessage(String prefix, IConstraint constraint, IUnifier unifier) {
         final ITerm astTerm = findClosestASTTerm(constraint, unifier);
         final StringBuilder message = new StringBuilder();
         message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
@@ -164,40 +121,46 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
         // @formatter:off
-        final Function1<IConstraint, Collection<ITerm>> terms = Constraints.cases(
-            onEqual -> ImmutableList.of(),
-            onFalse -> ImmutableList.of(),
-            onInequal -> ImmutableList.of(),
-            onNew -> ImmutableList.of(),
-            onPathDst -> ImmutableList.of(),
-            onPathLabels -> ImmutableList.of(),
-            onPathLt -> ImmutableList.of(),
-            onPathMatch -> ImmutableList.of(),
-            onPathScopes -> ImmutableList.of(),
-            onPathSrc -> ImmutableList.of(),
-            onResolveQuery -> ImmutableList.of(),
-            onTellEdge -> ImmutableList.of(),
-            onTellRel -> ImmutableList.of(),
-            onTermId -> ImmutableList.of(),
-            onTrue -> ImmutableList.of(),
-            onUser -> onUser.args()
+        final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
+            onConj -> Stream.empty(),
+            onEqual -> Stream.empty(),
+            onExists -> Stream.empty(),
+            onFalse -> Stream.empty(),
+            onInequal -> Stream.empty(),
+            onNew -> Stream.empty(),
+            onPathLt -> Stream.empty(),
+            onPathMatch -> Stream.empty(),
+            onResolveQuery -> Stream.empty(),
+            onTellEdge -> Stream.empty(),
+            onTellRel -> Stream.empty(),
+            onTermId -> Stream.empty(),
+            onTermProperty -> Stream.empty(),
+            onTrue -> Stream.empty(),
+            onUser -> onUser.args().stream()
         );
-        // @formatter:on
-        return Iterables2.stream(terms.apply(constraint)).map(unifier::findTerm)
-                .filter(t -> TermIndex.get(t).isPresent()).findAny().orElseGet(() -> {
+        return terms.apply(constraint).map(unifier::findTerm)
+                .filter(t -> TermIndex.get(t).isPresent())
+                .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
+                .findAny()
+                .orElseGet(() -> {
                     return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
                 });
+        // @formatter:on
     }
 
     private ITerm makeOriginTerm(ITerm term) {
         return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
     }
 
-    private static void formatTrace(@Nullable IConstraint constraint, IUnifier.Immutable unifier, StringBuilder sb) {
+    private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");
-            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
+            String c = constraint.toString(Solver.shallowTermFormatter(unifier));
+            c = c.replaceAll("&", "&amp;");
+            c = c.replaceAll("<", "&lt;");
+            c = c.replaceAll(">", "&gt;");
+            sb.append(c);
             constraint = constraint.cause().orElse(null);
         }
     }

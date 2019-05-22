@@ -5,14 +5,17 @@ imports
   libspoofax/analysis/constraint
 
   nabl2shared
+  nabl2/shared/ast // for index-ast
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
-  nabl2/runtime/analysis/query // for private set-custom-analysis
+  nabl2/runtime/transform/query // for private set-custom-analysis
 
   signatures/statix/lang/-
 
   statix/lang/statics/-
+  statix/lang/normalize
+  statix/lang/scope-extension
 
   pp
 
@@ -32,41 +35,35 @@ rules // Analysis
                       })> ast*
 
   editor--analyze:
-      (resource, ast) -> (ast'', result, error*, warning*, note*)
+      (resource, ast) -> (analyzed-ast, result, error*, warning*, note*)
     with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
-         ast' := <desugar-all;nabl2--index-ast(|resource)> ast;
+         desugared-ast := <desugar-all> ast;
          nabl2-custom-analysis-info-msg(|"Desugared AST.");
 
-         nabl2-custom-analysis-info-msg(|"Normalizing AST...");
-         let analyze = nabl2-custom-analysis-info-msg(|"| Analyzing...");
-                       nabl2-erase-ast-indices;nabl2-analyze-ast(|resource)
-             step(s,k) = { ast, a:
-                           analyze;
-                           if ?(ast, a, [], _, _) then
-                             nabl2-custom-analysis-info-msg(|"| Transforming...");
-                             <keep-origin(s(|a))> ast;
-                             k
-                           end
-                         }
-         in
-           <step(normalize-0,
-            step(normalize-1,
-            step(normalize-2,
-            step(normalize-3,
-            analyze))))> ast'
+         nabl2-custom-analysis-info-msg(|"Analyzing AST...");
+         (analyzed-ast, a, e*, w*, n*) :=
+            <nabl2-analyze-ast(|resource)> desugared-ast;
+
+         if [] := e* then
+           nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
+           or-e* := <detect-overlapping-rules> analyzed-ast;
+
+           nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
+           (ext*, ext-e*, ext-w*, ext-n*) :=
+               <compute-scope-extensions> analyzed-ast;
+
+           result   := <nabl2--set-custom-analysis(|a)> ext*;
+           error*   := [e*, ext-e*, or-e*];
+           warning* := [w*, ext-w*];
+           note*    := [n*, ext-n*]
+         else
+           result   := a;
+           error*   := e*;
+           warning* := w*;
+           note*    := n*
          end;
-         ?(ast'', a', e*, w*, n*);
+         nabl2-custom-analysis-info-msg(|"Analyzed AST.")
 
-         nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
-         or-e* := <detect-overlapping-rules> ast';
-
-         nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-         (ext*, ext-e*, ext-w*, ext-n*) := <compute-scope-extensions> ast'';
-
-         result := <nabl2--set-custom-analysis(|a')> ext*;
-         error*   := [e*, ext-e*, or-e*];
-         warning* := [w*, ext-w*];
-         note*    := [n*, ext-n*]
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term

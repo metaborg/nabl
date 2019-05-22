@@ -1,4 +1,4 @@
-module scopegraphs-extension
+module scopegraphs/extension
 
 language StatixLang
 
@@ -138,3 +138,115 @@ test extend local scope via functional constraint fails [[
     c1 : scope -> ()
     c1(s) = () :- s -> Var{"x"@-}.
 ]] analysis fails
+
+// extension via mapped predicate constraint
+
+test new extension of non-lifted parameter of lifted predicate succeeds [[
+  module test
+  signature
+    relations
+      r : int
+  rules
+    cs maps c(*, list(*))
+    c : scope * int
+    c(s, i) :- !r[i] in s.
+    
+    d :
+    d() :- {s} new s, cs(s, []).
+]] analysis succeeds
+
+test local extension of non-lifted parameter of lifted predicate fails [[
+  module test
+  signature
+    relations
+      r : int
+  rules
+    cs maps c(*, list(*))
+    c : scope * int
+    c(s, i) :- !r[i] in s.
+    
+    d :
+    d() :- {s1 s2} new s1, s1 == s2, cs(s2, []).
+]] analysis fails
+
+test extension of lifted parameter of lifted predicate fails [[
+  module test
+  signature
+    relations
+      r : int
+  rules
+    cs maps c(list(*), list(*))
+    c : scope * int
+    c(s, i) :- !r[i] in s.
+    
+    d :
+    d() :- {s1 s2} new s1, s1 == s2, cs([s2], []).
+]] analysis fails
+
+
+// extension via mapped functional constraint
+
+test new extension of non-lifted parameter of lifted functional succeeds [[
+  module test
+  signature
+    relations
+      r : int
+  rules
+    fs maps f(*, list(*)) = list(*)
+    f : scope * int -> ()
+    f(s, i) = () :- !r[i] in s.
+    
+    d :
+    d() :- {s} new s, fs(s, []) == _.
+]] analysis succeeds
+
+test local extension of non-lifted parameter of lifted functional fails [[
+  module test
+  signature
+    relations
+      r : int
+  rules
+    fs maps f(*, list(*)) = list(*)
+    f : scope * int -> ()
+    f(s, i) = () :- !r[i] in s.
+
+    d :
+    d() :- {s1 s2} new s1, s1 == s2, fs(s2, []) == _.
+]] analysis fails
+
+test extension of lifted parameter of lifted functional fails [[
+  module test
+  signature
+    relations
+      r : int
+  rules
+    fs maps f(list(*), list(*)) = list(*)
+    f : scope * int -> ()
+    f(s, i) = () :- !r[i] in s.
+    
+    d :
+    d() :- {s1 s2} new s1, s1 == s2, fs([s2], []) == _.
+]] analysis fails
+
+// extension in test goal
+
+test new extension in test goal succeeds [[
+  resolve {s} new s, c(s, 1)
+  signature
+    relations
+      r : int
+  rules
+    c : scope * int
+    c(s, i) :- !r[i] in s.
+]] analysis succeeds
+
+test local extension in test goal fails [[
+  resolve {s1 s2} new s1, s1 == s2, c(s2, 1)
+  signature
+    relations
+      r : int
+  rules
+    c : scope * int
+    c(s, i) :- !r[i] in s.
+]] analysis fails
+

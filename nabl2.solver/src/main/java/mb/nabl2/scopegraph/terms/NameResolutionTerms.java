@@ -3,7 +3,8 @@ package mb.nabl2.scopegraph.terms;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.INameResolution;
@@ -25,13 +26,13 @@ public final class NameResolutionTerms {
 
     private ITerm build() {
         final List<ITerm> resolutions =
-                scopeGraph.getAllRefs().stream().map(this::buildRef).collect(Collectors.toList());
+                scopeGraph.getAllRefs().stream().map(this::buildRef).collect(ImmutableList.toImmutableList());
         return B.newAppl("NameResolution", (ITerm) B.newList(resolutions));
     }
 
     private ITerm buildRef(Occurrence ref) {
         final List<ITerm> paths = nameResolution.resolve(ref).orElseGet(() -> Set.Immutable.of()).stream()
-                .map(this::buildPath).collect(Collectors.toList());
+                .map(this::buildPath).collect(ImmutableList.toImmutableList());
         final ITerm result;
         if(paths.isEmpty()) {
             result = B.newAppl("NoResolution");

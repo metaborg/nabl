@@ -5,23 +5,18 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -42,59 +37,56 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.constraints.CAstId;
+import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CConj;
+import mb.statix.constraints.CEqual;
+import mb.statix.constraints.CExists;
+import mb.statix.constraints.CFalse;
+import mb.statix.constraints.CInequal;
+import mb.statix.constraints.CNew;
+import mb.statix.constraints.CPathLt;
+import mb.statix.constraints.CPathMatch;
+import mb.statix.constraints.CResolveQuery;
+import mb.statix.constraints.CTellEdge;
+import mb.statix.constraints.CTellRel;
+import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CUser;
+import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.path.IScopePath;
+import mb.statix.scopegraph.path.IStep;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.constraint.CEqual;
-import mb.statix.solver.constraint.CFalse;
-import mb.statix.solver.constraint.CInequal;
-import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
-import mb.statix.solver.constraint.CPathLt;
-import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
-import mb.statix.solver.constraint.CResolveQuery;
-import mb.statix.solver.constraint.CTellEdge;
-import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CTermId;
-import mb.statix.solver.constraint.CUser;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
-import mb.statix.spec.Type;
 
 public class StatixTerms {
 
-    public static final ITerm QUERY_SCOPES = B.EMPTY_TUPLE;
-    public static final ITerm END_OF_PATH = B.newAppl("EOP");
-    public static final ITerm DECL_REL = B.newAppl("Decl");
-
-    public static final ITerm SCOPE_SORT = B.newAppl("SCOPE");
-    public static final Type SCOPE_REL_TYPE = Type.of(ImmutableList.of(SCOPE_SORT), ImmutableList.of());
-
     public static final String SCOPE_OP = "Scope";
+    public static final String TERMINDEX_OP = "TermIndex";
     public static final String OCCURRENCE_OP = "Occurrence";
-    public static final String SCOPEID_OP = "ScopeId";
-    public static final String TERMID_OP = "TermId";
+    public static final String PATH_EMPTY_OP = "PathEmpty";
+    public static final String PATH_STEP_OP = "PathStep";
     public static final String NOID_OP = "NoId";
 
     public static IMatcher<Spec> spec() {
-        return IMatcher.flatten(M.tuple4(M.req(labels()), M.req(relationDecls()), M.term(), M.req(scopeExtensions()),
-                (t, labels, relations, rulesTerm, ext) -> {
-                    Optional<ListMultimap<String, Rule>> maybeRules = M.req(rules(labels)).match(rulesTerm);
-                    return maybeRules.map(rules -> {
-                        return Spec.of(rules, labels, END_OF_PATH, relations, ext);
-                    });
-                }));
+        return M.tuple5(M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
+                (t, edgeLabels, relationLabels, noRelationLabel, rules, ext) -> {
+                    final IAlphabet<ITerm> labels = new FiniteAlphabet<>(
+                            Iterables2.cons(noRelationLabel, Iterables.concat(relationLabels, edgeLabels)));
+                    return Spec.of(rules, edgeLabels, relationLabels, noRelationLabel, labels, ext);
+                });
     }
 
-    public static IMatcher<ListMultimap<String, Rule>> rules(IAlphabet<ITerm> labels) {
-        return M.listElems(M.req(rule(labels))).map(rules -> {
+    public static IMatcher<ListMultimap<String, Rule>> rules() {
+        return M.listElems(M.req(rule())).map(rules -> {
             final ImmutableListMultimap.Builder<String, Rule> builder =
                     ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
             rules.stream().forEach(rule -> {
@@ -104,9 +96,9 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Rule> rule(IAlphabet<ITerm> labels) {
-        return M.appl3("Rule", head(), M.listElems(varTerm()), constraints(labels), (r, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), bvs, bc);
+    public static IMatcher<Rule> rule() {
+        return M.appl3("Rule", head(), M.listElems(varTerm()), constraint(), (r, h, bvs, bc) -> {
+            return Rule.of(h._1(), h._2(), new CExists(bvs, bc));
         });
     }
 
@@ -116,152 +108,83 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Set<IConstraint>> constraints(IAlphabet<ITerm> labels) {
+    public static IMatcher<IConstraint> constraint() {
         return (t, u) -> {
-            final ImmutableSet.Builder<IConstraint> constraints = ImmutableSet.builder();
-            return M.casesFix(m -> Iterables2.from(
             // @formatter:off
-                M.appl2("CConj", m, m, (c, t1, t2) -> {
-                    return Unit.unit;
+            return M.<IConstraint>casesFix(m -> Iterables2.from(
+                M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
+                    return new CAstId(t1, t2);
                 }),
-                M.appl0("CTrue", (c) -> {
-                    return Unit.unit;
+                M.appl3("CAstProperty", term(), label(), term(), (c, idTerm, property, valueTerm) -> {
+                    return new CAstProperty(idTerm, property, valueTerm);
                 }),
-                M.appl0("CFalse", (c) -> {
-                    constraints.add(new CFalse());
-                    return Unit.unit;
+                M.appl2("CConj", m, m, (c, c1, c2) -> {
+                    return new CConj(c1, c2);
                 }),
                 M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CEqual(t1, t2));
-                    return Unit.unit;
+                    return new CEqual(t1, t2);
+                }),
+                M.appl2("CExists", M.listElems(varTerm()), constraint(), (c, vs, body) -> {
+                    return new CExists(vs, body);
+                }),
+                M.appl0("CFalse", (c) -> {
+                    return new CFalse();
                 }),
                 M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CInequal(t1, t2));
-                    return Unit.unit;
+                    return new CInequal(t1, t2);
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
-                    constraints.add(new CNew(ts));
-                    return Unit.unit;
-                }),
-                M.appl2("CTermId", term(), term(), (c, t1, t2) -> {
-                    constraints.add(new CTermId(t1, t2));
-                    return Unit.unit;
-                }),
-                M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
-                    constraints.add(new CTellEdge(sourceScope, label, targetScope));
-                    return Unit.unit;
-                }),
-                M.appl3("CTellRel", relation(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    constraints.add(new CTellRel(scope, rel, args));
-                    return Unit.unit;
-                }),
-                M.appl5("CResolveQuery", queryTarget(), queryFilter(labels), queryMin(labels), term(), term(),
-                        (c, rel, filter, min, scope, result) -> {
-                    constraints.add(new CResolveQuery(rel, filter, min, scope, result));
-                    return Unit.unit;
-                }),
-                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>(labels)), listTerm(), (c, re, lbls) -> {
-                    constraints.add(new CPathMatch(re, lbls));
-                    return Unit.unit;
+                    return new CNew(ts);
                 }),
                 M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
-                    constraints.add(new CPathLt(lt, l1, l2));
-                    return Unit.unit;
+                    return new CPathLt(lt, l1, l2);
                 }),
-                M.appl2("CPathSrc", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathSrc(p, rt));
-                    return Unit.unit;
+                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
+                    return new CPathMatch(re, lbls);
                 }),
-                M.appl2("CPathDst", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathDst(p, rt));
-                    return Unit.unit;
+                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
+                        (c, rel, filter, min, scope, result) -> {
+                    return new CResolveQuery(rel, filter, min, scope, result);
                 }),
-                M.appl2("CPathLabels", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathLabels(p, rt));
-                    return Unit.unit;
+                M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
+                    return new CTellEdge(sourceScope, label, targetScope);
                 }),
-                M.appl2("CPathScopes", term(), term(), (c, p, rt) -> {
-                    constraints.add(new CPathScopes(p, rt));
-                    return Unit.unit;
+                M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
+                    return new CTellRel(scope, rel, args);
+                }),
+                M.appl0("CTrue", (c) -> {
+                    return new CTrue();
                 }),
                 M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
-                    constraints.add(new CUser(name, args));
-                    return Unit.unit;
+                    return new CUser(name, args);
                 }),
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
-                // @formatter:on
-            )).match(t, u).map(v -> constraints.build());
+            )).match(t, u);
+            // @formatter:on
         };
     }
 
     private static IMatcher<String> constraintName() {
-        // @formatter:off
-        return M.cases(
-            M.stringValue(),
-            M.appl().filter(t -> t.getArity() == 0).map(t -> t.getOp())
-        );
-        // @formatter:on
+        return M.stringValue();
     }
 
-    public static IMatcher<Optional<ITerm>> queryTarget() {
-        // @formatter:off
-        return M.cases(
-            M.appl0("NoTarget", t -> Optional.empty()),
-            M.appl1("RelTarget", relation(), (t, rel) -> Optional.of(rel))
-        );
-        // @formatter:on
-    }
-
-    public static IMatcher<IQueryFilter> queryFilter(IAlphabet<ITerm> labels) {
-        return M.appl2("Filter", hoconstraint(labels), hoconstraint(labels), (f, pathConstraint, dataConstraint) -> {
-            return new QueryFilter(pathConstraint, dataConstraint);
+    public static IMatcher<IQueryFilter> queryFilter() {
+        return M.appl2("Filter", labelRE(new RegExpBuilder<>()), hoconstraint(), (f, wf, dataConstraint) -> {
+            return new QueryFilter(wf, dataConstraint);
         });
     }
 
-    public static IMatcher<IQueryMin> queryMin(IAlphabet<ITerm> labels) {
-        return M.appl2("Min", hoconstraint(labels), hoconstraint(labels), (m, pathConstraint, dataConstraint) -> {
-            return new QueryMin(pathConstraint, dataConstraint);
+    public static IMatcher<IQueryMin> queryMin() {
+        return M.appl2("Min", labelLt(), hoconstraint(), (m, ord, dataConstraint) -> {
+            return new QueryMin(ord, dataConstraint);
         });
     }
 
-    public static IMatcher<Rule> hoconstraint(IAlphabet<ITerm> labels) {
-        return M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraints(labels),
-                (t, ps, vs, c) -> Rule.of("", ps, vs, c));
-    }
-
-    public static IMatcher<Map<ITerm, Type>> relationDecls() {
-        return M.listElems(relationDecl()).map(relDecls -> {
-            final ImmutableMap.Builder<ITerm, Type> builder = ImmutableMap.builder();
-            builder.put(DECL_REL, Type.of(ImmutableList.of(B.newTuple()), ImmutableList.of()));
-            relDecls.stream().forEach(relDecl -> {
-                builder.put(relDecl._1(), relDecl._2());
-            });
-            return builder.build();
-        });
-    }
-
-    public static IMatcher<Tuple2<ITerm, Type>> relationDecl() {
-        return M.tuple2(M.appl1("Rel", M.string()), type(), (rd, rel, type) -> ImmutableTuple2.of(rel, type));
-    }
-
-    public static IMatcher<Type> type() {
-        // @formatter:off
-        return M.cases(
-            M.appl1("SimpleType", M.listElems(), (ty, intys) -> Type.of(intys, Collections.emptyList())),
-            M.appl2("FunType", M.listElems(), M.listElems(), (ty, intys, outtys) -> Type.of(intys, outtys))
-        );
-        // @formatter:on
-    }
-
-    public static IMatcher<ITerm> relation() {
-        // @formatter:off
-        return M.cases(
-            M.appl0("Decl"),
-            M.appl1("Rel", M.string())
-        );
-        // @formatter:on
+    public static IMatcher<Rule> hoconstraint() {
+        return M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(),
+                (t, ps, vs, c) -> Rule.of("", ps, new CExists(vs, c)));
     }
 
     public static IMatcher<Multimap<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
@@ -277,20 +200,13 @@ public class StatixTerms {
                 (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i - 1, lbl)));
     }
 
-    public static IMatcher<IAlphabet<ITerm>> labels() {
-        return M.listElems(label(), (t, ls) -> new FiniteAlphabet<>(ls));
+    public static IMatcher<List<ITerm>> labels() {
+        return M.listElems(label());
     }
 
-    // @formatter:off
-    private static final IMatcher<ITerm> LABEL_MATCHER =
-            M.cases(
-                M.appl0("EOP"),
-                M.appl1("Label", M.string())
-            );
     public static IMatcher<ITerm> label() {
-        return LABEL_MATCHER;
+        return M.term();
     }
-    // @formatter:on
 
     private static IMatcher<IRegExp<ITerm>> labelRE(IRegExpBuilder<ITerm> builder) {
         // @formatter:off
@@ -343,12 +259,19 @@ public class StatixTerms {
             }),
             listTerm(),
             // SCOPE_OP -- has no syntax
-            // SCOPEID_OP -- has no syntax
-            // TERMID_OP -- has no syntax
+            // TERMINDEX_OP -- has no syntax
             // NOID_OP -- has no syntax
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
+            }),
+            M.appl1(PATH_EMPTY_OP, term(), (t, s) -> {
+                List<ITerm> applArgs = ImmutableList.of(s);
+                return B.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
+            }),
+            M.appl3(PATH_STEP_OP, term(), term(), term(), (t, p, l, s) -> {
+                List<ITerm> applArgs = ImmutableList.of(p, l, s);
+                return B.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
             })
         ));
         // @formatter:on
@@ -416,6 +339,14 @@ public class StatixTerms {
             M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(m), positionPattern(), (t, ns, args, pos) -> {
                 List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
                 return P.newAppl(OCCURRENCE_OP, applArgs);
+            }),
+            M.appl1(PATH_EMPTY_OP, m, (t, s) -> {
+                List<Pattern> applArgs = ImmutableList.of(s);
+                return P.newAppl(PATH_EMPTY_OP, applArgs);
+            }),
+            M.appl3(PATH_STEP_OP, m, m, m, (t, p, l, s) -> {
+                List<Pattern> applArgs = ImmutableList.of(p, l, s);
+                return P.newAppl(PATH_STEP_OP, applArgs);
             })
         ));
         // @formatter:on
@@ -453,10 +384,11 @@ public class StatixTerms {
             appl -> {
                 switch(appl.getOp()) {
                     case SCOPE_OP:
-                    case SCOPEID_OP:
-                    case TERMID_OP:
-                    case NOID_OP: {
-                        return B.newAppl(appl.getOp(), appl.getArgs());
+                    case TERMINDEX_OP:
+                    case NOID_OP:
+                    case PATH_EMPTY_OP:
+                    case PATH_STEP_OP: {
+                        return appl;
                     }
                     case OCCURRENCE_OP: {
                         final ITerm ns = appl.getArgs().get(0);
@@ -517,16 +449,30 @@ public class StatixTerms {
     }
 
     private static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(Collectors.toList());
+        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
     }
 
     public static IListTerm explicateList(Iterable<? extends ITerm> terms) {
         return B.newList(explicate(terms));
     }
 
-    public static IListTerm
-            explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
-        return B.newList(Iterables2.stream(entries).map(e -> B.newTuple(explicate(e.getKey()), explicate(e.getValue())))
-                .collect(Collectors.toList()));
+    public static IListTerm explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries,
+            IUnifier unifier) {
+        return B.newList(Iterables2.stream(entries)
+                .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
+                .collect(ImmutableList.toImmutableList()));
     }
+
+    public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path) {
+        return B.newTuple(explicate(path.getPath()), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    }
+
+    public static ITerm explicate(IScopePath<Scope, ITerm> path) {
+        ITerm pathTerm = B.newAppl(PATH_EMPTY_OP, path.getSource());
+        for(IStep<Scope, ITerm> step : path) {
+            pathTerm = B.newAppl(PATH_STEP_OP, pathTerm, step.getLabel(), step.getTarget());
+        }
+        return pathTerm;
+    }
+
 }

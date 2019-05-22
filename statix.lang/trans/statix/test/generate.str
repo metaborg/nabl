@@ -1,0 +1,10 @@
+module statix/test/generate
+
+imports
+
+  signatures/statix/test/-
+
+rules
+
+  generate-aterm:
+    (_, _, Test(_, _, _), path, project-path) -> None()

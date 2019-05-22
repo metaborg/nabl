@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.constraints.namebinding.DeclProperties;
@@ -33,21 +34,22 @@ public final class ScopeGraphTerms {
     }
 
     private ITerm build() {
-        List<ITerm> scopes = scopeGraph.getAllScopes().stream().map(this::buildScope).collect(Collectors.toList());
+        List<ITerm> scopes =
+                scopeGraph.getAllScopes().stream().map(this::buildScope).collect(ImmutableList.toImmutableList());
         return B.newAppl("ScopeGraph", (ITerm) B.newList(scopes));
     }
 
     private ITerm buildScope(Scope scope) {
         List<ITerm> parts = Lists.newArrayList();
 
-        List<ITerm> decls =
-                scopeGraph.getDecls().inverse().get(scope).stream().map(this::buildDecl).collect(Collectors.toList());
+        List<ITerm> decls = scopeGraph.getDecls().inverse().get(scope).stream().map(this::buildDecl)
+                .collect(ImmutableList.toImmutableList());
         if(!decls.isEmpty()) {
             parts.add(B.newAppl("Decls", (ITerm) B.newList(decls)));
         }
 
-        List<ITerm> refs =
-                scopeGraph.getRefs().inverse().get(scope).stream().map(this::buildRef).collect(Collectors.toList());
+        List<ITerm> refs = scopeGraph.getRefs().inverse().get(scope).stream().map(this::buildRef)
+                .collect(ImmutableList.toImmutableList());
         if(!refs.isEmpty()) {
             parts.add(B.newAppl("Refs", (ITerm) B.newList(refs)));
         }

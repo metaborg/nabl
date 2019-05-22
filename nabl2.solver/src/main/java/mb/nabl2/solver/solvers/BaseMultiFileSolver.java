@@ -40,6 +40,7 @@ import mb.nabl2.solver.components.PolymorphismComponent;
 import mb.nabl2.solver.components.RelationComponent;
 import mb.nabl2.solver.components.SetComponent;
 import mb.nabl2.solver.components.SymbolicComponent;
+import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.symbolic.SymbolicConstraints;
@@ -122,10 +123,13 @@ public class BaseMultiFileSolver extends BaseSolver {
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
 
+            final IMessages.Transient messages = initial.messages().melt();
+            messages.addAll(solveResult.messages());
+
             return ImmutableSolution
                     .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                             nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
-                            solveResult.messages(), solveResult.constraints())
+                            messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);

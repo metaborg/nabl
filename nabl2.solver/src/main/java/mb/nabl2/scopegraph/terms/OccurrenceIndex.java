@@ -9,11 +9,11 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Multiset;
 
 import mb.nabl2.scopegraph.IOccurrenceIndex;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.stratego.TermIndex;
 
 public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializable {
 
@@ -86,13 +86,21 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
     // static
 
     public static IMatcher<OccurrenceIndex> matcher() {
-        return M.preserveAttachments(M.cases(
         // @formatter:off
-            M.term(TermIndex.matcher(), (t, i) -> new OccurrenceIndex(i.getResource(), i)),
-            M.term(Scope.matcher(), (t, s) -> new OccurrenceIndex(s.getResource(), s))
-            // @formatter:on
+        return M.preserveAttachments(M.cases(
+            M.term(TermIndex.matcher(), (t, i) -> OccurrenceIndex.of(i)),
+            M.term(Scope.matcher(), (t, s) -> OccurrenceIndex.of(s))
         ));
+        // @formatter:on
 
+    }
+    
+    public static OccurrenceIndex of(TermIndex i) {
+        return new OccurrenceIndex(i.getResource(), i);
+    }
+
+    public static OccurrenceIndex of(Scope s) {
+        return new OccurrenceIndex(s.getResource(), s);
     }
 
 }

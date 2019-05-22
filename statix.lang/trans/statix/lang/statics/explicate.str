@@ -32,7 +32,6 @@ rules
   explicate-name(|a) = LC(replace-decl(|a)) 
   explicate-name(|a) = COp(replace-decl(|a), explicate-names(|a))
 
-  explicate-name(|a) = Rel(replace-decl(|a))
   explicate-name(|a) = Label(replace-decl(|a))
 
   explicate-name(|a) = NsDecl(replace-decl(|a), explicate-names(|a))

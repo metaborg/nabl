@@ -53,7 +53,20 @@ public abstract class Namespace extends AbstractApplTerm implements INamespace, 
     // Object implementation
 
     @Override public boolean equals(Object other) {
-        return super.equals(other);
+        if(other == null) {
+            return false;
+        }
+        if(other == this) {
+            return true;
+        }
+        if(!(other instanceof Namespace)) {
+            return super.equals(other);
+        }
+        final Namespace that = (Namespace) other;
+        if(!getName().equals(that.getName())) {
+            return false;
+        }
+        return true;
     }
 
     @Override public int hashCode() {

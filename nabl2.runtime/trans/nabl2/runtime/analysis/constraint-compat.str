@@ -158,13 +158,13 @@ rules
   /**
    * @type resource:String -> analysis:Term
    */
-  get-resource-constraint-analysis =
-    prim("C_get_resource_analysis")
+  nabl2--get-resource-analysis =
+    get-resource-constraint-analysis
   ; try(?CompatProjectAnalysis(_, <id>))
 
   /**
    * @type resource:String -> analysis:Term
    */
-  get-resource-partial-constraint-analysis =
-    prim("C_get_resource_partial_analysis")
+  nabl2--get-resource-partial-analysis =
+    get-resource-partial-constraint-analysis
   ; try(?CompatProjectAnalysis(<id>, _))

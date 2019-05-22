@@ -1,0 +1,23 @@
+module base/astproperties
+
+language StatixLang
+
+test set property on term succeeds [[
+  resolve {t} t == (), @t.type := ()
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test set property on scope succeeds [[
+  resolve {s} new s, @s.type := ()
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test set property on free variable fails [[
+  resolve {t} @t.type := ()
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test set property on term twice fails [[
+  resolve {t} t == (), @t.type := (), @t.type := ()
+]] analysis succeeds
+   run evaluate-test to FAILS()

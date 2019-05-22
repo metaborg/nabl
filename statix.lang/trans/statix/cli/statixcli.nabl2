@@ -7,6 +7,6 @@ imports
 rules
 
   [[ Eval(vs, c) ^ (s) ]] :=
-    new s', s' ---> s,
+    new s', s' -P-> s, s' ---> s,
     distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
     [[ c ^ (s') ]].

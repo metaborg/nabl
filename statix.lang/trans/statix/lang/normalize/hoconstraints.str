@@ -1,0 +1,90 @@
+module statix/lang/normalize/hoconstraints
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize/util
+
+rules
+
+  // normalize all higher-order constraint forms to lambda's
+
+  normalize-ho-constraints =
+    nabl2-custom-analysis-info-msg(|"| Normalize higher-order constraints...");
+    bottomup(
+      try(replace-ho-constraint)
+    )
+
+
+  replace-ho-constraint: l@LTrue() -> lam
+    with PRED(tys) := <norm-get-ast-type> l;
+         ps := <mk-Wlds> tys;
+         lam := <mk-LLam>(ps, [], CTrue())
+
+  replace-ho-constraint: l@LFalse() -> lam
+    with PRED(tys) := <norm-get-ast-type> l;
+         ps := <mk-Wlds> tys;
+         lam := <mk-LLam>(ps, [], CFalse())
+
+  replace-ho-constraint: l@LC(x) -> lam
+    with PRED(tys) := <norm-get-ast-type> l;
+         ps := <mk-seq-Vars(|"t")> tys;
+         lam := <mk-LLam>(ps, [], C(x, ps))
+
+  replace-ho-constraint: l@LPathMatch(re) -> lam
+    with p := <mk-Var(|LIST(LABEL()))>("ls");
+         lam := <mk-LLam>([p], [], CPathMatch(re, p))
+
+  replace-ho-constraint: l@LPathLt(ord) -> lam
+    with l1 := <mk-Var(|LABEL())>("l1");
+         l2 := <mk-Var(|LABEL())>("l2");
+         lam := <mk-LLam>([l1, l2], [], CPathLt(ord, l1, l2))
+
+rules
+
+  // Detect most general patterns and replace them with a single wildcard.
+  // This allows the solver to determine that some predicates are always true
+  // without knowing anything about the types. For example { _ :- true } is
+  // always true. But given the type (T * U) the lambda { (_, _) :- true } is
+  // also always true. However, that is impossible to conclude without knowing
+  // the type.
+
+  normalize-lambda-patterns =
+    nabl2-custom-analysis-info-msg(|"| Normalize lambda patterns...");
+    bottomup(
+      try(generalize-lambda-pattern)
+    )
+
+  generalize-lambda-pattern:
+       t@LLam(ps, vs, c){a*} -> lam
+     where <is-linear> ps // non-linear patterns ore not most-general!
+     with tys := <norm-get-ast-type;in-types> t
+        ; c-vars := <collect-all(is-var, union, skip-lambda)> c
+        ; used-vars := <raw-diff> (c-vars, vs)
+        ; wld-vars := <raw-diff> (<all-vars> ps, used-vars)
+        ; wld-wlds := <map(norm-get-ast-type);mk-Wlds> wld-vars
+        ; wld-sbs := <zip> (wld-vars, wld-wlds)
+        ; ps' := <substitute(is-var)> (wld-sbs, ps)
+        ; ps'' := <zip(most-general-pattern<+Snd)> (ps', tys)
+        ; lam := <mk-LLam>(ps'', vs, c)
+
+  is-linear = <eq> (<collect-all(is-var, conc);length>, <collect-all(is-var, raw-union);length>)
+
+  most-general-pattern: (Wld(){a*}, _) -> Wld(){a*}
+  most-general-pattern: (Tuple(ps){a*}, TUPLE(tys)) -> p{a*}
+    where ps' := <zip(most-general-pattern<+Fst)> (ps, tys)
+    with if <map(?Wld())> ps' then
+           p := Wld()
+         else
+           p := Tuple(ps')
+         end
+  most-general-pattern: (p{a*}, _) -> p{a*}
+
+  skip-lambda: LLam(_, _, _) -> []

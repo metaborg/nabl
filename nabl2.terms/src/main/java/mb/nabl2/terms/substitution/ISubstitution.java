@@ -3,7 +3,8 @@ package mb.nabl2.terms.substitution;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -21,7 +22,7 @@ public interface ISubstitution {
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        return terms.stream().map(this::apply).collect(Collectors.toList());
+        return terms.stream().map(this::apply).collect(ImmutableList.toImmutableList());
     }
 
     interface Immutable extends ISubstitution {

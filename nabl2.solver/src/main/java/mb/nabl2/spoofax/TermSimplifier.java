@@ -6,10 +6,10 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import mb.nabl2.scopegraph.terms.ImmutableScope;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.stratego.ImmutableTermIndex;
-import mb.nabl2.stratego.TermIndex;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Transform.T;
+import mb.nabl2.terms.stratego.ImmutableTermIndex;
+import mb.nabl2.terms.stratego.TermIndex;
 
 public class TermSimplifier {
 

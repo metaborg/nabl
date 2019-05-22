@@ -7,22 +7,21 @@ import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.solver.constraint.CEqual;
-import mb.statix.solver.constraint.CFalse;
-import mb.statix.solver.constraint.CInequal;
-import mb.statix.solver.constraint.CNew;
-import mb.statix.solver.constraint.CPathDst;
-import mb.statix.solver.constraint.CPathLabels;
-import mb.statix.solver.constraint.CPathLt;
-import mb.statix.solver.constraint.CPathMatch;
-import mb.statix.solver.constraint.CPathScopes;
-import mb.statix.solver.constraint.CPathSrc;
-import mb.statix.solver.constraint.CResolveQuery;
-import mb.statix.solver.constraint.CTellEdge;
-import mb.statix.solver.constraint.CTellRel;
-import mb.statix.solver.constraint.CTermId;
-import mb.statix.solver.constraint.CTrue;
-import mb.statix.solver.constraint.CUser;
+import mb.statix.constraints.CAstId;
+import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CConj;
+import mb.statix.constraints.CEqual;
+import mb.statix.constraints.CExists;
+import mb.statix.constraints.CFalse;
+import mb.statix.constraints.CInequal;
+import mb.statix.constraints.CNew;
+import mb.statix.constraints.CPathLt;
+import mb.statix.constraints.CPathMatch;
+import mb.statix.constraints.CResolveQuery;
+import mb.statix.constraints.CTellEdge;
+import mb.statix.constraints.CTellRel;
+import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CUser;
 
 public interface IConstraint {
 
@@ -38,22 +37,13 @@ public interface IConstraint {
 
     String toString(TermFormatter termToString);
 
-    static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {
-        final StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(IConstraint constraint : constraints) {
-            if(!first) {
-                sb.append(", ");
-            }
-            first = false;
-            sb.append(constraint.toString(termToString));
-        }
-        return sb.toString();
-    }
-
     interface Cases<R> extends Function1<IConstraint, R> {
 
+        R caseConj(CConj c);
+
         R caseEqual(CEqual c);
+
+        R caseExists(CExists c);
 
         R caseFalse(CFalse c);
 
@@ -61,17 +51,9 @@ public interface IConstraint {
 
         R caseNew(CNew c);
 
-        R casePathDst(CPathDst c);
-
-        R casePathLabels(CPathLabels c);
-
         R casePathLt(CPathLt c);
 
         R casePathMatch(CPathMatch c);
-
-        R casePathScopes(CPathScopes c);
-
-        R casePathSrc(CPathSrc c);
 
         R caseResolveQuery(CResolveQuery c);
 
@@ -79,7 +61,9 @@ public interface IConstraint {
 
         R caseTellRel(CTellRel c);
 
-        R caseTermId(CTermId c);
+        R caseTermId(CAstId c);
+
+        R caseTermProperty(CAstProperty c);
 
         R caseTrue(CTrue c);
 
@@ -93,7 +77,11 @@ public interface IConstraint {
 
     interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
 
+        R caseConj(CConj c) throws E;
+
         R caseEqual(CEqual c) throws E;
+
+        R caseExists(CExists c) throws E;
 
         R caseFalse(CFalse c) throws E;
 
@@ -101,17 +89,9 @@ public interface IConstraint {
 
         R caseNew(CNew c) throws E;
 
-        R casePathDst(CPathDst c) throws E;
-
-        R casePathLabels(CPathLabels c) throws E;
-
         R casePathLt(CPathLt c) throws E;
 
         R casePathMatch(CPathMatch c) throws E;
-
-        R casePathScopes(CPathScopes c) throws E;
-
-        R casePathSrc(CPathSrc c) throws E;
 
         R caseResolveQuery(CResolveQuery c) throws E;
 
@@ -119,7 +99,9 @@ public interface IConstraint {
 
         R caseTellRel(CTellRel c) throws E;
 
-        R caseTermId(CTermId c) throws E;
+        R caseTermId(CAstId c) throws E;
+
+        R caseTermProperty(CAstProperty c) throws E;
 
         R caseTrue(CTrue c) throws E;
 

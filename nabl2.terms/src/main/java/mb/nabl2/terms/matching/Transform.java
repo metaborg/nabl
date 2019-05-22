@@ -6,13 +6,13 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IListTerm;
@@ -31,7 +31,7 @@ public class Transform {
             // @formatter:off
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
-                    List<ITerm> args = appl.getArgs().stream().map(arg -> sometd(m).apply(arg)).collect(Collectors.toList());
+                    final List<ITerm> args = appl.getArgs().stream().map(arg -> sometd(m).apply(arg)).collect(ImmutableList.toImmutableList());
                     return B.newAppl(appl.getOp(), args, appl.getAttachments());
                 },
                 (list) -> list.match(ListTerms.<IListTerm> cases(
@@ -49,10 +49,10 @@ public class Transform {
 
         public static Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
             return term -> {
-                ITerm next = term.match(Terms.<ITerm>cases(
                 // @formatter:off
+                ITerm next = term.match(Terms.<ITerm>cases(
                     (appl) -> {
-                        List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(Collectors.toList());
+                        final List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(ImmutableList.toImmutableList());
                         return B.newAppl(appl.getOp(), args, appl.getAttachments());
                     },
                     (list) -> list.match(ListTerms.<IListTerm> cases(
@@ -64,8 +64,8 @@ public class Transform {
                     (integer) -> integer,
                     (blob) -> blob,
                     (var) -> var
-                    // @formatter:on
                 ));
+                // @formatter:on
                 return m.apply(next).orElse(next);
             };
         }

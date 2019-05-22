@@ -17,13 +17,13 @@ import mb.statix.scopegraph.path.IStep;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
+abstract class AComposedScopePath<S, L> implements IScopePath<S, L> {
 
-    @Value.Parameter public abstract IScopePath<V, L> getLeft();
+    @Value.Parameter public abstract IScopePath<S, L> getLeft();
 
-    @Value.Parameter public abstract IScopePath<V, L> getRight();
+    @Value.Parameter public abstract IScopePath<S, L> getRight();
 
-    @Value.Check public @Nullable AComposedScopePath<V, L> check() {
+    @Value.Check public @Nullable AComposedScopePath<S, L> check() {
         // left and right are not connected
         if(!getLeft().getTarget().equals(getRight().getSource())) {
             return null;
@@ -35,11 +35,11 @@ abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
         return this;
     }
 
-    @Value.Lazy @Override public V getSource() {
+    @Value.Lazy @Override public S getSource() {
         return getLeft().getSource();
     }
 
-    @Value.Lazy @Override public V getTarget() {
+    @Value.Lazy @Override public S getTarget() {
         return getRight().getTarget();
     }
 
@@ -47,11 +47,11 @@ abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
         return getLeft().size() + getRight().size();
     }
 
-    @Value.Lazy @Override public PSequence<V> scopes() {
+    @Value.Lazy @Override public PSequence<S> scopes() {
         return getLeft().scopes().appendAll(getRight().scopes().tail());
     }
 
-    @Value.Lazy @Override public Set.Immutable<V> scopeSet() {
+    @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
         return getLeft().scopeSet().__insertAll(getRight().scopeSet());
     }
 
@@ -59,7 +59,7 @@ abstract class AComposedScopePath<V, L> implements IScopePath<V, L> {
         return getLeft().labels().appendAll(getRight().labels());
     }
 
-    @Override public Iterator<IStep<V, L>> iterator() {
+    @Override public Iterator<IStep<S, L>> iterator() {
         return Iterators.concat(getLeft().iterator(), getRight().iterator());
     }
 

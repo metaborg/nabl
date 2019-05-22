@@ -3,10 +3,10 @@ package mb.statix.scopegraph.path;
 import java.util.Set;
 
 
-public interface IResolutionPaths<V, L, R> {
+public interface IResolutionPaths<S, L, D> {
 
-    IResolutionPaths<V, L, R> inverse();
+    IResolutionPaths<S, L, D> inverse();
 
-    Set<IResolutionPath<V, L, R>> get(V datum);
+    Set<IResolutionPath<S, L, D>> get(D datum);
 
 }
