@@ -97,7 +97,7 @@ rules
   [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
   [[ r@Rule(h, bvs, body) ^ (s) ]] :=
-    Rule{x} <- s, Rule{x}.ast := r,
+    Rule{x} <- s,
     new s_rule, s_rule -P-> s,
     distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
     RuleHead[[ h ^ (s_rule, s_body, x) : _ ]],
@@ -180,7 +180,7 @@ rules
     RelDecl[[ rel ^ (s) : ty ]].
 
   RelDecl[[ r@Label(x) ^ (s) : ty ]] :=
-    Rel{x} <- s, @x.decl := Rel{x}, Rel{x}.ast := r,
+    Rel{x} <- s, @x.decl := Rel{x},
     Rel{x} : ty !.
 
   RelRef[[ l@Label(x) ^ (s) : ty ]] :=
@@ -215,7 +215,7 @@ rules
     Map1(EdgeDecl)[[ lbls ^ (s) ]].
 
   EdgeDecl[[ l@Label(x) ^ (s) ]] :=
-    Edge{x} <- s, @x.decl := Edge{x}, Edge{x}.ast := l.
+    Edge{x} <- s, @x.decl := Edge{x}.
 
 
   EdgeRef[[ l@Label(x) ^ (s) ]] :=
