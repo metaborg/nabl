@@ -7,6 +7,7 @@ imports
   signatures/statix/lang/-
   statix/lang/-
   statix/lang/statics/-
+  statix/lang/normalize
 
   signatures/statix/test/-
   pp/statix/test/-
@@ -41,10 +42,11 @@ rules
          end
 
   evaluate: ast@Test(_, _, _) -> result
-    with a := <nabl2-get-ast-analysis> ast;
+    with a      := <nabl2-get-ast-analysis> ast;
          CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-         ast'@Test(bvs, body, _) := <normalize(|a)> ast;
-         spec := <core-ast-to-spec-aterm> (ast', ext);
-         level := <stx--log-level>;
-         body' := <eliminate-all;stx--index-ast(|""/*path*/)> body;
+         ast'   := <normalize(|a)> ast;
+         Test(bvs, body, _) := ast';
+         spec   := <spec-ast-to-aterm(|a)> (ast', ext);
+         level  := <stx--log-level>;
+         body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
          result := <stx--solve-constraint(|spec, level)> (bvs, body')

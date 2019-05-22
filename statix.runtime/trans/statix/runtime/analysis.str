@@ -43,8 +43,10 @@ rules // single file analysis
     ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ : \
-        ((resource, ast'), (a, error*, warning*, note*)) ->
-            (resource, Full(ast', a, error*, warning*, note*))
+        ((resource, ast'), (Solution(_, a), error*, warning*, note*)) ->
+            (resource, Full(ast', file-analysis, error*, warning*, note*))
+          with (a', error*, warning*, note*) := <stx--extract-messages> a
+             ; file-analysis := FileAnalysis(a')
       \})> (resource-ast'*, solve-result*)
 
   stx-editor-analyze(desugar|spec-name, init-constraint):
@@ -63,9 +65,11 @@ rules // single file elaboration
     ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ ast'': \
-        ((resource, ast'), (a@Solution(subst, _), error*, warning*, note*)) ->
-            (resource, Full(ast'', a, error*, warning*, note*))
+        ((resource, ast'), (Solution(subst, a), error*, warning*, note*)) ->
+            (resource, Full(ast'', file-analysis, error*, warning*, note*))
+          with (a', error*, warning*, note*) := <stx--extract-messages> a
           with ast'' := <substitute(stx--is-var);stx--implode> (subst, V)
+             ; file-analysis := FileAnalysis(a')
       \})> (resource-ast'*, solve-result*)
 
 rules // multi file analysis
@@ -179,6 +183,9 @@ rules
 
   stx--get-resource-analysis =
     get-resource-constraint-analysis
+  ; ( ?FileAnalysis(<id>)
+    + ?ProjectAnalysis(_, _, _, <id>)
+    )
 
   stx--get-ast-analysis =
     stx--get-ast-resource

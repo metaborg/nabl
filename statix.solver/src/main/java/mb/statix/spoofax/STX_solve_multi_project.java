@@ -12,10 +12,17 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.Constraints;
+import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
@@ -43,11 +50,28 @@ public class STX_solve_multi_project extends StatixPrimitive {
         final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
         final List<IConstraint> errors = new ArrayList<>(initial.errors());
         State state = initial.state();
+        final ImmutableMap.Builder<Tuple2<TermIndex, ITerm>, ITerm> termProperties = ImmutableMap.builder();
+        termProperties.putAll(state.termProperties());
+        final IUnifier.Transient unifier = state.unifier().melt();
+        final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph().melt();
         for(SolverResult result : results) {
             state = state.add(result.state());
             constraints.add(result.delayed());
             errors.addAll(result.errors());
+            try {
+                unifier.unify(result.state().unifier());
+            } catch(OccursException e) {
+                // can this ever occur?
+                return Optional.empty();
+            }
+            scopeGraph.addAll(result.state().scopeGraph());
+            termProperties.putAll(result.state().termProperties());
         }
+        // @formatter:off
+        state = state.withUnifier(unifier.freeze())
+                     .withScopeGraph(scopeGraph.freeze())
+                     .withTermProperties(termProperties.build());
+        // @formatter:on
 
         final SolverResult resultConfig;
         try {

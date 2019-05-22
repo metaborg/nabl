@@ -32,9 +32,17 @@ public abstract class TermOrigin {
         return getImploderAttachment().getRightToken();
     }
 
-    public ITerm put(ITerm term) {
+    @SuppressWarnings({ "unchecked", "rawtypes" }) public ITerm put(ITerm term) {
         final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
-        attachments.putAll(term.getAttachments());
+        // builder does not allow overwriting entries, so we need to filter out
+        // the term origin, in case it is already there
+        // @formatter:off
+        term.getAttachments().entrySet().stream()
+            .filter(e -> !TermOrigin.class.equals(e.getKey()))
+            .forEach(e -> {
+                attachments.put((Class)e.getKey(), e.getValue());
+            });
+        // @formatter:on
         attachments.put(TermOrigin.class, this);
         return term.withAttachments(attachments.build());
     }

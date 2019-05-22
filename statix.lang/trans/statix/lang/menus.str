@@ -4,6 +4,8 @@ imports
 
   signatures/statix/lang/-
   statix/lang/-
+  statix/lang/statics/-
+  statix/lang/normalize
 
   pp
 
@@ -64,5 +66,7 @@ rules // Debugging
   show-explicated-aterm: (_, _, ast, path, project-path) -> (filename, result)
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
-    with filename := <guarantee-extension(|"explicated.aterm")> path;
-         result   := <explicate-all(|a);nabl2-simplify-ast-indices> ast
+    with ast' := <normalize(|a)> ast;
+         filename := <guarantee-extension(|"explicated.aterm")> path;
+         result   := <explicate-all(|a);nabl2-simplify-ast-indices> ast'
+

@@ -14,6 +14,7 @@ imports
 
   statix/lang/statics/-
   statix/lang/normalize
+  statix/lang/scope-extension
 
   pp
 
@@ -27,49 +28,13 @@ rules // Analysis
 
   nabl2-custom-analysis-unit-hook: (resource, ast, _) -> or-e*
     with or-e* := <detect-overlapping-rules> ast
+    // collect scope extension constraints
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
     with ext := []
        ; e* := <concat> units
        ; ca  := CustomAnalysis(ext)
-
-/*
-  editor--analyze:
-      (resource, ast) -> (analyzed-ast, result, error*, warning*, note*)
-    with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
-         desugared-ast := <desugar-all> ast;
-         nabl2-custom-analysis-info-msg(|"Desugared AST.");
-
-         nabl2-custom-analysis-info-msg(|"Analyzing AST...");
-         (analyzed-ast, a, e*, w*, n*) :=
-            <analyze(|resource)> desugared-ast;
-
-         if [] := e* then
-           (normalized-ast, a', a-e*, _, _) :=
-               <normalize(|a);analyze(|resource)> analyzed-ast;
-           if not([] := a-e*) then
-             fatal-err-msg(|"Normalization introduced errors")
-           end;
-
-           nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
-           or-e* := <detect-overlapping-rules> analyzed-ast;
-
-           nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-           (ext*, ext-e*, ext-w*, ext-n*) :=
-               <compute-scope-extensions> normalized-ast;
-
-           result   := <nabl2--set-custom-analysis(|a)> (normalized-ast, a', ext*);
-           error*   := [e*, ext-e*, or-e*];
-           warning* := [w*, ext-w*];
-           note*    := [n*, ext-n*]
-         else
-           result   := a;
-           error*   := e*;
-           warning* := w*;
-           note*    := n*
-         end
-*/
-
+       // solve scope extension constraints
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term
