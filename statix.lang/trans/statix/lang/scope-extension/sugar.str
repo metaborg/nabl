@@ -7,6 +7,18 @@ imports
   signatures/statix/lang/-
   statix/lang/-
   statix/lang/statics/-
+  statix/lang/scope-extension/-
+
+rules // collect extension constraints
+
+  head-ext-constraints: F(x, inarg*, outarg) -> c
+    with arg* := <conc> (inarg*, [outarg])
+       ; c := < add-indices
+              ; filter(param-ext-constraints(|x))
+              ; combine-ext-constraints
+              > arg*
+
+/*
 
 rules // shared
 
@@ -42,3 +54,5 @@ rules // derived facts, constraints indirectly adding to the scope graph
   derive-extension(|y, i): COp(x, inarg*) -> arg
     where <raw-eq> (x, y)
     with arg := <index(|i)> inarg*
+
+*/

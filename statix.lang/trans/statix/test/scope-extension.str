@@ -8,6 +8,17 @@ imports
 
 rules
 
+  collect-ext-constraints:
+      Test(_, body, section*) -> c
+    with body-c := < collect-om(constraint-ext-constraints)
+                   ; combine-ext-constraints
+                   > body
+       ; rules-c := < collect-om(rule-ext-constraints)
+                    ; combine-ext-constraints
+                    > section*
+       ; c := <combine-ext-constraints> [body-c, rules-c]
+
+/*
   derived-extensions(|ext, error-iset, note-iset): Test(_, body, _) -> []
     with (y, i, lbl) := ext;
          new-var* := <all-fresh> body;
@@ -18,3 +29,4 @@ rules
 
          local-ext* := <filter(\ v -> v where <not(raw-elem)> (v, new-var*) \)> all-ext*;
          <map(\ v -> <iset-add(|(v, $[Cannot extend non-local scope [<pp-partial-Statix-string> v] in [<pp-partial-Statix-string> lbl]]))> error-iset \)> local-ext*
+*/

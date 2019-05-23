@@ -8,6 +8,97 @@ imports
   statix/lang/-
   statix/lang/statics/-
 
+signature
+  sorts Extensions constructors
+    TermExt  : Term -> Extensions
+    ParamExt : Term * Integer -> Extension
+             : List(Term) -> Extension
+  sorts ExtensionConstraint constructors
+    Provide : Extensions * Extensions -> ExtensionConstraint
+    Require : Extensions * Extensions -> ExtensionConstraint
+
+rules // collect extension constraints
+
+  rule-ext-constraints: Rule(head, _, body) -> c
+    with head-c := <head-ext-constraints> head
+       ; body-c := < collect-om(constraint-ext-constraints)
+                   ; combine-ext-constraints
+                   > body
+       ; c := <combine-ext-constraints> [head-c, body-c]
+  
+
+  head-ext-constraints: C(x, arg*) -> c
+    with c := < add-indices
+              ; filter(param-ext-constraints(|x))
+              ; combine-ext-constraints
+              > arg*
+
+  param-ext-constraints(|x): (i, t) -> c
+    where (term-ext, term-c) := <term-ext> t
+    with param-ext := ParamExt(x, i)
+       ; param-c := ([Provide(param-ext, term-ext)], [Require(term-ext, param-ext)])
+       ; c := <combine-ext-constraints> [term-c, param-c]
+
+
+  constraint-ext-constraints: CNew(vs) -> c
+    with (term-ext*, term-c*) := <map(term-ext);unzip> vs
+       ; new-c := (<map(!Provide(<id>,[()]))> term-ext*, [])
+       ; c := <combine-ext-constraints> [new-c|term-c*]
+
+  constraint-ext-constraints: CTellEdge(t, lbl, _) -> c
+    with (term-ext, term-c) := <term-ext> t
+       ; edge-c := ([], [Require([lbl], term-ext)])
+       ; c := <combine-ext-constraints> [term-c, edge-c]
+
+  constraint-ext-constraints: CTellRel(lbl, _, t) -> c
+    with (term-ext, term-c) := <term-ext> t
+       ; data-c := ([], [Require([lbl], term-ext)])
+       ; c := <combine-ext-constraints> [term-c, data-c]
+
+  constraint-ext-constraints: C(x, arg*) -> c
+    with c := < filter(arg-ext-constraints(|x))
+              ; combine-ext-constraints
+              > arg*
+
+  arg-ext-constraints(|x): (t, i) -> c
+    where (term-ext, term-c) := <term-ext> t
+    with param-ext := ParamExt(x, i)
+       ; arg-c := ([Provide(term-ext, param-ext)], [Require(param-ext, term-ext)])
+       ; c := <combine-ext-constraints> [term-c, arg-c]
+
+
+  term-ext: v@Var(_) -> (ext, c)
+    with ext := TermExt(v)
+       ; c := ([], [])
+
+
+rules // shared
+
+  combine-ext-constraints =
+    unzip
+  ; (concat, concat)
+
+
+rules // explicate occurrences
+
+  expl-ext-constraint(|a) = Provide(expl-ext(|a), expl-ext(|a))
+  expl-ext-constraint(|a) = Require(expl-ext(|a), expl-ext(|a))
+
+  expl-ext(|a) = is-list
+
+  expl-ext(|a): TermExt(v@Var(x)) -> TermExt(d)
+    with ty := <nabl2-get-ast-type(|a)> v
+    where SCOPE() := ty
+    with d := <nabl2-get-ast-property(|a,"decl")> x
+
+  expl-ext(|a): ParamExt(x, i) -> ParamExt(d, i)
+    with d := <nabl2-get-ast-property(|a,"decl")> x
+       ; tys := <nabl2-get-type(|a);inout-types> d
+       ; ty := <index(|i)> tys
+    where SCOPE() := ty
+
+/*
+
 rules // shared
 
   rule-vars: Rule(head, var*, body) -> (head-proj*, new-var*)
@@ -69,3 +160,5 @@ rules // derived facts, constraints indirectly adding to the scope graph
   derive-extension(|y, i): C(x, arg*) -> arg
     where <raw-eq> (x, y)
     with arg := <index(|i)> arg*
+
+*/

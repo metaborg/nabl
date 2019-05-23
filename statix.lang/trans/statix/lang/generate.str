@@ -9,7 +9,7 @@ imports
   nabl2/api
 
   signatures/statix/lang/-
-  statix/lang/statics/-
+  statix/lang/analysis
   statix/lang/normalize
 
 rules
@@ -37,7 +37,7 @@ rules
 
 rules
 
-  spec-ast-to-aterm(|a): (ast, ext) -> spec
+  core-ast-to-spec-aterm: (ast, ext) -> spec
     with edge* := <collect-all(?Labels(<id>));concat;strip-annos> ast
        ; data* := [Decl()|<collect-all(?RelDecl(<id>, _));strip-annos> ast]
        ; rule* := <collect-all(?Rule(_, _, _));strip-annos;eliminate-all> ast

@@ -20,21 +20,23 @@ imports
 
 signature
   sorts CustomAnalysis constructors
+    CustomUnitAnalysis : List(Error) * Extensions -> CustomAnalysis
     CustomAnalysis : Extensions -> CustomAnalysis
 
 rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> or-e*
+  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(or-e*, ext-c*)
     with or-e* := <detect-overlapping-rules> ast
-    // collect scope extension constraints
+       ; ext-c* := <collect-ext-constraints> ast
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
-    with ext := []
-       ; e* := <concat> units
+    with ext-c* := <map(?CustomUnitAnalysis(_, <id>));unzip;(concat,concat)> units
+       ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
+       ; ext := [] // FIXME solve scope extension constraints
+       ; e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
        ; ca  := CustomAnalysis(ext)
-       // solve scope extension constraints
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term

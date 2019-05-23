@@ -6,6 +6,21 @@ imports
 
 rules
 
+  // collect extension constraints
+  collect-ext-constraints:
+      Module(_, section*) -> (provide*, require*)
+    with (provide*, require*) :=
+             < collect-om(rule-ext-constraints)
+             ; combine-ext-constraints
+             > section*
+
+  // convert ast terms in constraints to occurrences
+  // filter out constraints not involving scope terms
+  explicate-ext-constraints(|a) =
+    (filter(expl-ext-constraint(|a)), filter(expl-ext-constraint(|a)))
+
+/*
+
   compute-scope-extensions: ast -> (ext*, error*, [], note*)
     with error-iset := <new-iset>;
          note-iset := <new-iset>;
@@ -16,3 +31,5 @@ rules
          ext* := <iset-elements> ext-iset;
          error* := <iset-elements> error-iset;
          note* := <iset-elements> note-iset
+
+*/
