@@ -36,7 +36,11 @@ rules // collect extension constraints
   param-ext-constraints(|x): (i, t) -> c
     where (term-ext, term-c) := <term-ext> t
     with param-ext := ParamExt(x, i)
-       ; param-c := ([Provide(param-ext, term-ext)], [Require(term-ext, param-ext)])
+       ; provide* := [] // [Provide(param-ext, term-ext)] for exporting permissions
+                        // But need to figure out how to solve those, since a constriant
+                        // should only provide permission if *all* its rules to so.
+       ; require* := [Require(term-ext, param-ext)]
+       ; param-c := (provide*, require*)
        ; c := <combine-ext-constraints> [term-c, param-c]
 
 
