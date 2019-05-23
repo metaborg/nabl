@@ -22,10 +22,8 @@ public abstract class ASolverResult implements ISolverResult {
 
     @Value.Parameter public abstract State state();
 
-    @Override
     @Value.Parameter public abstract List<IConstraint> errors();
 
-    @Override
     @Value.Parameter public abstract Map<IConstraint, Delay> delays();
 
     @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
@@ -51,6 +49,7 @@ public abstract class ASolverResult implements ISolverResult {
         return new Delay(vars.build(), scopes.build());
     }
 
+    @Override
     public IConstraint delayed() {
         return Constraints.conjoin(delays().keySet());
     }

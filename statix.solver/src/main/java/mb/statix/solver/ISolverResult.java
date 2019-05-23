@@ -1,12 +1,13 @@
 package mb.statix.solver;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 
 /**
@@ -17,7 +18,7 @@ public interface ISolverResult {
      * @return
      *      a set of constraints that encountered errors
      */
-    Collection<IConstraint> errors();
+    List<IConstraint> errors();
 
     /**
      * @return
@@ -61,6 +62,10 @@ public interface ISolverResult {
             scopes.addAll(d.criticalEdges());
         });
         return new Delay(vars.build(), scopes.build(), null, null);
+    }
+    
+    default IConstraint delayed() {
+        return Constraints.conjoin(delays().keySet());
     }
     
     /**

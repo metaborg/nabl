@@ -5,7 +5,6 @@ import static mb.statix.taico.util.TDebug.CONSTRAINT_SOLVING;
 import static mb.statix.taico.util.TDebug.DEV_NULL;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,8 +15,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.serial.Serial;
-import org.immutables.value.Value;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableMap;
@@ -25,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CTrue;
@@ -33,7 +29,6 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
-import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -305,19 +300,20 @@ public class ModuleSolver implements IOwnable {
      * 
      * @return
      *      the completeness result
+     * 
+     * @throws ModuleDelayException
+     *      If the incremental strategy disallows access from the owner of this solver to the owner
+     *      of the scope.
+     * @throws IllegalStateException
+     *      If the owner of the scope cannot be obtained.
      */
-    public CompletenessResult isComplete(ITerm scopeTerm, ITerm label, IMState state) {
+    public CompletenessResult isComplete(ITerm scopeTerm, ITerm label, IMState state) throws ModuleDelayException {
         if (state.getOwner() != getOwner()) debug.warn("Received isComplete query on {} for state of {}", getOwner(), state.getOwner());
 
         Scope scope = Scopes.getScope(scopeTerm);
         if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " got query for " + scope + "-" + label + ".");
         
-        IModule scopeOwner;
-        try {
-            scopeOwner = SolverContext.context().getModule(state.getOwner(), scope.getResource());
-        } catch (ModuleDelayException e) {
-            return CompletenessResult.of(false, getOwner()).withDelay(Delay.ofModule(e.getModule()));
-        }
+        IModule scopeOwner = SolverContext.context().getModule(state.getOwner(), scope.getResource());
         if (scopeOwner == null) throw new IllegalStateException("Encountered scope without owning module: " + scope);
         
         CompletenessResult result;
@@ -453,38 +449,6 @@ public class ModuleSolver implements IOwnable {
             sb.append(constraint.toString(ModuleSolver.shallowTermFormatter(unifier)));
         }
         return sb.toString();
-    }
-    
-    @Value.Immutable
-    @Serial.Version(42L)
-    public static abstract class AMSolverResult implements ISolverResult {
-
-        @Value.Parameter public abstract IMState state();
-        
-        @Value.Default public SolverContext context() {
-            return SolverContext.context();
-        }
-
-        @Override @Value.Parameter public abstract Collection<IConstraint> errors();
-
-        @Override @Value.Parameter public abstract Map<IConstraint, Delay> delays();
-
-        @Override @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
-
-        @Override
-        public Immutable unifier() {
-            return state().unifier();
-        }
-        
-        /**
-         * Resets all errors and delays on this solver result.
-         * 
-         * @return
-         *      a new solver result
-         */
-        public MSolverResult reset() {
-            return MSolverResult.of(state(), new HashSet<>(), new HashMap<>(), existentials());
-        }
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
