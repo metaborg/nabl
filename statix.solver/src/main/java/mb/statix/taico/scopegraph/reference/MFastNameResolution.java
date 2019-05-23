@@ -1,17 +1,16 @@
 package mb.statix.taico.scopegraph.reference;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function2;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.DataLeq;
@@ -22,30 +21,26 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.path.Paths;
-import mb.statix.solver.Delay;
-import mb.statix.taico.scopegraph.IEdge;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.IMNameResolution;
-import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.solver.CompletenessResult;
 
-public class MFastNameResolution<S extends V, V, L, R> implements IMNameResolution<S, V, L, R> {
+public class MFastNameResolution<S extends D, L, D> implements INameResolution<S, L, D> {
 
-    private final IMInternalScopeGraph<S, L, V> scopeGraph;
+    private final IMInternalScopeGraph<S, L, D> scopeGraph;
     private final Set.Immutable<L> labels;
-    private final Optional<L> relation;
+    private final L relation;
 
     private final LabelWF<L> labelWF; // default: true
     private final LabelOrder<L> labelOrder; // default: false
     private final Function2<? super S, L, CompletenessResult> isEdgeComplete; // default: true
 
-    private final DataWF<V> dataWF; // default: true
-    private final DataLeq<V> dataEquiv; // default: false
-    private final Function2<? super V, L, CompletenessResult> isDataComplete; // default: true
+    private final DataWF<D> dataWF; // default: true
+    private final DataLeq<D> dataEquiv; // default: false
+    private final Function2<? super D, L, CompletenessResult> isDataComplete; // default: true
 
-    public MFastNameResolution(IMInternalScopeGraph<S, L, V> scopeGraph, Optional<L> relation, LabelWF<L> labelWF,
-            LabelOrder<L> labelOrder, Function2<? super S, L, CompletenessResult> isEdgeComplete, DataWF<V> dataWF, DataLeq<V> dataEquiv,
-            Function2<? super V, L, CompletenessResult> isDataComplete) {
+    public MFastNameResolution(IMInternalScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF,
+            LabelOrder<L> labelOrder, Function2<? super S, L, CompletenessResult> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv,
+            Function2<? super D, L, CompletenessResult> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
         this.labels = Set.Immutable.<L>of().__insertAll(scopeGraph.getEdgeLabels()).__insert(scopeGraph.getNoDataLabel());
@@ -60,30 +55,30 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
     
     //TODO We want to eventually switch to a derivative query scenario. We need to know per scope what types of edges we are interested in?
 
-    @Override public java.util.Set<IResolutionPath<S, L, V>> resolve(S scope)
+    @Override public java.util.Set<IResolutionPath<S, L, D>> resolve(S scope)
             throws ResolutionException, InterruptedException {
         return env(labelWF, Paths.empty(scope), Set.Immutable.of());
     }
 
-    private Set<IResolutionPath<S, L, V>> env(LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
+    private Set<IResolutionPath<S, L, D>> env(LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         return env_L(labels, re, path, specifics);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Set.Immutable<IResolutionPath<S, L, V>> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, D>> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         if(Thread.interrupted()) {
             throw new InterruptedException();
         }
-        final Set.Transient<IResolutionPath<S, L, V>> env = Set.Transient.of();
+        final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
-            final Set.Immutable<IResolutionPath<S, L, V>> env1 = env_L(smaller(L, l), re, path, specifics);
+            final Set.Immutable<IResolutionPath<S, L, D>> env1 = env_L(smaller(L, l), re, path, specifics);
             env.__insertAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final Set.Immutable<IResolutionPath<S, L, V>> env2 =
+                final Set.Immutable<IResolutionPath<S, L, D>> env2 =
                         env_l(l, re, path, Set.Immutable.union(specifics, env1));
                 env.__insertAll(env2);
             }
@@ -91,49 +86,42 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         return env.freeze();
     }
 
-    private Set.Immutable<IResolutionPath<S, L, V>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, D>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         return l.equals(scopeGraph.getNoDataLabel()) ? env_EOP(re, path, specifics) : env_nonEOP(l, re, path, specifics);
     }
 
-    private Set.Immutable<IResolutionPath<S, L, V>> env_EOP(LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, D>> env_EOP(LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
             return Set.Immutable.of();
         }
         final S scope = path.getTarget();
-        CompletenessResult result = relation.map(r -> isDataComplete.apply(scope, r)).orElse(null);
+        CompletenessResult result = isDataComplete.apply(scope, relation);
         if(result != null) {
             if(!result.isComplete()) {
-                throw new IncompleteDataException(scope, relation.get(), result.cause());
-            } else if(result.delay() != null) {
-                throw new ModuleDelayException(result.delay().module());
+                throw new IncompleteDataException(scope, relation, result.cause());
             }
         }
-        final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
-        if(relation.isPresent()) {
-            try {
-                for(IEdge<S, R, V> edge : scopeGraph.getData(path.getTarget(), relation.get())) {
-                    V datum = edge.getTarget();
-                    if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                        env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
-                    }
+        final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
+        if(relation != null) {
+            for(D datum : scopeGraph.getData(path.getTarget(), relation)) {
+                if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
+                    env.__insert(Paths.resolve(path, relation, datum));
                 }
-            } catch (Delay d) {
-                throw new ModuleDelayException(d.module());
             }
         } else {
-            final V datum = scope;
+            final D datum = scope;
             if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
+                env.__insert(Paths.resolve(path, relation, datum));
             }
         }
         return env.freeze();
     }
 
-    private boolean notShadowed(V datum, Set.Immutable<IResolutionPath<S, L, V>> specifics)
+    private boolean notShadowed(D datum, Set.Immutable<IResolutionPath<S, L, D>> specifics)
             throws ResolutionException, InterruptedException {
-        for(IResolutionPath<S, L, V> p : specifics) {
+        for(IResolutionPath<S, L, D> p : specifics) {
             if(dataEquiv.leq(p.getDatum(), datum)) {
                 return false;
             }
@@ -141,8 +129,8 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         return true;
     }
 
-    private Set.Immutable<IResolutionPath<S, L, V>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, D>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
             return Set.Immutable.of();
@@ -150,20 +138,13 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         CompletenessResult result = isEdgeComplete.apply(path.getTarget(), l);
         if(!result.isComplete()) {
             throw new IncompleteEdgeException(path.getTarget(), l, result.cause());
-        } else if (result.delay() != null) {
-            throw new ModuleDelayException(result.delay().module());
         }
-        final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
-        try {
-            for(IEdge<S, L, S> element : scopeGraph.getEdges(path.getTarget(), l)) {
-                final S nextScope = element.getTarget();
-                final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
-                if(p.isPresent()) {
-                    env.__insertAll(env(newRe.get(), p.get(), specifics));
-                }
+        final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
+        for(S nextScope : scopeGraph.getEdges(path.getTarget(), l)) {
+            final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
+            if(p.isPresent()) {
+                env.__insertAll(env(newRe.get(), p.get(), specifics));
             }
-        } catch (Delay d) {
-            throw new ModuleDelayException(d.module());
         }
         return env.freeze();
     }
@@ -224,56 +205,51 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
     // builder                                                               //
     //////////////////////////////////////////////////////////////////S/////////
 
-    public static <S extends V, V, L, R> Builder<S, V, L, R> builder() {
+    public static <S extends D, L, D> Builder<S, L, D> builder() {
         return new Builder<>(); 
     }
 
-    public static class Builder<S extends V, V, L, R> {
+    public static class Builder<S extends D, L, D> {
 
         private LabelWF<L> labelWF = LabelWF.ANY();
         private LabelOrder<L> labelOrder = LabelOrder.NONE();
         private Function2<? super S, L, CompletenessResult> isEdgeComplete = (s, l) -> CompletenessResult.of(true, null);
 
-        private DataWF<V> dataWF = DataWF.ANY();
-        private DataLeq<V> dataEquiv = DataLeq.NONE();
-        private Function2<? super V, R, CompletenessResult> isDataComplete = (s, r) -> CompletenessResult.of(true, null);
+        private DataWF<D> dataWF = DataWF.ANY();
+        private DataLeq<D> dataEquiv = DataLeq.NONE();
+        private Function2<? super D, L, CompletenessResult> isDataComplete = (s, r) -> CompletenessResult.of(true, null);
 
-        public Builder<S, V, L, R> withLabelWF(LabelWF<L> labelWF) {
+        public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
             return this;
         }
 
-        public Builder<S, V, L, R> withLabelOrder(LabelOrder<L> labelOrder) {
+        public Builder<S, L, D> withLabelOrder(LabelOrder<L> labelOrder) {
             this.labelOrder = labelOrder;
             return this;
         }
 
-        public Builder<S, V, L, R> withEdgeComplete(Function2<? super S, L, CompletenessResult> isEdgeComplete) {
+        public Builder<S, L, D> withEdgeComplete(Function2<? super S, L, CompletenessResult> isEdgeComplete) {
             this.isEdgeComplete = isEdgeComplete;
             return this;
         }
 
-        public Builder<S, V, L, R> withDataWF(DataWF<V> dataWF) {
+        public Builder<S, L, D> withDataWF(DataWF<D> dataWF) {
             this.dataWF = dataWF;
             return this;
         }
 
-        public Builder<S, V, L, R> withDataEquiv(DataLeq<V> dataEquiv) {
+        public Builder<S, L, D> withDataEquiv(DataLeq<D> dataEquiv) {
             this.dataEquiv = dataEquiv;
             return this;
         }
 
-        public Builder<S, V, L, R> withDataComplete(Function2<? super V, R, CompletenessResult> isDataComplete) {
+        public Builder<S, L, D> withDataComplete(Function2<? super D, L, CompletenessResult> isDataComplete) {
             this.isDataComplete = isDataComplete;
             return this;
         }
         
-        @Deprecated
-        public Builder<S, V, L, R> withLockManager(LockManager lockManager) {
-            return this;
-        }
-        
-        public MFastNameResolution<S, V, L, R> build(IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation) {
+        public MFastNameResolution<S, L, D> build(IMInternalScopeGraph<S, L, D> scopeGraph, L relation) {
             return new MFastNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
                     dataEquiv, isDataComplete);
         }
