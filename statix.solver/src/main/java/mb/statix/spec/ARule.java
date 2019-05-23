@@ -97,7 +97,8 @@ public abstract class ARule {
             return Optional.empty();
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        return Optional.of(body().apply(isubst));
+        final IConstraint newBody = body().apply(isubst);
+        return Optional.of(newBody.withCause(cause));
     }
 
     public String toString(TermFormatter termToString) {
