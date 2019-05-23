@@ -5,7 +5,7 @@ import java.util.Map;
 
 import mb.statix.taico.scopegraph.locking.LockManager;
 
-public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S, V, L, R> {
+public interface ITrackingScopeGraph<S, L, D> extends IMInternalScopeGraph<S, L, D> {
     /**
      * A map with the scopes and the labels that were requested as data on the scope graph
      * of this tracker alone. This does not include any child or parent trackers.
@@ -22,7 +22,7 @@ public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S,
      * @return
      *      the map of tracked data
      */
-    Map<S, R> getTrackedData();
+    Map<S, L> getTrackedData();
     
     /**
      * A map with, per module, the scopes and the labels that were requested as edges on this
@@ -40,7 +40,7 @@ public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S,
      * @return
      *      the map of all requested data
      */
-    Map<String, Map<S, R>> aggregateTrackedData();
+    Map<String, Map<S, L>> aggregateTrackedData();
     
     /**
      * The directly reached modules, including their children.
@@ -51,7 +51,7 @@ public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S,
     Collection<String> getReachedModules();
     
     @Override
-    Collection<? extends ITrackingScopeGraph<S, V, L, R>> getChildren();
+    Collection<? extends ITrackingScopeGraph<S, L, D>> getChildren();
     
     /**
      * @return

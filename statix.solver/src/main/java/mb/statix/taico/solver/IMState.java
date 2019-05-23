@@ -77,7 +77,7 @@ public interface IMState extends IOwnable, Serializable {
     
     public void setUnifier(DistributedUnifier.Immutable unifier);
 
-    public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph();
+    public IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph();
     
     // --- other ---
     /**

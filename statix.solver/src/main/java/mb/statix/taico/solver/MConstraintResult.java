@@ -5,10 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableMap;
-
 import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.IConstraint;
 

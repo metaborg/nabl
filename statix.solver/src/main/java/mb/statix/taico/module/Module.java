@@ -30,7 +30,7 @@ public class Module implements IModule {
     
     private final String name;
     private String parentId;
-    private IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph;
+    private IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph;
     private Map<CResolveQuery, QueryDetails<AScope, ITerm, ITerm>> queries = new HashMap<>();
     private Map<String, CResolveQuery> dependants = new ConcurrentHashMap<>();
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
@@ -102,7 +102,7 @@ public class Module implements IModule {
     }
 
     @Override
-    public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> getScopeGraph() {
+    public IMInternalScopeGraph<AScope, ITerm, ITerm> getScopeGraph() {
         return scopeGraph;
     }
 

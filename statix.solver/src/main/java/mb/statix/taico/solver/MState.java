@@ -24,7 +24,7 @@ public class MState implements IMState, Serializable {
     private static final long serialVersionUID = 1L;
     
     private final IModule owner;
-    private IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph;
+    private IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph;
     private Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties;
     
     private int varCounter;
@@ -61,7 +61,7 @@ public class MState implements IMState, Serializable {
      * @param scopeGraph
      *      the new scopeGraph
      */
-    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph) {
+    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph) {
         this.owner = original.owner();
         this.scopeGraph = scopeGraph;
         this.vars = vars;
@@ -142,7 +142,7 @@ public class MState implements IMState, Serializable {
     }
 
     @Override
-    public IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> scopeGraph() {
+    public IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph() {
         return scopeGraph;
     }
 

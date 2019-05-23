@@ -3,7 +3,6 @@ package mb.statix.taico.solver;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.util.Scopes;
 
 public class MConstraintContext {
 

@@ -75,7 +75,7 @@ public interface IModule extends Serializable {
      * @return
      *      the scope graph of this module
      */
-    IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> getScopeGraph();
+    IMInternalScopeGraph<AScope, ITerm, ITerm> getScopeGraph();
     
     /**
      * @return

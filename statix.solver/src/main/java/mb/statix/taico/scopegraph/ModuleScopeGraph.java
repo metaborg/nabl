@@ -23,7 +23,7 @@ import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
 import mb.statix.util.Capsules;
 
-public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm>, IOwnable {
+public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITerm>, IOwnable {
     private static final long serialVersionUID = 1L;
     
     private static AtomicInteger idCounter = new AtomicInteger();
@@ -155,7 +155,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         }
         
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-        for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
+        for (IMInternalScopeGraph<AScope, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
                 set.addAll(child.getTransitiveEdges(scope, label));
             }
@@ -178,7 +178,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         Set<IEdge<AScope, ITerm, AScope>> set = new HashSet<>(getEdges().get(scope, label));
         
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-        for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
+        for (IMInternalScopeGraph<AScope, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
                 set.addAll(child.getTransitiveEdges(scope, label));
             }
@@ -197,7 +197,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
             getReadLock().unlock();
         }
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-        for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
+        for (IMInternalScopeGraph<AScope, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
                 set.addAll(child.getTransitiveData(scope, label));
             }
@@ -220,7 +220,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
       Set<IEdge<AScope, ITerm, ITerm>> set = new HashSet<>(getData().get(scope, label));
 
       //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-      for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
+      for (IMInternalScopeGraph<AScope, ITerm, ITerm> child : getChildren()) {
           if (child.getExtensibleScopes().contains(scope)) {
               set.addAll(child.getTransitiveData(scope, label));
           }
@@ -318,13 +318,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
     
     @Override
-    public Iterable<? extends IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm>> getChildren() {
+    public Iterable<? extends IMInternalScopeGraph<AScope, ITerm, ITerm>> getChildren() {
         return children.stream().map(s -> SolverContext.context().getModuleUnchecked(s).getScopeGraph())::iterator;
     }
     
     @Override
     public void purgeChildren() {
-        for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> childSg : getChildren()) {
+        for (IMInternalScopeGraph<AScope, ITerm, ITerm> childSg : getChildren()) {
             childSg.purgeChildren();
         }
         
@@ -370,7 +370,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
     
     @Override
-    public IMExternalScopeGraph<AScope, ITerm, ITerm, ITerm> externalGraph() {
+    public IMExternalScopeGraph<AScope, ITerm, ITerm> externalGraph() {
         ModuleScopeGraph msg = new ModuleScopeGraph(owner, labels, endOfPath, relations, parentScopes);
         for (AScope scope : parentScopes) {
             for (Entry<ITerm, IEdge<AScope, ITerm, AScope>> e : getEdges().get(scope)) {
@@ -391,7 +391,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
     
     @Override
-    public TrackingModuleScopeGraph trackingGraph(Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm>> trackers, LockManager lockManager) {
+    public TrackingModuleScopeGraph trackingGraph(Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm>> trackers, LockManager lockManager) {
         return new TrackingModuleScopeGraph(this, trackers, lockManager);
     }
     

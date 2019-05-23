@@ -7,11 +7,11 @@ import io.usethesource.capsule.Set;
 import mb.statix.solver.Delay;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMExternalScopeGraph<S, V, L, R> extends IOwnable, Serializable {
+public interface IMExternalScopeGraph<S, L, D> extends IOwnable, Serializable {
     
     L getEndOfPath();
     Set.Immutable<? extends L> getLabels();
-    Set.Immutable<? extends R> getRelations();
+    Set.Immutable<? extends L> getRelations();
     
     /**
      * Gets the collection of edges from the given scope with the given label.
@@ -37,7 +37,7 @@ public interface IMExternalScopeGraph<S, V, L, R> extends IOwnable, Serializable
      * @return
      *      an iterable with all the edges
      */
-    java.util.Set<IEdge<S, R, V>> getData(S scope, R label) throws Delay;
+    java.util.Set<IEdge<S, L, D>> getData(S scope, L label) throws Delay;
     
     /**
      * @return

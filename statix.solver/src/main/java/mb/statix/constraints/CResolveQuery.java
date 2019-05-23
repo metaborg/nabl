@@ -131,7 +131,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             return result;
         };
 
-        ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
+        ITrackingScopeGraph<AScope, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
         final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths;
         
         LockManager lockManager = new LockManager(state.owner());

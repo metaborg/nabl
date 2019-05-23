@@ -10,7 +10,7 @@ import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
 
-public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S, V, L, R> {
+public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L, D> {
     /**
      * @param sourceScope
      *      the source scope
@@ -35,7 +35,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      true if this scope graph changed as a result of this call, false otherwise
      */
-    boolean addDatum(S scope, R relation, V datum);
+    boolean addDatum(S scope, L relation, D datum);
     
     
     /**
@@ -74,7 +74,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      an iterable with all the data
      */
-    Set<IEdge<S, R, V>> getTransitiveData(S scope, R label);
+    Set<IEdge<S, L, D>> getTransitiveData(S scope, L label);
     
     //Scope graph tree
     
@@ -88,7 +88,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      the new scope graph
      */
-    IMInternalScopeGraph<S, V, L, R> createChild(IModule module, List<S> canExtend);
+    IMInternalScopeGraph<S, L, D> createChild(IModule module, List<S> canExtend);
     
     /**
      * Adds the given module as a child to this scope graph.
@@ -99,13 +99,13 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      the child scope graph
      */
-    IMInternalScopeGraph<S, V, L, R> addChild(IModule child);
+    IMInternalScopeGraph<S, L, D> addChild(IModule child);
     
     /**
      * @return
      *      an iterable of all the children of this scope graph
      */
-    Iterable<? extends IMInternalScopeGraph<S, V, L, R>> getChildren();
+    Iterable<? extends IMInternalScopeGraph<S, L, D>> getChildren();
     
     /**
      * Removes the given child module.
@@ -135,7 +135,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      a relation of all the data edges directly owned by this module
      */
-    IRelation3<S, R, IEdge<S, R, V>> getData();
+    IRelation3<S, L, IEdge<S, L, D>> getData();
     
     /**
      * @return
@@ -159,7 +159,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      a new tracking graph for this scope graph
      */
-    ITrackingScopeGraph<S, V, L, R> trackingGraph();
+    ITrackingScopeGraph<S, L, D> trackingGraph();
     
     /**
      * When creating tracking graphs from one view, all views must share the same set of trackers.
@@ -173,13 +173,13 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      a new tracking graph for this scope graph
      */
-    ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<String, ITrackingScopeGraph<S, V, L, R>> trackers, LockManager lockManager);
+    ITrackingScopeGraph<S, L, D> trackingGraph(Map<String, ITrackingScopeGraph<S, L, D>> trackers, LockManager lockManager);
     
     /**
      * @return
      *      an external view on this scope graph
      */
-    IMExternalScopeGraph<S, V, L, R> externalGraph();
+    IMExternalScopeGraph<S, L, D> externalGraph();
     
     /**
      * @param clearScopes
@@ -188,7 +188,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      a delegating scope graph
      */
-    IMInternalScopeGraph<S, V, L, R> delegatingGraph(boolean clearScopes);
+    IMInternalScopeGraph<S, L, D> delegatingGraph(boolean clearScopes);
     
     /**
      * Substitutes old parent scopes (extensible scopes) with the given new scopes.
