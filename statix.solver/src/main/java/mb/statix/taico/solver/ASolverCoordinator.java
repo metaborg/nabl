@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import mb.statix.constraints.CTrue;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -152,7 +151,7 @@ public abstract class ASolverCoordinator {
     
     public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
-        init(strategy, state, new CTrue(), debug); // TODO HVA Is this equal to the emptySet it was before?
+        init(strategy, state, null, debug); // TODO HVA Is this equal to the emptySet it was before?
         
         Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, constraints);
         

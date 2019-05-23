@@ -49,7 +49,7 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     }
 
     @Override
-    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> getData() {
+    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, ITerm>> getData() {
         return Relations.union(original.getData(), super.getData());
     }
 

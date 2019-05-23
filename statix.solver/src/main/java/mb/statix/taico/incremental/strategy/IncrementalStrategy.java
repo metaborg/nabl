@@ -47,7 +47,7 @@ public abstract class IncrementalStrategy {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public abstract Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, Set<IConstraint>> moduleConstraints, IDebugContext debug) throws InterruptedException;
+    public abstract Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> moduleConstraints, IDebugContext debug) throws InterruptedException;
     
     /**
      * Gets a child module of the given requester. The strategy is free to
@@ -143,13 +143,9 @@ public abstract class IncrementalStrategy {
      *      the created module
      * @throws Delay 
      */
-    protected IModule createFileModule(SolverContext context, String childName, Set<IConstraint> initConstraints) {
+    protected IModule createFileModule(SolverContext context, String childName, IConstraint initConstraint) {
         System.err.println("[IS] Creating file module for " + childName);
-        if (initConstraints.size() != 1) {
-            throw new IllegalArgumentException("Module " + childName + " does not have exactly 1 initialization constraint: " + initConstraints);
-        }
 
-        IConstraint initConstraint = getInitConstraint(initConstraints);
         List<AScope> scopes = getScopes(initConstraint);
         
         IModule rootOwner = context.getRootModule();
@@ -172,20 +168,6 @@ public abstract class IncrementalStrategy {
         MState state = new MState(oldModule);
         //TODO Is the root solver set at this point?
         context.getRootModule().getCurrentState().solver().noopSolver(state);
-    }
-    
-    /**
-     * Retrieves the single init constraint from the set of constraints.
-     * @param constraints
-     * @return
-     */
-    protected IConstraint getInitConstraint(Set<IConstraint> constraints) {
-        IConstraint initConstraint = null;
-        for (IConstraint constraint : constraints) {
-            initConstraint = constraint;
-            if (constraint instanceof CUser) return constraint;
-        }
-        return initConstraint;
     }
     
     /**

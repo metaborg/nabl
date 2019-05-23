@@ -3,7 +3,6 @@ package mb.statix.taico.incremental.strategy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -52,7 +51,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
      * Reanalyzes the modules that are not marked as clean.
      */
     @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, Set<IConstraint>> constraints, IDebugContext debug) throws InterruptedException {
+    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
         return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
     }
     
@@ -77,10 +76,10 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public Map<IModule, Set<IConstraint>> createModulesForPhase(SolverContext context,
-            Map<String, Set<IConstraint>> moduleConstraints) {
-        Map<IModule, Set<IConstraint>> newModules = new HashMap<>();
-        for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
+    public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+            Map<String, IConstraint> moduleConstraints) {
+        Map<IModule, IConstraint> newModules = new HashMap<>();
+        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
             System.err.println("[BI] Encountered entry for " + entry.getKey());
             IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
             

@@ -42,11 +42,10 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
     private final DataWF<V> dataWF; // default: true
     private final DataLeq<V> dataEquiv; // default: false
     private final Function2<? super V, R, CompletenessResult> isDataComplete; // default: true
-    private final LockManager lockManager;
 
     public MFastNameResolution(IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, Function2<? super S, L, CompletenessResult> isEdgeComplete, DataWF<V> dataWF, DataLeq<V> dataEquiv,
-            Function2<? super V, R, CompletenessResult> isDataComplete, LockManager lockManager) {
+            Function2<? super V, R, CompletenessResult> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
         this.labels = Set.Immutable.<L>of().__insertAll(scopeGraph.getLabels()).__insert(scopeGraph.getEndOfPath());
@@ -57,7 +56,6 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
         this.isDataComplete = isDataComplete;
-        this.lockManager = lockManager;
     }
     
     //TODO We want to eventually switch to a derivative query scenario. We need to know per scope what types of edges we are interested in?
@@ -115,7 +113,7 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         if(relation.isPresent()) {
             try {
-                for(IEdge<S, R, List<V>> edge : scopeGraph.getData(path.getTarget(), relation.get(), lockManager)) {
+                for(IEdge<S, R, List<V>> edge : scopeGraph.getData(path.getTarget(), relation.get())) {
                     List<V> datum = edge.getTarget();
                     if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                         env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
@@ -157,7 +155,7 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         }
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         try {
-            for(IEdge<S, L, S> element : scopeGraph.getEdges(path.getTarget(), l, lockManager)) {
+            for(IEdge<S, L, S> element : scopeGraph.getEdges(path.getTarget(), l)) {
                 final S nextScope = element.getTarget();
                 final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
                 if(p.isPresent()) {
@@ -239,7 +237,6 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         private DataWF<V> dataWF = DataWF.ANY();
         private DataLeq<V> dataEquiv = DataLeq.NONE();
         private Function2<? super V, R, CompletenessResult> isDataComplete = (s, r) -> CompletenessResult.of(true, null);
-        private LockManager lockManager = new LockManager(null);
 
         public Builder<S, V, L, R> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
@@ -271,14 +268,14 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
             return this;
         }
         
+        @Deprecated
         public Builder<S, V, L, R> withLockManager(LockManager lockManager) {
-            this.lockManager = lockManager;
             return this;
         }
         
         public MFastNameResolution<S, V, L, R> build(IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation) {
             return new MFastNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
-                    dataEquiv, isDataComplete, lockManager);
+                    dataEquiv, isDataComplete);
         }
 
     }

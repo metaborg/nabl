@@ -5,7 +5,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -15,12 +14,10 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.spec.Type;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;

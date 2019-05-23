@@ -47,9 +47,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    protected void init(IncrementalStrategy strategy, IMState rootState, Iterable<IConstraint> constraints, IDebugContext debug) {
+    protected void init(IncrementalStrategy strategy, IMState rootState, IConstraint constraint, IDebugContext debug) {
         this.finalResult = null;
-        super.init(strategy, rootState, constraints, debug);
+        super.init(strategy, rootState, constraint, debug);
     }
     
     @Override
@@ -72,21 +72,21 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    public MSolverResult solve(IMState state, Iterable<IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        solveAsync(state, constraints, debug, null);
+    public MSolverResult solve(IMState state, IConstraint constraint, IDebugContext debug) throws InterruptedException {
+        solveAsync(state, constraint, debug, null);
         awaitCompletion();
         return finalResult;
     }
     
     @Override
-    public void solveAsync(IMState state, Iterable<IConstraint> constraints, IDebugContext debug, Consumer<MSolverResult> onFinished) {
+    public void solveAsync(IMState state, IConstraint constraint, IDebugContext debug, Consumer<MSolverResult> onFinished) {
         this.onFinished = onFinished;
-        init(new NonIncrementalStrategy(), state, constraints, debug);
+        init(new NonIncrementalStrategy(), state, constraint, debug);
         addSolver(root);
     }
     
     @Override
-    protected void scheduleModules(Map<IModule, Set<IConstraint>> modules) {
+    protected void scheduleModules(Map<IModule, IConstraint> modules) {
         //Increase the progress counter to ensure modules do not finish before we are done scheduling them.
         progressCounter.switchToPending();
         try {

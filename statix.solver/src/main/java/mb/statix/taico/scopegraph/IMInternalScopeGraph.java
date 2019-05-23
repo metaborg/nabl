@@ -1,6 +1,5 @@
 package mb.statix.taico.scopegraph;
 
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +35,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      true if this scope graph changed as a result of this call, false otherwise
      */
-    boolean addDatum(S scope, R relation, Iterable<V> datum);
+    boolean addDatum(S scope, R relation, V datum);
     
     
     /**
@@ -57,13 +56,11 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      *      the scope to start from
      * @param label
      *      the label for the edges
-     * @param lockManager
-     *      the lock manager
      * 
      * @return
      *      an iterable with all the edges
      */
-    Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label, LockManager lockManager);
+    Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label);
     
     /**
      * Gets the collection of data from the given scope with the given label, that are
@@ -73,13 +70,11 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      *      the scope to start from
      * @param label
      *      the label for the data
-     * @param lockManager
-     *      the lock manager
      * 
      * @return
      *      an iterable with all the data
      */
-    Set<IEdge<S, R, List<V>>> getTransitiveData(S scope, R label, LockManager lockManager);
+    Set<IEdge<S, R, V>> getTransitiveData(S scope, R label);
     
     //Scope graph tree
     
@@ -140,7 +135,7 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * @return
      *      a relation of all the data edges directly owned by this module
      */
-    IRelation3<S, R, IEdge<S, R, List<V>>> getData();
+    IRelation3<S, R, IEdge<S, R, V>> getData();
     
     /**
      * @return
@@ -172,11 +167,13 @@ public interface IMInternalScopeGraph<S, V, L, R> extends IMExternalScopeGraph<S
      * 
      * @param trackers
      *      a map with the trackers of the current view
+     * @param lockManager
+     *      the lock manager of the trackers
      * 
      * @return
      *      a new tracking graph for this scope graph
      */
-    ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<String, ITrackingScopeGraph<S, V, L, R>> trackers);
+    ITrackingScopeGraph<S, V, L, R> trackingGraph(Map<String, ITrackingScopeGraph<S, V, L, R>> trackers, LockManager lockManager);
     
     /**
      * @return

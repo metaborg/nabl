@@ -3,7 +3,6 @@ package mb.statix.taico.incremental.strategy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -16,7 +15,7 @@ import mb.statix.taico.solver.SolverContext;
 
 public class NonIncrementalStrategy extends IncrementalStrategy {
     @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, Set<IConstraint>> constraints, IDebugContext debug)
+    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
         //TODO Ensure everything is redone, but that we remember old modules.
         return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
@@ -35,10 +34,10 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public Map<IModule, Set<IConstraint>> createModulesForPhase(SolverContext context,
-            Map<String, Set<IConstraint>> moduleConstraints) {
-        Map<IModule, Set<IConstraint>> newModules = new HashMap<>();
-        for (Entry<String, Set<IConstraint>> entry : moduleConstraints.entrySet()) {
+    public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+            Map<String, IConstraint> moduleConstraints) {
+        Map<IModule, IConstraint> newModules = new HashMap<>();
+        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
             IModule module = createFileModule(context, entry.getKey(), entry.getValue());
             newModules.put(module, entry.getValue());
         }

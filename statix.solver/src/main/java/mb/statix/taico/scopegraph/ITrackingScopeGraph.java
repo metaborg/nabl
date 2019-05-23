@@ -3,6 +3,8 @@ package mb.statix.taico.scopegraph;
 import java.util.Collection;
 import java.util.Map;
 
+import mb.statix.taico.scopegraph.locking.LockManager;
+
 public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S, V, L, R> {
     /**
      * A map with the scopes and the labels that were requested as data on the scope graph
@@ -50,4 +52,17 @@ public interface ITrackingScopeGraph<S, V, L, R> extends IMInternalScopeGraph<S,
     
     @Override
     Collection<? extends ITrackingScopeGraph<S, V, L, R>> getChildren();
+    
+    /**
+     * @return
+     *      the lock manager
+     */
+    LockManager getLockManager();
+    
+    /**
+     * Unlocks all locks held on this tracking scope graph.
+     */
+    default void unlockAll() {
+        getLockManager().releaseAll();
+    }
 }

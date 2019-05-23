@@ -1,6 +1,5 @@
 package mb.statix.taico.scopegraph;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     
     private final HashSet<AScope> scopes = new HashSet<>();
     private IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, AScope>> edges = HashTrieRelation3.Transient.of();
-    private IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> data = HashTrieRelation3.Transient.of();
+    private IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, ITerm>> data = HashTrieRelation3.Transient.of();
 
     protected int scopeCounter;
     protected int id;
@@ -99,7 +98,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
     
     @Override
-    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> getData() {
+    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, ITerm>> getData() {
         return data;
     }
     
@@ -124,51 +123,110 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
 
     @Override
-    public Set<IEdge<AScope, ITerm, AScope>> getEdges(AScope scope, ITerm label, LockManager lockManager) throws Delay {
+    public Set<IEdge<AScope, ITerm, AScope>> getEdges(AScope scope, ITerm label) throws Delay {
         //TODO Should be possible without passing a scope, but rather something specifying the parent scope number that was passed.
         if (owner.getId().equals(scope.getResource())) {
-            return getTransitiveEdges(scope, label, lockManager);
+            return getTransitiveEdges(scope, label);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getEdges(scope, label, lockManager);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getEdges(scope, label);
         }
     }
     
     @Override
-    public Set<IEdge<AScope, ITerm, List<ITerm>>> getData(AScope scope, ITerm label, LockManager lockManager) throws Delay {
+    public Set<IEdge<AScope, ITerm, ITerm>> getData(AScope scope, ITerm label) throws Delay {
         if (owner.getId().equals(scope.getResource())) {
-            return getTransitiveData(scope, label, lockManager);
+            return getTransitiveData(scope, label);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getData(scope, label, lockManager);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getData(scope, label);
         }
     }
     
     @Override
-    public Set<IEdge<AScope, ITerm, AScope>> getTransitiveEdges(AScope scope, ITerm label, LockManager lockManager) {
-        lockManager.acquire(getReadLock());
-        Set<IEdge<AScope, ITerm, AScope>> set = new HashSet<>(getEdges().get(scope, label));
+    public Set<IEdge<AScope, ITerm, AScope>> getTransitiveEdges(AScope scope, ITerm label) {
+//        lockManager.acquire(getReadLock());
+        Set<IEdge<AScope, ITerm, AScope>> set;
+        getReadLock().lock();
+        try {
+            set = new HashSet<>(getEdges().get(scope, label));
+        } finally {
+            getReadLock().unlock();
+        }
+        
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
-                set.addAll(child.getTransitiveEdges(scope, label, lockManager));
+                set.addAll(child.getTransitiveEdges(scope, label));
+            }
+        }
+        return set;
+    }
+    
+    /**
+     * Gets transitive edges without locking.
+     * 
+     * @param scope
+     *      the scope
+     * @param label
+     *      the label
+     * 
+     * @return
+     *      the set of edges that this module and children have
+     */
+    protected Set<IEdge<AScope, ITerm, AScope>> _getTransitiveEdges(AScope scope, ITerm label) {
+        Set<IEdge<AScope, ITerm, AScope>> set = new HashSet<>(getEdges().get(scope, label));
+        
+        //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
+        for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
+            if (child.getExtensibleScopes().contains(scope)) {
+                set.addAll(child.getTransitiveEdges(scope, label));
             }
         }
         return set;
     }
 
     @Override
-    public Set<IEdge<AScope, ITerm, List<ITerm>>> getTransitiveData(AScope scope, ITerm label, LockManager lockManager) {
-        lockManager.acquire(getReadLock());
-        Set<IEdge<AScope, ITerm, List<ITerm>>> set = new HashSet<>(getData().get(scope, label));
+    public Set<IEdge<AScope, ITerm, ITerm>> getTransitiveData(AScope scope, ITerm label) {
+//        lockManager.acquire(getReadLock());
+        Set<IEdge<AScope, ITerm, ITerm>> set;
+        getReadLock().lock();
+        try {
+            set = new HashSet<>(getData().get(scope, label));
+        } finally {
+            getReadLock().unlock();
+        }
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
-                set.addAll(child.getTransitiveData(scope, label, lockManager));
+                set.addAll(child.getTransitiveData(scope, label));
             }
         }
         return set;
     }
+    
+    /**
+     * Gets transitive data without locking.
+     * 
+     * @param scope
+     *      the scope
+     * @param label
+     *      the label
+     * 
+     * @return
+     *      the set of data that this module and children have
+     */
+    protected Set<IEdge<AScope, ITerm, ITerm>> _getTransitiveData(AScope scope, ITerm label) {
+      Set<IEdge<AScope, ITerm, ITerm>> set = new HashSet<>(getData().get(scope, label));
+
+      //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
+      for (IMInternalScopeGraph<AScope, ITerm, ITerm, ITerm> child : getChildren()) {
+          if (child.getExtensibleScopes().contains(scope)) {
+              set.addAll(child.getTransitiveData(scope, label));
+          }
+      }
+      return set;
+  }
     
     @Override
     public Scope createScope(String base) {
@@ -201,7 +259,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
 
     @Override
-    public boolean addDatum(AScope scope, ITerm relation, Iterable<ITerm> datum) {
+    public boolean addDatum(AScope scope, ITerm relation, ITerm datum) {
         if (!getScopes().contains(scope) && !getExtensibleScopes().contains(scope)) {
             throw new IllegalArgumentException(
                     "addDatum directed to wrong scope graph: "
@@ -211,14 +269,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
                     + "Datum: " + scope + " -" + relation + "-> " + datum.toString());
         }
         
-        ArrayList<ITerm> datumlist = new ArrayList<>();
-        for (ITerm v : datum) {
-            datumlist.add(v);
-        }
-        
         getWriteLock().lock();
         try {
-            IEdge<AScope, ITerm, List<ITerm>> edge = new Edge<>(scope, relation, datumlist);
+            IEdge<AScope, ITerm, ITerm> edge = new Edge<>(scope, relation, datum);
             return data.put(scope, relation, edge);
         } finally {
             getWriteLock().unlock();
@@ -295,7 +348,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
         parentScopes = newScopes;
         //scopes should be stored as strings in the sets to avoid substitution
         IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, AScope>> newEdges = HashTrieRelation3.Transient.of();
-        IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, List<ITerm>>> newData = HashTrieRelation3.Transient.of();
+        IRelation3.Transient<AScope, ITerm, IEdge<AScope, ITerm, ITerm>> newData = HashTrieRelation3.Transient.of();
         for (int i = 0; i < oldScopes.size(); i++) {
             AScope oldScope = oldScopes.get(i);
             AScope newScope = parentScopes.get(i);
@@ -305,8 +358,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
                         e.getValue().getLabel(),
                         e.getValue().getTarget()));
             }
-            for (Entry<ITerm, IEdge<AScope, ITerm, List<ITerm>>> e : getData().get(oldScope)) {
-                newData.put(newScope, e.getKey(), new Edge<AScope, ITerm, List<ITerm>>(
+            for (Entry<ITerm, IEdge<AScope, ITerm, ITerm>> e : getData().get(oldScope)) {
+                newData.put(newScope, e.getKey(), new Edge<AScope, ITerm, ITerm>(
                         newScope,
                         e.getValue().getLabel(),
                         e.getValue().getTarget()));
@@ -324,7 +377,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
                 msg.addEdge(scope, e.getKey(), e.getValue().getTarget());
             }
             
-            for (Entry<ITerm, IEdge<AScope, ITerm, List<ITerm>>> e : getData().get(scope)) {
+            for (Entry<ITerm, IEdge<AScope, ITerm, ITerm>> e : getData().get(scope)) {
                 msg.addDatum(scope, e.getKey(), e.getValue().getTarget());
             }
         }
@@ -338,8 +391,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<AScope, ITerm, ITe
     }
     
     @Override
-    public TrackingModuleScopeGraph trackingGraph(Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm>> trackers) {
-        return new TrackingModuleScopeGraph(this, trackers);
+    public TrackingModuleScopeGraph trackingGraph(Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm, ITerm>> trackers, LockManager lockManager) {
+        return new TrackingModuleScopeGraph(this, trackers, lockManager);
     }
     
     @Override
