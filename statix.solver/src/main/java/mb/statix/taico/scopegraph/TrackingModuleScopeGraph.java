@@ -12,18 +12,18 @@ import java.util.concurrent.locks.Lock;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 
-public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrackingScopeGraph<AScope, ITerm, ITerm> {
+public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrackingScopeGraph<Scope, ITerm, ITerm> {
     private final ModuleScopeGraph original;
     
-    private final Map<AScope, ITerm> trackedEdges = new HashMap<>();
-    private final Map<AScope, ITerm> trackedData = new HashMap<>();
+    private final Map<Scope, ITerm> trackedEdges = new HashMap<>();
+    private final Map<Scope, ITerm> trackedData = new HashMap<>();
     private final Set<TrackingModuleScopeGraph> trackedChildren = new HashSet<>();
-    private final Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm>> trackers;
+    private final Map<String, ITrackingScopeGraph<Scope, ITerm, ITerm>> trackers;
     private final LockManager lockManager;
     
     private volatile int currentModification;
@@ -32,7 +32,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
         this(original, new HashMap<>(), new LockManager(original.getOwner()));
     }
     
-    public TrackingModuleScopeGraph(ModuleScopeGraph original, Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm>> trackers, LockManager lockManager) {
+    public TrackingModuleScopeGraph(ModuleScopeGraph original, Map<String, ITrackingScopeGraph<Scope, ITerm, ITerm>> trackers, LockManager lockManager) {
         super(original.id, original.getOwner(), original.getEdgeLabels(), original.getDataLabels(), original.getNoDataLabel(), original.getParentScopes());
         this.original = original;
         
@@ -43,7 +43,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
         trackers.put(getOwner().getId(), this);
         
         
-        for (IMInternalScopeGraph<AScope, ITerm, ITerm> child : original.getChildren()) {
+        for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : original.getChildren()) {
             TrackingModuleScopeGraph tmsg = (TrackingModuleScopeGraph) trackers.computeIfAbsent(child.getOwner().getId(), m -> child.trackingGraph(trackers, lockManager));
             trackedChildren.add(tmsg);
             trackers.put(child.getOwner().getId(), tmsg);
@@ -51,23 +51,23 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public IRelation3<AScope, ITerm, ITerm> getOwnData() {
+    public IRelation3<Scope, ITerm, ITerm> getOwnData() {
         return original.getOwnData();
     }
     
     @Override
-    public IRelation3<AScope, ITerm, AScope> getOwnEdges() {
+    public IRelation3<Scope, ITerm, Scope> getOwnEdges() {
         return original.getOwnEdges();
     }
 
     @Override
-    public Set<AScope> getScopes() {
+    public Set<Scope> getScopes() {
         return original.getScopes();
     }
 
     @Override
     public ModuleScopeGraph createChild(IModule module,
-            List<AScope> canExtend) {
+            List<Scope> canExtend) {
         return super.createChild(module, canExtend).trackingGraph(trackers, lockManager);
     }
     
@@ -85,7 +85,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     public Collection<? extends TrackingModuleScopeGraph> getChildren() {
         if (original.currentModification != this.currentModification) {
             //Add missing children
-            for (IMInternalScopeGraph<AScope, ITerm, ITerm> child : original.getChildren()) {
+            for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : original.getChildren()) {
                 if (!trackedChildren.contains(child)) {
                     TrackingModuleScopeGraph tmsg = (TrackingModuleScopeGraph) trackers.computeIfAbsent(child.getOwner().getId(), m -> child.trackingGraph(trackers, lockManager));
                     trackedChildren.add(tmsg);
@@ -102,22 +102,22 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public Set<AScope> getEdges(AScope scope, ITerm label) throws ModuleDelayException {
+    public Set<Scope> getEdges(Scope scope, ITerm label) throws ModuleDelayException {
         if (getOwner().getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label);
         } else {
-            ITrackingScopeGraph<AScope, ITerm, ITerm> tmsg =
+            ITrackingScopeGraph<Scope, ITerm, ITerm> tmsg =
                     trackers.computeIfAbsent(scope.getResource(), o -> context().getModuleUnchecked(o).getScopeGraph().trackingGraph(trackers, lockManager));
             return tmsg.getEdges(scope, label);
         }
     }
     
     @Override
-    public Set<ITerm> getData(AScope scope, ITerm label) throws ModuleDelayException  {
+    public Set<ITerm> getData(Scope scope, ITerm label) throws ModuleDelayException  {
         if (getOwner().getId().equals(scope.getResource())) {
             return getTransitiveData(scope, label);
         } else {
-            ITrackingScopeGraph<AScope, ITerm, ITerm> tmsg =
+            ITrackingScopeGraph<Scope, ITerm, ITerm> tmsg =
                     trackers.computeIfAbsent(scope.getResource(), o -> context().getModuleUnchecked(o).getScopeGraph().trackingGraph(trackers, lockManager));
             return tmsg.getData(scope, label);
         }
@@ -142,21 +142,21 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public Set<AScope> getTransitiveEdges(AScope scope, ITerm label) {
+    public Set<Scope> getTransitiveEdges(Scope scope, ITerm label) {
         trackedEdges.put(scope, label);
         lockManager.acquire(getReadLock());
         return super._getTransitiveEdges(scope, label);
     }
 
     @Override
-    public Set<ITerm> getTransitiveData(AScope scope, ITerm label) {
+    public Set<ITerm> getTransitiveData(Scope scope, ITerm label) {
         trackedData.put(scope, label);
         lockManager.acquire(getReadLock());
         return super._getTransitiveData(scope, label);
     }
     
     @Override
-    public IMExternalScopeGraph<AScope, ITerm, ITerm> externalGraph() {
+    public IMExternalScopeGraph<Scope, ITerm, ITerm> externalGraph() {
         throw new UnsupportedOperationException("Cannot get external graph of a tracking scope graphOwnableScope (currently).");
     }
     
@@ -175,28 +175,28 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     // --- tracking stuff ---
     
     @Override
-    public Map<AScope, ITerm> getTrackedEdges() {
+    public Map<Scope, ITerm> getTrackedEdges() {
         return trackedEdges;
     }
 
     @Override
-    public Map<AScope, ITerm> getTrackedData() {
+    public Map<Scope, ITerm> getTrackedData() {
         return trackedData;
     }
     
     @Override
-    public Map<String, Map<AScope, ITerm>> aggregateTrackedEdges() {
-        Map<String, Map<AScope, ITerm>> tbr = new HashMap<>();
-        for (ITrackingScopeGraph<AScope, ITerm, ITerm> tmsg : trackers.values()) {
+    public Map<String, Map<Scope, ITerm>> aggregateTrackedEdges() {
+        Map<String, Map<Scope, ITerm>> tbr = new HashMap<>();
+        for (ITrackingScopeGraph<Scope, ITerm, ITerm> tmsg : trackers.values()) {
             tbr.put(tmsg.getOwner().getId(), tmsg.getTrackedEdges());
         }
         return tbr;
     }
     
     @Override
-    public Map<String, Map<AScope, ITerm>> aggregateTrackedData() {
-        Map<String, Map<AScope, ITerm>> tbr = new HashMap<>();
-        for (ITrackingScopeGraph<AScope, ITerm, ITerm> tmsg : trackers.values()) {
+    public Map<String, Map<Scope, ITerm>> aggregateTrackedData() {
+        Map<String, Map<Scope, ITerm>> tbr = new HashMap<>();
+        for (ITrackingScopeGraph<Scope, ITerm, ITerm> tmsg : trackers.values()) {
             tbr.put(tmsg.getOwner().getId(), tmsg.getTrackedData());
         }
         return tbr;

@@ -36,11 +36,11 @@ public class MFastNameResolution<S extends D, L, D> implements INameResolution<S
 
     private final DataWF<D> dataWF; // default: true
     private final DataLeq<D> dataEquiv; // default: false
-    private final Function2<? super D, L, CompletenessResult> isDataComplete; // default: true
+    private final Function2<? super S, L, CompletenessResult> isDataComplete; // default: true
 
     public MFastNameResolution(IMInternalScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, Function2<? super S, L, CompletenessResult> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv,
-            Function2<? super D, L, CompletenessResult> isDataComplete) {
+            Function2<? super S, L, CompletenessResult> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
         this.labels = Set.Immutable.<L>of().__insertAll(scopeGraph.getEdgeLabels()).__insert(scopeGraph.getNoDataLabel());
@@ -217,7 +217,7 @@ public class MFastNameResolution<S extends D, L, D> implements INameResolution<S
 
         private DataWF<D> dataWF = DataWF.ANY();
         private DataLeq<D> dataEquiv = DataLeq.NONE();
-        private Function2<? super D, L, CompletenessResult> isDataComplete = (s, r) -> CompletenessResult.of(true, null);
+        private Function2<? super S, L, CompletenessResult> isDataComplete = (s, r) -> CompletenessResult.of(true, null);
 
         public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
@@ -244,7 +244,7 @@ public class MFastNameResolution<S extends D, L, D> implements INameResolution<S
             return this;
         }
 
-        public Builder<S, L, D> withDataComplete(Function2<? super D, L, CompletenessResult> isDataComplete) {
+        public Builder<S, L, D> withDataComplete(Function2<? super S, L, CompletenessResult> isDataComplete) {
             this.isDataComplete = isDataComplete;
             return this;
         }

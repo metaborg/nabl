@@ -8,7 +8,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
@@ -63,11 +63,11 @@ public interface IMState extends IOwnable, Serializable {
 
     // --- scopes ---
 
-    public default AScope freshScope(String base) {
+    public default Scope freshScope(String base) {
         return scopeGraph().createScope(base);
     }
 
-    public default Set<? extends AScope> scopes() {
+    public default Set<? extends Scope> scopes() {
         return scopeGraph().getScopes();
     }
 
@@ -77,7 +77,7 @@ public interface IMState extends IOwnable, Serializable {
     
     public void setUnifier(DistributedUnifier.Immutable unifier);
 
-    public IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph();
+    public IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph();
     
     // --- other ---
     /**

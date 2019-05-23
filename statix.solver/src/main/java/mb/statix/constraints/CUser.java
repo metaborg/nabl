@@ -19,7 +19,7 @@ import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
@@ -138,10 +138,10 @@ public class CUser implements IConstraint, Serializable {
                     }                     
                     
                     //We don't always want to statically store the child relation. We want to base this on the current owner.
-                    List<AScope> canExtend = new ArrayList<>();
+                    List<Scope> canExtend = new ArrayList<>();
                     for (ITerm term : newArgs) {
                         //TODO IMPORTANT Is this getModule approach wanted here?
-                        AScope scope = AScope.matcher().match(term).orElse(null);
+                        Scope scope = Scope.matcher().match(term).orElse(null);
                         if (scope != null) canExtend.add(scope);
                     }
                     

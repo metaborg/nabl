@@ -12,7 +12,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.unifier.DistributedUnifier;
@@ -24,7 +24,7 @@ public class MState implements IMState, Serializable {
     private static final long serialVersionUID = 1L;
     
     private final IModule owner;
-    private IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph;
+    private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
     private Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties;
     
     private int varCounter;
@@ -61,7 +61,7 @@ public class MState implements IMState, Serializable {
      * @param scopeGraph
      *      the new scopeGraph
      */
-    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph) {
+    protected MState(MState original, Set<ITermVar> vars, IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
         this.owner = original.owner();
         this.scopeGraph = scopeGraph;
         this.vars = vars;
@@ -120,12 +120,12 @@ public class MState implements IMState, Serializable {
     // --- scopes ---
 
     @Override
-    public AScope freshScope(String base) {
+    public Scope freshScope(String base) {
         return scopeGraph.createScope(base);
     }
 
     @Override
-    public Set<? extends AScope> scopes() {
+    public Set<? extends Scope> scopes() {
         return scopeGraph.getScopes();
     }
 
@@ -142,7 +142,7 @@ public class MState implements IMState, Serializable {
     }
 
     @Override
-    public IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph() {
+    public IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph() {
         return scopeGraph;
     }
 

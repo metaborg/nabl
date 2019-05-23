@@ -14,7 +14,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.constraints.CUser;
-import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -147,7 +146,7 @@ public abstract class IncrementalStrategy {
     protected IModule createFileModule(SolverContext context, String childName, IConstraint initConstraint) {
         System.err.println("[IS] Creating file module for " + childName);
 
-        List<AScope> scopes = getScopes(initConstraint);
+        List<Scope> scopes = getScopes(initConstraint);
         
         IModule rootOwner = context.getRootModule();
         IModule child = rootOwner.createChild(childName, scopes, initConstraint);
@@ -181,11 +180,11 @@ public abstract class IncrementalStrategy {
      * @return
      *      the list of scopes in the given constraint
      */
-    protected List<AScope> getScopes(IConstraint constraint) {
+    protected List<Scope> getScopes(IConstraint constraint) {
         if (!(constraint instanceof CUser)) return Collections.emptyList();
         CUser user = (CUser) constraint;
         
-        List<AScope> scopes = new ArrayList<>();
+        List<Scope> scopes = new ArrayList<>();
         for (ITerm term : user.args()) {
             Scope scope = Scope.matcher().match(term).orElse(null);
             if (scope != null) scopes.add(scope);

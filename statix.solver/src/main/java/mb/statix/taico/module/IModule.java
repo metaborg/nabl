@@ -16,7 +16,7 @@ import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
@@ -75,7 +75,7 @@ public interface IModule extends Serializable {
      * @return
      *      the scope graph of this module
      */
-    IMInternalScopeGraph<AScope, ITerm, ITerm> getScopeGraph();
+    IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph();
     
     /**
      * @return
@@ -109,7 +109,7 @@ public interface IModule extends Serializable {
      * @return
      *      the child
      */
-    IModule createChild(String name, List<AScope> canExtend, IConstraint constraint);
+    IModule createChild(String name, List<Scope> canExtend, IConstraint constraint);
     
     /**
      * If the module with the given name already existed as a child of this module, that module is
@@ -129,7 +129,7 @@ public interface IModule extends Serializable {
      * @return
      *      the new/old child module
      */
-    default IModule createOrGetChild(String name, List<AScope> canExtend, IConstraint constraint) throws Delay {
+    default IModule createOrGetChild(String name, List<Scope> canExtend, IConstraint constraint) throws Delay {
         //TODO This method might no longer be neccessary, or it might not need to check for the old module flag.
         //TODO Incrementality breaks if parent or child names are changed
         IModule oldModule = getChild(name);
@@ -230,7 +230,7 @@ public interface IModule extends Serializable {
      * @param details
      *      the details relevant for dependencies related to this query
      */
-    void addQuery(CResolveQuery query, QueryDetails<AScope, ITerm, ITerm> details);
+    void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details);
     
     
     /**

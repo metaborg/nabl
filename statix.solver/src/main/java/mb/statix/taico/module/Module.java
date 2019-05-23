@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
@@ -30,8 +30,8 @@ public class Module implements IModule {
     
     private final String name;
     private String parentId;
-    private IMInternalScopeGraph<AScope, ITerm, ITerm> scopeGraph;
-    private Map<CResolveQuery, QueryDetails<AScope, ITerm, ITerm>> queries = new HashMap<>();
+    private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
+    private Map<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> queries = new HashMap<>();
     private Map<String, CResolveQuery> dependants = new ConcurrentHashMap<>();
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
@@ -102,12 +102,12 @@ public class Module implements IModule {
     }
 
     @Override
-    public IMInternalScopeGraph<AScope, ITerm, ITerm> getScopeGraph() {
+    public IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph() {
         return scopeGraph;
     }
 
     @Override
-    public Module createChild(String name, List<AScope> canExtend, IConstraint constraint) {
+    public Module createChild(String name, List<Scope> canExtend, IConstraint constraint) {
         Module child = new Module(name, this);
         child.setInitialization(constraint);
         child.scopeGraph = scopeGraph.createChild(child, canExtend);
@@ -147,7 +147,7 @@ public class Module implements IModule {
     }
     
     @Override
-    public void addQuery(CResolveQuery query, QueryDetails<AScope, ITerm, ITerm> details) {
+    public void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details) {
         queries.put(query, details);
     }
     

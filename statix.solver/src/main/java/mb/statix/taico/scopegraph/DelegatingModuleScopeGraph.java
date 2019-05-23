@@ -7,7 +7,7 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
-import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.util.Relations;
 
@@ -24,7 +24,7 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     }
 
     @Override
-    public ModuleScopeGraph createChild(IModule module, List<AScope> canExtend) {
+    public ModuleScopeGraph createChild(IModule module, List<Scope> canExtend) {
         throw new UnsupportedOperationException("Creating children in delegate scope graphs (during entails) is currently not supported.");
     }
 
@@ -44,17 +44,17 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     }
 
     @Override
-    public IRelation3<AScope, ITerm, AScope> getOwnEdges() {
+    public IRelation3<Scope, ITerm, Scope> getOwnEdges() {
         return Relations.union(original.getOwnEdges(), super.getOwnEdges());
     }
 
     @Override
-    public IRelation3<AScope, ITerm, ITerm> getOwnData() {
+    public IRelation3<Scope, ITerm, ITerm> getOwnData() {
         return Relations.union(original.getOwnData(), super.getOwnData());
     }
 
     @Override
-    public Set<AScope> getScopes() {
+    public Set<Scope> getScopes() {
         return clearScopes ? super.getScopes() : Sets.union(original.getScopes(), super.getScopes());
     }
 }

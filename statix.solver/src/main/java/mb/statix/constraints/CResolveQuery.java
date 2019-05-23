@@ -6,10 +6,11 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Function2;
+
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -30,8 +31,8 @@ import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
+import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
-import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.scopegraph.reference.MFastNameResolution;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.CompletenessResult;
@@ -120,7 +121,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         } else {
             subDebug = new NullDebugContext(params.debug().getDepth() + 1);
         }
-        final Function2<ITerm, ITerm, CompletenessResult> isComplete = (s, l) -> {
+        final Function2<Scope, ITerm, CompletenessResult> isComplete = (s, l) -> {
             CompletenessResult result = params.isComplete(s, l, state);
             if(result.isComplete()) {
                 subDebug.info("{} complete in {}", s, l);
@@ -130,8 +131,8 @@ public class CResolveQuery implements IConstraint, Serializable {
             return result;
         };
 
-        ITrackingScopeGraph<AScope, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
-        final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths;
+        ITrackingScopeGraph<Scope, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
+        final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
         try {
             final MConstraintQueries cq = new MConstraintQueries(state, params);
             // @formatter:off
@@ -176,16 +177,11 @@ public class CResolveQuery implements IConstraint, Serializable {
         //If the query was successful, we can release all locks.
         trackingGraph.unlockAll();
         
-        final List<ITerm> pathTerms;
-        if(relation != null) {
-            pathTerms = paths.stream().map(p -> B.newTuple(B.newBlob(p.getPath()), B.newTuple(p.getDatum())))
-                    .collect(Collectors.toList());
-        } else {
-            pathTerms = paths.stream().map(p -> B.newBlob(p.getPath())).collect(Collectors.toList());
-        }
+        final List<ITerm> pathTerms =
+                paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
         
         //Register this query
-        QueryDetails<AScope, ITerm, ITerm> details = new QueryDetails<AScope, ITerm, ITerm>(
+        QueryDetails<Scope, ITerm, ITerm> details = new QueryDetails<Scope, ITerm, ITerm>(
                 trackingGraph.aggregateTrackedEdges(),
                 trackingGraph.aggregateTrackedData(),
                 trackingGraph.getReachedModules(),
