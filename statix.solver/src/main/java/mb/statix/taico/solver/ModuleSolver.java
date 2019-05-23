@@ -41,6 +41,7 @@ import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
@@ -314,8 +315,8 @@ public class ModuleSolver implements IOwnable {
         IModule scopeOwner;
         try {
             scopeOwner = SolverContext.context().getModule(state.getOwner(), scope.getResource());
-        } catch (Delay d) {
-            return CompletenessResult.of(false, getOwner()).withDelay(d);
+        } catch (ModuleDelayException e) {
+            return CompletenessResult.of(false, getOwner()).withDelay(Delay.ofModule(e.getModule()));
         }
         if (scopeOwner == null) throw new IllegalStateException("Encountered scope without owning module: " + scope);
         
@@ -464,11 +465,11 @@ public class ModuleSolver implements IOwnable {
             return SolverContext.context();
         }
 
-        @Value.Parameter public abstract Collection<IConstraint> errors();
+        @Override @Value.Parameter public abstract Collection<IConstraint> errors();
 
-        @Value.Parameter public abstract Map<IConstraint, Delay> delays();
+        @Override @Value.Parameter public abstract Map<IConstraint, Delay> delays();
 
-        @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
+        @Override @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
 
         @Override
         public Immutable unifier() {

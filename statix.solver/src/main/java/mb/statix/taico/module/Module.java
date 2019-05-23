@@ -60,7 +60,7 @@ public class Module implements IModule {
         Spec spec = context().getSpec();
         
         this.name = name;
-        this.scopeGraph = new ModuleScopeGraph(this, spec.labels(), spec.endOfPath(), spec.relations().keySet(), Collections.emptyList());
+        this.scopeGraph = new ModuleScopeGraph(this, spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel(), Collections.emptyList());
         if (addToContext) context().addModule(this);
     }
     
@@ -174,7 +174,7 @@ public class Module implements IModule {
     
     @Override
     public void reset(Spec spec) {
-        this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getLabels(), scopeGraph.getEndOfPath(), scopeGraph.getRelations(), scopeGraph.getParentScopes());
+        this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getEdgeLabels(), scopeGraph.getDataLabels(), scopeGraph.getNoDataLabel(), scopeGraph.getParentScopes());
         this.queries = new HashMap<>();
         this.dependants = new HashMap<>();
         this.cleanliness = ModuleCleanliness.NEW;

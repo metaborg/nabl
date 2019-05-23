@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
-import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
@@ -58,9 +57,9 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      *      the label for the edges
      * 
      * @return
-     *      an iterable with all the edges
+     *      a set with all the edges
      */
-    Set<IEdge<S, L, S>> getTransitiveEdges(S scope, L label);
+    Set<S> getTransitiveEdges(S scope, L label);
     
     /**
      * Gets the collection of data from the given scope with the given label, that are
@@ -72,9 +71,9 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      *      the label for the data
      * 
      * @return
-     *      an iterable with all the data
+     *      a set with all the data
      */
-    Set<IEdge<S, L, D>> getTransitiveData(S scope, L label);
+    Set<D> getTransitiveData(S scope, L label);
     
     //Scope graph tree
     
@@ -129,13 +128,13 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      * @return
      *      a relation of all the edges directly owned by this module
      */
-    IRelation3<S, L, IEdge<S, L, S>> getEdges();
+    IRelation3<S, L, S> getOwnEdges();
     
     /**
      * @return
      *      a relation of all the data edges directly owned by this module
      */
-    IRelation3<S, L, IEdge<S, L, D>> getData();
+    IRelation3<S, L, D> getOwnData();
     
     /**
      * @return
@@ -147,7 +146,7 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      * @return
      *      the set of scopes that can be extended by this scope graph
      */
-    Immutable<? extends S> getExtensibleScopes();
+    io.usethesource.capsule.Set.Immutable<? extends S> getExtensibleScopes();
     
     /**
      * @return

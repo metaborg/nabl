@@ -3,9 +3,9 @@ package mb.statix.taico.util;
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.IScope;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
 
 public class Scopes {
@@ -91,13 +91,13 @@ public class Scopes {
      * @return
      *      the owner of the given scope
      *      
-     * @throws Delay
+     * @throws ModuleDelayException
      *      If this request is not allowed.
      * 
      * @throws IllegalArgumentException
      *      If the given term is not a scope.
      */
-    public static IModule getOwner(IScope scope, IModule requester) throws Delay {
+    public static IModule getOwner(IScope scope, IModule requester) throws ModuleDelayException {
         return SolverContext.context().getModule(requester, scope.getResource());
     }
 }

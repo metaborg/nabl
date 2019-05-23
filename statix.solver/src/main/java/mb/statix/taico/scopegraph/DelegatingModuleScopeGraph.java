@@ -16,7 +16,7 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     private final boolean clearScopes;
     
     public DelegatingModuleScopeGraph(ModuleScopeGraph original, boolean clearScopes) {
-        super(original.id, original.getOwner(), original.getLabels(), original.getEndOfPath(), original.getRelations(), original.getParentScopes());
+        super(original.id, original.getOwner(), original.getEdgeLabels(), original.getDataLabels(), original.getNoDataLabel(), original.getParentScopes());
         
         this.original = original;
         this.clearScopes = clearScopes;
@@ -44,13 +44,13 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     }
 
     @Override
-    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, AScope>> getEdges() {
-        return Relations.union(original.getEdges(), super.getEdges());
+    public IRelation3<AScope, ITerm, AScope> getOwnEdges() {
+        return Relations.union(original.getOwnEdges(), super.getOwnEdges());
     }
 
     @Override
-    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, ITerm>> getData() {
-        return Relations.union(original.getData(), super.getData());
+    public IRelation3<AScope, ITerm, ITerm> getOwnData() {
+        return Relations.union(original.getOwnData(), super.getOwnData());
     }
 
     @Override

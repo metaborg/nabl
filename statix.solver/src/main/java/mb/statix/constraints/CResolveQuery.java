@@ -33,6 +33,7 @@ import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.scopegraph.reference.MFastNameResolution;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.CompletenessResult;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
@@ -133,8 +134,6 @@ public class CResolveQuery implements IConstraint, Serializable {
 
         ITrackingScopeGraph<AScope, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
         final Set<IResolutionPath<ITerm, ITerm, ITerm>> paths;
-        
-        LockManager lockManager = new LockManager(state.owner());
         try {
             final MConstraintQueries cq = new MConstraintQueries(state, params);
             // @formatter:off
@@ -145,7 +144,6 @@ public class CResolveQuery implements IConstraint, Serializable {
                         .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
                         .withEdgeComplete(isComplete)
                         .withDataComplete(isComplete)
-                        .withLockManager(lockManager)
                         .build(trackingGraph, relation);
             // @formatter:on
             
@@ -153,28 +151,32 @@ public class CResolveQuery implements IConstraint, Serializable {
         } catch(IncompleteDataException e) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()), lockManager);
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()), trackingGraph.getLockManager());
         } catch(IncompleteEdgeException e) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), e.getModule()), lockManager);
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), e.getModule()), trackingGraph.getLockManager());
         } catch(ResolutionDelayException e) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query for unknown reason");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            lockManager.absorb(e.getCause().getLockManager());
-            e.getCause().setLockManager(lockManager);
+            trackingGraph.getLockManager().absorb(e.getCause().getLockManager());
+            e.getCause().setLockManager(trackingGraph.getLockManager());
             throw e.getCause();
+        } catch(ModuleDelayException e) {
+            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on module " + e.getModule());
+            params.debug().info("Query resolution delayed: {}", e.getMessage());
+            throw Delay.ofModule(e.getModule());
         } catch(ResolutionException e) {
-            lockManager.releaseAll();
+            trackingGraph.unlockAll();
             params.debug().info("Query resolution failed: {}", e.getMessage());
             return Optional.empty();
         } catch(Exception e) {
-            lockManager.releaseAll();
+            trackingGraph.unlockAll();
             throw e;
         }        
         
         //If the query was successful, we can release all locks.
-        lockManager.releaseAll();
+        trackingGraph.unlockAll();
         
         final List<ITerm> pathTerms;
         if(relation != null) {

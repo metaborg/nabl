@@ -1,8 +1,6 @@
 package mb.statix.taico.scopegraph.reference;
 
-import mb.statix.scopegraph.reference.ResolutionException;
-
-public class ModuleDelayException extends ResolutionException {
+public class ModuleDelayException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 

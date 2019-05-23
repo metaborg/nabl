@@ -31,9 +31,9 @@ import mb.statix.taico.solver.CompletenessResult;
 
 public class MFastNameResolution<S extends V, V, L, R> implements IMNameResolution<S, V, L, R> {
 
-    private final IMInternalScopeGraph<S, V, L, R> scopeGraph;
+    private final IMInternalScopeGraph<S, L, V> scopeGraph;
     private final Set.Immutable<L> labels;
-    private final Optional<R> relation;
+    private final Optional<L> relation;
 
     private final LabelWF<L> labelWF; // default: true
     private final LabelOrder<L> labelOrder; // default: false
@@ -41,14 +41,14 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
 
     private final DataWF<V> dataWF; // default: true
     private final DataLeq<V> dataEquiv; // default: false
-    private final Function2<? super V, R, CompletenessResult> isDataComplete; // default: true
+    private final Function2<? super V, L, CompletenessResult> isDataComplete; // default: true
 
-    public MFastNameResolution(IMInternalScopeGraph<S, V, L, R> scopeGraph, Optional<R> relation, LabelWF<L> labelWF,
+    public MFastNameResolution(IMInternalScopeGraph<S, L, V> scopeGraph, Optional<L> relation, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, Function2<? super S, L, CompletenessResult> isEdgeComplete, DataWF<V> dataWF, DataLeq<V> dataEquiv,
-            Function2<? super V, R, CompletenessResult> isDataComplete) {
+            Function2<? super V, L, CompletenessResult> isDataComplete) {
         super();
         this.scopeGraph = scopeGraph;
-        this.labels = Set.Immutable.<L>of().__insertAll(scopeGraph.getLabels()).__insert(scopeGraph.getEndOfPath());
+        this.labels = Set.Immutable.<L>of().__insertAll(scopeGraph.getEdgeLabels()).__insert(scopeGraph.getNoDataLabel());
         this.relation = relation;
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
@@ -60,30 +60,30 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
     
     //TODO We want to eventually switch to a derivative query scenario. We need to know per scope what types of edges we are interested in?
 
-    @Override public java.util.Set<IResolutionPath<V, L, R>> resolve(S scope)
+    @Override public java.util.Set<IResolutionPath<S, L, V>> resolve(S scope)
             throws ResolutionException, InterruptedException {
         return env(labelWF, Paths.empty(scope), Set.Immutable.of());
     }
 
-    private Set<IResolutionPath<V, L, R>> env(LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<V, L, R>> specifics) throws ResolutionException, InterruptedException {
+    private Set<IResolutionPath<S, L, V>> env(LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
         return env_L(labels, re, path, specifics);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Set.Immutable<IResolutionPath<V, L, R>> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<V, L, R>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, V>> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
         if(Thread.interrupted()) {
             throw new InterruptedException();
         }
-        final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
+        final Set.Transient<IResolutionPath<S, L, V>> env = Set.Transient.of();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
-            final Set.Immutable<IResolutionPath<V, L, R>> env1 = env_L(smaller(L, l), re, path, specifics);
+            final Set.Immutable<IResolutionPath<S, L, V>> env1 = env_L(smaller(L, l), re, path, specifics);
             env.__insertAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final Set.Immutable<IResolutionPath<V, L, R>> env2 =
+                final Set.Immutable<IResolutionPath<S, L, V>> env2 =
                         env_l(l, re, path, Set.Immutable.union(specifics, env1));
                 env.__insertAll(env2);
             }
@@ -91,13 +91,13 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         return env.freeze();
     }
 
-    private Set.Immutable<IResolutionPath<V, L, R>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<V, L, R>> specifics) throws ResolutionException, InterruptedException {
-        return l.equals(scopeGraph.getEndOfPath()) ? env_EOP(re, path, specifics) : env_nonEOP(l, re, path, specifics);
+    private Set.Immutable<IResolutionPath<S, L, V>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
+        return l.equals(scopeGraph.getNoDataLabel()) ? env_EOP(re, path, specifics) : env_nonEOP(l, re, path, specifics);
     }
 
-    private Set.Immutable<IResolutionPath<V, L, R>> env_EOP(LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<V, L, R>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, V>> env_EOP(LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
             return Set.Immutable.of();
         }
@@ -113,8 +113,8 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         final Set.Transient<IResolutionPath<V, L, R>> env = Set.Transient.of();
         if(relation.isPresent()) {
             try {
-                for(IEdge<S, R, List<V>> edge : scopeGraph.getData(path.getTarget(), relation.get())) {
-                    List<V> datum = edge.getTarget();
+                for(IEdge<S, R, V> edge : scopeGraph.getData(path.getTarget(), relation.get())) {
+                    V datum = edge.getTarget();
                     if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                         env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
                     }
@@ -123,7 +123,7 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
                 throw new ModuleDelayException(d.module());
             }
         } else {
-            final List<V> datum = ImmutableList.of(scope);
+            final V datum = scope;
             if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                 env.__insert(Paths.resolve((IScopePath<V, L>) path, relation, datum));
             }
@@ -131,9 +131,9 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         return env.freeze();
     }
 
-    private boolean notShadowed(List<V> datum, Set.Immutable<IResolutionPath<V, L, R>> specifics)
+    private boolean notShadowed(V datum, Set.Immutable<IResolutionPath<S, L, V>> specifics)
             throws ResolutionException, InterruptedException {
-        for(IResolutionPath<V, L, R> p : specifics) {
+        for(IResolutionPath<S, L, V> p : specifics) {
             if(dataEquiv.leq(p.getDatum(), datum)) {
                 return false;
             }
@@ -141,8 +141,8 @@ public class MFastNameResolution<S extends V, V, L, R> implements IMNameResoluti
         return true;
     }
 
-    private Set.Immutable<IResolutionPath<V, L, R>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Set.Immutable<IResolutionPath<V, L, R>> specifics) throws ResolutionException, InterruptedException {
+    private Set.Immutable<IResolutionPath<S, L, V>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
+            Set.Immutable<IResolutionPath<S, L, V>> specifics) throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
             return Set.Immutable.of();

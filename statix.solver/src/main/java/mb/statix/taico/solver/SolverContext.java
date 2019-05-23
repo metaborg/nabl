@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import mb.statix.constraints.CTrue;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
@@ -19,6 +18,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 
 public class SolverContext implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -109,7 +109,7 @@ public class SolverContext implements Serializable {
         manager.addModule(module);
     }
     
-    public IModule getChildModuleByName(IModule requester, String name) throws Delay {
+    public IModule getChildModuleByName(IModule requester, String name) throws ModuleDelayException {
         String id = ModulePaths.build(requester.getId(), name);
         
         if (phase == -1) return getModuleUnchecked(id);
@@ -137,7 +137,7 @@ public class SolverContext implements Serializable {
         return oldContext == null ? null : oldContext.manager.getModuleByName(name, level);
     }
     
-    public IModule getModule(IModule requester, String id) throws Delay {
+    public IModule getModule(IModule requester, String id) throws ModuleDelayException {
         if (phase == -1) return getModuleUnchecked(id);
         
         //TODO Also do the first part based on the strategy, to allow the strategy to delay.

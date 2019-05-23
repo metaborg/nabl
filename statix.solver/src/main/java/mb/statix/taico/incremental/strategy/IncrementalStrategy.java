@@ -22,6 +22,7 @@ import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.IChangeSet;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
@@ -65,10 +66,10 @@ public abstract class IncrementalStrategy {
      * @return
      *      the child module, or null if no child module exists.
      * 
-     * @throws Delay
+     * @throws ModuleDelayException
      *      If the child access needs to be delayed.
      */
-    public abstract IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) throws Delay;
+    public abstract IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) throws ModuleDelayException;
     
     /**
      * Method for handling the request to get a module from the context. The strategy is free to
@@ -86,10 +87,10 @@ public abstract class IncrementalStrategy {
      * @return
      *      the module that was requested, or null if such a module does not exist
      * 
-     * @throws Delay
+     * @throws ModuleDelayException
      *      If the access is not allowed (yet) in the current context phase.
      */
-    public abstract IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) throws Delay;
+    public abstract IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) throws ModuleDelayException;
     
     //---------------------------------------------------------------------------------------------
     // Phasing

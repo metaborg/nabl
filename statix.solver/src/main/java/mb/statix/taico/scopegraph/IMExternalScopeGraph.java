@@ -4,14 +4,19 @@ import java.io.Serializable;
 import java.util.concurrent.locks.Lock;
 
 import io.usethesource.capsule.Set;
-import mb.statix.solver.Delay;
+import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMExternalScopeGraph<S, L, D> extends IOwnable, Serializable {
+public interface IMExternalScopeGraph<S, L, D> extends IScopeGraph<S, L, D>, IOwnable, Serializable {
     
-    L getEndOfPath();
-    Set.Immutable<? extends L> getLabels();
-    Set.Immutable<? extends L> getRelations();
+    @Override
+    L getNoDataLabel();
+    
+    @Override
+    Set.Immutable<L> getEdgeLabels();
+    
+    @Override
+    Set.Immutable<L> getDataLabels();
     
     /**
      * Gets the collection of edges from the given scope with the given label.
@@ -22,9 +27,10 @@ public interface IMExternalScopeGraph<S, L, D> extends IOwnable, Serializable {
      *      the label for the edges
      * 
      * @return
-     *      an iterable with all the edges
+     *      a set with all the edges
      */
-    java.util.Set<IEdge<S, L, S>> getEdges(S scope, L label) throws Delay;
+    @Override
+    java.util.Set<S> getEdges(S scope, L label);
     
     /**
      * Gets the collection of data edges from the given scope with the given label.
@@ -35,9 +41,10 @@ public interface IMExternalScopeGraph<S, L, D> extends IOwnable, Serializable {
      *      the label for the edges
      * 
      * @return
-     *      an iterable with all the edges
+     *      a set with all the edges
      */
-    java.util.Set<IEdge<S, L, D>> getData(S scope, L label) throws Delay;
+    @Override
+    java.util.Set<D> getData(S scope, L label);
     
     /**
      * @return

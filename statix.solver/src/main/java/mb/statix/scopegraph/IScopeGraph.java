@@ -8,8 +8,8 @@ import mb.nabl2.util.collections.IRelation3;
  * 
  * <p>A scope graph consists of the following:
  * <ul>
- * <li>A set of labels {@link #getLabels()}</li>
- * <li>A set of relations {@link #getRelations()}</li>
+ * <li>A set of edge labels {@link #getEdgeLabels()}</li>
+ * <li>A set of data labels {@link #getDataLabels()}</li>
  * <li>A set of scopes {@link #getAllScopes()}</li>
  * <li>A set of edges (scope -label> scope) {@link #getEdges()}</li>
  * <li>A set of data lists (scope -relation> data) {@link #getData()}</li>

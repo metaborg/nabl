@@ -13,9 +13,9 @@ import java.util.concurrent.locks.Lock;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.AScope;
-import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 
 public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrackingScopeGraph<AScope, ITerm, ITerm> {
     private final ModuleScopeGraph original;
@@ -33,7 +33,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     public TrackingModuleScopeGraph(ModuleScopeGraph original, Map<String, ITrackingScopeGraph<AScope, ITerm, ITerm>> trackers, LockManager lockManager) {
-        super(original.id, original.getOwner(), original.getLabels(), original.getEndOfPath(), original.getRelations(), original.getParentScopes());
+        super(original.id, original.getOwner(), original.getEdgeLabels(), original.getDataLabels(), original.getNoDataLabel(), original.getParentScopes());
         this.original = original;
         
         this.trackers = trackers;
@@ -51,13 +51,13 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, ITerm>> getData() {
-        return original.getData();
+    public IRelation3<AScope, ITerm, ITerm> getOwnData() {
+        return original.getOwnData();
     }
     
     @Override
-    public IRelation3<AScope, ITerm, IEdge<AScope, ITerm, AScope>> getEdges() {
-        return original.getEdges();
+    public IRelation3<AScope, ITerm, AScope> getOwnEdges() {
+        return original.getOwnEdges();
     }
 
     @Override
@@ -102,7 +102,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public Set<IEdge<AScope, ITerm, AScope>> getEdges(AScope scope, ITerm label) throws Delay {
+    public Set<AScope> getEdges(AScope scope, ITerm label) throws ModuleDelayException {
         if (getOwner().getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label);
         } else {
@@ -113,7 +113,7 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public Set<IEdge<AScope, ITerm, ITerm>> getData(AScope scope, ITerm label) throws Delay  {
+    public Set<ITerm> getData(AScope scope, ITerm label) throws ModuleDelayException  {
         if (getOwner().getId().equals(scope.getResource())) {
             return getTransitiveData(scope, label);
         } else {
@@ -142,14 +142,14 @@ public class TrackingModuleScopeGraph extends ModuleScopeGraph implements ITrack
     }
     
     @Override
-    public Set<IEdge<AScope, ITerm, AScope>> getTransitiveEdges(AScope scope, ITerm label) {
+    public Set<AScope> getTransitiveEdges(AScope scope, ITerm label) {
         trackedEdges.put(scope, label);
         lockManager.acquire(getReadLock());
         return super._getTransitiveEdges(scope, label);
     }
 
     @Override
-    public Set<IEdge<AScope, ITerm, ITerm>> getTransitiveData(AScope scope, ITerm label) {
+    public Set<ITerm> getTransitiveData(AScope scope, ITerm label) {
         trackedData.put(scope, label);
         lockManager.acquire(getReadLock());
         return super._getTransitiveData(scope, label);

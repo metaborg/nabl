@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
@@ -22,13 +21,12 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id)
-            throws Delay {
+    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) {
         return context.getModuleManager().getModule(id);
     }
     
     @Override
-    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) throws Delay {
+    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
         //Always allow child access when we are not being incremental
         return context.getModuleManager().getModule(childId);
     }
