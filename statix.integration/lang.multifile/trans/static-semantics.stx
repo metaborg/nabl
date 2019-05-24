@@ -1,0 +1,16 @@
+module static-semantics
+
+signature
+  sorts Start
+  constructors
+    Empty : Start
+
+rules
+
+  projectOk : scope
+
+  projectOk(s).
+  
+  fileOk : scope * Start
+  
+  fileOk(s, Empty()).

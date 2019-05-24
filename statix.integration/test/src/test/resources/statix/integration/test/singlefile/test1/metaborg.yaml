@@ -1,0 +1,6 @@
+---
+id: org.metaborg:statix.integration.test.singlefile.test1:${metaborgVersion}
+name: StatixIntegrationTestSingleFileTest1
+dependencies:
+  compile:
+  - org.metaborg:statix.integration.lang.singlefile:${metaborgVersion}

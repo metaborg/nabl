@@ -1,0 +1,6 @@
+---
+id: org.metaborg:statix.integration.test.multifile.test1:${metaborgVersion}
+name: StatixIntegrationTestMultiFileTest1
+dependencies:
+  compile:
+  - org.metaborg:statix.integration.lang.multifile:${metaborgVersion}
