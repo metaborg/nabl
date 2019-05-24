@@ -21,7 +21,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IIsComplete;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
 
@@ -29,10 +29,10 @@ public class MConstraintDataWF implements DataWF<ITerm> {
 
     private final IRule constraint;
     private final IMState state;
-    private final ICompleteness isComplete;
+    private final IIsComplete isComplete;
     private final IDebugContext debug;
 
-    public MConstraintDataWF(IRule constraint, IMState state, ICompleteness isComplete, IDebugContext debug) {
+    public MConstraintDataWF(IRule constraint, IMState state, IIsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;

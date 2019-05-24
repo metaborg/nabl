@@ -7,7 +7,7 @@ import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IIsComplete;
 import mb.statix.taico.solver.IMState;
 
 /**
@@ -32,7 +32,7 @@ public interface IMQueryMin {
      * 
      * @throws ResolutionException
      */
-    LabelOrder<ITerm> getLabelOrder(IMState state, ICompleteness isComplete, IDebugContext debug)
+    LabelOrder<ITerm> getLabelOrder(IMState state, IIsComplete isComplete, IDebugContext debug)
             throws ResolutionException;
 
     /**
@@ -48,7 +48,7 @@ public interface IMQueryMin {
      * 
      * @throws ResolutionException
      */
-    DataLeq<ITerm> getDataEquiv(IMState state, ICompleteness isComplete, IDebugContext debug)
+    DataLeq<ITerm> getDataEquiv(IMState state, IIsComplete isComplete, IDebugContext debug)
             throws ResolutionException;
 
     String toString(TermFormatter termToString);

@@ -46,11 +46,12 @@ public class ModuleSolver implements IOwnable {
     private Map<ITermVar, ITermVar> existentials = null;
     private final ModuleConstraintStore constraints;
     private final MCompleteness completeness;
+    private final CompletenessCache completenessCache;
     private final PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
     private boolean separateSolver;
     
-    private ICompleteness isComplete;
+    private IIsComplete isComplete;
     
     // time log
     private final Map<Class<? extends IConstraint>, Long> successCount = new HashMap<>();
@@ -82,10 +83,11 @@ public class ModuleSolver implements IOwnable {
         return new ModuleSolver(state, constraint, (s, l, st) -> CompletenessResult.of(true, null), topDebug);
     }
     
-    private ModuleSolver(IMState state, IConstraint constraint, ICompleteness isComplete, PrefixedDebugContext debug) {
+    private ModuleSolver(IMState state, IConstraint constraint, IIsComplete isComplete, PrefixedDebugContext debug) {
         this.state = state;
         this.constraints = new ModuleConstraintStore(state.owner().getId(), Arrays.asList(constraint), debug);
         this.completeness = new MCompleteness(state.owner(), Arrays.asList(constraint));
+        this.completenessCache = new CompletenessCache();
         this.isComplete = isComplete;
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
@@ -156,7 +158,7 @@ public class ModuleSolver implements IOwnable {
     public static MSolverResult solveSeparately(
             IMState state,
             IConstraint constraint,
-            ICompleteness isComplete,
+            IIsComplete isComplete,
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
         ModuleSolver solver = new ModuleSolver(state, constraint, isComplete, debug2);
@@ -176,6 +178,10 @@ public class ModuleSolver implements IOwnable {
     
     public ModuleConstraintStore getStore() {
         return constraints;
+    }
+    
+    public IIsComplete getOwnIsComplete() {
+        return isComplete;
     }
     
     /**
@@ -227,7 +233,7 @@ public class ModuleSolver implements IOwnable {
         }
         
         try {
-            final ICompleteness isComplete = this::isComplete;
+            final IIsComplete isComplete = this::isComplete;
             final Optional<MConstraintResult> maybeResult;
             maybeResult =
                     constraint.solve(state, new MConstraintContext(isComplete, subDebug));
@@ -320,15 +326,50 @@ public class ModuleSolver implements IOwnable {
         if (scopeOwner != getOwner()) {
             result = scopeOwner.getCurrentState().solver().isCompleteFinal(scope, label, state);
         } else {
-            result = isCompleteFinal(scope, label, state);
+            return isCompleteFinal(scope, label, state);
         }
         if (!result.isComplete()) return result;
 
         return isComplete.apply(scopeTerm, label, state);
     }
     
-    private CompletenessResult isCompleteFinal(Scope scope, ITerm label, IMState state) {
-        CompletenessResult r = completeness.isComplete(scope, label, state);
+    /**
+     * @param scope
+     *      the scope of the edge
+     * @param label
+     *      the label of the edge
+     * 
+     * @return
+     *      true if the given edge is complete for this module (no children are checked), false
+     *      otherwise
+     */
+    public boolean isCompleteSelf(Scope scope, ITerm label) {
+        return completeness.isComplete2(scope, label, state.unifier()) && isComplete.apply(scope, label, state).isComplete();
+    }
+    
+    public void computeCompleteness(Set<String> incompleteModules, Scope scope, ITerm label) {
+        if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " got query for " + scope + "-" + label + ".");
+        
+        //We, or one of our parents will be the scope owner
+        
+        //Check if we ourselves are incomplete. If we are, we cannot be sure that all our children have been created, so we will stop there.
+        if (!isCompleteSelf(scope, label)) {
+            incompleteModules.add(getOwner().getId());
+            return;
+        }
+        
+        //TODO Not all our children might have been created yet, but we must ensure that this list is complete
+        //Check our children
+        for (IModule child : getOwner().getChildren()) {
+            //Only delegate to children who get passed the scope
+            if (!child.getScopeGraph().getExtensibleScopes().contains(scope)) continue;
+            
+            child.getCurrentState().solver().computeCompleteness(incompleteModules, scope, label);
+        }
+    }
+    
+    protected CompletenessResult isCompleteFinal(Scope scope, ITerm label, IMState state) {
+        CompletenessResult r = completeness.isComplete(scope, label, state.unifier());
         if (!r.isComplete()) {
             if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (own completeness) false, because of constraints: " + r.details());
             return r;
@@ -399,7 +440,7 @@ public class ModuleSolver implements IOwnable {
     }
 
     public static Optional<MSolverResult> entails(final IMState state, final IConstraint constraint,
-            final ICompleteness isComplete, final IDebugContext debug)
+            final IIsComplete isComplete, final IDebugContext debug)
             throws InterruptedException, Delay {
         debug.debug("Entails for {}", state.owner().getId());
         if(debug.isEnabled(Level.Info)) {

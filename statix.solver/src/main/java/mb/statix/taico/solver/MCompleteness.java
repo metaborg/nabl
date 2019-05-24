@@ -55,8 +55,7 @@ public class MCompleteness implements IOwnable {
         return owner;
     }
     
-    public CompletenessResult isComplete(ITerm scope, ITerm label, IMState state) {
-        final IUnifier unifier = state.unifier();
+    public CompletenessResult isComplete(ITerm scope, ITerm label, IUnifier unifier) {
         final Predicate2<ITerm, ITerm> equal = (t1, t2) -> {
             return t2.equals(label) && unifier.areEqual(t1, scope).orElse(false /* (1) */);
             /* (1) This assumes well-formed constraints and specifications,
@@ -89,6 +88,10 @@ public class MCompleteness implements IOwnable {
             }
             return CompletenessResult.of(complete, owner);
         }
+    }
+    
+    public boolean isComplete2(ITerm scope, ITerm label, IUnifier unifier) {
+        return isComplete(scope, label, unifier).isComplete();
     }
 
     public synchronized MCompleteness add(IConstraint constraint) {

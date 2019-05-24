@@ -7,7 +7,7 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.ICompleteness;
+import mb.statix.taico.solver.IIsComplete;
 import mb.statix.taico.solver.IMState;
 
 /**
@@ -41,7 +41,7 @@ public interface IMQueryFilter {
      * 
      * @throws ResolutionException
      */
-    LabelWF<ITerm> getLabelWF(IMState state, ICompleteness isComplete, IDebugContext debug) throws ResolutionException;
+    LabelWF<ITerm> getLabelWF(IMState state, IIsComplete isComplete, IDebugContext debug) throws ResolutionException;
 
     /**
      * @param state
@@ -56,7 +56,7 @@ public interface IMQueryFilter {
      * 
      * @throws ResolutionException
      */
-    DataWF<ITerm> getDataWF(IMState state, ICompleteness isComplete, IDebugContext debug) throws ResolutionException;
+    DataWF<ITerm> getDataWF(IMState state, IIsComplete isComplete, IDebugContext debug) throws ResolutionException;
 
     /**
      * Converts this query filter into string representation, where terms are formatted with the

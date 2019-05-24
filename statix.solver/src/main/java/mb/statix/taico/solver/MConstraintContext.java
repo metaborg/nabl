@@ -6,10 +6,10 @@ import mb.statix.solver.log.IDebugContext;
 
 public class MConstraintContext {
 
-    private final ICompleteness isComplete;
+    private final IIsComplete isComplete;
     private final IDebugContext debug;
 
-    public MConstraintContext(ICompleteness isComplete, IDebugContext debug) {
+    public MConstraintContext(IIsComplete isComplete, IDebugContext debug) {
         this.isComplete = isComplete;
         this.debug = debug;
     }

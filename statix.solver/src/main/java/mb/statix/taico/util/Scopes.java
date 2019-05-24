@@ -81,6 +81,19 @@ public class Scopes {
     }
     
     /**
+     * Gets the owner of the given scope without checking the access.
+     * 
+     * @param term
+     *      the scope
+     * 
+     * @return
+     *      the owner of the given scope
+     */
+    public static IModule getOwnerUnchecked(ITerm term) {
+        return SolverContext.context().getModuleUnchecked(getScope(term).getResource());
+    }
+    
+    /**
      * Gets the owner of the given term if it is a scope.
      * 
      * @param term
