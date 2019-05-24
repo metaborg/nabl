@@ -10,6 +10,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/normalize
 
 rules
 
@@ -19,8 +20,9 @@ rules
     with if <nabl2-analysis-has-errors> a then
            result := None()
          else
-           (ast', a', ext) := <nabl2-get-custom-analysis> a;
-           spec     := <spec-ast-to-aterm(|a')> (ast', ext);
+           ast'     := <normalize(|a)> ast;
+           ext      := <nabl2-get-custom-analysis> a;
+           spec     := <spec-ast-to-aterm(|a)> (ast', ext);
            filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
            result   := (filename, spec)
          end
@@ -36,27 +38,10 @@ rules
 rules
 
   spec-ast-to-aterm(|a): (ast, ext) -> spec
-    with s_mod := <nabl2-get-ast-property(|a,"scope")> ast
-       ; d* := <nabl2-get-visible-decls(|a)> s_mod
-       ; edge* := <filter(edge-to-aterm(|a));strip-annos> d*
-       ; data* := <filter(data-to-aterm(|a));strip-annos> d*
-       ; rule* := <filter(rule-to-aterm(|a));strip-annos;eliminate-all> d*
+    with edge* := <collect-all(?Labels(<id>));concat;strip-annos> ast
+       ; data* := [Decl()|<collect-all(?RelDecl(<id>, _));strip-annos> ast]
+       ; rule* := <collect-all(?Rule(_, _, _));strip-annos;eliminate-all> ast
        ; spec := (edge*, data*, EOP(), rule*, ext)
-
-  edge-to-aterm(|a): d -> ast
-    where "Edge" := <nabl2-get-occurrence-ns> d
-    with
-      ast := <nabl2-get-property(|a, "ast")> d
-
-  data-to-aterm(|a): d -> ast
-    where "Rel" := <nabl2-get-occurrence-ns> d
-    with
-      ast := <nabl2-get-property(|a, "ast")> d
-
-  rule-to-aterm(|a): d -> ast
-    where "Rule" := <nabl2-get-occurrence-ns> d
-    with
-      ast := <nabl2-get-property(|a, "ast")> d
 
 rules
 

@@ -29,7 +29,7 @@ test adding edge with free source fails [[
    run evaluate-test to FAILS()
 
 test adding edge with free target fails [[
-  resolve {s1 s2} new s2, s1 -P-> s2
+  resolve {s1 s2} new s1, s1 -P-> s2
   signature
     name-resolution
       labels P
@@ -43,14 +43,6 @@ test adding declaration succeeds [[
       Var : string
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
-
-test adding declaration to free scope fails [[
-  resolve {s} s -> Var{"x"@-}
-  signature
-    namespaces
-      Var : string
-]] analysis succeeds
-   run evaluate-test to FAILS()
 
 test adding declaration with free name succeeds [[
   resolve {s x} new s, s -> Var{x@-}

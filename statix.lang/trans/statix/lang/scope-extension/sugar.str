@@ -1,0 +1,50 @@
+module statix/lang/scope-extension/sugar
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/-
+  statix/lang/statics/-
+
+rules // shared
+
+  head-name: F(x, _, _) -> x
+
+  head-projs: F(_, inarg*, _) -> proj*
+    with proj* := <map-with-index(Swap)> inarg*
+
+rules // base facts, constraints directly adding to the scope graph
+
+  base-extends(|ext*): (NewOp(), l) -> <id>
+
+rules // derived facts, constraints indirectly adding to the scope graph
+
+  derived-extensions(|ext, error-iset, note-iset): CDeriveMap(x, x', lift*) -> rule-ext*
+    with (y, i, lbl) := ext
+    where <raw-eq> (y, x')
+    with lift := <index(|i)> lift*;
+         if IdLift() := lift then
+           rule-ext* := [(x, i, lbl)]
+         else
+           rule-ext* := [];
+           <iset-add(|(lift, $[Cannot extend lifted scope in [<pp-partial-Statix-string> lbl]]))> error-iset
+         end
+
+  derived-extensions(|ext, error-iset, note-iset): FDeriveMap(x, x', inlift*, _) -> rule-ext*
+    with (y, i, lbl) := ext
+    where <raw-eq> (y, x')
+    with inlift := <index(|i)> inlift*;
+         if IdLift() := inlift then
+           rule-ext* := [(x, i, lbl)]
+         else
+           rule-ext* := [];
+           <iset-add(|(inlift, $[Cannot extend lifted scope in [<pp-partial-Statix-string> lbl]]))> error-iset
+         end
+  
+  derive-extension(|y, i): COp(x, inarg*) -> arg
+    where <raw-eq> (x, y)
+    with arg := <index(|i)> inarg*
+
+  derive-extends(|ext*): NewOp() -> <id>

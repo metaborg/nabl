@@ -80,9 +80,9 @@ signature
 
   name-resolution
     labels P
-    resolve Class filter pathMatch[P*] min pathLt[$ < P]
-    resolve Instance filter pathMatch[P*] min pathLt[$ < P]
-    resolve Fun filter pathMatch[P*] min pathLt[$ < P]
+    resolve Class filter P* min $ < P
+    resolve Instance filter P* min $ < P
+    resolve Fun filter P* min $ < P
     
   relations
     type  : occurrence * TYPE
@@ -122,13 +122,13 @@ rules
 
 rules
 
-  instanceOf : scope * string * Type -> occurrence * scope
+  instanceOf : scope * string * Type -> (occurrence * scope)
 
   instanceOf(s, x, ty) = (d, s_inst) :- {ty_inst}
     query type
-      filter pathMatch[P*]
+      filter P*
           and { (Instance{x_inst@_}, CLASS(ty_inst, _)) :- x == x_inst, match(ty, ty_inst) }
-      min pathLt[$ < P] and true
+      min $ < P and true
       in s |-> [(_, (d, CLASS(ty_inst, s_inst)))].
 
 rules

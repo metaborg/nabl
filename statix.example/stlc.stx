@@ -27,7 +27,7 @@ signature
 
   name-resolution
     labels P R
-    resolve Var filter pathMatch[P*] min pathLt[$ < P]
+    resolve Var filter P* min $ < P
 
 rules
 

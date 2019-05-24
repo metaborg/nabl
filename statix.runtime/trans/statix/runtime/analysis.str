@@ -43,10 +43,10 @@ rules // single file analysis
     ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ : \
-        ((resource, ast'), (Solution(_, a), error*, warning*, note*)) ->
+        ((resource, ast'), Solution(_, a)) ->
             (resource, Full(ast', file-analysis, error*, warning*, note*))
-          with (a', error*, warning*, note*) := <stx--extract-messages> a
-             ; file-analysis := FileAnalysis(a')
+          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
+             ; file-analysis := FileAnalysis(a)
       \})> (resource-ast'*, solve-result*)
 
   stx-editor-analyze(desugar|spec-name, init-constraint):
@@ -65,11 +65,11 @@ rules // single file elaboration
     ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ ast'': \
-        ((resource, ast'), (Solution(subst, a), error*, warning*, note*)) ->
+        ((resource, ast'), Solution(subst, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
-          with (a', error*, warning*, note*) := <stx--extract-messages> a
+          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
           with ast'' := <substitute(stx--is-var);stx--implode> (subst, V)
-             ; file-analysis := FileAnalysis(a')
+             ; file-analysis := FileAnalysis(a)
       \})> (resource-ast'*, solve-result*)
 
 rules // multi file analysis
@@ -88,7 +88,7 @@ rules // multi file analysis
           // 1. create global scope
           //
           global-scope-var := Var("s")
-        ; (Solution(global-scope-subst, global-scope-state), _, _, _) :=
+        ; Solution(global-scope-subst, global-scope-state) :=
               <stx--solve-constraint(|spec, level)> ([global-scope-var], CNew([global-scope-var]))
         ; global-scope := <lookup> (global-scope-var, global-scope-subst)
           //
@@ -110,17 +110,16 @@ rules // multi file analysis
     ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
     ; file-result* := <zip({ file-state', error*, warning*, note*, file-analysis: \
         ((resource, ast'), file-state) ->
-            (resource, Full(ast', file-analysis, error*, warning*, note*))
-          with (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
-             ; file-analysis := FileAnalysis(file-state')
+            (resource, Full(ast', file-analysis, [], [], []))
+          with file-analysis := FileAnalysis(file-state)
       \})> (resource-ast'*, file-state*)
       //
       // 4. Combine and solve all partial solution
       //
     ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
     ; final-project-state := <stx--solve-multi-project(|initial-project-state, level)> [file-state*, cached-state*]
-    ; (final-project-state', error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
-    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state')
+    ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
+    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
@@ -151,16 +150,17 @@ rules // multi file analysis
 rules
 
   stx-evaluate(|spec-name, constraint): in* -> out
-    where (out, a, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
+    where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
   stx--evaluate(|spec-name, constraint):
-      in* -> (out, a, error*, warning*, note*)
+      in* -> (out, s, error*, warning*, note*)
     with spec  := <stx--find-spec(|spec-name)>
        ; T*    := <map(stx--explode)> in*
        ; V     := Var("out")
        ; C     := C(constraint, [T*, V])
        ; level := <stx--log-level>
-       ; (a@Solution(subst, _), error*, warning*, note*) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
        ; out := <substitute(stx--is-var);stx--implode> (subst, V)
 
 rules
@@ -176,7 +176,7 @@ rules
                <ReadFromFile> spec-file
             })
 
-  // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> (Solution, [Error], [Warning], [Note])
+  // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> Solution
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
 
 rules
