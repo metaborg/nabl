@@ -4,6 +4,7 @@ imports
 
   signatures/statix/test/-
   statix/lang/-
+  statix/lang/statics/-
   statix/lang/scope-extension/-
 
 rules
@@ -22,7 +23,7 @@ rules
   derived-extensions(|ext, error-iset, note-iset): Test(_, body, _) -> []
     with (y, i, lbl) := ext;
          new-var* := <all-fresh> body;
-         all-ext*   := <collect-om(derive-extension(|y, i);?Var(_))> body;
+         all-ext*   := <collect-om(derive-extension(|y, i))> body;
 
          new-ext*   := <filter(\ v -> v where <raw-elem> (v, new-var*) \)> all-ext*;
        //<map(\ v -> <iset-add(|(v, $[Extends locally fresh scope [<pp-partial-Statix-string> v] in [<pp-partial-Statix-string> lbl]]))> note-iset \)> new-ext*;

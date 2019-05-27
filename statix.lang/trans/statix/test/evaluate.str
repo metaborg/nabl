@@ -49,4 +49,6 @@ rules
          spec   := <core-ast-to-spec-aterm> (ast', ext);
          level  := <stx--log-level>;
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
-         result := <stx--solve-constraint(|spec, level)> (bvs, body')
+         s@Solution(_, a') := <stx--solve-constraint(|spec, level)> (bvs, body');
+         (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a';
+         result := (s, error*, warning*, note*)

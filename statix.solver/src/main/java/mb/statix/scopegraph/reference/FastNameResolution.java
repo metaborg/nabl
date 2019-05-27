@@ -103,8 +103,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
                 env.__insert(Paths.resolve(path, relation, datum));
             }
         } else {
-            final java.util.Set<D> data = scopeGraph.getData().get(path.getTarget(), relation);
-            for(D datum : data) {
+            for(D datum : getData(re, path, relation)) {
                 if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
                     env.__insert(Paths.resolve(path, relation, datum));
                 }
@@ -135,13 +134,25 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
         final Set.Transient<IResolutionPath<S, L, D>> env = Set.Transient.of();
-        for(S nextScope : scopeGraph.getEdges(path.getTarget(), l)) {
+        for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
                 env.__insertAll(env(re, p.get(), specifics));
             }
         }
         return env.freeze();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // edges and data                                                        //
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected java.util.Set<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
+        return scopeGraph.getData(path.getTarget(), l);
+    }
+
+    protected java.util.Set<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
+        return scopeGraph.getEdges(path.getTarget(), l);
     }
 
     ///////////////////////////////////////////////////////////////////////////
