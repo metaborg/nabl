@@ -1,9 +1,92 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>statix.integration.test</artifactId>
+
   <parent>
     <groupId>org.metaborg</groupId>
     <artifactId>parent.java</artifactId>
     <version>2.6.0-SNAPSHOT</version>
   </parent>
-  <artifactId>statix.integration.test</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>org.metaborg.spoofax.core</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>statix.integration.lang.singlefile</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>statix.integration.lang.multifile</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <testResources>
+      <testResource>
+        <directory>${project.basedir}/src/test/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>${project.build.directory}/test-languages</directory>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-languages</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>org.metaborg</groupId>
+              <artifactId>statix.integration.lang.singlefile</artifactId>
+              <version>${metaborg-version}</version>
+              <type>spoofax-language</type>
+              <destFileName>singlefile.spoofax-language</destFileName>
+            </artifactItem>
+            <artifactItem>
+              <groupId>org.metaborg</groupId>
+              <artifactId>statix.integration.lang.multifile</artifactId>
+              <version>${metaborg-version}</version>
+              <type>spoofax-language</type>
+              <destFileName>multifile.spoofax-language</destFileName>
+            </artifactItem>
+          </artifactItems>
+          <!-- Always use latest built artifacts -->
+          <overWriteReleases>true</overWriteReleases>
+          <overWriteSnapshots>true</overWriteSnapshots>
+          <outputDirectory>${project.build.directory}/test-languages</outputDirectory>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
