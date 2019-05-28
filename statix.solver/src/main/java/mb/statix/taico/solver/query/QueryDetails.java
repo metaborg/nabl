@@ -6,13 +6,13 @@ import java.util.Map;
 
 import mb.nabl2.terms.ITerm;
 
-public class QueryDetails<S, L, R> implements IQueryDetails<S, L, R> {
+public class QueryDetails<S, L> implements IQueryDetails<S, L> {
     private Map<String, Map<S, L>> edges;
-    private Map<String, Map<S, R>> data;
+    private Map<String, Map<S, L>> data;
     private Collection<String> modules;
     private List<ITerm> queryResult;
     
-    public QueryDetails(Map<String, Map<S, L>> edges, Map<String, Map<S, R>> data, Collection<String> modules, List<ITerm> queryResult) {
+    public QueryDetails(Map<String, Map<S, L>> edges, Map<String, Map<S, L>> data, Collection<String> modules, List<ITerm> queryResult) {
         this.edges = edges;
         this.data = data;
         this.modules = modules;
@@ -25,7 +25,7 @@ public class QueryDetails<S, L, R> implements IQueryDetails<S, L, R> {
     }
 
     @Override
-    public Map<String, Map<S, R>> getRelevantData() {
+    public Map<String, Map<S, L>> getRelevantData() {
         return data;
     }
     

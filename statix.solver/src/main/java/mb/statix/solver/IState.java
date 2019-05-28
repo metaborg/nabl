@@ -1,13 +1,9 @@
 package mb.statix.solver;
 
-import java.util.Map;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;

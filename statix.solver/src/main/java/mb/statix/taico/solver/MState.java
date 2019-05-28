@@ -125,7 +125,7 @@ public class MState implements IMState, Serializable {
     }
 
     @Override
-    public Set<? extends Scope> scopes() {
+    public Set<Scope> scopes() {
         return scopeGraph.getScopes();
     }
 

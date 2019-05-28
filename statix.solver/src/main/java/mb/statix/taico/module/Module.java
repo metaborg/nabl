@@ -31,7 +31,7 @@ public class Module implements IModule {
     private final String name;
     private String parentId;
     private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
-    private Map<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> queries = new HashMap<>();
+    private Map<CResolveQuery, QueryDetails<Scope, ITerm>> queries = new HashMap<>();
     private Map<String, CResolveQuery> dependants = new ConcurrentHashMap<>();
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
@@ -147,7 +147,7 @@ public class Module implements IModule {
     }
     
     @Override
-    public void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details) {
+    public void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm> details) {
         queries.put(query, details);
     }
     

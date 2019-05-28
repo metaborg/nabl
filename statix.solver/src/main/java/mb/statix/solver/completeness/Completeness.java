@@ -54,7 +54,7 @@ public class Completeness implements ICompleteness {
     @Override public void update(ITermVar var, IUnifier unifier) {
     }
 
-    static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
+    public static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
             onConj -> {

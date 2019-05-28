@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableList;
 
@@ -18,6 +18,7 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -33,9 +34,7 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
-import mb.statix.taico.scopegraph.reference.MFastNameResolution;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.CompletenessResult;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
@@ -121,14 +120,14 @@ public class CResolveQuery implements IConstraint, Serializable {
         } else {
             subDebug = new NullDebugContext(params.debug().getDepth() + 1);
         }
-        final Function2<Scope, ITerm, CompletenessResult> isComplete = (s, l) -> {
-            CompletenessResult result = params.isComplete(s, l, state);
-            if(result.isComplete()) {
+        final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
+            if(params.isComplete(s, l, state)) {
                 subDebug.info("{} complete in {}", s, l);
+                return true;
             } else {
                 subDebug.info("{} incomplete in {}", s, l);
+                return false;
             }
-            return result;
         };
 
         ITrackingScopeGraph<Scope, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
@@ -136,7 +135,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         try {
             final MConstraintQueries cq = new MConstraintQueries(state, params);
             // @formatter:off
-            final MFastNameResolution<Scope, ITerm, ITerm> nameResolution = MFastNameResolution.<Scope, ITerm, ITerm>builder()
+            final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
                         .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
                         .withDataWF(cq.getDataWF(filter.getDataWF()))
                         .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
@@ -150,11 +149,11 @@ public class CResolveQuery implements IConstraint, Serializable {
         } catch(IncompleteDataException e) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation(), e.getModule()), trackingGraph.getLockManager());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()), trackingGraph.getLockManager());
         } catch(IncompleteEdgeException e) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label(), e.getModule()), trackingGraph.getLockManager());
+            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()), trackingGraph.getLockManager());
         } catch(ResolutionDelayException e) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query for unknown reason");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
@@ -181,7 +180,7 @@ public class CResolveQuery implements IConstraint, Serializable {
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
         
         //Register this query
-        QueryDetails<Scope, ITerm, ITerm> details = new QueryDetails<Scope, ITerm, ITerm>(
+        QueryDetails<Scope, ITerm> details = new QueryDetails<Scope, ITerm>(
                 trackingGraph.aggregateTrackedEdges(),
                 trackingGraph.aggregateTrackedData(),
                 trackingGraph.getReachedModules(),

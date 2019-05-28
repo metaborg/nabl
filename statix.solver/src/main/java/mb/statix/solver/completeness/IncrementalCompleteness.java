@@ -15,53 +15,77 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
+import mb.statix.taico.util.Scopes;
 
 public class IncrementalCompleteness implements ICompleteness {
 
-    private final Spec spec;
+    protected final Spec spec;
     private final Map<ITerm, Multiset<ITerm>> incomplete;
 
     public IncrementalCompleteness(Spec spec) {
+        this(spec, new HashMap<>());
+    }
+    
+    protected IncrementalCompleteness(Spec spec, Map<ITerm, Multiset<ITerm>> incomplete) {
         this.spec = spec;
-        this.incomplete = new HashMap<>();
+        this.incomplete = incomplete;
+    }
+    
+    protected <T> Multiset<T> createMultiset() {
+        return HashMultiset.create();
     }
 
     @Override public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
         if(!label.isGround()) {
             throw new IllegalArgumentException("Label must be ground");
         }
-        return !(incomplete.containsKey(scope) && incomplete.get(scope).contains(label));
+        //TODO Taico Small optimization
+        Multiset<ITerm> incompleteSet = incomplete.get(scope);
+        return incompleteSet == null || !incompleteSet.contains(label); //no incompleteness or not incomplete in the given label
+        
+//        return !(incomplete.containsKey(scope) && incomplete.get(scope).contains(label));
     }
 
     @Override public void add(IConstraint constraint, IUnifier unifier) {
         Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
-                final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> HashMultiset.create());
-                labels.add(label);
-            });
-
+            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> add(scope, label));
         });
     }
 
     @Override public void remove(IConstraint constraint, IUnifier unifier) {
         Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
-                final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> HashMultiset.create());
-                labels.remove(label);
-            });
+            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> remove(scope, label));
         });
+    }
+    
+    protected void add(ITerm scope, ITerm label) {
+        final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
+        labels.add(label);
+    }
+
+    protected void remove(ITerm scope, ITerm label) {
+        final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
+        labels.remove(label);
     }
 
     @Override public void update(ITermVar var, IUnifier unifier) {
         final Multiset<ITerm> labels = incomplete.remove(var);
         if(labels != null) {
             getVarOrScope(var, unifier).ifPresent(scope -> {
-                incomplete.computeIfAbsent(scope, s -> HashMultiset.create()).addAll(labels);
+                //TODO TAICO: Remove this check
+                //TODO TAICO: This is a temporary check to assert the variable is equal
+                if (scope instanceof Scope) {
+                    if (!Scopes.getOwnerUnchecked(scope).getId().equals(var.getResource())) {
+                        throw new IllegalStateException("Scope owner should be equal");
+                    }
+                }
+                
+                incomplete.computeIfAbsent(scope, s -> createMultiset()).addAll(labels);
             });
         }
     }
 
-    private Optional<ITerm> getVarOrScope(ITerm scope, IUnifier unifier) {
+    protected Optional<ITerm> getVarOrScope(ITerm scope, IUnifier unifier) {
         // @formatter:off
         return M.cases(
             Scope.matcher(),

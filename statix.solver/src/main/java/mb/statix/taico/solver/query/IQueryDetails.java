@@ -12,14 +12,12 @@ import mb.nabl2.terms.ITerm;
  * @param <S>
  *      the type of scopes
  * @param <L>
- *      the type of edge labels
- * @param <R>
- *      the type of data edge labels (relations)
+ *      the type of labels
  */
-public interface IQueryDetails<S, L, R> {
+public interface IQueryDetails<S, L> {
     Map<String, Map<S, L>> getRelevantEdges();
     
-    Map<String, Map<S, R>> getRelevantData();
+    Map<String, Map<S, L>> getRelevantData();
     
     Collection<String> getReachedModules();
     

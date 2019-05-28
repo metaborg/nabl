@@ -5,7 +5,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.query.IMQueryMin;
 
 /**
  * Interface to represent query min.

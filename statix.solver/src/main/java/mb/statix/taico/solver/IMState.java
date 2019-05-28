@@ -9,20 +9,27 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.IState;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.IOwnable;
 
-public interface IMState extends IOwnable, Serializable {
+public interface IMState extends IOwnable, Serializable, IState {
     public IModule owner();
+    
+    @Override
+    public default String resource() {
+        return owner().getId();
+    }
     
     @Override
     public default IModule getOwner() {
         return owner();
     }
     
+    @Override
     public default Spec spec() {
         return SolverContext.context().getSpec();
     }
@@ -55,6 +62,7 @@ public interface IMState extends IOwnable, Serializable {
      */
     public ITermVar freshRigidVar(String base);
 
+    @Override
     public Set<ITermVar> vars();
     
     // --- term properties ---
@@ -67,16 +75,19 @@ public interface IMState extends IOwnable, Serializable {
         return scopeGraph().createScope(base);
     }
 
-    public default Set<? extends Scope> scopes() {
+    @Override
+    public default Set<Scope> scopes() {
         return scopeGraph().getScopes();
     }
 
     // --- solution ---
 
+    @Override
     public DistributedUnifier.Immutable unifier();
     
     public void setUnifier(DistributedUnifier.Immutable unifier);
 
+    @Override
     public IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph();
     
     // --- other ---

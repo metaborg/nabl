@@ -29,6 +29,8 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore.Entry;
+import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -36,22 +38,22 @@ import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.scopegraph.reference.ModuleDelayException;
+import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
+import mb.statix.taico.solver.concurrent.ConcurrentRedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
-import mb.statix.taico.util.Scopes;
+import mb.statix.taico.util.TOverrides;
 
 public class ModuleSolver implements IOwnable {
     private final IMState state;
     private Map<ITermVar, ITermVar> existentials = null;
     private final ModuleConstraintStore constraints;
-    private final MCompleteness completeness;
-    private final CompletenessCache completenessCache;
+    private final RedirectingIncrementalCompleteness completeness;
     private final PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
     private boolean separateSolver;
     
-    private IIsComplete isComplete;
+    private IsComplete isComplete;
     
     // time log
     private final Map<Class<? extends IConstraint>, Long> successCount = new HashMap<>();
@@ -80,15 +82,19 @@ public class ModuleSolver implements IOwnable {
      */
     public static ModuleSolver topLevelSolver(IMState state, IConstraint constraint, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
-        return new ModuleSolver(state, constraint, (s, l, st) -> CompletenessResult.of(true, null), topDebug);
+        return new ModuleSolver(state, constraint, (s, l, st) -> true, topDebug);
     }
     
-    private ModuleSolver(IMState state, IConstraint constraint, IIsComplete isComplete, PrefixedDebugContext debug) {
+    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug) {
+        final String owner = state.owner().getId();
         this.state = state;
-        this.constraints = new ModuleConstraintStore(state.owner().getId(), Arrays.asList(constraint), debug);
-        this.completeness = new MCompleteness(state.owner(), Arrays.asList(constraint));
-        this.completenessCache = new CompletenessCache();
-        this.isComplete = isComplete;
+        this.constraints = new ModuleConstraintStore(owner, Arrays.asList(constraint), debug);
+        this.completeness = TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(owner, state.spec()) : new RedirectingIncrementalCompleteness(owner, state.spec());
+        if (_isComplete == null) {
+            this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier());
+        } else {
+            this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier()) && _isComplete.test(s, l, u);
+        }
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
         
@@ -158,7 +164,7 @@ public class ModuleSolver implements IOwnable {
     public static MSolverResult solveSeparately(
             IMState state,
             IConstraint constraint,
-            IIsComplete isComplete,
+            IsComplete isComplete,
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
         ModuleSolver solver = new ModuleSolver(state, constraint, isComplete, debug2);
@@ -172,16 +178,16 @@ public class ModuleSolver implements IOwnable {
         return state.owner();
     }
     
-    public MCompleteness getCompleteness() {
-        return completeness;
-    }
-    
     public ModuleConstraintStore getStore() {
         return constraints;
     }
     
-    public IIsComplete getOwnIsComplete() {
+    public IsComplete getOwnIsComplete() {
         return isComplete;
+    }
+    
+    public RedirectingIncrementalCompleteness getCompleteness() {
+        return completeness;
     }
     
     /**
@@ -233,7 +239,6 @@ public class ModuleSolver implements IOwnable {
         }
         
         try {
-            final IIsComplete isComplete = this::isComplete;
             final Optional<MConstraintResult> maybeResult;
             maybeResult =
                     constraint.solve(state, new MConstraintContext(isComplete, subDebug));
@@ -253,16 +258,16 @@ public class ModuleSolver implements IOwnable {
                         subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
                     }
                     constraints.addAll(newConstaints);
-                    completeness.addAll(newConstaints);
+                    completeness.addAll(newConstaints, state.unifier());
                 }
                 //Only remove the solved constraint after new constraints are added (for concurrent consistency)
-                completeness.remove(constraint);
+                completeness.remove(constraint, state.unifier());
                 
                 //Activate constraints after updating the completeness
                 constraints.activateFromVars(result.vars(), subDebug);
-                constraints.activateFromEdges(MCompleteness.criticalEdges(constraint, state), subDebug);
+                constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
             } else {
-                completeness.remove(constraint);
+                completeness.remove(constraint, state.unifier());
                 subDebug.error("Failed");
                 failed.add(constraint);
                 if(proxyDebug.isRoot()) {
@@ -294,46 +299,6 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
-     * Checks if the given scope and label are complete. The result is delegated to children where
-     * necessary.
-     * 
-     * @param scope
-     *      the scope
-     * @param label
-     *      the label
-     * @param state
-     *      the state
-     * 
-     * @return
-     *      the completeness result
-     * 
-     * @throws ModuleDelayException
-     *      If the incremental strategy disallows access from the owner of this solver to the owner
-     *      of the scope.
-     * @throws IllegalStateException
-     *      If the owner of the scope cannot be obtained.
-     */
-    public CompletenessResult isComplete(ITerm scopeTerm, ITerm label, IMState state) throws ModuleDelayException {
-        if (state.getOwner() != getOwner()) debug.warn("Received isComplete query on {} for state of {}", getOwner(), state.getOwner());
-
-        Scope scope = Scopes.getScope(scopeTerm);
-        if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " got query for " + scope + "-" + label + ".");
-        
-        IModule scopeOwner = SolverContext.context().getModule(state.getOwner(), scope.getResource());
-        if (scopeOwner == null) throw new IllegalStateException("Encountered scope without owning module: " + scope);
-        
-        CompletenessResult result;
-        if (scopeOwner != getOwner()) {
-            result = scopeOwner.getCurrentState().solver().isCompleteFinal(scope, label, state);
-        } else {
-            return isCompleteFinal(scope, label, state);
-        }
-        if (!result.isComplete()) return result;
-
-        return isComplete.apply(scopeTerm, label, state);
-    }
-    
-    /**
      * @param scope
      *      the scope of the edge
      * @param label
@@ -344,7 +309,7 @@ public class ModuleSolver implements IOwnable {
      *      otherwise
      */
     public boolean isCompleteSelf(Scope scope, ITerm label) {
-        return completeness.isComplete2(scope, label, state.unifier()) && isComplete.apply(scope, label, state).isComplete();
+        return completeness.isComplete(scope, label, state.unifier()) && isComplete.test(scope, label, state);
     }
     
     public void computeCompleteness(Set<String> incompleteModules, Scope scope, ITerm label) {
@@ -366,30 +331,6 @@ public class ModuleSolver implements IOwnable {
             
             child.getCurrentState().solver().computeCompleteness(incompleteModules, scope, label);
         }
-    }
-    
-    protected CompletenessResult isCompleteFinal(Scope scope, ITerm label, IMState state) {
-        CompletenessResult r = completeness.isComplete(scope, label, state.unifier());
-        if (!r.isComplete()) {
-            if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (own completeness) false, because of constraints: " + r.details());
-            return r;
-        }
-        
-        //TODO Unchecked access to children. Should go via context. Requester is in the state
-        for (IModule child : getOwner().getChildren()) {
-            //TODO OPTIMIZATION Only delegate to children who get passed the scope
-            //if (!child.getScopeGraph().getExtensibleScopes().contains(scope)) continue;
-            
-            CompletenessResult childResult = child.getCurrentState().solver().isCompleteFinal(scope, label, state);
-            if (!childResult.isComplete()) {
-                if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (child) false");
-                return childResult;
-            }
-        }
-        
-        r = isComplete.apply(scope, label, state);
-        if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " result: (isComplete predicate) " + r.isComplete());
-        return r;
     }
     
     /**
@@ -440,7 +381,7 @@ public class ModuleSolver implements IOwnable {
     }
 
     public static Optional<MSolverResult> entails(final IMState state, final IConstraint constraint,
-            final IIsComplete isComplete, final IDebugContext debug)
+            final IsComplete isComplete, final IDebugContext debug)
             throws InterruptedException, Delay {
         debug.debug("Entails for {}", state.owner().getId());
         if(debug.isEnabled(Level.Info)) {

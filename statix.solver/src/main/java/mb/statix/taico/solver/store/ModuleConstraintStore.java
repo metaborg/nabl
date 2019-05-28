@@ -26,6 +26,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.util.Scopes;
 import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.Vars;
 
@@ -238,7 +239,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             activated = stuckOnEdge.removeAll(edge);
             stuckOnEdge.values().removeAll(activated);
         }
-        debug.info("activating edge {}, cause {}", edge, edge.cause());
+        debug.info("activating edge {}", edge);
         if (!activated.isEmpty()) {
             debug.info("activating {}", activated);
         } else {
@@ -412,13 +413,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     private IModule getEdgeCause(CriticalEdge edge) {
-        //TODO IMPORTANT Switch to scope owner
-        if (edge.cause() == null) {
-            throw new IllegalStateException("Encountered critical edge without owner: " + edge);
-        }
-        return edge.cause();
-        
-//        return Scopes.getOwnerUnchecked(edge.scope());
+        return Scopes.getOwnerUnchecked(edge.scope());
     }
     
     /**

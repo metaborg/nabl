@@ -230,7 +230,7 @@ public interface IModule extends Serializable {
      * @param details
      *      the details relevant for dependencies related to this query
      */
-    void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details);
+    void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm> details);
     
     
     /**

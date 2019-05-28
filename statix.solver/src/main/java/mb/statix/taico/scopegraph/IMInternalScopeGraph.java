@@ -140,7 +140,7 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      * @return
      *      a set of all the scopes owned by this module directly
      */
-    Set<? extends S> getScopes();
+    Set<S> getScopes();
     
     /**
      * @return
