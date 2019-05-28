@@ -5,6 +5,7 @@ import java.util.Map;
 import com.google.common.collect.Multiset;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
@@ -54,10 +55,23 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         });
     }
     
+    /**
+     * @param term
+     *      the term
+     * 
+     * @return
+     *      the completeness to which the request for the given term should be redirected
+     */
     private RedirectingIncrementalCompleteness getTarget(ITerm term) {
-        if (!(term instanceof Scope)) return this;
+        final String owner;
+        if (term instanceof ITermVar) {
+            owner = ((ITermVar) term).getResource();
+        } else if (term instanceof Scope) {
+            owner = ((Scope) term).getResource();
+        } else {
+            throw new IllegalArgumentException("Expected variable or scope, but was " + term);
+        }
         
-        final String owner = ((Scope) term).getResource();
         if (this.owner.equals(owner)) return this;
         
         return SolverContext.context().getModuleUnchecked(owner).getCurrentState().solver().getCompleteness();
