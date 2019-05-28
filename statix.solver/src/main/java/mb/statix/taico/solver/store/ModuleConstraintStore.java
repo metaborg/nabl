@@ -1,5 +1,6 @@
 package mb.statix.taico.solver.store;
 
+import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.taico.util.TDebug.STORE_DEBUG;
 
 import java.util.Collection;
@@ -21,12 +22,13 @@ import com.google.common.collect.SetMultimap;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.util.Scopes;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.Vars;
 
@@ -212,11 +214,6 @@ public class ModuleConstraintStore implements IConstraintStore {
                 //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
                 if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
                 
-                //Inform the owner of the scope that the edge is done
-                IModule target = getEdgeCause(edge);
-                
-                //TODO
-                
                 store.activateFromEdge(edge, debug, false); //Activate but don't propagate
                 
                 //Only notify if it is currently not doing anything (probably)
@@ -259,11 +256,6 @@ public class ModuleConstraintStore implements IConstraintStore {
         for (ModuleConstraintStore store : observers) {
             //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
             if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
-            
-            //Inform the owner of the scope that the edge is done
-            IModule target = getEdgeCause(edge);
-            
-            //TODO
             
             store.activateFromEdge(edge, debug, false); //Activate but don't propagate (it is impossible to have effect)
             
@@ -400,6 +392,7 @@ public class ModuleConstraintStore implements IConstraintStore {
      */
     private void registerAsObserver(CriticalEdge edge, IDebugContext debug) {
         IModule owner = getEdgeCause(edge);
+        if (owner == null) throw new IllegalStateException("Encountered edge without being able to determine the owner!");
         
         //A module doesn't have to register on itself
         if (this.owner.equals(owner.getId())) return;
@@ -412,8 +405,20 @@ public class ModuleConstraintStore implements IConstraintStore {
         store.registerObserver(edge, this, debug);
     }
     
+    /**
+     * @param edge
+     *      the edge
+     * 
+     * @return
+     *      the cause of the edge
+     */
     private IModule getEdgeCause(CriticalEdge edge) {
-        return Scopes.getOwnerUnchecked(edge.scope());
+        return M.cases(
+                Scope.matcher().map(Scope::getResource),
+                M.var().map(ITermVar::getResource)
+            ).match(edge.scope())
+             .map(s -> SolverContext.context().getModuleUnchecked(s))
+             .orElse(null);
     }
     
     /**
