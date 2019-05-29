@@ -15,12 +15,11 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
-import mb.statix.taico.util.Scopes;
 
 public class IncrementalCompleteness implements ICompleteness {
 
     protected final Spec spec;
-    private final Map<ITerm, Multiset<ITerm>> incomplete;
+    protected final Map<ITerm, Multiset<ITerm>> incomplete;
 
     public IncrementalCompleteness(Spec spec) {
         this(spec, new HashMap<>());
@@ -72,14 +71,6 @@ public class IncrementalCompleteness implements ICompleteness {
         final Multiset<ITerm> labels = incomplete.remove(var);
         if(labels != null) {
             getVarOrScope(var, unifier).ifPresent(scope -> {
-                //TODO TAICO: Remove this check
-                //TODO TAICO: This is a temporary check to assert the variable is equal
-                if (scope instanceof Scope) {
-                    if (!Scopes.getOwnerUnchecked(scope).getId().equals(var.getResource())) {
-                        throw new IllegalStateException("Scope owner should be equal");
-                    }
-                }
-                
                 incomplete.computeIfAbsent(scope, s -> createMultiset()).addAll(labels);
             });
         }
