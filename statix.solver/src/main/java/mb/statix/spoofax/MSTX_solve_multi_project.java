@@ -3,7 +3,6 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -20,7 +19,6 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MSolverResult;
 
 public class MSTX_solve_multi_project extends StatixPrimitive {
@@ -37,7 +35,7 @@ public class MSTX_solve_multi_project extends StatixPrimitive {
         final List<ISolverResult> results = M.listElems(M.blobValue(ISolverResult.class)).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results, but was " + term));
 
-        final MSolverResult aggregate = aggregateResults(initial.state(), results);
+        final MSolverResult aggregate = aggregateResults(initial, results);
         final ITerm resultTerm = B.newBlob(aggregate);
         return Optional.of(resultTerm);
     }
@@ -45,21 +43,21 @@ public class MSTX_solve_multi_project extends StatixPrimitive {
     /**
      * Aggregates results of all the solvers into one SolverResult.
      * 
-     * @param state
-     *      the state to put into the result
+     * @param initialResult
+     *      the initial solver result
      * @param results
      *      the solver results to aggregate
      * 
      * @return
      *      the aggregated results
      */
-    public MSolverResult aggregateResults(IMState state, List<ISolverResult> results) {
+    public MSolverResult aggregateResults(MSolverResult initialResult, List<ISolverResult> results) {
         Set<IConstraint> errors = new LinkedHashSet<>();
         Map<IConstraint, Delay> delays = new LinkedHashMap<>();
         for (ISolverResult result : results) {
             errors.addAll(result.errors());
             delays.putAll(result.delays());
         }
-        return MSolverResult.of(state, errors, delays, new HashMap<>());
+        return MSolverResult.of(initialResult.state(), errors, delays, initialResult.existentials());
     }
 }

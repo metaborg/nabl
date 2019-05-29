@@ -4,8 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.taico.util.TOverrides.CLEAN;
 import static mb.statix.taico.util.TOverrides.CONCURRENT;
-import static mb.statix.taico.util.TOverrides.LOGLEVEL;
-import static mb.statix.taico.util.TOverrides.OVERRIDE_LOGLEVEL;
 import static mb.statix.taico.util.TOverrides.THREADS;
 
 import java.util.Collection;
@@ -55,7 +53,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec, but was " + terms.get(0)));
         reportOverlappingRules(spec);
 
-        final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(1));
+        final IDebugContext debug = getDebugContext(terms.get(1));
 
         final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
                 M.tuple3(M.stringValue(), M.listElems(StatixTerms.varTerm()), StatixTerms.constraint(),

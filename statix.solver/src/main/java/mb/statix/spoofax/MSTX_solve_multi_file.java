@@ -43,16 +43,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        try {
-            return _call(env, term, terms);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-    
-    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms)
-            throws InterpreterException {
         if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         
         final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
@@ -63,7 +53,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .reset();
         final Spec spec = initial.state().spec();
 
-        final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(2));
+        final IDebugContext debug = getDebugContext(terms.get(2));
 
         final IMatcher<Tuple2<MChange, IConstraint>> constraintMatcher = M.tuple2(
                 MChange.matcher(),

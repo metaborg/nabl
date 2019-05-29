@@ -2,6 +2,8 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.taico.util.TOverrides.LOGLEVEL;
+import static mb.statix.taico.util.TOverrides.OVERRIDE_LOGLEVEL;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -71,8 +73,18 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         final ITerm term = strategoTerms.fromStratego(sterm);
         final List<ITerm> terms =
                 sterms.stream().map(strategoTerms::fromStratego).collect(ImmutableList.toImmutableList());
-        final Optional<? extends ITerm> result = call(env, term, terms);
+        final Optional<? extends ITerm> result = _call(env, term, terms);
         return result.map(strategoTerms::toStratego);
+    }
+    
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
+        try {
+            return call(env, term, terms);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
     }
 
     protected abstract Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -99,6 +111,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     }
 
     protected IDebugContext getDebugContext(ITerm levelTerm) throws InterpreterException {
+        if (OVERRIDE_LOGLEVEL) levelTerm = B.newString(LOGLEVEL);
+        
         final String levelString =
                 M.stringValue().match(levelTerm).orElseThrow(() -> new InterpreterException("Expected log level."));
         final @Nullable Level level = levelString.equalsIgnoreCase("None") ? null : Level.parse(levelString);
