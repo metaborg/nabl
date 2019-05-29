@@ -146,7 +146,7 @@ rules // multi file analysis
             (resource, Full(ast', file-analysis, error*, warning*, note*))
           with (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
              ; file-analysis := MModuleAnalysis(file-state')
-             ; <ppdebug(|"Should be equal: ")> (resource, resource')
+             ; <eq> (resource, resource') //TODO Temporary check
       \})> (<filter(not(?("", _)))> fullresource-ast*, <filter(not(?("", _)))> full-state*)
     
     // The updated results (resource, analysis)

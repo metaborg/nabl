@@ -68,6 +68,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         Set<String> removed = new HashSet<>();
         Set<String> changed = new HashSet<>();
         Set<String> added = new HashSet<>();
+        //TODO is the order still necessary?
         Map<String, Integer> order = new HashMap<>();
         Map<String, IConstraint> modules = new HashMap<>();
         int i = 0;
