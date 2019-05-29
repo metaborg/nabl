@@ -55,6 +55,24 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         });
     }
     
+    @Override
+    public void update(ITermVar var, IUnifier unifier) {
+        final Multiset<ITerm> labels = incomplete.remove(var);
+        if(labels != null) {
+            getVarOrScope(var, unifier).ifPresent(scope -> {
+                //TODO TAICO: Remove this check
+                //TODO TAICO: This is a temporary check to assert the variable is equal
+                if (scope instanceof Scope) {
+                    if (!Scopes.getOwnerUnchecked(scope).getId().equals(var.getResource())) {
+                        throw new IllegalStateException("Scope owner should be equal");
+                    }
+                }
+                
+                incomplete.computeIfAbsent(scope, s -> createMultiset()).addAll(labels);
+            });
+        }
+    }
+    
     /**
      * @param term
      *      the term
