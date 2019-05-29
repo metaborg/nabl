@@ -20,13 +20,13 @@ import mb.statix.solver.ISolverResult;
 @Serial.Version(42L)
 public abstract class ASolverResult implements ISolverResult {
 
-    @Value.Parameter public abstract State state();
+    @Override @Value.Parameter public abstract State state();
 
-    @Value.Parameter public abstract List<IConstraint> errors();
+    @Override @Value.Parameter public abstract List<IConstraint> errors();
 
-    @Value.Parameter public abstract Map<IConstraint, Delay> delays();
+    @Override @Value.Parameter public abstract Map<IConstraint, Delay> delays();
 
-    @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
+    @Override @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
     
     @Override
     public Immutable unifier() {

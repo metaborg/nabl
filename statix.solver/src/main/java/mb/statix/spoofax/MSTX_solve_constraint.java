@@ -52,7 +52,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
             throws InterpreterException {
         if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         final Spec spec =
-                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec, but was " + terms.get(0)));
         reportOverlappingRules(spec);
 
         final IDebugContext debug = getDebugContext(OVERRIDE_LOGLEVEL ? B.newString(LOGLEVEL) : terms.get(1));
@@ -110,7 +110,6 @@ public class MSTX_solve_constraint extends StatixPrimitive {
         if(!unsolved.isEmpty()) {
             unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
         }
-
         
         final ITerm substTerm =
                 StatixTerms.explicateMapEntries(resultConfig.existentials().entrySet(), resultConfig.unifier());

@@ -16,6 +16,12 @@ import mb.statix.scopegraph.reference.CriticalEdge;
 public interface ISolverResult {
     /**
      * @return
+     *      the final solver state
+     */
+    IState state();
+    
+    /**
+     * @return
      *      a set of constraints that encountered errors
      */
     List<IConstraint> errors();
@@ -97,5 +103,7 @@ public interface ISolverResult {
      * @return
      *      the unifier of the final result
      */
-    IUnifier.Immutable unifier();
+    default IUnifier unifier() {
+        return state().unifier();
+    }
 }

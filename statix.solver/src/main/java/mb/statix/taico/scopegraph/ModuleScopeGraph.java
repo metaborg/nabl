@@ -12,7 +12,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
-import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;

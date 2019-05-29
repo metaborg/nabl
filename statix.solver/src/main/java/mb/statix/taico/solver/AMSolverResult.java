@@ -9,7 +9,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -18,11 +17,7 @@ import mb.statix.solver.ISolverResult;
 @Serial.Version(42L)
 public abstract class AMSolverResult implements ISolverResult {
 
-    @Value.Parameter public abstract IMState state();
-    
-    @Value.Default public SolverContext context() {
-        return SolverContext.context();
-    }
+    @Override @Value.Parameter public abstract IMState state();
 
     @Override @Value.Parameter public abstract List<IConstraint> errors();
 
@@ -30,11 +25,10 @@ public abstract class AMSolverResult implements ISolverResult {
 
     @Override @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
 
-    @Override
-    public Immutable unifier() {
-        return state().unifier();
+    @Value.Default public SolverContext context() {
+        return SolverContext.context();
     }
-    
+
     /**
      * Resets all errors and delays on this solver result.
      * 
