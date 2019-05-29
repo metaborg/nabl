@@ -1,0 +1,41 @@
+module statix/lang/scope-extension/constraints
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/-
+  statix/lang/statics/-
+
+signature
+  sorts Extensions constructors
+    VarExt   : Term -> Extensions
+    ParamExt : Term * Integer -> Extension
+             : List(Term) -> Extension
+  sorts ExtensionConstraint constructors
+    Provide : Extensions * Extensions -> ExtensionConstraint
+    Require : Extensions * Extensions -> ExtensionConstraint
+
+rules // util
+
+  combine-ext-constraints =
+    unzip
+  ; (concat, concat)
+
+rules // explicate occurrences
+
+  expl-ext-constraint(|a) = Provide(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)))
+  expl-ext-constraint(|a) = Require(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)))
+
+  expl-ext(|a) = is-list
+
+  expl-ext(|a): VarExt(x) -> VarExt(d)
+    with d := <nabl2-get-ast-property(|a,"decl")> x
+    where SCOPE() := <nabl2-get-type(|a)> d
+
+  expl-ext(|a): ParamExt(x, i) -> ParamExt(d, i)
+    with d := <nabl2-get-ast-property(|a,"decl")> x
+       ; tys := <nabl2-get-type(|a);inout-types> d
+       ; ty := <index(|i)> tys
+    where SCOPE() := ty

@@ -227,3 +227,13 @@ test extension of lifted parameter of lifted functional fails [[
     d :
     d() :- {s1 s2} new s1, s1 == s2, fs([s2], []) == _.
 ]] 1 errors at #1
+
+test extension of output of functional constraint fails [[
+  resolve [[f()]] -> Var{"x"@-}
+  signature
+    namespaces Var : string
+  rules
+    c : 
+    c() :- {s} [[f()]] -> Var{"x"@-}.
+    f : -> scope
+]] 2 errors at #1, #2

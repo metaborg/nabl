@@ -11,53 +11,41 @@ imports
 
 rules // collect extension constraints
 
-  head-ext-constraints: F(x, inarg*, outarg) -> c
+  ext-constraints: CDeriveMap(x, x', lift*) -> c
+    with c := < add-indices
+              ; filter(lift-ext-constraints(|x, x'))
+              ; combine-ext-constraints
+              > lift*
+
+  ext-constraints: FDeriveMap(x, x', inlift*, outlift) -> c
+    with c := < add-indices
+              ; filter(lift-ext-constraints(|x, x'))
+              ; combine-ext-constraints
+              > inlift*
+
+  lift-ext-constraints(|x, x'): (i, IdLift()) -> c
+    with provide* := []
+       ; ext := <with-origin(|x)> ParamExt(x, i)
+       ; ext' := <with-origin(|x')> ParamExt(x', i)
+       ; require* := [Require(ext, ext')]
+       ; c := (provide*, require*)
+
+
+  ext-constraints: Rule(F(x, inarg*, outarg), _, _) -> c
     with arg* := <conc> (inarg*, [outarg])
        ; c := < add-indices
               ; filter(param-ext-constraints(|x))
               ; combine-ext-constraints
               > arg*
 
-/*
 
-rules // shared
+  ext-constraints: COp(x, arg*) -> c
+    with c := < add-indices
+              ; filter(arg-ext-constraints(|x))
+              ; combine-ext-constraints
+              > arg*
 
-  head-name: F(x, _, _) -> x
 
-  head-projs: F(_, inarg*, _) -> proj*
-    with proj* := <map-with-index(Swap)> inarg*
-
-rules // base facts, constraints directly adding to the scope graph
-
-  base-extends(|ext*): (NewOp(), l) -> <id>
-
-rules // derived facts, constraints indirectly adding to the scope graph
-
-  derived-extensions(|ext, error-iset, note-iset): CDeriveMap(x, x', lift*) -> rule-ext*
-    with (y, i, lbl) := ext
-    where <raw-eq> (y, x')
-    with lift := <index(|i)> lift*;
-         if IdLift() := lift then
-           rule-ext* := [(x, i, lbl)]
-         else
-           rule-ext* := [];
-           <iset-add(|(lift, $[Cannot extend lifted scope in [<pp-partial-Statix-string> lbl]]))> error-iset
-         end
-
-  derived-extensions(|ext, error-iset, note-iset): FDeriveMap(x, x', inlift*, _) -> rule-ext*
-    with (y, i, lbl) := ext
-    where <raw-eq> (y, x')
-    with inlift := <index(|i)> inlift*;
-         if IdLift() := inlift then
-           rule-ext* := [(x, i, lbl)]
-         else
-           rule-ext* := [];
-           <iset-add(|(inlift, $[Cannot extend lifted scope in [<pp-partial-Statix-string> lbl]]))> error-iset
-         end
-  
-  derive-extension(|y, i): COp(x, inarg*) -> arg
-    where <raw-eq> (x, y)
-    with arg := <index(|i)> inarg*
-
-  derive-extends(|ext*): NewOp() -> <id>
-*/
+  term-ext: COp(x, inarg*) -> (ext, c)
+    with ext := <with-origin(|x)> ParamExt(x, <length;inc> inarg*)
+       ; c := ([], [])

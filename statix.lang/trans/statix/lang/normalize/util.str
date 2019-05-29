@@ -10,6 +10,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/util
 
 rules
 

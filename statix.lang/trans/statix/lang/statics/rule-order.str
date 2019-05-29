@@ -6,7 +6,7 @@ imports
 
   signatures/statix/lang/-
 
-  statix/lang/statics/util
+  statix/lang/util
   statix/lang/pp
 
 rules

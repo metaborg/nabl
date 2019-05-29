@@ -12,6 +12,7 @@ imports
 
   signatures/statix/lang/-
 
+  statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
   statix/lang/scope-extension
@@ -34,8 +35,9 @@ rules // Analysis
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
     with ext-c* := <map(?CustomUnitAnalysis(_, <id>));unzip;(concat,concat)> units
        ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
-       ; ext := [] // FIXME solve scope extension constraints
-       ; e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
+       ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
+       ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
+       ; e* := [unit-e*, ext-e*]
        ; ca  := CustomAnalysis(ext)
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
