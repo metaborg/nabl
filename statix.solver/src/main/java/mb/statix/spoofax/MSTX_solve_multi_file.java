@@ -43,6 +43,16 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
+        try {
+            return _call(env, term, terms);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
+        }
+    }
+    
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms)
+            throws InterpreterException {
         if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         
         final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
