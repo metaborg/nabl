@@ -110,7 +110,7 @@ public abstract class ARule implements IRule {
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final IConstraint newBody = body().apply(isubst);
-        return Optional.of(ImmutableTuple2.of(isubst, newBody));
+        return Optional.of(ImmutableTuple2.of(isubst, newBody.withCause(cause)));
     }
 
     /**

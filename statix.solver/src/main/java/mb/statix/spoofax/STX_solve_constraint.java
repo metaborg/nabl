@@ -3,7 +3,6 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,14 +11,10 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CExists;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
@@ -73,27 +68,11 @@ public class STX_solve_constraint extends StatixPrimitive {
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
-        final State resultState = resultConfig.state();
-        final IUnifier unifier = resultState.unifier();
-
-        final List<ITerm> errorList = Lists.newArrayList();
-        if(resultConfig.hasErrors()) {
-            resultConfig.errors().stream().map(c -> makeMessage("Failed", c, unifier)).forEach(errorList::add);
-        }
-
-        final Collection<IConstraint> unsolved = resultConfig.delays().keySet();
-        if(!unsolved.isEmpty()) {
-            unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
-        }
 
         final ITerm substTerm =
                 StatixTerms.explicateMapEntries(resultConfig.existentials().entrySet(), resultConfig.state().unifier());
-        final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableList.of()));
-        final ITerm solveResultTerm = B.newAppl("Solution", substTerm, solverTerm);
-        final IListTerm errors = B.newList(errorList);
-        final IListTerm warnings = B.EMPTY_LIST;
-        final IListTerm notes = B.EMPTY_LIST;
-        final ITerm resultTerm = B.newTuple(solveResultTerm, errors, warnings, notes);
+        final ITerm solverTerm = B.newBlob(resultConfig);
+        final ITerm resultTerm = B.newAppl("Solution", substTerm, solverTerm);
 
         return resultTerm;
     }

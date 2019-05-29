@@ -9,7 +9,6 @@ import java.util.Optional;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
@@ -36,11 +35,10 @@ public class STX_extract_messages extends StatixPrimitive {
             result.errors().stream().map(c -> makeMessage("Failed", c, unifier)).forEach(errorList::add);
         }
 
-        final ITerm solveResultTerm = B.newBlob(result.withErrors(ImmutableSet.of()));
         final IListTerm errors = B.newList(errorList);
         final IListTerm warnings = B.EMPTY_LIST;
         final IListTerm notes = B.EMPTY_LIST;
-        final ITerm resultTerm = B.newTuple(solveResultTerm, errors, warnings, notes);
+        final ITerm resultTerm = B.newTuple(errors, warnings, notes);
         return Optional.of(resultTerm);
     }
 

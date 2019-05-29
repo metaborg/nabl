@@ -13,7 +13,11 @@ rules // shared
   head-name: F(x, _, _) -> x
 
   head-projs: F(_, inarg*, _) -> proj*
-    with proj* := <map-with-index(Swap);filter(?(Var(_), _))> inarg*
+    with proj* := <map-with-index(Swap)> inarg*
+
+rules // base facts, constraints directly adding to the scope graph
+
+  base-extends(|ext*): (NewOp(), l) -> <id>
 
 rules // derived facts, constraints indirectly adding to the scope graph
 
@@ -42,3 +46,5 @@ rules // derived facts, constraints indirectly adding to the scope graph
   derive-extension(|y, i): COp(x, inarg*) -> arg
     where <raw-eq> (x, y)
     with arg := <index(|i)> inarg*
+
+  derive-extends(|ext*): NewOp() -> <id>

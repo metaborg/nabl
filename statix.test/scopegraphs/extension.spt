@@ -14,7 +14,7 @@ test extend parameter scope in same rule succeeds [[
 ]] analysis succeeds
 
 test extend new scope in same rule succeeds [[
-  module test
+  resolve {s} new s, !foo[""] in s
   signature
     relations foo : string
   rules
@@ -23,13 +23,13 @@ test extend new scope in same rule succeeds [[
 ]] analysis succeeds
 
 test extend local scope in same rule fails [[
-  module test
+  resolve {s} !foo[""] in [[s]]
   signature
     relations foo : string
   rules
     c : 
-    c() :- {s} !foo[""] in s.
-]] analysis fails
+    c() :- {s} !foo[""] in [[s]].
+]] 2 errors at #1, #2
 
 // extension in one step
 
@@ -46,7 +46,7 @@ test extend parameter scope in via other constraint succeeds [[
 ]] analysis succeeds
 
 test extend new scope in via other constraint succeeds [[
-  module test
+  resolve {s} new s, c1(s)
   signature
     relations foo : string
   rules
@@ -58,16 +58,16 @@ test extend new scope in via other constraint succeeds [[
 ]] analysis succeeds
 
 test extend local scope in via other constraint fails [[
-  module test
+  resolve {s} c1([[s]])
   signature
     relations foo : string
   rules
     c0 : 
-    c0() :- {s} c1(s).
+    c0() :- {s} c1([[s]]).
 
     c1 : scope
     c1(s) :- !foo[""] in s.
-]] analysis fails
+]] 2 errors at #1, #2
 
 // extension in two steps
 
@@ -87,7 +87,7 @@ test extend parameter scope in via two other constraints succeeds [[
 ]] analysis succeeds
 
 test extend new scope in via two other constraints succeeds [[
-  module test
+  resolve {s} new s, c1(s)
   signature
     relations foo : string
   rules
@@ -102,47 +102,47 @@ test extend new scope in via two other constraints succeeds [[
 ]] analysis succeeds
 
 test extend local scope in via two other constraints fails [[
-  module test
+  resolve {s} c1([[s]])
   signature
     relations foo : string
   rules
     c0 : 
-    c0() :- {s} c1(s).
+    c0() :- {s} c1([[s]]).
 
     c1 : scope
     c1(s) :- c2(s).
 
     c2 : scope
     c2(s) :- !foo[""] in s.
-]] analysis fails
+]] 2 errors at #1, #2
 
 // extension via sugar construct
 
 test extend local scope via declaration sugar fails [[
-  module test
+  resolve {s} [[s]] -> Var{"x"@-}
   signature
     namespaces Var : string
   rules
     c : 
-    c() :- {s} s -> Var{"x"@-}.
-]] analysis fails
+    c() :- {s} [[s]] -> Var{"x"@-}.
+]] 2 errors at #1, #2
 
 test extend local scope via functional constraint fails [[
-  module test
+  resolve {s} c1([[s]]) == _
   signature
     namespaces Var : string
   rules
     c0 : 
-    c0() :- {s} c1(s) == _.
+    c0() :- {s} c1([[s]]) == _.
 
     c1 : scope -> ()
     c1(s) = () :- s -> Var{"x"@-}.
-]] analysis fails
+]] 2 errors at #1, #2
 
 // extension via mapped predicate constraint
 
 test new extension of non-lifted parameter of lifted predicate succeeds [[
-  module test
+  resolve {s} new s, cs(s, [])
   signature
     relations
       r : int
@@ -156,7 +156,7 @@ test new extension of non-lifted parameter of lifted predicate succeeds [[
 ]] analysis succeeds
 
 test local extension of non-lifted parameter of lifted predicate fails [[
-  module test
+  resolve {s1 s2} new s1, s1 == s2, cs([[s2]], [])
   signature
     relations
       r : int
@@ -166,28 +166,28 @@ test local extension of non-lifted parameter of lifted predicate fails [[
     c(s, i) :- !r[i] in s.
     
     d :
-    d() :- {s1 s2} new s1, s1 == s2, cs(s2, []).
-]] analysis fails
+    d() :- {s1 s2} new s1, s1 == s2, cs([[s2]], []).
+]] 2 errors at #1, #2
 
 test extension of lifted parameter of lifted predicate fails [[
-  module test
+  resolve {s1 s2} new s1, s1 == s2, cs([s2], [])
   signature
     relations
       r : int
   rules
-    cs maps c(list(*), list(*))
+    cs maps c([[list(*)]], list(*))
     c : scope * int
     c(s, i) :- !r[i] in s.
     
     d :
     d() :- {s1 s2} new s1, s1 == s2, cs([s2], []).
-]] analysis fails
+]] 1 errors at #1
 
 
 // extension via mapped functional constraint
 
 test new extension of non-lifted parameter of lifted functional succeeds [[
-  module test
+  resolve {s} new s, fs(s, []) == _
   signature
     relations
       r : int
@@ -201,7 +201,7 @@ test new extension of non-lifted parameter of lifted functional succeeds [[
 ]] analysis succeeds
 
 test local extension of non-lifted parameter of lifted functional fails [[
-  module test
+  resolve {s1 s2} new s1, s1 == s2, fs([[s2]], []) == _
   signature
     relations
       r : int
@@ -211,42 +211,19 @@ test local extension of non-lifted parameter of lifted functional fails [[
     f(s, i) = () :- !r[i] in s.
 
     d :
-    d() :- {s1 s2} new s1, s1 == s2, fs(s2, []) == _.
-]] analysis fails
+    d() :- {s1 s2} new s1, s1 == s2, fs([[s2]], []) == _.
+]] 2 errors at #1, #2
 
 test extension of lifted parameter of lifted functional fails [[
-  module test
+  resolve {s1 s2} new s1, s1 == s2, fs([s2], []) == _
   signature
     relations
       r : int
   rules
-    fs maps f(list(*), list(*)) = list(*)
+    fs maps f([[list(*)]], list(*)) = list(*)
     f : scope * int -> ()
     f(s, i) = () :- !r[i] in s.
     
     d :
     d() :- {s1 s2} new s1, s1 == s2, fs([s2], []) == _.
-]] analysis fails
-
-// extension in test goal
-
-test new extension in test goal succeeds [[
-  resolve {s} new s, c(s, 1)
-  signature
-    relations
-      r : int
-  rules
-    c : scope * int
-    c(s, i) :- !r[i] in s.
-]] analysis succeeds
-
-test local extension in test goal fails [[
-  resolve {s1 s2} new s1, s1 == s2, c(s2, 1)
-  signature
-    relations
-      r : int
-  rules
-    c : scope * int
-    c(s, i) :- !r[i] in s.
-]] analysis fails
-
+]] 1 errors at #1
