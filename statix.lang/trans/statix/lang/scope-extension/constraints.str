@@ -15,7 +15,7 @@ signature
              : List(Term) -> Extension
   sorts ExtensionConstraint constructors
     Provide : Extensions * Extensions -> ExtensionConstraint
-    Require : Extensions * Extensions -> ExtensionConstraint
+    Require : Extensions * Extensions * Origin -> ExtensionConstraint
 
 rules // util
 
@@ -26,7 +26,7 @@ rules // util
 rules // explicate occurrences
 
   expl-ext-constraint(|a) = Provide(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)))
-  expl-ext-constraint(|a) = Require(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)))
+  expl-ext-constraint(|a) = Require(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)), id)
 
   expl-ext(|a) = is-list
 

@@ -9,15 +9,6 @@ imports
   statix/lang/statics/-
   statix/lang/scope-extension/-
 
-signature
-  sorts Extensions constructors
-    VarExt   : Var -> Extensions
-    ParamExt : Term * Integer -> Extension
-             : List(Term) -> Extension
-  sorts ExtensionConstraint constructors
-    Provide : Extensions * Extensions -> ExtensionConstraint
-    Require : Extensions * Extensions -> ExtensionConstraint
-
 rules // collect extension constraints
 
   ext-constraints: Rule(C(x, arg*), _, body) -> c
@@ -28,12 +19,13 @@ rules // collect extension constraints
 
   param-ext-constraints(|x): (i, t) -> c
     where (term-ext, term-c) := <term-ext> t
-    with param-ext := <with-origin(|x)> ParamExt(x, i)
+    with param-ext := ParamExt(x, i)
+       ; origin := <nabl2-get-ast-index> x
        ; provide* := [Provide(term-ext, [()])]
          // Provide(param-ext, term-ext) for exporting permissions
          // But need to figure out how to solve those, since a constriant
          // should only provide permission if *all* its rules to so.
-       ; require* := [Require(term-ext, param-ext)]
+       ; require* := [Require(term-ext, param-ext, origin)]
        ; param-c := (provide*, require*)
        ; c := <combine-ext-constraints> [term-c, param-c]
 
@@ -46,12 +38,16 @@ rules // collect extension constraints
 
   ext-constraints: CTellEdge(t, lbl, _) -> c
     where (term-ext, term-c) := <term-ext> t
-    with edge-c := ([], [Require([lbl], term-ext)])
+    with origin := <nabl2-get-ast-index> t
+       ; require* := [Require([lbl], term-ext, origin)]
+       ; edge-c := ([], require*)
        ; c := <combine-ext-constraints> [term-c, edge-c]
 
   ext-constraints: CTellRel(lbl, _, t) -> c
     where (term-ext, term-c) := <term-ext> t
-    with data-c := ([], [Require([lbl], term-ext)])
+    with origin := <nabl2-get-ast-index> t
+       ; require* := [Require([lbl], term-ext, origin)]
+       ; data-c := ([], require*)
        ; c := <combine-ext-constraints> [term-c, data-c]
 
   // FIXME this also matches rule heads!
@@ -63,10 +59,10 @@ rules // collect extension constraints
 
   arg-ext-constraints(|x): (i, t) -> c
     where (term-ext, term-c) := <term-ext> t
-    with param-ext := <with-origin(|x)> ParamExt(x, i)
-       ; provide* := [Provide(term-ext, param-ext)]
-       ; require* := [Require(param-ext, term-ext)]
-       ; arg-c := (provide*, require*)
+    with param-ext := ParamExt(x, i)
+       ; origin := <nabl2-get-ast-index> t
+       ; require* := [Require(param-ext, term-ext, origin)]
+       ; arg-c := ([], require*)
        ; c := <combine-ext-constraints> [term-c, arg-c]
 
 

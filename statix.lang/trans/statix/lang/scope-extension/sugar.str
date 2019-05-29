@@ -27,7 +27,8 @@ rules // collect extension constraints
     with provide* := []
        ; ext := <with-origin(|x)> ParamExt(x, i)
        ; ext' := <with-origin(|x')> ParamExt(x', i)
-       ; require* := [Require(ext, ext')]
+       ; origin := <nabl2-get-ast-index> x
+       ; require* := [Require(ext, ext', origin)]
        ; c := (provide*, require*)
 
 

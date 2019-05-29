@@ -18,20 +18,25 @@ rules
        ; with(strip-annos;debug(!"p* := "))
        ; p'* := <solve-ext-constraints(combine-provides)> p*
        ; with(strip-annos;debug(!"p'* := "))
-    with r* := <map(\ Require(ext1, ext2) -> (ext2, ext1) \)> require*
+    with r* := <map(\ Require(ext1, ext2, _) -> (ext2, ext1) \)> require*
        ; with(strip-annos;debug(!"r* := "))
        ; r'* := <solve-ext-constraints(combine-requires)> r*
        ; with(strip-annos;debug(!"r'* := "))
     with ext := <filter(ext-entries);concat> r'*
-       ; e* := <filter(ext-error(|p'*))> r'*
+       ; e* := <filter(ext-error(|p'*, r'*))> require*
        ; with(strip-annos;debug(!"e* := "))
     
   ext-entries: (ParamExt(d, i), lbl*) -> ext
     with x := <nabl2-get-occurrence-name> d
        ; ext := <map(!(x, i, <id>))> lbl*
 
-  ext-error(|p*): (ext@VarExt(_), [_|_]) -> (ext, "Cannot extend local scope")
-    where not([_|_] := <raw-lookup> (ext, p*))
+  ext-error(|p*, r*): Require(ext1, ext2, origin) -> (origin, "Cannot extend local scope")
+    where <ext-error(|p*, r*)> ext1
+        + <ext-error(|p*, r*)> ext2
+
+  ext-error(|p*, r*): ext@VarExt(_) -> <id>
+    where [_|_] := <raw-lookup> (ext, r*)
+        ; not([_|_] := <raw-lookup> (ext, p*))
 
   combine-provides =
     foldr(![()], raw-isect)
