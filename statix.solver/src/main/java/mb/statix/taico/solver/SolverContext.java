@@ -73,6 +73,8 @@ public class SolverContext implements Serializable {
      */
     protected Map<String, IConstraint> fixInitConstraints(Map<String, IConstraint> moduleConstraints) {
         for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
+            if (!(entry.getValue() instanceof CTrue)) continue;
+            
             String childName = entry.getKey();
 
             //Scope substitution does not have to occur here, since the global scope remains constant.
