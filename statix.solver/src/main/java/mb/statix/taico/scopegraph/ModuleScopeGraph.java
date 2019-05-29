@@ -1,5 +1,6 @@
 package mb.statix.taico.scopegraph;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +39,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     private final HashSet<String> children = new HashSet<>();
     
     private final HashSet<Scope> scopes = new HashSet<>();
-    private IRelation3.Transient<Scope, ITerm, Scope> edges = HashTrieRelation3.Transient.of();
-    private IRelation3.Transient<Scope, ITerm, ITerm> data = HashTrieRelation3.Transient.of();
+    private transient IRelation3.Transient<Scope, ITerm, Scope> edges = HashTrieRelation3.Transient.of();
+    private transient IRelation3.Transient<Scope, ITerm, ITerm> data = HashTrieRelation3.Transient.of();
 
     protected int scopeCounter;
     protected int id;
@@ -431,5 +432,26 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     @Override
     public String toString() {
         return "SG<@" + owner.getId() + ", " + id + "_" + copyId + ">";
+    }
+    
+    //---------------------------------------------------------------------------------------------
+    //Serialization
+    //---------------------------------------------------------------------------------------------
+    
+    @SuppressWarnings("unchecked")
+    private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        
+        //Transient HashTrieRelation3 is not serializable, but the immutable variant is, so we read the frozen variant and melt it
+        this.edges = ((HashTrieRelation3.Immutable<Scope, ITerm, Scope>) stream.readObject()).melt();
+        this.data = ((HashTrieRelation3.Immutable<Scope, ITerm, ITerm>) stream.readObject()).melt();
+    }
+    
+    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        
+        //Transient HashTrieRelation3 is not serializable, but the immutable variant is, so we need to write the frozen version
+        stream.writeObject(edges.freeze());
+        stream.writeObject(data.freeze());
     }
 }
