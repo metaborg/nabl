@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -213,14 +214,20 @@ public abstract class ASolverCoordinator {
      *      the aggregated results
      */
     protected MSolverResult aggregateResults() {
+        //If there is only one result, we have nothing to aggregate
+        if (getResults().size() == 1) {
+            return getResults().values().stream().findFirst().get();
+        }
+        
         //TODO Instead of aggregating results, we should perhaps return the results of the top module?
         Set<IConstraint> errors = new LinkedHashSet<>();
         Map<IConstraint, Delay> delays = new LinkedHashMap<>();
+        Map<ITermVar, ITermVar> existentials = getResults().get(root.getOwner()).existentials();
         for (Entry<IModule, MSolverResult> result : getResults().entrySet()) {
             errors.addAll(result.getValue().errors());
             delays.putAll(result.getValue().delays());
         }
-        return MSolverResult.of(getRootState(), errors, delays, new HashMap<>());
+        return MSolverResult.of(getRootState(), errors, delays, existentials);
     }
     
     /**
