@@ -88,7 +88,7 @@ public class ModuleSolver implements IOwnable {
     private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug) {
         final String owner = state.owner().getId();
         this.state = state;
-        this.constraints = new ModuleConstraintStore(owner, Arrays.asList(constraint), debug);
+        this.constraints = new ModuleConstraintStore(owner, constraint == null ? Collections.emptyList() : Collections.singletonList(constraint), debug);
         this.completeness = TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(owner, state.spec()) : new RedirectingIncrementalCompleteness(owner, state.spec());
         if (_isComplete == null) {
             this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier());
