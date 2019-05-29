@@ -133,7 +133,7 @@ rules // multi file analysis
       // Solve with the previous result as starting point.
     ; (full-state*, update-state*) := <mstx--solve-multi-file(|incremental-strategy, initial-project-state, level)> mchanged-C-with-project*
     ; <debug> "Files solved"
-    ; fullresource-ast* := <map(\ c -> (m, ast) where ?MAdded(m, ast) + ?MChanged(m, ast, _) \)>
+    ; fullresource-ast* := <map({\ c -> (m, ast) where ?MAdded(m, ast) + ?MChanged(m, ast, _) \})>
                            <filter(?MAdded(_, _) + ?MChanged(_, _, _))> mchanged*
     ; updatedresource*  := <filter(?MUnchanged(<id>, _))> mchanged*
     ; <debug> "Computed resource-ast for full and updated"
