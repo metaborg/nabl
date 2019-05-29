@@ -38,11 +38,7 @@ public class IncrementalCompleteness implements ICompleteness {
         if(!label.isGround()) {
             throw new IllegalArgumentException("Label must be ground");
         }
-        //TODO Taico Small optimization
-        Multiset<ITerm> incompleteSet = incomplete.get(scope);
-        return incompleteSet == null || !incompleteSet.contains(label); //no incompleteness or not incomplete in the given label
-        
-//        return !(incomplete.containsKey(scope) && incomplete.get(scope).contains(label));
+        return !(incomplete.containsKey(scope) && incomplete.get(scope).contains(label));
     }
 
     @Override public void add(IConstraint constraint, IUnifier unifier) {
