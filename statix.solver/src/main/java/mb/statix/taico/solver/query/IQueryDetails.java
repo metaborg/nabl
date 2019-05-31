@@ -1,5 +1,6 @@
 package mb.statix.taico.solver.query;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ import mb.nabl2.terms.ITerm;
  * @param <L>
  *      the type of labels
  */
-public interface IQueryDetails<S, L> {
+public interface IQueryDetails<S, L> extends Serializable {
     Map<String, Map<S, L>> getRelevantEdges();
     
     Map<String, Map<S, L>> getRelevantData();

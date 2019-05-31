@@ -7,6 +7,8 @@ import java.util.Map;
 import mb.nabl2.terms.ITerm;
 
 public class QueryDetails<S, L> implements IQueryDetails<S, L> {
+    private static final long serialVersionUID = 1L;
+    
     private Map<String, Map<S, L>> edges;
     private Map<String, Map<S, L>> data;
     private Collection<String> modules;

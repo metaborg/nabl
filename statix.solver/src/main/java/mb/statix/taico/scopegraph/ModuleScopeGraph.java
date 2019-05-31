@@ -450,8 +450,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
         
+        IRelation3.Immutable<Scope, ITerm, Scope> frozenEdges = edges.freeze();
+        IRelation3.Immutable<Scope, ITerm, ITerm> frozenData = data.freeze();
         //Transient HashTrieRelation3 is not serializable, but the immutable variant is, so we need to write the frozen version
-        stream.writeObject(edges.freeze());
-        stream.writeObject(data.freeze());
+        stream.writeObject(frozenEdges);
+        stream.writeObject(frozenData);
+        
+        this.edges = frozenEdges.melt();
+        this.data = frozenData.melt();
     }
 }

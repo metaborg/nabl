@@ -128,24 +128,21 @@ rules // multi file analysis
     ; mchanged*   := <map(\ (resource, change) -> <mstx--change(desugar|resource)> change \)> change*
     ; mchanged-C* := <map(\ change -> (change, <mstx--build-C(|file-constraint, global-scope)> change) \)> mchanged*
     ; mchanged-C-with-project* := [(mchanged-project, project-C), mchanged-C*]
-    
-    ; <debug> "Pre solving files"
+
       // Solve with the previous result as starting point.
     ; (full-state*, update-state*) := <mstx--solve-multi-file(|incremental-strategy, initial-project-state, level)> mchanged-C-with-project*
-    ; <debug> "Files solved"
+    ; <debug> "Finished solve-multi-file"
     ; fullresource-ast* := <map({\ c -> (m, ast) where ?MAdded(m, ast) + ?MChanged(m, ast, _) \})>
                            <filter(?MAdded(_, _) + ?MChanged(_, _, _))> mchanged*
     ; updatedresource*  := <filter(?MUnchanged(<id>, _))> mchanged*
-    ; <debug> "Computed resource-ast for full and updated"
-    
     ; project-solver-result := <filter(?("", <id>))> [full-state*, update-state*]
-    
+
     // The full results (resource, analysis)
     ; file-result := <zip({ file-state', error*, warning*, note*, file-analysis: \
         ((resource, ast'), (resource', file-state)) ->
             (resource, Full(ast', file-analysis, error*, warning*, note*))
-          with (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
-             ; file-analysis := MModuleAnalysis(file-state')
+          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> file-state
+             ; file-analysis := MModuleAnalysis(file-state)
              ; <eq> (resource, resource') //TODO Temporary check
       \})> (<filter(not(?("", _)))> fullresource-ast*, <filter(not(?("", _)))> full-state*)
     
@@ -153,31 +150,27 @@ rules // multi file analysis
     ; file-result2 := <map({ file-state', error*, warning*, note*, file-analysis: \
         (resource, file-state) ->
             (resource, Update(file-analysis, error*, warning*, note*))
-          with
-          (file-state', error*, warning*, note*) := <stx--extract-messages> file-state
-             ; file-analysis := MModuleAnalysis(file-state')
+          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> file-state
+             ; file-analysis := MModuleAnalysis(file-state)
       \})> <filter(not(?("", _)))> update-state*
       
       //TODO Not really needed for modularized statix
       //
       // 4. Combine and solve all partial solution
       //
-    ; <debug> "Going to call solve-multi-project (aggregate results)"
       //Aggregate results
     ; aggregated-solver-result := <mstx--solve-multi-project(|initial-project-state, level)> <filter(?(_, <id>))> [full-state*, update-state*]
     ; <debug> "Finished solve-multi-project (aggregate results)"
-    ; (aggregated-solver-result', error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> aggregated-solver-result
-    ; <debug> "Extracted errors and messages"
-    ; project-analysis := MProjectAnalysis(global-scope, aggregated-solver-result')
+    ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> aggregated-solver-result
+    ; project-analysis := MProjectAnalysis(global-scope, aggregated-solver-result)
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
         case ?Cached(_):
           project-result := Update(project-analysis, error*, warning*, note*)
       end
-    ; <debug> "Created project"
     ; result* := <concat> [[(project-resource, project-result)], file-result, file-result2]
-    ; <debug> "Concatenated results"
+    ; <debug> "Project analysis completed!"
 
   //Builds the init constraint of a file
   mstx--build-C(|file-constraint, global-scope): change -> C
