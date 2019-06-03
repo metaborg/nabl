@@ -93,6 +93,8 @@ public class ModuleSolver implements IOwnable {
         Iterable<IConstraint> constraintList = constraint == null ? Collections.emptyList() : Collections.singletonList(constraint);
         this.constraints = new ModuleConstraintStore(owner, constraintList, debug);
         this.completeness = TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(owner, state.spec()) : new RedirectingIncrementalCompleteness(owner, state.spec());
+        this.completeness.addAll(constraintList, state.unifier());
+        
         if (_isComplete == null) {
             this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier());
         } else {
@@ -265,6 +267,7 @@ public class ModuleSolver implements IOwnable {
                 completeness.remove(constraint, state.unifier());
                 
                 //Activate constraints after updating the completeness
+                completeness.updateAll(result.vars(), state.unifier());
                 constraints.activateFromVars(result.vars(), subDebug);
                 constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
             } else {
