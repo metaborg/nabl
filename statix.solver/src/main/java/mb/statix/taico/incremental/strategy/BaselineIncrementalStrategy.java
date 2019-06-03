@@ -60,7 +60,9 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
         IModule module = context.getModuleManager().getModule(id);
         if (module != null) return module;
         
-        if (oldContext == null) return null;
+        //We need to redo everything if a file was added, otherwise we are missing dependencies.
+        //TODO Instead, with the correct dependencies, we would not get dependencies on the individual children, but rather on their parent. This would mean that additions do work properly.
+        if (oldContext == null || !context.getChangeSet().added().isEmpty()) return null;
         module = oldContext.getModuleManager().getModule(id);
         
         if (module == null) return null;
