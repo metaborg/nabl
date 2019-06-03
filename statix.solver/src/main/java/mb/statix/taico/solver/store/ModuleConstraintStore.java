@@ -4,14 +4,13 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.taico.util.TDebug.STORE_DEBUG;
 
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
@@ -28,6 +27,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.util.TDebug;
@@ -35,25 +35,23 @@ import mb.statix.taico.util.Vars;
 
 public class ModuleConstraintStore implements IConstraintStore {
     private final String owner;
-    private final Queue<IConstraint> active;
+    private final Deque<IConstraint> active;
     private final Multimap<ITermVar, Delayed> stuckOnVar;
     private final Multimap<CriticalEdge, Delayed> stuckOnEdge;
     private final Multimap<String, Delayed> stuckOnModule;
     
-//    private final SetMultimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
     private final SetMultimap<ITermVar, ModuleConstraintStore> varObservers;
     
     private volatile IObserver<ModuleConstraintStore> observer;
-    private volatile boolean progress;
     
     private final Object variableLock = new Object();
     
     public ModuleConstraintStore(String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.owner = owner;
-        this.active = new LinkedBlockingQueue<>();
-        this.stuckOnVar = HashMultimap.create();
-        this.stuckOnEdge = HashMultimap.create();
-        this.stuckOnModule = HashMultimap.create();
+        this.active = new LinkedList<>();
+        this.stuckOnVar = MultimapBuilder.hashKeys().hashSetValues().build();
+        this.stuckOnEdge = MultimapBuilder.hashKeys().hashSetValues().build();
+        this.stuckOnModule = MultimapBuilder.hashKeys().hashSetValues().build();
         this.varObservers = MultimapBuilder.hashKeys().hashSetValues().build();
         addAll(constraints);
     }
@@ -78,19 +76,25 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     @Override
     public void addAll(Iterable<? extends IConstraint> constraints) {
-        for (IConstraint constraint : constraints) {
-            active.add(constraint);
+        synchronized (active) {
+            for (IConstraint constraint : constraints) {
+                active.push(constraint);
+            }
         }
     }
     
     @Override
     public void add(IConstraint constraint) {
-        active.add(constraint);
+        synchronized (active) {
+            active.push(constraint);
+        }
     }
     
     @Override
     public IConstraint remove() {
-        throw new UnsupportedOperationException();
+        synchronized (active) {
+            return active.poll();
+        }
     }
 
     @Override
@@ -156,6 +160,10 @@ public class ModuleConstraintStore implements IConstraintStore {
             }
         }
         
+        propagateVariableActivation(vars, debug);
+    }
+
+    private void propagateVariableActivation(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         Set<ModuleConstraintStore> stores = new HashSet<>();
         synchronized (varObservers) {
             //Activate all observers
@@ -176,19 +184,28 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
-    public void activateFromVar(ITermVar var, IDebugContext debug) {
+    public boolean activateFromVar(ITermVar var, IDebugContext debug) {
         Collection<Delayed> activated;
         synchronized (stuckOnVar) {
             activated = stuckOnVar.removeAll(var);
             stuckOnVar.values().removeAll(activated);
         }
         
+        boolean tbr = false;
         for (Delayed delayed : activated) {
             if (delayed.activate()) {
                 final IConstraint constraint = delayed.constraint;
                 debug.info("activating {}", constraint);
                 add(constraint);
+                tbr = true;
             }
+        }
+        return tbr;
+    }
+    
+    public void externalActivateFromVar(ITermVar var, IDebugContext debug) {
+        if (activateFromVar(var, debug)) {
+            notifyObserver();
         }
     }
     
@@ -199,21 +216,25 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
-    public void activateFromEdge(CriticalEdge edge, IDebugContext debug) {
+    public boolean activateFromEdge(CriticalEdge edge, IDebugContext debug) {
         final Collection<Delayed> activated;
         synchronized (stuckOnEdge) {
             activated = stuckOnEdge.removeAll(edge);
             stuckOnEdge.values().removeAll(activated);
         }
         
+        boolean tbr = false;
         debug.info("activating edge {}", edge);
         for(Delayed delayed : activated) {
             if(delayed.activate()) {
                 final IConstraint constraint = delayed.constraint;
                 debug.info("activating {}", constraint);
                 add(constraint);
+                tbr = true;
             }
         }
+        
+        return tbr;
     }
     
     /**
@@ -226,10 +247,67 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the debug
      */
     public void externalActivateFromEdge(CriticalEdge edge, IDebugContext debug) {
-        activateFromEdge(edge, debug);
-        notifyObserver();
+        if (activateFromEdge(edge, debug)) {
+            notifyObserver();
+        }
+    }
+    
+    public void activateFromModules(IDebugContext debug) {
+        final Collection<Delayed> activated;
+        synchronized (stuckOnModule) {
+            activated = new HashSet<>(stuckOnModule.values());
+            stuckOnModule.clear();
+        }
+        
+        debug.info("activating all modules");
+        for(Delayed delayed : activated) {
+            if(delayed.activate()) {
+                final IConstraint constraint = delayed.constraint;
+                debug.info("activating {}", constraint);
+                add(constraint);
+            }
+        }
+    }
+    
+    public boolean activateFromModule(String module, IDebugContext debug) {
+        final Collection<Delayed> activated;
+        synchronized (stuckOnModule) {
+            activated = stuckOnModule.removeAll(module);
+            stuckOnModule.values().removeAll(activated);
+        }
+        
+        boolean tbr = false;
+        debug.info("activating module {}", module);
+        for(Delayed delayed : activated) {
+            if(delayed.activate()) {
+                final IConstraint constraint = delayed.constraint;
+                debug.info("activating {}", constraint);
+                add(constraint);
+                tbr = true;
+            }
+        }
+        
+        return tbr;
+    }
+    
+    /**
+     * Method that is to be called when a module is being activated by a different module than
+     * the owner of this store.
+     * 
+     * @param module
+     *      the module to activate
+     * @param debug
+     *      the debug
+     */
+    public void externalActivateFromModule(String module, IDebugContext debug) {
+        if (activateFromModule(module, debug)) {
+            notifyObserver();
+        }
     }
 
+    /**
+     * Notifies the observer if there is any.
+     */
     private void notifyObserver() {
         final IObserver<ModuleConstraintStore> observer = this.observer;
         if (observer != null) {
@@ -241,90 +319,6 @@ public class ModuleConstraintStore implements IConstraintStore {
         synchronized (varObservers) {
             varObservers.put(termVar, store);
         }
-    }
-    
-    public Iterable<IConstraintStore.Entry> active(IDebugContext debug) {
-        throw new UnsupportedOperationException("Request elements one by one");
-    }
-    
-    /**
-     * Gets an element from the {@link #active} queue. If the queue is empty, this method will take
-     * care of activating the stray constraints.
-     * 
-     * @return
-     *      an active constraint, or null if there are no more active constraints
-     */
-    private IConstraint _getActiveConstraint() {
-        IConstraint constraint = active.poll();
-        if (constraint != null) return constraint;
-
-        synchronized (this) {
-            if (progress) {
-                //Do the rollover
-                progress = false;
-                return active.poll();
-            }
-        }
-        
-        //we are stuck (potentially waiting for another solver)
-        return constraint;
-    }
-    
-    /**
-     * Gets an active constraint from this store.
-     * 
-     * @param debug
-     *      the debug context
-     * 
-     * @return
-     *      an entry
-     */
-    public Entry getActiveConstraint(IDebugContext debug) {
-        IConstraint constraint = _getActiveConstraint();
-        if (constraint == null) return null;
-        
-        return new Entry() {
-            @Override
-            public IConstraint constraint() {
-                return constraint;
-            }
-
-            @Override
-            public void delay(Delay d) {
-                final Delayed delayed = new Delayed(constraint);
-                try {
-                    if (!d.vars().isEmpty()) {
-                        debug.info("delayed {} on vars {}", constraint, d.vars());
-                        for (ITermVar var : d.vars()) {
-                            stuckOnVar.put(var, delayed);
-                            resolveStuckOnOtherModule(var, constraint, debug);
-                        }
-                    } else if (!d.criticalEdges().isEmpty()) {
-                        debug.info("delayed {} on critical edges {}", constraint, d.criticalEdges());
-                        for (CriticalEdge edge : d.criticalEdges()) {
-                            stuckOnEdge.put(edge, delayed);
-                            registerAsObserver(edge, debug);
-                        }
-                    } else if (d.module() != null){
-                        debug.warn("delayed {} on module {}", constraint, d.module());
-                        stuckOnModule.put(d.module(), delayed);
-                    } else {
-                        throw new IllegalArgumentException("delayed for no apparent reason");
-                    }
-                } finally {
-                    if (d.getLockManager() != null) {
-                        d.getLockManager().releaseAll();
-                    }
-                }
-            }
-
-            @Override
-            public void remove() {
-                synchronized (ModuleConstraintStore.this) {
-                    progress = true;
-                }
-            }
-        };
     }
     
     private void resolveStuckOnOtherModule(ITermVar termVar, IConstraint constraint, IDebugContext debug) {
@@ -364,15 +358,10 @@ public class ModuleConstraintStore implements IConstraintStore {
         //A module doesn't have to register on itself
         if (this.owner.equals(owner.getId())) return;
         
-        RedirectingIncrementalCompleteness completeness = owner.getCurrentState().solver().getCompleteness();
+        final IMState ownerState = owner.getCurrentState();
+        RedirectingIncrementalCompleteness completeness = ownerState.solver().getCompleteness();
         debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
-        completeness.registerObserver(edge.scope(), edge.label(), owner.getCurrentState().unifier(), e -> externalActivateFromEdge(e, debug));
-
-//        ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
-//        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
-//        
-//        debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
-//        store.registerObserver(edge, this, debug);
+        completeness.registerObserver(edge.scope(), edge.label(), ownerState.unifier(), e -> externalActivateFromEdge(e, debug));
     }
     
     /**
@@ -418,11 +407,11 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     @Override
     public Map<IConstraint, Delay> delayed() {
-        final Multimap<IConstraint, ITermVar> varStuck = HashMultimap.create();
+        final Multimap<IConstraint, ITermVar> varStuck = MultimapBuilder.hashKeys().hashSetValues().build();
         stuckOnVar.entries().stream().filter(e -> !e.getValue().activated)
                 .forEach(e -> varStuck.put(e.getValue().constraint, e.getKey()));
 
-        final Multimap<IConstraint, CriticalEdge> edgeStuck = HashMultimap.create();
+        final Multimap<IConstraint, CriticalEdge> edgeStuck = MultimapBuilder.hashKeys().hashSetValues().build();
         stuckOnEdge.entries().stream().filter(e -> !e.getValue().activated)
                 .forEach(e -> edgeStuck.put(e.getValue().constraint, e.getKey()));
 
@@ -449,13 +438,13 @@ public class ModuleConstraintStore implements IConstraintStore {
 
         public final IConstraint constraint;
 
-        private boolean activated = false;
+        private volatile boolean activated = false;
 
         public Delayed(IConstraint constraint) {
             this.constraint = constraint;
         }
 
-        public boolean activate() {
+        public synchronized boolean activate() {
             if(activated) {
                 return false;
             } else {

@@ -26,7 +26,6 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IConstraintStore.Entry;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
@@ -232,11 +231,10 @@ public class ModuleSolver implements IOwnable {
      * @throws InterruptedException
      */
     public boolean solveStep() throws InterruptedException {
-        Entry entry = constraints.getActiveConstraint(debug);
-        if (entry == null) return false;
+        IConstraint constraint = constraints.remove();
+        if (constraint == null) return false;
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
-        final IConstraint constraint = entry.constraint();
         if(proxyDebug.isEnabled(Level.Info)) {
             proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
         }
@@ -246,7 +244,6 @@ public class ModuleSolver implements IOwnable {
             maybeResult =
                     constraint.solve(state, new MConstraintContext(isComplete, subDebug));
             addTime(constraint, 1, successCount, debug);
-            entry.remove();
             
             reductions += 1;
             if(maybeResult.isPresent()) {
@@ -269,6 +266,8 @@ public class ModuleSolver implements IOwnable {
                 //Activate constraints after updating the completeness
                 completeness.updateAll(result.vars(), state.unifier());
                 constraints.activateFromVars(result.vars(), subDebug);
+                
+                //TODO This activates more edges than it should. Perhaps use the completeness to only activate relevant edges?
                 constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
             } else {
                 completeness.remove(constraint, state.unifier());
@@ -292,7 +291,7 @@ public class ModuleSolver implements IOwnable {
             }
             delayedLog.absorb(proxyDebug.copy());
             proxyDebug.commit();
-            entry.delay(d);
+            constraints.delay(constraint, d);
             delays += 1;
         } catch (Exception ex) {
             System.err.println("FATAL: Exception encountered while solving!");

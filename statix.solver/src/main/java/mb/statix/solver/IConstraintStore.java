@@ -29,15 +29,5 @@ public interface IConstraintStore {
     void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);
 
     void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug);
-
-    interface Entry {
-
-        IConstraint constraint();
-
-        void delay(Delay d);
-
-        void remove();
-
-    }
     
 }
