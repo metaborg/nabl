@@ -33,6 +33,7 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
     
     @Override
     public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+            IChangeSet changeSet,
             Map<String, IConstraint> moduleConstraints) {
         Map<IModule, IConstraint> newModules = new HashMap<>();
         for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {

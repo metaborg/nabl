@@ -415,6 +415,42 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         return lock.writeLock();
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Copy
+    // --------------------------------------------------------------------------------------------
+    
+    private ModuleScopeGraph(ModuleScopeGraph original, IModule newOwner) {
+        this.owner = newOwner;
+        this.canExtend = original.canExtend;
+        this.children.addAll(original.children);
+        this.copyId = original.copyId;
+        
+        IRelation3.Immutable<Scope, ITerm, ITerm> nData = original.data.freeze();
+        original.data = nData.melt();
+        this.data = nData.melt();
+        
+        IRelation3.Immutable<Scope, ITerm, Scope> nEdges = original.edges.freeze();
+        original.edges = nEdges.melt();
+        this.edges = nEdges.melt();
+        
+        this.dataLabels = original.dataLabels;
+        this.edgeLabels = original.edgeLabels;
+        this.noDataLabel = original.noDataLabel;
+        this.id = idCounter.getAndIncrement();
+        this.parentScopes = original.parentScopes;
+        this.scopeCounter = original.scopeCounter;
+        this.scopes.addAll(original.scopes);
+    }
+    
+    @Override
+    public ModuleScopeGraph copy(IModule owner) {
+        return new ModuleScopeGraph(this, owner);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Object methods
+    // --------------------------------------------------------------------------------------------
+    
     @Override
     public int hashCode() {
         return this.id;
@@ -434,9 +470,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         return "SG<@" + owner.getId() + ", " + id + "_" + copyId + ">";
     }
     
-    //---------------------------------------------------------------------------------------------
-    //Serialization
-    //---------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // Serialization
+    // --------------------------------------------------------------------------------------------
     
     @SuppressWarnings("unchecked")
     private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {

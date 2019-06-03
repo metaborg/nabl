@@ -154,7 +154,7 @@ public abstract class ASolverCoordinator {
             throws InterruptedException {
         init(strategy, state, null, debug); // TODO HVA Is this equal to the emptySet it was before?
         
-        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, constraints);
+        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
         
         //Switch the phase to 0 after the initialization
         if (context.getPhase() == -1) context.setPhase(0);

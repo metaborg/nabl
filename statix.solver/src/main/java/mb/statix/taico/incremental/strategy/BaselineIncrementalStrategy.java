@@ -79,6 +79,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     
     @Override
     public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+            IChangeSet changeSet,
             Map<String, IConstraint> moduleConstraints) {
         Map<IModule, IConstraint> newModules = new HashMap<>();
         for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
@@ -90,11 +91,21 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
                 newModules.put(module, entry.getValue());
             } else {
                 //Old module is clean, we can reuse it
-                reuseOldModule(context, oldModule);
+                reuseOldModule(context, changeSet, oldModule);
             }
         }
         
         return newModules;
+    }
+    
+    @Override
+    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
+        IModule newModule = oldModule.copy();
+        for (IModule child : changeSet.removed()) {
+            newModule.getScopeGraph().removeChild(child);
+        }
+        context.addModule(newModule);
+        super.reuseOldModule(context, changeSet, newModule);
     }
     
     @Override

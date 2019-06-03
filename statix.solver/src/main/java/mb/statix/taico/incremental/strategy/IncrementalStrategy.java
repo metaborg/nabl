@@ -108,6 +108,8 @@ public abstract class IncrementalStrategy {
      * 
      * @param context
      *      the context
+     * @param changeSet
+     *      the change set
      * @param moduleConstraints
      *      the map from module name to the initialization constraints
      * 
@@ -116,7 +118,7 @@ public abstract class IncrementalStrategy {
      * 
      * @see SolverContext#getPhase()
      */
-    public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context, Map<String, IConstraint> moduleConstraints);
+    public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context, IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
     
     /**
      * Called at the end of a phase (all modules are either done, failed or stuck).
@@ -160,10 +162,12 @@ public abstract class IncrementalStrategy {
      * 
      * @param context
      *      the context
+     * @param changeSet
+     *      the change set
      * @param oldModule
      *      the old module
      */
-    protected void reuseOldModule(SolverContext context, IModule oldModule) {
+    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
         System.err.println("[IS] Reusing old module " + oldModule);
         MState state = new MState(oldModule);
         //TODO Is the root solver set at this point?

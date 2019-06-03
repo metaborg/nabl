@@ -93,6 +93,10 @@ public class SolverContext implements Serializable {
         return spec;
     }
     
+    public IChangeSet getChangeSet() {
+        return changeSet;
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Modules
     // --------------------------------------------------------------------------------------------
@@ -161,7 +165,12 @@ public class SolverContext implements Serializable {
         if (module != null) return module;
         
         if (oldContext == null) return null;
-        return oldContext.manager.getModule(id);
+        
+        module = oldContext.manager.getModule(id);
+        
+        //If the module was removed, don't return it
+        if (changeSet.removed().contains(module)) return null;
+        return module;
     }
     
     /**

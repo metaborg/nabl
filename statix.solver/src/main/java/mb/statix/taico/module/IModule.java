@@ -260,5 +260,11 @@ public interface IModule extends Serializable {
      */
     void reset(Spec spec);
     
+    /**
+     * @return
+     *      a copy of this module, not added to the context
+     */
+    IModule copy();
+    
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
 }

@@ -183,6 +183,39 @@ public class Module implements IModule {
     }
     
     // --------------------------------------------------------------------------------------------
+    // Copy
+    // --------------------------------------------------------------------------------------------
+
+    /**
+     * Creates a copy of this module and it's scope graph.
+     * 
+     * Please note that the created copy is not added to the context.
+     * 
+     * @return
+     *      the copy
+     */
+    @Override
+    public Module copy() {
+        return new Module(this);
+    }
+
+    /**
+     * Copy constructor. The module is not added to the context.
+     * 
+     * @param original
+     *      the module to copy
+     */
+    private Module(Module original) {
+        this.name = original.name;
+        this.parentId = original.parentId;
+        this.cleanliness = original.cleanliness;
+        this.queries = new HashMap<>(original.queries);
+        this.dependants = new ConcurrentHashMap<>(original.dependants);
+        this.initialization = original.initialization;
+        this.scopeGraph = original.scopeGraph.copy(this);
+    }
+
+    // --------------------------------------------------------------------------------------------
     // Object methods
     // --------------------------------------------------------------------------------------------
     
