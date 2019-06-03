@@ -94,4 +94,9 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         
         return SolverContext.context().getModuleUnchecked(owner).getCurrentState().solver().getCompleteness();
     }
+    
+    @Override
+    public String toString() {
+        return "RedirectingIncrementalCompleteness<" + owner + ">";
+    }
 }
