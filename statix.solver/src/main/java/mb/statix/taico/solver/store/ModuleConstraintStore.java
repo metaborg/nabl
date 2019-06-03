@@ -366,7 +366,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         
         RedirectingIncrementalCompleteness completeness = owner.getCurrentState().solver().getCompleteness();
         debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
-        completeness.registerObserver(edge, owner.getCurrentState().unifier(), e -> externalActivateFromEdge(e, debug));
+        completeness.registerObserver(edge.scope(), edge.label(), owner.getCurrentState().unifier(), e -> externalActivateFromEdge(e, debug));
 
 //        ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
 //        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
