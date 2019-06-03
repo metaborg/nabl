@@ -4,7 +4,6 @@ import static mb.statix.taico.util.TDebug.COMPLETENESS;
 import static mb.statix.taico.util.TDebug.CONSTRAINT_SOLVING;
 import static mb.statix.taico.util.TDebug.DEV_NULL;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +23,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.constraints.CTrue;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -88,16 +86,19 @@ public class ModuleSolver implements IOwnable {
     private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug) {
         final String owner = state.owner().getId();
         this.state = state;
-        this.constraints = new ModuleConstraintStore(owner, constraint == null ? Collections.emptyList() : Collections.singletonList(constraint), debug);
+        this.debug = debug;
+        this.proxyDebug = new LazyDebugContext(debug);
+        
+        //Create the constraint store and the completeness. Also add the initial constraints
+        Iterable<IConstraint> constraintList = constraint == null ? Collections.emptyList() : Collections.singletonList(constraint);
+        this.constraints = new ModuleConstraintStore(owner, constraintList, debug);
         this.completeness = TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(owner, state.spec()) : new RedirectingIncrementalCompleteness(owner, state.spec());
         if (_isComplete == null) {
             this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier());
         } else {
             this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier()) && _isComplete.test(s, l, u);
         }
-        this.debug = debug;
-        this.proxyDebug = new LazyDebugContext(debug);
-        
+
         state.setSolver(this);
     }
     
@@ -136,7 +137,7 @@ public class ModuleSolver implements IOwnable {
     public ModuleSolver noopSolver(IMState state) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         // TODO Should report no constriants to solve, is this still true with CTrue?
-        ModuleSolver solver = new ModuleSolver(state, new CTrue(), this.isComplete, debug);
+        ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug);
         return solver;
     }
     

@@ -387,7 +387,7 @@ public class SolverContext implements Serializable {
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
         newContext.setState(previousRootState.getOwner(), previousRootState);
         setSolverContext(newContext);
-        ModuleSolver.topLevelSolver(previousRootState, new CTrue(), new NullDebugContext()); // TODO HVA Is CTrue equal to emtpySet?
+        ModuleSolver.topLevelSolver(previousRootState, null, new NullDebugContext()); // TODO HVA Is CTrue equal to emtpySet?
         return newContext;
     }
     
