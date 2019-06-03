@@ -15,6 +15,7 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
+import mb.statix.taico.util.TDebug;
 
 public class IncrementalCompleteness implements ICompleteness {
 
@@ -54,11 +55,13 @@ public class IncrementalCompleteness implements ICompleteness {
     }
     
     protected void add(ITerm scope, ITerm label) {
+        if (TDebug.COMPLETENESS) System.out.println("Adding " + scope + "-" + label + " as incomplete in " + this);
         final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
         labels.add(label);
     }
 
     protected void remove(ITerm scope, ITerm label) {
+        if (TDebug.COMPLETENESS) System.out.println("Removing " + scope + "-" + label + " from incomplete in " + this);
         final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
         labels.remove(label);
     }
