@@ -6,7 +6,6 @@ import static mb.statix.taico.util.TOverrides.CLEAN;
 import static mb.statix.taico.util.TOverrides.CONCURRENT;
 import static mb.statix.taico.util.TOverrides.THREADS;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -16,15 +15,10 @@ import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CExists;
@@ -97,26 +91,10 @@ public class MSTX_solve_constraint extends StatixPrimitive {
             throw new RuntimeException(e);
         }
         
-        final IUnifier.Immutable unifier = state.unifier();
-
-        final List<ITerm> errorList = Lists.newArrayList();
-        if(resultConfig.hasErrors()) {
-            resultConfig.errors().stream().map(c -> makeMessage("Failed", c, unifier)).forEach(errorList::add);
-        }
-
-        final Collection<IConstraint> unsolved = resultConfig.delays().keySet();
-        if(!unsolved.isEmpty()) {
-            unsolved.stream().map(c -> makeMessage("Unsolved", c, unifier)).forEach(errorList::add);
-        }
-        
         final ITerm substTerm =
                 StatixTerms.explicateMapEntries(resultConfig.existentials().entrySet(), resultConfig.unifier());
-        final ITerm solverTerm = B.newBlob(resultConfig.withDelays(ImmutableMap.of()).withErrors(ImmutableSet.of()));
-        final ITerm solveResultTerm = B.newAppl("Solution", substTerm, solverTerm);
-        final IListTerm errors = B.newList(errorList);
-        final IListTerm warnings = B.EMPTY_LIST;
-        final IListTerm notes = B.EMPTY_LIST;
-        final ITerm resultTerm = B.newTuple(solveResultTerm, errors, warnings, notes);
+        final ITerm solverTerm = B.newBlob(resultConfig);
+        final ITerm resultTerm = B.newAppl("Solution", substTerm, solverTerm);
 
         return resultTerm;
     }

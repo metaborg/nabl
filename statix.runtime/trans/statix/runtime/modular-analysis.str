@@ -40,10 +40,10 @@ rules // single file analysis
     ; C* := <map(\ (resource, ast') -> (resource, [], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
     ; solve-result* := <mstx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ : \
-        ((resource, ast'), (Solution(_, a), error*, warning*, note*)) ->
+        ((resource, ast'), (Solution(_, a))) ->
             (resource, Full(ast', module-analysis, error*, warning*, note*))
-          with (a', error*, warning*, note*) := <stx--extract-messages> a
-             ; module-analysis := MModuleAnalysis(a')
+          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
+             ; module-analysis := MModuleAnalysis(a)
       \})> (resource-ast'*, solve-result*)
 
   mstx-editor-analyze(desugar|spec-name, init-constraint):
@@ -101,7 +101,7 @@ rules // multi file analysis
           // 1. Create global scope and module
           //
           global-scope-var := Var("s")
-        ; (Solution(global-scope-subst, initial-project-state), _, _, _) :=
+        ; Solution(global-scope-subst, initial-project-state) :=
               <mstx--solve-constraint(|spec, level)> (project-resource, [global-scope-var], CNew([global-scope-var]))
         ; global-scope := <lookup> (global-scope-var, global-scope-subst)
           //
