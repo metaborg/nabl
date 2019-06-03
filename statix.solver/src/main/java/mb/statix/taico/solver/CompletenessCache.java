@@ -109,7 +109,8 @@ public class CompletenessCache {
     }
     
     private void sendNotificationToObservers(CriticalEdge edge) {
-        solver.getStore().activateFromEdge(edge, TDebug.DEV_OUT, true);
+        //TODO IMPORTANT
+//        solver.getStore().activateFromEdge(edge, TDebug.DEV_OUT, true);
         
 //        //If we were to take over the notification process
 //        Set<ModuleConstraintStore> observers;

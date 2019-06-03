@@ -29,6 +29,7 @@ import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.Vars;
 
@@ -39,8 +40,8 @@ public class ModuleConstraintStore implements IConstraintStore {
     private final Multimap<CriticalEdge, Delayed> stuckOnEdge;
     private final Multimap<String, Delayed> stuckOnModule;
     
-    private final SetMultimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
-    private final Multimap<ITermVar, ModuleConstraintStore> varObservers;
+//    private final SetMultimap<CriticalEdge, ModuleConstraintStore> edgeObservers;
+    private final SetMultimap<ITermVar, ModuleConstraintStore> varObservers;
     
     private volatile IObserver<ModuleConstraintStore> observer;
     private volatile boolean progress;
@@ -53,8 +54,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         this.stuckOnVar = HashMultimap.create();
         this.stuckOnEdge = HashMultimap.create();
         this.stuckOnModule = HashMultimap.create();
-        this.edgeObservers = MultimapBuilder.hashKeys().hashSetValues().build();
-        this.varObservers = HashMultimap.create();
+        this.varObservers = MultimapBuilder.hashKeys().hashSetValues().build();
         addAll(constraints);
     }
     
@@ -194,42 +194,12 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     @Override
     public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
-        if (Iterables.isEmpty(edges)) return;
-        
         for (CriticalEdge edge : edges) {
-            activateFromEdge(edge, debug, false);
-        }
-        
-        Set<ModuleConstraintStore> stores = new HashSet<>();
-        
-        //Activate all observers
-        for (CriticalEdge edge : edges) {
-            final Set<ModuleConstraintStore> observers;
-            synchronized (edgeObservers) {
-                observers = edgeObservers.removeAll(edge);
-            }
-            
-            for (ModuleConstraintStore store : observers) {
-                //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
-                if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
-                
-                store.activateFromEdge(edge, debug, false); //Activate but don't propagate
-                
-                //Only notify if it is currently not doing anything (probably)
-                final IObserver<ModuleConstraintStore> observer = store.observer;
-                if (observer != null && store.activeSize() == 1) {
-                    stores.add(store);
-                }
-            }
-        }
-        
-        //Notify each store only once
-        for (ModuleConstraintStore store : stores) {
-            if (store.observer != null) store.observer.notify(this);
+            activateFromEdge(edge, debug);
         }
     }
     
-    public void activateFromEdge(CriticalEdge edge, IDebugContext debug, boolean propagate) {
+    public void activateFromEdge(CriticalEdge edge, IDebugContext debug) {
         final Collection<Delayed> activated;
         synchronized (stuckOnEdge) {
             activated = stuckOnEdge.removeAll(edge);
@@ -244,33 +214,26 @@ public class ModuleConstraintStore implements IConstraintStore {
                 add(constraint);
             }
         }
-        
-        //If no propagation is necessary, we can stop here
-        if (!propagate) return;
-        
-        final Set<ModuleConstraintStore> observers;
-        synchronized (edgeObservers) {
-            observers = edgeObservers.removeAll(edge);
-        }
-        
-        //Activate all observers
-        for (ModuleConstraintStore store : observers) {
-            //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
-            if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of edge " + edge + " to " + store.owner);
-            
-            store.activateFromEdge(edge, debug, false); //Activate but don't propagate (it is impossible to have effect)
-            
-            //Only notify if it is currently not doing anything (probably)
-            final IObserver<ModuleConstraintStore> observer = store.observer;
-            if (observer != null && store.activeSize() == 1) {
-                observer.notify(this);
-            }
-        }
     }
     
-    public void registerObserver(CriticalEdge edge, ModuleConstraintStore store, IDebugContext debug) {
-        synchronized (edgeObservers) {
-            edgeObservers.put(edge, store);
+    /**
+     * Method that is to be called when an edge for a scope owned by a different module is
+     * activated.
+     * 
+     * @param edge
+     *      the edge to activate
+     * @param debug
+     *      the debug
+     */
+    public void externalActivateFromEdge(CriticalEdge edge, IDebugContext debug) {
+        activateFromEdge(edge, debug);
+        notifyObserver();
+    }
+
+    private void notifyObserver() {
+        final IObserver<ModuleConstraintStore> observer = this.observer;
+        if (observer != null) {
+            observer.notify(this);
         }
     }
     
@@ -386,8 +349,8 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     /**
      * Registers this store as an observer of the given critical edge.
-     * The registration is made with the store of the solver of the owner of the scope of the given
-     * critical edge.
+     * The registration is made with the completeness of the solver of the owner of the scope of
+     * the given critical edge.
      * 
      * @param edge
      *      the edge
@@ -400,13 +363,16 @@ public class ModuleConstraintStore implements IConstraintStore {
         
         //A module doesn't have to register on itself
         if (this.owner.equals(owner.getId())) return;
-
-        //TODO Static state access
-        ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
-        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
         
+        RedirectingIncrementalCompleteness completeness = owner.getCurrentState().solver().getCompleteness();
         debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
-        store.registerObserver(edge, this, debug);
+        completeness.registerObserver(edge, owner.getCurrentState().unifier(), e -> externalActivateFromEdge(e, debug));
+
+//        ModuleConstraintStore store = owner.getCurrentState().solver().getStore();
+//        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
+//        
+//        debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
+//        store.registerObserver(edge, this, debug);
     }
     
     /**

@@ -36,6 +36,10 @@ public class IncrementalCompleteness implements ICompleteness {
     }
 
     @Override public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
+        return _isComplete(scope, label);
+    }
+    
+    protected boolean _isComplete(Scope scope, ITerm label) {
         if(!label.isGround()) {
             throw new IllegalArgumentException("Label must be ground");
         }
