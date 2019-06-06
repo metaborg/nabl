@@ -11,7 +11,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
-import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.IMState;
@@ -55,7 +54,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
      * Reanalyzes the modules that are not marked as clean.
      */
     @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
+    public Map<String, ISolverResult> reanalyze(IChangeSet2 changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
         return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
     }
     
@@ -89,7 +88,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     
     @Override
     public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
-            IChangeSet changeSet,
+            IChangeSet2 changeSet,
             Map<String, IConstraint> moduleConstraints) {
         Map<IModule, IConstraint> newModules = new HashMap<>();
         for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
@@ -109,7 +108,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
+    protected void reuseOldModule(SolverContext context, IChangeSet2 changeSet, IModule oldModule) {
         IModule newModule = oldModule.copy();
         for (IModule child : changeSet.removed()) {
             newModule.getScopeGraph().removeChild(child);

@@ -20,7 +20,6 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
@@ -60,7 +59,7 @@ public abstract class IncrementalStrategy {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public abstract Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState,
+    public abstract Map<String, ISolverResult> reanalyze(IChangeSet2 changeSet, IMState baseState,
             Map<String, IConstraint> moduleConstraints, IDebugContext debug)
                     throws InterruptedException;
     
@@ -162,7 +161,7 @@ public abstract class IncrementalStrategy {
      * @see SolverContext#getPhase()
      */
     public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
-            IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
+            IChangeSet2 changeSet, Map<String, IConstraint> moduleConstraints);
     
     /**
      * Called at the end of a phase (all modules are either done, failed or stuck).
@@ -212,7 +211,7 @@ public abstract class IncrementalStrategy {
      * @param oldModule
      *      the old module
      */
-    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
+    protected void reuseOldModule(SolverContext context, IChangeSet2 changeSet, IModule oldModule) {
         System.err.println("[IS] Reusing old module " + oldModule);
         MState state = new MState(oldModule);
         //TODO Is the root solver set at this point?

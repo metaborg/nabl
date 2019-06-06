@@ -16,7 +16,7 @@ import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
-import mb.statix.taico.incremental.changeset.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 
@@ -150,7 +150,7 @@ public abstract class ASolverCoordinator {
     public abstract void solveAsync(IMState state, IConstraint constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
     
     
-    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
+    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet2 changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
         init(strategy, state, null, debug);
         
