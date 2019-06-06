@@ -20,4 +20,9 @@ public class IncrementalManager {
     public void finishInitPhase() {
         initPhase = true;
     }
+
+    @Override
+    public String toString() {
+        return "IncrementalManager [phase=" + phase + ", initPhase=" + initPhase + "]";
+    }
 }

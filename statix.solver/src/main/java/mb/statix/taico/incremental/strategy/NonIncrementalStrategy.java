@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.module.IModule;
@@ -25,7 +26,8 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
     @Override
     public IChangeSet2 createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
             Collection<String> removed) {
-        return new BaselineIncrementalStrategy.BaselineChangeSet(oldContext, added, changed, removed);
+        //TODO Is this correct? Does this not allow some module access already?
+        return new BaselineChangeSet(oldContext, added, changed, removed);
     }
     
     @Override

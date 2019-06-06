@@ -13,6 +13,7 @@ import mb.statix.constraints.CTrue;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
+import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
@@ -36,8 +37,6 @@ public class SolverContext implements Serializable {
     
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
     private Map<IModule, IMState> states = new ConcurrentHashMap<>();
-    private volatile Object phase;
-    private boolean initPhase = true;
     
     private SolverContext(IncrementalStrategy strategy, Spec spec) {
         this.strategy = strategy;
@@ -122,7 +121,7 @@ public class SolverContext implements Serializable {
     public IModule getChildModuleByName(IModule requester, String name) throws ModuleDelayException {
         String id = ModulePaths.build(requester.getId(), name);
         
-        if (initPhase) return getModuleUnchecked(id);
+        if (isInitPhase()) return getModuleUnchecked(id);
         
         return strategy.getChildModule(this, oldContext, requester, id);
     }
@@ -148,7 +147,7 @@ public class SolverContext implements Serializable {
     }
     
     public IModule getModule(IModule requester, String id) throws ModuleDelayException {
-        if (initPhase) return getModuleUnchecked(id);
+        if (isInitPhase()) return getModuleUnchecked(id);
         
         //TODO Also do the first part based on the strategy, to allow the strategy to delay.
         return strategy.getModule(this, oldContext, requester, id);
@@ -175,6 +174,18 @@ public class SolverContext implements Serializable {
         //If the module was removed, don't return it
         if (changeSet.removed().contains(module)) return null;
         return module;
+    }
+    
+    /**
+     * @param id
+     *      the id of the module
+     * 
+     * @return
+     *      the module with the given id from the previous analysis
+     */
+    public IModule getOldModule(String id) {
+        if (oldContext == null) return null;
+        return oldContext.manager.getModule(id);
     }
     
     /**
@@ -248,25 +259,25 @@ public class SolverContext implements Serializable {
     // Phase
     // --------------------------------------------------------------------------------------------
     
-    @SuppressWarnings("unchecked")
     public <T> T getPhase() {
-        return (T) phase;
+        return incrementalManager.getPhase();
     }
     
     public void setPhase(Object phase) {
-        this.phase = phase;
+        incrementalManager.setPhase(phase);
     }
     
     public boolean isInitPhase() {
-        return initPhase;
+        return incrementalManager.isInitPhase();
     }
     
     public void finishInitPhase() {
-        initPhase = true;
+        incrementalManager.finishInitPhase();
     }
     
-    public IncrementalManager getIncrementalManager() {
-        return incrementalManager;
+    @SuppressWarnings("unchecked")
+    public <T extends IncrementalManager> T getIncrementalManager() {
+        return (T) incrementalManager;
     }
     
     // --------------------------------------------------------------------------------------------
@@ -314,8 +325,8 @@ public class SolverContext implements Serializable {
             //If we have a new version for the module already, skip it
             if (manager.hasModule(module.getId())) continue;
             
-            assert module.getFlag() == ModuleCleanliness.CLEAN : "module flag should be clean if it is not in the new context";
-            module.flag(ModuleCleanliness.CLEAN);
+            assert module.getTopCleanliness() == ModuleCleanliness.CLEAN : "module flag should be clean if it is not in the new context";
+            module.setFlag(Flag.CLEAN);
             //TODO The module should get the new context and stuff.
             manager.addModule(module);
         }
@@ -335,7 +346,7 @@ public class SolverContext implements Serializable {
                 + ", manager=" + manager
                 + ", oldContext=" + oldContext
                 + ", changeSet=" + changeSet
-                + ", phase=" + phase
+                + ", incrementalManager=" + incrementalManager
                 + ", solverResults=" + solverResults + "]";
     }
     

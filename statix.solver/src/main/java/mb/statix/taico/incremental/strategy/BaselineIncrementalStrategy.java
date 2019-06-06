@@ -1,22 +1,19 @@
 package mb.statix.taico.incremental.strategy;
 
-import java.util.Arrays;
+import static mb.statix.taico.module.ModuleCleanliness.CLEAN;
+
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.incremental.changeset.AChangeSet2;
+import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
 
@@ -79,7 +76,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
         module = oldContext.getModuleManager().getModule(id);
         
         if (module == null) return null;
-        if (module.getFlag() == ModuleCleanliness.CLEAN) return module;
+        if (module.getTopCleanliness() == CLEAN) return module;
         
         return null;
     }
@@ -99,7 +96,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
             System.err.println("[BI] Encountered entry for " + entry.getKey());
             IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
             
-            if (oldModule == null || oldModule.getFlag() != ModuleCleanliness.CLEAN) {
+            if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
                 IModule module = createFileModule(context, entry.getKey(), entry.getValue());
                 newModules.put(module, entry.getValue());
             } else {
@@ -124,64 +121,5 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     @Override
     public boolean endOfPhase(SolverContext context) {
         return false;
-    }
-    
-    public static class BaselineChangeSet extends AChangeSet2 {
-        private static final long serialVersionUID = 1L;
-        
-        private static final ModuleCleanliness[] SUPPORTED = new ModuleCleanliness[] {
-                ModuleCleanliness.CLEAN,
-                ModuleCleanliness.CLIRTY,
-                ModuleCleanliness.DELETED,
-                ModuleCleanliness.DIRTY,
-                ModuleCleanliness.CHILDOFDIRTY,
-                ModuleCleanliness.NEW
-        };
-        
-        public BaselineChangeSet(SolverContext oldContext,
-                Collection<String> added, Collection<String> changed, Collection<String> removed) {
-            super(oldContext, Arrays.asList(SUPPORTED), added, changed, removed);
-            init(oldContext);
-        }
-        
-        @Override
-        protected void init(SolverContext oldContext) {
-            //Mark all removed modules and descendants as deleted
-            removed().stream().flatMap(m -> m.getDescendants()).forEach(m -> m.flagIfClean(ModuleCleanliness.DELETED));
-
-            //#0 Compute child of dirty
-            for (IModule module : dirty()) {
-                add(ModuleCleanliness.CHILDOFDIRTY, true, module.getDescendants());
-            }
-
-            //#1 Compute clirty = all modules that depend on dirty or clirty modules
-            //I need to flag all modules that depend on the dirty modules (recursively) as possibly dirty (clirty)
-            //Using a DFS algorithm with the reverse dependency edges in the graph
-            Set<IModule> visited = new HashSet<>(dirty());
-            visited.addAll(childOfDirty());
-            visited.addAll(removed());
-            LinkedList<IModule> stack = new LinkedList<>(visited);
-            while (!stack.isEmpty()) {
-                IModule module = stack.pop();
-                for (IModule depModule : module.getDependants().keySet()) {
-                    if (visited.contains(depModule)) continue;
-                    if (depModule.getFlag() != ModuleCleanliness.CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered ");
-                    visited.add(depModule);
-                    add(ModuleCleanliness.CLIRTY, true, depModule);
-                    stack.push(depModule);
-                }
-            }
-            
-            //All modules that depend upon removed modules are also considered clirty.
-            add(ModuleCleanliness.CLIRTY, true, removed().stream().flatMap(m -> m.getDependants().keySet().stream()));
-
-            //#2 Compute clean = all modules that were not marked otherwise
-            add(ModuleCleanliness.CLEAN, false, oldContext.getModules().stream().filter(m -> m.getFlag() == ModuleCleanliness.CLEAN));
-
-            System.err.println("Based on the files, we identified:");
-            System.err.println("  Dirty:  " + dirty().size()  + " modules (" + removed().size() + " removed)");
-            System.err.println("  Clirty: " + clirty().size() + " modules");
-            System.err.println("  Clean:  " + clean().size()  + " modules");
-        }
     }
 }

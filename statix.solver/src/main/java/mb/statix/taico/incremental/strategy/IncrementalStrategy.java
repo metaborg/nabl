@@ -241,7 +241,9 @@ public abstract class IncrementalStrategy {
         return scopes;
     }
     
-    public abstract IncrementalManager createManager();
+    public IncrementalManager createManager() {
+        return new IncrementalManager();
+    }
     
     //---------------------------------------------------------------------------------------------
     
