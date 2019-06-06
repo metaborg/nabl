@@ -18,7 +18,6 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -35,6 +34,7 @@ import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.ITrackingScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
+import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
@@ -131,11 +131,12 @@ public class CResolveQuery implements IConstraint, Serializable {
         };
 
         ITrackingScopeGraph<Scope, ITerm, ITerm> trackingGraph = state.scopeGraph().trackingGraph();
+        final TrackingNameResolution<Scope, ITerm, ITerm> nameResolution;
         final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
         try {
             final MConstraintQueries cq = new MConstraintQueries(state, params);
             // @formatter:off
-            final FastNameResolution<Scope, ITerm, ITerm> nameResolution = FastNameResolution.<Scope, ITerm, ITerm>builder()
+            nameResolution = TrackingNameResolution.<Scope, ITerm, ITerm>builder()
                         .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
                         .withDataWF(cq.getDataWF(filter.getDataWF()))
                         .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
@@ -180,15 +181,12 @@ public class CResolveQuery implements IConstraint, Serializable {
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
         
         //Register this query
-        QueryDetails<Scope, ITerm> details = new QueryDetails<Scope, ITerm>(
-                trackingGraph.aggregateTrackedEdges(),
-                trackingGraph.aggregateTrackedData(),
-                trackingGraph.getReachedModules(),
-                pathTerms);
+        QueryDetails<Scope, ITerm, ITerm> details = new QueryDetails<Scope, ITerm, ITerm>(
+                this, nameResolution, pathTerms, Scope::getResource);
         state.owner().addQuery(this, details);
         
         //Add reverse dependencies
-        for (String module : trackingGraph.getReachedModules()) {
+        for (String module : details.getReachedModules()) {
             SolverContext.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
         }
         

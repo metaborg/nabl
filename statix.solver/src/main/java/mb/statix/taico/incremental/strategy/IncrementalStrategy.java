@@ -1,6 +1,7 @@
 package mb.statix.taico.incremental.strategy;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,14 +20,26 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.incremental.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet2;
+import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
 
+/**
+ * The incremental strategy determines how the incremental solving proceeds.
+ * 
+ * NOTE: The strategy does not have state itself.
+ */
 public abstract class IncrementalStrategy {
+    
+    //---------------------------------------------------------------------------------------------
+    // Analysis
+    //---------------------------------------------------------------------------------------------
+    
     /**
      * Reanalyzes modules in an incremental fashion depending on the strategy.
      * 
@@ -47,7 +60,35 @@ public abstract class IncrementalStrategy {
      * @throws InterruptedException
      *      If solving is interrupted.
      */
-    public abstract Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> moduleConstraints, IDebugContext debug) throws InterruptedException;
+    public abstract Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState,
+            Map<String, IConstraint> moduleConstraints, IDebugContext debug)
+                    throws InterruptedException;
+    
+    //---------------------------------------------------------------------------------------------
+    // Change Sets
+    //---------------------------------------------------------------------------------------------
+    
+    /**
+     * Creates a new changeset for this strategy.
+     * 
+     * @param oldContext
+     *      the previous context
+     * @param added
+     *      the names of the (top level) modules that were added
+     * @param removed
+     *      the names of the (top level) modules that were removed
+     * @param changed
+     *      the names of the (top level) modules that were changed
+     * 
+     * @return
+     *      the change set
+     */
+    public abstract IChangeSet2 createChangeSet(SolverContext oldContext,
+            Collection<String> added, Collection<String> changed, Collection<String> removed);
+    
+    //---------------------------------------------------------------------------------------------
+    // Module access / delay
+    //---------------------------------------------------------------------------------------------
     
     /**
      * Gets a child module of the given requester. The strategy is free to
@@ -68,7 +109,8 @@ public abstract class IncrementalStrategy {
      * @throws ModuleDelayException
      *      If the child access needs to be delayed.
      */
-    public abstract IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) throws ModuleDelayException;
+    public abstract IModule getChildModule(SolverContext context, SolverContext oldContext,
+            IModule requester, String childId) throws ModuleDelayException;
     
     /**
      * Method for handling the request to get a module from the context. The strategy is free to
@@ -89,7 +131,8 @@ public abstract class IncrementalStrategy {
      * @throws ModuleDelayException
      *      If the access is not allowed (yet) in the current context phase.
      */
-    public abstract IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) throws ModuleDelayException;
+    public abstract IModule getModule(SolverContext context, SolverContext oldContext,
+            IModule requester, String id) throws ModuleDelayException;
     
     //---------------------------------------------------------------------------------------------
     // Phasing
@@ -118,7 +161,8 @@ public abstract class IncrementalStrategy {
      * 
      * @see SolverContext#getPhase()
      */
-    public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context, IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
+    public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+            IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
     
     /**
      * Called at the end of a phase (all modules are either done, failed or stuck).
@@ -145,7 +189,8 @@ public abstract class IncrementalStrategy {
      *      the created module
      * @throws Delay 
      */
-    protected IModule createFileModule(SolverContext context, String childName, IConstraint initConstraint) {
+    protected IModule createFileModule(
+            SolverContext context, String childName, IConstraint initConstraint) {
         System.err.println("[IS] Creating file module for " + childName);
 
         List<Scope> scopes = getScopes(initConstraint);
@@ -196,6 +241,8 @@ public abstract class IncrementalStrategy {
         return scopes;
     }
     
+    public abstract IncrementalManager createManager();
+    
     //---------------------------------------------------------------------------------------------
     
     /**
@@ -208,6 +255,8 @@ public abstract class IncrementalStrategy {
                 case "default":
                 case "baseline":
                     return new BaselineIncrementalStrategy();
+                case "query":
+                    return new QueryIncrementalStrategy();
                 //TODO Add more strategies here
                 default:
                     return null;

@@ -26,7 +26,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     private final LabelOrder<L> labelOrder; // default: false
     private final Predicate2<S, L> isEdgeComplete; // default: true
 
-    private final DataWF<D> dataWF; // default: true
+    protected final DataWF<D> dataWF; // default: true
     private final DataLeq<D> dataEquiv; // default: false
     private final Predicate2<S, L> isDataComplete; // default: true
 
@@ -217,13 +217,13 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
 
     public static class Builder<S extends D, L, D> {
 
-        private LabelWF<L> labelWF = LabelWF.ANY();
-        private LabelOrder<L> labelOrder = LabelOrder.NONE();
-        private Predicate2<S, L> isEdgeComplete = (s, l) -> true;
+        protected LabelWF<L> labelWF = LabelWF.ANY();
+        protected LabelOrder<L> labelOrder = LabelOrder.NONE();
+        protected Predicate2<S, L> isEdgeComplete = (s, l) -> true;
 
-        private DataWF<D> dataWF = DataWF.ANY();
-        private DataLeq<D> dataEquiv = DataLeq.NONE();
-        private Predicate2<S, L> isDataComplete = (s, r) -> true;
+        protected DataWF<D> dataWF = DataWF.ANY();
+        protected DataLeq<D> dataEquiv = DataLeq.NONE();
+        protected Predicate2<S, L> isDataComplete = (s, r) -> true;
 
         public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;

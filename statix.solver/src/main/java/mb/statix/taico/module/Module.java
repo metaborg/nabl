@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
+import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.MState;
@@ -30,11 +32,14 @@ public class Module implements IModule {
     
     private final String name;
     private String parentId;
+    private volatile String cachedId;
     private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
-    private Map<CResolveQuery, QueryDetails<Scope, ITerm>> queries = new HashMap<>();
+    private Map<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> queries = new HashMap<>();
     private Map<String, CResolveQuery> dependants = new ConcurrentHashMap<>();
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
+    
+    private PriorityQueue<Flag> flags;
     
     /**
      * Creates a new top level module.
@@ -85,7 +90,9 @@ public class Module implements IModule {
     
     @Override
     public String getId() {
-        return parentId == null ? name : ModulePaths.build(parentId, name);
+        final String id = cachedId;
+        if (id != null) return id;
+        return cachedId = (parentId == null ? name : ModulePaths.build(parentId, name));
     }
     
     @Override
@@ -99,6 +106,7 @@ public class Module implements IModule {
         //TODO Because of how the parent system currently works, we cannot hang modules under different parents.
         //     This is because we currently do not transitively update the module ids in our children as well.
         this.parentId = module == null ? null : module.getId();
+        this.cachedId = null;
     }
 
     @Override
@@ -124,30 +132,13 @@ public class Module implements IModule {
         this.initialization = constraint;
     }
     
-    
-//    @Override
-//    public Module copy(ModuleManager newManager, IModule newParent, List<IOwnableScope> newScopes) {
-//        //TODO This needs to be changed. We might need to record the old version, to do comparisons against.
-//        //TODO We also cannot instantiate our children yet. The mechanism needs to be different, based around
-//        //TODO lookups OR creations.
-//        Module copy = new Module(newManager, id, newParent);
-//        copy.flag(ModuleCleanliness.CLIRTY);
-//        copy.scopeGraph = scopeGraph.recreate(newScopes);
-//        
-//        //TODO We cannot really copy the children properly
-//        for (IModule child : children) {
-//            IModule childCopy = child.copy(newManager, newParent);
-//        }
-//        return copy;
-//    }
-    
     @Override
     public Set<IModule> getDependencies() {
         return queries.values().stream().flatMap(d -> d.getReachedModules().stream()).map(d -> context().getModuleUnchecked(d)).collect(Collectors.toSet());
     }
     
     @Override
-    public void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm> details) {
+    public void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details) {
         queries.put(query, details);
     }
     
@@ -160,6 +151,11 @@ public class Module implements IModule {
     public Map<IModule, CResolveQuery> getDependants() {
         return dependants.entrySet().stream()
                 .collect(Collectors.toMap(e -> context().getModuleUnchecked(e.getKey()), Entry::getValue));
+    }
+    
+    @Override
+    public PriorityQueue<Flag> getFlags() {
+        return flags;
     }
     
     @Override

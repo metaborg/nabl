@@ -1,5 +1,6 @@
 package mb.statix.taico.incremental.strategy;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -7,7 +8,8 @@ import java.util.Map.Entry;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.incremental.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
@@ -18,6 +20,12 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
             throws InterruptedException {
         //TODO Ensure everything is redone, but that we remember old modules.
         return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
+    }
+    
+    @Override
+    public IChangeSet2 createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
+            Collection<String> removed) {
+        return new BaselineIncrementalStrategy.BaselineChangeSet(oldContext, added, changed, removed);
     }
     
     @Override

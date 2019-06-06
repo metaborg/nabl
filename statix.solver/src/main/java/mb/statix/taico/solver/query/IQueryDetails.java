@@ -3,9 +3,12 @@ package mb.statix.taico.solver.query;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+
+import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.LabelWF;
 
 /**
  * Interface for storing query details.
@@ -14,11 +17,15 @@ import mb.nabl2.terms.ITerm;
  *      the type of scopes
  * @param <L>
  *      the type of labels
+ * @param <D>
+ *      the type of data
  */
-public interface IQueryDetails<S, L> extends Serializable {
-    Map<String, Map<S, L>> getRelevantEdges();
+public interface IQueryDetails<S extends D, L, D> extends Serializable {
+    Multimap<S, LabelWF<L>> getRelevantEdges();
     
-    Map<String, Map<S, L>> getRelevantData();
+    Multimap<S, LabelWF<L>> getRelevantData();
+    
+    DataWF<D> getDataWellFormedness();
     
     Collection<String> getReachedModules();
     

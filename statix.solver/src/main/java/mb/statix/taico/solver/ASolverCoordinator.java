@@ -16,7 +16,7 @@ import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
-import mb.statix.taico.incremental.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 
@@ -157,7 +157,7 @@ public abstract class ASolverCoordinator {
         Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
         
         //Switch the phase to 0 after the initialization
-        if (context.getPhase() == -1) context.setPhase(0);
+        if (context.getPhase() == null) context.setPhase(0);
         System.err.println("Scheduling");
         scheduleModules(modules);
         

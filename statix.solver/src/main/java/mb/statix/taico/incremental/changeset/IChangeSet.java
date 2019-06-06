@@ -1,4 +1,4 @@
-package mb.statix.taico.incremental;
+package mb.statix.taico.incremental.changeset;
 
 import java.io.Serializable;
 import java.util.Set;

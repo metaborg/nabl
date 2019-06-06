@@ -1,5 +1,6 @@
 package mb.statix.taico.solver;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +13,8 @@ import mb.statix.constraints.CTrue;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
-import mb.statix.taico.incremental.IChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet;
+import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
@@ -26,6 +28,7 @@ public class SolverContext implements Serializable {
     private final transient IncrementalStrategy strategy;
     private final transient Spec spec;
     private final ModuleManager manager = new ModuleManager();
+    private final IncrementalManager incrementalManager;
     private transient ASolverCoordinator coordinator;
     private transient SolverContext oldContext;
     private transient IChangeSet changeSet;
@@ -33,12 +36,13 @@ public class SolverContext implements Serializable {
     
     private Map<String, MSolverResult> solverResults = new ConcurrentHashMap<>();
     private Map<IModule, IMState> states = new ConcurrentHashMap<>();
-    private volatile int phase = -1;
-    
+    private volatile Object phase;
+    private boolean initPhase = true;
     
     private SolverContext(IncrementalStrategy strategy, Spec spec) {
         this.strategy = strategy;
         this.spec = spec;
+        this.incrementalManager = strategy.createManager();
     }
     
     /**
@@ -118,7 +122,7 @@ public class SolverContext implements Serializable {
     public IModule getChildModuleByName(IModule requester, String name) throws ModuleDelayException {
         String id = ModulePaths.build(requester.getId(), name);
         
-        if (phase == -1) return getModuleUnchecked(id);
+        if (initPhase) return getModuleUnchecked(id);
         
         return strategy.getChildModule(this, oldContext, requester, id);
     }
@@ -144,7 +148,7 @@ public class SolverContext implements Serializable {
     }
     
     public IModule getModule(IModule requester, String id) throws ModuleDelayException {
-        if (phase == -1) return getModuleUnchecked(id);
+        if (initPhase) return getModuleUnchecked(id);
         
         //TODO Also do the first part based on the strategy, to allow the strategy to delay.
         return strategy.getModule(this, oldContext, requester, id);
@@ -244,12 +248,25 @@ public class SolverContext implements Serializable {
     // Phase
     // --------------------------------------------------------------------------------------------
     
-    public int getPhase() {
-        return phase;
+    @SuppressWarnings("unchecked")
+    public <T> T getPhase() {
+        return (T) phase;
     }
     
-    public void setPhase(int phase) {
+    public void setPhase(Object phase) {
         this.phase = phase;
+    }
+    
+    public boolean isInitPhase() {
+        return initPhase;
+    }
+    
+    public void finishInitPhase() {
+        initPhase = true;
+    }
+    
+    public IncrementalManager getIncrementalManager() {
+        return incrementalManager;
     }
     
     // --------------------------------------------------------------------------------------------
@@ -448,4 +465,18 @@ public class SolverContext implements Serializable {
 //    public static SolverContext getThreadSensitiveSolverContext(SolverContext context) {
 //        return currentContextThreadSensitive.get();
 //    }
+    // --------------------------------------------------------------------------------------------
+    // Serialization
+    // --------------------------------------------------------------------------------------------
+    
+    private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+    }
+    
+    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        System.out.println("Serializing context " + this);
+    }
+    
+    
 }

@@ -13,7 +13,7 @@ public class TDebug {
     public static final boolean CONSTRAINT_SOLVING = false;
     
     /** If true, debug info will be printed for the completeness. */
-    public static final boolean COMPLETENESS = false;
+    public static final boolean COMPLETENESS = true;
     
     /** If true, completeness details will be made available (the constraints that cause the completeness to report false */
     public static final boolean COMPLETENESS_DETAILS = false;
