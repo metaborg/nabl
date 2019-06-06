@@ -152,12 +152,11 @@ public abstract class ASolverCoordinator {
     
     public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
-        init(strategy, state, null, debug); // TODO HVA Is this equal to the emptySet it was before?
+        init(strategy, state, null, debug);
         
         Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
         
-        //Switch the phase to 0 after the initialization
-        if (context.getPhase() == null) context.setPhase(0);
+        if (context.isInitPhase()) context.finishInitPhase();
         System.err.println("Scheduling");
         scheduleModules(modules);
         
