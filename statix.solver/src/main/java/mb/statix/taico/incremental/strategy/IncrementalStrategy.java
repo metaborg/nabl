@@ -164,18 +164,6 @@ public abstract class IncrementalStrategy {
             IChangeSet2 changeSet, Map<String, IConstraint> moduleConstraints);
     
     /**
-     * Called at the end of a phase (all modules are either done, failed or stuck).
-     * If this method returns true, a new solver phase is started.
-     * 
-     * @param context
-     *      the context
-     *      
-     * @return
-     *      true if a new solver phase is required, false otherwise
-     */
-    public abstract boolean endOfPhase(SolverContext context);
-    
-    /**
      * Creates a new file module from the given module and initconstraints.
      * Strategies can override this method to change the behavior.
      * 

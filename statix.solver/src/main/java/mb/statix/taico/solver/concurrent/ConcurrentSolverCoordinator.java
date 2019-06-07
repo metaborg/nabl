@@ -3,6 +3,7 @@ package mb.statix.taico.solver.concurrent;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +22,7 @@ import mb.statix.taico.solver.ModuleSolver;
 
 public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());
+    private final Map<ModuleSolver, SolverRunnable> failedSolvers = Collections.synchronizedMap(new HashMap<>());
     private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
     private final ProgressCounter progressCounter = new ProgressCounter(this::onFinished);
     private final ExecutorService executors;
@@ -54,15 +56,30 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     
     @Override
     public void addSolver(ModuleSolver solver) {
-        SolverRunnable runner = new SolverRunnable(solver, executors::submit, progressCounter, this::finishSolver, this::finishSolver, this::getContext);
+        SolverRunnable runner = new SolverRunnable(solver, executors::submit, progressCounter, this::finishSuccessfulSolver, this::finishFailedSolver, this::getContext);
         solver.getStore().setStoreObserver(store -> runner.notifyOfWork());
         solvers.put(solver, runner);
         runner.schedule();
     }
     
-    private void finishSolver(ModuleSolver solver) {
+    private void finishSuccessfulSolver(ModuleSolver solver) {
         synchronized (solvers) {
-            if (solvers.remove(solver) == null) {
+            SolverRunnable runnable = solvers.remove(solver);
+            if (runnable == null) {
+                debug.warn("[" + solver.getOwner() + "] FinishSolver: ignoring, solver already removed");
+                return;
+            }
+            
+            failedSolvers.put(solver, runnable);
+        }
+        
+        results.put(solver.getOwner(), solver.finishSolver());
+    }
+    
+    private void finishFailedSolver(ModuleSolver solver) {
+        synchronized (solvers) {
+            SolverRunnable runnable = solvers.remove(solver);
+            if (runnable == null) {
                 debug.warn("[" + solver.getOwner() + "] FinishSolver: ignoring, solver already removed");
                 return;
             }
@@ -109,14 +126,44 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
      * @return
      *      the solver result
      */
-    private MSolverResult finishSolving(IDebugContext debug) {
+    private void finishSolving(IDebugContext debug) {
         LazyDebugContext lazyDebug = new LazyDebugContext(debug);
+        
+        //We might want to do another round, prevent triggering this code multiple times.
+        progressCounter.switchToPending();
+        try {
+            //Check for another round
+            if (context.getIncrementalManager().finishPhase()) {
+                //We want to do another round
+                if (solvers.isEmpty()) {
+                    lazyDebug.info("[Coordinator] Phase done: all solvers finished successfully!");
+                } else {
+                    lazyDebug.info("[Coordinator] Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
+                }
+                
+                //Recycle failed solvers and runnables
+                synchronized (failedSolvers) {
+                    for (Entry<ModuleSolver, SolverRunnable> entry : failedSolvers.entrySet()) {
+                        solvers.put(entry.getKey(), entry.getValue());
+                        
+                        entry.getValue().restart();
+                    }
+                    
+                    failedSolvers.clear();
+                }
+                
+                return;
+            }
+        } finally {
+            progressCounter.switchToDone();
+        }
+        
         //If we end up here, none of the solvers is still able to make progress
         if (solvers.isEmpty()) {
             //All solvers are done!
             lazyDebug.info("All solvers finished successfully!");
         } else {
-            lazyDebug.warn("Solving failed, {} unusuccessful solvers: ", solvers.size());
+            lazyDebug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
             IDebugContext sub = lazyDebug.subContext();
             for (ModuleSolver solver : getSolvers()) {
                 sub.warn(solver.getOwner().getId());
@@ -140,7 +187,8 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         synchronized (this) {
             notify();
         }
-        return finalResult;
+        
+        return;
     }
 
     @Override

@@ -116,9 +116,4 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
         context.addModule(newModule);
         super.reuseOldModule(context, changeSet, newModule);
     }
-    
-    @Override
-    public boolean endOfPhase(SolverContext context) {
-        return false;
-    }
 }

@@ -266,6 +266,7 @@ public class SolverContext implements Serializable {
     
     public void setPhase(Object phase) {
         incrementalManager.setPhase(phase);
+        
     }
     
     public boolean isInitPhase() {

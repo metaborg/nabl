@@ -52,9 +52,4 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
         
         return newModules;
     }
-    
-    @Override
-    public boolean endOfPhase(SolverContext context) {
-        return false;
-    }
 }

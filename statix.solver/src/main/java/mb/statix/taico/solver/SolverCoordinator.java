@@ -69,6 +69,7 @@ public class SolverCoordinator extends ASolverCoordinator {
         boolean anyProgress = true;
         int complete = 0;
         int failed = 0;
+        Set<ModuleSolver> failedSolvers = new HashSet<>();
         while (anyProgress && !solvers.isEmpty()) {
             anyProgress = false;
             
@@ -104,8 +105,22 @@ public class SolverCoordinator extends ASolverCoordinator {
                     failed++;
                     this.debug.log(Level.Debug, "[{}] failed, removing...", solver.getOwner().getId());
                     solvers.remove(solver);
+                    failedSolvers.add(solver);
                     results.put(solver.getOwner(), solver.finishSolver());
                     continue;
+                }
+            }
+            
+            if (!anyProgress || solvers.isEmpty()) {
+                if (context.getIncrementalManager().finishPhase()) {
+                    this.debug.log(Level.Info, "[Coordinator] Phase complete, starting new phase: {}" + context.getIncrementalManager().getPhase());
+                    
+                    //We need to readd solvers if they failed
+                    solvers.addAll(failedSolvers);
+                    failedSolvers.clear();
+                    
+                    //Signal that we want to do another round
+                    anyProgress = true;
                 }
             }
         }

@@ -33,6 +33,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
+import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
@@ -349,8 +350,8 @@ public class ModuleSolver implements IOwnable {
         }
         
         if (getOwner().getCurrentState().solver() == this) {
-            //Flag the module as clean if we are its main solver.
-            getOwner().flag(ModuleCleanliness.CLEAN);
+            //If we are the main solver of this module, we signal that we are done.
+            SolverContext.context().getIncrementalManager().solverDone(this);
         }
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();

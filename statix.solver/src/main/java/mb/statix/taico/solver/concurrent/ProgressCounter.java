@@ -41,7 +41,7 @@ public class ProgressCounter {
         assert value >= 0 : "Counter value should never become negative!";
         if (value > 0) return;
         
-        //We have hit zero, trigger the stuck runnable
+        //We have hit zero, trigger the finished runnable
         onFinished.run();
     }
     

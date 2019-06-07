@@ -202,7 +202,39 @@ public class SolverRunnable implements Runnable {
     }
     
     /**
-     * Recovers this solver after a mild execution failure has occurred (e.g. interrupted).
+     * Restarts this solver after it has become done once. This can be used for multi phase
+     * solving.
+     * <p>
+     * This solver is only rescheduled if the solver currently reports that it is not done
+     * nor failed.
+     * 
+     * @return
+     *      true if the solver was restarted, false otherwise
+     */
+    public boolean restart() {
+        boolean wasDone;
+        synchronized (this) {
+            if (working || pending) return false;
+            
+            wasDone = done;
+            done = (solver.isDone() || solver.hasFailed());
+            if (wasDone && done) {
+                //If we were done and still are, just return false.
+                return false;
+            }
+            
+            //Otherwise, we will figure out when rescheduled
+            pending = true;
+        }
+        
+        schedule();
+        return true;
+    }
+    
+    /**
+     * Recovers this runnable after a failure has occurred. This can be helpful e.g. when a mild
+     * execution failure has occurred (e.g. interrupted).
+     * <p>
      * This runnable is rescheduled if the solver it belongs to has not reached a finishing state
      * (done or failed).
      */

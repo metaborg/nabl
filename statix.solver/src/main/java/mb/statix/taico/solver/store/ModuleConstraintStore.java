@@ -45,6 +45,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     private volatile IObserver<ModuleConstraintStore> observer;
     
     private final Object variableLock = new Object();
+    private volatile boolean externalMode = false;
     
     public ModuleConstraintStore(String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.owner = owner;
@@ -54,6 +55,23 @@ public class ModuleConstraintStore implements IConstraintStore {
         this.stuckOnModule = MultimapBuilder.hashKeys().hashSetValues().build();
         this.varObservers = MultimapBuilder.hashKeys().hashSetValues().build();
         addAll(constraints);
+    }
+    
+    /**
+     * Enables external mode. External mode allows constraints to be added to this store
+     * externally. Until external mode is disabled, {@link #isDone()} reports false.
+     */
+    public void enableExternalMode() {
+        externalMode = true;
+    }
+    
+    /**
+     * Disables external mode.
+     * 
+     * @see #enableExternalMode()
+     */
+    public void disableExternalMode() {
+        externalMode = false;
     }
     
     public IObserver<ModuleConstraintStore> getStoreObserver() {
@@ -88,6 +106,26 @@ public class ModuleConstraintStore implements IConstraintStore {
         synchronized (active) {
             active.push(constraint);
         }
+    }
+    
+    /**
+     * Adds the given constraint to this store externally.
+     * 
+     * @param constraint
+     *      the constraint
+     * 
+     * @throws IllegalStateException
+     *      If externalMode is not enabled.
+     * 
+     * @see #enableExternalMode()
+     */
+    public void externalAdd(IConstraint constraint) {
+        if (!externalMode) throw new IllegalStateException("Adding external constraints is only allowed if external mode is activated.");
+        
+        synchronized (active) {
+            active.push(constraint);
+        }
+        notifyObserver();
     }
     
     @Override
