@@ -49,10 +49,19 @@ public class Flag implements Serializable, Comparable<Flag> {
 
     @Override
     public int compareTo(Flag o) {
-        int cleanCompare = cleanliness.compareTo(o.cleanliness);
-        if (cleanCompare != 0) return cleanCompare;
+        int c = cleanliness.compareTo(o.cleanliness);
+        if (c != 0) return c;
         
-        return Integer.compare(level, o.level);
+        c = Integer.compare(level, o.level);
+        if (c != 0) return c;
+        
+        if (cause == null) {
+            return o.cause == null ? 0 : -1;
+        } else if (o.cause == null) {
+            return 1;
+        } else {
+            return cause.compareTo(o.cause);
+        }
     }
     
     @Override
