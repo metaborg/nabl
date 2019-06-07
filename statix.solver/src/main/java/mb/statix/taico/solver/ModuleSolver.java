@@ -77,14 +77,15 @@ public class ModuleSolver implements IOwnable {
      */
     public static ModuleSolver topLevelSolver(IMState state, IConstraint constraint, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
-        return new ModuleSolver(state, constraint, (s, l, st) -> true, topDebug);
+        return new ModuleSolver(state, constraint, (s, l, st) -> true, topDebug, false);
     }
     
-    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug) {
+    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver) {
         final String owner = state.owner().getId();
         this.state = state;
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
+        this.separateSolver = separateSolver;
         
         //Create the constraint store and the completeness. Also add the initial constraints
         Iterable<IConstraint> constraintList = constraint == null ? Collections.emptyList() : Collections.singletonList(constraint);
@@ -99,6 +100,7 @@ public class ModuleSolver implements IOwnable {
         }
 
         state.setSolver(this);
+        if (!separateSolver) SolverContext.context().getIncrementalManager().initSolver(this);
     }
     
     /**
@@ -117,7 +119,7 @@ public class ModuleSolver implements IOwnable {
      */
     public ModuleSolver childSolver(IMState state, IConstraint constraint) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
-        ModuleSolver solver = new ModuleSolver(state, constraint, this.isComplete, debug);
+        ModuleSolver solver = new ModuleSolver(state, constraint, this.isComplete, debug, false);
         
         this.state.coordinator().addSolver(solver);
         
@@ -136,7 +138,7 @@ public class ModuleSolver implements IOwnable {
     public ModuleSolver noopSolver(IMState state) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         // TODO Should report no constriants to solve, is this still true with CTrue?
-        ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug);
+        ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
         return solver;
     }
     
@@ -167,8 +169,7 @@ public class ModuleSolver implements IOwnable {
             IsComplete isComplete,
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
-        ModuleSolver solver = new ModuleSolver(state, constraint, isComplete, debug2);
-        solver.separateSolver = true;
+        ModuleSolver solver = new ModuleSolver(state, constraint, isComplete, debug2, true);
         while (solver.solveStep());
         return solver.finishSolver();
     }

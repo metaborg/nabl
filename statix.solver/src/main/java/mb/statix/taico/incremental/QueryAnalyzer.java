@@ -3,9 +3,11 @@ package mb.statix.taico.incremental;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
@@ -14,10 +16,12 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.query.QueryDetails;
 
 public class QueryAnalyzer {
     private IChangeSet2 changeSet;
     private Map<IModule, Set<IConstraint>> leftConstraints = new HashMap<>();
+    
     
     public void phase1() {
         Set<IModule> dirty = changeSet.dirty();
@@ -31,7 +35,7 @@ public class QueryAnalyzer {
             state.solver().getCompleteness().add(module.getInitialization(), state.unifier());
         }
         
-        //We need to add the init constraints to the completeness
+        
         
     }
     
@@ -43,7 +47,15 @@ public class QueryAnalyzer {
             //This module is clean.
             switchToClean(module);
         }
-        module.queries();
+        
+        IMState state = module.getCurrentState();
+        
+        //TODO This code needs to run after the solver has been created, but before the runner can become "stuck".
+        //TODO IMPORTANT In other words, not here.
+        for (Entry<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> e : module.queries().entrySet()) {
+            CResolveQuery query = e.getKey();
+            state.solver().getStore().add(query);
+        }
         //The given module should be a clirty one. We now have to redo it's queries
         //TrackingNameResolution<Scope, ITerm, ITerm> nameResolution = TrackingNameResolution.builder();
     }

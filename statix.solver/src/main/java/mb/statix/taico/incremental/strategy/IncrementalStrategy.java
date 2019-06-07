@@ -89,6 +89,7 @@ public abstract class IncrementalStrategy {
     // Module access / delay
     //---------------------------------------------------------------------------------------------
     
+    //TODO Move this method to the incremental manager
     /**
      * Gets a child module of the given requester. The strategy is free to
      * delay the request or to answer the request with an old version of the module.
@@ -111,6 +112,7 @@ public abstract class IncrementalStrategy {
     public abstract IModule getChildModule(SolverContext context, SolverContext oldContext,
             IModule requester, String childId) throws ModuleDelayException;
     
+    //TODO Move this method to the incremental manager
     /**
      * Method for handling the request to get a module from the context. The strategy is free to
      * delay the request or to answer the request with an old version of the module.

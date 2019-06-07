@@ -39,6 +39,8 @@ public class QueryIncrementalStrategy extends IncrementalStrategy {
     
     @Override
     public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) throws ModuleDelayException {
+        //TODO Move this method to the incremental manager
+        
         IModule module = context.getModuleManager().getModule(id);
         if (module != null) return module;
 

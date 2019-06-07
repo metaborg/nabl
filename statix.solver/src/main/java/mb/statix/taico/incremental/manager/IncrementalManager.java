@@ -11,6 +11,10 @@ public class IncrementalManager implements Serializable {
     protected volatile Object phase;
     protected boolean initPhase = true;
     
+    // --------------------------------------------------------------------------------------------
+    // Phase related
+    // --------------------------------------------------------------------------------------------
+    
     @SuppressWarnings("unchecked")
     public <T> T getPhase() {
         return (T) phase;
@@ -28,10 +32,6 @@ public class IncrementalManager implements Serializable {
         initPhase = true;
     }
     
-    public void phaseFinished() {
-        
-    }
-    
     /**
      * Called after a solving phase has completed.
      * 
@@ -43,6 +43,20 @@ public class IncrementalManager implements Serializable {
      */
     public boolean finishPhase() {
         return false;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Solver hooks
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Called whenever a module solver is initialized.
+     * 
+     * @param solver
+     *      the solver
+     */
+    public void initSolver(ModuleSolver solver) {
+        
     }
     
     /**
@@ -64,6 +78,10 @@ public class IncrementalManager implements Serializable {
     public void solverDone(ModuleSolver solver) {
         solver.getOwner().setFlag(Flag.CLEAN);
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
 
     @Override
     public String toString() {
