@@ -10,6 +10,9 @@ public enum ModuleCleanliness {
     /** Indicates that the module is new. */
     NEW,
     
+    /** Indicates that the module has a new child that potentially affects the rest. */
+    NEWCHILD,
+    
     /** Indicates that the module is guaranteed to be dirty. */
     DIRTY,
     

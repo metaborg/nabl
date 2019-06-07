@@ -63,6 +63,10 @@ public interface IChangeSet2 extends Serializable {
     default Set<IModule> childOfDirty() throws UnsupportedOperationException {
         return getModules(CHILDOFDIRTY);
     }
+    
+    default Set<IModule> hasNewChild() throws UnsupportedOperationException {
+        return getModules(NEWCHILD);
+    }
 
     // --------------------------------------------------------------------------------------------
     // Ids
@@ -95,6 +99,10 @@ public interface IChangeSet2 extends Serializable {
 
     default Set<String> hasClirtyChildIds() throws UnsupportedOperationException {
         return getIds(CLIRTYCHILD);
+    }
+    
+    default Set<String> hasNewChildIds() throws UnsupportedOperationException {
+        return getIds(NEWCHILD);
     }
     
     /**

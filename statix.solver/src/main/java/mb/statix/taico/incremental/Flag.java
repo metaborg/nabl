@@ -14,6 +14,7 @@ public class Flag implements Serializable, Comparable<Flag> {
     public static final Flag CLEAN = new Flag(ModuleCleanliness.CLEAN, 1);
     public static final Flag NEW = new Flag(ModuleCleanliness.NEW, 1);
     public static final Flag DELETED = new Flag(ModuleCleanliness.DELETED, 1);
+    public static final Flag NEWCHILD = new Flag(ModuleCleanliness.NEWCHILD, 1);
     
     private final ModuleCleanliness cleanliness;
     private final int level;
