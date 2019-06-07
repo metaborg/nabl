@@ -1,8 +1,6 @@
 package mb.statix.taico.solver;
 
-import static mb.statix.taico.util.TDebug.COMPLETENESS;
-import static mb.statix.taico.util.TDebug.CONSTRAINT_SOLVING;
-import static mb.statix.taico.util.TDebug.DEV_NULL;
+import static mb.statix.taico.util.TDebug.*;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,9 +31,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
-import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.concurrent.ConcurrentRedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
@@ -50,6 +46,7 @@ public class ModuleSolver implements IOwnable {
     private final PrefixedDebugContext debug;
     private final LazyDebugContext proxyDebug;
     private boolean separateSolver;
+    private boolean init;
     
     private IsComplete isComplete;
     
@@ -232,6 +229,10 @@ public class ModuleSolver implements IOwnable {
      * @throws InterruptedException
      */
     public boolean solveStep() throws InterruptedException {
+        if (!init) {
+            SolverContext.context().getIncrementalManager().solverStart(this);
+            init = true;
+        }
         IConstraint constraint = constraints.remove();
         if (constraint == null) return false;
     
@@ -352,6 +353,7 @@ public class ModuleSolver implements IOwnable {
         if (getOwner().getCurrentState().solver() == this) {
             //If we are the main solver of this module, we signal that we are done.
             SolverContext.context().getIncrementalManager().solverDone(this);
+            init = false;
         }
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();
