@@ -1,6 +1,10 @@
 package mb.statix.taico.incremental.manager;
 
-public class IncrementalManager {
+import java.io.Serializable;
+
+public class IncrementalManager implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     protected volatile Object phase;
     protected boolean initPhase = true;
     
