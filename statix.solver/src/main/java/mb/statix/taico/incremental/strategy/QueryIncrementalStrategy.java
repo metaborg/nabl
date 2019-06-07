@@ -47,11 +47,11 @@ public class QueryIncrementalStrategy extends IncrementalStrategy {
         if (module == null) return null;
         
         //TODO Move to IncrementalManager?
-        if (context.<QueryIncrementalManager>getIncrementalManager().isAllowedAccess(id)) {
-            return module;
+        if (!context.<QueryIncrementalManager>getIncrementalManager().isAllowedAccess(id)) {
+            throw new ModuleDelayException(id);
         }
         
-        return null;
+        return module;
     }
     
     @Override

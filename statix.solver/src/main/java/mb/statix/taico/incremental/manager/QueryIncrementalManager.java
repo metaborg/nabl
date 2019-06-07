@@ -27,6 +27,8 @@ public class QueryIncrementalManager extends IncrementalManager {
         allowedAccess.add(module);
     }
     
+    //TODO I need a mechanism for a module to become clean, e.g. the queries need to be checked themselves and then the module needs to be marked as clean.
+    
     public static enum QueryPhase {
         Dirty,
         
