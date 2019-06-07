@@ -1,5 +1,6 @@
 package mb.statix.solver.query;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import mb.nabl2.regexp.IRegExpMatcher;
@@ -7,7 +8,8 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 
-public class RegExpLabelWF implements LabelWF<ITerm> {
+public class RegExpLabelWF implements LabelWF<ITerm>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final IRegExpMatcher<ITerm> re;
 
