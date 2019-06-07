@@ -39,7 +39,7 @@ public class Module implements IModule {
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
     
-    private PriorityQueue<Flag> flags;
+    private PriorityQueue<Flag> flags = new PriorityQueue<>();
     
     /**
      * Creates a new top level module.
@@ -140,6 +140,11 @@ public class Module implements IModule {
     @Override
     public void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details) {
         queries.put(query, details);
+    }
+    
+    @Override
+    public Map<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> queries() {
+        return queries;
     }
     
     @Override

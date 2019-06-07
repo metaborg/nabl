@@ -100,11 +100,19 @@ public class CResolveQuery implements IConstraint, Serializable {
     @Override
     public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
+        List<ITerm> queryResult = resolveQuery(state, params);
+        if (queryResult == null) return Optional.empty();
+        
+        final IConstraint C = new CEqual(B.newList(queryResult), resultTerm, this);
+        return Optional.of(MConstraintResult.ofConstraints(C));        
+    }
+    
+    public List<ITerm> resolveQuery(IMState state, MConstraintContext params)
+            throws InterruptedException, Delay {
         final ITerm relation = relation();
         final IQueryFilter filter = filter();
         final IQueryMin min = min();
         final ITerm scopeTerm = scopeTerm();
-        final ITerm resultTerm = resultTerm();
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
@@ -168,11 +176,11 @@ public class CResolveQuery implements IConstraint, Serializable {
         } catch(ResolutionException e) {
             trackingGraph.unlockAll();
             params.debug().info("Query resolution failed: {}", e.getMessage());
-            return Optional.empty();
+            return null;
         } catch(Exception e) {
             trackingGraph.unlockAll();
             throw e;
-        }        
+        }
         
         //If the query was successful, we can release all locks.
         trackingGraph.unlockAll();
@@ -181,8 +189,8 @@ public class CResolveQuery implements IConstraint, Serializable {
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
         
         //Register this query
-        QueryDetails<Scope, ITerm, ITerm> details = new QueryDetails<Scope, ITerm, ITerm>(
-                this, nameResolution, pathTerms, Scope::getResource);
+        QueryDetails<Scope, ITerm, ITerm> details = new QueryDetails<>(
+                state.owner().getId(), this, nameResolution, pathTerms, Scope::getResource);
         state.owner().addQuery(this, details);
         
         //Add reverse dependencies
@@ -190,8 +198,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             SolverContext.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
         }
         
-        final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, this);
-        return Optional.of(MConstraintResult.ofConstraints(C));        
+        return pathTerms;
     }
     
     @Override public Optional<IConstraint> cause() {
