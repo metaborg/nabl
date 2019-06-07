@@ -76,6 +76,8 @@ public class Flag implements Serializable, Comparable<Flag> {
         if (!(obj instanceof Flag)) return false;
         
         Flag other = (Flag) obj;
+        if (cleanliness != other.cleanliness) return false;
+        if (level != other.level) return false;
         if (cause == null) {
             if (other.cause != null) {
                 return false;
@@ -83,9 +85,6 @@ public class Flag implements Serializable, Comparable<Flag> {
         } else if (!cause.equals(other.cause)) {
             return false;
         }
-        
-        if (cleanliness != other.cleanliness) return false;
-        if (level != other.level) return false;
         return true;
     }
 }

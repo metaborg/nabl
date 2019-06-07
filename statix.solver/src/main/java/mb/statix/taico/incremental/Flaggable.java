@@ -35,6 +35,7 @@ public interface Flaggable {
      *      the level
      */
     default void addFlag(Flag flag) {
+        if (flag.equals(Flag.CLEAN)) return;
         getFlags().add(flag);
     }
     
