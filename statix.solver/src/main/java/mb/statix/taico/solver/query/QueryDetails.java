@@ -15,7 +15,7 @@ import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 
 public class QueryDetails<S extends D, L, D> implements IQueryDetails<S, L, D> {
     private static final long serialVersionUID = 1L;
-    
+
     private IConstraint constraint;
     private Multimap<S, LabelWF<L>> edges;
     private Multimap<S, LabelWF<L>> data;

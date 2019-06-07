@@ -429,6 +429,19 @@ public class ModuleConstraintStore implements IConstraintStore {
         return delayed.build();
     }
     
+    /**
+     * @return
+     *      all the constraints remaining in the store
+     */
+    public Set<IConstraint> getAllRemainingConstraints() {
+        Set<IConstraint> tbr = new HashSet<>();
+        tbr.addAll(active);
+        for (Delayed d : stuckOnEdge.values()) tbr.add(d.constraint);
+        for (Delayed d : stuckOnVar.values()) tbr.add(d.constraint);
+        for (Delayed d : stuckOnModule.values()) tbr.add(d.constraint);
+        return tbr;
+    }
+    
     @Override
     public String toString() {
         return "ModuleConstraintStore<" + owner + ">";
