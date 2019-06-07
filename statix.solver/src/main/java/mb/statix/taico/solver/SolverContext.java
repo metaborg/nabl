@@ -193,6 +193,7 @@ public class SolverContext implements Serializable {
      *      the root module
      */
     public IModule getRootModule() {
+        if (coordinator == null) return manager.getModulesOnLevel(0).values().stream().findAny().orElse(null);
         return coordinator.getRootModule();
     }
     
