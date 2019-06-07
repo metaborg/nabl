@@ -31,5 +31,13 @@ public enum ModuleCleanliness {
     CLIRTYCHILD,
     
     /** Indicates that the module is guaranteed to be clean. */
-    CLEAN
+    CLEAN;
+    
+    public boolean isDirtyish() {
+        return !isCleanish();
+    }
+    
+    public boolean isCleanish() {
+        return this == CLEAN || this == NEW;
+    }
 }
