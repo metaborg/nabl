@@ -133,34 +133,7 @@ public abstract class AChangeSet2 implements IChangeSet2 {
     }
     
     protected boolean add(Flag flag, FlagCondition condition, Stream<IModule> modules) {
-        Set<IModule> sModules = getModules(flag.getCleanliness());
-        Set<String> sIds = getIds(flag.getCleanliness());
-        return modules.map(module -> {
-            switch (condition) {
-                case AddFlag:
-                    module.addFlag(flag);
-                    break;
-                case AddFlagIfNotSameCause:
-                    if (!module.addFlagIfNotSameCause(flag)) return false;
-                    break;
-                case OverrideFlag:
-                    module.setFlag(flag);
-                    break;
-                case FlagIfClean:
-                    if (!module.setFlagIfClean(flag)) return false;
-                    break;
-                case FlagIfCleanNoReturn:
-                    module.setFlagIfClean(flag);
-                    break;
-                case DontFlag:
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
-            }
-            sModules.add(module);
-            sIds.add(module.getId());
-            return true;
-        }).allMatch(b -> !b);
+        return add(flag, condition, modules::iterator);
     }
     
     /**
