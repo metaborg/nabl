@@ -7,6 +7,7 @@ import java.util.PriorityQueue;
 import mb.statix.taico.module.ModuleCleanliness;
 
 public interface Flaggable {
+    //TODO IMPORTANT Needs to be changed to a StablePriorityQueue, and the flag comparison needs to not compare on reason any more.
     PriorityQueue<Flag> getFlags();
     
     /**

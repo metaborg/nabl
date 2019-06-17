@@ -81,9 +81,15 @@ public interface EdgeCompleteManager {
         }
         
         synchronized (observers()) {
+            //We need to check again once we have the lock to prevent us from missing the event
+            if (alreadyResolved(scope, label)) break;
+            
             observers().put(edge, observer);
+            return true;
         }
-        return true;
+        
+        observer.accept(edge);
+        return false;
     }
     
     /**

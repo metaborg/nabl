@@ -18,4 +18,6 @@ public class ConcurrentRedirectingIncrementalCompleteness extends RedirectingInc
     protected <T> Multiset<T> createMultiset() {
         return ConcurrentHashMultiset.create();
     }
+	
+	//TODO IMPORTANT Also override the add method to perform atomically wrt checking if the edge is already resolved from the observer
 }

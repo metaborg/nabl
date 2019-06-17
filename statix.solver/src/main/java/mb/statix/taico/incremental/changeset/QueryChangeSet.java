@@ -64,6 +64,10 @@ public class QueryChangeSet extends AChangeSet2 {
             }
         }
         
+        //TODO IMPORTANT 3. Flag the parents of removed modules as RemovedChild if they pass a scope owned by them to the child, with the same level.
+        //(Only if the parent does not have the removed flag already)
+        
+        
         //4. Flag the dependencies on Dirty and Removed modules as Clirty (level 1)
         for (IModule dirty : Sets.union(dirty(), removed())) {
             final int dirtyLevel = dirty.getTopLevel();
@@ -85,15 +89,14 @@ public class QueryChangeSet extends AChangeSet2 {
         //6. Flag Clirtyness of higher levels (depends on clirty of lower levels).
         
         //I need to flag all modules that depend on the clirty modules with increasing levels of clirtiness
-        //Using a DFS algorithm with the reverse dependency edges in the graph
-        //TODO With cycles in the dependency graph, this will trigger an infinite process of flagging as higher levels of clirty.
-        //We only want each module to be flagged as clirty 
-        
+        //Using a BFS algorithm with the reverse dependency edges in the graph
+        //This algorithm visits each module at most once.
         {
-            LinkedList<IModule> stack = new LinkedList<>(clirty());
-            while (!stack.isEmpty()) {
-                IModule module = stack.pop();
+            LinkedList<IModule> queue = new LinkedList<>(clirty());
+            while (!queue.isEmpty()) {
+                IModule module = queue.removeFirst();
                 final Flag moduleFlag = module.getTopFlag();
+                //TODO Should this condition be removed?
                 if (moduleFlag.getCleanliness() != CLIRTY && moduleFlag.getCleanliness() != CLIRTYCHILD) continue;
                 final int moduleLevel = moduleFlag.getLevel();
                 final String moduleId = module.getId();
@@ -106,7 +109,7 @@ public class QueryChangeSet extends AChangeSet2 {
                     }
                     
                     //only if top flag changed do we need to revisit the module. Otherwise it does not make a difference for dependants
-                    if (oldFlag != depModule.getTopFlag()) stack.push(depModule);
+                    if (oldFlag != depModule.getTopFlag()) queue.addLast(depModule);
                 }
                 
                 //Add the clirtychild flag AFTER adding the clirty flags.
@@ -118,7 +121,7 @@ public class QueryChangeSet extends AChangeSet2 {
                     }
                     
                     //only if top flag changed do we need to revisit the module. Otherwise it does not make a difference for dependants
-                    if (oldFlag != parent.getTopFlag()) stack.push(parent);
+                    if (oldFlag != parent.getTopFlag()) queue.addLast(parent);
                 }
             }
         }
