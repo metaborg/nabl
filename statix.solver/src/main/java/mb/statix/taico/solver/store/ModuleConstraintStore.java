@@ -203,22 +203,24 @@ public class ModuleConstraintStore implements IConstraintStore {
 
     private void propagateVariableActivation(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         Set<ModuleConstraintStore> stores = new HashSet<>();
-        synchronized (varObservers) {
-            //Activate all observers
-            for (ITermVar termVar : vars) {
-                for (ModuleConstraintStore store : varObservers.removeAll(termVar)) {
-                    //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
-                    if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
-                    store.activateFromVar(termVar, debug); //Activate but don't propagate
-                    //Only notify if it is currently not doing anything (probably)
-                    if (store.activeSize() == 1) stores.add(store);
-                }
+        //Activate all observers
+        for (ITermVar termVar : vars) {
+            Collection<ModuleConstraintStore> observers;
+            synchronized (varObservers) {
+                observers = varObservers.removeAll(termVar);
             }
-            
-            //Notify each store only once
-            for (ModuleConstraintStore store : stores) {
-                if (store.observer != null) store.observer.notify(this);
+            for (ModuleConstraintStore store : observers) {
+                //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
+                if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
+                store.activateFromVar(termVar, debug); //Activate but don't propagate
+                //Only notify if it is currently not doing anything (probably)
+                if (store.activeSize() == 1) stores.add(store);
             }
+        }
+
+        //Notify each store only once
+        for (ModuleConstraintStore store : stores) {
+            if (store.observer != null) store.observer.notify(this);
         }
     }
     
