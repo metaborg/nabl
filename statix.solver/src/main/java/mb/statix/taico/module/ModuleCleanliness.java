@@ -7,6 +7,9 @@ public enum ModuleCleanliness {
     /** Indicates that the module does no longer exist. */
     DELETED,
     
+    /** One of the children of the module were removed. */
+    REMOVEDCHILD,
+    
     /** Indicates that the module is new. */
     NEW,
     
