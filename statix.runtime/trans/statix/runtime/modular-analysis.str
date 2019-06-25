@@ -45,6 +45,7 @@ rules // single file analysis
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
              ; module-analysis := MModuleAnalysis(a)
       \})> (resource-ast'*, solve-result*)
+    ; mstx--end-run
 
   mstx-editor-analyze(desugar|spec-name, init-constraint):
       AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `mstx-editor-analyze_1_2` called for multi-file analysis. Use `mstx-editor-analyze_1_3` instead.")>
@@ -125,13 +126,17 @@ rules // multi file analysis
       //
       //Let the incremental algorithm figure out the 
       //(resource, Change) -> MChange
+    ; mstx--start-phase(|"Stratego: creating changesets")
     ; mchanged*   := <map(\ (resource, change) -> <mstx--change(desugar|resource)> change \)> change*
     ; mchanged-C* := <map(\ change -> (change, <mstx--build-C(|file-constraint, global-scope)> change) \)> mchanged*
     ; mchanged-C-with-project* := [(mchanged-project, project-C), mchanged-C*]
+    ; mstx--end-phase(|"Stratego: creating changesets")
 
       // Solve with the previous result as starting point.
     ; (full-state*, update-state*) := <mstx--solve-multi-file(|incremental-strategy, initial-project-state, level)> mchanged-C-with-project*
     ; <debug> "Finished solve-multi-file"
+    
+    ; mstx--start-phase(|"Stratego: processing results")
     ; fullresource-ast* := <map({\ c -> (m, ast) where ?MAdded(m, ast) + ?MChanged(m, ast, _) \})>
                            <filter(?MAdded(_, _) + ?MChanged(_, _, _))> mchanged*
     ; updatedresource*  := <filter(?MUnchanged(<id>, _))> mchanged*
@@ -153,7 +158,8 @@ rules // multi file analysis
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> file-state
              ; file-analysis := MModuleAnalysis(file-state)
       \})> <filter(not(?("", _)))> update-state*
-      
+    
+    ; mstx--end-phase(|"Stratego: processing results")
       //TODO Not really needed for modularized statix
       //
       // 4. Combine and solve all partial solution
@@ -171,6 +177,7 @@ rules // multi file analysis
       end
     ; result* := <concat> [[(project-resource, project-result)], file-result, file-result2]
     ; <debug> "Project analysis completed!"
+    ; mstx--end-run
 
   //Builds the init constraint of a file
   mstx--build-C(|file-constraint, global-scope): change -> C
