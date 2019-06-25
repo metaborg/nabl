@@ -2,6 +2,8 @@ package mb.statix.taico.solver.query;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.io.Serializable;
+
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
@@ -19,13 +21,15 @@ import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
 import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.util.TDebug;
 
-public class MConstraintDataWF implements DataWF<ITerm> {
-
+public class MConstraintDataWF implements DataWF<ITerm>, Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private final IRule constraint;
     private final IMState state;
     private final IsComplete isComplete;
-    private final IDebugContext debug;
+    private transient IDebugContext debug;
 
     public MConstraintDataWF(IRule constraint, IMState state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
@@ -56,6 +60,17 @@ public class MConstraintDataWF implements DataWF<ITerm> {
         } catch(Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
         }
+    }
+    
+    //TODO Temporary workaround
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+        System.err.println("Serializing unserializable DataWF!");
+        out.defaultWriteObject();
+    }
+    
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        debug = TDebug.DEV_OUT;
     }
     
 }

@@ -26,4 +26,13 @@ public class TDebug {
     
     public static final IDebugContext DEV_NULL = new NullDebugContext();
     public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), Level.parse(TOverrides.LOGLEVEL));
+    
+    public static String print() {
+        return "QUERY_DELAY=" + QUERY_DELAY +
+                ", CONSTRAINT_SOLVING=" + CONSTRAINT_SOLVING +
+                ", COMPLETENESS=" + COMPLETENESS +
+                ", COMPLETENESS_DETAILS=" + COMPLETENESS_DETAILS +
+                ", QUERY_DEBUG=" + QUERY_DEBUG +
+                ", STORE_DEBUG=" + STORE_DEBUG;
+    }
 }

@@ -20,11 +20,27 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.util.TDebug;
+import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TTimings;
 
 public class MSTX_solve_multi_project extends StatixPrimitive {
 
     @Inject public MSTX_solve_multi_project() {
         super(MSTX_solve_multi_project.class.getSimpleName(), 2);
+    }
+    
+    @Override
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
+        TTimings.startNewRun();
+        TTimings.addDetails("MSTX_solve_multi_project Settings: <%s> Debug: <%s>", TOverrides.print(), TDebug.print());
+        TTimings.startPhase("MSTX_solve_multi_project");
+        
+        try {
+            return super._call(env, term, terms);
+        } finally {
+            TTimings.endPhase("MSTX_solve_multi_project");
+        }
     }
 
     @Override

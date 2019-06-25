@@ -25,6 +25,9 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.taico.util.TDebug;
+import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TTimings;
 
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
@@ -32,10 +35,24 @@ public class STX_solve_multi_file extends StatixPrimitive {
     @Inject public STX_solve_multi_file() {
         super(STX_solve_multi_file.class.getSimpleName(), 2);
     }
+    
+    @Override
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
+        TTimings.startNewRun();
+        TTimings.addDetails("STX_solve_multi_file Settings: <%s>, Debug: <%s>, Input: <%s>", TOverrides.print(), TDebug.print(), term);
+        TTimings.startPhase("STX_solve_multi_file");
+        
+        try {
+            return super._call(env, term, terms);
+        } finally {
+            TTimings.endPhase("STX_solve_multi_file");
+        }
+    }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
+        TTimings.startPhase("init");
         final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
@@ -46,11 +63,18 @@ public class STX_solve_multi_file extends StatixPrimitive {
         final Function1<Tuple2<String, IConstraint>, ITerm> solveConstraint =
                 resource_constraint -> solveConstraint(initial.state().withResource(resource_constraint._1()),
                         resource_constraint._2(), debug);
+        
+        TTimings.startPhase("constraint matching");
         final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
+        TTimings.endPhase("constraint matching");
+        TTimings.endPhase("init");
+        
+        TTimings.startPhase("solving");
         final double t0 = System.currentTimeMillis();
         final List<ITerm> results =
                 constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList());
+        TTimings.endPhase("solving");
         final double dt = System.currentTimeMillis() - t0;
         logger.info("Files analyzed in {} s", (dt / 1_000d));
         return Optional.of(B.newList(results));

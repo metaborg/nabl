@@ -34,17 +34,34 @@ import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
+import mb.statix.taico.util.TDebug;
+import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TTimings;
 
 public class MSTX_solve_multi_file extends StatixPrimitive {
 
     @Inject public MSTX_solve_multi_file() {
         super(MSTX_solve_multi_file.class.getSimpleName(), 3);
     }
-
+    
+    @Override
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
+        TTimings.startNewRun();
+        TTimings.addDetails("MSTX_solve_multi_file Settings: <Strategy=%s, %s>, Debug: <%s>, Input: <%s>", terms.get(0), TOverrides.print(), TDebug.print(), term);
+        TTimings.startPhase("MSTX_solve_multi_file");
+        
+        try {
+            return super._call(env, term, terms);
+        } finally {
+            TTimings.endPhase("MSTX_solve_multi_file");
+        }
+    }
+    
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         
+        if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
+        TTimings.startPhase("init");
         final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Invalid incremental strategy: " + terms.get(0)));
         
@@ -60,9 +77,12 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 StatixTerms.constraint(),
                 (t, mc, c) -> ImmutableTuple2.of(mc, c));
         
+        TTimings.startPhase("constraint matching");
         final List<Tuple2<MChange, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints, but was " + term));
+        TTimings.endPhase("constraint matching");
         
+        TTimings.startPhase("changeset");
         //We want the "initial" state, but rather we want the previous module manager used for the initial state.
         //TODO IMPORTANT Check if the changes to the module manager applied further on are applied on the project
         Set<String> removed = new HashSet<>();
@@ -94,15 +114,21 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             order.put(change.getModule(), i++);
             modules.put(change.getModule(), tuple._2());
         }
+        
         SolverContext oldContext = initial.context();
         IChangeSet2 changeSet = strategy.createChangeSet(oldContext, added, changed, removed);
+        TTimings.endPhase("changeset");
         
+        TTimings.startPhase("incremental context");
         SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
+        TTimings.endPhase("incremental context");
 //        newContext.setState(initial.state().getOwner(), initial.state());
         
         ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
         newContext.setCoordinator(coordinator); //Sets the coordinator on the context and the context on the coordinator
         
+        TTimings.endPhase("init");
+        TTimings.startPhase("solving");
         //TODO IMPORTANT Solver Context
         
         //Do the actual analysis
@@ -113,8 +139,11 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        TTimings.endPhase("solving");
         
+        TTimings.startPhase("commit changes");
         newContext.commitChanges();
+        TTimings.endPhase("commit changes");
         //TODO This is wrong!
         System.err.println("Modules in the context post solve: " + newContext.getModules());
 
@@ -128,6 +157,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
 //                .collect(Collectors.toList());
         
         //Return a tuple of 2 lists, one for added + changed (dirty) results, one for cached (clirty) results.
+        TTimings.startPhase("collect results");
         List<ITerm> fullResults = results.entrySet().stream()
                 .filter(e -> order.containsKey(e.getKey())) //TODO Should not be needed
                 .filter(e -> added.contains(e.getKey()) || changed.contains(e.getKey()))
@@ -143,7 +173,9 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .collect(Collectors.toList());
         
         // ([(resource, SolverResult)], [(resource, SolverResult)])
-        return Optional.of(B.newTuple(B.newList(fullResults), B.newList(updateResults)));
+        Optional<ITerm> tbr = Optional.of(B.newTuple(B.newList(fullResults), B.newList(updateResults)));
+        TTimings.endPhase("collect results");
+        return tbr;
     }
 
 }

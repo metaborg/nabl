@@ -28,6 +28,9 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.taico.util.TDebug;
+import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TTimings;
 
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
@@ -35,10 +38,24 @@ public class STX_solve_multi_project extends StatixPrimitive {
     @Inject public STX_solve_multi_project() {
         super(STX_solve_multi_project.class.getSimpleName(), 2);
     }
+    
+    @Override
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
+        TTimings.startNewRun();
+        TTimings.addDetails("STX_solve_multi_project Settings: <%s>, Debug: <%s>, Input: <%s>", TOverrides.print(), TDebug.print(), term);
+        TTimings.startPhase("STX_solve_multi_project");
+        
+        try {
+            return super._call(env, term, terms);
+        } finally {
+            TTimings.endPhase("STX_solve_multi_project");
+        }
+    }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
+        TTimings.startPhase("init");
         final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
@@ -72,6 +89,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
                      .withScopeGraph(scopeGraph.freeze())
                      .withTermProperties(termProperties.build());
         // @formatter:on
+        TTimings.endPhase("init");
+        TTimings.startPhase("solving");
 
         final SolverResult resultConfig;
         try {
@@ -82,6 +101,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
+        TTimings.endPhase("solving");
+        
         errors.addAll(resultConfig.errors());
         final ITerm resultTerm = B.newBlob(resultConfig.withErrors(errors));
         return Optional.of(resultTerm);

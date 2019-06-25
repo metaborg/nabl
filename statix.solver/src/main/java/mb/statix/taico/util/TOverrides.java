@@ -15,4 +15,8 @@ public class TOverrides {
     /** If true, will cause the statix calls to fail in order to trigger a clean run. */
     public static final boolean CLEAN = false;
     
+    public static String print() {
+        return "Concurrent=" + (CONCURRENT ? THREADS : "false") +
+                ", Loglevel=" + (OVERRIDE_LOGLEVEL ? LOGLEVEL : "not overridden");
+    }
 }

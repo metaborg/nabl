@@ -25,6 +25,7 @@ public interface IQueryDetails<S extends D, L, D> extends Serializable {
     
     Multimap<S, LabelWF<L>> getRelevantData();
     
+    //TODO Is not serializable!
     DataWF<D> getDataWellFormedness();
     
     Collection<String> getReachedModules();

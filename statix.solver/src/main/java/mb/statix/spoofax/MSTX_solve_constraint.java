@@ -34,15 +34,32 @@ import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.SolverCoordinator;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
+import mb.statix.taico.util.TDebug;
+import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TTimings;
 
 public class MSTX_solve_constraint extends StatixPrimitive {
     @Inject public MSTX_solve_constraint() {
         super(MSTX_solve_constraint.class.getSimpleName(), 2);
     }
+    
+    @Override
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
+        TTimings.startNewRun();
+        TTimings.addDetails("MSTX_solve_constraint<%s>, Settings: <%s> Debug: <%s>", terms.get(0), TOverrides.print(), TDebug.print());
+        TTimings.startPhase("MSTX_solve_constraint");
+        
+        try {
+            return super._call(env, term, terms);
+        } finally {
+            TTimings.endPhase("MSTX_solve_constraint");
+        }
+    }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
         if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
+        TTimings.startPhase("init");
         final Spec spec =
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec, but was " + terms.get(0)));
         reportOverlappingRules(spec);
@@ -55,6 +72,8 @@ public class MSTX_solve_constraint extends StatixPrimitive {
         
         final Function1<Tuple2<String, IConstraint>, ITerm> solveConstraint =
                 res_vars_constraint -> solveConstraint(spec, res_vars_constraint._1(), res_vars_constraint._2(), debug);
+        
+        TTimings.endPhase("init");
         
         // @formatter:off
         return M.cases(
