@@ -52,10 +52,11 @@ public class IChangeSet2Test {
         List<Flag> list = new ArrayList<>(Arrays.asList(expectedFlags));
         Collections.sort(list);
         
-        assertEquals("Expected flags " + expectedFlags + ", but was " + module.getFlags() + " (different amount)", list.size(), module.getFlags().size());
+        String expected = "Expected flags " + list + ", but was " + module.getFlags();
+        assertEquals(expected + " (different amount)", list.size(), module.getFlags().size());
         int i = 0;
         for (Flag flag : module.getFlags()) {
-            assertEquals("Expected flags " + expectedFlags + ", but was " + module.getFlags() + " (at " + i + ")", list.get(i++), flag);
+            assertEquals(expected + " (at " + i + ")", list.get(i++), flag);
         }
     }
     

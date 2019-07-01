@@ -8,10 +8,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.util.Scopes;
 
 public class BaselineChangeSet extends AChangeSet2 {
     private static final long serialVersionUID = 1L;
@@ -21,7 +23,6 @@ public class BaselineChangeSet extends AChangeSet2 {
             CLIRTY,
             DELETED,
             DIRTY,
-            CHILDOFDIRTY,
             NEW
     };
     
@@ -33,34 +34,47 @@ public class BaselineChangeSet extends AChangeSet2 {
     
     @Override
     protected void init(SolverContext oldContext) {
-        //Mark all removed modules and descendants as deleted
-        removed().stream().flatMap(m -> m.getDescendants()).forEach(m -> m.setFlagIfClean(Flag.DELETED));
-
-        //#0 Compute child of dirty
-        for (IModule module : dirty()) {
-            add(new Flag(CHILDOFDIRTY, 1), FlagCondition.FlagIfClean, module.getDescendants());
+        //1. Transitively flag removed children
+        new HashSet<>(removed()).stream().flatMap(m -> m.getDescendants()).forEach(
+                m -> add(Flag.DELETED, FlagCondition.OverrideFlag, m));
+        
+        //and dirty children
+        new HashSet<>(dirty()).stream().flatMap(m -> m.getDescendants()).forEach(
+                m -> add(new Flag(DIRTY, 1), FlagCondition.OverrideFlag, m));
+        
+        //2. Whenever there are added modules, flag their parent as clirty
+        if (!added().isEmpty()) {
+            add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, oldContext.getRootModule());
         }
-
-        //#1 Compute clirty = all modules that depend on dirty or clirty modules
+        
+        //3. Compute clirty = all modules that depend on dirty, removed or clirty modules or that have them as parent
         //I need to flag all modules that depend on the dirty modules (recursively) as possibly dirty (clirty)
         //Using a DFS algorithm with the reverse dependency edges in the graph
         Set<IModule> visited = new HashSet<>(dirty());
-        visited.addAll(childOfDirty());
         visited.addAll(removed());
+        visited.addAll(clirty());
         LinkedList<IModule> stack = new LinkedList<>(visited);
         while (!stack.isEmpty()) {
             IModule module = stack.pop();
+            
+            //Check modules that depend on this module
             for (IModule depModule : module.getDependants().keySet()) {
-                if (visited.contains(depModule)) continue;
-                if (depModule.getTopCleanliness() != CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered ");
-                visited.add(depModule);
+                if (!visited.add(depModule)) continue;
+                if (depModule.getTopCleanliness() != CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered clean module " + depModule);
+
                 add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, depModule);
                 stack.push(depModule);
             }
+            
+            //Check child relations
+            for (Scope scope : module.getScopeGraph().getParentScopes()) {
+                IModule parent = Scopes.getOwnerUnchecked(oldContext, scope);
+                if (!visited.add(parent)) continue;
+
+                add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, parent);
+                stack.push(parent);
+            }
         }
-        
-        //All modules that depend upon removed modules are also considered clirty.
-        add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, removed().stream().flatMap(m -> m.getDependants().keySet().stream()));
 
         //#2 Compute clean = all modules that were not marked otherwise
         add(Flag.CLEAN, FlagCondition.DontFlag, oldContext.getModules().stream().filter(m -> m.getTopCleanliness() == CLEAN));
