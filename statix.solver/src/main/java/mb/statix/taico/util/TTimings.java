@@ -16,7 +16,7 @@ public class TTimings {
     public static LinkedHashMap<Integer, String> details = new LinkedHashMap<>();
     public static final CSVFormat format = CSVFormat.EXCEL;
     public static final String FILE = "'results' yyyy.MM.dd 'at' HH:mm:ss";
-    //public static final String FOLDER = "~";
+    public static final String FOLDER = TDebug.DEBUG_FILE_PATH + "/results";
     
     public static void startNewRun() {
         results.put(++runCounter, new LinkedHashMap<>());
@@ -60,9 +60,12 @@ public class TTimings {
         }
     }
     
-    private static File getFile() {
+    private static File getFile() throws IOException {
+        File folder = new File(FOLDER);
+        if (!folder.exists() && !folder.mkdirs()) throw new IOException("Unable to create folder");
+        
         SimpleDateFormat format = new SimpleDateFormat(FILE);
         String name = format.format(System.currentTimeMillis());
-        return new File("~", name + ".csv");
+        return new File(folder, name + ".csv");
     }
 }
