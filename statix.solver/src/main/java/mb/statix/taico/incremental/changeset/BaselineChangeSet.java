@@ -80,8 +80,9 @@ public class BaselineChangeSet extends AChangeSet2 {
         add(Flag.CLEAN, FlagCondition.DontFlag, oldContext.getModules().stream().filter(m -> m.getTopCleanliness() == CLEAN));
 
         System.err.println("Based on the files, we identified:");
-        System.err.println("  Dirty:  " + dirty().size()  + " modules (" + removed().size() + " removed)");
-        System.err.println("  Clirty: " + clirty().size() + " modules");
-        System.err.println("  Clean:  " + clean().size()  + " modules");
+        System.err.println("  Removed:  (" + removed().size()        + ") " + removedIds());
+        System.err.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
+        System.err.println("  Clirty:   (" + clirty().size()         + ") " + clirtyIds());
+        System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
     }
 }
