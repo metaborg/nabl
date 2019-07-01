@@ -3,3 +3,5 @@ module statix/Menus
 menus
 
   menu: "Analysis" (meta) (openeditor)
+    action: "Debug file scope graph (DOT)" = mstx--debug-file-scope-graph-dot (realtime)
+    action: "Debug project scope graph (DOT)" = mstx--debug-project-scope-graph-dot (realtime)
