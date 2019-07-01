@@ -101,7 +101,7 @@ public class IncrementalCompleteness implements ICompleteness {
     protected void remove(ITerm scope, ITerm label) {
         if (TDebug.COMPLETENESS) System.out.println("Removing " + scope + "-" + label + " from incomplete in " + this);
         final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
-        if (labels.remove(label) && edgeCompleteObserver != null && labels.isEmpty()) {
+        if (labels.remove(label) && edgeCompleteObserver != null) {
             edgeCompleteObserver.accept(scope, label);
         }
     }
