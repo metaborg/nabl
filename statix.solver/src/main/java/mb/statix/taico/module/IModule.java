@@ -232,9 +232,9 @@ public interface IModule extends Serializable, Flaggable {
      * @param details
      *      the details relevant for dependencies related to this query
      */
-    void addQuery(CResolveQuery query, QueryDetails<Scope, ITerm, ITerm> details);
+    void addQuery(CResolveQuery query, QueryDetails details);
     
-    Map<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> queries();
+    Map<CResolveQuery, QueryDetails> queries();
     
     /**
      * The aggregated set of all dependencies based on all the queries in this module.

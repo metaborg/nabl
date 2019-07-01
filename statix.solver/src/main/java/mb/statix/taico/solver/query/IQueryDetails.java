@@ -7,7 +7,7 @@ import java.util.List;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.reference.LabelWF;
 
 /**
@@ -25,8 +25,7 @@ public interface IQueryDetails<S extends D, L, D> extends Serializable {
     
     Multimap<S, LabelWF<L>> getRelevantData();
     
-    //TODO Is not serializable!
-    DataWF<D> getDataWellFormedness();
+    CResolveQuery getOriginalConstraint();
     
     Collection<String> getReachedModules();
     

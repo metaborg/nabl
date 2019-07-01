@@ -25,7 +25,7 @@ public class QueryFilter implements IQueryFilter, Serializable {
         this(RegExpMatcher.create(pathWf), dataConstraint);
     }
 
-    private QueryFilter(IRegExpMatcher<ITerm> pathWf, IRule dataConstraint) {
+    public QueryFilter(IRegExpMatcher<ITerm> pathWf, IRule dataConstraint) {
         this.pathWf = pathWf;
         this.dataWf = dataConstraint;
     }

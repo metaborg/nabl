@@ -52,7 +52,7 @@ public class QueryAnalyzer {
         
         //TODO This code needs to run after the solver has been created, but before the runner can become "stuck".
         //TODO IMPORTANT In other words, not here.
-        for (Entry<CResolveQuery, QueryDetails<Scope, ITerm, ITerm>> e : module.queries().entrySet()) {
+        for (Entry<CResolveQuery, QueryDetails> e : module.queries().entrySet()) {
             CResolveQuery query = e.getKey();
             state.solver().getStore().add(query);
         }

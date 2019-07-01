@@ -189,8 +189,8 @@ public class CResolveQuery implements IConstraint, Serializable {
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
         
         //Register this query
-        QueryDetails<Scope, ITerm, ITerm> details = new QueryDetails<>(
-                state.owner().getId(), this, nameResolution, pathTerms, Scope::getResource);
+        QueryDetails details = new QueryDetails(
+                state.owner().getId(), this, nameResolution, pathTerms);
         state.owner().addQuery(this, details);
         
         //Add reverse dependencies

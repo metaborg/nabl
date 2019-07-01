@@ -29,6 +29,10 @@ public class RegExpLabelWF implements LabelWF<ITerm>, Serializable {
     @Override public boolean accepting() throws ResolutionException, InterruptedException {
         return re.isAccepting();
     }
+    
+    public IRegExpMatcher<ITerm> getRegex() {
+        return re;
+    }
 
     @Override public String toString() {
         return re.toString();
