@@ -1,6 +1,7 @@
 package mb.nabl2.spoofax.primitives;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -61,15 +62,21 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     protected abstract Optional<? extends ITerm> call(ITerm currentTerm, List<ITerm> argTerms,
             SemiIncrementalMultiFileSolver solver, ICancel cancel, IProgress progress) throws InterpreterException;
 
-    private static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
+    static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
+        final HashMap<String, SDefT> strCache = new HashMap<>();
         return (name, args) -> {
             final IStrategoTerm[] sargs = Iterables2.stream(args).map(strategoTerms::toStratego)
                     .collect(Collectors.toList()).toArray(new IStrategoTerm[0]);
             final IStrategoTerm sarg = sargs.length == 1 ? sargs[0] : env.getFactory().makeTuple(sargs);
             final IStrategoTerm prev = env.current();
             try {
+                final SDefT s;
+                if(strCache.containsKey(name)) {
+                    s = strCache.get(name);
+                } else {
+                    strCache.put(name, (s = env.lookupSVar(name.replace("-", "_") + "_0_0")));
+                }
                 env.setCurrent(sarg);
-                final SDefT s = env.lookupSVar(name.replace("-", "_") + "_0_0");
                 if(!s.evaluate(env)) {
                     return Optional.empty();
                 }

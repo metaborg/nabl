@@ -63,7 +63,6 @@ import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
-import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
@@ -144,11 +143,11 @@ public class GreedySolver {
             this.existentials = existentials;
         }
         final Immutable unifier = state.unifier();
-        completeness.remove(constraint, unifier);
         completeness.updateAll(updatedVars, unifier);
-        completeness.addAll(newConstraints, unifier);
         constraints.activateFromVars(updatedVars, debug);
-        constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), debug);
+        completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
+        final Set<CriticalEdge> removedEdges = completeness.remove(constraint, unifier);
+        constraints.activateFromEdges(removedEdges, debug);
         final IDebugContext subDebug = debug.subContext();
         if(!newConstraints.isEmpty()) {
             subDebug.info("Simplified to:");
