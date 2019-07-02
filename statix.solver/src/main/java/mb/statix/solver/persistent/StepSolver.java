@@ -63,7 +63,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.SolverException;
 import mb.statix.solver.SolverException.SolverInterrupted;
-import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
@@ -136,7 +135,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                     maybeResult = step(constraint);
                     addTime(constraint, 1, successCount, debug);
                     progress = true;
-                    completeness.remove(constraint, state.unifier());
                     reductions += 1;
                     if(maybeResult.isPresent()) {
                         final ConstraintResult result = maybeResult.get();
@@ -150,14 +148,12 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                                 if(subDebug.isEnabled(Level.Info)) {
                                     subDebug.info(" * {}", Solver.toString(newConstraint, state.unifier()));
                                 }
-                                completeness.add(newConstraint, state.unifier());
+                                completeness.add(newConstraint, state.unifier()); // must come before ICompleteness::remove
                                 constraints.add(newConstraint);
                             }
                         }
                         completeness.updateAll(result.vars(), state.unifier());
                         constraints.activateFromVars(result.vars(), subDebug);
-                        constraints.activateFromEdges(
-                                Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
@@ -168,6 +164,8 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                             break outer;
                         }
                     }
+                    final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
+                    constraints.activateFromEdges(removedEdges, subDebug);
                     proxyDebug.commit();
                 } catch(Delay d) {
                     addTime(constraint, 1, delayCount, debug);

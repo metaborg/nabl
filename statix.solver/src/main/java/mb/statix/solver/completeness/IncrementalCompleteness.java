@@ -5,13 +5,16 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
@@ -43,13 +46,18 @@ public class IncrementalCompleteness implements ICompleteness {
         });
     }
 
-    @Override public void remove(IConstraint constraint, IUnifier unifier) {
+    @Override public Set<CriticalEdge> remove(IConstraint constraint, IUnifier unifier) {
+        final ImmutableSet.Builder<CriticalEdge> removedEdges = ImmutableSet.builder();
         Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
-                final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> HashMultiset.create());
+            getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
+                final Multiset<ITerm> labels = incomplete.computeIfAbsent(scopeOrVar, s -> HashMultiset.create());
                 labels.remove(label);
+                if(!labels.contains(label)) {
+                    removedEdges.add(CriticalEdge.of(scopeOrVar, label));
+                }
             });
         });
+        return removedEdges.build();
     }
 
     @Override public void update(ITermVar var, IUnifier unifier) {
