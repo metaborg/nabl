@@ -1,5 +1,8 @@
 package statix.cli.incremental.changes;
 
-public interface IIncrementalChange {
+import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 
+@FunctionalInterface
+public interface IIncrementalChange {
+    ISpoofaxParseUnit apply(ISpoofaxParseUnit unit);
 }
