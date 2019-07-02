@@ -46,9 +46,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
     
     @Override
     protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        TTimings.startNewRun();
-        TTimings.addDetails("MSTX_solve_multi_file Settings: <Strategy=%s, %s>, Debug: <%s>, Input: <%s>", terms.get(0), TOverrides.print(), TDebug.print(), term);
-        TTimings.startPhase("MSTX_solve_multi_file");
+        TTimings.startPhase("MSTX_solve_multi_file", "Strategy=" + terms.get(0), "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Input: " + term);
         
         try {
             return super._call(env, term, terms);

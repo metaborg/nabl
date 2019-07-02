@@ -46,8 +46,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
     @Override
     protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
         TTimings.startNewRun();
-        TTimings.addDetails("MSTX_solve_constraint<%s>, Settings: <%s> Debug: <%s>", terms.get(0), TOverrides.print(), TDebug.print());
-        TTimings.startPhase("MSTX_solve_constraint");
+        TTimings.startPhase("MSTX_solve_constraint", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Spec: " + terms.get(0).hashCode(), "Input: " + term.toString());
         
         try {
             return super._call(env, term, terms);

@@ -38,9 +38,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
     
     @Override
     protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        TTimings.startNewRun();
-        TTimings.addDetails("STX_solve_multi_file Settings: <%s>, Debug: <%s>, Input: <%s>", TOverrides.print(), TDebug.print(), term);
-        TTimings.startPhase("STX_solve_multi_file");
+        TTimings.startPhase("STX_solve_multi_file", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Input: " + term.toString());
         
         try {
             return super._call(env, term, terms);

@@ -42,8 +42,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         }
         
         TTimings.startNewRun();
-        TTimings.addDetails("STX_solve_constraint Settings: <%s>, Debug: <%s>, Input: <%s>", TOverrides.print(), TDebug.print(), term);
-        TTimings.startPhase("STX_solve_constraint");
+        TTimings.startPhase("STX_solve_constraint", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Input: " + term.toString());
         
         try {
             return super._call(env, term, terms);

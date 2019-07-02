@@ -32,9 +32,7 @@ public class MSTX_solve_multi_project extends StatixPrimitive {
     
     @Override
     protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        TTimings.startNewRun();
-        TTimings.addDetails("MSTX_solve_multi_project Settings: <%s> Debug: <%s>", TOverrides.print(), TDebug.print());
-        TTimings.startPhase("MSTX_solve_multi_project");
+        TTimings.startPhase("MSTX_solve_multi_project", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print());
         
         try {
             return super._call(env, term, terms);
