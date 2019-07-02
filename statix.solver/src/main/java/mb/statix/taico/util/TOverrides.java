@@ -12,11 +12,18 @@ public class TOverrides {
     /** The number of threads for concurrency. Has no effect if CONCURRENT is false. */
     public static final int THREADS = 2;
     
+    /**
+     * If true, the observer mechanism is used for own critical edges.
+     * Otherwise, the"just redo whenever the critical edge MIGHT have changed" variant is used. 
+     */
+    public static final boolean USE_OBSERVER_MECHANISM_FOR_SELF = true;
+    
     /** If true, will cause the statix calls to fail in order to trigger a clean run. */
     public static final boolean CLEAN = false;
     
     public static String print() {
         return "Concurrent=" + (CONCURRENT ? THREADS : "false") +
-                ", Loglevel=" + (OVERRIDE_LOGLEVEL ? LOGLEVEL : "not overridden");
+                ", Loglevel=" + (OVERRIDE_LOGLEVEL ? LOGLEVEL : "not overridden") +
+                ", UseObserverMechanismSelf=" + USE_OBSERVER_MECHANISM_FOR_SELF;
     }
 }

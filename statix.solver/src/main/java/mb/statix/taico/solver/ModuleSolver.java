@@ -270,8 +270,7 @@ public class ModuleSolver implements IOwnable {
                 completeness.updateAll(result.vars(), state.unifier());
                 constraints.activateFromVars(result.vars(), subDebug);
                 
-                //TODO This activates more edges than it should. Perhaps use the completeness to only activate relevant edges?
-                constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
+                if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF) constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
             } else {
                 completeness.remove(constraint, state.unifier());
                 subDebug.error("Failed");

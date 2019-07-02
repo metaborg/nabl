@@ -31,6 +31,7 @@ import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.util.TDebug;
+import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.Vars;
 
 public class ModuleConstraintStore implements IConstraintStore {
@@ -396,7 +397,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (owner == null) throw new IllegalStateException("Encountered edge without being able to determine the owner!");
         
         //A module doesn't have to register on itself
-        if (this.owner.equals(owner.getId())) return;
+        if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return;
         
         final IMState ownerState = owner.getCurrentState();
         RedirectingIncrementalCompleteness completeness = ownerState.solver().getCompleteness();
