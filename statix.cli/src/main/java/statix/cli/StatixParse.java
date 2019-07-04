@@ -1,16 +1,13 @@
 package statix.cli;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.language.ILanguageImpl;
@@ -57,18 +54,18 @@ public class StatixParse {
      * @throws MetaborgException
      *      If parsing any of the contents fails.
      * 
-     * @see #parse(String)
+     * @see #parse(Object)
      *      Parse normally
-     * @see #parse(String, File)
+     * @see #parse(Object, File)
      *      Parse contents of separate file
-     * @see #parse(String, String)
+     * @see #parse(Object, String)
      *      Parse supplied string
-     * @see #parse(String, IStrategoTerm)
+     * @see #parse(Object, IStrategoTerm)
      *      Parse with AST supplied
      */
-    public List<ISpoofaxParseUnit> parseFiles(Map<String, ?> files) throws MetaborgException {
+    public List<ISpoofaxParseUnit> parseFiles(Map<?, ?> files) throws MetaborgException {
         List<ISpoofaxParseUnit> list = new ArrayList<>();
-        for (Entry<String, ?> e : files.entrySet()) {
+        for (Entry<?, ?> e : files.entrySet()) {
             ISpoofaxParseUnit unit;
             Object o = e.getValue();
             if (o instanceof String) {
@@ -89,6 +86,28 @@ public class StatixParse {
     }
     
     /**
+     * Creates parse units for the given files.
+     * 
+     * @param files
+     *      the files
+     * 
+     * @return
+     *      a list of parse units
+     * 
+     * @throws MetaborgException
+     *      If parsing any of the contents fails.
+     * 
+     * @see #parse(String)
+     */
+    public List<ISpoofaxParseUnit> parseFiles(Iterable<?> files) throws MetaborgException {
+        List<ISpoofaxParseUnit> list = new ArrayList<>();
+        for (Object file : files) {
+            list.add(parse(file));
+        }
+        return list;
+    }
+    
+    /**
      * Creates a parse unit for the given file.
      * 
      * @param file
@@ -100,8 +119,8 @@ public class StatixParse {
      * @throws MetaborgException
      *      If parsing of the contents of the given file fails.
      */
-    public ISpoofaxParseUnit parse(String file) throws MetaborgException {
-        final FileObject resource = S.resourceService.resolve(file);
+    public ISpoofaxParseUnit parse(Object file) throws MetaborgException {
+        final FileObject resource = StatixUtil.resolve(S, file);
         final String text;
         try {
             text = S.sourceTextService.text(resource);
@@ -127,15 +146,10 @@ public class StatixParse {
      * @throws MetaborgException
      *      If parsing of the given contents fails.
      */
-    public ISpoofaxParseUnit parse(String file, File contents) throws MetaborgException {
-        String fileContents;
-        try {
-            fileContents = IOUtils.toString(new FileInputStream(contents), Charset.defaultCharset());
-        } catch (IOException e) {
-            throw new MetaborgException("Unable to read file contents of " + contents, e);
-        }
+    public ISpoofaxParseUnit parse(Object file, File contents) throws MetaborgException {
+        String fileContents = StatixUtil.readFile(contents);
         
-        final FileObject resource = S.resourceService.resolve(file);
+        final FileObject resource = StatixUtil.resolve(S, file);
         final ISpoofaxInputUnit inputUnit = S.unitService.inputUnit(resource, fileContents, lang, null);
         final Optional<ISpoofaxParseUnit> parseUnit = parse(inputUnit);
         return parseUnit.orElseThrow(() -> new MetaborgException("Parsing of " + file + " failed: file " + contents + " has syntax errors (2)."));
@@ -155,8 +169,8 @@ public class StatixParse {
      * @throws MetaborgException
      *      If parsing of the given contents fails.
      */
-    public ISpoofaxParseUnit parse(String file, String contents) throws MetaborgException {
-        final FileObject resource = S.resourceService.resolve(file);
+    public ISpoofaxParseUnit parse(Object file, String contents) throws MetaborgException {
+        final FileObject resource = StatixUtil.resolve(S, file);
         final ISpoofaxInputUnit inputUnit = S.unitService.inputUnit(resource, contents, lang, null);
         final Optional<ISpoofaxParseUnit> parseUnit = parse(inputUnit);
         return parseUnit.orElseThrow(() -> new MetaborgException("Parsing of " + file + " failed: passed contents have syntax errors (3)."));
@@ -173,11 +187,27 @@ public class StatixParse {
      * @return
      *      the parse unit
      */
-    public ISpoofaxParseUnit parse(String file, IStrategoTerm ast) {
-        final FileObject resource = S.resourceService.resolve(file);
+    public ISpoofaxParseUnit parse(Object file, IStrategoTerm ast) {
+        final FileObject resource = StatixUtil.resolve(S, file);
         final ISpoofaxInputUnit inputUnit = S.unitService.emptyInputUnit(resource, lang, null);
         final ISpoofaxParseUnit parseUnit = S.unitService.parseUnit(inputUnit, new ParseContrib(ast));
         return parseUnit;
+    }
+    
+    /**
+     * Replaces the AST of the given parse unit with the given AST.
+     * The returned parse unit will have a successfully parsed AST and a duration of -1.
+     * 
+     * @param unit
+     *      the parse unit to replace the AST of
+     * @param ast
+     *      the AST replacement
+     * 
+     * @return
+     *      the new parse unit
+     */
+    public ISpoofaxParseUnit replace(ISpoofaxParseUnit unit, IStrategoTerm ast) {
+        return S.unitService.parseUnit(unit.input(), new ParseContrib(ast));
     }
     
     /**
@@ -190,8 +220,8 @@ public class StatixParse {
      * @return
      *      the parse unit for the file
      */
-    public ISpoofaxParseUnit removedFile(String file) {
-        final FileObject resource = S.resourceService.resolve(file);
+    public ISpoofaxParseUnit removedFile(Object file) {
+        final FileObject resource = StatixUtil.resolve(S, file);
         final ISpoofaxInputUnit inputUnit = S.unitService.emptyInputUnit(resource, lang, null);
         final ISpoofaxParseUnit parseUnit = S.unitService.emptyParseUnit(inputUnit);
         return parseUnit;

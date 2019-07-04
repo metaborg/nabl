@@ -89,7 +89,7 @@ public class Statix implements Callable<Void> {
         logDebug("Current working directory: " + System.getProperty("user.dir"));
         
         
-        S = new Spoofax();
+        S = MStatix.S;
         cli = new CLIUtils(S);
         lang = loadLanguage();
         project = cli.getOrCreateCWDProject();
@@ -145,10 +145,6 @@ public class Statix implements Callable<Void> {
             return lang;
         }
         throw new MetaborgException("Failed to load language from path or resources.");
-    }
-    
-    private void loadProject(String project) {
-        
     }
 
     private Optional<ISpoofaxAnalyzeUnit> loadFile(String file) throws MetaborgException {

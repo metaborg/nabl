@@ -1,7 +1,8 @@
 package statix.cli;
 
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
 import org.metaborg.core.MetaborgException;
-import org.metaborg.core.context.IContext;
 import org.metaborg.core.messages.IMessage;
 import org.metaborg.core.messages.IMessagePrinter;
 import org.metaborg.spoofax.core.Spoofax;
@@ -14,6 +15,16 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
+import static mb.nabl2.terms.matching.TermMatch.M;
+
+import java.io.File;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.statix.solver.ISolverResult;
 
 public class StatixAnalyze {
@@ -23,9 +34,9 @@ public class StatixAnalyze {
     private IConstraintContext context;
     private IMessagePrinter printer;
     
-    public StatixAnalyze(Spoofax S, IContext context, IMessagePrinter printer) throws MetaborgException {
+    public StatixAnalyze(Spoofax S, IConstraintContext context, IMessagePrinter printer) throws MetaborgException {
         this.S = S;
-        this.context = (IConstraintContext) context;
+        this.context = context;
         this.printer = printer;
         
         //Verify that the analysisService is available
@@ -34,10 +45,41 @@ public class StatixAnalyze {
         }
     }
     
+    public IConstraintContext getContext() {
+        return context;
+    }
+    
+    /**
+     * Loads the context state from the given file.
+     * 
+     * @param file
+     *      the file to load from
+     * 
+     * @throws MetaborgException 
+     *      If loading the context fails.
+     */
+    public void loadContextFrom(File file) throws MetaborgException {
+        StatixUtil.loadFrom(S, context, file);
+    }
+    
+    /**
+     * Saves the context to the given file.
+     * 
+     * @param file
+     *      the file to save to
+     * 
+     * @throws MetaborgException 
+     *      If writing the context fails.
+     */
+    public void saveContextTo(File file) throws MetaborgException {
+        StatixUtil.saveTo(S, context, file);
+    }
+    
     /**
      * Clears all analysis results so far, i.e. performs a clean run.
      */
     public void clearAnalysisResults() {
+        context.load();
         context.clear();
     }
     
@@ -60,9 +102,46 @@ public class StatixAnalyze {
     
     public ISolverResult getAnalysisResult(String resource) {
         IStrategoTerm term = context.get(resource);
-        System.out.println(term);
+        System.out.println("Term: " + term);
         
+        //TODO Look into prettyprint service
+        
+        StrategoTerms terms = new StrategoTerms(S.termFactoryService.getGeneric());
+        ITerm sterm = terms.fromStratego(term);
+        
+        System.out.println("STerm: " + sterm);
+        return M.blobValue(ISolverResult.class).match(sterm).orElse(null);
         //TODO
+    }
+    
+    /**
+     * @return
+     *      a list of all the files in the context
+     */
+    public List<File> getFilesInContext() {
+        return context.entrySet().stream()
+                .map(Entry::getKey)
+                .map(context::keyResource)
+                .map(this::getFile)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * @return
+     *      a list of all the files in the context
+     */
+    public List<String> getFileKeysInContext() {
+        return context.entrySet().stream()
+                .map(Entry::getKey)
+                .collect(Collectors.toList());
+    }
+    
+    private File getFile(FileObject fo) {
+        try {
+            return new File(fo.getURL().toURI());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
     
     /**

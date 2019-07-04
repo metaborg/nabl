@@ -7,11 +7,12 @@ import statix.cli.incremental.changes.IIncrementalOptionChange;
 /**
  * Implementation of the incremental option.
  */
-public class IncrementalOptionChange implements IIncrementalOptionChange {
+public class IncrementalOptionChange extends IIncrementalOptionChange {
     private File baseFolder;
     private String baseName;
     
     public IncrementalOptionChange(File baseFolder, String baseName) {
+        super("option", baseName);
         this.baseFolder = baseFolder;
         this.baseName = baseName;
     }

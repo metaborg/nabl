@@ -3,11 +3,22 @@ package statix.cli.incremental.changes;
 import java.io.File;
 import java.util.Random;
 
+import org.metaborg.core.MetaborgException;
+import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
+
+import statix.cli.StatixData;
+import statix.cli.StatixParse;
+import statix.cli.TestRandomness;
+
 //TODO Make parametric?
 /**
  * Interface to represent a (complex) option that can select different files.
  */
-public interface IIncrementalOptionChange {
+public abstract class IIncrementalOptionChange extends IncrementalChange {
+    public IIncrementalOptionChange(String group, String sort) {
+        super(group, sort);
+    }
+
     /**
      * @return
      *      the options to select from
@@ -15,13 +26,13 @@ public interface IIncrementalOptionChange {
      * @throws IllegalStateException
      *      If there are no options to select from.
      */
-    File[] getOptions();
+    public abstract File[] getOptions();
     
     /**
      * @return
      *      the amount of different options
      */
-    default int getOptionCount() {
+    public int getOptionCount() {
         return getOptions().length;
     }
     
@@ -32,9 +43,20 @@ public interface IIncrementalOptionChange {
      * @return
      *      selects an option randomly
      */
-    default File selectRandomly(Random random) {
+    public File selectRandomly(Random random) {
         File[] options = getOptions();
         return options[random.nextInt(options.length)];
+    }
+    
+    /**
+     * @param random
+     *      the random to use
+     * 
+     * @return
+     *      selects an option randomly
+     */
+    public File selectRandomly(TestRandomness random) {
+        return selectRandomly(random.getRandom());
     }
     
     /**
@@ -49,7 +71,24 @@ public interface IIncrementalOptionChange {
      * @throws ArrayIndexOutOfBoundsException
      *      If the given option is not possible.
      */
-    default File apply(int option) {
+    public File apply(int option) {
         return getOptions()[option];
+    }
+    
+    @Override
+    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, TestRandomness random, String file) throws MetaborgException {
+        File contents = selectRandomly(random);
+        return parse.parse(file, contents);
+    }
+    
+    @Override
+    public ISpoofaxParseUnit create(StatixData data, StatixParse parse, TestRandomness random) throws NotApplicableException, MetaborgException {
+        String name = data.freshName();
+        return parse(data, parse, random, name);
+    }
+    
+    @Override
+    public boolean supportsCreate() {
+        return true;
     }
 }

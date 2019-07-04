@@ -1,5 +1,6 @@
 package statix.cli;
 
+import java.io.File;
 import java.io.OutputStream;
 
 import org.apache.commons.vfs2.FileObject;
@@ -13,6 +14,7 @@ import org.metaborg.core.messages.IMessagePrinter;
 import org.metaborg.core.messages.WithLocationStreamMessagePrinter;
 import org.metaborg.core.project.IProject;
 import org.metaborg.spoofax.core.Spoofax;
+import org.metaborg.spoofax.core.context.constraint.IConstraintContext;
 import org.metaborg.spoofax.core.shell.CLIUtils;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
@@ -26,6 +28,7 @@ public class StatixData {
     public CLIUtils cli;
     public IProject project;
     public IMessagePrinter messagePrinter;
+    private int nameCounter = 0;
     
     public StatixData(Spoofax S, OutputStream messageOutput) throws MetaborgException {
         //TODO
@@ -34,6 +37,7 @@ public class StatixData {
         this.messagePrinter = new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, messageOutput);
         
         loadLanguagesFromPath();
+        loadStatix();
         this.project = cli.getOrCreateCWDProject();
     }
     
@@ -101,6 +105,86 @@ public class StatixData {
     }
     
     /**
+     * @param name
+     *      the name of the language
+     * 
+     * @return
+     *      the language with the given name, or null if not found
+     */
+    public ILanguageImpl getLanguage(String name) {
+        ILanguage L = S.languageService.getLanguage(name);
+        if (L == null) return null;
+        
+        return L.activeImpl();
+    }
+    
+    /**
+     * Creates a new context for the given language.
+     * 
+     * @param language
+     *      the language
+     * 
+     * @return
+     *      the created context, can be a cached context
+     * 
+     * @throws MetaborgException
+     *      If the language cannot be found.
+     */
+    public IConstraintContext createContext(String language) throws MetaborgException {
+        ILanguageImpl lang = getLanguage(language);
+        if (lang == null) throw new MetaborgException("Unable to find language " + language);
+        
+        IContext context = S.contextService.get(project.location(), project, lang);
+        if (!(context instanceof IConstraintContext)) throw new IllegalStateException("Expected context to be a constraint context!");
+        return (IConstraintContext) context;
+    }
+    
+    /**
+     * Loads the context state from the given file into the given context.
+     * 
+     * @param context
+     *      the context
+     * @param file
+     *      the file to load from
+     * 
+     * @throws MetaborgException 
+     *      If loading the context fails.
+     */
+    public void loadFrom(IConstraintContext context, File file) throws MetaborgException {
+        StatixUtil.loadFrom(S, context, file);
+    }
+    
+    /**
+     * Saves the given context to the given file.
+     * 
+     * @param context
+     *      the context
+     * @param file
+     *      the file to save to
+     * 
+     * @throws MetaborgException 
+     *      If writing the context fails.
+     */
+    public void saveTo(IConstraintContext context, File file) throws MetaborgException {
+        StatixUtil.saveTo(S, context, file);
+    }
+    
+    /**
+     * @return
+     *      a freshly created name
+     */
+    public String freshName() {
+        return "FreshName" + nameCounter++;
+    }
+    
+    /**
+     * Resets the fresh names.
+     */
+    public void resetFreshNames() {
+        nameCounter = 0;
+    }
+    
+    /**
      * Loads and analyzes the specification.
      * 
      * @param file
@@ -123,7 +207,7 @@ public class StatixData {
         
         ISpoofaxParseUnit specParsed = parse.parse(file);
         
-        StatixAnalyze analyze = new StatixAnalyze(S, context, messagePrinter);
+        StatixAnalyze analyze = new StatixAnalyze(S, (IConstraintContext) context, messagePrinter);
         ISpoofaxAnalyzeUnit specAnalyzed = analyze.analyzeSingle(specParsed);
         return specAnalyzed;
     }
