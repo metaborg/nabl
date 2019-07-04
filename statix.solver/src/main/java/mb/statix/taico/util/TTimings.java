@@ -79,7 +79,11 @@ public class TTimings {
     }
     
     public static void serialize() {
-        try (CSVPrinter printer = new CSVPrinter(new FileWriter(getFile()), format)) {
+        serialize(getFile());
+    }
+    
+    public static void serialize(File file) {
+        try (CSVPrinter printer = new CSVPrinter(new FileWriter(file), format)) {
             printer.printRecord("run", "phase", "start", "end", "duration", "details");
             for (Entry<Integer, LinkedHashMap<String, PhaseDetails>> entry : results.entrySet()) {
                 final Integer run = entry.getKey();
@@ -108,9 +112,9 @@ public class TTimings {
         }
     }
     
-    private static File getFile() throws IOException {
+    private static File getFile() {
         File folder = new File(FOLDER);
-        if (!folder.exists() && !folder.mkdirs()) throw new IOException("Unable to create folder");
+        if (!folder.exists() && !folder.mkdirs()) throw new IllegalStateException("Unable to create folder");
         
         SimpleDateFormat format = new SimpleDateFormat(FILE);
         String name = format.format(System.currentTimeMillis());

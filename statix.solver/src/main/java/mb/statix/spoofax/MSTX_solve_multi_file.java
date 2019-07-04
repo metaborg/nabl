@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -66,7 +67,11 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         final MSolverResult initial = M.blobValue(MSolverResult.class).match(terms.get(1))
                 .orElseThrow(() -> new InterpreterException("Expected solver result, but was " + terms.get(1)))
                 .reset();
+        
+        SolverContext.setSolverContext(initial.context());
+        
         final Spec spec = initial.state().spec();
+        Objects.requireNonNull(spec, "The spec should never be null");
 
         final IDebugContext debug = getDebugContext(terms.get(2));
 

@@ -27,7 +27,7 @@ public class SolverContext implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private final transient IncrementalStrategy strategy;
-    private final transient Spec spec;
+    private final Spec spec;
     private final ModuleManager manager = new ModuleManager();
     private final IncrementalManager incrementalManager;
     private transient ASolverCoordinator coordinator;

@@ -36,6 +36,6 @@ public abstract class AMSolverResult implements ISolverResult {
      *      a new solver result
      */
     public MSolverResult reset() {
-        return MSolverResult.of(state(), new HashSet<>(), new HashMap<>(), existentials());
+        return MSolverResult.builder().context(context()).state(state()).existentials(existentials()).delays(new HashMap<>()).build();
     }
 }

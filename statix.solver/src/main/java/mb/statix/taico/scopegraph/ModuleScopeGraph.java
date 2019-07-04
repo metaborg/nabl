@@ -46,7 +46,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     protected int id;
     private int copyId;
     
-    protected final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    protected transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
     protected volatile transient int currentModification;
     
@@ -481,6 +481,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         //Transient HashTrieRelation3 is not serializable, but the immutable variant is, so we read the frozen variant and melt it
         this.edges = ((HashTrieRelation3.Immutable<Scope, ITerm, Scope>) stream.readObject()).melt();
         this.data = ((HashTrieRelation3.Immutable<Scope, ITerm, ITerm>) stream.readObject()).melt();
+        
+        //Recreate the lock
+        this.lock = new ReentrantReadWriteLock();
     }
     
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
