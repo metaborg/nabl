@@ -50,7 +50,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     public ModuleConstraintStore(String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.owner = owner;
-        this.active = new LinkedList<>();
+        this.active = new LinkedList<>(); //TODO For concurrency, ConcurrentLinkedDeque?
         this.stuckOnVar = MultimapBuilder.hashKeys().hashSetValues().build();
         this.stuckOnEdge = MultimapBuilder.hashKeys().hashSetValues().build();
         this.stuckOnModule = MultimapBuilder.hashKeys().hashSetValues().build();
@@ -143,18 +143,24 @@ public class ModuleConstraintStore implements IConstraintStore {
             if (!delay.vars().isEmpty()) {
                 TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
                 for (ITermVar var : delay.vars()) {
-                    stuckOnVar.put(var, delayed);
+                    synchronized (stuckOnVar) {
+                        stuckOnVar.put(var, delayed);
+                    }
                     resolveStuckOnOtherModule(var, constraint, TDebug.DEV_OUT);
                 }
             } else if (!delay.criticalEdges().isEmpty()) {
                 TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
                 for (CriticalEdge edge : delay.criticalEdges()) {
-                    stuckOnEdge.put(edge, delayed);
+                    synchronized (stuckOnEdge) {
+                        stuckOnEdge.put(edge, delayed);
+                    }
                     registerAsObserver(edge, TDebug.DEV_OUT);
                 }
             } else if (delay.module() != null) {
                 TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
-                stuckOnModule.put(delay.module(), delayed);
+                synchronized (stuckOnModule) {
+                    stuckOnModule.put(delay.module(), delayed);
+                }
             } else {
                 throw new IllegalArgumentException("delayed for no apparent reason");
             }
