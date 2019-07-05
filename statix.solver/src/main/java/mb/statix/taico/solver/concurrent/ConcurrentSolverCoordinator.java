@@ -154,32 +154,31 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         
         //We might want to do another round, prevent triggering this code multiple times.
         progressCounter.switchToPending();
-        try {
-            //Check for another round
-            if (context.getIncrementalManager().finishPhase()) {
-                //We want to do another round
-                if (solvers.isEmpty()) {
-                    lazyDebug.info("[Coordinator] Phase done: all solvers finished successfully!");
-                } else {
-                    lazyDebug.info("[Coordinator] Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
-                }
-                
-                //Recycle failed solvers and runnables
-                synchronized (failedSolvers) {
-                    for (Entry<ModuleSolver, SolverRunnable> entry : failedSolvers.entrySet()) {
-                        solvers.put(entry.getKey(), entry.getValue());
-                        
-                        entry.getValue().restart();
-                    }
-                    
-                    failedSolvers.clear();
-                }
-                
-                return;
+
+        //Check for another round
+        if (context.getIncrementalManager().finishPhase()) {
+            //We want to do another round
+            if (solvers.isEmpty()) {
+                lazyDebug.info("[Coordinator] Phase done: all solvers finished successfully!");
+            } else {
+                lazyDebug.info("[Coordinator] Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
             }
-        } finally {
+            
+            //Recycle failed solvers and runnables
+            synchronized (failedSolvers) {
+                for (Entry<ModuleSolver, SolverRunnable> entry : failedSolvers.entrySet()) {
+                    solvers.put(entry.getKey(), entry.getValue());
+                    
+                    entry.getValue().restart();
+                }
+                
+                failedSolvers.clear();
+            }
+            
             progressCounter.switchToDone();
+            return;
         }
+        deinit();
         
         //If we end up here, none of the solvers is still able to make progress
         if (solvers.isEmpty()) {
