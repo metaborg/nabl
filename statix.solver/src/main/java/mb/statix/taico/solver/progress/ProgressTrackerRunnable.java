@@ -28,15 +28,21 @@ public class ProgressTrackerRunnable implements Runnable {
     
     @Override
     public void run() {
-        while (!stop) {
+        try {
+            while (!stop) {
+                tracker.update();
+                printResults();
+                
+                try {
+                    Thread.sleep(interval);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        } finally {
+            //Print one last time when stopping
             tracker.update();
             printResults();
-            
-            try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) {
-                return;
-            }
         }
     }
     
