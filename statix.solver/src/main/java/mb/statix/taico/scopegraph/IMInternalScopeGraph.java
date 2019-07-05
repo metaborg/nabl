@@ -178,6 +178,26 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     
     /**
      * @return
+     *      a new locking graph for this scope graph
+     */
+    ILockingScopeGraph<S, L, D> lockingGraph();
+    
+    /**
+     * When creating locking graphs from one view, all views must share the same set of graphs.
+     * As such, the passed map is the reference to the single map that contains all graphs.
+     * 
+     * @param graphs
+     *      a map with the graphs of the current view
+     * @param lockManager
+     *      the lock manager of the graphs
+     * 
+     * @return
+     *      a new locking graph for this scope graph
+     */
+    ILockingScopeGraph<S, L, D> lockingGraph(Map<String, ILockingScopeGraph<S, L, D>> graphs, LockManager lockManager);
+    
+    /**
+     * @return
      *      an external view on this scope graph
      */
     IMExternalScopeGraph<S, L, D> externalGraph();

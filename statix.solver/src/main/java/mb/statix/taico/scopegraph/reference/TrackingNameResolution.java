@@ -14,6 +14,7 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
+import mb.statix.taico.util.TDebug;
 
 public class TrackingNameResolution<S extends D, L, D> extends FastNameResolution<S, L, D> {
     private SetMultimap<S, LabelWF<L>> edgeMap = HashMultimap.create();
@@ -34,7 +35,7 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
         S scope = path.getTarget(); //the current scope
         dataMap.put(scope, re);
         
-        System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", data edge requested=" + l);
+        if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", data edge requested=" + l);
         return super.getData(re, path, l);
     }
     
@@ -43,7 +44,7 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
         S scope = path.getTarget(); //the current scope
         edgeMap.put(scope, re);
 
-        System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", edge requested=" + l);
+        if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", edge requested=" + l);
         return super.getEdges(re, path, l);
     }
     

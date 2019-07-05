@@ -401,6 +401,16 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     @Override
+    public LockingModuleScopeGraph lockingGraph() {
+        return new LockingModuleScopeGraph(this);
+    }
+    
+    @Override
+    public LockingModuleScopeGraph lockingGraph(Map<String, ILockingScopeGraph<Scope, ITerm, ITerm>> graphs, LockManager lockManager) {
+        return new LockingModuleScopeGraph(this, graphs, lockManager);
+    }
+    
+    @Override
     public DelegatingModuleScopeGraph delegatingGraph(boolean clearScopes) {
         return new DelegatingModuleScopeGraph(this, clearScopes);
     }
