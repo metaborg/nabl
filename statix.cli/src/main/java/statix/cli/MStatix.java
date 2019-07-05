@@ -34,6 +34,7 @@ import statix.cli.incremental.changes.ast.RemoveClass;
 import statix.cli.incremental.changes.ast.RemoveFile;
 import statix.cli.incremental.changes.ast.RemoveMethod;
 import statix.cli.incremental.changes.ast.RenameClass;
+import statix.cli.incremental.changes.ast.RenameMethod;
 import statix.cli.incremental.changes.other.AddClass;
 
 @Command(name = "java -jar statix.jar", description = "Type check and evaluate Statix files.", separator = "=")
@@ -51,7 +52,7 @@ public class MStatix implements Callable<Void> {
         
         S = spoofax;
         
-        forceInit(AddMethod.class, RemoveMethod.class);
+        forceInit(AddMethod.class, RenameMethod.class, RemoveMethod.class);
         forceInit(RemoveFile.class);
         forceInit(AddClass.class, RenameClass.class, RemoveClass.class);
     }
