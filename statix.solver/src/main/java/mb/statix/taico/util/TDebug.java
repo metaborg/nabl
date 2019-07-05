@@ -38,7 +38,10 @@ public class TDebug {
     public static final boolean QUERY_DEBUG = false;
     
     /** Debug info about delegation and events regarding the store. */
-    public static final boolean STORE_DEBUG = true;
+    public static final boolean STORE_DEBUG = false;
+    
+    /** The interval at which progress is listed (in ms). */
+    public static final long PROGRESS_TRACKER_INTERVAL = 30000;
     
     public static final IDebugContext DEV_NULL = new NullDebugContext();
     public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), Level.parse(TOverrides.LOGLEVEL));

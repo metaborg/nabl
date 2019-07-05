@@ -19,6 +19,8 @@ import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.progress.ProgressTrackerRunnable;
+import mb.statix.taico.util.TDebug;
 
 public abstract class ASolverCoordinator {
     protected ModuleSolver root;
@@ -27,6 +29,7 @@ public abstract class ASolverCoordinator {
     protected IncrementalStrategy strategy;
     protected IDebugContext debug;
     protected SolverContext context;
+    protected ProgressTrackerRunnable progressPrinter;
     
     /**
      * @return
@@ -107,6 +110,16 @@ public abstract class ASolverCoordinator {
         this.rootState = rootState;
         this.root = ModuleSolver.topLevelSolver(rootState, constraint, debug);
         this.strategy = strategy;
+        if (TDebug.PROGRESS_TRACKER_INTERVAL > 0) {
+            this.progressPrinter = new ProgressTrackerRunnable(TDebug.PROGRESS_TRACKER_INTERVAL);
+            this.progressPrinter.start();
+        }
+    }
+    
+    protected void deinit() {
+        if (this.progressPrinter != null) {
+            this.progressPrinter.stop();
+        }
     }
     
     /**
@@ -157,10 +170,13 @@ public abstract class ASolverCoordinator {
         Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
         
         if (context.isInitPhase()) context.finishInitPhase();
-        System.err.println("Scheduling");
         scheduleModules(modules);
         
-        runToCompletion();
+        try {
+            runToCompletion();
+        } finally {
+            deinit();
+        }
         
         return collectResults(modules.keySet());
     }

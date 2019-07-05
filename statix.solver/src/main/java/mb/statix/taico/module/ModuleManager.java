@@ -31,6 +31,16 @@ public class ModuleManager implements Serializable {
     }
     
     /**
+     * Unsafe, do not modify the returned collection.
+     * 
+     * @return
+     *      all the modules registered in this manager
+     */
+    public synchronized Collection<IModule> _getModules() {
+        return modules.values();
+    }
+    
+    /**
      * @return
      *      all the modules and their ids
      */

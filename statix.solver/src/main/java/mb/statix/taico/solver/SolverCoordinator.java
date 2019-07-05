@@ -6,12 +6,16 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.log.Level;
 
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.taico.incremental.changeset.IChangeSet2;
+import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 
@@ -42,7 +46,11 @@ public class SolverCoordinator extends ASolverCoordinator {
         init(new NonIncrementalStrategy(), state, constraint, debug);
         addSolver(root);
         
-        runToCompletion();
+        try {
+            runToCompletion();
+        } finally {
+            deinit();
+        }
         
         return aggregateResults();
     }
@@ -55,10 +63,31 @@ public class SolverCoordinator extends ASolverCoordinator {
                 runToCompletion();
             } catch (InterruptedException ex) {
                 this.debug.error("Interrupted while solving!");
+            } finally {
+                deinit();
             }
             
             onFinished.accept(aggregateResults());
         }).start();
+    }
+    
+    @Override
+    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet2 changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
+            throws InterruptedException {
+        init(strategy, state, null, debug);
+        
+        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
+        
+        if (context.isInitPhase()) context.finishInitPhase();
+        scheduleModules(modules);
+        
+        try {
+            runToCompletion();
+        } finally {
+            deinit();
+        }
+        
+        return collectResults(modules.keySet());
     }
     
     /**

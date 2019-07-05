@@ -10,8 +10,10 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
@@ -100,6 +102,27 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         this.onFinished = onFinished;
         init(new NonIncrementalStrategy(), state, constraint, debug);
         addSolver(root);
+    }
+    
+    @Override
+    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet2 changeSet, IMState state,
+            Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
+        init(strategy, state, null, debug);
+        
+        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
+        
+        if (context.isInitPhase()) context.finishInitPhase();
+        
+        scheduleModules(modules);
+        addSolver(root);
+        
+        try {
+            runToCompletion();
+        } finally {
+            deinit();
+        }
+        
+        return collectResults(modules.keySet());
     }
     
     @Override
