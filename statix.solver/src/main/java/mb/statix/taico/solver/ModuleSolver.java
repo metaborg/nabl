@@ -239,6 +239,7 @@ public class ModuleSolver implements IOwnable {
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
+//            System.out.println("[" + getOwner().getId() + "] Solving " + constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
             proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
         }
         
