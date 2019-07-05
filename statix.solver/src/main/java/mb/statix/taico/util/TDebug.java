@@ -44,7 +44,7 @@ public class TDebug {
     public static final long PROGRESS_TRACKER_INTERVAL = 30000;
     
     public static final IDebugContext DEV_NULL = new NullDebugContext();
-    public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), Level.parse(TOverrides.LOGLEVEL));
+    public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), TOverrides.LOGLEVEL.equalsIgnoreCase("none") ? Level.Error : Level.parse(TOverrides.LOGLEVEL));
     
     public static String print() {
         return "QUERY_DELAY=" + QUERY_DELAY +
