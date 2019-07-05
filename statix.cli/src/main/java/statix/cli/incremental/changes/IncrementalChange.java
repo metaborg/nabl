@@ -3,6 +3,7 @@ package statix.cli.incremental.changes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
@@ -149,6 +150,14 @@ public abstract class IncrementalChange {
             parse(tbr, s);
         }
         return tbr;
+    }
+    
+    /**
+     * @return
+     *      all available options
+     */
+    public static String listAllOptions() {
+        return ALL.get("*", "*").stream().map(c -> c.group + ":" + c.sort).collect(Collectors.joining(", "));
     }
     
     //---------------------------------------------------------------------------------------------

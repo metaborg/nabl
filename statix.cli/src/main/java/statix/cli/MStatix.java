@@ -18,6 +18,7 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.TTimings;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -57,13 +58,15 @@ public class MStatix implements Callable<Void> {
     
     @Spec private CommandSpec spec;
     @Option(names = { "-h", "--help" }, description = "show usage help", usageHelp = true) private boolean usageHelp;
-    @Option(names = { "-e", "--ext" }, description = "file extension") private String extension;
-    @Option(names = { "-l", "--language" }, description = "language under test") private String language;
+    @Option(names = { "-e", "--ext" }, required = true, description = "file extension") private String extension;
+    @Option(names = { "-l", "--language" }, required = true, description = "language under test") private String language;
     @Option(names = { "-o", "--output" }, description = "csv output for results") private String output;
     @Option(names = { "-s", "--seed" }, description = "seed for random changes") private long seed;
     @Option(names = { "-cin", "--contextin" }, description = "file to load context") private String contextIn;
     @Option(names = { "-cout", "--contextout" }, description = "file to save context", defaultValue = "default.context") private String contextOut;
     @Option(names = { "-c", "--count" }, description = "amount of runs", defaultValue = "1") private int count;
+    @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
+    @Option(names = { "--observerself" }, description = "observer mechanism for own module", defaultValue = "true") private boolean observer;
     
     @Parameters(
             paramLabel = "FOLDER",
@@ -74,7 +77,7 @@ public class MStatix implements Callable<Void> {
     @Parameters(
             paramLabel = "CHANGE",
             index = "1..*",
-            description = "the incremental changes to apply")
+            description = "the incremental changes to apply. e.g. method:add, class:*, *:remove, *:*")
     private List<String> changes;
     
     //---------------------------------------------------------------------------------------------
@@ -88,18 +91,26 @@ public class MStatix implements Callable<Void> {
     @Override public Void call() throws MetaborgException, IOException {
         init();
         
+        //Identify the files in the project
+        List<File> files;
+        try {
+            files = identifyFiles();
+        } catch (IOException e) {
+            throw new MetaborgException("Unable to identify files to parse: ", e);
+        }
+        
         try {
             boolean clean = ichanges.isEmpty();
             
             for (int run = 0; run < count; run++) {
-                //Load the context from scratch each timRenameClasse
+                //Load the context from scratch each time
                 loadContext();
                 
                 startTimedRun(clean);
                 if (clean) {
-                    cleanAnalysis();
+                    cleanAnalysis(files);
                 } else {
-                    incrementalAnalysis();
+                    incrementalAnalysis(files);
                 }
                 endTimedRun(clean);
             }
@@ -115,6 +126,23 @@ public class MStatix implements Callable<Void> {
         analyze = new StatixAnalyze(S, data.createContext(language), data.getMessagePrinter());
         random = new TestRandomness(seed == 0 ? System.currentTimeMillis() : seed);
         ichanges = IncrementalChange.parse(changes == null ? (changes = new ArrayList<>()) : changes);
+        
+        //Set the concurrency
+        TOverrides.CONCURRENT = threads > 1;
+        TOverrides.THREADS = threads;
+        
+        //Set observer mechanism
+        TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF = observer;
+        
+        //Disable debug logging
+        TOverrides.OVERRIDE_LOGLEVEL = true;
+        TOverrides.LOGLEVEL = "none";
+        
+        //Disable the modular override for when we want to do normal solving
+        TOverrides.MODULES_OVERRIDE = false;
+        
+        //We do not want to force clean runs. We are using our own contexts
+        TOverrides.CLEAN = false;
     }
     
     /**
@@ -122,17 +150,8 @@ public class MStatix implements Callable<Void> {
      * 
      * @throws MetaborgException
      */
-    public void cleanAnalysis() throws MetaborgException {
+    public void cleanAnalysis(List<File> files) throws MetaborgException {
         logger.info("Starting clean analysis");
-        
-        TTimings.startPhase("identifying files");
-        List<File> files;
-        try {
-            files = identifyFiles();
-        } catch (IOException e) {
-            throw new MetaborgException("Unable to identify files to parse: ", e);
-        }
-        TTimings.endPhase("identifying files");
         
         TTimings.startPhase("parsing", "Count: " + files.size());
         List<ISpoofaxParseUnit> parsed = parse.parseFiles(files);
@@ -156,17 +175,12 @@ public class MStatix implements Callable<Void> {
      * 
      * @throws MetaborgException
      */
-    public void incrementalAnalysis() throws MetaborgException {
+    public void incrementalAnalysis(List<File> files) throws MetaborgException {
         logger.info("Starting incremental analysis");
         
         //First we need to select the change to apply
         TTimings.startPhase("identifying files");
-        List<File> files;
-        try {
-            files = identifyFiles();
-        } catch (IOException e) {
-            throw new MetaborgException("Unable to identify files to parse: ", e);
-        }
+        
         TTimings.endPhase("identifying files");
         
         TTimings.startPhase("incremental change + parse");
@@ -228,7 +242,8 @@ public class MStatix implements Callable<Void> {
                 "Language: " + language,
                 "Clean: " + clean,
                 "Changes: " + changes,
-                "Seed: " + random.getSeed());
+                "Seed: " + random.getSeed(),
+                "Concurrent: " + (threads == 1 ? "false" : "" + threads));
     }
     
     public void endTimedRun(boolean clean) {

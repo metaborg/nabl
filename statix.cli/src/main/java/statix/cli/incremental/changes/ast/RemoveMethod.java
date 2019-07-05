@@ -1,11 +1,11 @@
 package statix.cli.incremental.changes.ast;
 
 import static statix.cli.MStatix.S;
+import static statix.cli.StrategoUtil.*;
 
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
 import statix.cli.StatixData;
-import statix.cli.StrategoUtil;
 import statix.cli.incremental.changes.IIncrementalASTChange;
 
 public class RemoveMethod extends IIncrementalASTChange {
@@ -17,7 +17,7 @@ public class RemoveMethod extends IIncrementalASTChange {
 
     @Override
     public IStrategoTerm apply(StatixData data, IStrategoTerm ast) {
-        return StrategoUtil.alterClass(S, ast, clazz -> StrategoUtil.alterMethod(S, clazz, m -> null));
+        return alterClass(S, ast, clazz -> alterMethod(S, clazz, m -> null));
     }
 
 }

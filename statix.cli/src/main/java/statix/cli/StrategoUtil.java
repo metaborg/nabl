@@ -328,7 +328,6 @@ public class StrategoUtil {
             IStrategoAppl method = M.appl(declarationTerm);
             
             //Only accept methods
-            //TODO
             if (!"MethodDecl".equals(method.getName())) continue;
             
             try {

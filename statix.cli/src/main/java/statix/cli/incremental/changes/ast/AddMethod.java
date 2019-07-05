@@ -19,7 +19,6 @@ public class AddMethod extends IIncrementalASTChange {
 
     @Override
     public IStrategoTerm apply(StatixData data, IStrategoTerm ast) {
-        
         alterClass(S, ast, clazz -> transform(data, clazz));
         return ast;
     }

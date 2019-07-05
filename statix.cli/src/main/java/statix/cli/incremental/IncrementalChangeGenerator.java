@@ -2,6 +2,7 @@ package statix.cli.incremental;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.metaborg.core.MetaborgException;
@@ -27,11 +28,11 @@ public class IncrementalChangeGenerator {
     private final List<File> files;
     private final List<IncrementalChange> changes;
     
-    public IncrementalChangeGenerator(StatixData data, StatixParse parse, TestRandomness randomness, List<File> files, List<IncrementalChange> changes) {
+    public IncrementalChangeGenerator(StatixData data, StatixParse parse, TestRandomness randomness, Collection<File> files, List<IncrementalChange> changes) {
         this.data = data;
         this.parse = parse;
         this.randomness = randomness;
-        this.files = files;
+        this.files = new ArrayList<>(files);
         this.changes = changes;
     }
     
