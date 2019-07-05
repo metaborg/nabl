@@ -63,22 +63,31 @@ public class PrefixedDebugContext implements IDebugContext {
 
     @Override
     public void info(String fmt, Object... args) {
-        parent.info(prefix + fmt, args);
+        if (!isEnabled(Level.Info)) return;
+        parent._log(Level.Info, prefix + fmt, args);
     }
 
     @Override
     public void warn(String fmt, Object... args) {
-        parent.warn(prefix + fmt, args);
+        if (!isEnabled(Level.Warn)) return;
+        parent._log(Level.Warn, prefix + fmt, args);
     }
 
     @Override
     public void error(String fmt, Object... args) {
-        parent.error(prefix + fmt, args);
+        if (!isEnabled(Level.Error)) return;
+        parent._log(Level.Error, prefix + fmt, args);
     }
 
     @Override
     public void log(Level level, String fmt, Object... args) {
-        parent.log(level, prefix + fmt, args);
+        if (!isEnabled(level)) return;
+        parent._log(level, prefix + fmt, args);
+    }
+    
+    @Override
+    public void _log(Level level, String fmt, Object... args) {
+        parent._log(level, prefix + fmt, args);
     }
 
     /**

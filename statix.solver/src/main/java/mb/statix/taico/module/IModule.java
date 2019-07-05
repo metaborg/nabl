@@ -136,7 +136,6 @@ public interface IModule extends Serializable, Flaggable {
         //TODO Incrementality breaks if parent or child names are changed
         IModule oldModule = getChild(name);
         if (oldModule == null) {
-            System.err.println("[" + getId() + "] Creating new child " + name);
             return createChild(name, canExtend, constraint);
         }
         

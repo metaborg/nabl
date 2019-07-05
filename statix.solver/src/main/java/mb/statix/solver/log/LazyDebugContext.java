@@ -62,6 +62,10 @@ public class LazyDebugContext implements IDebugContext {
             log.append(level, prefix + fmt, args);
         }
     }
+    
+    @Override public void _log(Level level, String fmt, Object... args) {
+        log.append(level, prefix + fmt, args);
+    }
 
     /**
      * Flushes the queued messages to the parent debug context.

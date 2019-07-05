@@ -79,7 +79,7 @@ public class SolverCoordinator extends ASolverCoordinator {
             for (ModuleSolver solver : tempSolvers) {
                 solverI++;
                 if (solverI % 10 == 0) {
-                    this.debug.info("Solvers in run: " + solverI + "/" + tempSolvers.length + " (C" + complete + "/F" + failed + ")");
+                    this.debug.info("Solvers in run: {}/{} (C{}/F{})", solverI, tempSolvers.length, complete, failed);
                 }
                 //If this solver is done, store its result and continue.
                 if (solver.isDone()) {
@@ -131,7 +131,8 @@ public class SolverCoordinator extends ASolverCoordinator {
             //All solvers are done!
             lazyDebug.info("All solvers finished successfully!");
         } else {
-            lazyDebug.warn("Solving failed, {} unusuccessful solvers: ", solvers.size());
+            System.err.println("Solving failed, " + solvers.size() + " unsuccessful solvers: " + solvers.stream().map(s -> s.getOwner().getId()).collect(Collectors.joining(", ")));
+            lazyDebug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
             IDebugContext sub = lazyDebug.subContext();
             for (ModuleSolver solver : solvers) {
                 sub.warn(solver.getOwner().getId());

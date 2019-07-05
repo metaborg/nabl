@@ -115,7 +115,6 @@ public class ModuleManager implements Serializable {
      *      given module.
      */
     public synchronized void addModule(IModule module) {
-        System.err.println("[ModuleManager " + this + "] Adding module " + module.getId());
         final IModule old = modules.put(module.getId(), module);
         moduleNames.put(module.getName(), module);
         if (old == null) return;

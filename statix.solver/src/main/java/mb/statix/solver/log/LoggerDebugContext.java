@@ -67,6 +67,10 @@ public class LoggerDebugContext implements IDebugContext {
             logger.log(level, prefix + fmt, args);
         }
     }
+    
+    @Override public void _log(Level level, String fmt, Object... args) {
+        logger.log(level, prefix + fmt, args);
+    }
 
     /**
      * Creates a prefix of {@code "| "} times the offset.

@@ -44,5 +44,9 @@ public class NullDebugContext implements IDebugContext {
 
     @Override public void log(Level level, String fmt, Object... args) {
     }
+    
+    @Override public void _log(Level level, String fmt, Object... args) {
+    }
+    
 
 }

@@ -52,6 +52,7 @@ public class TTimings {
     }
     
     public static void startPhase(String name, long time, String... details) {
+        System.out.println("Starting phase " + name);
         results.get(runCounter).put(name, new PhaseDetails(time, details));
     }
     
@@ -60,6 +61,7 @@ public class TTimings {
     }
     
     public static void startPhase(String name, long time, String details, Object... args) {
+        System.out.println("Starting phase " + name);
         results.get(runCounter).put(name, new PhaseDetails(time, String.format(details, args)));
     }
     
@@ -68,7 +70,8 @@ public class TTimings {
     }
     
     public static void endPhase(String name, long time) {
-        results.get(runCounter).get(name).end(time);
+        long duration = results.get(runCounter).get(name).end(time);
+        System.out.println("Completed phase " + name + " in " + duration + " ms");
     }
     
     @Deprecated
@@ -135,8 +138,9 @@ public class TTimings {
             return end - start;
         }
 
-        public void end(long endTime) {
+        public long end(long endTime) {
             this.end = endTime;
+            return duration();
         }
     }
 }

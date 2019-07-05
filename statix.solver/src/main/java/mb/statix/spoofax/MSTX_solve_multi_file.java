@@ -47,7 +47,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
     
     @Override
     protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        TTimings.startPhase("MSTX_solve_multi_file", "Strategy=" + terms.get(0), "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Input: " + term);
+        TTimings.startPhase("MSTX_solve_multi_file", "Strategy=" + terms.get(0), "Settings: " + TOverrides.print(), "Debug: " + TDebug.print());
         
         try {
             return super._call(env, term, terms);
@@ -147,8 +147,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         TTimings.startPhase("commit changes");
         newContext.commitChanges();
         TTimings.endPhase("commit changes");
-        //TODO This is wrong!
-        System.err.println("Modules in the context post solve: " + newContext.getModules());
 
 //        List<ITerm> strategoResults = results.entrySet().stream()
 //                .sorted((a, b) -> a.getKey().compareTo(b.getKey()))

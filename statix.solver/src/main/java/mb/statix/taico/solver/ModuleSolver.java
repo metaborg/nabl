@@ -414,6 +414,7 @@ public class ModuleSolver implements IOwnable {
     }
 
     private static void printTrace(IConstraint failed, IUnifier.Immutable unifier, IDebugContext debug) {
+        if (!debug.isEnabled(Level.Error)) return;
         @Nullable IConstraint constraint = failed;
         while(constraint != null) {
             debug.error(" * {}", constraint.toString(ModuleSolver.shallowTermFormatter(unifier)));

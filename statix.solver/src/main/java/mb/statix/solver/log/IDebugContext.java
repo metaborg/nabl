@@ -114,5 +114,19 @@ public interface IDebugContext {
      *      the arguments to format with
      */
     void log(Level level, String fmt, Object... args);
+    
+    void _log(Level level, String fmt, Object... args);
+    
+    default void _info(String fmt, Object... args) {
+        _log(Level.Info, fmt, args);
+    }
+    
+    default void _warn(String fmt, Object... args) {
+        _log(Level.Warn, fmt, args);
+    }
+    
+    default void _error(String fmt, Object... args) {
+        _log(Level.Error, fmt, args);
+    }
 
 }
