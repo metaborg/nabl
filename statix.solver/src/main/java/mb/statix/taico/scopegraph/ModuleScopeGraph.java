@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import mb.nabl2.terms.ITerm;
@@ -17,8 +18,10 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.locking.LockManager;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.concurrent.locking.DummyReadWriteLock;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
+import mb.statix.taico.util.TOverrides;
 import mb.statix.util.Capsules;
 
 public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITerm>, IOwnable {
@@ -46,7 +49,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     protected int id;
     private int copyId;
     
-    protected transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    protected transient ReadWriteLock lock = TOverrides.CONCURRENT ? new ReentrantReadWriteLock() : DummyReadWriteLock.of();
     
     protected volatile transient int currentModification;
     

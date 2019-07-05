@@ -66,7 +66,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         synchronized (solvers) {
             SolverRunnable runnable = solvers.remove(solver);
             if (runnable == null) {
-                debug.warn("[" + solver.getOwner() + "] FinishSolver: ignoring, solver already removed");
+                debug.warn("[{}] FinishSolver: ignoring, solver already removed", solver.getOwner().getId());
                 return;
             }
             
