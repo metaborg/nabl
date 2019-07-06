@@ -1,11 +1,14 @@
 package mb.statix.taico.util;
 
+import java.io.Serializable;
 import java.util.AbstractQueue;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
-public class StablePriorityQueue<E> extends AbstractQueue<E> {
+public class StablePriorityQueue<E> extends AbstractQueue<E> implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private PriorityQueue<Entry<E>> queue;
     private final Comparator<? super E> comparator;
     protected volatile int entryCounter;
