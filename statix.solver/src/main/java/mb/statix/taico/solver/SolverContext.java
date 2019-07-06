@@ -24,6 +24,8 @@ import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
+import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.state.IMState;
 
 public class SolverContext implements Serializable {
     private static final long serialVersionUID = 1L;

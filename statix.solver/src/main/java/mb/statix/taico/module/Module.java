@@ -20,8 +20,8 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
-import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.query.QueryDetails;
+import mb.statix.taico.solver.state.MState;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.
@@ -235,6 +235,6 @@ public class Module implements IModule {
     
     @Override
     public String toString() {
-        return "@" + getId();
+        return getId();
     }
 }

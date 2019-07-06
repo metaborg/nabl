@@ -113,6 +113,22 @@ public class Delay extends SolverException {
                 .forEach(retainedCriticalEdges::__insert);
         return new Delay(retainedVars, retainedCriticalEdges.freeze());
     }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (!vars.isEmpty()) {
+            sb.append("vars ").append(vars).append(",");
+        }
+        if (!criticalEdges.isEmpty()) {
+            sb.append("edges ").append(criticalEdges).append(",");
+        }
+        if (module != null && !module.isEmpty()) {
+            sb.append("module ").append(module).append(",");
+        }
+        if (sb.length() > 0) sb.setLength(sb.length() - 1);
+        return sb.toString();
+    }
 
     public static Delay of() {
         return new Delay(Set.Immutable.of(), Set.Immutable.of(), null, null);

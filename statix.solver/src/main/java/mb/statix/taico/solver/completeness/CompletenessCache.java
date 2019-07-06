@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.completeness;
 
 import static mb.statix.taico.util.TDebug.COMPLETENESS;
 
@@ -11,6 +11,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.util.Scopes;
 import mb.statix.taico.util.TDebug;
 

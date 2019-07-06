@@ -34,6 +34,7 @@ import mb.statix.solver.persistent.Solver;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.concurrent.ConcurrentRedirectingIncrementalCompleteness;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.TOverrides;

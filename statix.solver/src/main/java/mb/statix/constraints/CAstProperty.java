@@ -14,9 +14,9 @@ import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.state.IMState;
 
 public class CAstProperty implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;

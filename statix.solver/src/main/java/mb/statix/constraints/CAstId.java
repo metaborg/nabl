@@ -15,9 +15,9 @@ import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.state.IMState;
 
 public class CAstId implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;

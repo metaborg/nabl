@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.completeness;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;

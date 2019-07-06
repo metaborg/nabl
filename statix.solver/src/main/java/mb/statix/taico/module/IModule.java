@@ -23,9 +23,9 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.QueryDetails;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.IOwnable;
 
 /**

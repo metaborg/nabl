@@ -11,8 +11,8 @@ import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
+import mb.statix.taico.solver.state.IMState;
 
 public class MConstraintQueries implements IConstraintQueries {
 

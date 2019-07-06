@@ -24,9 +24,9 @@ import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.IMState;
-import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.solver.state.MState;
 
 /**
  * The incremental strategy determines how the incremental solving proceeds.

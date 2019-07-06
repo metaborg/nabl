@@ -10,10 +10,10 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.QueryDetails;
+import mb.statix.taico.solver.state.IMState;
 
 public class QueryIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;

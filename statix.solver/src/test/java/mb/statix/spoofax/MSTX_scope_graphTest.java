@@ -21,10 +21,10 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.MState;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.solver.state.MState;
 
 public class MSTX_scope_graphTest {
     protected static MSTX_scope_graph stratego = new MSTX_scope_graph();

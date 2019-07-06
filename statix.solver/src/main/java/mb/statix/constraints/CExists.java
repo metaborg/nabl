@@ -17,9 +17,9 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.state.IMState;
 
 public class CExists implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;

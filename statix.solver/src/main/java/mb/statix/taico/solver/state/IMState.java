@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.state;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -13,6 +13,9 @@ import mb.statix.solver.IState;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.coordinator.ASolverCoordinator;
 import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.IOwnable;
 

@@ -1,7 +1,7 @@
 package mb.statix.taico.solver.progress;
 
 public class ProgressTrackerRunnable implements Runnable {
-    private ProgressTracker tracker = new ProgressTracker();
+    public ProgressTracker tracker = new ProgressTracker();
     private long interval;
     private volatile Thread thread;
     private volatile boolean stop;

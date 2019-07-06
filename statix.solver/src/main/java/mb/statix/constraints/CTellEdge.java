@@ -12,9 +12,9 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.state.IMState;
 
 /**
  * Implementation for a tell edge constraint.

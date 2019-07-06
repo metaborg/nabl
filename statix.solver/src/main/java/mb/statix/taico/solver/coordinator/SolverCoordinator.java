@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.coordinator;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,6 +18,10 @@ import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
 
 public class SolverCoordinator extends ASolverCoordinator {
     protected final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());

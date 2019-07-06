@@ -6,6 +6,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.taico.solver.state.IMState;
 
 //TODO Extend ConstraintContext instead, only isClosed needs to be changed.
 public class MConstraintContext {

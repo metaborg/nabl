@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.coordinator;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,17 +9,24 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.metaborg.util.log.LoggerUtils;
+
 import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.progress.ProgressTrackerRunnable;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 
 public abstract class ASolverCoordinator {
@@ -30,6 +37,14 @@ public abstract class ASolverCoordinator {
     protected IDebugContext debug;
     protected SolverContext context;
     protected ProgressTrackerRunnable progressPrinter;
+    
+    /**
+     * Creates a debug context for the coordinator
+     * @return
+     */
+    public static IDebugContext createDebug() {
+        return new LoggerDebugContext(LoggerUtils.logger("Coordinator"));
+    }
     
     /**
      * @return

@@ -81,6 +81,13 @@ public class TTimings {
         runDetails.add(String.format(format, args));
     }
     
+    public static void clear() {
+        details.clear();
+        results.clear();
+        runTime.clear();
+        runCounter = -1;
+    }
+    
     public static void serialize() {
         serialize(getFile());
     }
@@ -115,7 +122,7 @@ public class TTimings {
         }
     }
     
-    private static File getFile() {
+    public static File getFile() {
         File folder = new File(FOLDER);
         if (!folder.exists() && !folder.mkdirs()) throw new IllegalStateException("Unable to create folder");
         

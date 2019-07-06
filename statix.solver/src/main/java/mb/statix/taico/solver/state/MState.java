@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.state;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
@@ -15,6 +15,8 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.unifier.DistributedUnifier;
 
 /**

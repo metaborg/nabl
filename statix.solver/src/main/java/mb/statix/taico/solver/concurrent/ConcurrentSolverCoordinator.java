@@ -17,17 +17,18 @@ import mb.statix.taico.incremental.changeset.IChangeSet2;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.ASolverCoordinator;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.state.IMState;
 
 public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());
     private final Map<ModuleSolver, SolverRunnable> failedSolvers = Collections.synchronizedMap(new HashMap<>());
     private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
     private final ProgressCounter progressCounter = new ProgressCounter(this::onFinished);
-    private final ExecutorService executors;
+    protected final ExecutorService executors;
+    private StuckDetector stuckDetector;
     
     private Consumer<MSolverResult> onFinished;
     private MSolverResult finalResult;
@@ -54,6 +55,10 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     protected void init(IncrementalStrategy strategy, IMState rootState, IConstraint constraint, IDebugContext debug) {
         this.finalResult = null;
         super.init(strategy, rootState, constraint, debug);
+        if (progressPrinter != null) {
+            stuckDetector = new StuckDetector(this, progressPrinter.tracker);
+            stuckDetector.start();
+        }
     }
     
     @Override
@@ -216,6 +221,25 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     @Override
     protected void runToCompletion() throws InterruptedException {
         awaitCompletion();
+    }
+    
+    @Override
+    protected void deinit() {
+        super.deinit();
+        if (this.stuckDetector != null) {
+            this.stuckDetector.stop();
+        }
+        System.err.println("Shutting down executor service...");
+        System.err.println("Remaining tasks: " + executors.shutdownNow().size());
+        System.err.println("Executor service shut down");
+    }
+    
+    /**
+     * @return
+     *      the progress counter
+     */
+    public ProgressCounter getProgressCounter() {
+        return progressCounter;
     }
     
     /**

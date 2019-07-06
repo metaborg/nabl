@@ -12,7 +12,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.state.MState;
 
 public class TestUtil {
 

@@ -1,4 +1,4 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.state;
 
 import java.util.HashSet;
 import java.util.Set;

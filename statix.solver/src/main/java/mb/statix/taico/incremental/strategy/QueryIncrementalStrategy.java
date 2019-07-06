@@ -14,8 +14,8 @@ import mb.statix.taico.incremental.manager.QueryIncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
 
 public class QueryIncrementalStrategy extends IncrementalStrategy {
     /**

@@ -1,4 +1,6 @@
-package mb.statix.taico.solver;
+package mb.statix.taico.solver.coordinator;
+
+import mb.statix.taico.solver.ModuleSolver;
 
 public class EntailsCoordinator extends SolverCoordinator {
     @Override

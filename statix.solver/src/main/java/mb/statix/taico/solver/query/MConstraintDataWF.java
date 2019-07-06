@@ -19,8 +19,8 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 
 public class MConstraintDataWF implements DataWF<ITerm>, Serializable {

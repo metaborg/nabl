@@ -29,9 +29,9 @@ import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.ILockingScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 
 public class QueryDetails implements IQueryDetails<Scope, ITerm, ITerm> {

@@ -28,10 +28,10 @@ import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.IMState;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.MState;
+import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.solver.state.MState;
 import mb.statix.taico.spec.ModuleBoundary;
 
 /**
