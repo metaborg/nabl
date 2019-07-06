@@ -1,7 +1,6 @@
 package mb.statix.taico.scopegraph;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
@@ -9,7 +8,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.locking.LockManager;
 
 public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L, D> {
     /**

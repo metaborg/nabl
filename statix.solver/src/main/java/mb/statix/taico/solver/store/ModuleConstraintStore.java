@@ -139,35 +139,29 @@ public class ModuleConstraintStore implements IConstraintStore {
     @Override
     public void delay(IConstraint constraint, Delay delay) {
         final Delayed delayed = new Delayed(constraint);
-        try {
-            if (!delay.vars().isEmpty()) {
-                TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
-                for (ITermVar var : delay.vars()) {
-                    synchronized (stuckOnVar) {
-                        stuckOnVar.put(var, delayed);
-                    }
-                    resolveStuckOnOtherModule(var, constraint, TDebug.DEV_OUT);
+        if (!delay.vars().isEmpty()) {
+            TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
+            for (ITermVar var : delay.vars()) {
+                synchronized (stuckOnVar) {
+                    stuckOnVar.put(var, delayed);
                 }
-            } else if (!delay.criticalEdges().isEmpty()) {
-                TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
-                for (CriticalEdge edge : delay.criticalEdges()) {
-                    synchronized (stuckOnEdge) {
-                        stuckOnEdge.put(edge, delayed);
-                    }
-                    registerAsObserver(edge, TDebug.DEV_OUT);
-                }
-            } else if (delay.module() != null) {
-                TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
-                synchronized (stuckOnModule) {
-                    stuckOnModule.put(delay.module(), delayed);
-                }
-            } else {
-                throw new IllegalArgumentException("delayed for no apparent reason");
+                resolveStuckOnOtherModule(var, constraint, TDebug.DEV_OUT);
             }
-        } finally {
-            if (delay.getLockManager() != null) {
-                delay.getLockManager().releaseAll();
+        } else if (!delay.criticalEdges().isEmpty()) {
+            TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            for (CriticalEdge edge : delay.criticalEdges()) {
+                synchronized (stuckOnEdge) {
+                    stuckOnEdge.put(edge, delayed);
+                }
+                registerAsObserver(edge, TDebug.DEV_OUT);
             }
+        } else if (delay.module() != null) {
+            TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
+            synchronized (stuckOnModule) {
+                stuckOnModule.put(delay.module(), delayed);
+            }
+        } else {
+            throw new IllegalArgumentException("delayed for no apparent reason");
         }
     }
     
@@ -472,7 +466,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         stuck.addAll(moduleStuck.keySet());
 
         final Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
-        stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c), moduleStuck.get(c), null)));
+        stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c), moduleStuck.get(c))));
         return delayed.build();
     }
     
