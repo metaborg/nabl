@@ -17,7 +17,7 @@ public class TOverrides {
     /** If concurrency should be used. Uses the number of threads below. */
     public static boolean CONCURRENT = true;
     /** The number of threads for concurrency. Has no effect if CONCURRENT is false. */
-    public static int THREADS = 2;
+    public static int THREADS = 4;
     
     /**
      * If true, the observer mechanism is used for own critical edges.
