@@ -1,5 +1,6 @@
 package mb.statix.taico.solver.state;
 
+import java.io.NotSerializableException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -8,6 +9,8 @@ import com.google.common.collect.Sets;
 import mb.nabl2.terms.ITermVar;
 
 public class DelegatingMState extends MState {
+    private static final long serialVersionUID = 1L;
+    
     private final Set<ITermVar> originalVars;
     
     /**
@@ -29,4 +32,14 @@ public class DelegatingMState extends MState {
     }
     
     //TODO Are the copy semantics correct?
+    
+    //---------------------------------------------------------------------------------------------
+    
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+        throw new NotSerializableException("It is not possible to deserialize delegates of states.");
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+        throw new NotSerializableException("It is not possible to deserialize delegates of states.");
+    }
 }
