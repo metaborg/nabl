@@ -13,7 +13,7 @@ public class TOverrides {
     /** If the log level should be overridden to the value below. */
     public static boolean OVERRIDE_LOGLEVEL = true;
     /** The log level to use, has no effect if OVERRIDE_LOGLEVEL is false. */
-    public static String LOGLEVEL = "info"; //"debug" "none"
+    public static String LOGLEVEL = "none"; //"debug" "none"
     /** If concurrency should be used. Uses the number of threads below. */
     public static boolean CONCURRENT = true;
     /** The number of threads for concurrency. Has no effect if CONCURRENT is false. */
