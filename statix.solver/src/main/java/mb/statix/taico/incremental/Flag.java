@@ -52,16 +52,7 @@ public class Flag implements Serializable, Comparable<Flag> {
         int c = cleanliness.compareTo(o.cleanliness);
         if (c != 0) return c;
         
-        c = Integer.compare(level, o.level);
-        if (c != 0) return c;
-        
-        if (cause == null) {
-            return o.cause == null ? 0 : -1;
-        } else if (o.cause == null) {
-            return 1;
-        } else {
-            return cause.compareTo(o.cause);
-        }
+        return Integer.compare(level, o.level);
     }
     
     @Override

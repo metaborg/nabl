@@ -3,10 +3,10 @@ package mb.statix.taico.incremental;
 import static mb.statix.taico.module.ModuleCleanliness.*;
 import static org.junit.Assert.*;
 
-import java.util.PriorityQueue;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import mb.statix.taico.util.StablePriorityQueue;
 
 public class FlaggableTest {
 
@@ -18,10 +18,10 @@ public class FlaggableTest {
      */
     public Flaggable createFlaggable() {
         return new Flaggable() {
-            private PriorityQueue<Flag> queue = new PriorityQueue<>();
+            private StablePriorityQueue<Flag> queue = new StablePriorityQueue<>();
             
             @Override
-            public PriorityQueue<Flag> getFlags() {
+            public StablePriorityQueue<Flag> getFlags() {
                 return queue;
             }
         };

@@ -20,7 +20,6 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
-import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.SolverContext;
@@ -31,7 +30,7 @@ import mb.statix.taico.util.IOwnable;
 /**
  * Interface to represent a module.
  */
-public interface IModule extends Serializable, Flaggable {
+public interface IModule extends Flaggable, Serializable {
     /**
      * @return
      *      the name of this module, could be non unique
@@ -139,7 +138,7 @@ public interface IModule extends Serializable, Flaggable {
             return createChild(name, canExtend, constraint);
         }
         
-        if (oldModule.getFlag() == ModuleCleanliness.CLEAN) {
+        if (oldModule.getTopCleanliness() == ModuleCleanliness.CLEAN) {
             //Update the edges to the new scopes and add it as a child of the current scope graph.
             oldModule.getScopeGraph().substitute(canExtend);
             oldModule.setParent(this);
@@ -246,21 +245,6 @@ public interface IModule extends Serializable, Flaggable {
     void addDependant(String module, CResolveQuery query);
     
     Map<IModule, CResolveQuery> getDependants();
-    
-    @Deprecated
-    default void flag(ModuleCleanliness cleanliness) {
-        setFlag(new Flag(cleanliness, 1));
-    }
-    
-    @Deprecated
-    default ModuleCleanliness getFlag() {
-        return getTopCleanliness();
-    }
-    
-    @Deprecated
-    default boolean flagIfClean(ModuleCleanliness cleanliness) {
-        return setFlagIfClean(new Flag(cleanliness, 1));
-    }
     
     /**
      * Resets the module to a clean module: no children, no scope graph.

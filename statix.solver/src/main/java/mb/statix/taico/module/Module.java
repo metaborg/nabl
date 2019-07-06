@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -22,11 +21,12 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.MState;
+import mb.statix.taico.util.StablePriorityQueue;
+import mb.statix.taico.util.TOverrides;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.
  */
-//TODO This would be a StatixModule or SGModule
 public class Module implements IModule {
     private static final long serialVersionUID = 1L;
     
@@ -39,7 +39,7 @@ public class Module implements IModule {
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
     
-    private PriorityQueue<Flag> flags = new PriorityQueue<>();
+    private StablePriorityQueue<Flag> flags = new StablePriorityQueue<>();
     
     /**
      * Creates a new top level module.
@@ -159,18 +159,8 @@ public class Module implements IModule {
     }
     
     @Override
-    public PriorityQueue<Flag> getFlags() {
+    public StablePriorityQueue<Flag> getFlags() {
         return flags;
-    }
-    
-    @Override
-    public void flag(ModuleCleanliness cleanliness) {
-        this.cleanliness = cleanliness;
-    }
-    
-    @Override
-    public ModuleCleanliness getFlag() {
-        return cleanliness;
     }
     
     @Override

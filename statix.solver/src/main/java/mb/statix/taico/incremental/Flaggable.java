@@ -2,13 +2,15 @@ package mb.statix.taico.incremental;
 
 import static mb.statix.taico.module.ModuleCleanliness.*;
 
-import java.util.PriorityQueue;
-
 import mb.statix.taico.module.ModuleCleanliness;
+import mb.statix.taico.util.StablePriorityQueue;
 
 public interface Flaggable {
-    //TODO IMPORTANT Needs to be changed to a StablePriorityQueue, and the flag comparison needs to not compare on reason any more.
-    PriorityQueue<Flag> getFlags();
+    /**
+     * @return
+     *      the priority queue with the flags of this {@link Flaggable}
+     */
+    StablePriorityQueue<Flag> getFlags();
     
     /**
      * @return

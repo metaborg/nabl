@@ -131,7 +131,7 @@ public class ModuleManager implements Serializable {
         
         if (old == module) {
             System.err.println("[ModuleManager] Added module " + module.getId() + " twice");
-        } else if (old.getFlag() != ModuleCleanliness.CLEAN) {
+        } else if (old.getTopCleanliness() != ModuleCleanliness.CLEAN) {
             System.err.println("[ModuleManager] Module " + old.getId() + " replaced with new version.");
         } else {
             System.err.println("[ModuleManager] Duplicate ID " + old.getId() + " discovered when adding module.");
