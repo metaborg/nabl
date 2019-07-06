@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.ISolverResult;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.QueryChangeSet;
 import mb.statix.taico.incremental.manager.QueryIncrementalManager;
@@ -15,16 +13,8 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.state.IMState;
 
 public class QueryIncrementalStrategy extends IncrementalStrategy {
-    /**
-     * Reanalyzes the modules that are not marked as clean.
-     */
-    @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
-    }
     
     @Override
     public QueryIncrementalManager createManager() {

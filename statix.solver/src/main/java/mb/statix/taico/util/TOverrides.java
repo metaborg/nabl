@@ -26,4 +26,64 @@ public class TOverrides {
                 ", Loglevel=" + (OVERRIDE_LOGLEVEL ? LOGLEVEL : "not overridden") +
                 ", UseObserverMechanismSelf=" + USE_OBSERVER_MECHANISM_FOR_SELF;
     }
+    
+    /**
+     * If concurrency is enabled, this method returns a {@link ConcurrentHashMap}. Otherwise, this
+     * method returns a normal {@link HashMap}.
+     * 
+     * @return
+     *      either a concurrent or non concurrent hash map
+     */
+    public static <K, V> Map<K, V> hashMap() {
+        return CONCURRENT ? new ConcurrentHashMap<>() : new HashMap<>();
+    }
+    
+    /**
+     * If concurrency is enabled, this method returns a {@link ConcurrentHashMap}. Otherwise, this
+     * method returns a normal {@link HashMap}.
+     * 
+     * All the mappings in the given map are added to the returned map.
+     * 
+     * @param map
+     *      the map
+     * 
+     * @return
+     *      either a concurrent or non concurrent hash map
+     */
+    public static <K, V> Map<K, V> hashMap(Map<K, V> map) {
+        return CONCURRENT ? new ConcurrentHashMap<>(map) : new HashMap<>(map);
+    }
+    
+    /**
+     * If concurrency is enabled, this method returns a concurrent hash set. Otherwise, this
+     * method returns a normal {@link HashSet}.
+     * 
+     * @return
+     *      either a concurrent or non concurrent set
+     */
+    public static <E> Set<E> set() {
+        return CONCURRENT ? ConcurrentHashMap.newKeySet() : new HashSet<>();
+    }
+    
+    /**
+     * If concurrency is enabled, this method returns a concurrent hash set. Otherwise, this
+     * method returns a normal {@link HashSet}.
+     * 
+     * The given elements are added to the set.
+     * 
+     * @param elements
+     *      the elements
+     * 
+     * @return
+     *      either a concurrent or non concurrent set
+     */
+    public static <E> Set<E> set(Collection<E> elements) {
+        if (CONCURRENT) {
+            Set<E> set = ConcurrentHashMap.newKeySet();
+            set.addAll(elements);
+            return set;
+        }
+        
+        return new HashSet<>(elements);
+    }
 }

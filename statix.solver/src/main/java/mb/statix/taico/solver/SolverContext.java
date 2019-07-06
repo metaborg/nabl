@@ -1,6 +1,6 @@
 package mb.statix.taico.solver;
 
-import static mb.statix.taico.util.TOverrides.CONCURRENT;
+import static mb.statix.taico.util.TOverrides.hashMap;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import mb.statix.constraints.CTrue;
 import mb.statix.solver.IConstraint;
@@ -39,8 +38,8 @@ public class SolverContext implements Serializable {
     private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
     
-    private Map<String, MSolverResult> solverResults = CONCURRENT ? new ConcurrentHashMap<>() : new HashMap<>();
-    private Map<IModule, IMState> states = CONCURRENT ? new ConcurrentHashMap<>() : new HashMap<>();
+    private Map<String, MSolverResult> solverResults = hashMap();
+    private Map<IModule, IMState> states = hashMap();
     
     private SolverContext(IncrementalStrategy strategy, Spec spec) {
         this.strategy = strategy;

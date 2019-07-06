@@ -43,6 +43,9 @@ public class TDebug {
     /** The interval at which progress is listed (in ms). */
     public static final long PROGRESS_TRACKER_INTERVAL = 30000;
     
+    /** The level at which the coordinator should log its messages. */
+    public static final Level COORDINATOR_LEVEL = Level.Info;
+    
     /** If true, a summary is printed when the coordinator finishes. */
     public static final boolean COORDINATOR_SUMMARY = true;
     

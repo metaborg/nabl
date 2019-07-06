@@ -4,9 +4,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;

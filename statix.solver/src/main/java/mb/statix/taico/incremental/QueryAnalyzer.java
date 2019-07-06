@@ -1,19 +1,15 @@
 package mb.statix.taico.incremental;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.QueryIncrementalManager;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;

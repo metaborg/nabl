@@ -2,9 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.taico.util.TOverrides.CLEAN;
-import static mb.statix.taico.util.TOverrides.CONCURRENT;
-import static mb.statix.taico.util.TOverrides.THREADS;
+import static mb.statix.taico.util.TOverrides.*;
 
 import java.util.List;
 import java.util.Optional;

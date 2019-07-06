@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
@@ -33,10 +32,20 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private Consumer<MSolverResult> onFinished;
     private MSolverResult finalResult;
     
+    /**
+     * Creates a new concurrent solver coordinator with a work stealing pool. This pool uses the
+     * available number of processors as the default parallelism level.
+     */
     public ConcurrentSolverCoordinator() {
         this(Executors.newWorkStealingPool());
     }
     
+    /**
+     * Creates a new concurrent solver coordinator with the given executor service.
+     * 
+     * @param executors
+     *      the executor service
+     */
     public ConcurrentSolverCoordinator(ExecutorService executors) {
         this.executors = executors;
     }
@@ -87,7 +96,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         synchronized (solvers) {
             SolverRunnable runnable = solvers.remove(solver);
             if (runnable == null) {
-                debug.warn("[" + solver.getOwner() + "] FinishSolver: ignoring, solver already removed");
+                debug.warn("[{}] FinishSolver: ignoring, solver already removed", solver.getOwner());
                 return;
             }
         }
@@ -162,9 +171,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         if (context.getIncrementalManager().finishPhase()) {
             //We want to do another round
             if (solvers.isEmpty()) {
-                debug.info("[Coordinator] Phase done: all solvers finished successfully!");
+                debug.info("Phase done: all solvers finished successfully!");
             } else {
-                debug.info("[Coordinator] Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
+                debug.info("Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
             }
             
             //Recycle failed solvers and runnables
@@ -227,6 +236,8 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         if (this.stuckDetector != null) {
             this.stuckDetector.stop();
         }
+        
+        //TODO Remove debug info
         System.err.println("Shutting down executor service...");
         System.err.println("Remaining tasks: " + executors.shutdownNow().size());
         System.err.println("Executor service shut down");

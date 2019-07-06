@@ -172,15 +172,12 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     /**
      * Substitutes old parent scopes (extensible scopes) with the given new scopes.
      * 
-     * @deprecated Should be replaced by a non substituting method.
-     * 
      * @param newScopes
      *      the new scopes
      * 
      * @throws IllegalArgumentException
      *      If the number of new scopes is not the same as the number of old scopes.
      */
-    @Deprecated
     void substitute(List<? extends S> newScopes);
     
     /**

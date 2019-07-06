@@ -8,13 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.ISolverResult;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.state.IMState;
 
 /**
  * Incremental strategy which is naive and simply redoes all modules that have changed and all
@@ -49,14 +46,6 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
 //            manager.purgeModules(module);
 //        }
 //    }
-    
-    /**
-     * Reanalyzes the modules that are not marked as clean.
-     */
-    @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
-    }
     
     @Override
     public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,

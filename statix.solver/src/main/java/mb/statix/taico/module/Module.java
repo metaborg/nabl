@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
@@ -35,7 +34,7 @@ public class Module implements IModule {
     private volatile String cachedId;
     private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
     private Map<CResolveQuery, QueryDetails> queries = new HashMap<>();
-    private Map<String, CResolveQuery> dependants = new ConcurrentHashMap<>();
+    private Map<String, CResolveQuery> dependants = TOverrides.hashMap();
     protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
     
@@ -167,7 +166,7 @@ public class Module implements IModule {
     public void reset(Spec spec) {
         this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getEdgeLabels(), scopeGraph.getDataLabels(), scopeGraph.getNoDataLabel(), scopeGraph.getParentScopes());
         this.queries = new HashMap<>();
-        this.dependants = new HashMap<>();
+        this.dependants = TOverrides.hashMap();
         this.cleanliness = ModuleCleanliness.NEW;
         new MState(this);
         context().addModule(this);
@@ -201,7 +200,7 @@ public class Module implements IModule {
         this.parentId = original.parentId;
         this.cleanliness = original.cleanliness;
         this.queries = new HashMap<>(original.queries);
-        this.dependants = new ConcurrentHashMap<>(original.dependants);
+        this.dependants = TOverrides.hashMap(original.dependants);
         this.initialization = original.initialization;
         this.scopeGraph = original.scopeGraph.copy(this);
     }

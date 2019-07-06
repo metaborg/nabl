@@ -1,5 +1,7 @@
 package mb.statix.taico.solver.coordinator;
 
+import static mb.statix.taico.util.TDebug.*;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -9,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITermVar;
@@ -18,7 +21,6 @@ import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
-import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
@@ -27,8 +29,12 @@ import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.progress.ProgressTrackerRunnable;
 import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.util.TDebug;
 
+/**
+ * Abstract class with the basis of a solver coordinator. A solver coordinator coordinates the
+ * solving process when multiple modules are used. The coordinator can chooose to solve modules
+ * sequentially or in parallel.
+ */
 public abstract class ASolverCoordinator {
     protected ModuleSolver root;
     protected IMState rootState;
@@ -37,14 +43,6 @@ public abstract class ASolverCoordinator {
     protected IDebugContext debug;
     protected SolverContext context;
     protected ProgressTrackerRunnable progressPrinter;
-    
-    /**
-     * Creates a debug context for the coordinator
-     * @return
-     */
-    public static IDebugContext createDebug() {
-        return new LoggerDebugContext(LoggerUtils.logger("Coordinator"));
-    }
     
     /**
      * @return
@@ -121,12 +119,12 @@ public abstract class ASolverCoordinator {
      *      the debug context
      */
     protected void init(IncrementalStrategy strategy, IMState rootState, IConstraint constraint, IDebugContext debug) {
-        this.debug = new PrefixedDebugContext("Coordinator", debug);
+        this.debug = createDebug(COORDINATOR_LEVEL);
         this.rootState = rootState;
         this.root = ModuleSolver.topLevelSolver(rootState, constraint, debug);
         this.strategy = strategy;
-        if (TDebug.PROGRESS_TRACKER_INTERVAL > 0) {
-            this.progressPrinter = new ProgressTrackerRunnable(TDebug.PROGRESS_TRACKER_INTERVAL);
+        if (PROGRESS_TRACKER_INTERVAL > 0) {
+            this.progressPrinter = new ProgressTrackerRunnable(PROGRESS_TRACKER_INTERVAL);
             this.progressPrinter.start();
         }
     }
@@ -267,7 +265,7 @@ public abstract class ASolverCoordinator {
      *      the debug context to log to
      */
     public void logDebugInfo(IDebugContext debug) {
-        if (!TDebug.COORDINATOR_SUMMARY) return;
+        if (!COORDINATOR_SUMMARY) return;
         
         debug.info("Debug output.");
         debug.info("Module hierarchy:");
@@ -283,7 +281,7 @@ public abstract class ASolverCoordinator {
             String id = entry.getKey().getId();
             if (entry.getValue().hasErrors()) {
                 fail.info(id);
-                if (TDebug.COORDINATOR_EXTENDED_SUMMARY) {
+                if (COORDINATOR_EXTENDED_SUMMARY) {
                     failDetails.info("[{}] Failed constraints:", id);
                     IDebugContext sub = failDetails.subContext();
                     for (IConstraint c : entry.getValue().errors()) {
@@ -292,7 +290,7 @@ public abstract class ASolverCoordinator {
                 }
             } else if (entry.getValue().hasDelays()) {
                 stuck.info(id);
-                if (TDebug.COORDINATOR_EXTENDED_SUMMARY) {
+                if (COORDINATOR_EXTENDED_SUMMARY) {
                     stuckDetails.info("[{}] Stuck constraints:", id);
                     IDebugContext sub = stuckDetails.subContext();
                     for (Entry<IConstraint, Delay> e : entry.getValue().delays().entrySet()) {
@@ -320,7 +318,7 @@ public abstract class ASolverCoordinator {
         debug.info("Failed modules:");
         fail.commit();
         
-        if (TDebug.COORDINATOR_EXTENDED_SUMMARY) {
+        if (COORDINATOR_EXTENDED_SUMMARY) {
             debug.info("Stuck output:");
             stuckDetails.commit();
             
@@ -343,5 +341,18 @@ public abstract class ASolverCoordinator {
         for (IModule child : module.getChildren()) {
             printModuleHierarchy(child, sub);
         }
+    }
+    
+    /**
+     * Creates a debug context for the coordinator.
+     * 
+     * @param level
+     *      the level
+     * 
+     * @return
+     *      the debug context
+     */
+    private static IDebugContext createDebug(Level level) {
+        return new LoggerDebugContext(LoggerUtils.logger("Coordinator"), level);
     }
 }

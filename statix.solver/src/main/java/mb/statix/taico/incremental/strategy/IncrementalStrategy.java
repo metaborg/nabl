@@ -18,14 +18,11 @@ import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.ISolverResult;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.solver.state.MState;
 
 /**
@@ -34,34 +31,6 @@ import mb.statix.taico.solver.state.MState;
  * NOTE: The strategy does not have state itself.
  */
 public abstract class IncrementalStrategy {
-    
-    //---------------------------------------------------------------------------------------------
-    // Analysis
-    //---------------------------------------------------------------------------------------------
-    
-    /**
-     * Reanalyzes modules in an incremental fashion depending on the strategy.
-     * 
-     * <p>This method should be called only after the {@link #setupReanalysis} method has been called.
-     * 
-     * @param changeSet
-     *      the change set
-     * @param baseState
-     *      the state to start from
-     * @param moduleConstraints
-     *      a map from module name to constraints to solve
-     * @param debug
-     *      the debug context
-     * 
-     * @return
-     *      a map of results, based on the changeset
-     * 
-     * @throws InterruptedException
-     *      If solving is interrupted.
-     */
-    public abstract Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState,
-            Map<String, IConstraint> moduleConstraints, IDebugContext debug)
-                    throws InterruptedException;
     
     //---------------------------------------------------------------------------------------------
     // Change Sets

@@ -1,6 +1,5 @@
 package mb.statix.taico.solver.coordinator;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,7 +12,6 @@ import org.metaborg.util.log.Level;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
@@ -23,9 +21,15 @@ import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.state.IMState;
 
+/**
+ * A sequential solver coordinator. Modules are solved one after the other.
+ * 
+ * This coordinator uses a greedy solving process. That is, each module is solved as far as
+ * possible before the coordinator moves on to the next module.
+ */
 public class SolverCoordinator extends ASolverCoordinator {
-    protected final Set<ModuleSolver> solvers = Collections.synchronizedSet(new HashSet<>());
-    protected final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
+    protected final Set<ModuleSolver> solvers = new HashSet<>();
+    protected final Map<IModule, MSolverResult> results = new HashMap<>();
     
     public SolverCoordinator() {}
     
@@ -100,24 +104,15 @@ public class SolverCoordinator extends ASolverCoordinator {
     @Override
     protected void runToCompletion() throws InterruptedException {
         boolean anyProgress = true;
-        int complete = 0;
-        int failed = 0;
         Set<ModuleSolver> failedSolvers = new HashSet<>();
         while (anyProgress && !solvers.isEmpty()) {
             anyProgress = false;
             
             //Ensure that changes are not reflected this run
             ModuleSolver[] tempSolvers = solvers.toArray(new ModuleSolver[0]);
-            int solverI = 0;
             for (ModuleSolver solver : tempSolvers) {
-                solverI++;
-                if (solverI % 10 == 0) {
-                    this.debug.info("Solvers in run: {}/{} (C{}/F{})", solverI, tempSolvers.length, complete, failed);
-                }
                 //If this solver is done, store its result and continue.
                 if (solver.isDone()) {
-                    complete++;
-                    this.debug.log(Level.Debug, "[{}] done, removing...", solver.getOwner().getId());
                     solvers.remove(solver);
                     results.put(solver.getOwner(), solver.finishSolver());
                     continue;
@@ -125,18 +120,13 @@ public class SolverCoordinator extends ASolverCoordinator {
                 //If any progress can be made, store that information
                 SolverContext.setCurrentModule(solver.getOwner());
                 if (solver.solveStep()) {
-                    this.debug.log(Level.Debug, "[{}] solved one step", solver.getOwner().getId());
                     anyProgress = true;
                     
                     //Solve this solver as far as possible
                     while (solver.solveStep());
-                } else {
-                    this.debug.log(Level.Debug, "[{}] unable to solve a step", solver.getOwner().getId());
                 }
                 
                 if (solver.hasFailed()) {
-                    failed++;
-                    this.debug.log(Level.Debug, "[{}] failed, removing...", solver.getOwner().getId());
                     solvers.remove(solver);
                     failedSolvers.add(solver);
                     results.put(solver.getOwner(), solver.finishSolver());
@@ -146,7 +136,7 @@ public class SolverCoordinator extends ASolverCoordinator {
             
             if (!anyProgress || solvers.isEmpty()) {
                 if (context.getIncrementalManager().finishPhase()) {
-                    this.debug.log(Level.Info, "[Coordinator] Phase complete, starting new phase: {}" + context.getIncrementalManager().getPhase());
+                    this.debug.log(Level.Info, "Phase complete, starting new phase: {}" + context.getIncrementalManager().getPhase());
                     
                     //We need to readd solvers if they failed
                     solvers.addAll(failedSolvers);
@@ -158,15 +148,14 @@ public class SolverCoordinator extends ASolverCoordinator {
             }
         }
         
-        LazyDebugContext lazyDebug = new LazyDebugContext(this.debug);
         //If we end up here, none of the solvers is still able to make progress
         if (solvers.isEmpty()) {
             //All solvers are done!
-            lazyDebug.info("All solvers finished successfully!");
+            debug.info("All solvers finished successfully!");
         } else {
             System.err.println("Solving failed, " + solvers.size() + " unsuccessful solvers: " + solvers.stream().map(s -> s.getOwner().getId()).collect(Collectors.joining(", ")));
-            lazyDebug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
-            IDebugContext sub = lazyDebug.subContext();
+            debug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
+            IDebugContext sub = debug.subContext();
             for (ModuleSolver solver : solvers) {
                 sub.warn(solver.getOwner().getId());
                 
@@ -175,7 +164,6 @@ public class SolverCoordinator extends ASolverCoordinator {
             
             solvers.clear();
         }
-        logDebugInfo(lazyDebug);
-        lazyDebug.commit();
+        logDebugInfo(debug);
     }
 }

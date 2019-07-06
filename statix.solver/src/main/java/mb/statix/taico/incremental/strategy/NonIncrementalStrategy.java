@@ -6,21 +6,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.ISolverResult;
-import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.state.IMState;
 
 public class NonIncrementalStrategy extends IncrementalStrategy {
-    @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug)
-            throws InterruptedException {
-        //TODO Ensure everything is redone, but that we remember old modules.
-        return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
-    }
     
     @Override
     public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,

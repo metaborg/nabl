@@ -13,7 +13,6 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.util.Scopes;
-import mb.statix.taico.util.TDebug;
 
 public class CompletenessCache {
     private ModuleSolver solver;
