@@ -43,6 +43,12 @@ public class TDebug {
     /** The interval at which progress is listed (in ms). */
     public static final long PROGRESS_TRACKER_INTERVAL = 30000;
     
+    /** If true, a summary is printed when the coordinator finishes. */
+    public static final boolean COORDINATOR_SUMMARY = true;
+    
+    /** If true and COORDINATOR_SUMMARY is true, more details are printed when the coordinator finishes. */
+    public static final boolean COORDINATOR_EXTENDED_SUMMARY = true;
+    
     public static final IDebugContext DEV_NULL = new NullDebugContext();
     public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), TOverrides.LOGLEVEL.equalsIgnoreCase("none") ? Level.Error : Level.parse(TOverrides.LOGLEVEL));
     

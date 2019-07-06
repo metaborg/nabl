@@ -267,6 +267,8 @@ public abstract class ASolverCoordinator {
      *      the debug context to log to
      */
     public void logDebugInfo(IDebugContext debug) {
+        if (!TDebug.COORDINATOR_SUMMARY) return;
+        
         debug.info("Debug output.");
         debug.info("Module hierarchy:");
         printModuleHierarchy(getRootState().owner(), debug.subContext());
@@ -281,23 +283,27 @@ public abstract class ASolverCoordinator {
             String id = entry.getKey().getId();
             if (entry.getValue().hasErrors()) {
                 fail.info(id);
-                failDetails.info("[{}] Failed constraints:", id);
-                IDebugContext sub = failDetails.subContext();
-                for (IConstraint c : entry.getValue().errors()) {
-                    sub.info(c.toString());
+                if (TDebug.COORDINATOR_EXTENDED_SUMMARY) {
+                    failDetails.info("[{}] Failed constraints:", id);
+                    IDebugContext sub = failDetails.subContext();
+                    for (IConstraint c : entry.getValue().errors()) {
+                        sub.info(c.toString());
+                    }
                 }
             } else if (entry.getValue().hasDelays()) {
                 stuck.info(id);
-                stuckDetails.info("[{}] Stuck constraints:", id);
-                IDebugContext sub = stuckDetails.subContext();
-                for (Entry<IConstraint, Delay> e : entry.getValue().delays().entrySet()) {
-                    Delay delay = e.getValue();
-                    if (!delay.vars().isEmpty()) {
-                        sub.info("on vars {}: {}", delay.vars(), e.getKey());
-                    } else if (!delay.criticalEdges().isEmpty()) {
-                        sub.info("on edges {}: {}", delay.criticalEdges(), e.getKey());
-                    } else {
-                        sub.info("on unknown: {}", e.getKey());
+                if (TDebug.COORDINATOR_EXTENDED_SUMMARY) {
+                    stuckDetails.info("[{}] Stuck constraints:", id);
+                    IDebugContext sub = stuckDetails.subContext();
+                    for (Entry<IConstraint, Delay> e : entry.getValue().delays().entrySet()) {
+                        Delay delay = e.getValue();
+                        if (!delay.vars().isEmpty()) {
+                            sub.info("on vars {}: {}", delay.vars(), e.getKey());
+                        } else if (!delay.criticalEdges().isEmpty()) {
+                            sub.info("on edges {}: {}", delay.criticalEdges(), e.getKey());
+                        } else {
+                            sub.info("on unknown: {}", e.getKey());
+                        }
                     }
                 }
             } else {
@@ -314,11 +320,13 @@ public abstract class ASolverCoordinator {
         debug.info("Failed modules:");
         fail.commit();
         
-        debug.info("Stuck output:");
-        stuckDetails.commit();
-        
-        debug.info("Failed output:");
-        failDetails.commit();
+        if (TDebug.COORDINATOR_EXTENDED_SUMMARY) {
+            debug.info("Stuck output:");
+            stuckDetails.commit();
+            
+            debug.info("Failed output:");
+            failDetails.commit();
+        }
     }
     
     /**

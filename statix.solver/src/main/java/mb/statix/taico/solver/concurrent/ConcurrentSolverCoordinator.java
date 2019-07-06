@@ -155,8 +155,6 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
      *      the solver result
      */
     private void finishSolving(IDebugContext debug) {
-        LazyDebugContext lazyDebug = new LazyDebugContext(debug);
-        
         //We might want to do another round, prevent triggering this code multiple times.
         progressCounter.switchToPending();
 
@@ -164,9 +162,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         if (context.getIncrementalManager().finishPhase()) {
             //We want to do another round
             if (solvers.isEmpty()) {
-                lazyDebug.info("[Coordinator] Phase done: all solvers finished successfully!");
+                debug.info("[Coordinator] Phase done: all solvers finished successfully!");
             } else {
-                lazyDebug.info("[Coordinator] Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
+                debug.info("[Coordinator] Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
             }
             
             //Recycle failed solvers and runnables
@@ -188,10 +186,10 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         //If we end up here, none of the solvers is still able to make progress
         if (solvers.isEmpty()) {
             //All solvers are done!
-            lazyDebug.info("All solvers finished successfully!");
+            debug.info("All solvers finished successfully!");
         } else {
-            lazyDebug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
-            IDebugContext sub = lazyDebug.subContext();
+            debug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
+            IDebugContext sub = debug.subContext();
             for (ModuleSolver solver : getSolvers()) {
                 sub.warn(solver.getOwner().getId());
                 
@@ -200,8 +198,8 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
             
             solvers.clear();
         }
-        logDebugInfo(lazyDebug);
-        lazyDebug.commit();
+        
+        logDebugInfo(debug);
         
         finalResult = aggregateResults();
         if (onFinished != null) {
