@@ -9,21 +9,21 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
-import mb.statix.taico.incremental.changeset.IChangeSet2;
+import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.state.IMState;
 
 public class NonIncrementalStrategy extends IncrementalStrategy {
     @Override
-    public Map<String, ISolverResult> reanalyze(IChangeSet2 changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug)
+    public Map<String, ISolverResult> reanalyze(IChangeSet changeSet, IMState baseState, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
         //TODO Ensure everything is redone, but that we remember old modules.
         return baseState.coordinator().solve(this, changeSet, baseState, constraints, debug);
     }
     
     @Override
-    public IChangeSet2 createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
+    public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
             Collection<String> removed) {
         //TODO Is this correct? Does this not allow some module access already?
         return new BaselineChangeSet(oldContext, added, changed, removed);
@@ -42,7 +42,7 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
     
     @Override
     public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
-            IChangeSet2 changeSet,
+            IChangeSet changeSet,
             Map<String, IConstraint> moduleConstraints) {
         Map<IModule, IConstraint> newModules = new HashMap<>();
         for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {

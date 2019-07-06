@@ -16,7 +16,7 @@ import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.util.Scopes;
 
-public class QueryChangeSet extends AChangeSet2 {
+public class QueryChangeSet extends AChangeSet {
     private static final long serialVersionUID = 1L;
     
     private static final ModuleCleanliness[] SUPPORTED = new ModuleCleanliness[] {

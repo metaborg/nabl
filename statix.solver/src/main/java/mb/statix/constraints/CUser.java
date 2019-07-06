@@ -27,7 +27,6 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.state.IMState;
@@ -140,7 +139,6 @@ public class CUser implements IConstraint, Serializable {
                     //We don't always want to statically store the child relation. We want to base this on the current owner.
                     List<Scope> canExtend = new ArrayList<>();
                     for (ITerm term : newArgs) {
-                        //TODO IMPORTANT Is this getModule approach wanted here?
                         Scope scope = Scope.matcher().match(term).orElse(null);
                         if (scope != null) canExtend.add(scope);
                     }
@@ -150,12 +148,11 @@ public class CUser implements IConstraint, Serializable {
                     IMState childState = new MState(child);
 
                     //TODO This condition might need to change
-                    if (child.getFlag() == ModuleCleanliness.NEW) {
-                        //TODO IMPORTANT Fix the isRigid and isClosed to their correct forms (check ownership and delegate)
+//                    if (child.getTopCleanliness() == ModuleCleanliness.NEW) {
                         state.solver().childSolver(childState, appl._2());
-                    } else {
-                        //TODO Add solver without constraints for this module?
-                    }    
+//                    } else {
+//                        //TODO Add solver without constraints for this module?
+//                    }
                     
                     proxyDebug.info("{} accepted", ruleOrModb);
                     proxyDebug.commit();
@@ -211,7 +208,6 @@ public class CUser implements IConstraint, Serializable {
         final List<ITerm> newArgs = new ArrayList<>();
         for (ITerm term : args) {
             if (term instanceof ITermVar) {
-                //TODO IMPOTANT try catch?
                 ITerm actual = unifier.findRecursive(term);
                 newArgs.add(actual);
             } else {

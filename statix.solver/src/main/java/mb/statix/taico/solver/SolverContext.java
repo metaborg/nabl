@@ -16,7 +16,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flag;
-import mb.statix.taico.incremental.changeset.IChangeSet2;
+import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
@@ -36,7 +36,7 @@ public class SolverContext implements Serializable {
     private final IncrementalManager incrementalManager;
     private transient ASolverCoordinator coordinator;
     private transient SolverContext oldContext;
-    private transient IChangeSet2 changeSet;
+    private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
     
     private Map<String, MSolverResult> solverResults = CONCURRENT ? new ConcurrentHashMap<>() : new HashMap<>();
@@ -100,7 +100,7 @@ public class SolverContext implements Serializable {
         return spec;
     }
     
-    public IChangeSet2 getChangeSet() {
+    public IChangeSet getChangeSet() {
         return changeSet;
     }
     
@@ -414,7 +414,7 @@ public class SolverContext implements Serializable {
      */
     public static SolverContext incrementalContext(
             IncrementalStrategy strategy, SolverContext previousContext, IMState previousRootState,
-            IChangeSet2 changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
+            IChangeSet changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
         SolverContext newContext = new SolverContext(strategy, spec);
         newContext.oldContext = previousContext; //TODO Ensure that changes are committed
         newContext.changeSet = changeSet;

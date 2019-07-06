@@ -10,7 +10,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.incremental.changeset.IChangeSet2;
+import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.QueryIncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
@@ -19,7 +19,7 @@ import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
 
 public class QueryAnalyzer {
-    private IChangeSet2 changeSet;
+    private IChangeSet changeSet;
     private Map<IModule, Set<IConstraint>> leftConstraints = new HashMap<>();
     
     

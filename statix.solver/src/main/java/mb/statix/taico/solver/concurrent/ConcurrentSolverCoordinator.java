@@ -13,7 +13,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
-import mb.statix.taico.incremental.changeset.IChangeSet2;
+import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
@@ -110,7 +110,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet2 changeSet, IMState state,
+    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state,
             Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
         init(strategy, state, null, debug);
         

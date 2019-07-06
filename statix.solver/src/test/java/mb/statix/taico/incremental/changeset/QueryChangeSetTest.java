@@ -8,7 +8,7 @@ import org.junit.Test;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 
-public class QueryChangeSetTest extends IChangeSet2Test {
+public class QueryChangeSetTest extends IChangeSetTest {
     @Test
     public void testAddedOneFromEmpty() {
         QueryChangeSet changeSet = new QueryChangeSet(context, list("A"), empty(), empty());

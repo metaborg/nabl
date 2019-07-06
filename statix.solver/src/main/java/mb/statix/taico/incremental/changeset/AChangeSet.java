@@ -16,13 +16,13 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.SolverContext;
 
-public abstract class AChangeSet2 implements IChangeSet2 {
+public abstract class AChangeSet implements IChangeSet {
     private static final long serialVersionUID = 1L;
     
     protected final EnumMap<ModuleCleanliness, Set<IModule>> modules = new EnumMap<>(ModuleCleanliness.class);
     protected final EnumMap<ModuleCleanliness, Set<String>> ids = new EnumMap<>(ModuleCleanliness.class);
     
-    public AChangeSet2(SolverContext oldContext, Iterable<ModuleCleanliness> supported) {
+    public AChangeSet(SolverContext oldContext, Iterable<ModuleCleanliness> supported) {
         this(oldContext, supported, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
     }
     
@@ -44,7 +44,7 @@ public abstract class AChangeSet2 implements IChangeSet2 {
      * @param removed
      *      the set of removed modules (names)
      */
-    public AChangeSet2(SolverContext oldContext, Iterable<ModuleCleanliness> supported, Collection<String> added, Collection<String> changed, Collection<String> removed) {
+    public AChangeSet(SolverContext oldContext, Iterable<ModuleCleanliness> supported, Collection<String> added, Collection<String> changed, Collection<String> removed) {
         //Add all the required sets
         for (ModuleCleanliness mc : supported) {
             modules.put(mc, createSet());

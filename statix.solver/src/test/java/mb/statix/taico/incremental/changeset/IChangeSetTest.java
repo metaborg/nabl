@@ -22,7 +22,7 @@ import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.SolverContext;
 
-public class IChangeSet2Test {
+public class IChangeSetTest {
     protected SolverContext context;
     protected IModule global;
     protected Scope globalScope;
