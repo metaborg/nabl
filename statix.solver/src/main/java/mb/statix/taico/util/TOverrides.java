@@ -1,5 +1,12 @@
 package mb.statix.taico.util;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class TOverrides {
     /** Redirect STX_solve_constraint to MSTX_solve_constraint. */
     public static boolean MODULES_OVERRIDE = true;
