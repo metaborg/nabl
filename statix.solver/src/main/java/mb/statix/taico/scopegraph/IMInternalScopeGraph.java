@@ -158,26 +158,6 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     
     /**
      * @return
-     *      a new tracking graph for this scope graph
-     */
-    ITrackingScopeGraph<S, L, D> trackingGraph();
-    
-    /**
-     * When creating tracking graphs from one view, all views must share the same set of trackers.
-     * As such, the passed map is the reference to the single map that contains all trackers.
-     * 
-     * @param trackers
-     *      a map with the trackers of the current view
-     * @param lockManager
-     *      the lock manager of the trackers
-     * 
-     * @return
-     *      a new tracking graph for this scope graph
-     */
-    ITrackingScopeGraph<S, L, D> trackingGraph(Map<String, ITrackingScopeGraph<S, L, D>> trackers, LockManager lockManager);
-    
-    /**
-     * @return
      *      an external view on this scope graph
      */
     IMExternalScopeGraph<S, L, D> externalGraph();

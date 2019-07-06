@@ -394,16 +394,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     @Override
-    public TrackingModuleScopeGraph trackingGraph() {
-        return new TrackingModuleScopeGraph(this);
-    }
-    
-    @Override
-    public TrackingModuleScopeGraph trackingGraph(Map<String, ITrackingScopeGraph<Scope, ITerm, ITerm>> trackers, LockManager lockManager) {
-        return new TrackingModuleScopeGraph(this, trackers, lockManager);
-    }
-    
-    @Override
     public DelegatingModuleScopeGraph delegatingGraph(boolean clearScopes) {
         return new DelegatingModuleScopeGraph(this, clearScopes);
     }
