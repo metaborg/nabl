@@ -37,6 +37,16 @@ public class RegExpLabelWF implements LabelWF<ITerm>, Serializable {
     @Override public String toString() {
         return re.toString();
     }
+    
+    @Override public int hashCode() {
+        return re.hashCode();
+    }
+    
+    @Override public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof RegExpLabelWF)) return false;
+        return re.equals(((RegExpLabelWF) obj).re);
+    }
 
     public static RegExpLabelWF of(IRegExpMatcher<ITerm> re) {
         return new RegExpLabelWF(re);
