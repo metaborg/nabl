@@ -4,8 +4,9 @@ import java.util.Set;
 
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IScopePath;
@@ -17,8 +18,10 @@ import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.taico.util.TDebug;
 
 public class TrackingNameResolution<S extends D, L, D> extends FastNameResolution<S, L, D> {
-    private SetMultimap<S, LabelWF<L>> edgeMap = HashMultimap.create();
-    private SetMultimap<S, LabelWF<L>> dataMap = HashMultimap.create();
+    //TODO LabelWF only has identity equality, so it makes no sense to put it in a set over a list.
+    //TODO However, we might want to be able to determine when we reach the same query again, and not add it twice in that case.
+    private ListMultimap<S, LabelWF<L>> edgeMap = MultimapBuilder.hashKeys().arrayListValues().build();
+    private ListMultimap<S, LabelWF<L>> dataMap = MultimapBuilder.hashKeys().arrayListValues().build();
     
     //if scope x changed, redo the queries in it.
     
@@ -48,11 +51,11 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
         return super.getEdges(re, path, l);
     }
     
-    public SetMultimap<S, LabelWF<L>> getTrackedEdges() {
+    public Multimap<S, LabelWF<L>> getTrackedEdges() {
         return edgeMap;
     }
     
-    public SetMultimap<S, LabelWF<L>> getTrackedData() {
+    public Multimap<S, LabelWF<L>> getTrackedData() {
         return dataMap;
     }
     

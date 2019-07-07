@@ -51,9 +51,9 @@ public class ModuleConstraintStore implements IConstraintStore {
     public ModuleConstraintStore(String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
         this.owner = owner;
         this.active = new LinkedList<>(); //TODO For concurrency, ConcurrentLinkedDeque?
-        this.stuckOnVar = MultimapBuilder.hashKeys().hashSetValues().build();
-        this.stuckOnEdge = MultimapBuilder.hashKeys().hashSetValues().build();
-        this.stuckOnModule = MultimapBuilder.hashKeys().hashSetValues().build();
+        this.stuckOnVar = MultimapBuilder.hashKeys().arrayListValues().build();
+        this.stuckOnEdge = MultimapBuilder.hashKeys().arrayListValues().build();
+        this.stuckOnModule = MultimapBuilder.hashKeys().arrayListValues().build();
         this.varObservers = MultimapBuilder.hashKeys().hashSetValues().build();
         addAll(constraints);
     }
