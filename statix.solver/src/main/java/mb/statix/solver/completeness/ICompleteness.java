@@ -1,7 +1,5 @@
 package mb.statix.solver.completeness;
 
-import org.metaborg.util.iterators.Iterables2;
-
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
@@ -15,19 +13,25 @@ public interface ICompleteness {
     void add(IConstraint constraint, IUnifier unifier);
 
     default void addAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
-        Iterables2.stream(constraints).forEach(c -> add(c, unifier));
+        for (IConstraint constraint : constraints) {
+            add(constraint, unifier);
+        }
     }
 
     void remove(IConstraint constraint, IUnifier unifier);
 
     default void removeAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
-        Iterables2.stream(constraints).forEach(c -> remove(c, unifier));
+        for (IConstraint constraint : constraints) {
+            remove(constraint, unifier);
+        }
     }
 
     void update(ITermVar var, IUnifier unifier);
 
     default void updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
-        Iterables2.stream(vars).forEach(c -> update(c, unifier));
+        for (ITermVar var : vars) {
+            update(var, unifier);
+        }
     }
 
 }
