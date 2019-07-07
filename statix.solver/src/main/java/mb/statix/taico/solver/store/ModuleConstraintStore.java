@@ -45,7 +45,6 @@ public class ModuleConstraintStore implements IConstraintStore {
     
     private volatile IObserver<ModuleConstraintStore> observer;
     
-    private final Object variableLock = new Object();
     private volatile boolean externalMode = false;
     
     public ModuleConstraintStore(String owner, Iterable<? extends IConstraint> constraints, IDebugContext debug) {
@@ -145,7 +144,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 synchronized (stuckOnVar) {
                     stuckOnVar.put(var, delayed);
                 }
-                resolveStuckOnOtherModule(var, constraint, TDebug.DEV_OUT);
+                registerAsObserver(var, TDebug.DEV_OUT);
             }
         } else if (!delay.criticalEdges().isEmpty()) {
             TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
@@ -193,10 +192,8 @@ public class ModuleConstraintStore implements IConstraintStore {
     public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         if (Iterables.isEmpty(vars)) return;
         
-        synchronized (variableLock) {
-            for (ITermVar termVar : vars) {
-                activateFromVar(termVar, debug);
-            }
+        for (ITermVar termVar : vars) {
+            activateFromVar(termVar, debug);
         }
         
         propagateVariableActivation(vars, debug);
@@ -205,27 +202,35 @@ public class ModuleConstraintStore implements IConstraintStore {
     private void propagateVariableActivation(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         Set<ModuleConstraintStore> stores = new HashSet<>();
         //Activate all observers
+        int counter = 0;
         for (ITermVar termVar : vars) {
             Collection<ModuleConstraintStore> observers;
             synchronized (varObservers) {
                 observers = varObservers.removeAll(termVar);
             }
+            
             for (ModuleConstraintStore store : observers) {
                 //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
                 if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
-                store.activateFromVar(termVar, debug); //Activate but don't propagate
-                //Only notify if it is currently not doing anything (probably)
-                if (store.activeSize() == 1) stores.add(store);
+                
+                if (!store.activateFromVar(termVar, debug)) continue; //Activate but don't propagate
+                
+                //Only send the event near the end
+                if (!stores.add(store)) counter++;
             }
         }
 
+        //TODO This checks if the event sending optimization is even worth it in these cases.
+        if (counter > 0) System.out.println("Caching stores for variable activation relieved " + counter + " notifications");
+        
         //Notify each store only once
         for (ModuleConstraintStore store : stores) {
-            if (store.observer != null) store.observer.notify(this);
+            store.notifyObserver();
         }
     }
     
     public boolean activateFromVar(ITermVar var, IDebugContext debug) {
+        //We do not need to lock the variable lock here, since the unifier 
         Collection<Delayed> activated;
         synchronized (stuckOnVar) {
             activated = stuckOnVar.removeAll(var);
@@ -362,30 +367,53 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
     }
     
-    private void resolveStuckOnOtherModule(ITermVar termVar, IConstraint constraint, IDebugContext debug) {
-        //Not stuck on another module
+    /**
+     * Registers this store as an observer of the given variable. If the variable was activated
+     * before the registration completed, this method instead triggers the variable activation
+     * event immediately.
+     * If the owner of the given variable is the owner of this store, or if the owner is
+     * unknown, this method does nothing.
+     * <p>
+     * In particular, after obtaining the variable registration lock of the owner of the variable,
+     * this method checks if the variable has been resolved in the meantime. If it has not been
+     * resolved, this store is registered as observer for the given variable. Otherwise, the given
+     * variable is resolved immediately.
+     * 
+     * @param termVar
+     *      the variable
+     * @param debug
+     *      the debug
+     */
+    private void registerAsObserver(ITermVar termVar, IDebugContext debug) {
         final IModule varOwner;
         if (this.owner.equals(termVar.getResource()) || (varOwner = Vars.getOwnerUnchecked(termVar)) == null) return;
         
-        ModuleConstraintStore varStore = varOwner.getCurrentState().solver().getStore();
+        final IMState state = varOwner.getCurrentState();
+        final ModuleConstraintStore varStore = state.solver().getStore();
         
-        synchronized (varStore.variableLock) {
-            IUnifier.Immutable unifier = varOwner.getCurrentState().unifier();
-            //Cannot be removed because of locking stuff
-            if (!unifier.isGround(termVar)) {
-                if (STORE_DEBUG) System.err.println(owner + ": Registering as observer on " + varOwner + " for " + termVar);
-                registerAsObserver(termVar, debug);
-            } else {
-                System.err.println(termVar + " is ground according to the unifier!");
-                active.add(constraint);
+        //Before checking, ensure that the other side cannot notify observers causing us to miss the event
+        synchronized (varStore.varObservers) {
+            IUnifier.Immutable unifier = state.unifier();
+            
+            //If we are running concurrently, check if the variable was resolved between our stuck check and the registration.
+            if (TOverrides.CONCURRENT && !unifier.isGround(termVar)) {
+                debug.info("Registering as observer on {}, waiting on var {}", varOwner, termVar);
+                varStore.registerObserver(termVar, this, debug);
+                return;
             }
         }
+        
+        //The term is already ground, resolve immediately.
+        activateFromVar(termVar, debug);
     }
     
     /**
-     * Registers this store as an observer of the given critical edge.
-     * The registration is made with the completeness of the solver of the owner of the scope of
-     * the given critical edge.
+     * Registers this store as an observer of the given critical edge. If the edge was already
+     * resolved before the registration completed, the edge activation event is triggered
+     * immediately.
+     * <p>
+     * If the owner of the given edge is the owner of this store and
+     * {@link TOverrides#USE_OBSERVER_MECHANISM_FOR_SELF} is false, then this method does nothing.
      * 
      * @param edge
      *      the edge
@@ -419,31 +447,6 @@ public class ModuleConstraintStore implements IConstraintStore {
             ).match(edge.scope())
              .map(s -> SolverContext.context().getModuleUnchecked(s))
              .orElse(null);
-    }
-    
-    /**
-     * Registers this store as an observer of the given term variable.
-     * The registration is made with the store of the solver of the owner of the given term
-     * variable.
-     * 
-     * @param termVar
-     *      the term variable
-     * @param context
-     *      the solver context
-     * @param debug
-     *      the debug context
-     */
-    private void registerAsObserver(ITermVar termVar, IDebugContext debug) {
-        IModule varOwner = Vars.getOwnerUnchecked(termVar);
-        //A module doesn't have to register on itself
-        if (this.owner.equals(varOwner.getId())) return;
-
-        //TODO Static state access
-        ModuleConstraintStore store = varOwner.getCurrentState().solver().getStore();
-        assert store != this : "FATAL: Current states are messed up in the context: owner inconsistency!";
-        
-        debug.info("Registering as observer on {}, waiting on var {}", varOwner, termVar);
-        store.registerObserver(termVar, this, debug);
     }
     
     @Override
