@@ -48,7 +48,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     protected int id;
     private int copyId;
     
-    protected transient ReadWriteLock lock = TOverrides.CONCURRENT ? new ReentrantReadWriteLock() : DummyReadWriteLock.of();
+    protected transient ReadWriteLock lock = TOverrides.readWriteLock();
     
     protected volatile transient int currentModification;
     
@@ -407,7 +407,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public String toString() {
-        return "SG<@" + owner.getId() + ", " + id + "_" + copyId + ">";
+        return "SG<" + owner.getId() + ", " + id + "_" + copyId + ">";
     }
     
     // --------------------------------------------------------------------------------------------

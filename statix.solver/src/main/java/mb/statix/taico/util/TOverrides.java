@@ -6,6 +6,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import mb.statix.taico.solver.concurrent.locking.DummyReadWriteLock;
 
 public class TOverrides {
     /** Redirect STX_solve_constraint to MSTX_solve_constraint. */
@@ -92,5 +96,16 @@ public class TOverrides {
         }
         
         return new HashSet<>(elements);
+    }
+    
+    /**
+     * If concurrency is enabled, this method returns a {@link ReentrantReadWriteLock}. Otherwise,
+     * this method returns a dummy lock.
+     * 
+     * @return
+     *      either a read write lock or a dummy lock
+     */
+    public static ReadWriteLock readWriteLock() {
+        return CONCURRENT ? new ReentrantReadWriteLock() : DummyReadWriteLock.of();
     }
 }
