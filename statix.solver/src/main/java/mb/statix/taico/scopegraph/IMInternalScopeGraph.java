@@ -1,5 +1,7 @@
 package mb.statix.taico.scopegraph;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -59,7 +61,11 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      * @return
      *      a set with all the edges
      */
-    Set<S> getTransitiveEdges(S scope, L label);
+    default Set<S> getTransitiveEdges(S scope, L label) {
+        Set<S> edges = new HashSet<>();
+        getTransitiveEdges(scope, label, edges);
+        return edges;
+    }
     
     /**
      * Gets the collection of data from the given scope with the given label, that are
@@ -73,7 +79,43 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      * @return
      *      a set with all the data
      */
-    Set<D> getTransitiveData(S scope, L label);
+    default Set<D> getTransitiveData(S scope, L label) {
+        Set<D> data = new HashSet<>();
+        getTransitiveData(scope, label, data);
+        return data;
+    }
+    
+    /**
+     * Gets the collection of edges from the given scope with the given label, that are
+     * either edges owned by the current scope graph, or owned by any of its children.
+     * 
+     * @param scope
+     *      the scope to start from
+     * @param label
+     *      the label for the edges
+     * @param edges
+     *      the collection to add the edges to
+     * 
+     * @return
+     *      a set with all the edges
+     */
+    void getTransitiveEdges(S scope, L label, Collection<S> edges);
+    
+    /**
+     * Gets the collection of data from the given scope with the given label, that are
+     * either data owned by the current scope graph, or owned by any of its children.
+     * 
+     * @param scope
+     *      the scope to start from
+     * @param label
+     *      the label for the data
+     * @param data
+     *      the collection to add the data to
+     * 
+     * @return
+     *      a set with all the data
+     */
+    void getTransitiveData(S scope, L label, Collection<D> data);
     
     //Scope graph tree
     

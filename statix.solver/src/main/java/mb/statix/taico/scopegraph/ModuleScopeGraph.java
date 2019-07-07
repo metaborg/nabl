@@ -1,6 +1,7 @@
 package mb.statix.taico.scopegraph;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -143,7 +144,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             return getTransitiveEdges(scope, label);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getEdges(scope, label);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getTransitiveEdges(scope, label);
         }
     }
     
@@ -153,17 +154,15 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             return getTransitiveData(scope, label);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getData(scope, label);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getTransitiveData(scope, label);
         }
     }
     
     @Override
-    public Set<Scope> getTransitiveEdges(Scope scope, ITerm label) {
-//        lockManager.acquire(getReadLock());
-        Set<Scope> set;
+    public void getTransitiveEdges(Scope scope, ITerm label, Collection<Scope> edges) {
         getReadLock().lock();
         try {
-            set = new HashSet<>(getOwnEdges().get(scope, label));
+            edges.addAll(getOwnEdges().get(scope, label));
         } finally {
             getReadLock().unlock();
         }
@@ -171,76 +170,26 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
-                set.addAll(child.getTransitiveEdges(scope, label));
+                child.getTransitiveEdges(scope, label, edges);
             }
         }
-        return set;
     }
     
-    /**
-     * Gets transitive edges without locking.
-     * 
-     * @param scope
-     *      the scope
-     * @param label
-     *      the label
-     * 
-     * @return
-     *      the set of edges that this module and children have
-     */
-    protected Set<Scope> _getTransitiveEdges(Scope scope, ITerm label) {
-        Set<Scope> set = new HashSet<>(getOwnEdges().get(scope, label));
-        
-        //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-        for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
-            if (child.getExtensibleScopes().contains(scope)) {
-                set.addAll(child.getTransitiveEdges(scope, label));
-            }
-        }
-        return set;
-    }
-
     @Override
-    public Set<ITerm> getTransitiveData(Scope scope, ITerm label) {
-//        lockManager.acquire(getReadLock());
-        Set<ITerm> set;
+    public void getTransitiveData(Scope scope, ITerm label, Collection<ITerm> data) {
         getReadLock().lock();
         try {
-            set = new HashSet<>(getOwnData().get(scope, label));
+            data.addAll(getOwnData().get(scope, label));
         } finally {
             getReadLock().unlock();
         }
         //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
         for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
             if (child.getExtensibleScopes().contains(scope)) {
-                set.addAll(child.getTransitiveData(scope, label));
+                child.getTransitiveData(scope, label, data);
             }
         }
-        return set;
     }
-    
-    /**
-     * Gets transitive data without locking.
-     * 
-     * @param scope
-     *      the scope
-     * @param label
-     *      the label
-     * 
-     * @return
-     *      the set of data that this module and children have
-     */
-    protected Set<ITerm> _getTransitiveData(Scope scope, ITerm label) {
-      Set<ITerm> set = new HashSet<>(getOwnData().get(scope, label));
-
-      //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-      for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
-          if (child.getExtensibleScopes().contains(scope)) {
-              set.addAll(child.getTransitiveData(scope, label));
-          }
-      }
-      return set;
-  }
     
     @Override
     public Scope createScope(String base) {
