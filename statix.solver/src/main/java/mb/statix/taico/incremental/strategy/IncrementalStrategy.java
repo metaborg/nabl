@@ -21,8 +21,11 @@ import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleCleanliness;
+import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.solver.state.MState;
 
 /**
@@ -42,11 +45,11 @@ public abstract class IncrementalStrategy {
      * @param oldContext
      *      the previous context
      * @param added
-     *      the names of the (top level) modules that were added
+     *      the names (first level)of the modules that were added
      * @param removed
-     *      the names of the (top level) modules that were removed
+     *      the names (first level) or ids of the modules that were removed
      * @param changed
-     *      the names of the (top level) modules that were changed
+     *      the names (first level) or ids of the modules that were changed
      * 
      * @return
      *      the change set
@@ -135,17 +138,39 @@ public abstract class IncrementalStrategy {
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
     
     /**
+     * Creates a new module (child or file) with the given init constraint.
+     * 
+     * @param context
+     *      the context 
+     * @param childNameOrId
+     *      the name of the child (file level) or the id of the child
+     * @param initConstraint
+     *      the init constraint of the child
+     * 
+     * @return
+     *      the module
+     */
+    protected IModule createModule(SolverContext context, IChangeSet changeSet, String childNameOrId, IConstraint initConstraint) {
+        if (ModulePaths.containsPathSeparator(childNameOrId)) {
+            return createChildModule(context, changeSet, childNameOrId, initConstraint);
+        } else {
+            return createFileModule(context, childNameOrId, initConstraint);
+        }
+    }
+    
+    /**
      * Creates a new file module from the given module and initconstraints.
      * Strategies can override this method to change the behavior.
      * 
      * @param context
      *      the context
-     * @param entry
-     *      the (modifiable) entry
+     * @param childName
+     *      the name of the child
+     * @param initConstraint
+     *      the initialization constraint
      * 
      * @return
      *      the created module
-     * @throws Delay 
      */
     protected IModule createFileModule(
             SolverContext context, String childName, IConstraint initConstraint) {
@@ -156,12 +181,53 @@ public abstract class IncrementalStrategy {
         IModule rootOwner = context.getRootModule();
         IModule child = rootOwner.createChild(childName, scopes, initConstraint);
         new MState(child);
+        rootOwner.addChild(child);
+        return child;
+    }
+    
+    /**
+     * Creates a new child module from the given module and initconstraints.
+     * Strategies can override this method to change the behavior.
+     * <p>
+     * <b>NOTE</b>: If the parent of this module is not clean, then this child module is not
+     * created and this method instead returns null.
+     * 
+     * @param context
+     *      the context
+     * @param changeSet
+     *      the change set
+     * @param childId
+     *      the child id
+     * @param initConstraint
+     *      the initialization constraint
+     * 
+     * @return
+     *      the created module, or null
+     */
+    protected IModule createChildModule(
+            SolverContext context, IChangeSet changeSet, String childId, IConstraint initConstraint) {
+        System.err.println("[IS] Creating child module for " + childId);
+        
+        String parent = ModulePaths.getParent(childId);
+        IModule parentModule = context.getModuleUnchecked(parent);
+        if (parentModule == null) throw new IllegalStateException("Could not find module " + parent + " even though one of its children changed: " + childId);
+        if (parentModule.getTopCleanliness() != ModuleCleanliness.CLEAN) {
+            //Parent is also dirty, we need to give up creating this module. It will be created because of the changeset, as long as it's file is reused (which it should be)
+            System.err.println("[IS] SKIPPING module " + childId + ": parent is not clean");
+            return null;
+        }
+        
+        List<Scope> scopes = getScopes(initConstraint);
+        
+        IModule child = parentModule.createChild(ModulePaths.getName(childId), scopes, initConstraint);
+        new MState(child);
+        parentModule.addChild(child);
         return child;
     }
     
     /**
      * Reuses an old module for a new analysis.
-     * This method creates a state and a dummy solver for the given module.
+     * This method reuses the state and creates a dummy solver for the given module.
      * 
      * @param context
      *      the context
@@ -172,9 +238,9 @@ public abstract class IncrementalStrategy {
      */
     protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
         System.err.println("[IS] Reusing old module " + oldModule);
-        MState state = new MState(oldModule);
-        //TODO Is the root solver set at this point?
-        context.getRootModule().getCurrentState().solver().noopSolver(state);
+        IMState state = context.reuseOldState(oldModule);
+        //Does the parent module have a state at this point?
+        oldModule.getParent().getCurrentState().solver().noopSolver(state);
     }
     
     /**

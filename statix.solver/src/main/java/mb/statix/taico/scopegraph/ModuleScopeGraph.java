@@ -1,23 +1,32 @@
 package mb.statix.taico.scopegraph;
 
+import static mb.statix.taico.util.TOverrides.*;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.concurrent.locking.DummyReadWriteLock;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
 import mb.statix.taico.util.TOverrides;
@@ -40,7 +49,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     //Scope graph graph
     private final HashSet<String> children = new HashSet<>();
     
-    private final HashSet<Scope> scopes = new HashSet<>();
+    private final Set<Scope> scopes = synchronizedSet(new HashSet<>());
     private transient IRelation3.Transient<Scope, ITerm, Scope> edges = HashTrieRelation3.Transient.of();
     private transient IRelation3.Transient<Scope, ITerm, ITerm> data = HashTrieRelation3.Transient.of();
 
@@ -48,7 +57,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     protected int id;
     private int copyId;
     
-    protected transient ReadWriteLock lock = TOverrides.readWriteLock();
+    protected transient ReadWriteLock lock;
+    protected transient boolean useLock;
     
     protected volatile transient int currentModification;
     
@@ -75,6 +85,18 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         this.noDataLabel = noDataLabel;
         this.parentScopes = canExtend;
         this.canExtend = Capsules.newSet(canExtend);
+        this.useLock = useLock();
+        if (this.useLock) lock = TOverrides.readWriteLock();
+    }
+    
+    /**
+     * @return
+     *      true if locks should be used, false if synchronized should be used
+     */
+    private boolean useLock() {
+        if (!CONCURRENT || SYNC_SCOPEGRAPHS == 0) return true;
+        
+        return SYNC_SCOPEGRAPHS - ModulePaths.pathLength(owner.getId()) > 0;
     }
     
     @Override
@@ -139,7 +161,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
 
     @Override
     public Set<Scope> getEdges(Scope scope, ITerm label) {
-        //TODO Should be possible without passing a scope, but rather something specifying the parent scope number that was passed.
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label);
         } else {
@@ -160,35 +181,70 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public void getTransitiveEdges(Scope scope, ITerm label, Collection<Scope> edges) {
-        getReadLock().lock();
-        try {
-            edges.addAll(getOwnEdges().get(scope, label));
-        } finally {
-            getReadLock().unlock();
-        }
-        
-        //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-        for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
-            if (child.getExtensibleScopes().contains(scope)) {
-                child.getTransitiveEdges(scope, label, edges);
+        if (useLock) {
+            getReadLock().lock();
+            try {
+                edges.addAll(getOwnEdges().get(scope, label));
+                
+                //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
+                for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
+                    if (child.getExtensibleScopes().contains(scope)) {
+                        child.getTransitiveEdges(scope, label, edges);
+                    }
+                }
+            } finally {
+                getReadLock().unlock();
+            }
+        } else {
+            final IRelation3<Scope, ITerm, Scope> ownEdges = getOwnEdges();
+            synchronized (ownEdges) {
+                edges.addAll(ownEdges.get(scope, label));
+            }
+            
+            synchronized (children) {
+                //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
+                for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
+                    if (child.getExtensibleScopes().contains(scope)) {
+                        child.getTransitiveEdges(scope, label, edges);
+                    }
+                }
             }
         }
     }
     
     @Override
     public void getTransitiveData(Scope scope, ITerm label, Collection<ITerm> data) {
-        getReadLock().lock();
-        try {
-            data.addAll(getOwnData().get(scope, label));
-        } finally {
-            getReadLock().unlock();
-        }
-        //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
-        for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
-            if (child.getExtensibleScopes().contains(scope)) {
-                child.getTransitiveData(scope, label, data);
+        if (useLock) {
+            getReadLock().lock();
+            try {
+                data.addAll(getOwnData().get(scope, label));
+                
+                //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
+                for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
+                    if (child.getExtensibleScopes().contains(scope)) {
+                        child.getTransitiveData(scope, label, data);
+                    }
+                }
+            } finally {
+                getReadLock().unlock();
+            }
+        } else {
+            final IRelation3<Scope, ITerm, ITerm> ownData = getOwnData();
+            synchronized (ownData) {
+                data.addAll(ownData.get(scope, label));
+            }
+            
+            synchronized (children) {
+                //TODO OPTIMIZATION We might be able to do a better check than just the scopes that are passed based on the spec. 
+                for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
+                    if (child.getExtensibleScopes().contains(scope)) {
+                        child.getTransitiveData(scope, label, data);
+                    }
+                }
             }
         }
+        
+
     }
     
     @Override
@@ -212,11 +268,17 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                     + "Edge: " + sourceScope + " -" + label + "-> " + targetScope);
         }
         
-        getWriteLock().lock();
-        try {
-            return edges.put(sourceScope, label, targetScope);
-        } finally {
-            getWriteLock().unlock();
+        if (useLock) {
+            getWriteLock().lock();
+            try {
+                return edges.put(sourceScope, label, targetScope);
+            } finally {
+                getWriteLock().unlock();
+            }
+        } else {
+            synchronized (edges) {
+                return edges.put(sourceScope, label, targetScope);
+            }
         }
     }
 
@@ -231,26 +293,24 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                     + "Datum: " + scope + " -" + relation + "-> " + datum.toString());
         }
         
-        getWriteLock().lock();
-        try {
-            return data.put(scope, relation, datum);
-        } finally {
-            getWriteLock().unlock();
+        if (useLock) {
+            getWriteLock().lock();
+            try {
+                return data.put(scope, relation, datum);
+            } finally {
+                getWriteLock().unlock();
+            }
+        } else {
+            synchronized (data) {
+                return data.put(scope, relation, datum);
+            }
         }
     }
     
     @Override
     public ModuleScopeGraph createChild(IModule module, List<Scope> canExtend) {
-        currentModification++;
         ModuleScopeGraph child = new ModuleScopeGraph(module, edgeLabels, dataLabels, noDataLabel, canExtend);
-        
-        getWriteLock().lock();
-        try {
-            children.add(child.getOwner().getId());
-            return child;
-        } finally {
-            getWriteLock().unlock();
-        }
+        return child;
     }
     
     @Override
@@ -259,22 +319,35 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         //TODO Unsafe cast
         ModuleScopeGraph childSg = (ModuleScopeGraph) child.getScopeGraph();
         
-        getWriteLock().lock();
-        try {
-            children.add(child.getId());
-            return childSg;
-        } finally {
-            getWriteLock().unlock();
+        if (useLock) {
+            getWriteLock().lock();
+            try {
+                children.add(child.getId());
+            } finally {
+                getWriteLock().unlock();
+            }
+        } else {
+            synchronized (children) {
+                children.add(child.getId());
+            }
         }
+        
+        return childSg;
     }
     
     @Override
     public boolean removeChild(IModule child) {
-        getWriteLock().lock();
-        try {
-            return children.remove(child.getId());
-        } finally {
-            getWriteLock().unlock();
+        if (useLock) {
+            getWriteLock().lock();
+            try {
+                return children.remove(child.getId());
+            } finally {
+                getWriteLock().unlock();
+            }
+        } else {
+            synchronized (children) {
+                return children.remove(child.getId());
+            }
         }
     }
     
@@ -289,11 +362,17 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             childSg.purgeChildren();
         }
         
-        getWriteLock().lock();
-        try {
-            children.clear();
-        } finally {
-            getWriteLock().unlock();
+        if (useLock) {
+            getWriteLock().lock();
+            try {
+                children.clear();
+            } finally {
+                getWriteLock().unlock();
+            }
+        } else {
+            synchronized (children) {
+                children.clear();
+            }
         }
     }
     
@@ -320,24 +399,98 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                 newData.put(newScope, e.getKey(), e.getValue());
             }
         }
-        edges = newEdges;
-        data = newData;
+        
+        if (useLock) {
+            getWriteLock().lock();
+            edges = newEdges;
+            data = newData;
+            getWriteLock().unlock();
+        } else {
+            edges = newEdges;
+            data = newData;
+        }
+        
     }
     
     @Override
     public IMExternalScopeGraph<Scope, ITerm, ITerm> externalGraph() {
         ModuleScopeGraph msg = new ModuleScopeGraph(owner, edgeLabels, dataLabels, noDataLabel, parentScopes);
-        for (Scope scope : parentScopes) {
-            for (Entry<ITerm, Scope> e : getOwnEdges().get(scope)) {
-                msg.addEdge(scope, e.getKey(), e.getValue());
+        
+        IUnifier.Immutable unifier = owner.getCurrentState().unifier();
+        
+        Queue<Scope> scopes = new LinkedList<>(parentScopes);
+        final IRelation3<Scope, ITerm, Scope> ownEdges = getOwnEdges();
+        final IRelation3<Scope, ITerm, ITerm> ownData = getOwnData();
+        if (useLock) {
+            getReadLock().lock();
+            try {
+                while (!scopes.isEmpty()) {
+                    Scope scope = scopes.poll();
+                    if (owner.getId().equals(scope.getResource())) {
+                        msg.scopes.add(scope);
+                    }
+                    
+                    for (Entry<ITerm, Scope> e : ownEdges.get(scope)) {
+                        msg.addEdge(scope, e.getKey(), e.getValue());
+                    }
+                    
+                    for (Entry<ITerm, ITerm> e : ownData.get(scope)) {
+                        ITerm data = e.getValue();
+                        msg.addDatum(scope, e.getKey(), data);
+                        addDataIfScope(scopes, data, unifier);
+                    }
+                }
+            } finally {
+                getReadLock().unlock();
             }
-            
-            for (Entry<ITerm, ITerm> e : getOwnData().get(scope)) {
-                msg.addDatum(scope, e.getKey(), e.getValue());
+        } else {
+            while (!scopes.isEmpty()) {
+                Scope scope = scopes.poll();
+                if (owner.getId().equals(scope.getResource())) {
+                    msg.scopes.add(scope);
+                }
+                
+                synchronized (ownEdges) {
+                    for (Entry<ITerm, Scope> e : ownEdges.get(scope)) {
+                        msg.addEdge(scope, e.getKey(), e.getValue());
+                    }
+                }
+                
+                synchronized (ownData) {
+                    for (Entry<ITerm, ITerm> e : ownData.get(scope)) {
+                        ITerm data = e.getValue();
+                        msg.addDatum(scope, e.getKey(), data);
+                        addDataIfScope(scopes, data, unifier);
+                    }
+                }
             }
         }
         
+        //TODO also need to add associated scopes data
+
+        
         return msg;
+    }
+    
+    private void addDataIfScope(Queue<Scope> scopes, ITerm data, IUnifier.Immutable unifier) {
+        if (data instanceof ITermVar) {
+            if (!unifier.isGround(data)) {
+                //TODO This variable is unbound! How to handle this? We can assume it is not a scope at this moment
+                System.out.println("While determining external scope graph of " + owner + ": There is data in the scope graph that is not ground!");
+                return;
+            }
+            data = unifier.findRecursive(data);
+        }
+        
+        //Try to match as a scope
+        Optional<Scope> sdata = Scope.matcher().match(data);
+        if (sdata.isPresent()) {
+            Scope scope = sdata.get();
+            
+            //Do not add the scope if it is not ours
+            if (!owner.getId().equals(scope.getResource())) return;
+            scopes.add(sdata.get());
+        }
     }
     
     @Override
@@ -380,6 +533,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         this.parentScopes = original.parentScopes;
         this.scopeCounter = original.scopeCounter;
         this.scopes.addAll(original.scopes);
+        this.useLock = useLock();
     }
     
     @Override
@@ -423,7 +577,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         this.data = ((HashTrieRelation3.Immutable<Scope, ITerm, ITerm>) stream.readObject()).melt();
         
         //Recreate the lock
-        this.lock = new ReentrantReadWriteLock();
+        this.useLock = useLock();
+        if (useLock) this.lock = TOverrides.readWriteLock();
     }
     
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {

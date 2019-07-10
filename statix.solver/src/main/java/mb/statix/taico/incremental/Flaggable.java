@@ -72,7 +72,7 @@ public interface Flaggable {
      */
     default void setFlag(Flag flag) {
         getFlags().clear();
-        addFlag(flag);
+        if (flag != Flag.CLEAN) addFlag(flag);
     }
     
     /**

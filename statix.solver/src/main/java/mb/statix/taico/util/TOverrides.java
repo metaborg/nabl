@@ -1,6 +1,7 @@
 package mb.statix.taico.util;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,6 +29,18 @@ public class TOverrides {
      * Otherwise, the"just redo whenever the critical edge MIGHT have changed" variant is used. 
      */
     public static boolean USE_OBSERVER_MECHANISM_FOR_SELF = true;
+    
+    /**
+     * The value of this integer determines what locking approach scope graphs use.
+     * <p>
+     * 0 -> all modules use reentrant read write locks<br>
+     * 1 -> all modules use synchronized<br>
+     * 2 -> all modules use synchronized, except for the <b>first</b> level (root)<br>
+     * 3 -> all modules use synchronized, except for the first <b>two</b> levels<br>
+     * 4 -> all modules use synchronized, except for the first <b>three</b> levels<br>
+     * 5 -> ...
+     */
+    public static int SYNC_SCOPEGRAPHS = 0;
     
     /** If true, will cause the statix calls to fail in order to trigger a clean run. */
     public static boolean CLEAN = false;
@@ -96,6 +109,19 @@ public class TOverrides {
         }
         
         return new HashSet<>(elements);
+    }
+    
+    /**
+     * Wraps the given set into a synchronized set if concurrency is enabled.
+     * 
+     * @param base
+     *      the set to wrap
+     * 
+     * @return
+     *      the set itself, or the wrapped set
+     */
+    public static <E> Set<E> synchronizedSet(Set<E> base) {
+        return CONCURRENT ? Collections.synchronizedSet(base) : base;
     }
     
     /**

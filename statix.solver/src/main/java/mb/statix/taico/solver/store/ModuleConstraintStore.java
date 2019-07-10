@@ -396,7 +396,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             IUnifier.Immutable unifier = state.unifier();
             
             //If we are running concurrently, check if the variable was resolved between our stuck check and the registration.
-            if (TOverrides.CONCURRENT && !unifier.isGround(termVar)) {
+            if (!unifier.isGround(termVar)) {
                 debug.info("Registering as observer on {}, waiting on var {}", varOwner, termVar);
                 varStore.registerObserver(termVar, this, debug);
                 return;

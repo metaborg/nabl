@@ -68,7 +68,11 @@ public class ModuleManager implements Serializable {
      * 
      * @throws IllegalStateException
      *      If the given name is not globally unique
+     * 
+     * @deprecated
+     *      Only works when modules are unique.
      */
+    @Deprecated
     public synchronized IModule getModuleByName(String name) {
         System.err.println("getModuleByName request for " + name);
         List<IModule> mods = moduleNames.get(name);
@@ -92,9 +96,15 @@ public class ModuleManager implements Serializable {
      */
     public synchronized IModule getModuleByName(String name, int level) {
         List<IModule> mods = moduleNames.get(name);
-        List<IModule> filtered = mods.stream().filter(m -> ModulePaths.pathLength(m.getId()) - 1 == level).collect(Collectors.toList());
-        if (filtered.size() > 1) throw new IllegalStateException("[ModuleManager] Module " + name + " is not unique on its level. Use a full id instead");
-        return filtered.isEmpty() ? null : filtered.get(0);
+        IModule found = null;
+        for (IModule module : mods) {
+            if (ModulePaths.pathLength(module.getId()) - 1 != level) continue;
+            
+            if (found != null) throw new IllegalStateException("[ModuleManager] Module " + name + " is not unique on its level. Use a full id instead");
+            found = module;
+        }
+        
+        return found;
     }
     
     /**

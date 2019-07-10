@@ -4,7 +4,6 @@ import static mb.statix.taico.util.TOverrides.hashMap;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -38,8 +37,8 @@ public class SolverContext implements Serializable {
     private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
     
-    private Map<String, MSolverResult> solverResults = hashMap();
-    private Map<IModule, IMState> states = hashMap();
+//    private Map<String, MSolverResult> solverResults = hashMap();
+    private Map<String, IMState> states = hashMap();
     
     private SolverContext(IncrementalStrategy strategy, Spec spec) {
         this.strategy = strategy;
@@ -81,13 +80,17 @@ public class SolverContext implements Serializable {
         for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
             if (!(entry.getValue() instanceof CTrue)) continue;
             
-            String childName = entry.getKey();
+            String childNameOrId = entry.getKey();
 
             //Scope substitution does not have to occur here, since the global scope remains constant.
             //If there is no constraint available, use the initialization constraint for the child
-            IModule child = oldContext == null ? null : oldContext.manager.getModuleByName(childName, 1);
+            if (oldContext == null) {
+                throw new IllegalStateException("Encountered a module without initialization but no previous context is available: " + childNameOrId);
+            }
+            
+            IModule child = oldContext.getModuleByNameOrId(childNameOrId);
             if (child == null) {
-                throw new IllegalStateException("Encountered a module without initialization that was not present in the previous context: " + childName);
+                throw new IllegalStateException("Encountered a module without initialization that was not present in the previous context: " + childNameOrId);
             }
 
             entry.setValue(child.getInitialization());
@@ -231,9 +234,44 @@ public class SolverContext implements Serializable {
         return manager.getModulesOnLevel(level);
     }
     
+    /**
+     * If a module id is supplied, gets the module with the given id.
+     * Otherwise, if the given string is a name, the module at the <b>first level</b> with the
+     * given name is requested.
+     * <p>
+     * This method returns modules from the current context only (not from the old context).
+     * 
+     * @param nameOrId
+     *      the name or id of the module
+     * 
+     * @return
+     *      the module, or null if no such module exists
+     */
+    public IModule getModuleByNameOrId(String nameOrId) {
+        IModule module;
+        if (ModulePaths.containsPathSeparator(nameOrId)) {
+            module = manager.getModule(nameOrId);
+        } else {
+            module = manager.getModuleByName(nameOrId, 1);
+        }
+        
+        return module;
+    }
+    
     // --------------------------------------------------------------------------------------------
     // States
     // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @param module
+     *      the id of the module
+     * 
+     * @return
+     *      the state associated with the given module in the current context
+     */
+    public IMState getState(String moduleId) {
+        return states.get(moduleId);
+    }
     
     /**
      * @param module
@@ -243,7 +281,7 @@ public class SolverContext implements Serializable {
      *      the state associated with the given module in the current context
      */
     public IMState getState(IModule module) {
-        return states.get(module);
+        return states.get(module.getId());
     }
     
     /**
@@ -255,8 +293,28 @@ public class SolverContext implements Serializable {
      *      the state
      */
     public void setState(IModule module, IMState state) {
-        IMState old = states.put(module, state);
-        if (old != null) System.err.println("Overridden state of " + module + " in context " + hashCode());
+        IMState old = states.put(module.getId(), state);
+        if (old != null) System.err.println("Overridden state of " + module);
+    }
+    
+    /**
+     * Reuses the state of an old module (module from the old context). The reused state is set
+     * as current state of the given module.
+     * 
+     * @param oldModule
+     *      the module
+     * 
+     * @return
+     *      the reused state
+     */
+    public IMState reuseOldState(IModule oldModule) {
+        if (oldContext == null) throw new IllegalStateException("Old context is null!");
+        
+        IMState oldState = oldContext.getState(oldModule);
+        if (oldState == null) throw new IllegalStateException("Old state of the module is null!");
+        
+        setState(oldModule, oldState);
+        return oldState;
     }
     
     // --------------------------------------------------------------------------------------------
@@ -302,18 +360,22 @@ public class SolverContext implements Serializable {
     // Solver results
     // --------------------------------------------------------------------------------------------
     
-    public void addResult(String moduleId, MSolverResult result) {
-        solverResults.put(moduleId, result);
-    }
-    
-    public MSolverResult getResult(String moduleId) {
-        return solverResults.get(moduleId);
-    }
-    
-    public Map<String, MSolverResult> getResults() {
-        return new HashMap<>(solverResults);
-    }
+//    public void addResult(String moduleId, MSolverResult result) {
+//        solverResults.put(moduleId, result);
+//    }
+//    
+//    public MSolverResult getResult(String moduleId) {
+//        return solverResults.get(moduleId);
+//    }
+//    
+//    public Map<String, MSolverResult> getResults() {
+//        return new HashMap<>(solverResults);
+//    }
 
+    public Map<IModule, MSolverResult> getResults() {
+        return coordinator.getResults();
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Context transfer
     // --------------------------------------------------------------------------------------------
@@ -351,8 +413,8 @@ public class SolverContext implements Serializable {
                 + ", manager=" + manager
                 + ", oldContext=" + oldContext
                 + ", changeSet=" + changeSet
-                + ", incrementalManager=" + incrementalManager
-                + ", solverResults=" + solverResults + "]";
+                + ", incrementalManager=" + incrementalManager + "]";
+//                + ", solverResults=" + solverResults + "]";
     }
     
 //    private void writeObject(ObjectOutputStream out) throws IOException {
@@ -493,6 +555,5 @@ public class SolverContext implements Serializable {
         stream.defaultWriteObject();
         System.out.println("Serializing context " + this);
     }
-    
     
 }

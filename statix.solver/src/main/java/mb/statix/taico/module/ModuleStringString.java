@@ -5,6 +5,7 @@ import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.util.TermFormatter;
 
 public class ModuleStringString implements IModuleStringComponent {
+    private static final long serialVersionUID = 1L;
     
     private String string;
     

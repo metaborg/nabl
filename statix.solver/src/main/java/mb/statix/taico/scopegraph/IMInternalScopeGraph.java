@@ -120,7 +120,8 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     //Scope graph tree
     
     /**
-     * Creates a child scope graph from this scope graph.
+     * Creates a child scope graph from this scope graph. The returned scope graph must be added
+     * with the addChild method.
      * 
      * @param module
      *      the module that will own the child graph

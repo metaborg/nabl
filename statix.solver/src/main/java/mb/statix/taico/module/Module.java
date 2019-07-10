@@ -35,7 +35,6 @@ public class Module implements IModule {
     private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
     private Map<CResolveQuery, QueryDetails> queries = new HashMap<>();
     private Map<String, CResolveQuery> dependants = TOverrides.hashMap();
-    protected ModuleCleanliness cleanliness = ModuleCleanliness.NEW;
     private IConstraint initialization;
     
     private StablePriorityQueue<Flag> flags = new StablePriorityQueue<>();
@@ -96,8 +95,12 @@ public class Module implements IModule {
     
     @Override
     public IModule getParent() {
-        System.err.println("Getting parent on module " + this);
         return parentId == null ? null : context().getModuleUnchecked(parentId);
+    }
+    
+    @Override
+    public String getParentId() {
+        return parentId;
     }
     
     @Override
@@ -167,7 +170,6 @@ public class Module implements IModule {
         this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getEdgeLabels(), scopeGraph.getDataLabels(), scopeGraph.getNoDataLabel(), scopeGraph.getParentScopes());
         this.queries = new HashMap<>();
         this.dependants = TOverrides.hashMap();
-        this.cleanliness = ModuleCleanliness.NEW;
         new MState(this);
         context().addModule(this);
     }
@@ -198,7 +200,7 @@ public class Module implements IModule {
     private Module(Module original) {
         this.name = original.name;
         this.parentId = original.parentId;
-        this.cleanliness = original.cleanliness;
+        this.flags = new StablePriorityQueue<>(original.flags);
         this.queries = new HashMap<>(original.queries);
         this.dependants = TOverrides.hashMap(original.dependants);
         this.initialization = original.initialization;

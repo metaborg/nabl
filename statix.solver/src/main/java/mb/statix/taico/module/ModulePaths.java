@@ -1,11 +1,13 @@
 package mb.statix.taico.module;
 
+import java.util.Comparator;
 import java.util.regex.Pattern;
 
 public class ModulePaths {
     public static final char PATH_SEPARATOR_CHAR = '%';
     public static final String PATH_SEPARATOR = String.valueOf(PATH_SEPARATOR_CHAR);
     public static final char REPLACEMENT_CHAR = '_';
+    public static final Comparator<String> INCREASING_PATH_LENGTH = (a, b) -> Integer.compare(pathLength(a), pathLength(b));
     
     /**
      * Builds the path with the given path and name. The name is sanitized.
@@ -83,5 +85,42 @@ public class ModulePaths {
      */
     public static String[] pathSegments(String path, int limit) {
         return path.split(Pattern.quote(PATH_SEPARATOR), limit);
+    }
+    
+    /**
+     * @param str
+     *      the string
+     * 
+     * @return
+     *      true if the given string contains the {@link #PATH_SEPARATOR}, false otherwise
+     */
+    public static boolean containsPathSeparator(String str) {
+        return str.indexOf(PATH_SEPARATOR_CHAR) != -1;
+    }
+
+    /**
+     * @param path
+     *      the path
+     * 
+     * @return
+     *      the parent of the given path, or null if there is no parent
+     */
+    public static String getParent(String path) {
+        int index = path.lastIndexOf(PATH_SEPARATOR_CHAR);
+        
+        return index == -1 ? null : path.substring(0, index);
+    }
+    
+    /**
+     * @param path
+     *      the path
+     * 
+     * @return
+     *      the name of the given path (last segment)
+     */
+    public static String getName(String path) {
+        int index = path.lastIndexOf(PATH_SEPARATOR_CHAR);
+        
+        return path.substring(index + 1);
     }
 }

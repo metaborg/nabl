@@ -29,7 +29,7 @@ public class MState implements IMState, Serializable {
     private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
     private Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties;
     
-    private int varCounter;
+    private volatile int varCounter;
     private Set<ITermVar> vars;
     
     private volatile DistributedUnifier.Immutable unifier;
@@ -91,7 +91,7 @@ public class MState implements IMState, Serializable {
     // --- variables ---
 
     @Override
-    public synchronized ITermVar freshVar(String base) {
+    public ITermVar freshVar(String base) {
         //TODO Reuse freshRigidVar code?
         int i = ++varCounter;
         String name = base.replaceAll("-", "_") + "-" + i;

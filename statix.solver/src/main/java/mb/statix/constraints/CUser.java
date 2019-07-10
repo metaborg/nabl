@@ -144,16 +144,22 @@ public class CUser implements IConstraint, Serializable {
                     }
                     
                     String modName = rule.moduleString().build(appl._1());
-                    IModule child = state.owner().createOrGetChild(modName, canExtend, new CUser(name(), newArgs));
-                    IMState childState = new MState(child);
-
-                    //TODO This condition might need to change
-//                    if (child.getTopCleanliness() == ModuleCleanliness.NEW) {
-                        state.solver().childSolver(childState, appl._2());
-//                    } else {
-//                        //TODO Add solver without constraints for this module?
-//                    }
                     
+                    IModule child = state.owner().getChildIfClean(modName, canExtend, new CUser(name(), newArgs));
+                    if (child != null) {
+                        //Reuse an old child if it is clean (1), and add the child to the scope graph of the state owner (2)
+                        state.solver().noopSolver(child.getCurrentState());
+                        state.owner().addChild(child);
+                    } else {
+                        //Create the child module + state (1), create the state (2), create the child solver (3) and add the child to the scope graph of the state owner (4)
+                        //This needs to happen in this precise ordering to prevent concurrency issues. The third call makes the new child module
+                        //available to the rest of the world.
+                        child = state.owner().createChild(modName, canExtend, new CUser(name(), newArgs));
+                        new MState(child);
+                        state.solver().childSolver(child.getCurrentState(), appl._2());
+                        state.owner().addChild(child);
+                    }
+
                     proxyDebug.info("{} accepted", ruleOrModb);
                     proxyDebug.commit();
                     return Optional.of(MConstraintResult.of());

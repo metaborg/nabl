@@ -2,6 +2,7 @@ package mb.statix.taico.spec;
 
 import java.util.List;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.terms.matching.Pattern;
@@ -17,6 +18,7 @@ import mb.statix.taico.module.ModuleString;
  * <pre>modbound ruleName(paramVars) | $[moduleName]:- {bodyVars} constraints.</pre>
  */
 @Value.Immutable
+@Serial.Version(42L)
 public abstract class AModuleBoundary extends ARule {
 
     @Override

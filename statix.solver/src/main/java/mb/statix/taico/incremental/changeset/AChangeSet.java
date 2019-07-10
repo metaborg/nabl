@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -40,9 +39,9 @@ public abstract class AChangeSet implements IChangeSet {
      * @param added
      *      the set of added modules (names)
      * @param changed
-     *      the set of changed modules (names)
+     *      the set of changed modules (names (top level) or ids)
      * @param removed
-     *      the set of removed modules (names)
+     *      the set of removed modules (names (top level) or ids)
      */
     public AChangeSet(SolverContext oldContext, Iterable<ModuleCleanliness> supported, Collection<String> added, Collection<String> changed, Collection<String> removed) {
         //Add all the required sets
@@ -57,15 +56,24 @@ public abstract class AChangeSet implements IChangeSet {
         //Add all added modules
         ids.computeIfAbsent(NEW, k -> createSet()).addAll(added);
         
-        Map<String, IModule> modules = oldContext.getModulesOnLevel(1);
-        add(Flag.DELETED, FlagCondition.OverrideFlag, removed.stream().map(name -> getModule(modules, name)).toArray(IModule[]::new));
-        add(new Flag(DIRTY, 1), FlagCondition.OverrideFlag, changed.stream().map(name -> getModule(modules, name)).toArray(IModule[]::new));
+        add(new Flag(DIRTY, 1), FlagCondition.OverrideFlag, changed.stream().map(name -> getModule(oldContext, name)).toArray(IModule[]::new));
+        add(Flag.DELETED, FlagCondition.OverrideFlag, removed.stream().map(name -> getModule(oldContext, name)).toArray(IModule[]::new));
     }
     
-    private IModule getModule(Map<String, IModule> modules, String name) {
+    /**
+     * @param oldContext
+     *      the old context
+     * @param nameOrId
+     *      the name or id of the module
+     * 
+     * @return
+     *      the module
+     */
+    protected IModule getModule(SolverContext oldContext, String nameOrId) {
+        IModule module = oldContext.getModuleByNameOrId(nameOrId);
+        
         //TODO Use id by using the name of the parent.
-        IModule module = modules.get(name);
-        if (module == null) throw new IllegalStateException("Encountered module that is unknown: " + name);
+        if (module == null) throw new IllegalStateException("Encountered module that is unknown: " + nameOrId);
         return module;
     }
     

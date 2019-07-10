@@ -20,6 +20,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
@@ -140,6 +141,7 @@ public class ModuleSolver implements IOwnable {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         // TODO Should report no constriants to solve, is this still true with CTrue?
         ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
+        this.state.coordinator().addSolver(solver);
         return solver;
     }
     

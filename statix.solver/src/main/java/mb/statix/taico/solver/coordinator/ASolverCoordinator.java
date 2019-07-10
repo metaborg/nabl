@@ -203,7 +203,8 @@ public abstract class ASolverCoordinator {
     protected void scheduleModules(Map<IModule, IConstraint> modules) {
         for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             //childSolver sets the solver on the state and adds it
-            root.childSolver(entry.getKey().getCurrentState(), entry.getValue());
+            ModuleSolver parentSolver = context.getState(entry.getKey().getParentId()).solver();
+            parentSolver.childSolver(entry.getKey().getCurrentState(), entry.getValue());
         }
     }
     
@@ -222,7 +223,20 @@ public abstract class ASolverCoordinator {
         for (Entry<IModule, MSolverResult> entry : getResults().entrySet()) {
             //Skip all modules that are not in the initial set.
             if (!modules.contains(entry.getKey())) continue;
-            results.put(entry.getKey().getName(), entry.getValue());
+            
+            IModule fileModule = entry.getKey();
+            Set<IConstraint> errors = new LinkedHashSet<>();
+            Map<IConstraint, Delay> delays = new LinkedHashMap<>();
+            ISolverResult fileResult = entry.getValue();
+            errors.addAll(fileResult.errors());
+            delays.putAll(fileResult.delays());
+            
+            for (IModule module : (Iterable<IModule>) fileModule.getDescendants()::iterator) {
+                ISolverResult result = getResults().get(module);
+                errors.addAll(result.errors());
+                delays.putAll(result.delays());
+            }
+            results.put(entry.getKey().getName(), fileResult.withErrors(errors).withDelays(delays));
         }
         return results;
     }

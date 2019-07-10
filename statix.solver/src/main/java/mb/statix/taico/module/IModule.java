@@ -22,6 +22,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
@@ -50,6 +51,12 @@ public interface IModule extends Flaggable, Serializable {
      *      the parent of this module
      */
     IModule getParent();
+    
+    /**
+     * @return
+     *      the id of the parent of this module
+     */
+    String getParentId();
     
     /**
      * Sets the parent of this module to the given module.
@@ -97,6 +104,8 @@ public interface IModule extends Flaggable, Serializable {
     }
     
     /**
+     * Creates a child module, but not the state.
+     * 
      * @param name
      *      the name of the child module
      * @param canExtend
@@ -113,8 +122,20 @@ public interface IModule extends Flaggable, Serializable {
     IModule createChild(String name, List<Scope> canExtend, IConstraint constraint);
     
     /**
+     * Adds a (newly created) child module.
+     * 
+     * @param child
+     *      the child module
+     */
+    default void addChild(IModule child) {
+        getScopeGraph().addChild(child);
+    }
+    
+    /**
      * If the module with the given name already existed as a child of this module, that module is
      * returned. Otherwise, this method returns a new child module of this module.
+     * <p>
+     * <b>NOTE:</b> the child module must still be added as a child after creation.
      * 
      * @param name
      *      the name of the module to create or get
@@ -130,7 +151,7 @@ public interface IModule extends Flaggable, Serializable {
      * @return
      *      the new/old child module
      */
-    default IModule createOrGetChild(String name, List<Scope> canExtend, IConstraint constraint) throws Delay {
+    default IModule createOrGetChild(String name, List<Scope> canExtend, IConstraint constraint) {
         //TODO This method might no longer be neccessary, or it might not need to check for the old module flag.
         //TODO Incrementality breaks if parent or child names are changed
         IModule oldModule = getChild(name);
@@ -144,11 +165,44 @@ public interface IModule extends Flaggable, Serializable {
             oldModule.setParent(this);
             //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
             oldModule.setInitialization(constraint);
-            getScopeGraph().addChild(oldModule);
             return oldModule;
         } else {
             return createChild(name, canExtend, constraint);
         }
+    }
+    
+    /**
+     * Gets the child with the given name if it is clean. If no child with the given name exists
+     * or if the child is not clean, this method returns null.
+     * <p>
+     * If the child exists, its scopes are substituted for the given scopes and its initialization
+     * is updated. The state of the child is reused.
+     * 
+     * @param name
+     *      the name of the child
+     * @param canExtend
+     *      the scope the child can extend
+     * @param constraint
+     *      the new initialization constraint for the child
+     * 
+     * @return
+     *      the child if clean, or null otherwise
+     */
+    default IModule getChildIfClean(String name, List<Scope> canExtend, IConstraint constraint) {
+        IModule oldModule;
+        try {
+            oldModule = getChild(name);
+        } catch (ModuleDelayException ex) {
+            return null;
+        }
+        if (oldModule == null || oldModule.getTopCleanliness() != ModuleCleanliness.CLEAN) return null;
+        
+        oldModule.getScopeGraph().substitute(canExtend);
+        oldModule.setParent(this);
+        //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
+        oldModule.setInitialization(constraint);
+        context().reuseOldState(oldModule);
+        return oldModule;
     }
     
     /**
@@ -158,7 +212,7 @@ public interface IModule extends Flaggable, Serializable {
      * @return
      *      the child of this module
      */
-    default IModule getChild(String name) throws Delay {
+    default IModule getChild(String name) throws ModuleDelayException {
         return context().getChildModuleByName(this, name);
     }
     

@@ -1,7 +1,5 @@
 package mb.statix.spoofax;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 import static mb.statix.taico.util.test.TestUtil.*;
 
 import java.util.ArrayList;

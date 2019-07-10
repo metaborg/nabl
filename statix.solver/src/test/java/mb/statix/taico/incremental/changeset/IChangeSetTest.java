@@ -87,7 +87,7 @@ public class IChangeSetTest {
     }
     
     /**
-     * Convenient way to create a new child module.
+     * Convenient way to create a new child module (without a state).
      * 
      * @param parent
      *      the parent
@@ -100,7 +100,9 @@ public class IChangeSetTest {
      *      the child module
      */
     protected static IModule createChild(IModule parent, String name, Scope... scopes) {
-        return parent.createChild(name, list(scopes), null);
+        IModule module = parent.createChild(name, list(scopes), null);
+        parent.addChild(module);
+        return module;
     }
     
     /**

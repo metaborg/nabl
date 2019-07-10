@@ -2,6 +2,7 @@ package mb.statix.taico.util;
 
 import java.io.Serializable;
 import java.util.AbstractQueue;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
@@ -14,7 +15,7 @@ public class StablePriorityQueue<E> extends AbstractQueue<E> implements Serializ
     protected volatile int entryCounter;
     
     public StablePriorityQueue() {
-        this(null);
+        this((Comparator<? super E>) null);
     }
 
     /**
@@ -59,6 +60,17 @@ public class StablePriorityQueue<E> extends AbstractQueue<E> implements Serializ
                          Comparator<? super E> comparator) {
         this.queue = new PriorityQueue<>(initialCapacity);
         this.comparator = comparator;
+    }
+    
+    /**
+     * Creates a {@code StablePriorityQueue} and adds all the given elements to it.
+     * 
+     * @param elements
+     *      the elements to add to the queue
+     */
+    public StablePriorityQueue(Collection<? extends E> elements) {
+        this(elements.size(), null);
+        addAll(elements);
     }
     
     @Override

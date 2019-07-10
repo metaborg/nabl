@@ -11,6 +11,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.SolverContext;
 
 /**
@@ -79,19 +80,22 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
             IChangeSet changeSet,
             Map<String, IConstraint> moduleConstraints) {
+        
         Map<IModule, IConstraint> newModules = new HashMap<>();
-        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
+        moduleConstraints.entrySet().stream()
+        .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
+        .forEachOrdered(entry -> {
             System.err.println("[BI] Encountered entry for " + entry.getKey());
-            IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
+            IModule oldModule = context.getOldContext().map(c -> c.getModuleByNameOrId(entry.getKey())).orElse(null);
             
             if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
-                IModule module = createFileModule(context, entry.getKey(), entry.getValue());
-                newModules.put(module, entry.getValue());
+                IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue());
+                if (module != null) newModules.put(module, entry.getValue());
             } else {
                 //Old module is clean, we can reuse it
                 reuseOldModule(context, changeSet, oldModule);
             }
-        }
+        });
         
         return newModules;
     }

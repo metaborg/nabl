@@ -47,7 +47,9 @@ public class TestUtil {
      *      the child module
      */
     public static IModule createChildNoState(IModule parent, String name, Scope... scopes) {
-        return parent.createChild(name, list(scopes), null);
+        IModule module = parent.createChild(name, list(scopes), null);
+        parent.addChild(module);
+        return module;
     }
     
     /**

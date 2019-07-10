@@ -5,6 +5,8 @@ import java.util.Collection;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.state.IMState;
 
 public class ProgressTracker {
     public int constraintsActive;
@@ -15,6 +17,10 @@ public class ProgressTracker {
     public int modulesTotal;
     public int modulesComplete;
     public int modulesFailed;
+    
+    public int solversTotal;
+    public int solversRunning;
+    public int solversComplete;
     
     public ProgressTracker() {}
     
@@ -29,7 +35,10 @@ public class ProgressTracker {
         constraintsFailActive = 0;
         constraintsFailDelayed = 0;
         for (IModule module : modules) {
-            ModuleSolver solver = module.getCurrentState().solver();
+            IMState state = module.getCurrentState();
+            if (state == null) continue;
+            
+            ModuleSolver solver = state.solver();
             if (solver == null) continue;
             
             boolean fail = solver.hasFailed();
@@ -47,11 +56,17 @@ public class ProgressTracker {
                 constraintsFailDelayed += delayed;
             }
         }
+        
+        ASolverCoordinator coordinator = SolverContext.context().getCoordinator();
+        solversRunning = coordinator.getSolvers().size();
+        solversComplete = coordinator.getResults().size();
+        solversTotal = solversRunning + solversComplete;
     }
     
     @Override
     public String toString() {
         return "Modules C/F/T (%)        : " + modulesComplete + "/" + modulesFailed + "/" + modulesTotal + " (" + (int) (((modulesComplete + modulesFailed) * 100) / (double) modulesTotal) + "%)\n"
+             + "Solvers R/C/T            : " + + solversRunning + "/" + solversComplete + "/" + solversTotal + "\n"
              + "Constraints A/D/T (A/D/T): " + constraintsActive + "/" + constraintsDelayed + "/" + (constraintsActive + constraintsDelayed)
              + " (" + constraintsFailActive + "/" + constraintsFailDelayed + "/" + (constraintsFailActive + constraintsFailDelayed) + ")";
     }
