@@ -24,6 +24,7 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.taico.dot.DotPrinter;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.SolverContext;
@@ -592,5 +593,33 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         
         this.edges = frozenEdges.melt();
         this.data = frozenData.melt();
+    }
+    
+    /**
+     * Prints this scope graph as a dot file.
+     * 
+     * @param includeChildren
+     *      if children should be included
+     * 
+     * @return
+     *      the string representing the dot file
+     */
+    public String printDot(boolean includeChildren) {
+        return new DotPrinter(this, true).printDot();
+    }
+    
+    /**
+     * @param file
+     *      the file to write to
+     * @param includeChildren
+     *      if child scope graphs should be included
+     * 
+     * @throws IOException
+     *      If writing to the given file encounters an IOException.
+     */
+    public void writeDot(File file, boolean includeChildren) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write(printDot(includeChildren));
+        }
     }
 }

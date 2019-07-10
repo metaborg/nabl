@@ -12,11 +12,12 @@ import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.SolverContext;
 
 public class DotPrinter {
-    protected final MSolverResult initial;
-    protected final IModule root;
+    protected final IMInternalScopeGraph<Scope, ITerm, ITerm> rootGraph;
     protected final Set<IModule> modules;
     protected IRelation3<Scope, ITerm, Scope> edges;
     protected IRelation3<Scope, ITerm, ITerm> data;
@@ -25,19 +26,65 @@ public class DotPrinter {
     protected StringBuilder sb;
     protected String result;
     protected String resultNonModular;
+    protected boolean includeChildren = true;
     
+    /**
+     * DotPrinter for the given solver result.
+     * 
+     * @param initial
+     *      the solver result
+     * @param file
+     *      the file to start the graph at, or null to start at the root
+     */
     public DotPrinter(MSolverResult initial, String file) {
-        this.initial = initial;
         if (file == null) {
             //Use the root module and print all modules
-            this.root = initial.state().getOwner();
+            this.rootGraph = initial.state().getOwner().getScopeGraph();
             this.modules = initial.context().getModules();
         } else {
-            this.root = findFileModule(file);
-            this.modules = this.root.getDescendantsIncludingSelf().collect(Collectors.toSet());
+            IModule root = findFileModule(initial.context(), file);
+            this.rootGraph = root.getScopeGraph();
+            this.modules = root.getDescendantsIncludingSelf().collect(Collectors.toSet());
         }
         
         determineEdgesAndData(modules);
+    }
+    
+    /**
+     * A dot printer that prints the given file as root.
+     * If the given file is null, the root module is used instead.
+     * 
+     * This method uses the globally accessible context.
+     * 
+     * @param file
+     *      the file to start the graph at, or null to indicate the root module
+     */
+    public DotPrinter(String file) {
+        if (file == null) {
+            //Use the root module and print all modules
+            this.rootGraph = SolverContext.context().getRootModule().getScopeGraph();
+            this.modules = SolverContext.context().getModules();
+        } else {
+            IModule root = findFileModule(SolverContext.context(), file);
+            this.rootGraph = root.getScopeGraph();
+            this.modules = root.getDescendantsIncludingSelf().collect(Collectors.toSet());
+        }
+        
+        determineEdgesAndData(modules);
+    }
+    
+    /**
+     * Creates a dot printer for the given scope graph (+ children).
+     * 
+     * @param graph
+     *      the graph to print
+     * @param includeChildren
+     *      if child scope graphs should be included
+     */
+    public DotPrinter(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, boolean includeChildren) {
+        this.rootGraph = graph;
+        this.modules = graph.getOwner().getDescendantsIncludingSelf().collect(Collectors.toSet());
+        this.includeChildren = includeChildren;
     }
     
     /**
@@ -52,9 +99,9 @@ public class DotPrinter {
      * @throws NullPointerException
      *      if the given module cannot be found.
      */
-    protected IModule findFileModule(String name) {
-        IModule module = initial.context().getModulesOnLevel(1).get(name);
-        if (module == null) throw new NullPointerException("Module " + name + " not found (in " + initial.context().getModulesOnLevel(1) + ")");
+    protected IModule findFileModule(SolverContext context, String name) {
+        IModule module = context.getModulesOnLevel(1).get(name);
+        if (module == null) throw new NullPointerException("Module " + name + " not found (in " + context.getModulesOnLevel(1) + ")");
         return module;
     }
     
@@ -84,7 +131,7 @@ public class DotPrinter {
         
         sb = new StringBuilder(128);
         startHeader();
-        printModuleHierarchy(root, 2);
+        printModuleHierarchy(rootGraph, 2);
         printEdges(2);
         printDataEdges(2);
         endHeader();
@@ -99,7 +146,7 @@ public class DotPrinter {
         
         sb = new StringBuilder(128);
         startHeader();
-        printModuleHierarchy(root, 2);
+        printModuleHierarchy(rootGraph, 2);
         printEdges(2);
         printDataEdges(2);
         endHeader();
@@ -294,17 +341,19 @@ public class DotPrinter {
     }
     
     /**
-     * Prints the module hierarchy.
+     * Prints the module hierarchy starting at the given scope graph.
      * 
-     * @param module
-     *      the module to print
+     * @param graph
+     *      the scope graph of the module to print the hierarchy for
      * @param indent
      *      the indent
      */
-    public void printModuleHierarchy(IModule module, int indent) {
-        startModule(module, indent);
-        for (IModule child : module.getChildren()) {
-            printModuleHierarchy(child, indent + 2);
+    public void printModuleHierarchy(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, int indent) {
+        startModule(graph, indent);
+        if (includeChildren) {
+            for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : graph.getChildren()) {
+                printModuleHierarchy(child, indent + 2);
+            }
         }
         endModule(indent);
     }
@@ -312,20 +361,20 @@ public class DotPrinter {
     /**
      * Starts a module. A module is represented with a cluster.
      * 
-     * @param module
-     *      the module
+     * @param graph
+     *      the scope graph of the module
      * @param indent
      *      the indent
      */
-    public void startModule(IModule module, int indent) {
+    public void startModule(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, int indent) {
 //        List<String> items = new ArrayList<>();
 //        module.getScopeGraph().getScopes().stream().map(DotPrinter::name).map(DotPrinter::quote).forEach(items::add);
 //        module.getScopeGraph().getOwnData().valueSet().stream().map(i -> quote(escape(trim(i.toString())))).forEach(items::add);
 ////        module.getChildren().stream().map(IModule::getName).map(DotPrinter::quote).forEach(items::add);
         
-        startCluster(module.getId(), module.getName(), indent);
-        printScopes(module.getScopeGraph().getScopes(), indent + 2);
-        printDeclarations(module.getScopeGraph().getOwnData().valueSet(), indent + 2);
+        startCluster(graph.getOwner().getId(), graph.getOwner().getName(), indent);
+        printScopes(graph.getScopes(), indent + 2);
+        printDeclarations(graph.getOwnData().valueSet(), indent + 2);
         
         //{ rank=same {clusters} }
 //        indent(indent + 2).append("{ rank=same");
