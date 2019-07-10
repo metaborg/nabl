@@ -16,7 +16,6 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;

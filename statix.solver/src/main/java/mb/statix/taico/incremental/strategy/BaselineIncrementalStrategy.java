@@ -5,7 +5,6 @@ import static mb.statix.taico.module.ModuleCleanliness.CLEAN;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
