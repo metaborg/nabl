@@ -11,7 +11,6 @@ import org.metaborg.core.language.ILanguage;
 import org.metaborg.core.language.ILanguageImpl;
 import org.metaborg.core.messages.IMessage;
 import org.metaborg.core.messages.IMessagePrinter;
-import org.metaborg.core.messages.WithLocationStreamMessagePrinter;
 import org.metaborg.core.project.IProject;
 import org.metaborg.spoofax.core.Spoofax;
 import org.metaborg.spoofax.core.context.constraint.IConstraintContext;
@@ -20,6 +19,8 @@ import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+
+import statix.cli.messages.CompactMessagePrinter;
 
 public class StatixData {
     public static final ILogger logger = LoggerUtils.logger(StatixData.class);
@@ -34,7 +35,7 @@ public class StatixData {
         //TODO
         this.S = S;
         this.cli = new CLIUtils(S);
-        this.messagePrinter = new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, messageOutput);
+        this.messagePrinter = new CompactMessagePrinter(S.sourceTextService, S.projectService, messageOutput); //WithLocationStreamMessagePrinter
         
         loadLanguagesFromPath();
         loadStatix();

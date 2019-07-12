@@ -1,6 +1,8 @@
 package statix.cli;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +20,7 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import mb.statix.taico.dot.DotPrinter;
 import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.TTimings;
 import picocli.CommandLine;
@@ -62,12 +65,18 @@ public class MStatix implements Callable<Void> {
     @Option(names = { "-e", "--ext" }, required = true, description = "file extension") private String extension;
     @Option(names = { "-l", "--language" }, required = true, description = "language under test") private String language;
     @Option(names = { "-o", "--output" }, description = "csv output for results") private String output;
+    @Option(names = { "-g", "--outputgraph" }, description = "dot output for scope graph") private String outputGraph;
     @Option(names = { "-s", "--seed" }, description = "seed for random changes") private long seed;
     @Option(names = { "-cin", "--contextin" }, description = "file to load context") private String contextIn;
     @Option(names = { "-cout", "--contextout" }, description = "file to save context", defaultValue = "default.context") private String contextOut;
     @Option(names = { "-c", "--count" }, description = "amount of runs", defaultValue = "1") private int count;
     @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
     @Option(names = { "--observerself" }, description = "observer mechanism for own module", defaultValue = "true") private boolean observer;
+    @Option(
+            names = { "--syncscopegraphs" },
+            description = "use synchronized (1), locks (2) or combined locking (3) for locking scope graphs",
+            defaultValue = "1")
+    private int syncSgs;
     
     @Parameters(
             paramLabel = "FOLDER",
@@ -104,10 +113,9 @@ public class MStatix implements Callable<Void> {
             boolean clean = ichanges.isEmpty();
             
             for (int run = 0; run < count; run++) {
+                startTimedRun(clean);
                 //Load the context from scratch each time
                 loadContext();
-                
-                startTimedRun(clean);
                 if (clean) {
                     cleanAnalysis(files);
                 } else {
@@ -139,11 +147,14 @@ public class MStatix implements Callable<Void> {
         TOverrides.OVERRIDE_LOGLEVEL = true;
         TOverrides.LOGLEVEL = "none";
         
-        //Disable the modular override for when we want to do normal solving
+        //Disable the modular override for when we want to benchmark the original solver
         TOverrides.MODULES_OVERRIDE = false;
         
         //We do not want to force clean runs. We are using our own contexts
         TOverrides.CLEAN = false;
+        
+        //Set sync scopegraphs mechanism
+        TOverrides.SYNC_SCOPEGRAPHS = syncSgs;
     }
     
     /**
@@ -169,6 +180,7 @@ public class MStatix implements Callable<Void> {
 //        }
         
         saveContext();
+        printScopeGraph();
     }
     
     /**
@@ -198,6 +210,7 @@ public class MStatix implements Callable<Void> {
         //TODO Do something with results
         
         saveContext();
+        printScopeGraph();
     }
     
     public void exit() {
@@ -244,7 +257,9 @@ public class MStatix implements Callable<Void> {
                 "Clean: " + clean,
                 "Changes: " + changes,
                 "Seed: " + random.getSeed(),
-                "Concurrent: " + (threads == 1 ? "false" : "" + threads));
+                "Concurrent: " + (threads == 1 ? "false" : "" + threads),
+                "Sync: " + syncSgs,
+                "ObserverSelf: " + observer);
     }
     
     public void endTimedRun(boolean clean) {
@@ -255,8 +270,29 @@ public class MStatix implements Callable<Void> {
     
     //---------------------------------------------------------------------------------------------
     
+    public void printScopeGraph() {
+        if (outputGraph == null || outputGraph.isEmpty()) return;
+        
+        TTimings.startPhase("printing scope graph");
+        DotPrinter printer = new DotPrinter(null);
+        
+        File outputFile = new File(outputGraph);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
+            writer.write(printer.printDot());
+        } catch (IOException ex) {
+            System.err.println("Unable to write scope graph output file to " + outputGraph);
+            ex.printStackTrace();
+        }
+        TTimings.endPhase("printing scope graph");
+    }
+    
+    //---------------------------------------------------------------------------------------------
+    
     private void loadContext() throws MetaborgException {
-        if (contextIn != null) analyze.loadContextFrom(new File(contextIn));
+        if (contextIn == null) return;
+        TTimings.startPhase("loading context");
+        analyze.loadContextFrom(new File(contextIn));
+        TTimings.startPhase("loading context");
     }
     
     /**
@@ -266,7 +302,9 @@ public class MStatix implements Callable<Void> {
      *      If the context cannot be saved.
      */
     private void saveContext() throws MetaborgException {
+        TTimings.startPhase("saving context");
         if (contextOut != null) analyze.saveContextTo(new File(contextOut));
+        TTimings.startPhase("saving context");
     }
     
     //---------------------------------------------------------------------------------------------
