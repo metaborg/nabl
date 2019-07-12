@@ -75,9 +75,9 @@ public class ModuleManager implements Serializable {
     @Deprecated
     public synchronized IModule getModuleByName(String name) {
         System.err.println("getModuleByName request for " + name);
-        List<IModule> mods = moduleNames.get(name);
+        Set<IModule> mods = moduleNames.get(name);
         if (mods.isEmpty()) return null;
-        if (mods.size() == 1) return mods.get(0);
+        if (mods.size() == 1) return mods.iterator().next();
         
         throw new IllegalStateException("[ModuleManager] Module " + name + " is not globally unique, use a full id instead");
     }
