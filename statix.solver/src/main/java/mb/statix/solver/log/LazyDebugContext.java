@@ -7,10 +7,10 @@ import org.metaborg.util.log.Level;
  */
 public class LazyDebugContext implements IDebugContext {
 
-    private final IDebugContext debug;
-    private final int offset;
-    private final Log log;
-    private final String prefix;
+    protected final IDebugContext debug;
+    protected final int offset;
+    protected final Log log;
+    protected final String prefix;
 
     public LazyDebugContext(IDebugContext debug) {
         this(debug, 0, new Log());

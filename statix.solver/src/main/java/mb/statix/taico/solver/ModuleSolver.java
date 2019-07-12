@@ -26,6 +26,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.IsComplete;
+import mb.statix.solver.log.FakeLazyDebugContext;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
@@ -85,7 +86,7 @@ public class ModuleSolver implements IOwnable {
         final String owner = state.owner().getId();
         this.state = state;
         this.debug = debug;
-        this.proxyDebug = new LazyDebugContext(debug);
+        this.proxyDebug = new FakeLazyDebugContext(debug); //TODO Remove at some point
         this.separateSolver = separateSolver;
         
         //Create the constraint store and the completeness. Also add the initial constraints
@@ -227,9 +228,14 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
+     * Solves a single constraint. A false return value indicates that there are no constraints
+     * that can currently be activated and that no constraint was solved.
+     * 
      * @return
      *      true if another step is required, false otherwise
+     * 
      * @throws InterruptedException
+     *      If the solver is interrupted.
      */
     public boolean solveStep() throws InterruptedException {
         if (!init) {
@@ -241,7 +247,6 @@ public class ModuleSolver implements IOwnable {
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
-//            System.out.println("[" + getOwner().getId() + "] Solving " + constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
             proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
         }
         
