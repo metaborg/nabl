@@ -22,7 +22,7 @@ import mb.statix.taico.solver.SolverContext;
 public class TDebug {
     /** The location where debug files will be written. */
     public static final String DEBUG_FILE_PATH = "/home/taico/spoofax";
-    private static final String DEBUG_SCOPE_GRAPH_DOT_FILE = "yyyy.MM.dd 'at' HH:mm:ss";
+    private static final String DEBUG_SCOPE_GRAPH_DOT_FILE = "yyyy.MM.dd 'at' HH_mm_ss";
     
     public static final boolean QUERY_DELAY = false;
     /** If false, no debug messages will be created for the constraint solving in ModuleSolver. */
@@ -82,7 +82,7 @@ public class TDebug {
         
         SimpleDateFormat format = new SimpleDateFormat(DEBUG_SCOPE_GRAPH_DOT_FILE);
         String name = format.format(System.currentTimeMillis());
-        File file = new File(folder, root.getId() + " " + name + ".dot");
+        File file = new File(folder, sanitizeName(root.getId()) + " " + name + ".dot");
         
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
             bw.write(dotFile);
@@ -90,5 +90,9 @@ public class TDebug {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+    }
+    
+    private static String sanitizeName(String name) {
+        return name.replace("eclipse:///", "").replace("/", "").replace(":", "");
     }
 }

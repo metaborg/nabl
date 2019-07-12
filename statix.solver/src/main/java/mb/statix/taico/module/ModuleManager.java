@@ -4,21 +4,21 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 
 public class ModuleManager implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private Map<String, IModule> modules = new ConcurrentHashMap<>();
-    private ListMultimap<String, IModule> moduleNames = MultimapBuilder.hashKeys().arrayListValues().build();
+    private SetMultimap<String, IModule> moduleNames = MultimapBuilder.hashKeys().hashSetValues().build();
+    private volatile Boolean moduleNamesUnique;
     
     public ModuleManager() {}
     
@@ -95,7 +95,7 @@ public class ModuleManager implements Serializable {
      *      If the given name is not unique on its level
      */
     public synchronized IModule getModuleByName(String name, int level) {
-        List<IModule> mods = moduleNames.get(name);
+        Set<IModule> mods = moduleNames.get(name);
         IModule found = null;
         for (IModule module : mods) {
             if (ModulePaths.pathLength(module.getId()) - 1 != level) continue;
@@ -135,6 +135,8 @@ public class ModuleManager implements Serializable {
      *      given module.
      */
     public synchronized void addModule(IModule module) {
+        moduleNamesUnique = null;
+        
         final IModule old = modules.put(module.getId(), module);
         moduleNames.put(module.getName(), module);
         if (old == null) return;
@@ -155,6 +157,7 @@ public class ModuleManager implements Serializable {
      *      the module to remove
      */
     public synchronized void removeModule(IModule module) {
+        if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
         modules.remove(module.getId());
         moduleNames.remove(module.getName(), module);
     }
@@ -166,6 +169,7 @@ public class ModuleManager implements Serializable {
      *      the module to purge
      */
     public synchronized void purgeModules(IModule module) {
+        if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
         modules.remove(module.getId());
         moduleNames.remove(module.getName(), module);
         module.getScopeGraph().purgeChildren();
@@ -178,6 +182,7 @@ public class ModuleManager implements Serializable {
      * Removes all modules.
      */
     public synchronized void clearModules() {
+        if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
         for (IModule module : topLevelModules()) {
             purgeModules(module);
         }
@@ -192,6 +197,7 @@ public class ModuleManager implements Serializable {
      *      the modules to retain
      */
     public synchronized void retainModules(Collection<IModule> toRetain) {
+        if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
         modules.values().retainAll(toRetain);
         moduleNames.values().retainAll(toRetain);
     }
@@ -216,5 +222,17 @@ public class ModuleManager implements Serializable {
             levelModules.put(module.getName(), module);
         }
         return levelModules;
+    }
+    
+    /**
+     * @return
+     *      true if module names alone are unique, false otherwise
+     */
+    public boolean areModuleNamesUnique() {
+        if (moduleNamesUnique != null) return moduleNamesUnique;
+        
+        boolean tbr = moduleNames.asMap().values().stream().allMatch(c -> c.size() <= 1);
+        moduleNamesUnique = tbr;
+        return tbr;
     }
 }

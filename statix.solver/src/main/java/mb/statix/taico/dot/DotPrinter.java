@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
@@ -15,10 +16,12 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.util.TPrettyPrinter;
 
 public class DotPrinter {
     protected final IMInternalScopeGraph<Scope, ITerm, ITerm> rootGraph;
     protected final Set<IModule> modules;
+    protected final IUnifier unifier;
     protected IRelation3<Scope, ITerm, Scope> edges;
     protected IRelation3<Scope, ITerm, ITerm> data;
     protected List<Scope> scopes;
@@ -27,6 +30,7 @@ public class DotPrinter {
     protected String result;
     protected String resultNonModular;
     protected boolean includeChildren = true;
+    
     
     /**
      * DotPrinter for the given solver result.
@@ -37,16 +41,17 @@ public class DotPrinter {
      *      the file to start the graph at, or null to start at the root
      */
     public DotPrinter(MSolverResult initial, String file) {
+        IModule root;
         if (file == null) {
             //Use the root module and print all modules
-            this.rootGraph = initial.state().getOwner().getScopeGraph();
+            root = initial.state().getOwner();
             this.modules = initial.context().getModules();
         } else {
-            IModule root = findFileModule(initial.context(), file);
-            this.rootGraph = root.getScopeGraph();
+            root = findFileModule(initial.context(), file);
             this.modules = root.getDescendantsIncludingSelf().collect(Collectors.toSet());
         }
-        
+        this.rootGraph = root.getScopeGraph();
+        this.unifier = root.getCurrentState().unifier();
         determineEdgesAndData(modules);
     }
     
@@ -60,16 +65,17 @@ public class DotPrinter {
      *      the file to start the graph at, or null to indicate the root module
      */
     public DotPrinter(String file) {
+        IModule root;
         if (file == null) {
             //Use the root module and print all modules
-            this.rootGraph = SolverContext.context().getRootModule().getScopeGraph();
+            root = SolverContext.context().getRootModule();
             this.modules = SolverContext.context().getModules();
         } else {
-            IModule root = findFileModule(SolverContext.context(), file);
-            this.rootGraph = root.getScopeGraph();
+            root = findFileModule(SolverContext.context(), file);
             this.modules = root.getDescendantsIncludingSelf().collect(Collectors.toSet());
         }
-        
+        this.rootGraph = root.getScopeGraph();
+        this.unifier = root.getCurrentState().unifier();
         determineEdgesAndData(modules);
     }
     
@@ -84,6 +90,7 @@ public class DotPrinter {
     public DotPrinter(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, boolean includeChildren) {
         this.rootGraph = graph;
         this.modules = graph.getOwner().getDescendantsIncludingSelf().collect(Collectors.toSet());
+        this.unifier = graph.getOwner().getCurrentState().unifier();
         this.includeChildren = includeChildren;
     }
     
@@ -99,7 +106,7 @@ public class DotPrinter {
      * @throws NullPointerException
      *      if the given module cannot be found.
      */
-    protected IModule findFileModule(SolverContext context, String name) {
+    protected final IModule findFileModule(SolverContext context, String name) {
         IModule module = context.getModulesOnLevel(1).get(name);
         if (module == null) throw new NullPointerException("Module " + name + " not found (in " + context.getModulesOnLevel(1) + ")");
         return module;
@@ -111,7 +118,7 @@ public class DotPrinter {
      * @param modules
      *      the modules to use the edges and data from
      */
-    protected void determineEdgesAndData(Collection<IModule> modules) {
+    protected final void determineEdgesAndData(Collection<IModule> modules) {
         List<Scope> scopes = new ArrayList<>();
         IRelation3.Transient<Scope, ITerm, Scope> edges = HashTrieRelation3.Transient.of();
         IRelation3.Transient<Scope, ITerm, ITerm> data = HashTrieRelation3.Transient.of();
@@ -195,54 +202,18 @@ public class DotPrinter {
      * Prints a single scope.
      * 
      * <pre>
-     * "{name}" [shape="ellipse"];
-     * {edges}
-     * {data-edges}
-     * 
-//     * { rank="same";
-//     *   {decls}
-//     * }
+     * "{scope-node}" [shape="ellipse", label="{name}"];
      * </pre>
      * 
      * @param scope
      *      the scope to print
      * @param indent
      *      the indent
-     *///        List<String> items = new ArrayList<>();
-//  module.getScopeGraph().getScopes().stream().map(DotPrinter::name).map(DotPrinter::quote).forEach(items::add);
-//  module.getScopeGraph().getOwnData().valueSet().stream().map(i -> quote(escape(trim(i.toString())))).forEach(items::add);
-////  module.getChildren().stream().map(IModule::getName).map(DotPrinter::quote).forEach(items::add);
+     */
   
     public void printScope(Scope scope, int indent) {
-        indent(indent).append(quote(name(scope))).append(" [shape=\"ellipse\"];");
+        indent(indent).append(quote(scopeNode(scope))).append(" [shape=\"ellipse\", label=\"" + scopeLabel(scope) + "\"];");
         ln();
-//        printEdges(name(scope), edges.get(scope), indent);
-//        printDataEdges(name(scope), data.get(scope), indent);
-    }
-    
-    /**
-     * Prints the given edges for the given scope.
-     * 
-     * <pre>
-     * "{scope-name}" -> "{name}" [label="{lbl}"];
-     * </pre>
-     * 
-     * @param scopeName
-     *      the name of the scope
-     * @param edges
-     *      the edges of the scope
-     * @param indent
-     *      the indent
-     */
-    public void printEdges(String scopeName, Set<? extends Entry<ITerm, Scope>> edges, int indent) {
-        for (Entry<ITerm, Scope> entry : edges) {
-            String label = label(entry.getKey());
-            String targetName = name(entry.getValue());
-            
-            //"{scope-name}" -> "{name}" [label="{lbl}"];
-            indent(indent).append(quote(scopeName)).append(" -> ").append(quote(targetName)).append(" [label=").append(quote(label)).append("];");
-            ln();
-        }
     }
     
     /**
@@ -253,7 +224,44 @@ public class DotPrinter {
      */
     public void printEdges(int indent) {
         for (Scope base : edges.keySet()) {
-            printEdges(name(base), edges.get(base), indent);
+            printEdges(scopeNode(base), edges.get(base), indent);
+        }
+    }
+    
+    /**
+     * Prints the given edges for the given scope.
+     * 
+     * <pre>
+     * "{scope-node}" -> "{target-node}" [label="{lbl}"];
+     * </pre>
+     * 
+     * @param scopeNode
+     *      the name of the node of the scope
+     * @param edges
+     *      the edges of the scope
+     * @param indent
+     *      the indent
+     */
+    public void printEdges(String scopeNode, Set<? extends Entry<ITerm, Scope>> edges, int indent) {
+        for (Entry<ITerm, Scope> entry : edges) {
+            String label = label(entry.getKey());
+            String targetNode = scopeNode(entry.getValue());
+            
+            //"{scope-node}" -> "{target-node}" [label="{lbl}"];
+            indent(indent).append(quote(scopeNode)).append(" -> ").append(quote(targetNode)).append(" [label=").append(quote(label)).append("];");
+            ln();
+        }
+    }
+    
+    /**
+     * Prints all the edges by calling {@link #printDataEdges(String, Set, int)}.
+     * 
+     * @param indent
+     *      the indent
+     */
+    public void printDataEdges(int indent) {
+        for (Scope base : data.keySet()) {
+            printDataEdges(scopeNode(base), data.get(base), indent);
         }
     }
     
@@ -261,68 +269,60 @@ public class DotPrinter {
      * Prints the given data for the given scope.
      * 
      * <pre>
-     * "{scope-name}" -> "{name}" [label="{lbl}", arrowhead="box"];
+     * "{scope-node}" -> "{data-node}" [label="{lbl}", arrowhead="box"];
      * </pre>
      * 
-     * @param scopeName
-     *      the name of the scope
+     * @param scopeNode
+     *      the name of the node of the scope
      * @param data
      *      the data of the scope
      * @param indent
      *      the indent
      */
-    public void printDataEdges(String scopeName, Set<? extends Entry<ITerm, ITerm>> data, int indent) {
+    public void printDataEdges(String scopeNode, Set<? extends Entry<ITerm, ITerm>> data, int indent) {
         for (Entry<ITerm, ITerm> entry : data) {
             String label = label(entry.getKey());
-            String targetName = escape(trim(entry.getValue().toString()));
+            String dataNode = dataNode(entry.getValue());
             
-            //"{scope-name}" -> "{name}" [label="{lbl}", arrowhead="box"];
-            indent(indent).append(quote(scopeName)).append(" -> ").append(quote(targetName)).append(" [label=").append(quote(label)).append(", arrowhead=\"box\"];");
+            //"{scope-node}" -> "{data-node}" [label="{lbl}", arrowhead="box"];
+            indent(indent).append(quote(scopeNode)).append(" -> ").append(quote(dataNode)).append(" [label=").append(quote(label)).append(", arrowhead=\"box\"];");
             ln();
         }
     }
     
     /**
-     * Prints all the edges by calling {@link #printEdges(String, Set, int)}.
      * 
+     * <pre>
+     * "{data-node}" [shape="box", label="{name}"];
+     * "{scope-node}" -> "{data-node}" [label="{lbl}", arrowhead="box"];
+     * </pre>
+     * @param scopeNode
+     *      the name of the node of the scope
+     * @param data
+     *      the data to print
      * @param indent
      *      the indent
      */
-    public void printDataEdges(int indent) {
-        for (Scope base : data.keySet()) {
-            printDataEdges(name(base), data.get(base), indent);
-        }
-    }
-    
-    /**
-     * 
-     * <pre>
-     * "{name}" [shape="box"];
-     * "{scope-name}" -> "{name}" [label="{lbl}", arrowhead="box"];
-     * </pre>
-     * @param scopeName
-     * @param data
-     * @param indent
-     */
     @Deprecated
-    public void printDecls(String scopeName, Set<? extends Entry<ITerm, ITerm>> data, int indent) {
+    public void printDecls(String scopeNode, Set<? extends Entry<ITerm, ITerm>> data, int indent) {
         for (Entry<ITerm, ITerm> entry : data) {
             String label = label(entry.getKey());
-            String name = escape(trim(entry.getValue().toString()));
+            String node = dataNode(entry.getValue());
+            String name = dataLabel(entry.getValue());
             
-            //"{name}" [shape="box"];
-            indent(indent).append(quote(name)).append(" [shape=\"box\"];");
+            //"{data-node}" [shape="box", label="{name}"];
+            indent(indent).append(quote(node)).append(" [shape=\"box\", label=\"" + name + "\"];");
             ln();
             
             //"{scope-name}" -> "{name}" [label="{lbl}", arrowhead="box"];
-            indent(indent).append(quote(scopeName)).append(" -> ").append(quote(name)).append(" [label=").append(quote(label)).append(", arrowhead=\"box\"];");
+            indent(indent).append(quote(scopeNode)).append(" -> ").append(quote(node)).append(" [label=").append(quote(label)).append(", arrowhead=\"box\"];");
             ln();
         }
     }
     
     /**
      * <pre>
-     * "{name}" [shape="box"];
+     * "{node}" [shape="box", label="{name}"];
      * </pre>
      * 
      * @param declarations
@@ -332,10 +332,11 @@ public class DotPrinter {
      */
     public void printDeclarations(Set<ITerm> declarations, int indent) {
         for (ITerm declaration : declarations) {
-            String name = escape(trim(declaration.toString()));
+            String node = dataNode(declaration);
+            String name = dataLabel(declaration);
             
-            //"{name}" [shape="box"];
-            indent(indent).append(quote(name)).append(" [shape=\"box\"];");
+            //"{node}" [shape="box", label="{name}"];
+            indent(indent).append(quote(node)).append(" [shape=\"box\", label=\"" + name + "\"];");
             ln();
         }
     }
@@ -367,16 +368,11 @@ public class DotPrinter {
      *      the indent
      */
     public void startModule(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, int indent) {
-//        List<String> items = new ArrayList<>();
-//        module.getScopeGraph().getScopes().stream().map(DotPrinter::name).map(DotPrinter::quote).forEach(items::add);
-//        module.getScopeGraph().getOwnData().valueSet().stream().map(i -> quote(escape(trim(i.toString())))).forEach(items::add);
-////        module.getChildren().stream().map(IModule::getName).map(DotPrinter::quote).forEach(items::add);
-        
         startCluster(graph.getOwner().getId(), graph.getOwner().getName(), indent);
         printScopes(graph.getScopes(), indent + 2);
         printDeclarations(graph.getOwnData().valueSet(), indent + 2);
         
-        //{ rank=same {clusters} }
+//        //{ rank=same {clusters} }
 //        indent(indent + 2).append("{ rank=same");
 //        for (IModule child : module.getChildren()) {
 //            String clusterName = "cluster_" + child.getId().replaceAll("[^\\w]", "_");
@@ -412,7 +408,7 @@ public class DotPrinter {
         indent(indent).append("subgraph cluster_").append(uniqueId.replaceAll("[^\\w]", "_")).append(" {");
         ln();
         
-        indent(indent + 2).append("label = \"").append(escape(name)).append("\";");
+        indent(indent + 2).append("label = \"").append(escape(TPrettyPrinter.printModule(uniqueId))).append("\";");
         ln();
         
 //      indent(sb, indent + 2).append("{ rank=same");
@@ -430,22 +426,56 @@ public class DotPrinter {
     /**
      * @param scope
      *      the scope
+     * 
      * @return
-     *      the name of the scope
+     *      the name of the node for this scope
      */
-    private static final String name(Scope scope) {
-        //return escape(scope.getResource() + "-" + scope.getName())
-        return escape(scope.getName());
+    private static final String scopeNode(Scope scope) {
+        return escape(TPrettyPrinter.printScope(scope, false, true));
+    }
+    
+    /**
+     * @param data
+     *      the data
+     * 
+     * @return
+     *      the name of the node for this data
+     */
+    private static final String dataNode(ITerm data) {
+        return escape(trim(data.toString()));
+    }
+    
+    /**
+     * @param scope
+     *      the scope
+     * 
+     * @return
+     *      the name of the scope node
+     */
+    private static final String scopeLabel(Scope scope) {
+        return escape(TPrettyPrinter.printScopeFancy(scope));
+    }
+    
+    /**
+     * @param data
+     *      the data
+     * 
+     * @return
+     *      the label of the data node
+     */
+    private final String dataLabel(ITerm data) {
+        return escape(trim(TPrettyPrinter.printTerm(data, unifier)));
     }
     
     /**
      * @param label
      *      the label
+     * 
      * @return
      *      the string label represented by the given term
      */
     private static final String label(ITerm label) {
-        return escape(trim(label.toString()));
+        return escape(trim(TPrettyPrinter.printLabel(label)));
     }
     
     protected StringBuilder appendLn(String string) {
