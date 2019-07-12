@@ -68,8 +68,13 @@ public class CNew implements IConstraint, Serializable {
     @Override public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) {
         final List<IConstraint> constraints = new ArrayList<>();
         for (ITerm t : terms) {
-            final String base = M.var(ITermVar::getName).match(t).orElse("s");
-            ITerm ss = state.freshScope(base);
+            String base = M.var(ITermVar::getName).match(t).orElse("s");
+            //Cut off the number of the variable name
+            int varIndex = base.lastIndexOf('-');
+            if (varIndex != -1) {
+                base = base.substring(0, varIndex);
+            }
+            ITerm ss = state.freshScope(base, this);
             constraints.add(new CEqual(t, ss, this));
         }
         return Optional.of(MConstraintResult.ofConstraints(constraints));

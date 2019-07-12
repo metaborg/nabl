@@ -45,6 +45,8 @@ public class CUser implements IConstraint, Serializable {
     private final List<ITerm> args;
 
     private final @Nullable IConstraint cause;
+    
+    private final @Nullable IRule appliedRule;
 
     /**
      * Creates a new user constraint without a cause.
@@ -72,6 +74,22 @@ public class CUser implements IConstraint, Serializable {
         this.name = name;
         this.args = ImmutableList.copyOf(args);
         this.cause = cause;
+        this.appliedRule = null;
+    }
+    
+    /**
+     * Creates a new CUser constraint with the given applied rule.
+     * 
+     * @param original
+     *      the original CUser
+     * @param rule
+     *      the rule that was applied
+     */
+    private CUser(CUser original, IRule rule) {
+        this.name = original.name;
+        this.args = original.args;
+        this.cause = original.cause;
+        this.appliedRule = rule;
     }
 
     public String name() {
@@ -100,6 +118,29 @@ public class CUser implements IConstraint, Serializable {
 
     @Override public CUser apply(ISubstitution.Immutable subst) {
         return new CUser(name, subst.apply(args), cause);
+    }
+    
+    /**
+     * Creates a new CUser with the given rule as the rule that was selected.
+     * This information is used by tracing rule applications for scope identity.
+     * 
+     * @param rule
+     *      the rule that was applied
+     * 
+     * @return
+     */
+    public CUser withAppliedRule(IRule rule) {
+        return new CUser(this, rule);
+    }
+    
+    /**
+     * The rule that was selected and applied by this user constraint.
+     * 
+     * @return
+     *      the rule that was applied, or null if no rule was applied
+     */
+    public @Nullable IRule getAppliedRule() {
+        return appliedRule;
     }
     
     @Override
@@ -172,7 +213,10 @@ public class CUser implements IConstraint, Serializable {
                     
                     proxyDebug.info("{} accepted", ruleOrModb);
                     proxyDebug.commit();
-                    return Optional.of(MConstraintResult.ofConstraints(instantiatedBody));              
+                    
+                    //Add rule tracking
+                    IConstraint tbr = instantiatedBody.withCause(this.withAppliedRule(rawRule));
+                    return Optional.of(MConstraintResult.ofConstraints(tbr));
                 }
             } catch(Delay d) {
                 proxyDebug.info("{} delayed (unsolved guard constraint)", ruleOrModb);

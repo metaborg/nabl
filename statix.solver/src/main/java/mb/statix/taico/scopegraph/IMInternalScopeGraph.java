@@ -44,10 +44,26 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      * 
      * @param base
      *      the base string to use for the scope name
+     * 
+     * @return
+     *      the newly created scope
+     * 
+     * @deprecated
+     *      Use {@link #createScopeWithIdentity(String)} instead.
+     */
+    @Deprecated
+    S createScope(String base);
+    
+    /**
+     * Creates a new scope in this scope graph, with the given identity.
+     * 
+     * @param identity
+     *      the scope name (identity) this contains the creation path
+     * 
      * @return
      *      the newly created scope
      */
-    S createScope(String base);
+    S createScopeWithIdentity(String identity);
     
     /**
      * Gets the collection of edges from the given scope with the given label, that are

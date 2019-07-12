@@ -13,11 +13,13 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.IConstraint;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.unifier.DistributedUnifier;
+import mb.statix.taico.util.ScopeIdentity;
 
 /**
  * Implementation of mutable state.
@@ -122,8 +124,11 @@ public class MState implements IMState, Serializable {
     // --- scopes ---
 
     @Override
-    public Scope freshScope(String base) {
-        return scopeGraph.createScope(base);
+    public Scope freshScope(String base, IConstraint constraint) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(base);
+        ScopeIdentity.userTrace(constraint, sb);
+        return scopeGraph.createScopeWithIdentity(sb.toString());
     }
 
     @Override

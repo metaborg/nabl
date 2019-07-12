@@ -83,7 +83,7 @@ public class MSTX_scope_graphTest {
     }
     
     protected static Scope scope(IModule module, String name) {
-        return module.getCurrentState().freshScope(name);
+        return module.getCurrentState().freshScope(name, null);
     }
     
     protected void edge(IModule module, Scope from, Scope to, String label) {

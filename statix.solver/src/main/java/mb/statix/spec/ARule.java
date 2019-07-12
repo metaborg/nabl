@@ -135,12 +135,31 @@ public abstract class ARule implements IRule {
         }
         sb.append(" :- ");
         sb.append(body().toString(termToString));
-        sb.append(".");
+        if(name().isEmpty()) {
+            sb.append(" }");
+        } else {
+            sb.append(".");
+
+        }
         return sb.toString();
     }
 
     @Override public String toString() {
         return toString(ITerm::toString);
+    }
+    
+    @Override public String signature() {
+        StringBuilder sb = new StringBuilder();
+        signature(sb);
+        return sb.toString();
+    }
+    
+    @Override public void signature(StringBuilder sb) {
+        if(name().isEmpty()) {
+            sb.append("{ ").append(params()).append('}');
+        } else {
+            sb.append(name()).append("(").append(params()).append(')');
+        }
     }
 
     /**

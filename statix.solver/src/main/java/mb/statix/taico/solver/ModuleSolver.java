@@ -258,21 +258,23 @@ public class ModuleSolver implements IOwnable {
                     existentials = result.existentials();
                 }
                 if(!result.constraints().isEmpty()) {
+                    //Do not override the cause if one is set. This is important for rule tracking (scope identity)
                     final List<IConstraint> newConstaints = result.constraints().stream()
-                            .map(c -> c.withCause(constraint)).collect(Collectors.toList());
+                            .map(c -> c.cause().isPresent() ? c : c.withCause(constraint)).collect(Collectors.toList());
                     if(subDebug.isEnabled(Level.Info)) {
                         subDebug.info("Simplified to {}", toString(newConstaints, state.unifier()));
                     }
                     constraints.addAll(newConstaints);
                     completeness.addAll(newConstaints, state.unifier());
                 }
-                //Only remove the solved constraint after new constraints are added (for concurrent consistency)
+                //Only remove the solved constraint after new constraints are added (for concurrent atomicity)
                 completeness.remove(constraint, state.unifier());
                 
                 //Activate constraints after updating the completeness
                 completeness.updateAll(result.vars(), state.unifier());
                 constraints.activateFromVars(result.vars(), subDebug);
                 
+                //If we do not use the observer mechanism for our own constraints, just activate all the edges that are potentially affected
                 if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF) constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
             } else {
                 completeness.remove(constraint, state.unifier());

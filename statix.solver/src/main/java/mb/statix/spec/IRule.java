@@ -101,4 +101,20 @@ public interface IRule {
      *      the string
      */
     String toString(TermFormatter termToString);
+    
+    /**
+     * The signature of this rule as a string.
+     * 
+     * @return
+     *      the signature of this rule, as a string
+     */
+    String signature();
+    
+    /**
+     * Appends the signature of this rule to the given string builder.
+     * 
+     * @param sb
+     *      the string builder
+     */
+    void signature(StringBuilder sb);
 }

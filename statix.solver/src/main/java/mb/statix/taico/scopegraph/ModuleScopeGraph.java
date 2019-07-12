@@ -244,8 +244,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                 }
             }
         }
-        
-
     }
     
     @Override
@@ -254,6 +252,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         
         String name = base.replaceAll("-", "_") + "-" + i;
         Scope scope = Scope.of(owner.getId(), name);
+        scopes.add(scope);
+        return scope;
+    }
+    
+    @Override
+    public Scope createScopeWithIdentity(String identity) {
+        Scope scope = Scope.of(owner.getId(), identity);
         scopes.add(scope);
         return scope;
     }
@@ -474,6 +479,17 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     private void addDataIfScope(Queue<Scope> scopes, ITerm data, IUnifier.Immutable unifier) {
+        //Try to match as a scope
+        Optional<Scope> sdata = Scope.matcher().match(data, unifier);
+        if (sdata.isPresent()) {
+            Scope scope = sdata.get();
+            
+            //Do not add the scope if it is not ours
+            if (!owner.getId().equals(scope.getResource())) return;
+            scopes.add(sdata.get());
+            return;
+        }
+        
         if (data instanceof ITermVar) {
             if (!unifier.isGround(data)) {
                 //TODO This variable is unbound! How to handle this? We can assume it is not a scope at this moment
@@ -484,8 +500,9 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         }
         
         //Try to match as a scope
-        Optional<Scope> sdata = Scope.matcher().match(data);
+        sdata = Scope.matcher().match(data, unifier);
         if (sdata.isPresent()) {
+            System.err.println("Matching after instantiation from the unifier worked!");
             Scope scope = sdata.get();
             
             //Do not add the scope if it is not ours
