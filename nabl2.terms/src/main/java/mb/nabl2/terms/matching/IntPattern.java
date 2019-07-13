@@ -10,7 +10,7 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.IUnifier;
 
-class IntPattern extends Pattern {
+public class IntPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
     private final int value;

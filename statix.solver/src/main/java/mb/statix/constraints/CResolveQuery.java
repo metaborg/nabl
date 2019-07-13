@@ -32,14 +32,17 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spoofax.StatixTerms;
+import mb.statix.taico.name.Name;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.MConstraintQueries;
+import mb.statix.taico.solver.query.NameQueryDetails;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.util.SingleItemQuery;
 import mb.statix.taico.util.TDebug;
 
 /**
@@ -60,6 +63,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
+    private final Optional<Name> name;
     private final @Nullable IConstraint cause;
 
     public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
@@ -74,6 +78,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
+        this.name = SingleItemQuery.getMatchedName(filter.getDataWF());
     }
 
     public ITerm relation() {
@@ -108,11 +113,6 @@ public class CResolveQuery implements IConstraint, Serializable {
     
     public List<ITerm> resolveQuery(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
-        final ITerm relation = relation();
-        final IQueryFilter filter = filter();
-        final IQueryMin min = min();
-        final ITerm scopeTerm = scopeTerm();
-
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
             if (TDebug.QUERY_DELAY) System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
@@ -137,6 +137,11 @@ public class CResolveQuery implements IConstraint, Serializable {
             }
         };
 
+        Name name = null;
+        if (this.name.isPresent()) {
+            name = this.name.get().ground(unifier);
+        }
+        
         final TrackingNameResolution<Scope, ITerm, ITerm> nameResolution;
         final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
         try {
@@ -178,12 +183,17 @@ public class CResolveQuery implements IConstraint, Serializable {
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
         
         //Register this query
-        QueryDetails details = new QueryDetails(
-                state.owner().getId(), this, nameResolution, pathTerms);
+        QueryDetails details;
+        if (name != null) {
+            details = new NameQueryDetails(state.owner().getId(), name, this, nameResolution, pathTerms);
+        } else {
+            details = new QueryDetails(state.owner().getId(), this, nameResolution, pathTerms);
+        }
         state.owner().addQuery(this, details);
         
         //Add reverse dependencies
         for (String module : details.getReachedModules()) {
+            //TODO Make the dependant have the query details instead of the query
             SolverContext.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
         }
         
