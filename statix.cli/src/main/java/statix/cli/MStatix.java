@@ -150,9 +150,6 @@ public class MStatix implements Callable<Void> {
         //Disable the modular override for when we want to benchmark the original solver
         TOverrides.MODULES_OVERRIDE = false;
         
-        //We do not want to force clean runs. We are using our own contexts
-        TOverrides.CLEAN = false;
-        
         //Set sync scopegraphs mechanism
         TOverrides.SYNC_SCOPEGRAPHS = syncSgs;
     }
