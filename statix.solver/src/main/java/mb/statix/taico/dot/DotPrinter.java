@@ -1,11 +1,10 @@
 package mb.statix.taico.dot;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
@@ -20,7 +19,6 @@ import mb.statix.taico.util.TPrettyPrinter;
 
 public class DotPrinter {
     protected final IMInternalScopeGraph<Scope, ITerm, ITerm> rootGraph;
-    protected final Set<IModule> modules;
     protected final IUnifier unifier;
     protected IRelation3<Scope, ITerm, Scope> edges;
     protected IRelation3<Scope, ITerm, ITerm> data;
@@ -42,13 +40,14 @@ public class DotPrinter {
      */
     public DotPrinter(MSolverResult initial, String file) {
         IModule root;
+        Stream<IMInternalScopeGraph<Scope, ITerm, ITerm>> modules;
         if (file == null) {
             //Use the root module and print all modules
             root = initial.state().getOwner();
-            this.modules = initial.context().getModules();
+            modules = initial.context().getModules().stream().map(IModule::getScopeGraph);
         } else {
             root = findFileModule(initial.context(), file);
-            this.modules = root.getDescendantsIncludingSelf().collect(Collectors.toSet());
+            modules = root.getScopeGraph().getDescendantsIncludingSelf();
         }
         this.rootGraph = root.getScopeGraph();
         this.unifier = root.getCurrentState().unifier();
@@ -66,13 +65,14 @@ public class DotPrinter {
      */
     public DotPrinter(String file) {
         IModule root;
+        Stream<IMInternalScopeGraph<Scope, ITerm, ITerm>> modules;
         if (file == null) {
             //Use the root module and print all modules
             root = SolverContext.context().getRootModule();
-            this.modules = SolverContext.context().getModules();
+            modules = SolverContext.context().getModules().stream().map(IModule::getScopeGraph);
         } else {
             root = findFileModule(SolverContext.context(), file);
-            this.modules = root.getDescendantsIncludingSelf().collect(Collectors.toSet());
+            modules = root.getScopeGraph().getDescendantsIncludingSelf();
         }
         this.rootGraph = root.getScopeGraph();
         this.unifier = root.getCurrentState().unifier();
@@ -89,9 +89,9 @@ public class DotPrinter {
      */
     public DotPrinter(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, boolean includeChildren) {
         this.rootGraph = graph;
-        this.modules = graph.getOwner().getDescendantsIncludingSelf().collect(Collectors.toSet());
         this.unifier = graph.getOwner().getCurrentState().unifier();
         this.includeChildren = includeChildren;
+        determineEdgesAndData(graph.getDescendantsIncludingSelf());
     }
     
     /**
@@ -118,11 +118,11 @@ public class DotPrinter {
      * @param modules
      *      the modules to use the edges and data from
      */
-    protected final void determineEdgesAndData(Collection<IModule> modules) {
+    protected final void determineEdgesAndData(Stream<IMInternalScopeGraph<Scope, ITerm, ITerm>> modules) {
         List<Scope> scopes = new ArrayList<>();
         IRelation3.Transient<Scope, ITerm, Scope> edges = HashTrieRelation3.Transient.of();
         IRelation3.Transient<Scope, ITerm, ITerm> data = HashTrieRelation3.Transient.of();
-        modules.stream().map(IModule::getScopeGraph).forEach(m -> {
+        modules.forEach(m -> {
             scopes.addAll(m.getScopes());
             edges.putAll(m.getOwnEdges());
             data.putAll(m.getOwnData());

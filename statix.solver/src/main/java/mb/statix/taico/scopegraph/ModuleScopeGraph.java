@@ -419,12 +419,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     @Override
-    public IMExternalScopeGraph<Scope, ITerm, ITerm> externalGraph() {
+    public ModuleScopeGraph externalGraph() {
         ModuleScopeGraph msg = new ModuleScopeGraph(owner, edgeLabels, dataLabels, noDataLabel, parentScopes);
         
         IUnifier.Immutable unifier = owner.getCurrentState().unifier();
         
         Queue<Scope> scopes = new LinkedList<>(parentScopes);
+        scopes.addAll(this.scopes);
         final IRelation3<Scope, ITerm, Scope> ownEdges = getOwnEdges();
         final IRelation3<Scope, ITerm, ITerm> ownData = getOwnData();
         if (useLock) {
@@ -471,6 +472,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                 }
             }
         }
+        
+        msg.children.addAll(this.children);
         
         //TODO also need to add associated scopes data
 

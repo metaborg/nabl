@@ -5,18 +5,18 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 
+import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.taico.dot.DotPrinter;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.SolverContext;
 
 public class TDebug {
@@ -74,15 +74,26 @@ public class TDebug {
      */
     public static void outputScopeGraph() {
         IModule root = SolverContext.context().getRootModule();
-        MSolverResult result = MSolverResult.of(root.getCurrentState(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
-        DotPrinter printer = new DotPrinter(result, null);
+        outputScopeGraph(root.getScopeGraph(), "");
+    }
+    
+    /**
+     * Writes the scope graph to a file in {@value #DEBUG_FILE_PATH} ({@link #DEBUG_FILE_PATH}).
+     * The file is named {@value #DEBUG_SCOPE_GRAPH_DOT_FILE} (@link {@link #DEBUG_SCOPE_GRAPH_DOT_FILE}),
+     * which is a string formatted with a {@link SimpleDateFormat}.
+     * 
+     * @throws RuntimeException
+     *      If writing fails for some reason.
+     */
+    public static void outputScopeGraph(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, String nameSuffix) {
+        DotPrinter printer = new DotPrinter(graph, true);
         String dotFile = printer.printDot();
         File folder = new File(DEBUG_FILE_PATH);
         if (!folder.exists() && !folder.mkdirs()) throw new RuntimeException("Unable to create debug folder " + DEBUG_FILE_PATH);
         
         SimpleDateFormat format = new SimpleDateFormat(DEBUG_SCOPE_GRAPH_DOT_FILE);
         String name = format.format(System.currentTimeMillis());
-        File file = new File(folder, sanitizeName(root.getId()) + " " + name + ".dot");
+        File file = new File(folder, (sanitizeName(graph.getOwner().getId()) + "_" + nameSuffix + "_" + name + ".dot").replace(' ', '_'));
         
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
             bw.write(dotFile);

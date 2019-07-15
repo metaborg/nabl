@@ -5,6 +5,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import org.metaborg.util.iterators.Iterables2;
+
+import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
@@ -37,7 +43,6 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      *      true if this scope graph changed as a result of this call, false otherwise
      */
     boolean addDatum(S scope, L relation, D datum);
-    
     
     /**
      * Creates a new scope in this scope graph.
@@ -133,7 +138,20 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      */
     void getTransitiveData(S scope, L label, Collection<D> data);
     
-    //Scope graph tree
+    /**
+     * Substitutes old parent scopes (extensible scopes) with the given new scopes.
+     * 
+     * @param newScopes
+     *      the new scopes
+     * 
+     * @throws IllegalArgumentException
+     *      If the number of new scopes is not the same as the number of old scopes.
+     */
+    void substitute(List<? extends S> newScopes);
+    
+    //---------------------------------------------------------------------------------------------
+    //Scope graph tree / child scope graphs
+    //---------------------------------------------------------------------------------------------
     
     /**
      * Creates a child scope graph from this scope graph. The returned scope graph must be added
@@ -160,12 +178,6 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     IMInternalScopeGraph<S, L, D> addChild(IModule child);
     
     /**
-     * @return
-     *      an iterable of all the children of this scope graph
-     */
-    Iterable<? extends IMInternalScopeGraph<S, L, D>> getChildren();
-    
-    /**
      * Removes the given child module.
      * 
      * @param child
@@ -181,7 +193,36 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      */
     void purgeChildren();
     
+    /**
+     * @return
+     *      an iterable of all the children of this scope graph
+     */
+    Iterable<? extends IMInternalScopeGraph<S, L, D>> getChildren();
+    
+    /**
+     * @return
+     *      all the scope graphs that are descendent from this scope graph
+     */
+    default Stream<IMInternalScopeGraph<S, L, D>> getDescendants() {
+        return Iterables2.stream(getChildren())
+                .flatMap(sg -> StreamSupport.stream(sg.getDescendantsIncludingSelf().spliterator(), false));
+    }
+    
+    /**
+     * @return
+     *      all the scope graphs that are descendent from this scope graph, including this scope
+     *      graph itself
+     */
+    default Stream<IMInternalScopeGraph<S, L, D>> getDescendantsIncludingSelf() {
+        return Streams.concat(
+                Stream.of(this),
+                Iterables2.stream(getChildren())
+                    .flatMap(m -> StreamSupport.stream(m.getDescendantsIncludingSelf().spliterator(), false)));
+    }
+    
+    //---------------------------------------------------------------------------------------------
     //Getters for the internal data structures of the scope graph
+    //---------------------------------------------------------------------------------------------
     
     /**
      * @return
@@ -213,6 +254,10 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      */
     List<? extends S> getParentScopes();
     
+    //---------------------------------------------------------------------------------------------
+    //Graph views/copies
+    //---------------------------------------------------------------------------------------------
+    
     /**
      * @return
      *      an external view on this scope graph
@@ -229,24 +274,6 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     IMInternalScopeGraph<S, L, D> delegatingGraph(boolean clearScopes);
     
     /**
-     * Substitutes old parent scopes (extensible scopes) with the given new scopes.
-     * 
-     * @param newScopes
-     *      the new scopes
-     * 
-     * @throws IllegalArgumentException
-     *      If the number of new scopes is not the same as the number of old scopes.
-     */
-    void substitute(List<? extends S> newScopes);
-    
-    /**
-     * @return
-     *      the write lock for this scope graph (not for children)
-     */
-    Lock getWriteLock();
-
-    
-    /**
      * @param module
      *      the new owner
      * 
@@ -254,4 +281,14 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      *      the copy
      */
     IMInternalScopeGraph<Scope, ITerm, ITerm> copy(IModule module);
+    
+    //---------------------------------------------------------------------------------------------
+    //Other
+    //---------------------------------------------------------------------------------------------
+    
+    /**
+     * @return
+     *      the write lock for this scope graph (not for children)
+     */
+    Lock getWriteLock();
 }
