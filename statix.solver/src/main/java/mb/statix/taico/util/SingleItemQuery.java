@@ -1,5 +1,7 @@
 package mb.statix.taico.util;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,8 +10,7 @@ import java.util.Optional;
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-
-import static mb.nabl2.terms.build.TermBuild.B;
+import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.ApplPattern;
 import mb.nabl2.terms.matching.ConsPattern;
 import mb.nabl2.terms.matching.IntPattern;
@@ -26,7 +27,7 @@ import mb.statix.constraints.CTrue;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.IRule;
 import mb.statix.spoofax.StatixTerms;
-import mb.statix.taico.name.Name;
+import mb.statix.taico.name.NameAndRelation;
 
 public class SingleItemQuery {
     /**
@@ -38,11 +39,13 @@ public class SingleItemQuery {
      * 
      * @param rule
      *      the rule
+     * @param relation
+     *      the relation
      * 
      * @return
      *      the single name matched by the given rule, or an empty optional
      */
-    public static Optional<Name> getMatchedName(IRule rule) {
+    public static Optional<NameAndRelation> getMatchedName(IRule rule, ITerm relation) {
         //A simple rule like the one we are looking for has no name and matches a single term
         if (!rule.name().isEmpty()) return Optional.empty();
         if (rule.params().size() != 1) return Optional.empty();
@@ -50,8 +53,17 @@ public class SingleItemQuery {
         Pattern pattern = rule.params().get(0);
         if (!(pattern instanceof ApplPattern)) return Optional.empty();
         
+        //Tuple([Occurrence(...), Wld())
+        ApplPattern tuple = (ApplPattern) pattern;
+        if (!tuple.getOp().equals(Terms.TUPLE_OP)) return Optional.empty();
+        if (tuple.getArgs().size() != 2) return Optional.empty();
+        if (!isWildcard(tuple.getArgs().get(1))) return Optional.empty();
+        
+        Pattern tupleA = tuple.getArgs().get(0);
+        if (!(tupleA instanceof ApplPattern)) return Optional.empty();
+        
         //Occurrence({namespace}, [{arguments}], {position})
-        ApplPattern pat = (ApplPattern) pattern;
+        ApplPattern pat = (ApplPattern) tupleA;
         if (!pat.getOp().equals(StatixTerms.OCCURRENCE_OP)) return Optional.empty();
         
         List<Pattern> args = pat.getArgs();
@@ -74,7 +86,7 @@ public class SingleItemQuery {
         ISubstitution.Transient subst = new PersistentSubstitution.Transient(Map.Transient.of());
         if (!checkBody(rule.body(), subst)) return Optional.empty();
         
-        Name name = new Name(namespace, convertPatterns(arguments, subst.freeze()));
+        NameAndRelation name = new NameAndRelation(namespace, convertPatterns(arguments, subst.freeze()), relation);
         return Optional.of(name);
     }
     

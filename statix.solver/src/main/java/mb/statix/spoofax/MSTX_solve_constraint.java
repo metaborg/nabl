@@ -55,7 +55,6 @@ public class MSTX_solve_constraint extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         TTimings.startPhase("init");
         final Spec spec =
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec, but was " + terms.get(0)));

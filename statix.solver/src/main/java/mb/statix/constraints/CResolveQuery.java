@@ -32,7 +32,7 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spoofax.StatixTerms;
-import mb.statix.taico.name.Name;
+import mb.statix.taico.name.NameAndRelation;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.MConstraintContext;
@@ -63,7 +63,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
-    private final Optional<Name> name;
+    private final Optional<NameAndRelation> name;
     private final @Nullable IConstraint cause;
 
     public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
@@ -78,7 +78,18 @@ public class CResolveQuery implements IConstraint, Serializable {
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
-        this.name = SingleItemQuery.getMatchedName(filter.getDataWF());
+        this.name = SingleItemQuery.getMatchedName(filter.getDataWF(), relation);
+    }
+    
+    private CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+            Optional<NameAndRelation> name, @Nullable IConstraint cause) {
+        this.relation = relation;
+        this.filter = filter;
+        this.min = min;
+        this.scopeTerm = scopeTerm;
+        this.resultTerm = resultTerm;
+        this.name = name;
+        this.cause = cause;
     }
 
     public ITerm relation() {
@@ -137,7 +148,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             }
         };
 
-        Name name = null;
+        NameAndRelation name = null;
         if (this.name.isPresent()) {
             name = this.name.get().ground(unifier);
         }
@@ -218,7 +229,7 @@ public class CResolveQuery implements IConstraint, Serializable {
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
         return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
-                cause);
+                name, cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

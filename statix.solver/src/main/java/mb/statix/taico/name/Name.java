@@ -17,8 +17,8 @@ import mb.statix.solver.Delay;
 public class Name implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private final String namespace;
-    private final List<ITerm> terms;
+    protected final String namespace;
+    protected final List<ITerm> terms;
     //private final ? position;
     
     public Name(String namespace, List<ITerm> terms) {
@@ -73,7 +73,7 @@ public class Name implements Serializable {
             }
         }
         
-        return changed ? new Name(namespace, nTerms) : this;
+        return changed ? with(namespace, nTerms) : this;
     }
     
     /**
@@ -100,7 +100,24 @@ public class Name implements Serializable {
             nterms.add(nterm);
         }
         
-        return changed ? new Name(namespace, nterms) : this;
+        return changed ? with(namespace, nterms) : this;
+    }
+    
+    /**
+     * Creates a new Name with the given namespace and terms.
+     * This method can be overridden by extending classes, to ensure that their fields are copied
+     * over.
+     * 
+     * @param namespace
+     *      the namespace
+     * @param terms
+     *      the terms
+     * 
+     * @return
+     *      the new name
+     */
+    protected Name with(String namespace, List<ITerm> terms) {
+        return new Name(namespace, terms);
     }
     
     //---------------------------------------------------------------------------------------------

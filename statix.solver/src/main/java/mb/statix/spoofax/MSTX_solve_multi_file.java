@@ -59,7 +59,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
         
-        if (CLEAN) throw new UnsupportedOperationException("Throwing error to clean build!");
         TTimings.startPhase("init");
         final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Invalid incremental strategy: " + terms.get(0)));

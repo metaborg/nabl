@@ -40,10 +40,7 @@ public class TOverrides {
      * 4 -> all modules use synchronized, except for the first <b>three</b> levels<br>
      * 5 -> ...
      */
-    public static int SYNC_SCOPEGRAPHS = 0;
-    
-    /** If true, will cause the statix calls to fail in order to trigger a clean run. */
-    public static boolean CLEAN = false;
+    public static volatile int SYNC_SCOPEGRAPHS = 0;
     
     public static String print() {
         return "Concurrent=" + (CONCURRENT ? THREADS : "false") +
