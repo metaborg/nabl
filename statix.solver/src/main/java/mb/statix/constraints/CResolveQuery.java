@@ -63,7 +63,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
-    private final Optional<NameAndRelation> name;
+    private final @Nullable NameAndRelation name;
     private final @Nullable IConstraint cause;
 
     public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
@@ -78,11 +78,11 @@ public class CResolveQuery implements IConstraint, Serializable {
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
-        this.name = SingleItemQuery.getMatchedName(filter.getDataWF(), relation);
+        this.name = SingleItemQuery.getMatchedName(filter.getDataWF(), relation).orElse(null);
     }
     
     private CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
-            Optional<NameAndRelation> name, @Nullable IConstraint cause) {
+            @Nullable NameAndRelation name, @Nullable IConstraint cause) {
         this.relation = relation;
         this.filter = filter;
         this.min = min;
@@ -149,8 +149,8 @@ public class CResolveQuery implements IConstraint, Serializable {
         };
 
         NameAndRelation name = null;
-        if (this.name.isPresent()) {
-            name = this.name.get().ground(unifier);
+        if (this.name != null) {
+            name = this.name.ground(unifier);
         }
         
         final TrackingNameResolution<Scope, ITerm, ITerm> nameResolution;
