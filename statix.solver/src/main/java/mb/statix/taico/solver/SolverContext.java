@@ -9,7 +9,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
+
+import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CTrue;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
@@ -18,9 +22,9 @@ import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
+import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.coordinator.ASolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
@@ -258,6 +262,26 @@ public class SolverContext implements Serializable {
         return module;
     }
     
+    /**
+     * Transfers the given module from the old context to the next context.
+     * 
+     * @param oldModule
+     *      the old module
+     * 
+     * @return
+     *      the state for the module
+     * 
+     * @throws IllegalStateException
+     *      If the old module could not be transferred
+     */
+    public IMState transferModule(IModule oldModule) {
+        if (oldContext == null) throw new IllegalStateException("Cannot transfer module " + oldModule + ": there is no old context to transfer from!");
+        if (!oldContext.manager.hasModule(oldModule.getId())) throw new IllegalStateException("Cannot transfer module " + oldModule + ": module is unknown in the old context!");
+        if (manager.hasModule(oldModule.getId())) throw new IllegalStateException("Cannot transfer module " + oldModule + ": there is already a new module with the same id!");
+        
+        return reuseOldState(oldModule);
+    }
+    
     // --------------------------------------------------------------------------------------------
     // States
     // --------------------------------------------------------------------------------------------
@@ -298,14 +322,15 @@ public class SolverContext implements Serializable {
     }
     
     /**
-     * Reuses the state of an old module (module from the old context). The reused state is set
-     * as current state of the given module.
+     * Reuses the state of an old module (module from the old context). The reused state is copied
+     * and the copy is set as current state of the given module. The given module is also added to
+     * this context if it was not already present.
      * 
      * @param oldModule
      *      the module
      * 
      * @return
-     *      the reused state
+     *      the copied state for the module
      */
     public IMState reuseOldState(IModule oldModule) {
         if (oldContext == null) throw new IllegalStateException("Old context is null!");
@@ -313,8 +338,39 @@ public class SolverContext implements Serializable {
         IMState oldState = oldContext.getState(oldModule);
         if (oldState == null) throw new IllegalStateException("Old state of the module is null!");
         
-        setState(oldModule, oldState);
-        return oldState;
+        IMState newState = oldState.copy();
+        setState(oldModule, newState);
+        if (!manager.hasModule(oldModule.getId())) addModule(oldModule);
+        return newState;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Scope Graphs
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @param id
+     *      the id of the module
+     * 
+     * @return
+     *      the scope graph of the given module in the current context
+     */
+    public IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph(String id) {
+        IMState state = getState(id);
+        return state == null ? null : state.scopeGraph();
+    }
+    
+    /**
+     * @param id
+     *      the id of the module
+     * 
+     * @return
+     *      the scope graph of the given module in the previous context
+     */
+    public IMInternalScopeGraph<Scope, ITerm, ITerm> getOldScopeGraph(String id) {
+        if (oldContext == null) return null;
+        
+        return oldContext.getScopeGraph(id);
     }
     
     // --------------------------------------------------------------------------------------------
@@ -386,18 +442,35 @@ public class SolverContext implements Serializable {
      * the links to the old context and the change set, finalizing this context.
      */
     public void commitChanges() {
-        for (IModule module : oldContext.manager.getModules()) {
-            if (changeSet.removed().contains(module)) continue;
-            
-            //If we have a new version for the module already, skip it
-            if (manager.hasModule(module.getId())) continue;
-            
-            assert module.getTopCleanliness() == ModuleCleanliness.CLEAN : "module flag should be clean if it is not in the new context";
-            module.setFlag(Flag.CLEAN);
-            //TODO The module should get the new context and stuff.
-            manager.addModule(module);
+//        //We need to determine if a module has been reused.
+//        for (IModule module : oldContext.manager.getModules()) {
+//            if (changeSet.removed().contains(module)) continue;
+//            
+//            //If we have a new version for the module already, skip it
+//            if (manager.hasModule(module.getId())) continue;
+//            
+//            assert module.getTopCleanliness() == ModuleCleanliness.CLEAN : "module flag should be clean if it is not in the new context";
+//            module.setFlag(Flag.CLEAN);
+//            //TODO The module should get the new context and stuff.
+//            manager.addModule(module);
+//        }
+        
+        //For all modules for which we have state, migrate the module itself as well
+        for (IMState state : states.values()) {
+            if (!manager.hasModule(state.owner().getId())) {
+                System.err.println("Migrating module " + state.owner() + ": state is present, but module is not in current context!");
+                addModule(state.owner());
+            }
         }
         
+        //Clean the world
+        for (IModule module : getModules()) {
+            module.setFlag(Flag.CLEAN);
+        }
+        
+        for (IModule module : Sets.difference(oldContext.manager.getModules(), getModules())) {
+            System.err.println("Removed module " + module);
+        }
         oldContext = null;
         changeSet = null;
         //TODO probably need more here
@@ -477,12 +550,21 @@ public class SolverContext implements Serializable {
             IncrementalStrategy strategy, SolverContext previousContext, IMState previousRootState,
             IChangeSet changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
         SolverContext newContext = new SolverContext(strategy, spec);
-        newContext.oldContext = previousContext; //TODO Ensure that changes are committed
+        newContext.oldContext = previousContext;
         newContext.changeSet = changeSet;
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
-        newContext.setState(previousRootState.getOwner(), previousRootState);
+        
+        //TODO IMPORTANT validate that the state used here is the correct one (should it be the one stored, or the one in the context corresponding to the root?)
+        IMState newState = newContext.transferModule(previousRootState.getOwner());
+        newState.owner().resetDependants();
         setSolverContext(newContext);
-        ModuleSolver.topLevelSolver(previousRootState, null, new NullDebugContext()); // TODO HVA Is CTrue equal to emtpySet?
+        
+        //Prune removed children
+        for (IModule child : changeSet.removed()) {
+            newState.scopeGraph().removeChild(child);
+        }
+        
+        ModuleSolver.topLevelSolver(newState, null, new NullDebugContext());
         return newContext;
     }
     

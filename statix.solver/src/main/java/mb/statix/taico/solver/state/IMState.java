@@ -21,7 +21,18 @@ import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.ScopeIdentity;
 
+/**
+ * Interface to represent mutable state.
+ */
 public interface IMState extends IOwnable, Serializable, IState {
+    // --------------------------------------------------------------------------------------------
+    // Identity
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @return
+     *      the owner of this state
+     */
     public IModule owner();
     
     @Override
@@ -34,13 +45,21 @@ public interface IMState extends IOwnable, Serializable, IState {
         return owner();
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Convenience
+    // --------------------------------------------------------------------------------------------
+    
     @Override
     public default Spec spec() {
         return SolverContext.context().getSpec();
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Solver
+    // --------------------------------------------------------------------------------------------
+    
     /**
-     * Convenience method.
+     * Convenience method. Returns the current coordinator based on the context.
      * 
      * @see SolverContext#getCoordinator()
      */
@@ -48,16 +67,33 @@ public interface IMState extends IOwnable, Serializable, IState {
         return SolverContext.context().getCoordinator();
     }
     
+    /**
+     * Returns the solver that is currently responsible for progressing this state.
+     * 
+     * @return
+     *      the solver
+     */
     public ModuleSolver solver();
     
     public void setSolver(ModuleSolver solver);
 
-    // --- variables ---
+    // --------------------------------------------------------------------------------------------
+    // Variables
+    // --------------------------------------------------------------------------------------------
 
+    /**
+     * Creates a new variable in this module, with the given base name.
+     * 
+     * @param base
+     *      the base name for the variable
+     * 
+     * @return
+     *      the created variable
+     */
     public ITermVar freshVar(String base);
     
     /**
-     * Same as {@link #freshVar(String)}, but does not add to vars.
+     * Same as {@link #freshVar(String)}, but does not add to the vars in this state.
      * 
      * @param base
      *      the base name for the variable
@@ -70,14 +106,29 @@ public interface IMState extends IOwnable, Serializable, IState {
     @Override
     public Set<ITermVar> vars();
     
-    // --- term properties ---
+    // --------------------------------------------------------------------------------------------
+    // Term properties
+    // --------------------------------------------------------------------------------------------
     
     public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties();
 
-    // --- scopes ---
+    // --------------------------------------------------------------------------------------------
+    // Scopes
+    // --------------------------------------------------------------------------------------------
     
+    /**
+     * Creates a new scope with the given base name. The created scope will be unique as long as
+     * base is unique within the given constraint. 
+     * 
+     * @param base
+     *      the base name
+     * @param constraint
+     *      the constraint which causes the creation of this scope
+     * 
+     * @return
+     *      a newly created scope
+     */
     public default Scope freshScope(String base, IConstraint constraint) {
-        System.out.println("Base = " + base);
         StringBuilder sb = new StringBuilder();
         sb.append(base);
         ScopeIdentity.userTrace(constraint, sb);
@@ -89,7 +140,9 @@ public interface IMState extends IOwnable, Serializable, IState {
         return scopeGraph().getScopes();
     }
 
-    // --- solution ---
+    // --------------------------------------------------------------------------------------------
+    // Solution
+    // --------------------------------------------------------------------------------------------
 
     @Override
     public DistributedUnifier.Immutable unifier();
@@ -99,7 +152,10 @@ public interface IMState extends IOwnable, Serializable, IState {
     @Override
     public IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph();
     
-    // --- other ---
+    // --------------------------------------------------------------------------------------------
+    // Views / copies
+    // --------------------------------------------------------------------------------------------
+    
     /**
      * Creates a delegate of this state with the given set of variables kept and scopes cleared
      * (optionally). A delegate is a view on the original state.
@@ -128,5 +184,26 @@ public interface IMState extends IOwnable, Serializable, IState {
      */
     public default IMState delegate() {
         return delegate(vars(), false);
+    }
+    
+    /**
+     * Creates a copy of this state, replacing the scope graph with the given graph.
+     * 
+     * @param graph
+     *      the scope graph for the copy
+     * 
+     * @return
+     *      the copy
+     */
+    public IMState copy(IMInternalScopeGraph<Scope, ITerm, ITerm> graph);
+    
+    /**
+     * Creates a copy of this state with a copy of the scope graph.
+     * 
+     * @return
+     *      the copy     
+     */
+    public default IMState copy() {
+        return copy(scopeGraph().copy());
     }
 }

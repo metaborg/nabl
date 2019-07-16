@@ -30,7 +30,6 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.solver.state.MState;
 import mb.statix.taico.spec.ModuleBoundary;
 
 /**
@@ -196,7 +195,6 @@ public class CUser implements IConstraint, Serializable {
                         //This needs to happen in this precise ordering to prevent concurrency issues. The third call makes the new child module
                         //available to the rest of the world.
                         child = state.owner().createChild(modName, canExtend, new CUser(name(), newArgs));
-                        new MState(child);
                         state.solver().childSolver(child.getCurrentState(), appl._2());
                         state.owner().addChild(child);
                     }

@@ -1,12 +1,14 @@
 package mb.statix.taico.util;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.terms.IScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.state.IMState;
 
 public class Scopes {
     /**
@@ -25,6 +27,27 @@ public class Scopes {
         if (term instanceof Scope) return (Scope) term;
         
         return Scope.matcher().match(term)
+                .orElseThrow(() -> new IllegalArgumentException("The given scope is not a scope!"));
+    }
+    
+    /**
+     * Gets the scope represented by the given term.
+     * 
+     * @param term
+     *      the term
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the scope represented by the term
+     * 
+     * @throws IllegalArgumentException
+     *      If the given term does not represent a scope.
+     */
+    public static Scope getScope(ITerm term, IUnifier unifier) {
+        if (term instanceof Scope) return (Scope) term;
+        
+        return Scope.matcher().match(term, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("The given scope is not a scope!"));
     }
     
@@ -91,6 +114,35 @@ public class Scopes {
      */
     public static IModule getOwnerUnchecked(ITerm term) {
         return SolverContext.context().getModuleUnchecked(getScope(term).getResource());
+    }
+    
+    /**
+     * Gets the owner of the given scope without checking the access.
+     * 
+     * @param term
+     *      the scope
+     * 
+     * @return
+     *      the owner of the given scope
+     */
+    public static IModule getOwnerUnchecked(ITerm term, IUnifier unifier) {
+        return SolverContext.context().getModuleUnchecked(getScope(term, unifier).getResource());
+    }
+    
+    /**
+     * Gets the state of the owner of the given term if it is a scope.
+     * 
+     * @param term
+     *      the scope
+     * 
+     * @return
+     *      the state of the owner of the given scope
+     * 
+     * @throws IllegalArgumentException
+     *      If the given term is not a scope.
+     */
+    public static IMState getStateUnchecked(ITerm term) {
+        return SolverContext.context().getState(getScope(term).getResource());
     }
     
     /**

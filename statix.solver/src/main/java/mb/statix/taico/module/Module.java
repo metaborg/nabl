@@ -2,7 +2,6 @@ package mb.statix.taico.module;
 
 import static mb.statix.taico.solver.SolverContext.context;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,14 +9,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flag;
-import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.MState;
 import mb.statix.taico.util.StablePriorityQueue;
@@ -29,15 +24,13 @@ import mb.statix.taico.util.TOverrides;
 public class Module implements IModule {
     private static final long serialVersionUID = 1L;
     
-    private final String name;
-    private String parentId;
-    private volatile String cachedId;
-    private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
-    private Map<CResolveQuery, QueryDetails> queries = new HashMap<>();
-    private Map<String, CResolveQuery> dependants = TOverrides.hashMap();
-    private IConstraint initialization;
-    
-    private StablePriorityQueue<Flag> flags = new StablePriorityQueue<>();
+    private final String name;                                             //Stateless
+    private final String parentId;                                         //Stateless
+    private final String id;                                               //Stateless
+    private Map<CResolveQuery, QueryDetails> queries = new HashMap<>();    //Stateful, old value unimportant
+    private Map<String, CResolveQuery> dependants = TOverrides.hashMap();  //Stateful, old value unimportant
+    private IConstraint initialization;                                    //Stateful, old value unimportant
+    private StablePriorityQueue<Flag> flags = new StablePriorityQueue<>(); //Stateful, old value unimportant
     
     /**
      * Creates a new top level module.
@@ -47,24 +40,11 @@ public class Module implements IModule {
      * @param spec
      *      the spec
      */
-    public Module(String name) {
-        this(name, true);
-    }
-    
-    /**
-     * Protected constructor for {@link DelegatingModule}.
-     * 
-     * @param name
-     *      the name of the module
-     * @param addToContext
-     *      if true, adds to the context, otherwise, doesn't alter the context
-     */
-    protected Module(String name, boolean addToContext) {
-        Spec spec = context().getSpec();
-        
+    private Module(String name) {
         this.name = name;
-        this.scopeGraph = new ModuleScopeGraph(this, spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel(), Collections.emptyList());
-        if (addToContext) context().addModule(this);
+        this.parentId = null;
+        this.id = (parentId == null ? name : ModulePaths.build(parentId, name));
+        context().addModule(this);
     }
     
     /**
@@ -78,6 +58,7 @@ public class Module implements IModule {
     private Module(String name, IModule parent) {
         this.name = name;
         this.parentId = parent == null ? null : parent.getId();
+        this.id = (parentId == null ? name : ModulePaths.build(parentId, name));
         context().addModule(this);
     }
 
@@ -88,9 +69,7 @@ public class Module implements IModule {
     
     @Override
     public String getId() {
-        final String id = cachedId;
-        if (id != null) return id;
-        return cachedId = (parentId == null ? name : ModulePaths.build(parentId, name));
+        return id;
     }
     
     @Override
@@ -102,27 +81,24 @@ public class Module implements IModule {
     public String getParentId() {
         return parentId;
     }
-    
-    @Override
-    public void setParent(IModule module) {
-        //TODO Because of how the parent system currently works, we cannot hang modules under different parents.
-        //     This is because we currently do not transitively update the module ids in our children as well.
-        this.parentId = module == null ? null : module.getId();
-        this.cachedId = null;
-    }
-
-    @Override
-    public IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph() {
-        return scopeGraph;
-    }
 
     @Override
     public Module createChild(String name, List<Scope> canExtend, IConstraint constraint) {
+        System.err.println("Creating child module " + name + " on " + this);
         Module child = new Module(name, this);
         child.setInitialization(constraint);
-        child.scopeGraph = scopeGraph.createChild(child, canExtend);
+        new MState(child, getScopeGraph().createChild(child, canExtend));
         return child;
     }
+    
+    @Override
+    public StablePriorityQueue<Flag> getFlags() {
+        return flags;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Initialization
+    // --------------------------------------------------------------------------------------------
     
     @Override
     public IConstraint getInitialization() {
@@ -133,6 +109,10 @@ public class Module implements IModule {
     public void setInitialization(IConstraint constraint) {
         this.initialization = constraint;
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Dependencies
+    // --------------------------------------------------------------------------------------------
     
     @Override
     public Set<IModule> getDependencies() {
@@ -161,17 +141,14 @@ public class Module implements IModule {
     }
     
     @Override
-    public StablePriorityQueue<Flag> getFlags() {
-        return flags;
+    public Map<String, CResolveQuery> getDependantIds() {
+        return dependants;
     }
     
     @Override
-    public void reset(Spec spec) {
-        this.scopeGraph = new ModuleScopeGraph(this, scopeGraph.getEdgeLabels(), scopeGraph.getDataLabels(), scopeGraph.getNoDataLabel(), scopeGraph.getParentScopes());
-        this.queries = new HashMap<>();
+    public void resetDependants() {
         this.dependants = TOverrides.hashMap();
-        new MState(this);
-        context().addModule(this);
+        this.queries = new HashMap<>();
     }
     
     // --------------------------------------------------------------------------------------------
@@ -179,14 +156,19 @@ public class Module implements IModule {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Creates a copy of this module and it's scope graph.
+     * Creates a copy of this module, but not it's state.
      * 
      * Please note that the created copy is not added to the context.
      * 
      * @return
      *      the copy
+     * 
+     * @deprecated
+     *      Since modules have no <b>important</b> stateful fields, there is no need to ever copy
+     *      one. Instead, a copy should be made of the state.
      */
     @Override
+    @Deprecated
     public Module copy() {
         return new Module(this);
     }
@@ -200,11 +182,11 @@ public class Module implements IModule {
     private Module(Module original) {
         this.name = original.name;
         this.parentId = original.parentId;
+        this.id = original.id;
         this.flags = new StablePriorityQueue<>(original.flags);
         this.queries = new HashMap<>(original.queries);
         this.dependants = TOverrides.hashMap(original.dependants);
         this.initialization = original.initialization;
-        this.scopeGraph = original.scopeGraph.copy(this);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -215,17 +197,37 @@ public class Module implements IModule {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (!(obj instanceof Module)) return false;
-        assert !this.getId().equals(((Module) obj).getId()) : "Module identifiers are equal but modules are not the same instance! (id: " + getId() + ")";
-        return this.getId().equals(((Module) obj).getId());
+        
+        assert !id.equals(((Module) obj).getId()) : "Module identifiers are equal but modules are not the same instance! (id: " + id + ")";
+        return id.equals(((Module) obj).getId());
     }
     
     @Override
     public int hashCode() {
-        return name.hashCode() + (parentId == null ? 0 : (31 * parentId.hashCode()));
+        return id.hashCode();
     }
     
     @Override
     public String toString() {
-        return getId();
+        return id;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Object methods
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Creates a new top level module and its corresponding state.
+     * 
+     * @param name
+     *      the name of the module
+     * 
+     * @return
+     *      the created module
+     */
+    public static Module topLevelModule(String name) {
+        Module module = new Module(name);
+        MState.topLevelState(module);
+        return module;
     }
 }

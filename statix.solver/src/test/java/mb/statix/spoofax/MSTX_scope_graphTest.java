@@ -1,5 +1,7 @@
 package mb.statix.spoofax;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.taico.util.test.TestUtil.*;
 
 import java.util.ArrayList;
@@ -11,9 +13,6 @@ import org.junit.Test;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.terms.ITerm;
-import static mb.nabl2.terms.matching.TermMatch.M;
-
-import static mb.nabl2.terms.build.TermBuild.B;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
@@ -21,14 +20,11 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.solver.state.MState;
 
 public class MSTX_scope_graphTest {
     protected static MSTX_scope_graph stratego = new MSTX_scope_graph();
     protected IModule root;
     protected MSolverResult result;
-    protected IMState state;
     protected SolverContext context;
     protected ITerm noRelation;
     
@@ -36,9 +32,8 @@ public class MSTX_scope_graphTest {
     public void setUp() throws Exception {
         Spec spec = createSpec(noRelation = label("%"));
         context = SolverContext.initialContext(new NonIncrementalStrategy(), spec);
-        root = new Module("root");
-        state = new MState(root);
-        result = MSolverResult.of(state, new ArrayList<>(), new HashMap<>(), new HashMap<>());
+        root = Module.topLevelModule("root");
+        result = MSolverResult.of(root.getCurrentState(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }
 
     @Test

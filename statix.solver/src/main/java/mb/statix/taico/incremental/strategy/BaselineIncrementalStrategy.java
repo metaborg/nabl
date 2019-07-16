@@ -98,14 +98,4 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
         
         return newModules;
     }
-    
-    @Override
-    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
-        IModule newModule = oldModule.copy();
-        for (IModule child : changeSet.removed()) {
-            newModule.getScopeGraph().removeChild(child);
-        }
-        context.addModule(newModule);
-        super.reuseOldModule(context, changeSet, newModule);
-    }
 }

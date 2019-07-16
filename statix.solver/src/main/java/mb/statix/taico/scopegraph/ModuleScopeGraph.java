@@ -359,7 +359,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public Iterable<? extends IMInternalScopeGraph<Scope, ITerm, ITerm>> getChildren() {
-        return children.stream().map(s -> SolverContext.context().getModuleUnchecked(s).getScopeGraph())::iterator;
+        return children.stream().map(s -> SolverContext.context().getState(s).scopeGraph())::iterator;
     }
     
     @Override
@@ -533,8 +533,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     // Copy
     // --------------------------------------------------------------------------------------------
     
-    private ModuleScopeGraph(ModuleScopeGraph original, IModule newOwner) {
-        this.owner = newOwner;
+    private ModuleScopeGraph(ModuleScopeGraph original) {
+        this.owner = original.owner;
         this.canExtend = original.canExtend;
         this.children.addAll(original.children);
         this.copyId = original.copyId;
@@ -555,11 +555,12 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         this.scopeCounter = original.scopeCounter;
         this.scopes.addAll(original.scopes);
         this.useLock = useLock();
+        if (useLock) this.lock = TOverrides.readWriteLock();
     }
     
     @Override
-    public ModuleScopeGraph copy(IModule owner) {
-        return new ModuleScopeGraph(this, owner);
+    public ModuleScopeGraph copy() {
+        return new ModuleScopeGraph(this);
     }
     
     // --------------------------------------------------------------------------------------------

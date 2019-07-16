@@ -6,11 +6,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.module.IModule;
@@ -156,6 +158,60 @@ public class TPrettyPrinter {
      */
     public static String printList(List<? extends ITerm> list, IUnifier unifier) {
         return formatList(convertList(list, unifier));
+    }
+    
+    public static String prettyPrint(Object object) {
+        return prettyPrint(object, NULL_UNIFIER);
+    }
+    
+    public static String prettyPrint(Object object, IUnifier unifier) {
+        if (object instanceof Scope) return printScope((Scope) object);
+        if (object instanceof ITerm) return printTerm((ITerm) object, unifier);
+        if (object instanceof Entry) {
+            Entry<?, ?> entry = (Entry<?, ?>) object;
+            return prettyPrint(entry.getKey(), unifier) + "=" + prettyPrint(entry.getValue(), unifier);
+        }
+        if (object instanceof Iterable) {
+            StringBuilder sb = new StringBuilder("[");
+            for (Object obj : (Iterable<?>) object) {
+                sb.append(prettyPrint(obj, unifier));
+            }
+            sb.append(']');
+            return sb.toString();
+        }
+        if (object instanceof Map) {
+            StringBuilder sb = new StringBuilder("{");
+            for (Entry<?, ?> obj : ((Map<?, ?>) object).entrySet()) {
+                sb.append(prettyPrint(obj.getKey(), unifier));
+                sb.append('=');
+                sb.append(prettyPrint(obj.getValue(), unifier));
+                sb.append(", ");
+            }
+            if (sb.length() > 2) sb.setLength(sb.length() - 2);
+            sb.append('}');
+            return sb.toString();
+        }
+        if (object instanceof IRelation3) {
+            @SuppressWarnings("unchecked")
+            IRelation3<Object, ?, ?> rel = (IRelation3<Object, ?, ?>) object;
+            StringBuilder sb = new StringBuilder("{");
+            for (Object key : rel.keySet()) {
+                for (Entry<?, ?> obj : rel.get(key)) {
+                    sb.append('(');
+                    sb.append(prettyPrint(key, unifier));
+                    sb.append(", ");
+                    sb.append(prettyPrint(obj.getKey(), unifier));
+                    sb.append(")=");
+                    sb.append(prettyPrint(obj.getValue(), unifier));
+                }
+                sb.append(", ");
+            }
+            if (sb.length() > 2) sb.setLength(sb.length() - 2);
+            sb.append('}');
+            return sb.toString();
+        }
+        
+        return object.toString();
     }
     
     //---------------------------------------------------------------------------------------------

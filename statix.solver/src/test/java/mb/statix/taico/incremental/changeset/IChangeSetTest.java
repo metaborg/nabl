@@ -33,8 +33,8 @@ public class IChangeSetTest {
         Spec spec = Spec.builder().noRelationLabel(mock(ITerm.class)).labels(new FiniteAlphabet<>()).build();
         context = SolverContext.initialContext(new QueryIncrementalStrategy(), spec);
         
-        //Create the global module and it's state
-        global = new Module("global");
+        //Create the global module
+        global = Module.topLevelModule("global");
         globalScope = Scope.of(global.getId(), "s");
     }
     

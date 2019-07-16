@@ -274,13 +274,12 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     IMInternalScopeGraph<S, L, D> delegatingGraph(boolean clearScopes);
     
     /**
-     * @param module
-     *      the new owner
+     * Creates a copy of this scope graph.
      * 
      * @return
      *      the copy
      */
-    IMInternalScopeGraph<Scope, ITerm, ITerm> copy(IModule module);
+    IMInternalScopeGraph<Scope, ITerm, ITerm> copy();
     
     //---------------------------------------------------------------------------------------------
     //Other

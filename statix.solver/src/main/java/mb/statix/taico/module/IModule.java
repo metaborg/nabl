@@ -17,9 +17,7 @@ import com.google.common.collect.Streams;
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
@@ -58,15 +56,9 @@ public interface IModule extends Flaggable, Serializable {
      */
     String getParentId();
     
-    /**
-     * Sets the parent of this module to the given module.
-     * 
-     * Used for moving modules in the module tree.
-     * 
-     * @param module
-     *      the module
-     */
-    void setParent(IModule module);
+    // --------------------------------------------------------------------------------------------
+    // Children convenience
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
@@ -77,13 +69,17 @@ public interface IModule extends Flaggable, Serializable {
     }
     
     /**
-     * Returns the mutable scope graph belonging to this module. Additions can be made to the
-     * returned scope graph, so consecutive calls can yield different results.
+     * Convenience method. Returns the scope graph of the current state of this module.
+     * <p>
+     * Please note that scope graphs are mutable, so consecutive calls on the scope graph can yield
+     * differing results.
      * 
      * @return
      *      the scope graph of this module
      */
-    IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph();
+    default IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph() {
+        return getCurrentState().scopeGraph();
+    }
     
     /**
      * @return
@@ -104,7 +100,7 @@ public interface IModule extends Flaggable, Serializable {
     }
     
     /**
-     * Creates a child module, but not the state.
+     * Creates a child module and state.
      * 
      * @param name
      *      the name of the child module
@@ -129,46 +125,6 @@ public interface IModule extends Flaggable, Serializable {
      */
     default void addChild(IModule child) {
         getScopeGraph().addChild(child);
-    }
-    
-    /**
-     * If the module with the given name already existed as a child of this module, that module is
-     * returned. Otherwise, this method returns a new child module of this module.
-     * <p>
-     * <b>NOTE:</b> the child module must still be added as a child after creation.
-     * 
-     * @param name
-     *      the name of the module to create or get
-     * @param canExtend
-     *      the list of scopes from this module and parents that the child can extend, in the order
-     *      they are encountered in the rule
-     * @param moduleBoundary
-     *      the name of the module boundary which caused this modules creation
-     * @param args
-     *      the arguments with which the module boundary was called (TODO IMPORTANT substitute scopes)
-     *      (TODO does this preserve declarations (references) correctly?)
-     * 
-     * @return
-     *      the new/old child module
-     */
-    default IModule createOrGetChild(String name, List<Scope> canExtend, IConstraint constraint) {
-        //TODO This method might no longer be neccessary, or it might not need to check for the old module flag.
-        //TODO Incrementality breaks if parent or child names are changed
-        IModule oldModule = getChild(name);
-        if (oldModule == null) {
-            return createChild(name, canExtend, constraint);
-        }
-        
-        if (oldModule.getTopCleanliness() == ModuleCleanliness.CLEAN) {
-            //Update the edges to the new scopes and add it as a child of the current scope graph.
-            oldModule.getScopeGraph().substitute(canExtend);
-            oldModule.setParent(this);
-            //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
-            oldModule.setInitialization(constraint);
-            return oldModule;
-        } else {
-            return createChild(name, canExtend, constraint);
-        }
     }
     
     /**
@@ -197,11 +153,10 @@ public interface IModule extends Flaggable, Serializable {
         }
         if (oldModule == null || oldModule.getTopCleanliness() != ModuleCleanliness.CLEAN) return null;
         
+        context().transferModule(oldModule);
         oldModule.getScopeGraph().substitute(canExtend);
-        oldModule.setParent(this);
         //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
         oldModule.setInitialization(constraint);
-        context().reuseOldState(oldModule);
         return oldModule;
     }
     
@@ -217,27 +172,6 @@ public interface IModule extends Flaggable, Serializable {
     }
     
     /**
-     * Gets the child with the given name, adding it as a child of this module.
-     * The child will have its parent and coordinator updated.
-     * 
-     * @param name
-     *      the name of the child
-     * 
-     * @return
-     *      the child, or null if no such child exists
-     */
-    default IModule getChildAndAdd(String name) throws Delay {
-        IModule child = getChild(name);
-        if (child == null) return null;
-        
-        child.setParent(this);
-//        child.getCurrentState().setCoordinator(getCurrentState().coordinator());
-        getScopeGraph().addChild(child);
-        context().addModule(child);
-        return child;
-    }
-    
-    /**
      * Removes the given module as child of this module.
      * 
      * @param module
@@ -246,6 +180,10 @@ public interface IModule extends Flaggable, Serializable {
     default void removeChild(IModule module) {
         getScopeGraph().removeChild(module);
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Initialization
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
@@ -272,9 +210,13 @@ public interface IModule extends Flaggable, Serializable {
      */
     default IMState getCurrentState() {
         IMState state = SolverContext.context().getState(this);
-        if (state == null) System.err.println("State of " + this + " is null!");
+        if (state == null) System.err.println("State of " + this + " is null!"); //TODO Remove
         return state;
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Dependencies
+    // --------------------------------------------------------------------------------------------
     
     /**
      * Adds a query with its resolution details to determine the dependencies.
@@ -300,15 +242,24 @@ public interface IModule extends Flaggable, Serializable {
     
     Map<IModule, CResolveQuery> getDependants();
     
-    /**
-     * Resets the module to a clean module: no children, no scope graph.
-     */
-    void reset(Spec spec);
+    Map<String, CResolveQuery> getDependantIds();
+    
+    void resetDependants();
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
      *      a copy of this module, not added to the context
+     * 
+     * @deprecated
+     *      Since modules contain no stateful information that needs to be kept between contexts,
+     *      it never makes sense to create a copy of it. Instead, the corresponding state should
+     *      be copied, if anything.
      */
+    @Deprecated
     IModule copy();
     
     //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();

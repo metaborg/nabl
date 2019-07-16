@@ -2,7 +2,7 @@ package mb.statix.taico.solver.state;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,8 +14,10 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.unifier.DistributedUnifier;
@@ -24,15 +26,15 @@ import mb.statix.taico.util.ScopeIdentity;
 /**
  * Implementation of mutable state.
  */
-public class MState implements IMState, Serializable {
+public class MState implements IMState {
     private static final long serialVersionUID = 1L;
     
     private final IModule owner;
-    private IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
-    private Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties;
+    private final IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph;
+    private final Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties;
     
     private volatile int varCounter;
-    private Set<ITermVar> vars;
+    private final Set<ITermVar> vars;
     
     private volatile DistributedUnifier.Immutable unifier;
     
@@ -46,9 +48,9 @@ public class MState implements IMState, Serializable {
      * @param owner
      *      the owner of this state
      */
-    public MState(IModule owner) {
+    public MState(IModule owner, IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
         this.owner = owner;
-        this.scopeGraph = owner.getScopeGraph();
+        this.scopeGraph = scopeGraph;
         this.vars = new HashSet<>();
         this.unifier = DistributedUnifier.Immutable.of(owner.getId());
         this.termProperties = new HashMap<>();
@@ -90,7 +92,9 @@ public class MState implements IMState, Serializable {
         this.solver = solver;
     }
 
-    // --- variables ---
+    // --------------------------------------------------------------------------------------------
+    // Variables
+    // --------------------------------------------------------------------------------------------
 
     @Override
     public ITermVar freshVar(String base) {
@@ -116,12 +120,18 @@ public class MState implements IMState, Serializable {
         return this.vars;
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Term properties
+    // --------------------------------------------------------------------------------------------
+    
     @Override
     public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
         return termProperties;
     }
 
-    // --- scopes ---
+    // --------------------------------------------------------------------------------------------
+    // Scopes
+    // --------------------------------------------------------------------------------------------
 
     @Override
     public Scope freshScope(String base, IConstraint constraint) {
@@ -136,7 +146,9 @@ public class MState implements IMState, Serializable {
         return scopeGraph.getScopes();
     }
 
-    // --- solution ---
+    // --------------------------------------------------------------------------------------------
+    // Solution
+    // --------------------------------------------------------------------------------------------
 
     @Override
     public DistributedUnifier.Immutable unifier() {
@@ -153,7 +165,10 @@ public class MState implements IMState, Serializable {
         return scopeGraph;
     }
 
-    // --- other ---
+    // --------------------------------------------------------------------------------------------
+    // Views / copies
+    // --------------------------------------------------------------------------------------------
+    
     @Override
     public synchronized DelegatingMState delegate(Set<ITermVar> vars, boolean clearScopes) {
         return new DelegatingMState(this, vars, clearScopes);
@@ -162,5 +177,31 @@ public class MState implements IMState, Serializable {
     @Override
     public MState delegate() {
         return delegate(vars(), false);
+    }
+    
+    @Override
+    public MState copy(IMInternalScopeGraph<Scope, ITerm, ITerm> graph) {
+        return new MState(this, new HashSet<>(vars), graph);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Static creation
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Creates a new top level state for the given module.
+     * <p>
+     * NOTE: Uses the context to retrieve the state.
+     * 
+     * @param module
+     *      the module
+     * 
+     * @return
+     *      the state for the given module
+     */
+    public static MState topLevelState(IModule module) {
+        Spec spec = SolverContext.context().getSpec();
+        ModuleScopeGraph scopeGraph = new ModuleScopeGraph(module, spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel(), Collections.emptyList());
+        return new MState(module, scopeGraph);
     }
 }

@@ -58,7 +58,12 @@ public class BaselineChangeSet extends AChangeSet {
             IModule module = stack.pop();
             
             //Check modules that depend on this module
-            for (IModule depModule : module.getDependants().keySet()) {
+            for (String depModuleId : module.getDependantIds().keySet()) {
+                IModule depModule = oldContext.getModuleUnchecked(depModuleId);
+                if (depModule == null) {
+                    System.err.println("Dependent " + depModuleId + " of " + module.getId() + " does not exist");
+                    continue; //This module no longer exists
+                }
                 if (!visited.add(depModule)) continue;
                 if (depModule.getTopCleanliness() != CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered clean module " + depModule);
 

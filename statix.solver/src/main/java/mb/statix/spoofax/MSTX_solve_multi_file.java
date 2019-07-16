@@ -35,6 +35,7 @@ import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 import mb.statix.taico.solver.coordinator.ASolverCoordinator;
 import mb.statix.taico.solver.coordinator.SolverCoordinator;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.TTimings;
@@ -67,9 +68,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected solver result, but was " + terms.get(1)))
                 .reset();
         
-        SolverContext.setSolverContext(initial.context());
-        
-        final Spec spec = initial.state().spec();
+        final Spec spec = initial.context().getSpec();
         Objects.requireNonNull(spec, "The spec should never be null");
 
         final IDebugContext debug = getDebugContext(terms.get(2));
@@ -84,9 +83,10 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints, but was " + term));
         TTimings.endPhase("constraint matching");
         
+        
         TTimings.startPhase("changeset");
-        //We want the "initial" state, but rather we want the previous module manager used for the initial state.
-        //TODO IMPORTANT Check if the changes to the module manager applied further on are applied on the project
+        //Temporarily set the context to the previous context for the changeset
+        SolverContext.setSolverContext(initial.context());
         Set<String> removed = new HashSet<>();
         Set<String> changed = new HashSet<>();
         Set<String> added = new HashSet<>();
@@ -124,7 +124,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         TTimings.startPhase("incremental context");
         SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
         TTimings.endPhase("incremental context");
-//        newContext.setState(initial.state().getOwner(), initial.state());
         
         ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
         newContext.setCoordinator(coordinator); //Sets the coordinator on the context and the context on the coordinator
@@ -135,8 +134,8 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         //Do the actual analysis
         Map<String, ISolverResult> results;
         try {
-            //TODO Add the context as an argument to the coordinator?
-            results = coordinator.solve(strategy, changeSet, initial.state(), modules, debug);
+            IMState rootState = initial.state().owner().getCurrentState();
+            results = coordinator.solve(strategy, changeSet, rootState, modules, debug);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

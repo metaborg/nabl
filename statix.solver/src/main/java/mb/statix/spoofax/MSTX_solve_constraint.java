@@ -31,7 +31,6 @@ import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 import mb.statix.taico.solver.coordinator.ASolverCoordinator;
 import mb.statix.taico.solver.coordinator.SolverCoordinator;
-import mb.statix.taico.solver.state.MState;
 import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.TTimings;
@@ -96,12 +95,11 @@ public class MSTX_solve_constraint extends StatixPrimitive {
         context.setCoordinator(coordinator);
         
         //Create the top level module and state. It is added to the context automatically.
-        final IModule module = new Module(resource);
-        final MState state = new MState(module);
+        final IModule module = Module.topLevelModule(resource);
         
         final ISolverResult resultConfig;
         try {
-            resultConfig = coordinator.solve(state, constraint, debug);
+            resultConfig = coordinator.solve(module.getCurrentState(), constraint, debug);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

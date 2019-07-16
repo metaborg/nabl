@@ -12,7 +12,6 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.state.MState;
 
 public class TestUtil {
 
@@ -34,25 +33,6 @@ public class TestUtil {
     }
     
     /**
-     * Convenient way to create a new child module without a state.
-     * 
-     * @param parent
-     *      the parent
-     * @param name
-     *      the name of the module
-     * @param scopes
-     *      the scope that it can extend
-     * 
-     * @return
-     *      the child module
-     */
-    public static IModule createChildNoState(IModule parent, String name, Scope... scopes) {
-        IModule module = parent.createChild(name, list(scopes), null);
-        parent.addChild(module);
-        return module;
-    }
-    
-    /**
      * Convenient way to create a new child module with a state.
      * 
      * @param parent
@@ -66,8 +46,8 @@ public class TestUtil {
      *      the child module
      */
     public static IModule createChild(IModule parent, String name, Scope... scopes) {
-        IModule module = createChildNoState(parent, name, scopes);
-        new MState(module);
+        IModule module = parent.createChild(name, list(scopes), null);
+        parent.addChild(module);
         return module;
     }
     

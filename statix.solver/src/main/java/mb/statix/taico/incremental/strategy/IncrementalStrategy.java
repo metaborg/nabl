@@ -25,7 +25,6 @@ import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.solver.state.MState;
 
 /**
  * The incremental strategy determines how the incremental solving proceeds.
@@ -179,7 +178,6 @@ public abstract class IncrementalStrategy {
         
         IModule rootOwner = context.getRootModule();
         IModule child = rootOwner.createChild(childName, scopes, initConstraint);
-        new MState(child);
         rootOwner.addChild(child);
         return child;
     }
@@ -219,7 +217,6 @@ public abstract class IncrementalStrategy {
         List<Scope> scopes = getScopes(initConstraint);
         
         IModule child = parentModule.createChild(ModulePaths.getName(childId), scopes, initConstraint);
-        new MState(child);
         parentModule.addChild(child);
         return child;
     }
@@ -232,14 +229,17 @@ public abstract class IncrementalStrategy {
      *      the context
      * @param changeSet
      *      the change set
-     * @param oldModule
-     *      the old module
+     * @param module
+     *      the module
      */
-    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule oldModule) {
-        System.err.println("[IS] Reusing old module " + oldModule);
-        IMState state = context.reuseOldState(oldModule);
+    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule module) {
+        System.err.println("[IS] Reusing old module " + module);
+        IMState state = context.transferModule(module);
+        for (IModule child : changeSet.removed()) {
+            state.scopeGraph().removeChild(child);
+        }
         //Does the parent module have a state at this point?
-        oldModule.getParent().getCurrentState().solver().noopSolver(state);
+        module.getParent().getCurrentState().solver().noopSolver(state);
     }
     
     /**
