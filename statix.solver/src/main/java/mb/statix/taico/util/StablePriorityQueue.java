@@ -69,7 +69,7 @@ public class StablePriorityQueue<E> extends AbstractQueue<E> implements Serializ
      *      the elements to add to the queue
      */
     public StablePriorityQueue(Collection<? extends E> elements) {
-        this(elements.size(), null);
+        this(Math.max(elements.size(), 11), null);
         addAll(elements);
     }
     
@@ -170,7 +170,9 @@ public class StablePriorityQueue<E> extends AbstractQueue<E> implements Serializ
      * @param <T>
      *      the type parameter is used to avoid typing conflicts with contains and remove
      */
-    private class Entry<T> implements Comparable<Entry<T>> {
+    private class Entry<T> implements Comparable<Entry<T>>, Serializable {
+        private static final long serialVersionUID = 1L;
+        
         private final int order;
         private final T value;
         
