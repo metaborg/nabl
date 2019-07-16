@@ -14,7 +14,7 @@ public class ProgressTrackerRunnable implements Runnable {
         if (thread != null) return;
         
         stop = false;
-        thread = new Thread(this);
+        thread = new Thread(this, "ProgressTracker");
         thread.start();
     }
     

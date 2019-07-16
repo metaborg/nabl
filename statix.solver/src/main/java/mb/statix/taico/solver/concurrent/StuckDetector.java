@@ -30,7 +30,7 @@ public class StuckDetector implements Runnable {
     public synchronized void start() {
         if (thread != null) return;
         stop = false;
-        thread = new Thread(this);
+        thread = new Thread(this, "StuckDetector");
         thread.start();
     }
     
