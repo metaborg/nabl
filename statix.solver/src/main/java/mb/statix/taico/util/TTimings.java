@@ -53,6 +53,7 @@ public class TTimings {
     
     public static void startPhase(String name, long time, String... details) {
         System.out.println("Starting phase " + name);
+        if (runCounter == -1) startNewRun();
         results.get(runCounter).put(name, new PhaseDetails(time, details));
     }
     
@@ -62,6 +63,7 @@ public class TTimings {
     
     public static void startPhase(String name, long time, String details, Object... args) {
         System.out.println("Starting phase " + name);
+        if (runCounter == -1) startNewRun();
         results.get(runCounter).put(name, new PhaseDetails(time, String.format(details, args)));
     }
     
