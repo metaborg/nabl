@@ -245,7 +245,9 @@ public class TPrettyPrinter {
     }
     
     public static IMatcher<String> label() {
-        return M.appl1("Label", M.stringValue(), (t, s) -> s);
+        return M.cases(
+                M.appl1("Label", M.stringValue(), (t, s) -> s),
+                M.appl0("Decl", t -> "decl"));
     }
     
     public static IMatcher<String> tuple(IUnifier unifier) {
