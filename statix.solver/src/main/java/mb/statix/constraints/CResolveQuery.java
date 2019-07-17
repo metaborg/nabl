@@ -33,6 +33,7 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.name.NameAndRelation;
+import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.MConstraintContext;
@@ -42,7 +43,6 @@ import mb.statix.taico.solver.query.MConstraintQueries;
 import mb.statix.taico.solver.query.NameQueryDetails;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.util.SingleItemQuery;
 import mb.statix.taico.util.TDebug;
 
 /**
@@ -78,7 +78,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
-        this.name = SingleItemQuery.getMatchedName(filter.getDataWF(), relation).orElse(null);
+        this.name = Names.getMatchedName(filter.getDataWF(), relation).orElse(null);
     }
     
     private CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,

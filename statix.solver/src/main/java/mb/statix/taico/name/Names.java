@@ -1,6 +1,7 @@
-package mb.statix.taico.util;
+package mb.statix.taico.name;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,8 +19,10 @@ import mb.nabl2.terms.matching.NilPattern;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.PatternVar;
 import mb.nabl2.terms.matching.StringPattern;
+import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -27,9 +30,8 @@ import mb.statix.constraints.CTrue;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.IRule;
 import mb.statix.spoofax.StatixTerms;
-import mb.statix.taico.name.NameAndRelation;
 
-public class SingleItemQuery {
+public class Names {
     /**
      * Attempts to determine statically which name is matched by the given rule. If the given rule
      * matches more than one name, or if we cannot statically determine which names are matched,
@@ -80,7 +82,7 @@ public class SingleItemQuery {
         
         //We need to verify that no wildcards are matched in the name
         //TODO Refinement: also support wildcard lookups
-        if (!arguments.stream().noneMatch(SingleItemQuery::isWildcard)) return Optional.empty();
+        if (!arguments.stream().noneMatch(Names::isWildcard)) return Optional.empty();
         
         //From the body we want to determine the substituation that we should apply
         ISubstitution.Transient subst = new PersistentSubstitution.Transient(Map.Transient.of());
@@ -88,6 +90,35 @@ public class SingleItemQuery {
         
         NameAndRelation name = new NameAndRelation(namespace, convertPatterns(arguments, subst.freeze()), relation);
         return Optional.of(name);
+    }
+    
+    /**
+     * Attempts to retrieve the name of the given term. If the given term is an occurrence, it is
+     * converted to its corresponding name. If the given term is a tuple and the first argument is
+     * an occurrence, it is converted to its corresponding name. Otherwise, an empty optional is
+     * returned.
+     * 
+     * @param term
+     *      the term
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the name represented by the given term or contained in the given tuple
+     */
+    public static Optional<Name> getName(ITerm term, IUnifier unifier) {
+        return M.cases(
+                occurrence(),
+                M.tuple(t -> {
+                    if (t.getArity() <= 0) return null;
+                    return occurrence().match(t.getArgs().get(1), unifier).orElse(null);
+                })
+        ).match(term, unifier);
+    }
+    
+    private static IMatcher<Name> occurrence() {
+        return M.appl3(StatixTerms.OCCURRENCE_OP, M.stringValue(), M.listElems(M.term()), M.term(),
+                (t, n, l, p) -> new Name(n, l));
     }
     
     /**
