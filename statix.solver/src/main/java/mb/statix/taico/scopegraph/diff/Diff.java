@@ -1,6 +1,5 @@
 package mb.statix.taico.scopegraph.diff;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -10,95 +9,156 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.name.Name;
+import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.solver.SolverContext;
 
 public class Diff {
     /**
-     * Performs a diff between the given scope graphs.
+     * Computes the diff for the module with the given id between the given contexts.
      * 
-     * @param sga
-     *      the previous version
-     * @param ua
-     *      the unifier of the previous version
-     * @param sgb
-     *      the new version
-     * @param ub
-     *      the unifier of the new version
+     * @param id
+     *      the id of the module
+     * @param newContext
+     *      the new context
+     * @param oldContext
+     *      the old context
      * @param external
-     *      if the external scope graphs should be compared instead of the actual graphs
-     * @param dataToName
-     *      a function to convert data to a name
+     *      if true, the external scope graph is compared, otherwise, the internal scope graph is
+     *      compared
      * 
      * @return
-     *      the diff
+     *      a diffresult
      */
-    public static <S extends D, L, D> IScopeGraphDiff<S, L, D> diff(
-            IMInternalScopeGraph<S, L, D> sga, IUnifier ua,
-            IMInternalScopeGraph<S, L, D> sgb, IUnifier ub,
-            boolean external, Function<D, Name> dataToName) {
-        IMInternalScopeGraph<S, L, D> a = external ? (IMInternalScopeGraph<S, L, D>) sga.externalGraph() : sga;
-        IMInternalScopeGraph<S, L, D> b = external ? (IMInternalScopeGraph<S, L, D>) sgb.externalGraph() : sgb;
-        
-        Set<S> newScopes = getNew(a.getScopes(), b.getScopes());   //new in b
-        Set<S> removedScopes = getNew(b.getScopes(), a.getScopes()); //new in a = removed in b
-        
-        IRelation3<S, L, S> newEdges = getNew(a.getOwnEdges(), b.getOwnEdges());
-        IRelation3<S, L, S> removedEdges = getNew(b.getOwnEdges(), a.getOwnEdges());
-        
-        //Changed = same name, but different data
-        IRelation3<S, L, D> newData = getNew(a.getOwnData(), b.getOwnData());
-        IRelation3<S, L, D> removedData = getNew(b.getOwnData(), a.getOwnData());
-        
-        HashTrieRelation3.Transient<S, L, Name> newDataNames = toNames(newData, dataToName);
-        HashTrieRelation3.Transient<S, L, Name> removedDataNames = toNames(removedData, dataToName);
-        HashTrieRelation3.Transient<S, L, Name> changedDataNames = nameOverlap(newDataNames, removedDataNames);
-        
-        return new ScopeGraphDiff<>(newScopes, removedScopes, newEdges, removedEdges, newDataNames, removedDataNames, changedDataNames);
-        
-        //TODO IMPORTANT Diff children!
-//        if (external) {
-//            
-//        }
+    public static DiffResult<Scope, ITerm, ITerm> diff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
+        DiffResult<Scope, ITerm, ITerm> result = new DiffResult<>();
+        diff(result, id, newContext, oldContext, external);
+        return result;
     }
     
-    public static Name itermToName(ITerm term) {
-        System.out.println(term);
-        return new Name("", Collections.emptyList());
+    public static void diff(
+            DiffResult<Scope, ITerm, ITerm> result,
+            String id,
+            SolverContext cNew, SolverContext cOld,
+            boolean external) {
+        //Determine the graphs and their unifiers from the context
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = external
+                ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cNew.getScopeGraph(id).externalGraph()
+                : cNew.getScopeGraph(id);
+        IUnifier uNew = cNew.getState(id).unifier();
         
-//        M.appl3(StatixTerms.OCCURRENCE_OP, M.string(), m2, m3)
-//        //(Occurrence, value)
-//        //(String, String, value)
-//        M.appl(Terms.TUPLE_OP, a -> a
-////        {
-////            int arity = a.getArity();
-////            
-////        }
-//        ).match(term);
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = external
+                ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cOld.getScopeGraph(id).externalGraph()
+                : cOld.getScopeGraph(id);
+        IUnifier uOld = cOld.getState(id).unifier();
+        
+        //Scopes
+        Set<Scope> newScopes =
+                getNew(sgOld.getScopes(), sgNew.getScopes());
+        Set<Scope> removedScopes =
+                getNew(sgNew.getScopes(), sgOld.getScopes());
+        
+        //Edges
+        IRelation3<Scope, ITerm, Scope> newEdges =
+                getNew(sgOld.getOwnEdges(), sgNew.getOwnEdges());
+        IRelation3<Scope, ITerm, Scope> removedEdges =
+                getNew(sgNew.getOwnEdges(), sgOld.getOwnEdges());
+        
+        //Data
+        IRelation3<Scope, ITerm, ITerm> newData =
+                getNew(sgOld.getOwnData(), sgNew.getOwnData());
+        IRelation3<Scope, ITerm, ITerm> removedData =
+                getNew(sgNew.getOwnData(), sgOld.getOwnData());
+        
+        //Convert data to names
+        IRelation3.Transient<Scope, ITerm, Name> newDataNames =
+                toNames(newData, d -> Names.getName(d, uNew).orElse(null));
+        IRelation3.Transient<Scope, ITerm, Name> removedDataNames =
+                toNames(removedData, d -> Names.getName(d, uOld).orElse(null));
+        IRelation3.Transient<Scope, ITerm, Name> changedDataNames =
+                nameOverlap(newDataNames, removedDataNames);
+        
+        ScopeGraphDiff<Scope, ITerm, ITerm> diff =
+                new ScopeGraphDiff<>(
+                        newScopes, removedScopes,
+                        newEdges, removedEdges,
+                        newDataNames, removedDataNames, changedDataNames);
+        result.addDiff(id, diff);
+        
+        //Child modules
+        for (String childId : sgNew.getChildIds()) {
+            if (sgOld.getChildIds().contains(childId)) {
+                //Child is contained in both, create a diff
+                diff(result, childId, cNew, cOld, external);
+            } else {
+                //Child is in new but not in old -> added
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cNew.getScopeGraph(childId);
+                result.addAddedChild(childId, sg);
+            }
+        }
+        
+        for (String childId : sgOld.getChildIds()) {
+            if (!sgNew.getChildIds().contains(childId)) {
+                //Child is in old but not in new -> removed
+                result.addRemovedChild(childId, cOld.getScopeGraph(childId));
+            }
+        }
     }
     
-    private static <S> Set<S> getNew(Set<S> a, Set<S> b) {
+    /**
+     * @param oldSet
+     *      the old set
+     * @param newSet
+     *      the new set
+     * 
+     * @return
+     *      everything in newSet that is not in oldSet
+     */
+    private static <S> Set<S> getNew(Set<S> oldSet, Set<S> newSet) {
         Set<S> added = new HashSet<>();
-        for (S s : b) {
-            if (!a.contains(s)) added.add(s);
+        for (S s : newSet) {
+            if (!oldSet.contains(s)) added.add(s);
         }
         return added;
     }
     
-    private static <S extends D, L, D> IRelation3.Transient<S, L, D> getNew(IRelation3<S, L, D> a, IRelation3<S, L, D> b) {
+    /**
+     * @param oldRel
+     *      the old relation
+     * @param newRel
+     *      the new relation
+     * 
+     * @return
+     *      everything in newRel that is not in oldRel
+     */
+    private static <S, L, D> IRelation3.Transient<S, L, D> getNew(IRelation3<S, L, D> oldRel, IRelation3<S, L, D> newRel) {
         IRelation3.Transient<S, L, D> added = HashTrieRelation3.Transient.of();
-        for (S s : a.keySet()) {
-            for (Entry<L, D> entry : a.get(s)) {
+        for (S s : oldRel.keySet()) {
+            for (Entry<L, D> entry : oldRel.get(s)) {
                 final L l = entry.getKey();
                 final D d = entry.getValue();
-                if (!b.contains(s, l, d)) added.put(s, l, d);
+                if (!newRel.contains(s, l, d)) added.put(s, l, d);
             }
         }
         return added;
     }
     
-    private static <S extends D, L, D> HashTrieRelation3.Transient<S, L, Name> nameOverlap(
-            HashTrieRelation3.Transient<S, L, Name> newData, HashTrieRelation3.Transient<S, L, Name> removedData) {
+    /**
+     * Determines the overlap between the names in the given relations.
+     * All overlapping names are removed from both.
+     * 
+     * @param newData
+     *      all the new names
+     * @param removedData
+     *      all the removed names
+     * 
+     * @return
+     *      the names that are in both
+     */
+    private static <S, L, D> IRelation3.Transient<S, L, Name> nameOverlap(
+            IRelation3.Transient<S, L, Name> newData, IRelation3.Transient<S, L, Name> removedData) {
         HashTrieRelation3.Transient<S, L, Name> tbr = HashTrieRelation3.Transient.of();
         for (S s : newData.keySet()) {
             for (Entry<L, Name> entry : newData.get(s)) {
@@ -119,10 +179,24 @@ public class Diff {
         return tbr;
     }
     
-    private static <S extends D, L, D> HashTrieRelation3.Transient<S, L, Name> toNames(IRelation3<S, L, D> old, Function<D, Name> dataToName) {
+    /**
+     * @param data
+     *      the data
+     * @param dataToName
+     *      the function to convert data to a name
+     * 
+     * @return
+     *      the given relation, but with data converted to names
+     */
+    private static <S, L, D> IRelation3.Transient<S, L, Name> toNames(IRelation3<S, L, D> data, Function<D, Name> dataToName) {
         HashTrieRelation3.Transient<S, L, Name> tbr = HashTrieRelation3.Transient.of();
-        for (S s : old.keySet()) {
-            for (Entry<L, D> entry : old.get(s)) {
+        for (S s : data.keySet()) {
+            for (Entry<L, D> entry : data.get(s)) {
+                Name name = dataToName.apply(entry.getValue());
+                if (name == null) {
+                    System.err.println("DIFF: Skipping data " + entry.getValue() + " at scope " + s + " relation " + entry.getKey() + ": cannot convert to name");
+                    continue;
+                }
                 tbr.put(s, entry.getKey(), dataToName.apply(entry.getValue()));
             }
         }

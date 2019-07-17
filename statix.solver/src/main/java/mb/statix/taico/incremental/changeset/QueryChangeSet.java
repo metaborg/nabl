@@ -102,6 +102,11 @@ public class QueryChangeSet extends AChangeSet {
                 final String moduleId = module.getId();
                 
                 for (IModule depModule : module.getDependants().keySet()) {
+                    if (depModule == null) {
+                        System.err.println("Encountered null depModule for " + module);
+                        continue;
+                    }
+                    
                     Flag oldFlag = depModule.getTopFlag();
                     //If we already have a flag with the same cause, we don't want to visit this module again
                     if (!add(new Flag(CLIRTY, moduleLevel + 1, moduleId), FlagCondition.AddFlagIfNotSameCause, depModule)) {

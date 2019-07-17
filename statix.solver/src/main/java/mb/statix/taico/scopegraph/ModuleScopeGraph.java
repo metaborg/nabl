@@ -313,6 +313,15 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         }
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Children
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public boolean hasChild(String childId) {
+        return children.contains(childId);
+    }
+    
     @Override
     public ModuleScopeGraph createChild(IModule module, List<Scope> canExtend) {
         ModuleScopeGraph child = new ModuleScopeGraph(module, edgeLabels, dataLabels, noDataLabel, canExtend);
@@ -360,6 +369,11 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     @Override
     public Iterable<? extends IMInternalScopeGraph<Scope, ITerm, ITerm>> getChildren() {
         return children.stream().map(s -> SolverContext.context().getState(s).scopeGraph())::iterator;
+    }
+    
+    @Override
+    public Set<String> getChildIds() {
+        return children;
     }
     
     @Override

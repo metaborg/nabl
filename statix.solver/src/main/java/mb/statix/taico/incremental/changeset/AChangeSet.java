@@ -112,6 +112,7 @@ public abstract class AChangeSet implements IChangeSet {
         Set<String> sIds = getIds(flag.getCleanliness());
         boolean tbr = false;
         for (IModule module : modules) {
+            if (module == null) continue;
             switch (condition) {
                 case AddFlag:
                     module.addFlag(flag);

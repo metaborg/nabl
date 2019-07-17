@@ -167,6 +167,17 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     IMInternalScopeGraph<S, L, D> createChild(IModule module, List<S> canExtend);
     
     /**
+     * Checks if this scope graph has a child with the given id.
+     * 
+     * @param childId
+     *      the id of the child
+     * 
+     * @return
+     *      true if this scope graph has a child with the given id
+     */
+    boolean hasChild(String childId);
+    
+    /**
      * Adds the given module as a child to this scope graph.
      * 
      * @param child
@@ -194,10 +205,18 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
     void purgeChildren();
     
     /**
+     * Convenience method.
+     * 
      * @return
      *      an iterable of all the children of this scope graph
      */
     Iterable<? extends IMInternalScopeGraph<S, L, D>> getChildren();
+    
+    /**
+     * @return
+     *      a set with the ids of all the children
+     */
+    Set<String> getChildIds();
     
     /**
      * @return

@@ -1,16 +1,44 @@
 package mb.statix.taico.scopegraph.diff;
 
-import java.util.Map;
+import static mb.statix.taico.util.TPrettyPrinter.prettyPrint;
+
+import java.io.PrintStream;
 import java.util.Set;
 
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.name.Name;
-import mb.statix.taico.name.NameAndRelation;
 
+/**
+ * Interface to represent a diff of scope graphs
+ *
+ * @param <S>
+ *      the type of scopes
+ * @param <L>
+ *      the type of labels
+ * @param <D>
+ *      the type of data
+ */
 public interface IScopeGraphDiff<S extends D, L, D> {
+    // --------------------------------------------------------------------------------------------
+    // General
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @return
+     *      if this diff is empty (represents no changes)
+     */
+    default boolean isEmpty() {
+        return getAddedScopes().isEmpty() && getRemovedScopes().isEmpty()
+                && getAddedData().isEmpty() && getRemovedData().isEmpty() && getChangedData().isEmpty()
+                && getAddedEdges().isEmpty() && getRemovedEdges().isEmpty();
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Scopes
+    // --------------------------------------------------------------------------------------------
+    
     /**
      * @return
      *      a set of all scopes that have been added
@@ -23,26 +51,25 @@ public interface IScopeGraphDiff<S extends D, L, D> {
      */
     Set<S> getRemovedScopes();
     
-    //---------------------------------------------------------------------------------------------
-    
-    Multimap<S, NameAndRelation> getChangedNamesPS();
-    Multimap<S, NameAndRelation> getRemovedNamesPS();
-    Multimap<S, NameAndRelation> getAddedNamesPS();
-    
-    //---------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // Edges
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
      *      all the edges that were added
      */
     IRelation3<S, L, S> getAddedEdges();
+    
     /**
      * @return
      *      all the edges that were removed
      */
     IRelation3<S, L, S> getRemovedEdges();
     
-    //---------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // Data
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
@@ -62,20 +89,69 @@ public interface IScopeGraphDiff<S extends D, L, D> {
      */
     IRelation3<S, L, Name> getChangedData();
     
-    //---------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // Convenience methods
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
      *      a set of all names that are affected by changes
      */
     default Set<Name> getAffectedNames() {
-        return Sets.union(getAddedData().valueSet(), Sets.union(getRemovedData().valueSet(), getChangedData().valueSet()));
+        return Sets.union(getAddedData().valueSet(),
+                Sets.union(getRemovedData().valueSet(), getChangedData().valueSet()));
     }
     
-    //---------------------------------------------------------------------------------------------
+    
     /**
-     * @return
-     *      the diffs of each of the children
+     * Prints this diff to the given stream. Please note that this method can lock the given stream
+     * for quite a while.
+     * 
+     * @param stream
+     *      the stream to print to
+     * @param indent
+     *      the indentation before the bar
      */
-    Map<String, IScopeGraphDiff<S, L, D>> childDiffs();
+    public default void print(PrintStream stream, int indent) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < indent; i++) {
+            sb.append("| ");
+        }
+        String base = sb.toString();
+        synchronized (stream) {
+            stream.print(base);
+            stream.print("addedScopes=");
+            stream.println(prettyPrint(getAddedScopes()));
+            stream.print(base);
+            stream.print("removedScopes=");
+            stream.println(prettyPrint(getRemovedScopes()));
+            
+            stream.print(base);
+            stream.print("addedEdges=");
+            stream.println(prettyPrint(getAddedEdges()));
+            stream.print(base);
+            stream.print("removedEdges=");
+            stream.println(prettyPrint(getRemovedEdges()));
+            
+            stream.print(base);
+            stream.print("addedData=");
+            stream.println(prettyPrint(getAddedData()));
+            stream.print(base);
+            stream.print("removedData=");
+            stream.println(prettyPrint(getRemovedData()));
+            stream.print(base);
+            stream.print("changedData=");
+            stream.println(prettyPrint(getChangedData()));
+        }
+    }
+    
+    public default String print() {
+        return "IScopeGraphDiff [addedScopes=" + prettyPrint(getAddedScopes())
+        + ",\n removedScopes=" + prettyPrint(getRemovedScopes())
+        + ",\n addedEdges=" + prettyPrint(getAddedEdges())
+        + ",\n removedEdges=" + prettyPrint(getRemovedEdges())
+        + ",\n addedData=" + prettyPrint(getAddedData())
+        + ",\n removedData=" + prettyPrint(getRemovedData())
+        + ",\n changedData=" + prettyPrint(getChangedData()) + "]";
+    }
 }
