@@ -10,22 +10,27 @@ public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, 
     private Set<S> removedScopes;
     private IRelation3<S, L, S> addedEdges;
     private IRelation3<S, L, S> removedEdges;
-    private IRelation3<S, L, Name> addedData;
-    private IRelation3<S, L, Name> removedData;
-    private IRelation3<S, L, Name> changedData;
+    private IRelation3<S, L, D> addedData;
+    private IRelation3<S, L, D> removedData;
+    private IRelation3<S, L, Name> addedDataNames;
+    private IRelation3<S, L, Name> removedDataNames;
+    private IRelation3<S, L, Name> changedDataNames;
     
     public ScopeGraphDiff(
             Set<S> addedScopes, Set<S> removedScopes,
             IRelation3<S, L, S> addedEdges, IRelation3<S, L, S> removedEdges,
-            IRelation3<S, L, Name> addedData, IRelation3<S, L, Name> removedData,
-            IRelation3<S, L, Name> changedData) {
+            IRelation3<S, L, D> addedData, IRelation3<S, L, D> removedData,
+            IRelation3<S, L, Name> addedDataNames, IRelation3<S, L, Name> removedDataNames,
+            IRelation3<S, L, Name> changedDataNames) {
         this.addedScopes = addedScopes;
         this.removedScopes = removedScopes;
         this.addedEdges = addedEdges;
         this.removedEdges = removedEdges;
         this.addedData = addedData;
         this.removedData = removedData;
-        this.changedData = changedData;
+        this.addedDataNames = addedDataNames;
+        this.removedDataNames = removedDataNames;
+        this.changedDataNames = changedDataNames;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -61,18 +66,28 @@ public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, 
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public IRelation3<S, L, Name> getAddedData() {
+    public IRelation3<S, L, D> getAddedData() {
         return addedData;
     }
 
     @Override
-    public IRelation3<S, L, Name> getRemovedData() {
+    public IRelation3<S, L, D> getRemovedData() {
         return removedData;
+    }
+    
+    @Override
+    public IRelation3<S, L, Name> getAddedDataNames() {
+        return addedDataNames;
     }
 
     @Override
-    public IRelation3<S, L, Name> getChangedData() {
-        return changedData;
+    public IRelation3<S, L, Name> getRemovedDataNames() {
+        return removedDataNames;
+    }
+
+    @Override
+    public IRelation3<S, L, Name> getChangedDataNames() {
+        return changedDataNames;
     }
     
     // --------------------------------------------------------------------------------------------

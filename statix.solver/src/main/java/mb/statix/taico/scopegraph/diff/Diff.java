@@ -83,6 +83,7 @@ public class Diff {
                 new ScopeGraphDiff<>(
                         newScopes, removedScopes,
                         newEdges, removedEdges,
+                        newData, removedData,
                         newDataNames, removedDataNames, changedDataNames);
         result.addDiff(id, diff);
         

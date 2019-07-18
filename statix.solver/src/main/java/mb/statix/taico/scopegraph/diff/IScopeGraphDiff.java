@@ -31,7 +31,7 @@ public interface IScopeGraphDiff<S extends D, L, D> {
      */
     default boolean isEmpty() {
         return getAddedScopes().isEmpty() && getRemovedScopes().isEmpty()
-                && getAddedData().isEmpty() && getRemovedData().isEmpty() && getChangedData().isEmpty()
+                && getAddedData().isEmpty() && getRemovedData().isEmpty()
                 && getAddedEdges().isEmpty() && getRemovedEdges().isEmpty();
     }
     
@@ -73,21 +73,33 @@ public interface IScopeGraphDiff<S extends D, L, D> {
     
     /**
      * @return
+     *      all the data that has been added
+     */
+    IRelation3<S, L, D> getAddedData();
+    
+    /**
+     * @return
+     *      all the data that has been removed
+     */
+    IRelation3<S, L, D> getRemovedData();
+    
+    /**
+     * @return
      *      all the names that have been added (new sort with relation)
      */
-    IRelation3<S, L, Name> getAddedData();
+    IRelation3<S, L, Name> getAddedDataNames();
     
     /**
      * @return
      *      all the names that have been removed (all relations for sort removed)
      */
-    IRelation3<S, L, Name> getRemovedData();
+    IRelation3<S, L, Name> getRemovedDataNames();
     
     /**
      * @return
-     *      all the names for which an associated relation has changed (!decl)
+     *      all the names which have changed
      */
-    IRelation3<S, L, Name> getChangedData();
+    IRelation3<S, L, Name> getChangedDataNames();
     
     // --------------------------------------------------------------------------------------------
     // Convenience methods
@@ -98,8 +110,8 @@ public interface IScopeGraphDiff<S extends D, L, D> {
      *      a set of all names that are affected by changes
      */
     default Set<Name> getAffectedNames() {
-        return Sets.union(getAddedData().valueSet(),
-                Sets.union(getRemovedData().valueSet(), getChangedData().valueSet()));
+        return Sets.union(getAddedDataNames().valueSet(),
+                Sets.union(getRemovedDataNames().valueSet(), getChangedDataNames().valueSet()));
     }
     
     
@@ -139,9 +151,16 @@ public interface IScopeGraphDiff<S extends D, L, D> {
             stream.print(base);
             stream.print("removedData=");
             stream.println(prettyPrint(getRemovedData()));
+            
             stream.print(base);
-            stream.print("changedData=");
-            stream.println(prettyPrint(getChangedData()));
+            stream.print("addedDataNames=");
+            stream.println(prettyPrint(getAddedDataNames()));
+            stream.print(base);
+            stream.print("removedDataNames=");
+            stream.println(prettyPrint(getRemovedDataNames()));
+            stream.print(base);
+            stream.print("changedDataNames=");
+            stream.println(prettyPrint(getChangedDataNames()));
         }
     }
     
@@ -152,6 +171,8 @@ public interface IScopeGraphDiff<S extends D, L, D> {
         + ",\n removedEdges=" + prettyPrint(getRemovedEdges())
         + ",\n addedData=" + prettyPrint(getAddedData())
         + ",\n removedData=" + prettyPrint(getRemovedData())
-        + ",\n changedData=" + prettyPrint(getChangedData()) + "]";
+        + ",\n addedDataNames=" + prettyPrint(getAddedDataNames())
+        + ",\n removedDataNames=" + prettyPrint(getRemovedDataNames())
+        + ",\n changedDataNames=" + prettyPrint(getChangedDataNames()) + "]";
     }
 }
