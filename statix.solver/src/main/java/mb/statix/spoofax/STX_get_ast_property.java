@@ -14,7 +14,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.ISolverResult;
 
 public class STX_get_ast_property extends StatixPrimitive {
 
@@ -24,7 +24,7 @@ public class STX_get_ast_property extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
+        final ISolverResult analysis = M.blobValue(ISolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final ITerm property = terms.get(1);
         final Optional<TermIndex> maybeIndex = TermIndex.get(term);
