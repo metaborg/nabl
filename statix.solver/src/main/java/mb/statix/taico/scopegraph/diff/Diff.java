@@ -55,10 +55,8 @@ public class Diff {
         IUnifier uOld = cOld.getState(id).unifier();
         
         //Scopes
-        Set<Scope> newScopes =
-                getNew(sgOld.getScopes(), sgNew.getScopes());
-        Set<Scope> removedScopes =
-                getNew(sgNew.getScopes(), sgOld.getScopes());
+        Set<Scope> newScopes     = getNew(sgOld.getScopes(), sgNew.getScopes());
+        Set<Scope> removedScopes = getNew(sgNew.getScopes(), sgOld.getScopes());
         
         //Edges
         IRelation3<Scope, ITerm, Scope> newEdges =
@@ -67,10 +65,11 @@ public class Diff {
                 getNew(sgNew.getOwnEdges(), sgOld.getOwnEdges());
         
         //Data
-        IRelation3<Scope, ITerm, ITerm> newData =
-                getNew(sgOld.getOwnData(), sgNew.getOwnData());
-        IRelation3<Scope, ITerm, ITerm> removedData =
-                getNew(sgNew.getOwnData(), sgOld.getOwnData());
+        IRelation3<Scope, ITerm, ITerm> oldDataInst = instantiate(sgOld.getOwnData(), uOld);
+        IRelation3<Scope, ITerm, ITerm> newDataInst = instantiate(sgNew.getOwnData(), uNew);
+        
+        IRelation3<Scope, ITerm, ITerm> newData     = getNew(oldDataInst, newDataInst);
+        IRelation3<Scope, ITerm, ITerm> removedData = getNew(newDataInst, oldDataInst);
         
         //Convert data to names
         IRelation3.Transient<Scope, ITerm, Name> newDataNames =
@@ -143,6 +142,27 @@ public class Diff {
             }
         }
         return added;
+    }
+    
+    /**
+     * Fully instantiates the terms in the given relation by looking them up in the given unifier.
+     * 
+     * @param rel
+     *      the relation
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the instantiated terms
+     */
+    private static <S, L> IRelation3<S, L, ITerm> instantiate(IRelation3<S, L, ITerm> rel, IUnifier unifier) {
+        IRelation3.Transient<S, L, ITerm> tbr = HashTrieRelation3.Transient.of();
+        for (S s : rel.keySet()) {
+            for (Entry<L, ITerm> entry : rel.get(s)) {
+                tbr.put(s, entry.getKey(), unifier.findRecursive(entry.getValue()));
+            }
+        }
+        return tbr;
     }
     
     /**
