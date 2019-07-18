@@ -110,6 +110,7 @@ public interface IMState extends IOwnable, Serializable, IState {
     // Term properties
     // --------------------------------------------------------------------------------------------
     
+    @Override
     public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties();
 
     // --------------------------------------------------------------------------------------------

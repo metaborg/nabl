@@ -25,6 +25,13 @@ public class TPrettyPrinter {
     private static int scopeCounter;
     private static final IUnifier NULL_UNIFIER = PersistentUnifier.Immutable.of();
     
+    //Matchers
+    public static final IMatcher<String> SCOPE = Scope.matcher().map(TPrettyPrinter::printScopeFancy);
+    public static final IMatcher<String> VAR = M.var(v -> "?" + printModule(v.getResource()) + "-" + v.getName());
+    public static final IMatcher<String> LABEL = M.cases(
+            M.appl1("Label", M.stringValue(), (t, s) -> s),
+            M.appl0("Decl", t -> "decl"));
+    
     /**
      * Prints the given scope with the module it belongs to and a unique id.
      * 
@@ -123,7 +130,11 @@ public class TPrettyPrinter {
     }
     
     public static String printTerm(ITerm term, IUnifier unifier) {
-        return term(unifier).match(term, unifier).get();
+        try {
+            return term(unifier).match(term, unifier).get();
+        } catch (IllegalStateException ex) {
+            return term.toString();
+        }
     }
     
     /**
@@ -226,14 +237,14 @@ public class TPrettyPrinter {
         //@formatter:off
         return M.cases(
                 M.stringValue(),
-                var(),
-                scope(),
+                LABEL,
+                SCOPE,
                 occurrence(unifier),
                 list(unifier),
                 tuple(unifier),
-                label(),
-                appl(unifier),            //Fallback for an application
-                M.term(t -> t.toString()) //Fallback for any other term
+                appl(unifier),
+                VAR,
+                M.term(ITerm::toString) //Fallback for any other term
         );
         //@formatter:on
     }
@@ -245,9 +256,7 @@ public class TPrettyPrinter {
     }
     
     public static IMatcher<String> label() {
-        return M.cases(
-                M.appl1("Label", M.stringValue(), (t, s) -> s),
-                M.appl0("Decl", t -> "decl"));
+        return LABEL;
     }
     
     public static IMatcher<String> tuple(IUnifier unifier) {
@@ -263,11 +272,11 @@ public class TPrettyPrinter {
     }
     
     public static IMatcher<String> var() {
-        return M.var(v -> "?" + printModule(v.getResource()) + "-" + v.getName());
+        return VAR;
     }
     
     public static IMatcher<String> scope() {
-        return Scope.matcher().map(TPrettyPrinter::printScopeFancy);
+        return SCOPE;
     }
     
     //---------------------------------------------------------------------------------------------
@@ -281,7 +290,12 @@ public class TPrettyPrinter {
     public static List<String> convertList(List<? extends ITerm> list, IUnifier unifier) {
         List<String> tbr = new ArrayList<>(list.size());
         for (ITerm term : list) {
-            tbr.add(term(unifier).match(term, unifier).get());
+            try {
+                tbr.add(term(unifier).match(term, unifier).get());
+            } catch (IllegalStateException ex) {
+                System.err.println("Term is not ground: " + ex);
+                tbr.add(term.toString());
+            }
         }
         return tbr;
     }
