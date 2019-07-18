@@ -282,6 +282,8 @@ public abstract class IncrementalStrategy {
                     return new BaselineIncrementalStrategy();
                 case "query":
                     return new QueryIncrementalStrategy();
+                case "name":
+                    return new NameIncrementalStrategy();
                 //TODO Add more strategies here
                 default:
                     return null;
