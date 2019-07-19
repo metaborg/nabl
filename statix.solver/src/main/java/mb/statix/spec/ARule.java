@@ -25,6 +25,8 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CExists;
+import mb.statix.constraints.CFalse;
+import mb.statix.constraints.CTrue;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
@@ -59,6 +61,9 @@ public abstract class ARule implements IRule {
 
     @Override
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+        if (body() instanceof CTrue) return Optional.of(true);
+        if (body() instanceof CFalse) return Optional.of(false);
+        
         // 1. Create arguments
         final ImmutableList.Builder<ITermVar> argsBuilder = ImmutableList.builder();
         for(int i = 0; i < params().size(); i++) {
