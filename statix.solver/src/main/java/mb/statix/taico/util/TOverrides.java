@@ -14,7 +14,7 @@ import mb.statix.taico.solver.concurrent.locking.DummyReadWriteLock;
 
 public class TOverrides {
     /** Redirect STX_solve_constraint to MSTX_solve_constraint. */
-    public static volatile boolean MODULES_OVERRIDE = true;
+    public static volatile boolean MODULES_OVERRIDE = false;
     /** If the log level should be overridden to the value below. */
     public static volatile boolean OVERRIDE_LOGLEVEL = true;
     /** The log level to use, has no effect if OVERRIDE_LOGLEVEL is false. */
@@ -23,6 +23,14 @@ public class TOverrides {
     public static volatile boolean CONCURRENT = false;
     /** The number of threads for concurrency. Has no effect if CONCURRENT is false. */
     public static volatile int THREADS = 4;
+    
+    /** If a scope graph should be generated after a solve_constraint call. */
+    public static volatile boolean OUTPUT_SCOPE_GRAPH_SINGLE = true;
+    /** If a scope graph should be generated after a solve_multi_file call. */
+    public static volatile boolean OUTPUT_SCOPE_GRAPH_MULTI = true;
+    
+    /** If a diff should be generated after an incremental analysis. */
+    public static volatile boolean OUTPUT_DIFF = true;
     
     /**
      * If true, the observer mechanism is used for own critical edges.

@@ -30,6 +30,7 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.MChange;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
+import mb.statix.taico.scopegraph.diff.Diff;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
@@ -140,6 +141,8 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             throw new RuntimeException(e);
         }
         TTimings.endPhase("solving");
+        
+        if (OUTPUT_DIFF) Diff.diff(initial.state().owner().getId(), newContext, oldContext, true).print(System.out);
         
         TTimings.startPhase("commit changes");
         newContext.commitChanges();

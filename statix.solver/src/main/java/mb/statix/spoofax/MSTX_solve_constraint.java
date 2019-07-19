@@ -71,20 +71,17 @@ public class MSTX_solve_constraint extends StatixPrimitive {
         TTimings.endPhase("init");
         
         // @formatter:off
-        return M.cases(
+        Optional<ITerm> tbr = M.cases(
             constraintMatcher.map(solveConstraint::apply),
             M.listElems(constraintMatcher).map(vars_constraints -> {
                 return B.newList(vars_constraints.stream().map(solveConstraint::apply).collect(Collectors.toList()));
             })
         ).match(term);
         // @formatter:on
-//        final Tuple3<String, List<ITermVar>, Set<IConstraint>> vars_constraint = M
-//                .tuple3(M.stringValue(), M.listElems(StatixTerms.varTerm()), StatixTerms.constraints(spec.labels()),
-//                        (t, r, vs, c) -> ImmutableTuple3.of(r, vs, c))
-//                .match(term).orElseThrow(() -> new InterpreterException("Expected constraint."));
-//
-//        final ITerm resultTerm = solveConstraint(spec, vars_constraint._1(), vars_constraint._2(), vars_constraint._3(), debug);
-//        return Optional.of(resultTerm);
+        
+        if (OUTPUT_SCOPE_GRAPH_SINGLE) TDebug.outputScopeGraph();
+        
+        return tbr;
     }
 
     private ITerm solveConstraint(Spec spec, String resource, IConstraint constraint,

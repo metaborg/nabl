@@ -49,6 +49,8 @@ public class MSTX_solve_multi_project extends StatixPrimitive {
         final List<ISolverResult> results = M.listElems(M.blobValue(ISolverResult.class)).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results, but was " + term));
 
+        if (TOverrides.OUTPUT_SCOPE_GRAPH_MULTI) TDebug.outputScopeGraph();
+        
         final MSolverResult aggregate = aggregateResults(initial, results);
         final ITerm resultTerm = B.newBlob(aggregate);
         return Optional.of(resultTerm);
