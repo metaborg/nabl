@@ -153,11 +153,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
      */
     protected void scheduleModules(Map<IModule, IConstraint> modules) {
         addSolver(root);
-        for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
-            //childSolver sets the solver on the state and adds it
-            ModuleSolver parentSolver = context.getState(entry.getKey().getParentId()).solver();
-            parentSolver.childSolver(entry.getKey().getCurrentState(), entry.getValue());
-        }
+        context.getIncrementalManager().startFirstPhase(modules);
     }
     
     // --------------------------------------------------------------------------------------------
