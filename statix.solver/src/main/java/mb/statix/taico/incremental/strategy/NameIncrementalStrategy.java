@@ -53,7 +53,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
             IChangeSet changeSet,
             Map<String, IConstraint> moduleConstraints) {
         Map<IModule, IConstraint> newModules = new HashMap<>();

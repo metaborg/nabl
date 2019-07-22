@@ -110,9 +110,8 @@ public abstract class IncrementalStrategy {
     //---------------------------------------------------------------------------------------------
 
     /**
-     * Creates / reuses the modules from the given map from module name to constraints.
-     * This method assumes that each module has 1 constraint which will be used as initialization
-     * reason for the module.
+     * Creates file level modules from the given map of module names to constraints. This method
+     * can reuse existing modules where convenient.
      * <p>
      * All modules in the returned map will have a solver created for them, all modules that are
      * not in the map will be available, but won't be actively solving themselves.
@@ -132,7 +131,7 @@ public abstract class IncrementalStrategy {
      * 
      * @see SolverContext#getPhase()
      */
-    public abstract Map<IModule, IConstraint> createModulesForPhase(SolverContext context,
+    public abstract Map<IModule, IConstraint> createInitialModules(SolverContext context,
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
     
     /**

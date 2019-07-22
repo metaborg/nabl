@@ -20,7 +20,6 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
@@ -126,33 +125,139 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
             throws InterruptedException {
         init(strategy, state, null, debug);
         
-        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
+        Map<IModule, IConstraint> modules = strategy.createInitialModules(context, changeSet, constraints);
         
         if (context.isInitPhase()) context.finishInitPhase();
         scheduleModules(modules);
-        
-        try {
-            runToCompletion();
-        } finally {
-            deinit();
-        }
+        runToCompletion();
         
         return collectResults(modules.keySet());
     }
     
     /**
-     * Schedules the given modules by creating solvers for them.
+     * Makes sure this coordinator progresses until completion. This method will call
+     * finishRound to determine if more rounds are requested.
+     * <p>
+     * Whenever this method returns, {@link #finishSolving()} will have been called.
+     * 
+     * @throws InterruptedException
+     *      If the coordinator is interrupted while running.
+     */
+    protected abstract void runToCompletion() throws InterruptedException;
+    
+    /**
+     * Schedules the given modules by creating solvers for them. Also schedules the root solver.
      * 
      * @param modules
      *      the modules to schedule
      */
     protected void scheduleModules(Map<IModule, IConstraint> modules) {
+        addSolver(root);
         for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             //childSolver sets the solver on the state and adds it
             ModuleSolver parentSolver = context.getState(entry.getKey().getParentId()).solver();
             parentSolver.childSolver(entry.getKey().getCurrentState(), entry.getValue());
         }
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Phasing
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Finishes the current phase. If another phase is started, this method will return true.
+     * Otherwise, this method returns false.
+     * 
+     * @return
+     *      true if we want another phase of solving, false otherwise
+     */
+    protected boolean finishPhase() {
+        Map<IModule, MSolverResult> results = getResults();
+        Collection<ModuleSolver> solvers = getSolvers();
+        
+        Set<ModuleSolver> finishedSolvers = new HashSet<>();
+        Set<ModuleSolver> failedSolvers = new HashSet<>();
+        
+        for (Entry<IModule, MSolverResult> result : results.entrySet()) {
+            if (result.getValue().hasErrors()) {
+                failedSolvers.add(result.getKey().getCurrentState().solver());
+            } else if (result.getValue().hasDelays()) {
+                System.err.println("FATAL:");
+                throw new IllegalStateException("It should not be possible for a solver to be finished and have delays!");
+            } else {
+                finishedSolvers.add(result.getKey().getCurrentState().solver());
+            }
+        }
+        
+        //All the solvers that are still remaining are stuck
+        Set<ModuleSolver> stuckSolvers = new HashSet<>(solvers);
+        
+        int failed = (int) results.values().stream().filter(r -> r.hasErrors()).count();
+        debug.info("Phase {} finished: {} done, {} failed, {} stuck",
+                context.getPhase(),
+                results.size() - failed,
+                failed,
+                solvers.size());
+        
+        if (failed > 0) {
+            debug.info("Failed solvers:");
+            IDebugContext sub = debug.subContext();
+            results.entrySet().stream().filter(e -> e.getValue().hasErrors()).forEach(e -> sub.info(e.getKey().getId()));
+        }
+        
+        if (!solvers.isEmpty()) {
+            debug.info("Stuck solvers:");
+            IDebugContext sub = debug.subContext();
+            for (ModuleSolver solver : solvers) {
+                sub.info(solver.getOwner().getId());
+                
+                results.put(solver.getOwner(), solver.finishSolver());
+            }
+            
+            solvers.clear();
+        }
+        
+        if (!startNextPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) return false;
+        
+        debug.info("Starting new phase: {}", context.getPhase());
+        return true;
+    }
+    
+    /**
+     * Called after the last phase has finished.
+     * <p>
+     * Finishes the solving process by outputting debug info and more.
+     */
+    protected void finishSolving() {
+        deinit();
+        logDebugInfo(debug);
+    }
+    
+    /**
+     * Checks if we want to execute another phase. If we do, this method starts the next phase and
+     * returns true. Otherwise, this method returns false.
+     * 
+     * @param finishedSolvers
+     *      finished solvers
+     * @param failedSolvers
+     *      failed solvers
+     * @param stuckSolvers
+     *      stuck solvers
+     * @param results
+     *      results of the phase
+     * 
+     * @return
+     *      true if another phase has started, false otherwise
+     */
+    protected boolean startNextPhase(
+            Set<ModuleSolver> finishedSolvers, Set<ModuleSolver> failedSolvers,
+            Set<ModuleSolver> stuckSolvers, Map<IModule, MSolverResult> results) {
+        return context.getIncrementalManager().finishPhase(finishedSolvers, failedSolvers, stuckSolvers, results);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Gather results
+    // --------------------------------------------------------------------------------------------
     
     /**
      * Creates a map with all the results from module <b>NAME</b> to solver result.
@@ -188,14 +293,6 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     }
     
     /**
-     * Makes sure this coordinator progresses until completion, and then returns.
-     * 
-     * @throws InterruptedException
-     *      If the coordinator is interrupted while running.
-     */
-    protected abstract void runToCompletion() throws InterruptedException;
-    
-    /**
      * Aggregates results of all the solvers into one SolverResult.
      * 
      * @return
@@ -218,90 +315,9 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         return MSolverResult.of(getRootState(), errors, delays, existentials);
     }
     
-    /**
-     * Logs debug output.
-     * 
-     * @param debug
-     *      the debug context to log to
-     */
-    public void logDebugInfo(IDebugContext debug) {
-        if (!COORDINATOR_SUMMARY) return;
-        
-        debug.info("Debug output.");
-        debug.info("Module hierarchy:");
-        printModuleHierarchy(getRootState().owner(), debug.subContext());
-        
-        LazyDebugContext success = new LazyDebugContext(debug.subContext());
-        LazyDebugContext fail = new LazyDebugContext(debug.subContext());
-        LazyDebugContext stuck = new LazyDebugContext(debug.subContext());
-        LazyDebugContext failDetails = new LazyDebugContext(debug.subContext().subContext());
-        LazyDebugContext stuckDetails = new LazyDebugContext(debug.subContext().subContext());
-        
-        for (Entry<IModule, MSolverResult> entry : getResults().entrySet()) {
-            String id = entry.getKey().getId();
-            if (entry.getValue().hasErrors()) {
-                fail.info(id);
-                if (COORDINATOR_EXTENDED_SUMMARY) {
-                    failDetails.info("[{}] Failed constraints:", id);
-                    IDebugContext sub = failDetails.subContext();
-                    for (IConstraint c : entry.getValue().errors()) {
-                        sub.info(c.toString());
-                    }
-                }
-            } else if (entry.getValue().hasDelays()) {
-                stuck.info(id);
-                if (COORDINATOR_EXTENDED_SUMMARY) {
-                    stuckDetails.info("[{}] Stuck constraints:", id);
-                    IDebugContext sub = stuckDetails.subContext();
-                    for (Entry<IConstraint, Delay> e : entry.getValue().delays().entrySet()) {
-                        Delay delay = e.getValue();
-                        if (!delay.vars().isEmpty()) {
-                            sub.info("on vars {}: {}", delay.vars(), e.getKey());
-                        } else if (!delay.criticalEdges().isEmpty()) {
-                            sub.info("on edges {}: {}", delay.criticalEdges(), e.getKey());
-                        } else {
-                            sub.info("on unknown: {}", e.getKey());
-                        }
-                    }
-                }
-            } else {
-               success.info(id); 
-            }
-        }
-        
-        debug.info("Finished modules:");
-        success.commit();
-        
-        debug.info("Stuck modules:");
-        stuck.commit();
-        
-        debug.info("Failed modules:");
-        fail.commit();
-        
-        if (COORDINATOR_EXTENDED_SUMMARY) {
-            debug.info("Stuck output:");
-            stuckDetails.commit();
-            
-            debug.info("Failed output:");
-            failDetails.commit();
-        }
-    }
-    
-    /**
-     * Prints the module hierarchy to the given context, starting at the given module.
-     * 
-     * @param module
-     *      the module to start at
-     * @param context
-     *      the debug context to print to
-     */
-    public void printModuleHierarchy(IModule module, IDebugContext context) {
-        context.info("{}: dependencies={}", module.getId(), module.getDependencies());
-        IDebugContext sub = context.subContext();
-        for (IModule child : module.getChildren()) {
-            printModuleHierarchy(child, sub);
-        }
-    }
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
     
     /**
      * Creates a debug context for the coordinator.

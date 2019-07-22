@@ -1,5 +1,6 @@
 package mb.statix.taico.incremental.manager;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,6 +9,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.QueryDetails;
@@ -36,7 +38,8 @@ public class QueryIncrementalManager extends IncrementalManager {
     }
 
     @Override
-    public boolean finishPhase() {
+    public boolean finishPhase(Set<ModuleSolver> finishedSolvers, Set<ModuleSolver> failedSolvers,
+            Set<ModuleSolver> stuckSolvers, Map<IModule, MSolverResult> results) {
         //TODO Check all the modules that are not done at this point, and do the setup for the next phase (expand the set of constraints for solving, to make more progress)
         throw new UnsupportedOperationException("TODO Implement phase switching. Do the setup for the next phase here.");
     }

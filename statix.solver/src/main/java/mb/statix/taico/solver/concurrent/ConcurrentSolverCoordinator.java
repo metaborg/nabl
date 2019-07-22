@@ -3,16 +3,13 @@ package mb.statix.taico.solver.concurrent;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
@@ -24,9 +21,8 @@ import mb.statix.taico.solver.state.IMState;
 
 public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());
-    private final Map<ModuleSolver, SolverRunnable> failedSolvers = Collections.synchronizedMap(new HashMap<>());
     private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
-    private final ProgressCounter progressCounter = new ProgressCounter(this::onFinished);
+    private final ProgressCounter progressCounter = new ProgressCounter(this::onFinishPhase);
     protected final ExecutorService executors;
     private StuckDetector stuckDetector;
     
@@ -85,6 +81,12 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         runner.schedule();
     }
     
+    /**
+     * Called by the runnable of a solver whenever that solver finishes successfully.
+     * 
+     * @param solver
+     *      the solver
+     */
     private void finishSuccessfulSolver(ModuleSolver solver) {
         synchronized (solvers) {
             SolverRunnable runnable = solvers.remove(solver);
@@ -92,13 +94,17 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
                 debug.warn("[{}] FinishSolver: ignoring, solver already removed", solver.getOwner().getId());
                 return;
             }
-            
-            failedSolvers.put(solver, runnable);
         }
         
         results.put(solver.getOwner(), solver.finishSolver());
     }
     
+    /**
+     * Called by the runnable of a solver whenever that solver finishes unsuccessfully.
+     * 
+     * @param solver
+     *      the solver
+     */
     private void finishFailedSolver(ModuleSolver solver) {
         synchronized (solvers) {
             SolverRunnable runnable = solvers.remove(solver);
@@ -126,27 +132,6 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     }
     
     @Override
-    public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state,
-            Map<String, IConstraint> constraints, IDebugContext debug) throws InterruptedException {
-        init(strategy, state, null, debug);
-        
-        Map<IModule, IConstraint> modules = strategy.createModulesForPhase(context, changeSet, constraints);
-        
-        if (context.isInitPhase()) context.finishInitPhase();
-        
-        scheduleModules(modules);
-        addSolver(root);
-        
-        try {
-            runToCompletion();
-        } finally {
-            deinit();
-        }
-        
-        return collectResults(modules.keySet());
-    }
-    
-    @Override
     protected void scheduleModules(Map<IModule, IConstraint> modules) {
         //Increase the progress counter to ensure modules do not finish before we are done scheduling them.
         progressCounter.switchToPending();
@@ -157,79 +142,49 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         }
     }
     
-    private void onFinished() {
-        finishSolving(debug);
-    }
-    
     /**
-     * Performs the last part of solving, e.g. collecting results and logging debug information.
+     * Called whenever the current phase is finished.
+     */
+    private void onFinishPhase() {
+        if (!finishPhase()) {
+            finishSolving();
+        }
+    }
+
+    @Override
+    protected boolean startNextPhase(Set<ModuleSolver> finishedSolvers, Set<ModuleSolver> failedSolvers,
+            Set<ModuleSolver> stuckSolvers, Map<IModule, MSolverResult> results) {
+        progressCounter.switchToPending();
+        if (!context.getIncrementalManager().finishPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) return false;
+        progressCounter.switchToDone();
+        return true;
+    }
+
+    /**
+     * Finishes the solving process. Should only be called after finishing a round.
      * 
      * @param debug
      *      the debug context to log to
-     * 
-     * @return
-     *      the solver result
      */
-    private void finishSolving(IDebugContext debug) {
-        //We might want to do another round, prevent triggering this code multiple times.
-        progressCounter.switchToPending();
-
-        //Check for another round
-        if (context.getIncrementalManager().finishPhase()) {
-            //We want to do another round
-            if (solvers.isEmpty()) {
-                debug.info("Phase done: all solvers finished successfully!");
-            } else {
-                debug.info("Phase done: solving not completed successfully, {} unsuccessful solvers: ", solvers.size());
-            }
-            
-            //Recycle failed solvers and runnables
-            synchronized (failedSolvers) {
-                for (Entry<ModuleSolver, SolverRunnable> entry : failedSolvers.entrySet()) {
-                    solvers.put(entry.getKey(), entry.getValue());
-                    
-                    entry.getValue().restart();
-                }
-                
-                failedSolvers.clear();
-            }
-            
-            progressCounter.switchToDone();
-            return;
-        }
-        deinit();
-        
-        //If we end up here, none of the solvers is still able to make progress
-        if (solvers.isEmpty()) {
-            //All solvers are done!
-            debug.info("All solvers finished successfully!");
-        } else {
-            debug.warn("Solving failed, {} unsuccessful solvers: ", solvers.size());
-            IDebugContext sub = debug.subContext();
-            for (ModuleSolver solver : getSolvers()) {
-                sub.warn(solver.getOwner().getId());
-                
-                results.put(solver.getOwner(), solver.finishSolver());
-            }
-            
-            solvers.clear();
-        }
-        
-        logDebugInfo(debug);
+    @Override
+    protected void finishSolving() {
+        super.finishSolving();
         
         finalResult = aggregateResults();
-        if (onFinished != null) {
-            try {
-                onFinished.accept(finalResult);
-            } catch (Throwable t) {
-                debug.error("On finished consumer threw an exception: {}", t.getMessage());
+        try {
+            if (onFinished != null) {
+                try {
+                    onFinished.accept(finalResult);
+                } catch (Throwable t) {
+                    debug.error("On finished consumer threw an exception: {}", t.getMessage());
+                }
+            }
+        } finally {
+            //Notify any thread that is waiting for the final result that it has been obtained.
+            synchronized (this) {
+                notify();
             }
         }
-        synchronized (this) {
-            notify();
-        }
-        
-        return;
     }
 
     @Override
