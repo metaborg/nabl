@@ -62,13 +62,13 @@ public class QueryChangeSetTest extends IChangeSetTest {
         
         QueryChangeSet changeSet = new QueryChangeSet(context, empty(), list("A"), empty());
         assertTrue(changeSet.hasDirtyChild().contains(global));
-        assertTrue(changeSet.hasClirtyChild().contains(global));
-        checkFlags(global, flag(DIRTYCHILD, 1, a), flag(CLIRTYCHILD, 2, b));
+        assertTrue(changeSet.hasUnsureChild().contains(global));
+        checkFlags(global, flag(DIRTYCHILD, 1, a), flag(UNSURECHILD, 2, b));
         
         assertTrue(changeSet.dirty().contains(a));
         checkFlags(a, flag(DIRTY, 1));
         
-        assertTrue(changeSet.clirty().contains(b));
-        checkFlags(b, flag(CLIRTY, 1, a), flag(CLIRTY, 2, global));
+        assertTrue(changeSet.unsure().contains(b));
+        checkFlags(b, flag(UNSURE, 1, a), flag(UNSURE, 2, global));
     }
 }

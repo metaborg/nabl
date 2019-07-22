@@ -313,6 +313,7 @@ public class ModuleSolver implements IOwnable {
         return true;
     }
     
+    //TODO Remove
     /**
      * @param scope
      *      the scope of the edge

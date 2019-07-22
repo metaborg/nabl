@@ -31,10 +31,10 @@ public enum ModuleCleanliness {
     DIRTYCHILD,
     
     /** Indicates that we are unsure if the module is dirty or not. */
-    CLIRTY,
+    UNSURE,
     
-    /** Indicates that the module has a clirty child. */
-    CLIRTYCHILD,
+    /** Indicates that the module has a child with the unsure flag. */
+    UNSURECHILD,
     
     /** Indicates that the module is guaranteed to be clean. */
     CLEAN;

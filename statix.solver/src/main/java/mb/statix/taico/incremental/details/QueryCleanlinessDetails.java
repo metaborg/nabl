@@ -39,8 +39,8 @@ public class QueryCleanlinessDetails implements CleanlinessDetails {
      */
     public boolean isPotentiallyDirty() {
         switch (cleanliness) {
-            case CLIRTY:
-            case CLIRTYCHILD:
+            case UNSURE:
+            case UNSURECHILD:
             case CHILDOFDIRTY:
             case DIRTYCHILD:
                 return true;
@@ -56,13 +56,13 @@ public class QueryCleanlinessDetails implements CleanlinessDetails {
     
     public ModuleCleanliness dirtynessDependsOnReason() {
         switch (cleanliness) {
-            case CLIRTY:
+            case UNSURE:
                 //Eventually
                 return DIRTY;
             case DIRTYCHILD:
                 return DIRTY;
-            case CLIRTYCHILD:
-                return CLIRTY;
+            case UNSURECHILD:
+                return UNSURE;
             case DIRTY:
                 return DIRTY;
             default:

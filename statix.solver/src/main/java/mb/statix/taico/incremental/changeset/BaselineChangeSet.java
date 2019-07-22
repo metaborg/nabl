@@ -20,7 +20,7 @@ public class BaselineChangeSet extends AChangeSet {
     
     private static final ModuleCleanliness[] SUPPORTED = new ModuleCleanliness[] {
             CLEAN,
-            CLIRTY,
+            UNSURE,
             DELETED,
             DIRTY,
             NEW
@@ -42,17 +42,17 @@ public class BaselineChangeSet extends AChangeSet {
         new HashSet<>(dirty()).stream().flatMap(m -> m.getDescendants()).forEach(
                 m -> add(new Flag(DIRTY, 1), FlagCondition.OverrideFlag, m));
         
-        //2. Whenever there are added modules, flag their parent as clirty
+        //2. Whenever there are added modules, flag their parent as unsure
         if (!added().isEmpty()) {
-            add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, oldContext.getRootModule());
+            add(new Flag(UNSURE, 1), FlagCondition.FlagIfClean, oldContext.getRootModule());
         }
         
-        //3. Compute clirty = all modules that depend on dirty, removed or clirty modules or that have them as parent
-        //I need to flag all modules that depend on the dirty modules (recursively) as possibly dirty (clirty)
+        //3. Compute unsure = all modules that depend on dirty, removed or unsure modules or that have them as parent
+        //I need to flag all modules that depend on the dirty modules (recursively) as possibly dirty (unsure)
         //Using a DFS algorithm with the reverse dependency edges in the graph
         Set<IModule> visited = new HashSet<>(dirty());
         visited.addAll(removed());
-        visited.addAll(clirty());
+        visited.addAll(unsure());
         LinkedList<IModule> stack = new LinkedList<>(visited);
         while (!stack.isEmpty()) {
             IModule module = stack.pop();
@@ -67,7 +67,7 @@ public class BaselineChangeSet extends AChangeSet {
                 if (!visited.add(depModule)) continue;
                 if (depModule.getTopCleanliness() != CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered clean module " + depModule);
 
-                add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, depModule);
+                add(new Flag(UNSURE, 1), FlagCondition.FlagIfClean, depModule);
                 stack.push(depModule);
             }
             
@@ -76,7 +76,7 @@ public class BaselineChangeSet extends AChangeSet {
                 IModule parent = Scopes.getOwnerUnchecked(oldContext, scope);
                 if (!visited.add(parent)) continue;
 
-                add(new Flag(CLIRTY, 1), FlagCondition.FlagIfClean, parent);
+                add(new Flag(UNSURE, 1), FlagCondition.FlagIfClean, parent);
                 stack.push(parent);
             }
         }
@@ -87,7 +87,7 @@ public class BaselineChangeSet extends AChangeSet {
         System.err.println("Based on the files, we identified:");
         System.err.println("  Removed:  (" + removed().size()        + ") " + removedIds());
         System.err.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
-        System.err.println("  Clirty:   (" + clirty().size()         + ") " + clirtyIds());
+        System.err.println("  Unsure:   (" + unsure().size()         + ") " + unsureIds());
         System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
     }
 }

@@ -55,8 +55,8 @@ public class FlaggableTest {
      */
     @Test
     public void testGetTopFlag3() {
-        Flag flag1 = new Flag(CLIRTY, 2);
-        Flag flag2 = new Flag(CLIRTY, 1);
+        Flag flag1 = new Flag(UNSURE, 2);
+        Flag flag2 = new Flag(UNSURE, 1);
         flaggable.addFlag(flag1);
         flaggable.addFlag(flag2);
         assertEquals(flaggable.getTopFlag(), flag2);
@@ -78,8 +78,8 @@ public class FlaggableTest {
 
     @Test
     public void testAddFlagIfNotSameCause() {
-        Flag flag1 = new Flag(CLIRTY, 1, "A");
-        Flag flag2 = new Flag(CLIRTYCHILD, 1, "A");
+        Flag flag1 = new Flag(UNSURE, 1, "A");
+        Flag flag2 = new Flag(UNSURECHILD, 1, "A");
         flaggable.addFlag(flag1);
         assertFalse(flaggable.addFlagIfNotSameCause(flag2));
         assertEquals(1, flaggable.getFlags().size());

@@ -14,7 +14,7 @@ public class BaselineChangeSetTest extends IChangeSetTest {
     public void testAddedOneFromEmpty() {
         BaselineChangeSet changeSet = new BaselineChangeSet(context, list("A"), empty(), empty());
         assertTrue(changeSet.added().contains("A"));
-        assertEquals(global.getTopFlag(), flag(CLIRTY, 1));
+        assertEquals(global.getTopFlag(), flag(UNSURE, 1));
     }
     
     /**
@@ -58,13 +58,13 @@ public class BaselineChangeSetTest extends IChangeSetTest {
         addDependency(b, global);
         
         BaselineChangeSet changeSet = new BaselineChangeSet(context, empty(), list("A"), empty());
-        checkFlags(global, flag(CLIRTY, 1));
+        checkFlags(global, flag(UNSURE, 1));
         
         assertTrue(changeSet.dirty().contains(a));
         checkFlags(a, flag(DIRTY, 1));
         
-        assertTrue(changeSet.clirty().contains(b));
-        checkFlags(b, flag(CLIRTY, 1));
+        assertTrue(changeSet.unsure().contains(b));
+        checkFlags(b, flag(UNSURE, 1));
     }
 
 }

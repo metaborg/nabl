@@ -21,8 +21,8 @@ public class QueryChangeSet extends AChangeSet {
     
     private static final ModuleCleanliness[] SUPPORTED = new ModuleCleanliness[] {
             CLEAN,
-            CLIRTY,
-            CLIRTYCHILD,
+            UNSURE,
+            UNSURECHILD,
             DELETED,
             DIRTY,
             DIRTYCHILD,
@@ -68,36 +68,36 @@ public class QueryChangeSet extends AChangeSet {
         //(Only if the parent does not have the removed flag already)
         
         
-        //4. Flag the dependencies on Dirty and Removed modules as Clirty (level 1)
+        //4. Flag the dependencies on Dirty and Removed modules as Unsure (level 1)
         for (IModule dirty : Sets.union(dirty(), removed())) {
             final int dirtyLevel = dirty.getTopLevel();
             final String dirtyId = dirty.getId();
             //TODO Store the queries in the reason?
             dirty.getDependants().keySet().stream().forEach(
-                    m -> add(new Flag(CLIRTY, dirtyLevel, dirtyId), FlagCondition.AddFlag, m));
+                    m -> add(new Flag(UNSURE, dirtyLevel, dirtyId), FlagCondition.AddFlag, m));
         }
         
-        //5. Flag the dependencies on DirtyChild and NewChild as Clirty (level 2)
+        //5. Flag the dependencies on DirtyChild and NewChild as Unsure (level 2)
         for (IModule dirtyChild : Sets.union(hasDirtyChild(), hasNewChild())) {
             final int dirtyLevel = dirtyChild.getTopLevel();
             final String dirtyId = dirtyChild.getId();
             //TODO Store the queries in the reason?
             dirtyChild.getDependants().keySet().stream().forEach(
-                    m -> add(new Flag(CLIRTY, dirtyLevel + 1, dirtyId), FlagCondition.AddFlag, m));
+                    m -> add(new Flag(UNSURE, dirtyLevel + 1, dirtyId), FlagCondition.AddFlag, m));
         }
         
-        //6. Flag Clirtyness of higher levels (depends on clirty of lower levels).
+        //6. Flag Unsureness of higher levels (depends on unsure of lower levels).
         
-        //I need to flag all modules that depend on the clirty modules with increasing levels of clirtiness
+        //I need to flag all modules that depend on the unsure modules with increasing levels of clirtiness
         //Using a BFS algorithm with the reverse dependency edges in the graph
         //This algorithm visits each module at most once.
         {
-            LinkedList<IModule> queue = new LinkedList<>(clirty());
+            LinkedList<IModule> queue = new LinkedList<>(unsure());
             while (!queue.isEmpty()) {
                 IModule module = queue.removeFirst();
                 final Flag moduleFlag = module.getTopFlag();
                 //TODO Should this condition be removed?
-                if (moduleFlag.getCleanliness() != CLIRTY && moduleFlag.getCleanliness() != CLIRTYCHILD) continue;
+                if (moduleFlag.getCleanliness() != UNSURE && moduleFlag.getCleanliness() != UNSURECHILD) continue;
                 final int moduleLevel = moduleFlag.getLevel();
                 final String moduleId = module.getId();
                 
@@ -109,7 +109,7 @@ public class QueryChangeSet extends AChangeSet {
                     
                     Flag oldFlag = depModule.getTopFlag();
                     //If we already have a flag with the same cause, we don't want to visit this module again
-                    if (!add(new Flag(CLIRTY, moduleLevel + 1, moduleId), FlagCondition.AddFlagIfNotSameCause, depModule)) {
+                    if (!add(new Flag(UNSURE, moduleLevel + 1, moduleId), FlagCondition.AddFlagIfNotSameCause, depModule)) {
                         continue;
                     }
                     
@@ -117,11 +117,11 @@ public class QueryChangeSet extends AChangeSet {
                     if (oldFlag != depModule.getTopFlag()) queue.addLast(depModule);
                 }
                 
-                //Add the clirtychild flag AFTER adding the clirty flags.
+                //Add the unsurechild flag AFTER adding the unsure flags.
                 for (Scope scope : module.getScopeGraph().getParentScopes()) {
                     IModule parent = Scopes.getOwnerUnchecked(oldContext, scope);
                     Flag oldFlag = parent.getTopFlag();
-                    if (!add(new Flag(CLIRTYCHILD, moduleLevel + 1, moduleId), FlagCondition.AddFlagIfNotSameCause, parent)) {
+                    if (!add(new Flag(UNSURECHILD, moduleLevel + 1, moduleId), FlagCondition.AddFlagIfNotSameCause, parent)) {
                         continue;
                     }
                     
@@ -139,8 +139,8 @@ public class QueryChangeSet extends AChangeSet {
         System.err.println("  NewChld:  (" + hasNewChild().size()    + ") " + hasNewChildIds());
         System.err.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
         System.err.println("  DirtyCh:  (" + hasDirtyChild().size()  + ") " + hasDirtyChildIds());
-        System.err.println("  Clirty:   (" + clirty().size()         + ") " + clirtyIds());
-        System.err.println("  ClirtyCh: (" + hasClirtyChild().size() + ") " + hasClirtyChildIds());
+        System.err.println("  Unsure:   (" + unsure().size()         + ") " + unsureIds());
+        System.err.println("  UnsureCh: (" + hasUnsureChild().size() + ") " + hasUnsureChildIds());
         System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
         
     }

@@ -48,16 +48,16 @@ public interface IChangeSet extends Serializable {
     }
 
     // Potentially unsupported
-    default Set<IModule> clirty() throws UnsupportedOperationException {
-        return getModules(CLIRTY);
+    default Set<IModule> unsure() throws UnsupportedOperationException {
+        return getModules(UNSURE);
     }
 
     default Set<IModule> hasDirtyChild() throws UnsupportedOperationException {
         return getModules(DIRTYCHILD);
     }
     
-    default Set<IModule> hasClirtyChild() throws UnsupportedOperationException {
-        return getModules(CLIRTYCHILD);
+    default Set<IModule> hasUnsureChild() throws UnsupportedOperationException {
+        return getModules(UNSURECHILD);
     }
     
     default Set<IModule> childOfDirty() throws UnsupportedOperationException {
@@ -89,16 +89,16 @@ public interface IChangeSet extends Serializable {
     }
 
     // Potentially unsupported
-    default Set<String> clirtyIds() throws UnsupportedOperationException {
-        return getIds(CLIRTY);
+    default Set<String> unsureIds() throws UnsupportedOperationException {
+        return getIds(UNSURE);
     }
 
     default Set<String> hasDirtyChildIds() throws UnsupportedOperationException {
         return getIds(DIRTYCHILD);
     }
 
-    default Set<String> hasClirtyChildIds() throws UnsupportedOperationException {
-        return getIds(CLIRTYCHILD);
+    default Set<String> hasUnsureChildIds() throws UnsupportedOperationException {
+        return getIds(UNSURECHILD);
     }
     
     default Set<String> hasNewChildIds() throws UnsupportedOperationException {
