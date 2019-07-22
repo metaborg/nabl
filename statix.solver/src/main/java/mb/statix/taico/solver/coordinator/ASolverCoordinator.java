@@ -4,6 +4,7 @@ import static mb.statix.taico.util.TDebug.*;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -35,7 +36,7 @@ import mb.statix.taico.solver.state.IMState;
  * solving process when multiple modules are used. The coordinator can chooose to solve modules
  * sequentially or in parallel.
  */
-public abstract class ASolverCoordinator {
+public abstract class ASolverCoordinator implements ISolverCoordinator {
     protected ModuleSolver root;
     protected IMState rootState;
     
@@ -44,66 +45,38 @@ public abstract class ASolverCoordinator {
     protected SolverContext context;
     protected ProgressTrackerRunnable progressPrinter;
     
-    /**
-     * @return
-     *      the root solver
-     */
+    @Override
     public ModuleSolver getRootSolver() {
         return root;
     }
     
-    /**
-     * @return
-     *      the state of the root solver
-     */
+    @Override
     public IMState getRootState() {
         return rootState;
     }
     
-    /**
-     * @return
-     *      the root module
-     */
+    @Override
     public IModule getRootModule() {
         return rootState.getOwner();
     }
     
-    /**
-     * Sets the context that is reported to the SolverRunnables.
-     * 
-     * @param context
-     *      the context
-     */
+    @Override
     public void setContext(SolverContext context) {
         this.context = context;
     }
     
-    /**
-     * @return
-     *      the context that this coordinator is currently coordinating
-     */
+    @Override
     public SolverContext getContext() {
         return context;
     }
     
-    /**
-     * @return
-     *      a map containing all the solver results of solvers that have completed
-     */
+    @Override
     public abstract Map<IModule, MSolverResult> getResults();
     
-    /**
-     * @return
-     *      a collection of all solvers
-     */
+    @Override
     public abstract Collection<ModuleSolver> getSolvers();
     
-    /**
-     * Adds the given solver to the collection of solvers.
-     * 
-     * @param solver
-     *      the solver to add
-     */
+    @Override
     public abstract void addSolver(ModuleSolver solver);
     
     /**
@@ -129,53 +102,26 @@ public abstract class ASolverCoordinator {
         }
     }
     
+    /**
+     * Deinitializes the coordinator by stopping the progress tracker.
+     */
     protected void deinit() {
         if (this.progressPrinter != null) {
             this.progressPrinter.stop();
         }
     }
     
-    /**
-     * Solves the given constraints in a modularized fashion.
-     * 
-     * @param state
-     *      the state of the root module
-     * @param constraint
-     *      the constraint to solve
-     * @param debug
-     *      the debug context to log to
-     * 
-     * @return
-     *      the aggregated result of solving
-     * 
-     * @throws InterruptedException
-     *      If solving is interrupted.
-     */
+    // --------------------------------------------------------------------------------------------
+    // Solving
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
     public abstract MSolverResult solve(IMState state, IConstraint constraint, IDebugContext debug) throws InterruptedException;
     
-    /**
-     * Solves the given constraints in a modularized fashion.
-     * 
-     * This method starts the solving process and then returns a future which can be used to 
-     * 
-     * @param state
-     *      the state of the root module
-     * @param constraints
-     *      the constraints to solve
-     * @param debug
-     *      the debug context to log to
-     * @param onFinished
-     *      called whenever solving is finished
-     * 
-     * @return
-     *      a future to get the solve result from
-     * 
-     * @throws UnsupportedOperationException
-     *      If this solver does not support asynchronous solving.
-     */
+    @Override
     public abstract void solveAsync(IMState state, IConstraint constraints, IDebugContext debug, Consumer<MSolverResult> onFinished);
     
-    
+    @Override
     public Map<String, ISolverResult> solve(IncrementalStrategy strategy, IChangeSet changeSet, IMState state, Map<String, IConstraint> constraints, IDebugContext debug)
             throws InterruptedException {
         init(strategy, state, null, debug);

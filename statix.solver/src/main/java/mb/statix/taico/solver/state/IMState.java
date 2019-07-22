@@ -16,7 +16,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.ScopeIdentity;
@@ -63,7 +63,7 @@ public interface IMState extends IOwnable, Serializable, IState {
      * 
      * @see SolverContext#getCoordinator()
      */
-    public default ASolverCoordinator coordinator() {
+    public default ISolverCoordinator coordinator() {
         return SolverContext.context().getCoordinator();
     }
     

@@ -5,7 +5,7 @@ import java.util.Collection;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
 public class ProgressTracker {
@@ -57,7 +57,7 @@ public class ProgressTracker {
             }
         }
         
-        ASolverCoordinator coordinator = SolverContext.context().getCoordinator();
+        ISolverCoordinator coordinator = SolverContext.context().getCoordinator();
         solversRunning = coordinator.getSolvers().size();
         solversComplete = coordinator.getResults().size();
         solversTotal = solversRunning + solversComplete;

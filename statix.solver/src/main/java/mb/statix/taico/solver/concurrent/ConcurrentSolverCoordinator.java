@@ -19,6 +19,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
 public class ConcurrentSolverCoordinator extends ASolverCoordinator {
@@ -55,6 +56,12 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         return results;
     }
     
+    /**
+     * NOTE: Synchronize over the collection if iterating over it while the solving process is
+     * still ongoing to avoid ConcurrentModificationException s.
+     * 
+     * @see ISolverCoordinator#getSolvers()
+     */
     @Override
     public Set<ModuleSolver> getSolvers() {
         return solvers.keySet();

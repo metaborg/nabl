@@ -34,7 +34,7 @@ import mb.statix.taico.scopegraph.diff.Diff;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
-import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.coordinator.SolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
@@ -126,7 +126,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
         TTimings.endPhase("incremental context");
         
-        ASolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
+        ISolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
         newContext.setCoordinator(coordinator); //Sets the coordinator on the context and the context on the coordinator
         
         TTimings.endPhase("init");

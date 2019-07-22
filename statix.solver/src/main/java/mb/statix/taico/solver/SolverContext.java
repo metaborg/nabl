@@ -26,7 +26,7 @@ import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.coordinator.ASolverCoordinator;
+import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
 public class SolverContext implements Serializable {
@@ -36,7 +36,7 @@ public class SolverContext implements Serializable {
     private final Spec spec;
     private final ModuleManager manager = new ModuleManager();
     private final IncrementalManager incrementalManager;
-    private transient ASolverCoordinator coordinator;
+    private transient ISolverCoordinator coordinator;
     private transient SolverContext oldContext;
     private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
@@ -403,11 +403,11 @@ public class SolverContext implements Serializable {
     // Solver coordinator
     // --------------------------------------------------------------------------------------------
     
-    public ASolverCoordinator getCoordinator() {
+    public ISolverCoordinator getCoordinator() {
         return coordinator;
     }
     
-    public void setCoordinator(ASolverCoordinator coordinator) {
+    public void setCoordinator(ISolverCoordinator coordinator) {
         this.coordinator = coordinator;
         coordinator.setContext(this);
     }
