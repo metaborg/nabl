@@ -73,11 +73,6 @@ public class Module implements IModule {
     }
     
     @Override
-    public IModule getParent() {
-        return parentId == null ? null : context().getModuleUnchecked(parentId);
-    }
-    
-    @Override
     public String getParentId() {
         return parentId;
     }

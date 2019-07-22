@@ -46,15 +46,20 @@ public interface IModule extends Flaggable, Serializable {
     
     /**
      * @return
-     *      the parent of this module
-     */
-    IModule getParent();
-    
-    /**
-     * @return
      *      the id of the parent of this module
      */
     String getParentId();
+    
+    /**
+     * Convenience method for getting the parent.
+     * 
+     * @return
+     *      the parent of this module
+     */
+    default IModule getParent() {
+        final String parentId = getParentId();
+        return parentId == null ? null : context().getModuleUnchecked(parentId);
+    }
     
     // --------------------------------------------------------------------------------------------
     // Children convenience
