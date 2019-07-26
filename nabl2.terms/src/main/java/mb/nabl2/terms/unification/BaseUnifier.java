@@ -295,7 +295,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return findTermRecursive(term, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private ITerm findTermRecursive(final ITerm term, final Set<ITermVar> stack,
+    protected ITerm findTermRecursive(final ITerm term, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         return term.match(Terms.cases(
         // @formatter:off
@@ -343,7 +343,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return instance.get();
     }
 
-    private ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
+    protected ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         final ITermVar rep = findRep(var);
         final ITerm instance;
@@ -380,7 +380,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return equalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private MaybeNotInstantiatedBool equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
+    protected MaybeNotInstantiatedBool equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
             final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         // @formatter:off
         return left.match(Terms.<MaybeNotInstantiatedBool>cases(
@@ -448,7 +448,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         // @formatter:on
     }
 
-    private MaybeNotInstantiatedBool equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
+    protected MaybeNotInstantiatedBool equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
             final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar rep = findRep(var);
         if(terms().containsKey(rep)) {
@@ -458,7 +458,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         }
     }
 
-    private MaybeNotInstantiatedBool equalVars(final ITermVar left, final ITermVar right,
+    protected MaybeNotInstantiatedBool equalVars(final ITermVar left, final ITermVar right,
             final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar leftRep = findRep(left);
         final ITermVar rightRep = findRep(right);

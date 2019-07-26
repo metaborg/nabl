@@ -39,9 +39,8 @@ public class SplitModuleUtil {
         List<Scope> canExtendList = canExtendSet.stream().sorted((a, b) -> a.getName().compareTo(b.getName())).collect(Collectors.toList());
         canExtendList.addAll(contextFreeScopeGraph.getParentScopes());
         
-        //We need to determine an initialization constraint
-        Set<IConstraint> delayed = contextFreeState.solver().getStore().createSplitModule();
-        
+        //Clear and retrieve the delayed constraints on the original module.
+        Set<IConstraint> delayed = contextFreeState.solver().getStore().delayedConstraints();
         
         //Just store the original initialization and associate special behavior to the split module?
         IConstraint init = Constraints.conjoin(delayed);
