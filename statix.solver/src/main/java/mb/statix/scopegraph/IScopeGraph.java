@@ -35,10 +35,18 @@ public interface IScopeGraph<S, L, D> {
     IRelation3<S, L, S> getEdges();
 
     java.util.Set<S> getEdges(S scope, L label);
+    
+    default java.util.Set<S> getEdges(S scope, L label, String requester) {
+        return getEdges(scope, label);
+    }
 
     IRelation3<S, L, D> getData();
 
     java.util.Set<D> getData(S scope, L relation);
+    
+    default java.util.Set<D> getData(S scope, L relation, String requester) {
+        return getData(scope, relation);
+    }
 
     /**
      * @see IScopeGraph

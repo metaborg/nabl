@@ -133,6 +133,10 @@ public class SolverContext implements Serializable {
         
         if (isInitPhase()) return getModuleUnchecked(id);
         
+        if (!getIncrementalManager().isAllowedAccess(requester.getId(), id)) {
+            throw new ModuleDelayException(id);
+        }
+        
         return strategy.getChildModule(this, oldContext, requester, id);
     }
     
@@ -157,7 +161,15 @@ public class SolverContext implements Serializable {
     }
     
     public IModule getModule(IModule requester, String id) throws ModuleDelayException {
+        return getModule(requester.getId(), id);
+    }
+    
+    public IModule getModule(String requester, String id) throws ModuleDelayException {
         if (isInitPhase()) return getModuleUnchecked(id);
+        
+        if (!getIncrementalManager().isAllowedAccess(requester, id)) {
+            throw new ModuleDelayException(id);
+        }
         
         //TODO Also do the first part based on the strategy, to allow the strategy to delay.
         return strategy.getModule(this, oldContext, requester, id);
@@ -634,8 +646,8 @@ public class SolverContext implements Serializable {
     }
     
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
         System.out.println("Serializing context " + this);
+        stream.defaultWriteObject();
     }
     
 }

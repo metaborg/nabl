@@ -165,4 +165,25 @@ public class Scopes {
     public static IModule getOwner(IScope scope, IModule requester) throws ModuleDelayException {
         return SolverContext.context().getModule(requester, scope.getResource());
     }
+    
+    /**
+     * Gets the owner of the given term if it is a scope.
+     * 
+     * @param term
+     *      the scope
+     * @param requester
+     *      the requester of the owner
+     * 
+     * @return
+     *      the owner of the given scope
+     *      
+     * @throws ModuleDelayException
+     *      If this request is not allowed.
+     * 
+     * @throws IllegalArgumentException
+     *      If the given term is not a scope.
+     */
+    public static IModule getOwner(IScope scope, String requester) throws ModuleDelayException {
+        return SolverContext.context().getModule(requester, scope.getResource());
+    }
 }

@@ -21,7 +21,7 @@ public class NonIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) {
+    public IModule getModule(SolverContext context, SolverContext oldContext, String requester, String id) {
         return context.getModuleManager().getModule(id);
     }
     

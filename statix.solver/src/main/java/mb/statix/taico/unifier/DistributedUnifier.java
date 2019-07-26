@@ -30,7 +30,7 @@ public class DistributedUnifier {
             return term.match(Terms.<ITerm>cases().var(var -> {
                 final ITermVar rep;
                 final IModule target;
-                if (owner.equals(var.getResource()) || (target = Vars.getOwnerUnchecked(var)) == null) {
+                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
                     rep = findRepFinal(var);
                     return findTermFinal(rep);
                 }
@@ -48,7 +48,7 @@ public class DistributedUnifier {
         public ITermVar findRep(ITermVar var) {
             //TODO Entails?
             final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwnerUnchecked(var)) == null) {
+            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
                 return findRepFinal(var);
             }
 
@@ -63,7 +63,7 @@ public class DistributedUnifier {
         protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwnerUnchecked(var)) == null) {
+            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
                 return isGroundFinal(var, stack, visited);
             } else {
                 return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
@@ -107,7 +107,7 @@ public class DistributedUnifier {
             return term.match(Terms.<ITerm>cases().var(var -> {
                 final ITermVar rep;
                 final IModule target;
-                if (owner.equals(var.getResource()) || (target = Vars.getOwnerUnchecked(var)) == null) {
+                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
                     rep = findRepFinal(var);
                     return findTermFinal(rep);
                 }
@@ -124,7 +124,7 @@ public class DistributedUnifier {
         @Override
         public ITermVar findRep(ITermVar var) {
             final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwnerUnchecked(var)) == null) {
+            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
                 return findRepFinal(var);
             }
 
@@ -139,7 +139,7 @@ public class DistributedUnifier {
         protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwnerUnchecked(var)) == null) {
+            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
                 return isGroundFinal(var, stack, visited);
             } else {
                 return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);

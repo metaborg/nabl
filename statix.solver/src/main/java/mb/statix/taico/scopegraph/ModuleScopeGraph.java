@@ -162,6 +162,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
 
     @Override
     public Set<Scope> getEdges(Scope scope, ITerm label) {
+        System.err.println("WARNING: Unchecked access to edges: " + scope + " -" + label + "->");
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label);
         } else {
@@ -171,12 +172,31 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     @Override
-    public Set<ITerm> getData(Scope scope, ITerm label) {
+    public Set<Scope> getEdges(Scope scope, ITerm label, String requester) {
         if (owner.getId().equals(scope.getResource())) {
-            return getTransitiveData(scope, label);
+            return getTransitiveEdges(scope, label);
+        } else {
+            return Scopes.getOwner(scope, requester).getScopeGraph().getTransitiveEdges(scope, label);
+        }
+    }
+    
+    @Override
+    public Set<ITerm> getData(Scope scope, ITerm relation) {
+        System.err.println("WARNING: Unchecked access to data: " + scope + " -" + relation + "->");
+        if (owner.getId().equals(scope.getResource())) {
+            return getTransitiveData(scope, relation);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getTransitiveData(scope, label);
+            return Scopes.getOwner(scope, owner).getScopeGraph().getTransitiveData(scope, relation);
+        }
+    }
+    
+    @Override
+    public Set<ITerm> getData(Scope scope, ITerm relation, String requester) {
+        if (owner.getId().equals(scope.getResource())) {
+            return getTransitiveData(scope, relation);
+        } else {
+            return Scopes.getOwner(scope, requester).getScopeGraph().getTransitiveData(scope, relation);
         }
     }
     

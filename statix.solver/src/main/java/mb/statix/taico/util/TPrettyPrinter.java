@@ -117,8 +117,7 @@ public class TPrettyPrinter {
             return "~";
             //sb.append(base.replace("eclipse:///", ""));
         }
-        
-        return new StringBuilder("~%").append(module, root.length(), module.length()).toString();
+        return new StringBuilder("~").append(module, root.length(), module.length()).toString();
     }
     
     public static String printLabel(ITerm term) {

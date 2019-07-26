@@ -54,7 +54,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, IModule requester, String id) {
+    public IModule getModule(SolverContext context, SolverContext oldContext, String requesterId, String id) {
         IModule module = context.getModuleManager().getModule(id);
         if (module != null) return module;
         
@@ -72,7 +72,7 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     @Override
     public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
         //Child access works the same as normal access.
-        return getModule(context, oldContext, requester, childId);
+        return getModule(context, oldContext, requester.getId(), childId);
     }
     
     @Override

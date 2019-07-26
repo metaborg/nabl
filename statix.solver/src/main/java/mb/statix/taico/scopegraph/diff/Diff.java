@@ -89,6 +89,10 @@ public class Diff {
         
         //Child modules
         for (String childId : sgNew.getChildIds()) {
+            if (!cNew.getModuleManager().hasModule(childId)) {
+                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
+                continue;
+            }
             if (sgOld.getChildIds().contains(childId)) {
                 //Child is contained in both, create a diff
                 diff(result, childId, cNew, cOld, external);
@@ -100,6 +104,11 @@ public class Diff {
         }
         
         for (String childId : sgOld.getChildIds()) {
+            if (!cOld.getModuleManager().hasModule(childId)) {
+                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
+                continue;
+            }
+            //TODO Should split modules be included here?
             if (!sgNew.getChildIds().contains(childId)) {
                 //Child is in old but not in new -> removed
                 result.addRemovedChild(childId, cOld.getScopeGraph(childId));

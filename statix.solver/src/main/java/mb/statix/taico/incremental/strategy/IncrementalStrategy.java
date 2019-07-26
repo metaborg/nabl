@@ -91,8 +91,8 @@ public abstract class IncrementalStrategy {
      *      the context on which the module is requested
      * @param oldContext
      *      the previous context (can be null)
-     * @param requester
-     *      the requester of the module
+     * @param requesterId
+     *      the id of the requester of the module
      * @param id
      *      the id of the module being requested
      * 
@@ -103,7 +103,7 @@ public abstract class IncrementalStrategy {
      *      If the access is not allowed (yet) in the current context phase.
      */
     public abstract IModule getModule(SolverContext context, SolverContext oldContext,
-            IModule requester, String id) throws ModuleDelayException;
+            String requesterId, String id) throws ModuleDelayException;
     
     //---------------------------------------------------------------------------------------------
     // Phasing

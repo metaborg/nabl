@@ -397,7 +397,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             
             //If we are running concurrently, check if the variable was resolved between our stuck check and the registration.
             if (!unifier.isGround(termVar)) {
-                debug.info("Registering as observer on {}, waiting on var {}", varOwner, termVar);
+                debug.info("Registering {} as observer on {}, waiting on var {}", owner, varOwner, termVar);
                 varStore.registerObserver(termVar, this, debug);
                 return;
             }
@@ -429,7 +429,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         
         final IMState ownerState = owner.getCurrentState();
         RedirectingIncrementalCompleteness completeness = ownerState.solver().getCompleteness();
-        debug.info("Registering as observer on {}, waiting on edge {}", owner, edge);
+        debug.info("Registering {} as observer on {}, waiting on edge {}", this.owner, owner, edge);
         completeness.registerObserver(edge.scope(), edge.label(), ownerState.unifier(), e -> externalActivateFromEdge(e, debug));
     }
     
@@ -471,6 +471,32 @@ public class ModuleConstraintStore implements IConstraintStore {
         final Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
         stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c), moduleStuck.get(c))));
         return delayed.build();
+    }
+    
+    /**
+     * @return
+     *      all delayed constraints
+     */
+    public Set<IConstraint> delayedConstraints() {
+        final Set<IConstraint> stuck = new HashSet<>();
+        for (Delayed d : stuckOnVar.values()) stuck.add(d.constraint);
+        for (Delayed d : stuckOnEdge.values()) stuck.add(d.constraint);
+        for (Delayed d : stuckOnModule.values()) stuck.add(d.constraint);
+        return stuck;
+    }
+    
+    /**
+     * Clears all the delayed constraints from this store.
+     * 
+     * @return
+     *      all the constraints that were removed 
+     */
+    public Set<IConstraint> clearDelays() {
+        Set<IConstraint> tbr = getAllRemainingConstraints();
+        stuckOnVar.clear();
+        stuckOnEdge.clear();
+        stuckOnModule.clear();
+        return tbr;
     }
     
     /**

@@ -190,7 +190,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         
         int failed = (int) results.values().stream().filter(r -> r.hasErrors()).count();
         debug.info("Phase {} finished: {} done, {} failed, {} stuck",
-                context.getPhase(),
+                context.getPhase() == null ? "init" : context.getPhase().toString(),
                 results.size() - failed,
                 failed,
                 solvers.size());
@@ -215,7 +215,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         
         if (!startNextPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) return false;
         
-        debug.info("Starting new phase: {}", context.getPhase());
+        debug.info("Starting new phase: {}", context.<Object>getPhase());
         return true;
     }
     

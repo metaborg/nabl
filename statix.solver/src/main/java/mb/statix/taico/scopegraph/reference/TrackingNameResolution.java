@@ -2,6 +2,7 @@ package mb.statix.taico.scopegraph.reference;
 
 import java.util.Set;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ListMultimap;
@@ -29,8 +30,8 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
 
     public TrackingNameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv,
-            Predicate2<S, L> isDataComplete) {
-        super(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv, isDataComplete);
+            Predicate2<S, L> isDataComplete, @Nullable String requester) {
+        super(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv, isDataComplete, requester);
     }
     
     @Override
@@ -106,9 +107,15 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
         }
         
         @Override
+        public Builder<S, L, D> withRequester(String requester) {
+            this.requester = requester;
+            return this;
+        }
+        
+        @Override
         public TrackingNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
             return new TrackingNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
-                    dataEquiv, isDataComplete);
+                    dataEquiv, isDataComplete, requester);
         }
 
     }

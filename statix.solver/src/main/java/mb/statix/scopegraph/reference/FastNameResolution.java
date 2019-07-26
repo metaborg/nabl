@@ -3,6 +3,7 @@ package mb.statix.scopegraph.reference;
 import java.util.Map;
 import java.util.Optional;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.Maps;
@@ -29,9 +30,11 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     protected final DataWF<D> dataWF; // default: true
     private final DataLeq<D> dataEquiv; // default: false
     private final Predicate2<S, L> isDataComplete; // default: true
+    private final String requester; // default: null
 
     public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, L> isDataComplete) {
+            Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, L> isDataComplete,
+            @Nullable String requester) {
         this.scopeGraph = scopeGraph;
         this.relation = relation;
         this.labels =
@@ -42,6 +45,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
         this.isDataComplete = isDataComplete;
+        this.requester = requester;
     }
 
     @Override public java.util.Set<IResolutionPath<S, L, D>> resolve(S scope)
@@ -148,11 +152,11 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     ///////////////////////////////////////////////////////////////////////////
 
     protected java.util.Set<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
-        return scopeGraph.getData(path.getTarget(), l);
+        return scopeGraph.getData(path.getTarget(), l, requester);
     }
 
     protected java.util.Set<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
-        return scopeGraph.getEdges(path.getTarget(), l);
+        return scopeGraph.getEdges(path.getTarget(), l, requester);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -224,6 +228,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         protected DataWF<D> dataWF = DataWF.ANY();
         protected DataLeq<D> dataEquiv = DataLeq.NONE();
         protected Predicate2<S, L> isDataComplete = (s, r) -> true;
+        protected String requester = null;
 
         public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
@@ -254,10 +259,15 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
             this.isDataComplete = isDataComplete;
             return this;
         }
+        
+        public Builder<S, L, D> withRequester(String requester) {
+            this.requester = requester;
+            return this;
+        }
 
         public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
             return new FastNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
-                    dataEquiv, isDataComplete);
+                    dataEquiv, isDataComplete, requester);
         }
 
     }

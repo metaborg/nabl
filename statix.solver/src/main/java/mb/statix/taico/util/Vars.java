@@ -1,9 +1,9 @@
 package mb.statix.taico.util;
 
 import mb.nabl2.terms.ITermVar;
-import mb.statix.solver.Delay;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
 
 public class Vars {
@@ -64,10 +64,28 @@ public class Vars {
      * @return
      *      the owner of the given term variable
      *      
-     * @throws Delay
+     * @throws ModuleDelayException
      *      If this request is not allowed.
      */
-    public static IModule getOwner(ITermVar termVar, IModule requester) throws Delay {
+    public static IModule getOwner(ITermVar termVar, IModule requester) throws ModuleDelayException {
         return SolverContext.context().getModule(requester, termVar.getResource());
+    }
+    
+    /**
+     * Gets the owner of the given term variable.
+     * 
+     * @param termVar
+     *      the term variable
+     * @param requester
+     *      the requester of the owner
+     * 
+     * @return
+     *      the owner of the given term variable
+     *      
+     * @throws ModuleDelayException
+     *      If this request is not allowed.
+     */
+    public static IModule getOwner(ITermVar termVar, String requesterId) throws ModuleDelayException {
+        return SolverContext.context().getModule(requesterId, termVar.getResource());
     }
 }
