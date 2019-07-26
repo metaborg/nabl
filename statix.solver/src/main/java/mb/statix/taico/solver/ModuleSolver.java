@@ -33,6 +33,7 @@ import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.concurrent.ConcurrentRedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.state.IMState;
@@ -49,6 +50,7 @@ public class ModuleSolver implements IOwnable {
     private final LazyDebugContext proxyDebug;
     private boolean separateSolver;
     private boolean init;
+    private boolean splitCheck;
     
     private IsComplete isComplete;
     
@@ -88,6 +90,7 @@ public class ModuleSolver implements IOwnable {
         this.debug = debug;
         this.proxyDebug = new FakeLazyDebugContext(debug); //TODO Remove at some point
         this.separateSolver = separateSolver;
+        this.splitCheck = separateSolver;
         
         //Create the constraint store and the completeness. Also add the initial constraints
         Iterable<IConstraint> constraintList = constraint == null ? Collections.emptyList() : Collections.singletonList(constraint);
@@ -120,9 +123,13 @@ public class ModuleSolver implements IOwnable {
      *      the new solver
      */
     public ModuleSolver childSolver(IMState state, IConstraint constraint) {
-        PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
+        String id = state.owner().getId();
+        PrefixedDebugContext debug = this.debug.createSibling(id);
         ModuleSolver solver = new ModuleSolver(state, constraint, this.isComplete, debug, false);
         
+        if (!SplitModuleUtil.isSplitModule(state.owner().getId())) {
+            SolverContext.context().getIncrementalManager().registerNonSplit(id);
+        }
         this.state.coordinator().addSolver(solver);
         
         return solver;
@@ -243,7 +250,10 @@ public class ModuleSolver implements IOwnable {
             init = true;
         }
         IConstraint constraint = constraints.remove();
-        if (constraint == null) return false;
+        if (constraint == null) {
+            if (!splitCheck) checkCreateSplitModule();
+            return false;
+        }
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
@@ -313,6 +323,43 @@ public class ModuleSolver implements IOwnable {
         return true;
     }
     
+    private void checkCreateSplitModule() {
+        splitCheck = true;
+        String ownerId = getOwner().getId();
+        
+        //We are a split module ourselves, no need to split further
+        if (SplitModuleUtil.isSplitModule(ownerId)) return;
+        
+        System.out.println(getOwner() + " is performing split check...");
+        
+        String splitId = SplitModuleUtil.getSplitModuleId(ownerId);
+        
+        //TODO How to handle using old modules
+        IModule splitCurrent = SolverContext.context().getModuleManager().getModule(splitId);
+        if (splitCurrent != null) {
+            //a. The split already exists in the current context, update it
+            System.err.println("Split module " + splitId + " already exists in the current context, but was not created by the solver of the original module. State = " + splitCurrent.getTopCleanliness() + ". Updating...");
+            SplitModuleUtil.updateSplitModule(splitCurrent);
+        } else if ((splitCurrent = SolverContext.context().getModuleUnchecked(splitId)) != null) {
+            //TODO This scenario depends on the strategy. Will the strategy create a new one?
+            System.err.println("Split module " + splitId + " existed in the previous context, but not in the current");
+            //b. The split already exists in the previous context: create a new one in the current context
+            
+            //Notify the incremental manager to make a decision over this split module. It might only be interested in the structure here
+            if (SolverContext.context().getIncrementalManager().createSplitModuleRequest(ownerId)) {
+                System.err.println("Creating split module " + splitId + " after approval from the incremental manager");
+                splitCurrent = SplitModuleUtil.createSplitModule(getOwner());
+                SplitModuleUtil.createSplitSolver(splitCurrent);
+            } else {
+                System.err.println("NOT creating split module " + splitId + " after disapproval from the incremental manager");
+            }
+        } else {
+            //c. The split module does not exist: create it
+            splitCurrent = SplitModuleUtil.createSplitModule(getOwner());
+            SplitModuleUtil.createSplitSolver(splitCurrent);
+        }
+    }
+
     //TODO Remove
     /**
      * @param scope

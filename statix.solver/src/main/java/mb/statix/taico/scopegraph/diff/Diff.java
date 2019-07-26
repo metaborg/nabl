@@ -10,6 +10,7 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.name.Name;
 import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
@@ -34,7 +35,29 @@ public class Diff {
      */
     public static DiffResult<Scope, ITerm, ITerm> diff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
         DiffResult<Scope, ITerm, ITerm> result = new DiffResult<>();
-        diff(result, id, newContext, oldContext, external);
+        diff(result, id, newContext, oldContext, external, false);
+        return result;
+    }
+    
+    /**
+     * Computes the diff for the module with the given id between the given contexts.
+     * 
+     * @param id
+     *      the id of the module
+     * @param newContext
+     *      the new context
+     * @param oldContext
+     *      the old context
+     * @param external
+     *      if true, the external scope graph is compared, otherwise, the internal scope graph is
+     *      compared
+     * 
+     * @return
+     *      a diffresult
+     */
+    public static DiffResult<Scope, ITerm, ITerm> contextFreeDiff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
+        DiffResult<Scope, ITerm, ITerm> result = new DiffResult<>();
+        diff(result, id, newContext, oldContext, external, true);
         return result;
     }
     
@@ -42,7 +65,8 @@ public class Diff {
             DiffResult<Scope, ITerm, ITerm> result,
             String id,
             SolverContext cNew, SolverContext cOld,
-            boolean external) {
+            boolean external,
+            boolean onlyContextFree) {
         //Determine the graphs and their unifiers from the context
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = external
                 ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cNew.getScopeGraph(id).externalGraph()
@@ -94,8 +118,12 @@ public class Diff {
                 continue;
             }
             if (sgOld.getChildIds().contains(childId)) {
+                //Ignore split modules
+                if (onlyContextFree && SplitModuleUtil.isSplitModule(childId)) continue;
+                
                 //Child is contained in both, create a diff
-                diff(result, childId, cNew, cOld, external);
+                //Verify that the child is contained in both
+                diff(result, childId, cNew, cOld, external, onlyContextFree);
             } else {
                 //Child is in new but not in old -> added
                 IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cNew.getScopeGraph(childId);
