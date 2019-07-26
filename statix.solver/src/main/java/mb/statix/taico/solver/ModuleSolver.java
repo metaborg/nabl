@@ -348,15 +348,13 @@ public class ModuleSolver implements IOwnable {
             //Notify the incremental manager to make a decision over this split module. It might only be interested in the structure here
             if (SolverContext.context().getIncrementalManager().createSplitModuleRequest(ownerId)) {
                 System.err.println("Creating split module " + splitId + " after approval from the incremental manager");
-                splitCurrent = SplitModuleUtil.createSplitModule(getOwner());
-                SplitModuleUtil.createSplitSolver(splitCurrent);
+                splitCurrent = SplitModuleUtil.createSplitModule(getOwner(), true);
             } else {
                 System.err.println("NOT creating split module " + splitId + " after disapproval from the incremental manager");
             }
         } else {
             //c. The split module does not exist: create it
-            splitCurrent = SplitModuleUtil.createSplitModule(getOwner());
-            SplitModuleUtil.createSplitSolver(splitCurrent);
+            splitCurrent = SplitModuleUtil.createSplitModule(getOwner(), true);
         }
     }
 

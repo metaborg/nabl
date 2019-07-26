@@ -354,7 +354,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     /**
      * Notifies the observer if there is any.
      */
-    private void notifyObserver() {
+    public void notifyObserver() {
         final IObserver<ModuleConstraintStore> observer = this.observer;
         if (observer != null) {
             observer.notify(this);

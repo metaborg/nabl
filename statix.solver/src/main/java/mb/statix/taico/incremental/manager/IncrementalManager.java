@@ -2,8 +2,8 @@ package mb.statix.taico.incremental.manager;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.Flag;
