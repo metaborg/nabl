@@ -8,15 +8,67 @@ import java.util.Map.Entry;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.util.TOverrides;
 
 public class IncrementalManager implements Serializable {
     private static final long serialVersionUID = 1L;
     
     protected volatile Object phase;
     protected boolean initPhase = true;
+    protected Set<String> nonSplitModules = TOverrides.set();
+    
+    // Module access
+
+    /**
+     * Registers that a module is not yet split.
+     * 
+     * @param id
+     *      the non-split module
+     */
+    public void registerNonSplit(String id) {
+        assert !SplitModuleUtil.isSplitModule(id) : "Registration of a non split module expects a non-split module!";
+        nonSplitModules.add(id);
+    }
+    
+    /**
+     * Removes the registration for a non-split module (because the module has been split).
+     * 
+     * @param id
+     *      the module
+     */
+    public void unregisterNonSplit(String id) {
+        nonSplitModules.remove(id);
+    }
+    
+    /**
+     * Called to inform the incremental manager of the fact that in normal execution, a new split
+     * module would now be created for the given module. However, the strategy, through its
+     * incremental manager is free to change this behavior.
+     * 
+     * @return
+     *      true if a split module should be created, false if not
+     */
+    public boolean createSplitModuleRequest(String id) {
+        return true;
+    }
+    
+    /**
+     * @param requester
+     *      the id of the requesting module
+     * @param moduleId
+     *      the id of the module that is requested
+     * 
+     * @return
+     *      true if access to the given module is allowed, false otherwise.
+     */
+    public boolean isAllowedAccess(String requester, String moduleId) {
+        if (requester.equals(moduleId)) return true;
+        return !nonSplitModules.contains(moduleId);
+    }
     
     // --------------------------------------------------------------------------------------------
     // Phase related
