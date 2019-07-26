@@ -12,6 +12,7 @@ public class DelegatingMState extends MState {
     private static final long serialVersionUID = 1L;
     
     private final Set<ITermVar> originalVars;
+    private final Set<ITermVar> varsUnion;
     
     /**
      * @param original
@@ -24,11 +25,12 @@ public class DelegatingMState extends MState {
     public DelegatingMState(MState original, Set<ITermVar> vars, boolean clearScopes) {
         super(original, new HashSet<>(), original.scopeGraph().delegatingGraph(clearScopes));
         this.originalVars = Sets.intersection(original.vars(), vars);
+        this.varsUnion = Sets.union(originalVars, super.vars());
     }
 
     @Override
     public Set<ITermVar> vars() {
-        return Sets.union(originalVars, super.vars());
+        return varsUnion;
     }
     
     //TODO Are the copy semantics correct?

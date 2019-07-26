@@ -48,8 +48,10 @@ public class SolverCoordinator extends ASolverCoordinator {
         init(new NonIncrementalStrategy(), state, constraint, debug);
         addSolver(root);
         
+        if (context.isInitPhase()) context.finishInitPhase();
         runToCompletion();
         
+        //TODO Does not perform a multi phase approach yet
         return aggregateResults();
     }
     

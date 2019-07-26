@@ -129,6 +129,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         this.onFinished = onFinished;
         init(new NonIncrementalStrategy(), state, constraint, debug);
         addSolver(root);
+        if (context.isInitPhase()) context.finishInitPhase();
     }
     
     @Override
