@@ -523,12 +523,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return isCyclic(vars, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private boolean isCyclic(final Set<ITermVar> vars, final Set<ITermVar> stack,
+    protected boolean isCyclic(final Set<ITermVar> vars, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         return vars.stream().anyMatch(var -> isCyclic(var, stack, visited));
     }
 
-    private boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
+    protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         final boolean cyclic;
         final ITermVar rep = findRep(var);
@@ -589,12 +589,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return vars;
     }
 
-    private void getVars(final Set<ITermVar> tryVars, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+    protected void getVars(final Set<ITermVar> tryVars, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
             Set<ITermVar> vars) {
         tryVars.stream().forEach(var -> getVars(var, stack, visited, vars));
     }
 
-    private void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+    protected void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
             Set<ITermVar> vars) {
         final ITermVar rep = findRep(var);
         if(!visited.contains(rep)) {
