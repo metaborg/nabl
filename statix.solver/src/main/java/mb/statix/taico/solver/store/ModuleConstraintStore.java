@@ -144,7 +144,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 synchronized (stuckOnVar) {
                     stuckOnVar.put(var, delayed);
                 }
-                registerAsObserver(var, TDebug.DEV_OUT);
+                if (!registerAsObserver(var, TDebug.DEV_OUT)) break;
             }
         } else if (!delay.criticalEdges().isEmpty()) {
             TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
@@ -152,7 +152,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 synchronized (stuckOnEdge) {
                     stuckOnEdge.put(edge, delayed);
                 }
-                registerAsObserver(edge, TDebug.DEV_OUT);
+                if (!registerAsObserver(edge, TDebug.DEV_OUT)) break;
             }
         } else if (delay.module() != null) {
             TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
@@ -383,10 +383,13 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the variable
      * @param debug
      *      the debug
+     * 
+     * @return
+     *      false if the var was immediately activated, true otherwise
      */
-    private void registerAsObserver(ITermVar termVar, IDebugContext debug) {
+    private boolean registerAsObserver(ITermVar termVar, IDebugContext debug) {
         final IModule varOwner;
-        if (this.owner.equals(termVar.getResource()) || (varOwner = Vars.getOwnerUnchecked(termVar)) == null) return;
+        if (this.owner.equals(termVar.getResource()) || (varOwner = Vars.getOwnerUnchecked(termVar)) == null) return true;
         
         final IMState state = varOwner.getCurrentState();
         final ModuleConstraintStore varStore = state.solver().getStore();
@@ -396,15 +399,18 @@ public class ModuleConstraintStore implements IConstraintStore {
             IUnifier.Immutable unifier = state.unifier();
             
             //If we are running concurrently, check if the variable was resolved between our stuck check and the registration.
+            //TODO Optimization check if we are running concurrently
+            //TODO Could we get a module delay exception here?
             if (!unifier.isGround(termVar)) {
                 debug.info("Registering {} as observer on {}, waiting on var {}", owner, varOwner, termVar);
                 varStore.registerObserver(termVar, this, debug);
-                return;
+                return true;
             }
         }
         
         //The term is already ground, resolve immediately.
         activateFromVar(termVar, debug);
+        return false;
     }
     
     /**
@@ -419,18 +425,21 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the edge
      * @param debug
      *      the debug context
+     * 
+     * @return
+     *      false if the edge was immediately activated, true otherwise
      */
-    private void registerAsObserver(CriticalEdge edge, IDebugContext debug) {
+    private boolean registerAsObserver(CriticalEdge edge, IDebugContext debug) {
         IModule owner = getEdgeCause(edge);
         if (owner == null) throw new IllegalStateException("Encountered edge without being able to determine the owner!");
         
         //A module doesn't have to register on itself
-        if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return;
+        if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return true;
         
         final IMState ownerState = owner.getCurrentState();
         RedirectingIncrementalCompleteness completeness = ownerState.solver().getCompleteness();
         debug.info("Registering {} as observer on {}, waiting on edge {}", this.owner, owner, edge);
-        completeness.registerObserver(edge.scope(), edge.label(), ownerState.unifier(), e -> externalActivateFromEdge(e, debug));
+        return completeness.registerObserver(edge.scope(), edge.label(), ownerState.unifier(), e -> externalActivateFromEdge(e, debug));
     }
     
     /**
