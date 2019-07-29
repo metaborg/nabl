@@ -128,8 +128,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     public void solveAsync(IMState state, IConstraint constraint, IDebugContext debug, Consumer<MSolverResult> onFinished) {
         this.onFinished = onFinished;
         init(new NonIncrementalStrategy(), state, constraint, debug);
-        addSolver(root);
         if (context.isInitPhase()) context.finishInitPhase();
+        
+        addSolver(root);
     }
     
     @Override
