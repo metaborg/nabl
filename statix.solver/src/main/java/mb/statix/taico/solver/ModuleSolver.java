@@ -32,6 +32,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
+import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
@@ -128,6 +129,7 @@ public class ModuleSolver implements IOwnable {
         ModuleSolver solver = new ModuleSolver(state, constraint, this.isComplete, debug, false);
         
         if (!SplitModuleUtil.isSplitModule(state.owner().getId())) {
+            //This module should solve in restricted mode
             SolverContext.context().getIncrementalManager().registerNonSplit(id);
         }
         this.state.coordinator().addSolver(solver);
@@ -257,7 +259,11 @@ public class ModuleSolver implements IOwnable {
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
-            proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier())));
+            IncrementalManager im = SolverContext.context().getIncrementalManager();
+            //TODO Dirty hack: printing the constraint will trigger a module delay exception if a variable is encountered from another module.
+            //To "fix" this we unregister and reregister the module between the printing.
+            im.executeUnrestricted(getOwner().getId(),
+                    () -> proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier()))));
         }
         
         try {
