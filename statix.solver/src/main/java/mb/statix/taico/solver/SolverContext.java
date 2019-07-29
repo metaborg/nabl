@@ -17,6 +17,8 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
+import mb.statix.taico.dependencies.Dependencies;
+import mb.statix.taico.dependencies.DependencyManager;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
@@ -35,6 +37,7 @@ public class SolverContext implements Serializable {
     private final transient IncrementalStrategy strategy;
     private final Spec spec;
     private final ModuleManager manager = new ModuleManager();
+    private final DependencyManager<?> dependencies;
     private final IncrementalManager incrementalManager;
     private transient ISolverCoordinator coordinator;
     private transient SolverContext oldContext;
@@ -48,6 +51,7 @@ public class SolverContext implements Serializable {
         this.strategy = strategy;
         this.spec = spec;
         this.incrementalManager = strategy.createManager();
+        this.dependencies = strategy.createDependencyManager();
     }
     
     /**
@@ -383,6 +387,20 @@ public class SolverContext implements Serializable {
         if (oldContext == null) return null;
         
         return oldContext.getScopeGraph(id);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Dependencies
+    // --------------------------------------------------------------------------------------------
+    
+    //TODO Add javadoc
+    public Dependencies getDependencies(String moduleId) {
+        return dependencies.getDependencies(moduleId);
+    }
+    
+    @SuppressWarnings("unchecked")
+    public <T extends Dependencies> DependencyManager<T> getDependencyManager() {
+        return (DependencyManager<T>) dependencies;
     }
     
     // --------------------------------------------------------------------------------------------

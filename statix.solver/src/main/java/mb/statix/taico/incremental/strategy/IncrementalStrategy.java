@@ -1,5 +1,6 @@
 package mb.statix.taico.incremental.strategy;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.metaborg.util.functions.Function1;
 
@@ -17,6 +19,8 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.dependencies.DependencyManager;
+import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
@@ -265,6 +269,11 @@ public abstract class IncrementalStrategy {
     
     public IncrementalManager createManager() {
         return new IncrementalManager();
+    }
+    
+    @SuppressWarnings("unchecked")
+    public DependencyManager<?> createDependencyManager() {
+        return new DependencyManager<>((Supplier<NameDependencies> & Serializable) NameDependencies::new);
     }
     
     //---------------------------------------------------------------------------------------------

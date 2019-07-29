@@ -27,8 +27,8 @@ public class Module implements IModule {
     private final String name;                                             //Stateless
     private final String parentId;                                         //Stateless
     private final String id;                                               //Stateless
-    private Map<CResolveQuery, QueryDetails> queries = new HashMap<>();    //Stateful, old value unimportant
-    private Map<String, CResolveQuery> dependants = TOverrides.hashMap();  //Stateful, old value unimportant
+    private Map<CResolveQuery, QueryDetails> queries = new HashMap<>();    //Stateful, old value unimportant (?)
+    private Map<String, CResolveQuery> dependants = TOverrides.hashMap();  //Stateful, old value unimportant (?)
     private IConstraint initialization;                                    //Stateful, old value unimportant
     private StablePriorityQueue<Flag> flags = new StablePriorityQueue<>(); //Stateful, old value unimportant
     
