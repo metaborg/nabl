@@ -142,6 +142,8 @@ public class DistributedUnifier {
             return super.findRep(var);
         }
         
+        // ----------------------------------------------------------------------------------------
+        
         @Override
         protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
@@ -200,6 +202,8 @@ public class DistributedUnifier {
             return module.getCurrentState().unifier().terms();
         }
         
+        // ----------------------------------------------------------------------------------------
+        
         @Override public DistributedUnifier.Transient melt() {
             return new DistributedUnifier.Transient(owner, finite, reps.get().asTransient(), ranks.asTransient(),
                     terms.asTransient());
@@ -226,6 +230,61 @@ public class DistributedUnifier {
             super(finite, reps, ranks, terms);
             this.owner = owner;
         }
+        
+        // ----------------------------------------------------------------------------------------
+        
+        /**
+         * Collects all the variables in the given term that are owned by the module owning this
+         * unifier. Variables from other modules will not be expanded.
+         * The result only contains variables that are not ground.
+         * <p>
+         * Keep in mind that expanding variables from other modules could yield additional
+         * variables that belong to this unifier. These variables are not reported by this method.
+         * <p>
+         * The variables in this set should be non-ground, otherwise it will have been instantiated
+         * or it is cyclic (which might be considered non-ground).
+         * 
+         * @param term
+         *      the term
+         * 
+         * @return
+         *      all the variables in the given term that belong to this unifier
+         */
+        public Set<ITermVar> getOwnVariables(ITerm term) {
+            final Set<ITermVar> vars = Sets.newHashSet();
+            getOwnVars(term.getVars().elementSet(), Lists.newLinkedList(), Sets.newHashSet(), vars);
+            return vars;
+        }
+
+        private void getOwnVars(final Set<ITermVar> tryVars, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            tryVars.stream().forEach(var -> getOwnVars(var, stack, visited, vars));
+        }
+
+        private void getOwnVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            final ITermVar rep = findRepFinal(var);
+            if (!owner.equals(rep.getResource())) return; //Not our own variable
+            
+            if(!visited.contains(rep)) {
+                visited.add(rep);
+                stack.push(rep);
+                final ITerm term = terms().get(rep);
+                if(term != null) {
+                    getOwnVars(term.getVars().elementSet(), stack, visited, vars);
+                } else {
+                    vars.add(rep);
+                }
+                stack.pop();
+            } else {
+                final int index = stack.indexOf(rep); // linear
+                if(index >= 0) {
+                    vars.addAll(stack.subList(0, index + 1));
+                }
+            }
+        }
+        
+        // ----------------------------------------------------------------------------------------
         
         @Override
         public ITerm findTerm(ITerm term) {
@@ -281,6 +340,8 @@ public class DistributedUnifier {
         protected ITermVar findRepFinal(ITermVar var) {
             return super.findRep(var);
         }
+        
+        // ----------------------------------------------------------------------------------------
         
         @Override
         protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
@@ -339,6 +400,8 @@ public class DistributedUnifier {
             if (module == null) return this.terms();
             return module.getCurrentState().unifier().targetTerms(var);
         }
+        
+        // ----------------------------------------------------------------------------------------
         
         @Override public DistributedUnifier.Immutable freeze() {
             return new DistributedUnifier.Immutable(owner, finite, reps.freeze(), ranks.freeze(), terms.freeze());
