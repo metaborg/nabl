@@ -119,7 +119,7 @@ public class IncrementalManager implements Serializable {
      */
     public boolean isAllowedAccess(String requester, String moduleId) {
         if (requester.equals(moduleId)) return true;
-        return !nonSplitModules.contains(moduleId);
+        return !nonSplitModules.contains(requester);
     }
     
     // --------------------------------------------------------------------------------------------
