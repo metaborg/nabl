@@ -32,6 +32,144 @@ public class DistributedUnifier {
         }
         
         // ----------------------------------------------------------------------------------------
+        // Term
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        public ITerm findTerm(ITerm term) {
+            return term.match(Terms.<ITerm>cases().var(var -> {
+                final ITermVar rep;
+                final IModule target;
+                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                    rep = findRepFinal(var);
+                    return findTermFinal(rep);
+                }
+                
+                DistributedUnifier.Immutable unifier = target.getCurrentState().unifier();
+                rep = unifier.findRepFinal(var);
+                return unifier.findTermFinal(rep);
+            }).otherwise(t -> t));
+        }
+        
+        protected ITerm findTermFinal(ITermVar rep) {
+            return terms().getOrDefault(rep, rep);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Recursive
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, ITerm> visited) {
+            final ITermVar rep = findRep(var);
+            final ITerm instance;
+            if(!visited.containsKey(rep)) {
+                stack.add(rep);
+                visited.put(rep, null);
+                //Modification: get the term from the target
+                final ITerm term = targetTerms(rep).get(rep);
+                instance = term != null ? findTermRecursive(term, stack, visited) : rep;
+                visited.put(rep, instance);
+                stack.remove(rep);
+                return instance;
+            } else if(stack.contains(rep)) {
+                throw new IllegalArgumentException("Recursive terms cannot be fully instantiated.");
+            } else {
+                instance = visited.get(rep);
+            }
+            return instance;
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Rep
+        // ----------------------------------------------------------------------------------------
+
+        @Override
+        public ITermVar findRep(ITermVar var) {
+            //TODO Entails?
+            final IModule module;
+            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+                return findRepFinal(var);
+            }
+
+            return module.getCurrentState().unifier().findRepFinal(var);
+        }
+        
+        protected ITermVar findRepFinal(ITermVar var) {
+            return super.findRep(var);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Ground
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                return isGroundFinal(var, stack, visited);
+            } else {
+                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isGround(var, stack, visited);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Cyclic
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                return isCyclicFinal(var, stack, visited);
+            } else {
+                return target.getCurrentState().unifier().isCyclicFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isCyclicFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isCyclic(var, stack, visited);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Get Vars
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            final ITermVar rep = findRep(var);
+            if(!visited.contains(rep)) {
+                visited.add(rep);
+                stack.push(rep);
+                final ITerm term = targetTerms(rep).get(rep);
+                if(term != null) {
+                    getVars(term.getVars().elementSet(), stack, visited, vars);
+                } else {
+                    vars.add(rep);
+                }
+                stack.pop();
+            } else {
+                final int index = stack.indexOf(rep); // linear
+                if(index >= 0) {
+                    vars.addAll(stack.subList(0, index + 1));
+                }
+            }
+        }
+        
+
+        // ----------------------------------------------------------------------------------------
+        // Own Variables
+        // ----------------------------------------------------------------------------------------
         
         /**
          * Collects all the variables in the given term that are owned by the module owning this
@@ -85,79 +223,20 @@ public class DistributedUnifier {
         }
         
         // ----------------------------------------------------------------------------------------
-        
-        @Override
-        public ITerm findTerm(ITerm term) {
-            return term.match(Terms.<ITerm>cases().var(var -> {
-                final ITermVar rep;
-                final IModule target;
-                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
-                    rep = findRepFinal(var);
-                    return findTermFinal(rep);
-                }
-                
-                rep = target.getCurrentState().unifier().findRepFinal(var);
-                return target.getCurrentState().unifier().findTermFinal(rep);
-            }).otherwise(t -> t));
-        }
-        
-        protected ITerm findTermFinal(ITermVar rep) {
-            return terms().getOrDefault(rep, rep);
-        }
-        
-        @Override
-        protected ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
-                final java.util.Map<ITermVar, ITerm> visited) {
-            final ITermVar rep = findRep(var);
-            final ITerm instance;
-            if(!visited.containsKey(rep)) {
-                stack.add(rep);
-                visited.put(rep, null);
-                //Modification: get the term from the target
-                final ITerm term = targetTerms(rep).get(rep);
-                instance = term != null ? findTermRecursive(term, stack, visited) : rep;
-                visited.put(rep, instance);
-                stack.remove(rep);
-                return instance;
-            } else if(stack.contains(rep)) {
-                throw new IllegalArgumentException("Recursive terms cannot be fully instantiated.");
-            } else {
-                instance = visited.get(rep);
-            }
-            return instance;
-        }
-
-        @Override
-        public ITermVar findRep(ITermVar var) {
-            //TODO Entails?
-            final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
-                return findRepFinal(var);
-            }
-
-            return module.getCurrentState().unifier().findRepFinal(var);
-        }
-        
-        protected ITermVar findRepFinal(ITermVar var) {
-            return super.findRep(var);
-        }
-        
+        // Var equality
         // ----------------------------------------------------------------------------------------
         
         @Override
-        protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
-                final java.util.Map<ITermVar, Boolean> visited) {
-            final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
-                return isGroundFinal(var, stack, visited);
+        protected MaybeNotInstantiatedBool equalVarTerm(ITermVar var, ITerm term, Set<Set2<ITermVar>> stack,
+                java.util.Map<Set2<ITermVar>, Boolean> visited) {
+            final ITermVar rep = findRep(var);
+            //Modified: Get the term from the target unifier
+            Map<ITermVar, ITerm> terms = targetTerms(rep);
+            if(terms.containsKey(rep)) {
+                return equalTerms(terms.get(rep), term, stack, visited);
             } else {
-                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
+                return MaybeNotInstantiatedBool.ofNotInstantiated(rep);
             }
-        }
-        
-        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
-                final java.util.Map<ITermVar, Boolean> visited) {
-            return super.isGround(var, stack, visited);
         }
         
         @Override
@@ -175,7 +254,7 @@ public class DistributedUnifier {
                 visited.put(pair, null);
                 //Modified: Get the term from the target unifier
                 final ITerm leftTerm = targetTerms(leftRep).get(leftRep);
-                final ITerm rightTerm = targetTerms(leftRep).get(rightRep);
+                final ITerm rightTerm = targetTerms(rightRep).get(rightRep);
                 if(leftTerm == null && rightTerm == null) {
                     return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep, rightRep);
                 } else if(leftTerm == null) {
@@ -196,12 +275,21 @@ public class DistributedUnifier {
             return equal;
         }
         
+        // ----------------------------------------------------------------------------------------
+        // Helper methods
+        // ----------------------------------------------------------------------------------------
+        
         private Map<ITermVar, ITerm> targetTerms(ITermVar var) {
-            IModule module = Vars.getOwner(var, owner);
-            if (module == null) return this.terms();
+            final IModule module;
+            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+                return this.terms();
+            }
+            
             return module.getCurrentState().unifier().terms();
         }
         
+        // ----------------------------------------------------------------------------------------
+        // Other
         // ----------------------------------------------------------------------------------------
         
         @Override public DistributedUnifier.Transient melt() {
@@ -232,6 +320,139 @@ public class DistributedUnifier {
         }
         
         // ----------------------------------------------------------------------------------------
+        // Term
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        public ITerm findTerm(ITerm term) {
+            return term.match(Terms.<ITerm>cases().var(var -> {
+                final ITermVar rep;
+                final IModule target;
+                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                    rep = findRepFinal(var);
+                    return findTermFinal(rep);
+                }
+                
+                rep = target.getCurrentState().unifier().findRepFinal(var);
+                return target.getCurrentState().unifier().findTermFinal(rep);
+            }).otherwise(t -> t));
+        }
+        
+        protected ITerm findTermFinal(ITermVar rep) {
+            return terms().getOrDefault(rep, rep);
+        }
+        
+        @Override
+        protected ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, ITerm> visited) {
+            final ITermVar rep = findRep(var);
+            final ITerm instance;
+            if(!visited.containsKey(rep)) {
+                stack.add(rep);
+                visited.put(rep, null);
+                //Modification: get the term from the target
+                final ITerm term = targetTerms(rep).get(rep);
+                instance = term != null ? findTermRecursive(term, stack, visited) : rep;
+                visited.put(rep, instance);
+                stack.remove(rep);
+                return instance;
+            } else if(stack.contains(rep)) {
+                throw new IllegalArgumentException("Recursive terms cannot be fully instantiated.");
+            } else {
+                instance = visited.get(rep);
+            }
+            return instance;
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Rep
+        // ----------------------------------------------------------------------------------------
+
+        @Override
+        public ITermVar findRep(ITermVar var) {
+            final IModule module;
+            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+                return findRepFinal(var);
+            }
+
+            return module.getCurrentState().unifier().findRepFinal(var);
+        }
+        
+        protected ITermVar findRepFinal(ITermVar var) {
+            return super.findRep(var);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Ground
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                return isGroundFinal(var, stack, visited);
+            } else {
+                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isGround(var, stack, visited);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Cyclic
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                return isCyclicFinal(var, stack, visited);
+            } else {
+                return target.getCurrentState().unifier().isCyclicFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isCyclicFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isCyclic(var, stack, visited);
+        }
+        
+        
+        // ----------------------------------------------------------------------------------------
+        // Get Vars
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            final ITermVar rep = findRep(var);
+            if(!visited.contains(rep)) {
+                visited.add(rep);
+                stack.push(rep);
+                final ITerm term = targetTerms(rep).get(rep);
+                if(term != null) {
+                    getVars(term.getVars().elementSet(), stack, visited, vars);
+                } else {
+                    vars.add(rep);
+                }
+                stack.pop();
+            } else {
+                final int index = stack.indexOf(rep); // linear
+                if(index >= 0) {
+                    vars.addAll(stack.subList(0, index + 1));
+                }
+            }
+        }
+        
+        
+        // ----------------------------------------------------------------------------------------
+        // Get own vars
+        // ----------------------------------------------------------------------------------------
         
         /**
          * Collects all the variables in the given term that are owned by the module owning this
@@ -285,78 +506,20 @@ public class DistributedUnifier {
         }
         
         // ----------------------------------------------------------------------------------------
-        
-        @Override
-        public ITerm findTerm(ITerm term) {
-            return term.match(Terms.<ITerm>cases().var(var -> {
-                final ITermVar rep;
-                final IModule target;
-                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
-                    rep = findRepFinal(var);
-                    return findTermFinal(rep);
-                }
-                
-                rep = target.getCurrentState().unifier().findRepFinal(var);
-                return target.getCurrentState().unifier().findTermFinal(rep);
-            }).otherwise(t -> t));
-        }
-        
-        protected ITerm findTermFinal(ITermVar rep) {
-            return terms().getOrDefault(rep, rep);
-        }
-        
-        @Override
-        protected ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
-                final java.util.Map<ITermVar, ITerm> visited) {
-            final ITermVar rep = findRep(var);
-            final ITerm instance;
-            if(!visited.containsKey(rep)) {
-                stack.add(rep);
-                visited.put(rep, null);
-                //Modification: get the term from the target
-                final ITerm term = targetTerms(rep).get(rep);
-                instance = term != null ? findTermRecursive(term, stack, visited) : rep;
-                visited.put(rep, instance);
-                stack.remove(rep);
-                return instance;
-            } else if(stack.contains(rep)) {
-                throw new IllegalArgumentException("Recursive terms cannot be fully instantiated.");
-            } else {
-                instance = visited.get(rep);
-            }
-            return instance;
-        }
-
-        @Override
-        public ITermVar findRep(ITermVar var) {
-            final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
-                return findRepFinal(var);
-            }
-
-            return module.getCurrentState().unifier().findRepFinal(var);
-        }
-        
-        protected ITermVar findRepFinal(ITermVar var) {
-            return super.findRep(var);
-        }
-        
+        // Var Equality
         // ----------------------------------------------------------------------------------------
         
         @Override
-        protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
-                final java.util.Map<ITermVar, Boolean> visited) {
-            final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
-                return isGroundFinal(var, stack, visited);
+        protected MaybeNotInstantiatedBool equalVarTerm(ITermVar var, ITerm term, Set<Set2<ITermVar>> stack,
+                java.util.Map<Set2<ITermVar>, Boolean> visited) {
+            final ITermVar rep = findRep(var);
+            //Modified: Get the term from the target unifier
+            Map<ITermVar, ITerm> terms = targetTerms(rep);
+            if(terms.containsKey(rep)) {
+                return equalTerms(terms.get(rep), term, stack, visited);
             } else {
-                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
+                return MaybeNotInstantiatedBool.ofNotInstantiated(rep);
             }
-        }
-        
-        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
-                final java.util.Map<ITermVar, Boolean> visited) {
-            return super.isGround(var, stack, visited);
         }
         
         @Override
@@ -374,7 +537,7 @@ public class DistributedUnifier {
                 visited.put(pair, null);
                 //Modified: Get the term from the target unifier
                 final ITerm leftTerm = targetTerms(leftRep).get(leftRep);
-                final ITerm rightTerm = targetTerms(leftRep).get(rightRep);
+                final ITerm rightTerm = targetTerms(rightRep).get(rightRep);
                 if(leftTerm == null && rightTerm == null) {
                     return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep, rightRep);
                 } else if(leftTerm == null) {
@@ -395,12 +558,21 @@ public class DistributedUnifier {
             return equal;
         }
         
+        // ----------------------------------------------------------------------------------------
+        // Helper methods
+        // ----------------------------------------------------------------------------------------
+        
         private Map<ITermVar, ITerm> targetTerms(ITermVar var) {
-            IModule module = Vars.getOwner(var, owner);
-            if (module == null) return this.terms();
+            final IModule module;
+            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+                return this.terms();
+            }
+            
             return module.getCurrentState().unifier().targetTerms(var);
         }
         
+        // ----------------------------------------------------------------------------------------
+        // Other
         // ----------------------------------------------------------------------------------------
         
         @Override public DistributedUnifier.Immutable freeze() {
