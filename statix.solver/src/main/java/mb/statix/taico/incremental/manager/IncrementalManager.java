@@ -152,7 +152,7 @@ public class IncrementalManager implements Serializable {
      * {@link #startFirstPhase()}.
      */
     public void finishInitPhase() {
-        initPhase = true;
+        initPhase = false;
     }
     
     /**
