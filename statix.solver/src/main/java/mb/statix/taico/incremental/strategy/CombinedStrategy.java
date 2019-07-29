@@ -1,0 +1,72 @@
+package mb.statix.taico.incremental.strategy;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import mb.statix.solver.IConstraint;
+import mb.statix.taico.incremental.changeset.CombinedChangeSet;
+import mb.statix.taico.incremental.changeset.IChangeSet;
+import mb.statix.taico.incremental.manager.CombinedIncrementalManager;
+import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleCleanliness;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
+import mb.statix.taico.solver.SolverContext;
+
+public class CombinedStrategy extends IncrementalStrategy {
+    
+    @Override
+    public CombinedIncrementalManager createManager() {
+        return new CombinedIncrementalManager();
+    }
+    
+    @Override
+    public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
+            Collection<String> removed) {
+        return new CombinedChangeSet(oldContext, added, changed, removed);
+    }
+    
+    @Override
+    public IModule getModule(SolverContext context, SolverContext oldContext, String requester, String id) throws ModuleDelayException {
+        //TODO Move this method to the incremental manager
+        if (requester.equals(id)) return context.getModuleManager().getModule(requester);
+        
+        IModule module = context.getModuleManager().getModule(id);
+        if (module != null) return module;
+
+        if (oldContext == null) return null;
+        module = oldContext.getModuleManager().getModule(id);
+        if (module == null) return null;
+        
+        return module;
+    }
+    
+    @Override
+    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
+        //Child access works the same as normal access.
+        return getModule(context, oldContext, requester.getId(), childId);
+    }
+    
+    @Override
+    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
+            IChangeSet changeSet,
+            Map<String, IConstraint> moduleConstraints) {
+        Map<IModule, IConstraint> newModules = new HashMap<>();
+        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
+            System.err.println("[CI] Encountered entry for " + entry.getKey());
+            IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
+            
+            if (oldModule == null || oldModule.getTopCleanliness() != ModuleCleanliness.CLEAN) {
+                IModule module = createFileModule(context, entry.getKey(), entry.getValue());
+                newModules.put(module, entry.getValue());
+            } else {
+                //Old module is clean, we can reuse it
+                reuseOldModule(context, changeSet, oldModule);
+            }
+        }
+        
+        return newModules;
+    }
+}
+

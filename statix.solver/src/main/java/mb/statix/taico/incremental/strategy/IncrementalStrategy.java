@@ -285,13 +285,16 @@ public abstract class IncrementalStrategy {
     public static IMatcher<IncrementalStrategy> matcher() {
         Function<String, IncrementalStrategy> f = s -> {
             switch (s) {
-                case "default":
+                
                 case "baseline":
                     return new BaselineIncrementalStrategy();
                 case "query":
                     return new QueryIncrementalStrategy();
                 case "name":
                     return new NameIncrementalStrategy();
+                case "default":
+                case "combined":
+                    return new CombinedStrategy();
                 //TODO Add more strategies here
                 default:
                     return null;
