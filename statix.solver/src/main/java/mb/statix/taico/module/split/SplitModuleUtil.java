@@ -60,16 +60,13 @@ public class SplitModuleUtil {
         
         //Clear and retrieve the delayed constraints on the original module.
         Set<IConstraint> delayed = contextFreeState.solver().getStore().delayedConstraints();
+        System.err.println("Delayed constraints: " + delayed);
         
         //Create new variables for all variables of the original module that are delayed upon
         DistributedUnifier.Immutable cfUnifier = contextFreeState.unifier();
         
         //TODO Check if the unifier will not prevent top level variables from being used, since they could be composed of variables of the parent. - DONE
         //The above cannot happen, since the values passed to the module are ground and fully instantiated. In other words, they cannot contain any variables.
-        
-        //This can also be done with a unifier, but then we would also need to handle rigid vars and send the update.
-//        Predicate1<ITermVar> isRigid = v -> !contextFreeState.vars().contains(v);
-//        DistributedUnifier.Transient soFar = cfUnifier.melt();
         ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
         Set<IConstraint> equalityConstraints = new HashSet<>();
         for (IConstraint constraint : delayed) {
@@ -84,14 +81,11 @@ public class SplitModuleUtil {
                 subst.put(var, nVar);
                 CEqual ce2 = new CEqual(var, nVar, ce);
                 equalityConstraints.add(ce2);
-//                try {
-//                    soFar.unify(var, nVar, isRigid);
-//                } catch (OccursException | RigidVarsException e) {
-//                    System.err.println("Unable to create unification variable for split module " + split.getId() + ": " + var + " <-> " + nVar);
-//                    e.printStackTrace();
-//                }
             }
         }
+        
+        System.err.println("New equality constraints: " + equalityConstraints);
+        System.err.println("Substitution: " + subst);
         
         //We fix the initialization of the module to be the conjoined constraints with the given substitution applied
         IConstraint init = subst.isEmpty() ? Constraints.conjoin(delayed) : Constraints.conjoin(delayed).apply(subst.freeze());
