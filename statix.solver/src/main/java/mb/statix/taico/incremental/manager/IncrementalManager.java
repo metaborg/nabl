@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.Flag;
@@ -30,6 +31,7 @@ public class IncrementalManager implements Serializable {
      *      the non-split module
      */
     public void registerNonSplit(String id) {
+        System.err.println("Registering " + id + " as non split (made restricted)");
         assert !SplitModuleUtil.isSplitModule(id) : "Registration of a non split module expects a non-split module!";
         nonSplitModules.add(id);
     }
@@ -39,9 +41,59 @@ public class IncrementalManager implements Serializable {
      * 
      * @param id
      *      the module
+     * 
+     * @return
+     *      if the module was unregistered
      */
-    public void unregisterNonSplit(String id) {
-        nonSplitModules.remove(id);
+    public boolean unregisterNonSplit(String id) {
+        if (nonSplitModules.remove(id)) {
+            System.err.println("Unregistering " + id + " as non split (made unrestricted)");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Executes the given runnable where the module with the given id is unrestricted.
+     * 
+     * @param id
+     *      the id of the module
+     * @param runnable
+     *      the runnable to execute
+     */
+    public void executeUnrestricted(String id, Runnable runnable) {
+        boolean removed = nonSplitModules.remove(id);
+        try {
+            runnable.run();
+        } finally {
+            if (removed) nonSplitModules.add(id);
+        }
+    }
+    
+    /**
+     * Executes the given Callable where the module with the given id is unrestricted.
+     * 
+     * @param id
+     *      the id of the module
+     * @param callable
+     *      the callable to execute
+     * 
+     * @return
+     *      the result of the callable
+     * 
+     * @throws Exception
+     *      If the callable throws an exception when called.
+     */
+    public <R> R executeUnrestricted(String id, Callable<R> callable) throws Exception {
+        R tbr;
+        boolean removed = nonSplitModules.remove(id);
+        try {
+            tbr = callable.call();
+        } finally {
+            if (removed) nonSplitModules.add(id);
+        }
+        return tbr;
     }
     
     /**
