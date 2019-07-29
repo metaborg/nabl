@@ -165,6 +165,7 @@ public class CResolveQuery implements IConstraint, Serializable {
                         .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
                         .withEdgeComplete(isComplete)
                         .withDataComplete(isComplete)
+                        .withRequester(state.resource())
                         .build(state.scopeGraph(), relation);
             // @formatter:on
             
