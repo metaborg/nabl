@@ -58,7 +58,7 @@ public class BaselineChangeSet extends AChangeSet {
             IModule module = stack.pop();
             
             //Check modules that depend on this module
-            for (String depModuleId : module.getDependantIds().keySet()) {
+            for (String depModuleId : oldContext.getDependencies(module).getModuleDependantIds()) {
                 IModule depModule = oldContext.getModuleUnchecked(depModuleId);
                 if (depModule == null) {
                     System.err.println("Dependent " + depModuleId + " of " + module.getId() + " does not exist");

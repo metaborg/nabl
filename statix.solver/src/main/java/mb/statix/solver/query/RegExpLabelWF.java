@@ -25,6 +25,11 @@ public class RegExpLabelWF implements LabelWF<ITerm>, Serializable {
             return Optional.of(new RegExpLabelWF(re));
         }
     }
+    
+    @Override
+    public boolean canStep(ITerm l) {
+        return !this.re.match(l).isEmpty();
+    }
 
     @Override public boolean accepting() throws ResolutionException, InterruptedException {
         return re.isAccepting();

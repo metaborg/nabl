@@ -102,6 +102,18 @@ public interface IScopeGraphDiff<S extends D, L, D> {
     IRelation3<S, L, Name> getChangedDataNames();
     
     // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Converts this diff into an effective diff.
+     * 
+     * @param target
+     *      the diff result to append to
+     */
+    void toEffectiveDiff(DiffResult target);
+    
+    // --------------------------------------------------------------------------------------------
     // Convenience methods
     // --------------------------------------------------------------------------------------------
     

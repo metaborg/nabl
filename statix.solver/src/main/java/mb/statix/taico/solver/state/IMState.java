@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
@@ -129,7 +131,7 @@ public interface IMState extends IOwnable, Serializable, IState {
      * @return
      *      a newly created scope
      */
-    public default Scope freshScope(String base, IConstraint constraint) {
+    public default Scope freshScope(String base, @Nullable IConstraint constraint) {
         StringBuilder sb = new StringBuilder();
         sb.append(base);
         ScopeIdentity.userTrace(constraint, sb);

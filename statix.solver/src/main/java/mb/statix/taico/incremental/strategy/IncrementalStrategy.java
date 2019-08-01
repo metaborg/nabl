@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.metaborg.util.functions.Function1;
 
@@ -273,7 +272,7 @@ public abstract class IncrementalStrategy {
     
     @SuppressWarnings("unchecked")
     public DependencyManager<?> createDependencyManager() {
-        return new DependencyManager<>((Supplier<NameDependencies> & Serializable) NameDependencies::new);
+        return new DependencyManager<>((Function<String, NameDependencies> & Serializable) NameDependencies::new);
     }
     
     //---------------------------------------------------------------------------------------------
@@ -283,25 +282,41 @@ public abstract class IncrementalStrategy {
      *      a matcher for incremental strategies
      */
     public static IMatcher<IncrementalStrategy> matcher() {
-        Function<String, IncrementalStrategy> f = s -> {
-            switch (s) {
-                
-                case "baseline":
-                    return new BaselineIncrementalStrategy();
-                case "query":
-                    return new QueryIncrementalStrategy();
-                case "name":
-                    return new NameIncrementalStrategy();
-                case "default":
-                case "combined":
-                    return new CombinedStrategy();
-                //TODO Add more strategies here
-                default:
-                    return null;
-            }
-        };
         Function1<ITerm, Optional<IncrementalStrategy>> empty = i -> Optional.empty();
-        return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<IncrementalStrategy>>cases(empty, empty,
-                string -> Optional.ofNullable(f.apply(string.getValue())), empty, empty, empty));
+        return (term, unifier) -> unifier.findTerm(term).match(
+                Terms.<Optional<IncrementalStrategy>>cases(empty, empty,
+                        string -> Optional.ofNullable(of(string.getValue())), empty, empty, empty));
+    }
+    
+    /**
+     * @return
+     *      the default incremental strategy
+     */
+    public static IncrementalStrategy of() {
+        return of("default");
+    }
+    
+    /**
+     * @param name
+     *      the name of the strategy
+     * 
+     * @return
+     *      the strategy with the given name, or null if not recognized
+     */
+    public static IncrementalStrategy of(String name) {
+        switch (name) {
+            case "baseline":
+                return new BaselineIncrementalStrategy();
+            case "query":
+                return new QueryIncrementalStrategy();
+            case "name":
+                return new NameIncrementalStrategy();
+            case "default":
+            case "combined":
+                return new CombinedStrategy();
+            //TODO Add more strategies here
+            default:
+                return null;
+        }
     }
 }

@@ -11,6 +11,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -20,6 +21,7 @@ import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
+import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
@@ -32,16 +34,17 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spoofax.StatixTerms;
+import mb.statix.taico.dependencies.details.IDependencyDetail;
+import mb.statix.taico.dependencies.details.NameDependencyDetail;
+import mb.statix.taico.dependencies.details.QueryDependencyDetail;
+import mb.statix.taico.module.IModule;
 import mb.statix.taico.name.NameAndRelation;
 import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.SolverContext;
 import mb.statix.taico.solver.query.MConstraintQueries;
-import mb.statix.taico.solver.query.NameQueryDetails;
-import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 
@@ -112,25 +115,56 @@ public class CResolveQuery implements IConstraint, Serializable {
         return resultTerm;
     }
     
+    public NameAndRelation name() {
+        return name;
+    }
+    
     @Override
     public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
-        List<ITerm> queryResult = resolveQuery(state, params);
-        if (queryResult == null) return Optional.empty();
+        QueryResult result = resolveQuery(state, params);
+        if (result == null) return Optional.empty();
         
-        final IConstraint C = new CEqual(B.newList(queryResult), resultTerm, this);
+        createDependencies(state.owner(), result);
+        
+        final IConstraint C = new CEqual(B.newList(result.pathTerms), resultTerm, this);
         return Optional.of(MConstraintResult.ofConstraints(C));        
     }
     
-    public List<ITerm> resolveQuery(IMState state, MConstraintContext params)
+    /**
+     * Resolves the given query by determining the paths and terms in the scope graph that match.
+     * <p>
+     * If query resolution fails completely, this method will return null.
+     * 
+     * @param state
+     *      the state
+     * @param params
+     *      the params
+     * 
+     * @return
+     *      the query result, or null if the resolution failed
+     * 
+     * @throws InterruptedException
+     *      If query resolution gets interrupted.
+     * @throws Delay
+     *      If the scope in which the query is performed is not ground relative to the unifier in
+     *      the given state (see {@link #getScope(IUnifier)}).
+     * @throws Delay
+     *      If the name that is requested by this query, if any, is not ground relative to the
+     *      unifier in the given state.
+     * @throws Delay
+     *      If query resolution is delayed on an incomplete edge, incomplete data, a module or
+     *      otherwise cannot be completed at this moment in time.
+     */
+    public QueryResult resolveQuery(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final IUnifier unifier = state.unifier();
-        if(!unifier.isGround(scopeTerm)) {
-            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
-            throw Delay.ofVars(unifier.getVars(scopeTerm));
+        final Scope scope = getScope(unifier);
+        
+        NameAndRelation name = null;
+        if (this.name != null) {
+            name = this.name.ground(state.unifier());
         }
-        final Scope scope = AScope.matcher().match(scopeTerm, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
         final IDebugContext subDebug;
         if (TDebug.QUERY_DEBUG) {
@@ -138,6 +172,7 @@ public class CResolveQuery implements IConstraint, Serializable {
         } else {
             subDebug = new NullDebugContext(params.debug().getDepth() + 1);
         }
+        
         final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
             if(params.isComplete(s, l, state)) {
                 subDebug.info("{} complete in {}", s, l);
@@ -147,11 +182,6 @@ public class CResolveQuery implements IConstraint, Serializable {
                 return false;
             }
         };
-
-        NameAndRelation name = null;
-        if (this.name != null) {
-            name = this.name.ground(unifier);
-        }
         
         final TrackingNameResolution<Scope, ITerm, ITerm> nameResolution;
         final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
@@ -193,23 +223,63 @@ public class CResolveQuery implements IConstraint, Serializable {
 
         final List<ITerm> pathTerms =
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+        return new QueryResult(name, pathTerms, paths, nameResolution);
+    }
+    
+    /**
+     * Gets the scope in which this query is performed. If the scope of this query is not ground
+     * relative to the given unifier, this method throws a delay exception.
+     * 
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the scope
+     * 
+     * @throws Delay
+     *      If the scope is not ground relative to the given unifier.
+     */
+    public Scope getScope(IUnifier unifier) throws Delay {
+        if(!unifier.isGround(scopeTerm)) {
+            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
+            throw Delay.ofVars(unifier.getVars(scopeTerm));
+        }
+        final Scope scope = AScope.matcher().match(scopeTerm, unifier)
+                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
         
-        //Register this query
-        QueryDetails details;
-        if (name != null) {
-            details = new NameQueryDetails(state.owner().getId(), name, this, nameResolution, pathTerms);
+        return scope;
+    }
+
+    /**
+     * Creates the dependencies for this query with the given query result.
+     * 
+     * @param module
+     *      the module which executed the query (owner of the state)
+     * @param result
+     *      the result of the query
+     */
+    public void createDependencies(IModule module, QueryResult result) {
+        QueryDependencyDetail queryDetail = new QueryDependencyDetail(
+                module.getId(), this, result.edges, result.data, result.pathTerms, result.paths);
+        IDependencyDetail[] details;
+        
+        final NameAndRelation name = result.name;
+        if (name == null) {
+            details = new IDependencyDetail[1];
         } else {
-            details = new QueryDetails(state.owner().getId(), this, nameResolution, pathTerms);
+            details = new IDependencyDetail[2];
+            details[1] = new NameDependencyDetail(name, name.getRelation());
         }
-        state.owner().addQuery(this, details);
+        details[0] = queryDetail;
         
-        //Add reverse dependencies
-        for (String module : details.getReachedModules()) {
-            //TODO Make the dependant have the query details instead of the query
-            SolverContext.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
-        }
-        
-        return pathTerms;
+        module.dependencies().addMultiDependency(queryDetail.getReachedModules(), details);
+//        //Add reverse dependencies
+//        for (String module : details.getReachedModules()) {
+//            //TODO We used to have a single dependency with all the modules introduced by that dependency, we no longer have that
+//            state.owner().dependencies().addDependency(module, details);
+//            //TODO Make the dependant have the query details instead of the query
+//            moduleUnchecked(module).addDependant(state.owner().getId(), this);
+//        }
     }
     
     @Override public Optional<IConstraint> cause() {
@@ -252,4 +322,27 @@ public class CResolveQuery implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    /**
+     * Class to represent the result of a query.
+     */
+    public static class QueryResult implements Serializable {
+        private static final long serialVersionUID = 1L;
+        
+        public final NameAndRelation name;
+        public final List<ITerm> pathTerms;
+        public final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
+        public final Multimap<Scope, LabelWF<ITerm>> edges;
+        public final Multimap<Scope, LabelWF<ITerm>> data;
+        
+        public QueryResult(
+                NameAndRelation name, List<ITerm> pathTerms,
+                Set<IResolutionPath<Scope, ITerm, ITerm>> paths,
+                TrackingNameResolution<Scope, ITerm, ITerm> nameResolution) {
+            this.name = name;
+            this.pathTerms = pathTerms;
+            this.paths = paths;
+            this.edges = nameResolution.getTrackedEdges();
+            this.data = nameResolution.getTrackedData();
+        }
+    }
 }

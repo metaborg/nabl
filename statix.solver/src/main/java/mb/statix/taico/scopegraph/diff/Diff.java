@@ -33,8 +33,8 @@ public class Diff {
      * @return
      *      a diffresult
      */
-    public static DiffResult<Scope, ITerm, ITerm> diff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
-        DiffResult<Scope, ITerm, ITerm> result = new DiffResult<>();
+    public static DiffResult diff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
+        DiffResult result = new DiffResult();
         diff(result, id, newContext, oldContext, external, false);
         return result;
     }
@@ -55,14 +55,14 @@ public class Diff {
      * @return
      *      a diffresult
      */
-    public static DiffResult<Scope, ITerm, ITerm> contextFreeDiff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
-        DiffResult<Scope, ITerm, ITerm> result = new DiffResult<>();
+    public static DiffResult contextFreeDiff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
+        DiffResult result = new DiffResult();
         diff(result, id, newContext, oldContext, external, true);
         return result;
     }
     
     public static void diff(
-            DiffResult<Scope, ITerm, ITerm> result,
+            DiffResult result,
             String id,
             SolverContext cNew, SolverContext cOld,
             boolean external,
@@ -83,17 +83,17 @@ public class Diff {
         Set<Scope> removedScopes = getNew(sgNew.getScopes(), sgOld.getScopes());
         
         //Edges
-        IRelation3<Scope, ITerm, Scope> newEdges =
+        IRelation3.Transient<Scope, ITerm, Scope> newEdges =
                 getNew(sgOld.getOwnEdges(), sgNew.getOwnEdges());
-        IRelation3<Scope, ITerm, Scope> removedEdges =
+        IRelation3.Transient<Scope, ITerm, Scope> removedEdges =
                 getNew(sgNew.getOwnEdges(), sgOld.getOwnEdges());
         
         //Data
-        IRelation3<Scope, ITerm, ITerm> oldDataInst = instantiate(sgOld.getOwnData(), uOld);
-        IRelation3<Scope, ITerm, ITerm> newDataInst = instantiate(sgNew.getOwnData(), uNew);
+        IRelation3.Transient<Scope, ITerm, ITerm> oldDataInst = instantiate(sgOld.getOwnData(), uOld);
+        IRelation3.Transient<Scope, ITerm, ITerm> newDataInst = instantiate(sgNew.getOwnData(), uNew);
         
-        IRelation3<Scope, ITerm, ITerm> newData     = getNew(oldDataInst, newDataInst);
-        IRelation3<Scope, ITerm, ITerm> removedData = getNew(newDataInst, oldDataInst);
+        IRelation3.Transient<Scope, ITerm, ITerm> newData     = getNew(oldDataInst, newDataInst);
+        IRelation3.Transient<Scope, ITerm, ITerm> removedData = getNew(newDataInst, oldDataInst);
         
         //Convert data to names
         IRelation3.Transient<Scope, ITerm, Name> newDataNames =
@@ -103,8 +103,8 @@ public class Diff {
         IRelation3.Transient<Scope, ITerm, Name> changedDataNames =
                 nameOverlap(newDataNames, removedDataNames);
         
-        ScopeGraphDiff<Scope, ITerm, ITerm> diff =
-                new ScopeGraphDiff<>(
+        ScopeGraphDiff diff =
+                new ScopeGraphDiff(
                         newScopes, removedScopes,
                         newEdges, removedEdges,
                         newData, removedData,
@@ -193,7 +193,7 @@ public class Diff {
      * @return
      *      the instantiated terms
      */
-    private static <S, L> IRelation3<S, L, ITerm> instantiate(IRelation3<S, L, ITerm> rel, IUnifier unifier) {
+    private static <S, L> IRelation3.Transient<S, L, ITerm> instantiate(IRelation3<S, L, ITerm> rel, IUnifier unifier) {
         IRelation3.Transient<S, L, ITerm> tbr = HashTrieRelation3.Transient.of();
         for (S s : rel.keySet()) {
             for (Entry<L, ITerm> entry : rel.get(s)) {

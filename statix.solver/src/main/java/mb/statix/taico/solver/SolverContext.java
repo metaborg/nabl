@@ -295,7 +295,9 @@ public class SolverContext implements Serializable {
         if (!oldContext.manager.hasModule(oldModule.getId())) throw new IllegalStateException("Cannot transfer module " + oldModule + ": module is unknown in the old context!");
         if (manager.hasModule(oldModule.getId())) throw new IllegalStateException("Cannot transfer module " + oldModule + ": there is already a new module with the same id!");
         
-        return reuseOldState(oldModule);
+        IMState state = reuseOldState(oldModule);
+        transferDependencies(oldModule.getId());
+        return state;
     }
     
     // --------------------------------------------------------------------------------------------
@@ -393,9 +395,96 @@ public class SolverContext implements Serializable {
     // Dependencies
     // --------------------------------------------------------------------------------------------
     
-    //TODO Add javadoc
-    public Dependencies getDependencies(String moduleId) {
-        return dependencies.getDependencies(moduleId);
+    /**
+     * Gets the dependencies object for the given module. If the given module does not currently
+     * have a dependencies object, but the previous context does have a dependencies object, then
+     * those dependencies will be returned. Otherwise, a new dependencies object will be created.
+     * 
+     * @param moduleId
+     *      the id of the module
+     * 
+     * @return
+     *      the dependencies object for the given module
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Dependencies> T getDependencies(String moduleId) {
+        T old;
+        if (!dependencies.hasDependencies(moduleId) && (old = getOldDependencies(moduleId)) != null) {
+            return old;
+        }
+        
+        return (T) dependencies.getDependencies(moduleId);
+    }
+    
+    /**
+     * Gets the dependencies object for the given module. If the given module does not currently
+     * have a dependencies object, but the previous context does have a dependencies object, then
+     * those dependencies will be returned. Otherwise, a new dependencies object will be created.
+     * 
+     * @param module
+     *      the module
+     * 
+     * @return
+     *      the dependencies object for the given module
+     */
+    public <T extends Dependencies> T getDependencies(IModule module) {
+        return getDependencies(module.getId());
+    }
+    
+    /**
+     * Gets the dependencies of the given module in the previous context.
+     * If there is no old context or if the old context does not know about the given module, then
+     * this method will return null.
+     * 
+     * TODO Ensure that the dependencies are initialized.
+     * 
+     * @param moduleId
+     *      the id of the module
+     * 
+     * @return
+     *      the dependencies of the given module
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Dependencies> T getOldDependencies(String moduleId) {
+        if (oldContext == null || !oldContext.getModuleManager().hasModule(moduleId)) return null;
+        
+        return (T) oldContext.dependencies.getDependencies(moduleId);
+    }
+    
+    /**
+     * Gets or creates a dependendencies object for the given module in the current context.
+     * This method does not consider dependencies in previous contexts.
+     * 
+     * @param moduleId
+     *      the id of the module
+     * 
+     * @return
+     *      the dependencies
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Dependencies> T getNewDependencies(String moduleId) {
+        return (T) dependencies.getDependencies(moduleId);
+    }
+    
+    /**
+     * Transfers dependencies for this module from the old context to the new context.
+     * 
+     * @param moduleId
+     *      the id of the module
+     * 
+     * @return
+     *      the transferred dependencies
+     *      
+     * @throws IllegalStateException
+     *      If there is no old context, or the old context is not aware of the given module.
+     */
+    public <T extends Dependencies> T transferDependencies(String moduleId) {
+        if (oldContext == null) throw new IllegalStateException("The old context is null!");
+        T old = getOldDependencies(moduleId);
+        if (old == null) throw new IllegalStateException("The given module is unknown in the old context.");
+        
+        getDependencyManager().setDependencies(moduleId, old);
+        return old;
     }
     
     @SuppressWarnings("unchecked")
@@ -493,6 +582,19 @@ public class SolverContext implements Serializable {
             }
         }
         
+        //Transfer all dependencies that are not present yet, create dependencies for other modules
+        for (IModule module : manager._getModules()) {
+            String id = module.getId();
+            if (!dependencies.hasDependencies(id)) {
+                if (oldContext != null && oldContext.getModuleManager().hasModule(id)) {
+                    transferDependencies(id);
+                } else {
+                    //Force creation
+                    getNewDependencies(id);
+                }
+            }
+        }
+        
         //Clean the world
         for (IModule module : getModules()) {
             module.setFlag(Flag.CLEAN);
@@ -586,7 +688,7 @@ public class SolverContext implements Serializable {
         
         //TODO IMPORTANT validate that the state used here is the correct one (should it be the one stored, or the one in the context corresponding to the root?)
         IMState newState = newContext.transferModule(previousRootState.getOwner());
-        newState.owner().resetDependants();
+        newContext.getNewDependencies(newState.owner().getId()); //Reset dependencies of the top level
         setSolverContext(newContext);
         
         //Prune removed children
@@ -594,7 +696,7 @@ public class SolverContext implements Serializable {
             newState.scopeGraph().removeChild(child);
         }
         
-        ModuleSolver.topLevelSolver(newState, null, new NullDebugContext());
+        ModuleSolver.topLevelSolver(newState, null, new NullDebugContext()); //TODO Does not happen in the clean context, why?
         return newContext;
     }
     

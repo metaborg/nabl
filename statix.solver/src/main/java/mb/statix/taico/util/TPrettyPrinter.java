@@ -170,6 +170,21 @@ public class TPrettyPrinter {
         return formatList(convertList(list, unifier));
     }
     
+    /**
+     * Prints the given edge in the form {@code scope -label->}.
+     * 
+     * @param scope
+     *      the scope of the edge
+     * @param label
+     *      the label of the edge
+     * 
+     * @return
+     *      the string representation of the edge
+     */
+    public static String printEdge(Scope scope, ITerm label) {
+        return printScopeFancy(scope) + " -" + printLabel(label) + "->";
+    }
+    
     public static String prettyPrint(Object object) {
         return prettyPrint(object, NULL_UNIFIER);
     }

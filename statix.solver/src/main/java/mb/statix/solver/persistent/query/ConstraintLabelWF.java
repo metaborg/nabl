@@ -83,6 +83,10 @@ class ConstraintLabelWF implements LabelWF<ITerm> {
             }
         }
     }
+    
+    @Override public boolean canStep(ITerm l) throws ResolutionException, InterruptedException {
+        return step(l).isPresent();
+    }
 
     @Override public boolean accepting() throws ResolutionException, InterruptedException {
         if(debug.isEnabled(Level.Info)) {

@@ -1,27 +1,32 @@
 package mb.statix.taico.scopegraph.diff;
 
+import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.name.Name;
 
-public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, D> {
-    private Set<S> addedScopes;
-    private Set<S> removedScopes;
-    private IRelation3<S, L, S> addedEdges;
-    private IRelation3<S, L, S> removedEdges;
-    private IRelation3<S, L, D> addedData;
-    private IRelation3<S, L, D> removedData;
-    private IRelation3<S, L, Name> addedDataNames;
-    private IRelation3<S, L, Name> removedDataNames;
-    private IRelation3<S, L, Name> changedDataNames;
+public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
+    protected Set<Scope> addedScopes;
+    protected Set<Scope> removedScopes;
+    protected IRelation3.Transient<Scope, ITerm, Scope> addedEdges;
+    protected IRelation3.Transient<Scope, ITerm, Scope> removedEdges;
+    protected IRelation3.Transient<Scope, ITerm, ITerm> addedData;
+    protected IRelation3.Transient<Scope, ITerm, ITerm> removedData;
+    protected IRelation3.Transient<Scope, ITerm, Name> addedDataNames;
+    protected IRelation3.Transient<Scope, ITerm, Name> removedDataNames;
+    protected IRelation3.Transient<Scope, ITerm, Name> changedDataNames;
     
     public ScopeGraphDiff(
-            Set<S> addedScopes, Set<S> removedScopes,
-            IRelation3<S, L, S> addedEdges, IRelation3<S, L, S> removedEdges,
-            IRelation3<S, L, D> addedData, IRelation3<S, L, D> removedData,
-            IRelation3<S, L, Name> addedDataNames, IRelation3<S, L, Name> removedDataNames,
-            IRelation3<S, L, Name> changedDataNames) {
+            Set<Scope> addedScopes, Set<Scope> removedScopes,
+            IRelation3.Transient<Scope, ITerm, Scope> addedEdges, IRelation3.Transient<Scope, ITerm, Scope> removedEdges,
+            IRelation3.Transient<Scope, ITerm, ITerm> addedData, IRelation3.Transient<Scope, ITerm, ITerm> removedData,
+            IRelation3.Transient<Scope, ITerm, Name> addedDataNames, IRelation3.Transient<Scope, ITerm, Name> removedDataNames,
+            IRelation3.Transient<Scope, ITerm, Name> changedDataNames) {
         this.addedScopes = addedScopes;
         this.removedScopes = removedScopes;
         this.addedEdges = addedEdges;
@@ -38,12 +43,12 @@ public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, 
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public Set<S> getAddedScopes() {
+    public Set<Scope> getAddedScopes() {
         return addedScopes;
     }
 
     @Override
-    public Set<S> getRemovedScopes() {
+    public Set<Scope> getRemovedScopes() {
         return removedScopes;
     }
     
@@ -52,12 +57,12 @@ public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, 
     // --------------------------------------------------------------------------------------------
 
     @Override
-    public IRelation3<S, L, S> getAddedEdges() {
+    public IRelation3<Scope, ITerm, Scope> getAddedEdges() {
         return addedEdges;
     }
 
     @Override
-    public IRelation3<S, L, S> getRemovedEdges() {
+    public IRelation3<Scope, ITerm, Scope> getRemovedEdges() {
         return removedEdges;
     }
 
@@ -66,28 +71,99 @@ public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, 
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public IRelation3<S, L, D> getAddedData() {
+    public IRelation3<Scope, ITerm, ITerm> getAddedData() {
         return addedData;
     }
 
     @Override
-    public IRelation3<S, L, D> getRemovedData() {
+    public IRelation3<Scope, ITerm, ITerm> getRemovedData() {
         return removedData;
     }
     
     @Override
-    public IRelation3<S, L, Name> getAddedDataNames() {
+    public IRelation3<Scope, ITerm, Name> getAddedDataNames() {
         return addedDataNames;
     }
 
     @Override
-    public IRelation3<S, L, Name> getRemovedDataNames() {
+    public IRelation3<Scope, ITerm, Name> getRemovedDataNames() {
         return removedDataNames;
     }
 
     @Override
-    public IRelation3<S, L, Name> getChangedDataNames() {
+    public IRelation3<Scope, ITerm, Name> getChangedDataNames() {
         return changedDataNames;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public void toEffectiveDiff(DiffResult target) {
+        for (Scope scope : addedEdges.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Scope> entry : addedEdges.get(scope)) {
+                diff.addedEdges.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        for (Scope scope : removedEdges.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Scope> entry : removedEdges.get(scope)) {
+                diff.removedEdges.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        for (Scope scope : addedData.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, ITerm> entry : addedData.get(scope)) {
+                diff.addedData.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        for (Scope scope : removedData.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, ITerm> entry : removedData.get(scope)) {
+                diff.removedData.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        for (Scope scope : addedDataNames.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Name> entry : addedDataNames.get(scope)) {
+                diff.addedDataNames.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        for (Scope scope : removedDataNames.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Name> entry : removedDataNames.get(scope)) {
+                diff.removedDataNames.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        for (Scope scope : changedDataNames.keySet()) {
+            ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Name> entry : changedDataNames.get(scope)) {
+                diff.changedDataNames.put(scope, entry.getKey(), entry.getValue());
+            }
+        }
+    }
+    
+    /**
+     * Creates a new ScopeGraphDiff which only has the addedScopes and removedScopes retained.
+     * 
+     * @return
+     *      the new ScopeGraphDiff
+     */
+    public ScopeGraphDiff retainScopes() {
+        return new ScopeGraphDiff(
+                addedScopes, removedScopes,
+                HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                HashTrieRelation3.Transient.of());
     }
     
     // --------------------------------------------------------------------------------------------
@@ -97,5 +173,18 @@ public class ScopeGraphDiff<S extends D, L, D> implements IScopeGraphDiff<S, L, 
     @Override
     public String toString() {
         return print();
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Static initializers
+    // --------------------------------------------------------------------------------------------
+    
+    public static ScopeGraphDiff empty() {
+        return new ScopeGraphDiff(
+                new HashSet<>(), new HashSet<>(),
+                HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
+                HashTrieRelation3.Transient.of());
     }
 }

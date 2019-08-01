@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.diff.Diff;
@@ -152,8 +150,11 @@ public class CombinedIncrementalManager extends IncrementalManager {
         final ISolverCoordinator coordinator = context().getCoordinator();
         final IModule root = coordinator.getRootModule();
         System.err.println("Diff in final phase");
-        DiffResult<Scope, ITerm, ITerm> diff = Diff.diff(root.getId(), context(), context().getOldContext().get(), true);
+        DiffResult diff = Diff.diff(root.getId(), context(), context().getOldContext().get(), true);
         diff.print(System.err);
+        
+        System.err.println("Effective diff in final phase");
+        diff.toEffectiveDiff().print(System.err);
 
         //At this point we have redone the structure of dirty modules and of unclean modules
 

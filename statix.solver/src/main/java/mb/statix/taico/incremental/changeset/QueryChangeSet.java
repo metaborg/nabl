@@ -73,7 +73,7 @@ public class QueryChangeSet extends AChangeSet {
             final int dirtyLevel = dirty.getTopLevel();
             final String dirtyId = dirty.getId();
             //TODO Store the queries in the reason?
-            dirty.getDependants().keySet().stream().forEach(
+            oldContext.getDependencies(dirtyId).getModuleDependants().stream().forEach(
                     m -> add(new Flag(UNSURE, dirtyLevel, dirtyId), FlagCondition.AddFlag, m));
         }
         
@@ -82,7 +82,7 @@ public class QueryChangeSet extends AChangeSet {
             final int dirtyLevel = dirtyChild.getTopLevel();
             final String dirtyId = dirtyChild.getId();
             //TODO Store the queries in the reason?
-            dirtyChild.getDependants().keySet().stream().forEach(
+            oldContext.getDependencies(dirtyId).getModuleDependants().stream().forEach(
                     m -> add(new Flag(UNSURE, dirtyLevel + 1, dirtyId), FlagCondition.AddFlag, m));
         }
         
@@ -101,7 +101,7 @@ public class QueryChangeSet extends AChangeSet {
                 final int moduleLevel = moduleFlag.getLevel();
                 final String moduleId = module.getId();
                 
-                for (IModule depModule : module.getDependants().keySet()) {
+                for (IModule depModule : oldContext.getDependencies(moduleId).getModuleDependants()) {
                     if (depModule == null) {
                         System.err.println("Encountered null depModule for " + module);
                         continue;

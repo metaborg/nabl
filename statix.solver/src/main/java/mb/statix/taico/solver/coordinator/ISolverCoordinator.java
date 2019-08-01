@@ -222,7 +222,7 @@ public interface ISolverCoordinator {
      *      the debug context to print to
      */
     public default void printModuleHierarchy(IModule module, IDebugContext context) {
-        context.info("{}: dependencies={}", module.getId(), module.getDependencies());
+        context.info("{}: dependencies={}", module.getId(), module.getDependencyIds());
         IDebugContext sub = context.subContext();
         for (IModule child : module.getChildren()) {
             printModuleHierarchy(child, sub);

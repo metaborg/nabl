@@ -18,6 +18,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
@@ -224,6 +225,14 @@ public interface IModule extends Flaggable, Serializable {
     // --------------------------------------------------------------------------------------------
     
     /**
+     * @return
+     *      the name dependencies of this module
+     */
+    default NameDependencies dependencies() {
+        return context().<NameDependencies>getDependencies(getId());
+    }
+    
+    /**
      * Adds a query with its resolution details to determine the dependencies.
      * 
      * @param query
@@ -231,9 +240,13 @@ public interface IModule extends Flaggable, Serializable {
      * @param details
      *      the details relevant for dependencies related to this query
      */
-    void addQuery(CResolveQuery query, QueryDetails details);
+    default void addQuery(CResolveQuery query, QueryDetails details) {
+        dependencies().addQuery(query, details);
+    }
     
-    Map<CResolveQuery, QueryDetails> queries();
+    default Map<CResolveQuery, QueryDetails> queries() {
+        return dependencies().queries();
+    }
     
     /**
      * The aggregated set of all dependencies based on all the queries in this module.
@@ -241,31 +254,42 @@ public interface IModule extends Flaggable, Serializable {
      * @return
      *      the dependencies of this module
      */
-    Set<? extends IModule> getDependencies();
+    default Set<? extends IModule> getDependencies() {
+        return dependencies().getModuleDependencies();
+    }
     
-    void addDependant(String module, CResolveQuery query);
+    default Set<String> getDependencyIds() {
+        return dependencies().getModuleDependencyIds();
+    }
     
-    Map<IModule, CResolveQuery> getDependants();
+    default void addDependant(String module, CResolveQuery query) {
+        dependencies().addDependant(module, query);
+    }
     
-    Map<String, CResolveQuery> getDependantIds();
+    default Map<IModule, CResolveQuery> getDependants() {
+        return dependencies().getDetailedDependants();
+    }
     
-    void resetDependants();
+    default Map<String, CResolveQuery> getDependantIds() {
+        return dependencies().getDetailedDependantIds();
+    }
     
     // --------------------------------------------------------------------------------------------
     // Other
     // --------------------------------------------------------------------------------------------
     
     /**
+     * Creates a copy of this module, but not it's state.
+     * 
+     * Please note that the created copy is not added to the context.
+     * 
      * @return
-     *      a copy of this module, not added to the context
+     *      the copy, not added to the state
      * 
      * @deprecated
-     *      Since modules contain no stateful information that needs to be kept between contexts,
-     *      it never makes sense to create a copy of it. Instead, the corresponding state should
-     *      be copied, if anything.
+     *      Since modules have no <b>important</b> stateful fields, there is no need to ever copy
+     *      one. Instead, a copy should be made of the state.
      */
     @Deprecated
     IModule copy();
-    
-    //Set<IQuery<IOwnableTerm, ITerm, ITerm, ITerm>> queries();
 }
