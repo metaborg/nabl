@@ -1,11 +1,9 @@
 package mb.statix.taico.scopegraph.diff;
 
-import static org.junit.Assert.*;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import static mb.nabl2.terms.build.TermBuild.B;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.Scope;
