@@ -219,8 +219,8 @@ public class SolverContext implements Serializable {
      *      the root module
      */
     public IModule getRootModule() {
+        if (coordinator != null) return coordinator.getRootModule();
         return manager.getRootModule();
-        //return coordinator.getRootModule();
     }
     
     /**

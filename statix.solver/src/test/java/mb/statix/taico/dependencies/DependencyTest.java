@@ -2,7 +2,7 @@ package mb.statix.taico.dependencies;
 
 import static mb.statix.taico.util.test.TestUtil.*;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,11 +36,19 @@ public class DependencyTest {
         //Create a context
         Spec spec = createSpec();
         oldContext = SolverContext.initialContext(IncrementalStrategy.of("combined"), spec);
-        oldContext.setCoordinator(mock(ISolverCoordinator.class));
         
         //Create the global module
         global = Module.topLevelModule("global");
         globalScope = global.getCurrentState().freshScope("s", null);
+        
+        //Set the coordinator
+        oldContext.setCoordinator(mockCoordinator(global));
+    }
+    
+    private ISolverCoordinator mockCoordinator(IModule root) {
+        ISolverCoordinator coordinator = mock(ISolverCoordinator.class);
+        when(coordinator.getRootModule()).thenReturn(root);
+        return coordinator;
     }
     
     /**
@@ -63,7 +71,7 @@ public class DependencyTest {
         }
         IncrementalStrategy strategy = IncrementalStrategy.of("combined");
         SolverContext context = SolverContext.incrementalContext(strategy, oldContext, previousRootState, changeSet, initConstraints, oldContext.getSpec());
-        context.setCoordinator(mock(ISolverCoordinator.class));
+        context.setCoordinator(mockCoordinator(global));
         
         //This step is normally done in the coordinator. It initializes the correct modules and removes or transfers dependencies
         strategy.createInitialModules(context, changeSet, context.getInitialConstraints());
