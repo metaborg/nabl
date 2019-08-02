@@ -220,7 +220,7 @@ public class SolverContext implements Serializable {
      */
     public IModule getRootModule() {
         if (coordinator != null) return coordinator.getRootModule();
-        return manager.getRootModule();
+        return manager.getModulesOnLevel(0).values().stream().findFirst().get();
     }
     
     /**
