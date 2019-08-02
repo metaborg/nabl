@@ -4,7 +4,7 @@ import static mb.statix.taico.solver.SolverContext.context;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -12,18 +12,21 @@ import java.util.stream.StreamSupport;
 
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.dependencies.Dependencies;
+import mb.statix.taico.dependencies.Dependency;
 import mb.statix.taico.dependencies.NameDependencies;
+import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.IOwnable;
 
@@ -107,21 +110,26 @@ public interface IModule extends Flaggable, Serializable {
     
     /**
      * Creates a child module and state.
+     * <p>
+     * NOTE: If resetDependencies is false, dependencies are neither reset nor transferred. The
+     * dependencies reported by the context will be the old ones, if no new ones are created.
      * 
      * @param name
      *      the name of the child module
      * @param canExtend
-     *      the list of scopes from this module and parents that the child can extend, in the order
-     *      they are encountered in the rule
+     *      the list of scopes from this module and parents that the child can extend, in the
+     *      order they are encountered in the rule
      * @param constraint
      *      the constraint which caused this modules creation
      *      (TODO IMPORTANT substitute scopes)
      *      (TODO does this preserve declaration (references) correctly?)
+     * @param transferDependencies
+     *      if true, dependencies are transferred. Otherwise, new dependencies are created
      * 
      * @return
      *      the child
      */
-    IModule createChild(String name, List<Scope> canExtend, IConstraint constraint);
+    IModule createChild(String name, List<Scope> canExtend, IConstraint constraint, boolean transferDependencies);
     
     /**
      * Adds a (newly created) child module.
@@ -228,24 +236,42 @@ public interface IModule extends Flaggable, Serializable {
      * @return
      *      the name dependencies of this module
      */
-    default NameDependencies dependencies() {
+    default Dependencies dependencies() {
         return context().<NameDependencies>getDependencies(getId());
     }
     
     /**
-     * Adds a query with its resolution details to determine the dependencies.
+     * NOTE: This value is not cached and is computed from the dependencies each time this method
+     * is called.
      * 
-     * @param query
-     *      the constraint representing the query
-     * @param details
-     *      the details relevant for dependencies related to this query
+     * @return
+     *      for each dependency, the query with details 
      */
-    default void addQuery(CResolveQuery query, QueryDetails details) {
-        dependencies().addQuery(query, details);
+    default SetMultimap<String, QueryDependencyDetail> reverseQueries() {
+        SetMultimap<String, QueryDependencyDetail> details = MultimapBuilder.hashKeys().hashSetValues().build();
+        for (Entry<String, Dependency> entry : dependencies().getDependencies().entries()) {
+            QueryDependencyDetail detail = entry.getValue().getDetails(QueryDependencyDetail.class);
+            if (detail == null) continue;
+            details.put(entry.getKey(), detail);
+        }
+        return details;
     }
     
-    default Map<CResolveQuery, QueryDetails> queries() {
-        return dependencies().queries();
+    /**
+     * NOTE: This value is not cached and is computed from the dependencies each time this method
+     * is called.
+     * 
+     * @return
+     *      a map mapping a query with details to the modules that it depends on
+     */
+    default SetMultimap<QueryDependencyDetail, String> queries() {
+        SetMultimap<QueryDependencyDetail, String> details = MultimapBuilder.hashKeys().hashSetValues().build();
+        for (Entry<String, Dependency> entry : dependencies().getDependencies().entries()) {
+            QueryDependencyDetail detail = entry.getValue().getDetails(QueryDependencyDetail.class);
+            if (detail == null) continue;
+            details.put(detail, entry.getKey());
+        }
+        return details;
     }
     
     /**
@@ -262,16 +288,12 @@ public interface IModule extends Flaggable, Serializable {
         return dependencies().getModuleDependencyIds();
     }
     
-    default void addDependant(String module, CResolveQuery query) {
-        dependencies().addDependant(module, query);
+    default Set<? extends IModule> getDependants() {
+        return dependencies().getModuleDependants();
     }
     
-    default Map<IModule, CResolveQuery> getDependants() {
-        return dependencies().getDetailedDependants();
-    }
-    
-    default Map<String, CResolveQuery> getDependantIds() {
-        return dependencies().getDetailedDependantIds();
+    default Set<String> getDependantIds() {
+        return dependencies().getModuleDependantIds();
     }
     
     // --------------------------------------------------------------------------------------------

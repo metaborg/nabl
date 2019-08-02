@@ -1,15 +1,19 @@
 package mb.statix.taico.incremental.strategy;
 
+import static mb.statix.taico.module.ModuleCleanliness.CLEAN;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.ITerm;
@@ -134,8 +138,27 @@ public abstract class IncrementalStrategy {
      * 
      * @see SolverContext#getPhase()
      */
-    public abstract Map<IModule, IConstraint> createInitialModules(SolverContext context,
-            IChangeSet changeSet, Map<String, IConstraint> moduleConstraints);
+    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
+            IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
+        
+        Map<IModule, IConstraint> newModules = new HashMap<>();
+        moduleConstraints.entrySet().stream()
+        .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
+        .forEachOrdered(entry -> {
+            System.err.println("[IS] Encountered entry for " + entry.getKey());
+            IModule oldModule = context.getOldContext().map(c -> c.getModuleByNameOrId(entry.getKey())).orElse(null);
+            
+            if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
+                IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);
+                if (module != null) newModules.put(module, entry.getValue());
+            } else {
+                //Old module is clean, we can reuse it
+                reuseOldModule(context, changeSet, oldModule);
+            }
+        });
+        
+        return newModules;
+    }
     
     /**
      * Creates a new module (child or file) with the given init constraint.
@@ -146,15 +169,23 @@ public abstract class IncrementalStrategy {
      *      the name of the child (file level) or the id of the child
      * @param initConstraint
      *      the init constraint of the child
+     * @param oldModule
+     *      the old module, or null if not available
      * 
      * @return
      *      the module
      */
-    protected IModule createModule(SolverContext context, IChangeSet changeSet, String childNameOrId, IConstraint initConstraint) {
-        if (ModulePaths.containsPathSeparator(childNameOrId)) {
-            return createChildModule(context, changeSet, childNameOrId, initConstraint);
+    protected IModule createModule(SolverContext context, IChangeSet changeSet, String childNameOrId, IConstraint initConstraint, @Nullable IModule oldModule) {
+        int len = ModulePaths.pathLength(childNameOrId);
+        if (len == 1) {
+            //This is not a path, but just a file name
+            return createFileModule(context, childNameOrId, initConstraint, oldModule);
+        } else if (len == 2) {
+            //This is a path, but it is still about a top level module
+            return createFileModule(context, ModulePaths.getName(childNameOrId), initConstraint, oldModule);
         } else {
-            return createFileModule(context, childNameOrId, initConstraint);
+            //This is a path of a module that is not top level.
+            return createChildModule(context, changeSet, childNameOrId, initConstraint);
         }
     }
     
@@ -168,18 +199,20 @@ public abstract class IncrementalStrategy {
      *      the name of the child
      * @param initConstraint
      *      the initialization constraint
+     * @param oldModule
+     *      the old module, or null
      * 
      * @return
      *      the created module
      */
     protected IModule createFileModule(
-            SolverContext context, String childName, IConstraint initConstraint) {
+            SolverContext context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
         System.err.println("[IS] Creating file module for " + childName);
 
         List<Scope> scopes = getScopes(initConstraint);
         
         IModule rootOwner = context.getRootModule();
-        IModule child = rootOwner.createChild(childName, scopes, initConstraint);
+        IModule child = rootOwner.createChild(childName, scopes, initConstraint, false);
         rootOwner.addChild(child);
         return child;
     }
@@ -218,7 +251,7 @@ public abstract class IncrementalStrategy {
         
         List<Scope> scopes = getScopes(initConstraint);
         
-        IModule child = parentModule.createChild(ModulePaths.getName(childId), scopes, initConstraint);
+        IModule child = parentModule.createChild(ModulePaths.getName(childId), scopes, initConstraint, false);
         parentModule.addChild(child);
         return child;
     }

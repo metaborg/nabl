@@ -1,10 +1,11 @@
 package mb.statix.taico.incremental.strategy;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.CombinedChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
@@ -49,24 +50,21 @@ public class CombinedStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
-            IChangeSet changeSet,
-            Map<String, IConstraint> moduleConstraints) {
-        Map<IModule, IConstraint> newModules = new HashMap<>();
-        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
-            System.err.println("[CI] Encountered entry for " + entry.getKey());
-            IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
-            
-            if (oldModule == null || oldModule.getTopCleanliness() != ModuleCleanliness.CLEAN) {
-                IModule module = createFileModule(context, entry.getKey(), entry.getValue());
-                newModules.put(module, entry.getValue());
-            } else {
-                //Old module is clean, we can reuse it
-                reuseOldModule(context, changeSet, oldModule);
-            }
+    protected IModule createFileModule(
+            SolverContext context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
+        boolean transferDeps = false;
+        if (oldModule != null && oldModule.getTopCleanliness() == ModuleCleanliness.CLEAN) {
+            transferDeps = true;
         }
         
-        return newModules;
+        System.err.println("[IS] Creating file module for " + childName);
+
+        List<Scope> scopes = getScopes(initConstraint);
+        
+        IModule rootOwner = context.getRootModule();
+        IModule child = rootOwner.createChild(childName, scopes, initConstraint, transferDeps);
+        rootOwner.addChild(child);
+        return child;
     }
 }
 

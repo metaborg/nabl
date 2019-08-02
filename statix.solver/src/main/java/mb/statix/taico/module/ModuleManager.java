@@ -18,9 +18,18 @@ public class ModuleManager implements Serializable {
     
     private Map<String, IModule> modules = new ConcurrentHashMap<>();
     private SetMultimap<String, IModule> moduleNames = MultimapBuilder.hashKeys().hashSetValues().build();
+    private IModule rootModule;
     private volatile Boolean moduleNamesUnique;
     
     public ModuleManager() {}
+    
+    /**
+     * @return
+     *      the root module, or null if there is no root module
+     */
+    public synchronized IModule getRootModule() {
+        return rootModule;
+    }
     
     /**
      * @return
@@ -136,6 +145,12 @@ public class ModuleManager implements Serializable {
      */
     public synchronized void addModule(IModule module) {
         moduleNamesUnique = null;
+        if (!ModulePaths.containsPathSeparator(module.getId())) {
+            if (rootModule != null && rootModule != module) {
+                throw new IllegalStateException("Multiple root modules added to the manager: " + rootModule + " and " + module);
+            }
+            rootModule = module;
+        }
         
         final IModule old = modules.put(module.getId(), module);
         moduleNames.put(module.getName(), module);
@@ -158,6 +173,7 @@ public class ModuleManager implements Serializable {
      */
     public synchronized void removeModule(IModule module) {
         if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
+        if (module == rootModule) rootModule = null;
         modules.remove(module.getId());
         moduleNames.remove(module.getName(), module);
     }
@@ -170,6 +186,7 @@ public class ModuleManager implements Serializable {
      */
     public synchronized void purgeModules(IModule module) {
         if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
+        if (module == rootModule) rootModule = null;
         modules.remove(module.getId());
         moduleNames.remove(module.getName(), module);
         module.getScopeGraph().purgeChildren();
@@ -188,6 +205,7 @@ public class ModuleManager implements Serializable {
         }
         modules.clear();
         moduleNames.clear();
+        rootModule = null;
     }
     
     /**
@@ -200,6 +218,9 @@ public class ModuleManager implements Serializable {
         if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
         modules.values().retainAll(toRetain);
         moduleNames.values().retainAll(toRetain);
+        if (rootModule != null && !modules.containsKey(rootModule.getId())) {
+            rootModule = null;
+        }
     }
 
     /**

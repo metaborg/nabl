@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
@@ -127,8 +128,8 @@ public class QueryIncrementalManager extends IncrementalManager {
         
         //TODO This code needs to run after the solver has been created, but before the runner can become "stuck".
         //TODO IMPORTANT In other words, not here.
-        for (Entry<CResolveQuery, QueryDetails> e : module.queries().entrySet()) {
-            CResolveQuery query = e.getKey();
+        for (QueryDependencyDetail qdd : module.queries().keySet()) {
+            CResolveQuery query = qdd.getOriginalConstraint();
             state.solver().getStore().add(query);
         }
         //The given module should be a clirty one. We now have to redo it's queries

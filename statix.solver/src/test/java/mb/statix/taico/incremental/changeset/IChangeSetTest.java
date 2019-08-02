@@ -12,7 +12,6 @@ import org.junit.Before;
 
 import mb.nabl2.regexp.impl.FiniteAlphabet;
 import mb.nabl2.terms.ITerm;
-import mb.statix.constraints.CResolveQuery;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.Flag;
@@ -21,6 +20,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.util.test.TestUtil;
 
 public class IChangeSetTest {
     protected SolverContext context;
@@ -83,7 +83,7 @@ public class IChangeSetTest {
      *      the module that is depended upon
      */
     protected static void addDependency(IModule b, IModule a) {
-        a.addDependant(b.getId(), mock(CResolveQuery.class));
+        b.dependencies().addDependency(a);
     }
     
     /**
@@ -100,9 +100,7 @@ public class IChangeSetTest {
      *      the child module
      */
     protected static IModule createChild(IModule parent, String name, Scope... scopes) {
-        IModule module = parent.createChild(name, list(scopes), null);
-        parent.addChild(module);
-        return module;
+        return TestUtil.createChild(parent, name, scopes);
     }
     
     /**
@@ -116,7 +114,7 @@ public class IChangeSetTest {
      */
     @SafeVarargs
     protected static <T> List<T> list(T... items) {
-        return Arrays.asList(items);
+        return TestUtil.list(items);
     }
     
     /**
@@ -126,7 +124,7 @@ public class IChangeSetTest {
      *      an empty list (immutable)
      */
     protected static <T> List<T> empty() {
-        return Collections.emptyList();
+        return TestUtil.empty();
     }
 
 }

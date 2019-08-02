@@ -68,12 +68,16 @@ public class Module implements IModule {
     }
 
     @Override
-    public Module createChild(String name, List<Scope> canExtend, IConstraint constraint) {
-        System.err.println("Creating child module " + name + " on " + this);
+    public Module createChild(String name, List<Scope> canExtend, IConstraint constraint, boolean transferDependencies) {
+        System.err.println("Creating child module " + name + " on " + this + ". Transferring dependencies: " + transferDependencies);
         Module child = new Module(name, this);
         child.setInitialization(constraint);
         new MState(child, getScopeGraph().createChild(child, canExtend));
-        context().getNewDependencies(child.getId());
+        if (transferDependencies) {
+            context().transferDependencies(child.getId());
+        } else {
+            context().getDependencies(child.getId());
+        }
         return child;
     }
     

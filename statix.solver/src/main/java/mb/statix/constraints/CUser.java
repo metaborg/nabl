@@ -195,7 +195,7 @@ public class CUser implements IConstraint, Serializable {
                         //Create the child module + state (1), create the state (2), create the child solver (3) and add the child to the scope graph of the state owner (4)
                         //This needs to happen in this precise ordering to prevent concurrency issues. The third call makes the new child module
                         //available to the rest of the world.
-                        child = state.owner().createChild(modName, canExtend, new CUser(name(), newArgs));
+                        child = state.owner().createChild(modName, canExtend, new CUser(name(), newArgs), false);
                         state.solver().childSolver(child.getCurrentState(), appl._2());
                         state.owner().addChild(child);
                     }

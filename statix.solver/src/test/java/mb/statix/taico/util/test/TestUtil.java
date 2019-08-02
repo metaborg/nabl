@@ -46,7 +46,7 @@ public class TestUtil {
      *      the child module
      */
     public static IModule createChild(IModule parent, String name, Scope... scopes) {
-        IModule module = parent.createChild(name, list(scopes), null);
+        IModule module = parent.createChild(name, list(scopes), null, false);
         parent.addChild(module);
         return module;
     }

@@ -2,16 +2,15 @@ package mb.statix.taico.incremental;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.QueryIncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.SolverContext;
-import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
 
 public class QueryAnalyzer {
@@ -48,8 +47,8 @@ public class QueryAnalyzer {
         
         //TODO This code needs to run after the solver has been created, but before the runner can become "stuck".
         //TODO IMPORTANT In other words, not here.
-        for (Entry<CResolveQuery, QueryDetails> e : module.queries().entrySet()) {
-            CResolveQuery query = e.getKey();
+        for (QueryDependencyDetail qdd : module.queries().keySet()) {
+            CResolveQuery query = qdd.getOriginalConstraint();
             state.solver().getStore().add(query);
         }
         //The given module should be a clirty one. We now have to redo it's queries

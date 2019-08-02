@@ -17,7 +17,6 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
-import mb.statix.constraints.CExists;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
@@ -63,7 +62,7 @@ public class SplitModuleUtil {
         canExtendList.addAll(contextFreeScopeGraph.getParentScopes());
         
         //Create the split module
-        IModule split = module.createChild(SPLIT_SEPARATOR, canExtendList, null);
+        IModule split = module.createChild(SPLIT_SEPARATOR, canExtendList, null, false);
         IMState splitState = split.getCurrentState();
         
         //Clear and retrieve the delayed constraints on the original module.

@@ -1,16 +1,11 @@
 package mb.statix.taico.incremental.strategy;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
-import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.QueryChangeSet;
 import mb.statix.taico.incremental.manager.QueryIncrementalManager;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.SolverContext;
 
@@ -50,26 +45,5 @@ public class QueryIncrementalStrategy extends IncrementalStrategy {
     public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
         //Child access works the same as normal access.
         return getModule(context, oldContext, requester.getId(), childId);
-    }
-    
-    @Override
-    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
-            IChangeSet changeSet,
-            Map<String, IConstraint> moduleConstraints) {
-        Map<IModule, IConstraint> newModules = new HashMap<>();
-        for (Entry<String, IConstraint> entry : moduleConstraints.entrySet()) {
-            System.err.println("[QI] Encountered entry for " + entry.getKey());
-            IModule oldModule = context.getOldContext().map(c -> c.getModuleByName(entry.getKey(), 1)).orElse(null);
-            
-            if (oldModule == null || oldModule.getTopCleanliness() != ModuleCleanliness.CLEAN) {
-                IModule module = createFileModule(context, entry.getKey(), entry.getValue());
-                newModules.put(module, entry.getValue());
-            } else {
-                //Old module is clean, we can reuse it
-                reuseOldModule(context, changeSet, oldModule);
-            }
-        }
-        
-        return newModules;
     }
 }

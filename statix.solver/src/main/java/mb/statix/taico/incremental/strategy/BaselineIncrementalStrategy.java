@@ -3,14 +3,16 @@ package mb.statix.taico.incremental.strategy;
 import static mb.statix.taico.module.ModuleCleanliness.CLEAN;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModulePaths;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.solver.SolverContext;
 
 /**
@@ -76,26 +78,20 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
-            IChangeSet changeSet,
-            Map<String, IConstraint> moduleConstraints) {
+    protected IModule createFileModule(
+            SolverContext context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
+        boolean transferDeps = false;
+        if (oldModule != null && oldModule.getTopCleanliness() == ModuleCleanliness.CLEAN) {
+            transferDeps = true;
+        }
         
-        Map<IModule, IConstraint> newModules = new HashMap<>();
-        moduleConstraints.entrySet().stream()
-        .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
-        .forEachOrdered(entry -> {
-            System.err.println("[BI] Encountered entry for " + entry.getKey());
-            IModule oldModule = context.getOldContext().map(c -> c.getModuleByNameOrId(entry.getKey())).orElse(null);
-            
-            if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
-                IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue());
-                if (module != null) newModules.put(module, entry.getValue());
-            } else {
-                //Old module is clean, we can reuse it
-                reuseOldModule(context, changeSet, oldModule);
-            }
-        });
+        System.err.println("[IS] Creating file module for " + childName);
+
+        List<Scope> scopes = getScopes(initConstraint);
         
-        return newModules;
+        IModule rootOwner = context.getRootModule();
+        IModule child = rootOwner.createChild(childName, scopes, initConstraint, transferDeps);
+        rootOwner.addChild(child);
+        return child;
     }
 }

@@ -15,12 +15,12 @@ import mb.statix.taico.util.Modules;
 /**
  * Class to represent dependencies of a module.
  */
-public abstract class Dependencies implements Serializable {
+public class Dependencies implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private final String owner;
-    private final ListMultimap<String, Dependency> dependencies = MultimapBuilder.hashKeys().arrayListValues().build();
-    private final ListMultimap<String, Dependency> dependants = MultimapBuilder.hashKeys().arrayListValues().build();
+    protected final String owner;
+    protected final ListMultimap<String, Dependency> dependencies = MultimapBuilder.hashKeys().arrayListValues().build();
+    protected final ListMultimap<String, Dependency> dependants = MultimapBuilder.hashKeys().arrayListValues().build();
     
     public Dependencies(String owner) {
         this.owner = owner;
@@ -189,6 +189,21 @@ public abstract class Dependencies implements Serializable {
     protected Dependency addDependant(String module, Dependency dependency) {
         dependants.put(module, dependency);
         return dependency;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Copy
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @return
+     *      a copy of this dependencies object
+     */
+    public Dependencies copy() {
+        Dependencies copy = new Dependencies(owner);
+        copy.dependencies.putAll(dependencies);
+        copy.dependants.putAll(dependants);
+        return copy;
     }
     
     // --------------------------------------------------------------------------------------------

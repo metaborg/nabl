@@ -1,7 +1,7 @@
 package mb.statix.taico.dependencies;
 
-import static org.junit.Assert.*;
 import static mb.statix.taico.util.test.TestUtil.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
@@ -11,7 +11,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-import mb.statix.constraints.CResolveQuery;
+import mb.statix.constraints.CFalse;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
@@ -20,7 +20,9 @@ import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
+import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
 public class DependencyTest {
@@ -34,6 +36,7 @@ public class DependencyTest {
         //Create a context
         Spec spec = createSpec();
         oldContext = SolverContext.initialContext(IncrementalStrategy.of("combined"), spec);
+        oldContext.setCoordinator(mock(ISolverCoordinator.class));
         
         //Create the global module
         global = Module.topLevelModule("global");
@@ -52,10 +55,19 @@ public class DependencyTest {
         IChangeSet changeSet = new BaselineChangeSet(oldContext, empty(), changed, empty());
         
         Map<String, IConstraint> initConstraints = new HashMap<>();
-//        if (changed.contains(global.getName())) {
-//            initConstraints.put(global.getName(), global.getInitialization());
-//        }
-        return SolverContext.incrementalContext(IncrementalStrategy.of("combined"), oldContext, previousRootState, changeSet, initConstraints, oldContext.getSpec());
+        for (IModule module : oldContext.getModules()) {
+            //Skip the root module
+            if (!ModulePaths.containsPathSeparator(module.getId())) continue;
+            
+            initConstraints.put(module.getId(), new CFalse());
+        }
+        IncrementalStrategy strategy = IncrementalStrategy.of("combined");
+        SolverContext context = SolverContext.incrementalContext(strategy, oldContext, previousRootState, changeSet, initConstraints, oldContext.getSpec());
+        context.setCoordinator(mock(ISolverCoordinator.class));
+        
+        //This step is normally done in the coordinator. It initializes the correct modules and removes or transfers dependencies
+        strategy.createInitialModules(context, changeSet, context.getInitialConstraints());
+        return context;
     }
     
     @Test
@@ -64,8 +76,9 @@ public class DependencyTest {
         IModule A = createChild(global, "A", globalScope);
         IModule B = createChild(global, "B", globalScope);
         
-        NameDependencies doA = oldContext.getDependencies(A);
-        doA.addDependant(B.getId(), mock(CResolveQuery.class));
+        Dependencies doA = oldContext.getDependencies(A);
+        Dependencies doB = oldContext.getDependencies(B);
+        doB.addDependency(A);
         assertTrue(doA.getModuleDependantIds().contains(B.getId()));
         
         //After transfer with no changes, this should still hold
@@ -80,8 +93,10 @@ public class DependencyTest {
         IModule A = createChild(global, "A", globalScope);
         IModule B = createChild(global, "B", globalScope);
         
-        NameDependencies doA = oldContext.getDependencies(A);
-        doA.addDependant(B.getId(), mock(CResolveQuery.class));
+        Dependencies doB = oldContext.getDependencies(B);
+        doB.addDependency(A);
+        
+        Dependencies doA = oldContext.getDependencies(A);
         assertTrue(doA.getModuleDependantIds().contains(B.getId()));
         
         //After transfer with changes to A, this should still hold

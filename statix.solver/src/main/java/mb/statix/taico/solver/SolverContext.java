@@ -219,8 +219,8 @@ public class SolverContext implements Serializable {
      *      the root module
      */
     public IModule getRootModule() {
-        if (coordinator == null) return manager.getModulesOnLevel(0).values().stream().findAny().orElse(null);
-        return coordinator.getRootModule();
+        return manager.getRootModule();
+        //return coordinator.getRootModule();
     }
     
     /**
@@ -397,8 +397,7 @@ public class SolverContext implements Serializable {
     
     /**
      * Gets the dependencies object for the given module. If the given module does not currently
-     * have a dependencies object, but the previous context does have a dependencies object, then
-     * those dependencies will be returned. Otherwise, a new dependencies object will be created.
+     * have a dependencies object, a new dependencies object will be created.
      * 
      * @param moduleId
      *      the id of the module
@@ -408,18 +407,12 @@ public class SolverContext implements Serializable {
      */
     @SuppressWarnings("unchecked")
     public <T extends Dependencies> T getDependencies(String moduleId) {
-        T old;
-        if (!dependencies.hasDependencies(moduleId) && (old = getOldDependencies(moduleId)) != null) {
-            return old;
-        }
-        
         return (T) dependencies.getDependencies(moduleId);
     }
     
     /**
      * Gets the dependencies object for the given module. If the given module does not currently
-     * have a dependencies object, but the previous context does have a dependencies object, then
-     * those dependencies will be returned. Otherwise, a new dependencies object will be created.
+     * have a dependencies object, a new dependencies object will be created.
      * 
      * @param module
      *      the module
@@ -452,21 +445,6 @@ public class SolverContext implements Serializable {
     }
     
     /**
-     * Gets or creates a dependendencies object for the given module in the current context.
-     * This method does not consider dependencies in previous contexts.
-     * 
-     * @param moduleId
-     *      the id of the module
-     * 
-     * @return
-     *      the dependencies
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends Dependencies> T getNewDependencies(String moduleId) {
-        return (T) dependencies.getDependencies(moduleId);
-    }
-    
-    /**
      * Transfers dependencies for this module from the old context to the new context.
      * 
      * @param moduleId
@@ -483,8 +461,22 @@ public class SolverContext implements Serializable {
         T old = getOldDependencies(moduleId);
         if (old == null) throw new IllegalStateException("The given module is unknown in the old context.");
         
-        getDependencyManager().setDependencies(moduleId, old);
+        getDependencyManager().setDependencies(moduleId, old.copy());
         return old;
+    }
+    
+    /**
+     * Resets the dependencies of the module with the given id.
+     * 
+     * @param moduleId
+     *      the id of the module
+     * 
+     * @return
+     *      the new dependencies
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Dependencies> T resetDependencies(String moduleId) {
+        return (T) dependencies.resetDependencies(moduleId);
     }
     
     @SuppressWarnings("unchecked")
@@ -586,12 +578,7 @@ public class SolverContext implements Serializable {
         for (IModule module : manager._getModules()) {
             String id = module.getId();
             if (!dependencies.hasDependencies(id)) {
-                if (oldContext != null && oldContext.getModuleManager().hasModule(id)) {
-                    transferDependencies(id);
-                } else {
-                    //Force creation
-                    getNewDependencies(id);
-                }
+                System.err.println("There are no dependencies for module " + id + "!!!");
             }
         }
         
@@ -621,26 +608,6 @@ public class SolverContext implements Serializable {
                 + ", incrementalManager=" + incrementalManager + "]";
 //                + ", solverResults=" + solverResults + "]";
     }
-    
-//    private void writeObject(ObjectOutputStream out) throws IOException {
-//        Set<IContextAware> contextObservers = new HashSet<>();
-//        for (WeakReference<IContextAware> wr : this.contextObservers) {
-//            IContextAware observer = wr.get();
-//            if (observer != null) contextObservers.add(observer);
-//        }
-//        out.defaultWriteObject();
-//        out.writeObject(contextObservers);
-//    }
-//    
-//    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-//        //TODO IMPORTANT CRITICAL Unable to read like this, the weak references might be cleared directly.
-//        in.defaultReadObject();
-//        Set<IContextAware> contextObservers = (Set<IContextAware>) in.readObject();
-//        this.contextObservers = ConcurrentHashMap.newKeySet();
-//        for (IContextAware observer : contextObservers) {
-//            this.contextObservers.add(new WeakReference<>(observer));
-//        }
-//    }
     
     // --------------------------------------------------------------------------------------------
     // Creation
@@ -688,7 +655,8 @@ public class SolverContext implements Serializable {
         
         //TODO IMPORTANT validate that the state used here is the correct one (should it be the one stored, or the one in the context corresponding to the root?)
         IMState newState = newContext.transferModule(previousRootState.getOwner());
-        newContext.getNewDependencies(newState.owner().getId()); //Reset dependencies of the top level
+        newContext.resetDependencies(newState.owner().getId()); //Reset dependencies of the top level
+        //TODO Important we need to reset the dependants as well
         setSolverContext(newContext);
         
         //Prune removed children

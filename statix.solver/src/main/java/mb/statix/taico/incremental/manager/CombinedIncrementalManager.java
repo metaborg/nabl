@@ -2,7 +2,6 @@ package mb.statix.taico.incremental.manager;
 
 import static mb.statix.taico.solver.SolverContext.context;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -65,7 +64,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
         //TODO Determine from the changeset which modules to add to the solver
         
         //We add all modules that are dirty or new, after which the solving process begins
-        System.err.println("Adding dirty and new modules");
+        System.err.println("[CIM] Adding dirty and new modules");
         for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             final IModule module = entry.getKey();
             final IConstraint init = entry.getValue();
@@ -149,11 +148,11 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
         final ISolverCoordinator coordinator = context().getCoordinator();
         final IModule root = coordinator.getRootModule();
-        System.err.println("Diff in final phase");
+        System.err.println("[CIM] Diff in final phase");
         DiffResult diff = Diff.diff(root.getId(), context(), context().getOldContext().get(), true);
         diff.print(System.err);
         
-        System.err.println("Effective diff in final phase");
+        System.err.println("[CIM] Effective diff in final phase");
         diff.toEffectiveDiff().print(System.err);
 
         //At this point we have redone the structure of dirty modules and of unclean modules
@@ -161,7 +160,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
 
         //Schedule all stuck modules for the next phase.
-        System.out.println("Scheduling all stuck modules for the Final phase: " + stuck);
+        System.out.println("[CIM] Scheduling all stuck modules for the Final phase: " + stuck);
         for (ModuleSolver solver : stuck) {
             solver.getStore().activateFromModules(TDebug.DEV_OUT);
             coordinator.addSolver(solver);
@@ -268,38 +267,36 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
     @Override
     public void initSolver(ModuleSolver solver) {
-        //On initialization, we want to add the init constraint of the m
+        //TODO Is this the correct approach?
+        //On initialization, we want to add the init constraint of the module if it is not clean
         IModule module = solver.getOwner();
         if (module.getTopCleanliness().isCleanish()) return;
 
         IMState state = solver.getOwner().getCurrentState();
         IConstraint init = solver.getOwner().getInitialization();
         if (init == null) {
-            System.err.println("Module " + solver.getOwner() + " does not have an init constraint.");
+            System.err.println("[CIM] Module " + solver.getOwner() + " does not have an init constraint.");
             return;
         }
+        
+        System.err.println("[CIM] Adding the init constraint of module " + solver.getOwner() + " to the completeness, to make it incomplete (it is uncertain)");
         
         solver.getCompleteness().add(init, state.unifier());
     }
 
     @Override
     public void solverStart(ModuleSolver solver) {
-        System.err.println("Solver start triggerd for " + solver.getOwner());
+        System.err.println("[CIM] Solver start triggerd for " + solver.getOwner());
 
 
     }
 
     @Override
     public void solverDone(ModuleSolver solver) {
-        System.err.println("Solver done triggered on incremental manager for " + solver.getOwner() + ". Switching module over to clean.");
+        System.err.println("[CIM] Solver done triggered for " + solver.getOwner() + ". Switching module over to clean.");
 
         //If this solver is done, do we count that as the solving having succeeded?
         super.solverDone(solver);
-    }
-    
-    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
-        System.out.println("Serializing combined incremental manager");
-        stream.defaultWriteObject();
     }
 
     public static enum CombinedPhase {

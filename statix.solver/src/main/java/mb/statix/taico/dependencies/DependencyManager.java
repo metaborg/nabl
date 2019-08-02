@@ -62,6 +62,21 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
         return null;
     }
     
+    /**
+     * Resets the dependencies of the given module.
+     * 
+     * @param moduleId
+     *      the id of the module
+     * 
+     * @return
+     *      the new dependencies
+     */
+    public D resetDependencies(String moduleId) {
+        D deps = creator.apply(moduleId);
+        map.put(moduleId, deps);
+        return deps;
+    }
+    
     @Override
     public Iterator<Entry<String, D>> iterator() {
         return map.entrySet().iterator();
