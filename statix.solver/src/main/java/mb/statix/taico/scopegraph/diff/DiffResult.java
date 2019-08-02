@@ -79,7 +79,7 @@ public class DiffResult implements Serializable {
     }
     
     public DiffResult toEffectiveDiff() {
-        DiffResult effective = new DiffResult();
+        DiffResult effective = new DiffResult(addedModules, removedModules);
         
         //We need to move the different declarations to the owners of the scopes
         synchronized (diffs) {
