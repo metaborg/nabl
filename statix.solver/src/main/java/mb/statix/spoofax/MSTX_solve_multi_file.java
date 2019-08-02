@@ -32,7 +32,7 @@ import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.scopegraph.diff.Diff;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.coordinator.SolverCoordinator;
@@ -87,7 +87,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         
         TTimings.startPhase("changeset");
         //Temporarily set the context to the previous context for the changeset
-        SolverContext.setSolverContext(initial.context());
+        Context.setContext(initial.context());
         Set<String> removed = new HashSet<>();
         Set<String> changed = new HashSet<>();
         Set<String> added = new HashSet<>();
@@ -118,12 +118,12 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             modules.put(change.getModule(), tuple._2());
         }
         
-        SolverContext oldContext = initial.context();
+        Context oldContext = initial.context();
         IChangeSet changeSet = strategy.createChangeSet(oldContext, added, changed, removed);
         TTimings.endPhase("changeset");
         
         TTimings.startPhase("incremental context");
-        SolverContext newContext = SolverContext.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
+        Context newContext = Context.incrementalContext(strategy, oldContext, initial.state(), changeSet, modules, spec);
         TTimings.endPhase("incremental context");
         
         ISolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();

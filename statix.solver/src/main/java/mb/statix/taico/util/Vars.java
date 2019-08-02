@@ -4,7 +4,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class Vars {
     /**
@@ -36,7 +36,7 @@ public class Vars {
      * @return
      *      the owner of the given term variable
      */
-    public static IModule getOwnerUnchecked(SolverContext context, ITermVar termVar) {
+    public static IModule getOwnerUnchecked(Context context, ITermVar termVar) {
         return context.getModuleUnchecked(termVar.getResource());
     }
     
@@ -50,7 +50,7 @@ public class Vars {
      *      the owner of the given term variable
      */
     public static IModule getOwnerUnchecked(ITermVar termVar) {
-        return SolverContext.context().getModuleUnchecked(termVar.getResource());
+        return Context.context().getModuleUnchecked(termVar.getResource());
     }
     
     /**
@@ -68,7 +68,7 @@ public class Vars {
      *      If this request is not allowed.
      */
     public static IModule getOwner(ITermVar termVar, IModule requester) throws ModuleDelayException {
-        return SolverContext.context().getModule(requester, termVar.getResource());
+        return Context.context().getModule(requester, termVar.getResource());
     }
     
     /**
@@ -86,6 +86,6 @@ public class Vars {
      *      If this request is not allowed.
      */
     public static IModule getOwner(ITermVar termVar, String requesterId) throws ModuleDelayException {
-        return SolverContext.context().getModule(requesterId, termVar.getResource());
+        return Context.context().getModule(requesterId, termVar.getResource());
     }
 }

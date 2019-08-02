@@ -19,7 +19,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.ScopeIdentity;
 
@@ -54,7 +54,7 @@ public class MState implements IMState {
         this.vars = new HashSet<>();
         this.unifier = DistributedUnifier.Immutable.of(owner.getId());
         this.termProperties = new HashMap<>();
-        SolverContext.context().setState(owner, this);
+        Context.context().setState(owner, this);
     }
     
     /**
@@ -200,7 +200,7 @@ public class MState implements IMState {
      *      the state for the given module
      */
     public static MState topLevelState(IModule module) {
-        Spec spec = SolverContext.context().getSpec();
+        Spec spec = Context.context().getSpec();
         ModuleScopeGraph scopeGraph = new ModuleScopeGraph(module, spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel(), Collections.emptyList());
         return new MState(module, scopeGraph);
     }

@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
@@ -25,7 +25,7 @@ public class ProgressTracker {
     public ProgressTracker() {}
     
     public synchronized void update() {
-        Collection<IModule> modules = SolverContext.context().getModuleManager()._getModules();
+        Collection<IModule> modules = Context.context().getModuleManager()._getModules();
         
         modulesTotal = modules.size();
         modulesComplete = 0;
@@ -57,7 +57,7 @@ public class ProgressTracker {
             }
         }
         
-        ISolverCoordinator coordinator = SolverContext.context().getCoordinator();
+        ISolverCoordinator coordinator = Context.context().getCoordinator();
         solversRunning = coordinator.getSolvers().size();
         solversComplete = coordinator.getResults().size();
         solversTotal = solversRunning + solversComplete;

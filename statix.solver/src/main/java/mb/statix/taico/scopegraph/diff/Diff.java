@@ -14,7 +14,7 @@ import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.name.Name;
 import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class Diff {
     /**
@@ -33,7 +33,7 @@ public class Diff {
      * @return
      *      a diffresult
      */
-    public static DiffResult diff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
+    public static DiffResult diff(String id, Context newContext, Context oldContext, boolean external) {
         DiffResult result = new DiffResult();
         diff(result, id, newContext, oldContext, external, false);
         return result;
@@ -55,7 +55,7 @@ public class Diff {
      * @return
      *      a diffresult
      */
-    public static DiffResult contextFreeDiff(String id, SolverContext newContext, SolverContext oldContext, boolean external) {
+    public static DiffResult contextFreeDiff(String id, Context newContext, Context oldContext, boolean external) {
         DiffResult result = new DiffResult();
         diff(result, id, newContext, oldContext, external, true);
         return result;
@@ -64,7 +64,7 @@ public class Diff {
     public static void diff(
             DiffResult result,
             String id,
-            SolverContext cNew, SolverContext cOld,
+            Context cNew, Context cOld,
             boolean external,
             boolean onlyContextFree) {
         //Determine the graphs and their unifiers from the context

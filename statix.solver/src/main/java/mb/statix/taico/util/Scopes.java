@@ -7,7 +7,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 
 public class Scopes {
@@ -99,7 +99,7 @@ public class Scopes {
      * @return
      *      the owner of the given scope
      */
-    public static IModule getOwnerUnchecked(SolverContext context, IScope term) {
+    public static IModule getOwnerUnchecked(Context context, IScope term) {
         return context.getModuleUnchecked(term.getResource());
     }
     
@@ -113,7 +113,7 @@ public class Scopes {
      *      the owner of the given scope
      */
     public static IModule getOwnerUnchecked(ITerm term) {
-        return SolverContext.context().getModuleUnchecked(getScope(term).getResource());
+        return Context.context().getModuleUnchecked(getScope(term).getResource());
     }
     
     /**
@@ -126,7 +126,7 @@ public class Scopes {
      *      the owner of the given scope
      */
     public static IModule getOwnerUnchecked(ITerm term, IUnifier unifier) {
-        return SolverContext.context().getModuleUnchecked(getScope(term, unifier).getResource());
+        return Context.context().getModuleUnchecked(getScope(term, unifier).getResource());
     }
     
     /**
@@ -142,7 +142,7 @@ public class Scopes {
      *      If the given term is not a scope.
      */
     public static IMState getStateUnchecked(ITerm term) {
-        return SolverContext.context().getState(getScope(term).getResource());
+        return Context.context().getState(getScope(term).getResource());
     }
     
     /**
@@ -163,7 +163,7 @@ public class Scopes {
      *      If the given term is not a scope.
      */
     public static IModule getOwner(IScope scope, IModule requester) throws ModuleDelayException {
-        return SolverContext.context().getModule(requester, scope.getResource());
+        return Context.context().getModule(requester, scope.getResource());
     }
     
     /**
@@ -184,6 +184,6 @@ public class Scopes {
      *      If the given term is not a scope.
      */
     public static IModule getOwner(IScope scope, String requester) throws ModuleDelayException {
-        return SolverContext.context().getModule(requester, scope.getResource());
+        return Context.context().getModule(requester, scope.getResource());
     }
 }

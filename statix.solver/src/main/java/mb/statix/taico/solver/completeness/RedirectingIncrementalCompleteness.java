@@ -20,7 +20,7 @@ import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.spec.Spec;
 import mb.statix.taico.observers.EdgeCompleteManager;
 import mb.statix.taico.observers.EdgeCompleteObserver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.Scopes;
 
 public class RedirectingIncrementalCompleteness extends IncrementalCompleteness implements EdgeCompleteManager {
@@ -113,7 +113,7 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         
         if (this.owner.equals(owner)) return this;
         
-        return SolverContext.context().getModuleUnchecked(owner).getCurrentState().solver().getCompleteness();
+        return Context.context().getModuleUnchecked(owner).getCurrentState().solver().getCompleteness();
     }
     
     // --------------------------------------------------------------------------------------------

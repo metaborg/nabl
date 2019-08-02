@@ -27,7 +27,7 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.coordinator.SolverCoordinator;
@@ -87,7 +87,7 @@ public class MSTX_solve_constraint extends StatixPrimitive {
     private ITerm solveConstraint(Spec spec, String resource, IConstraint constraint,
             IDebugContext debug) {
         //Create a context and a coordinator
-        final SolverContext context = SolverContext.initialContext(new NonIncrementalStrategy(), spec);
+        final Context context = Context.initialContext(new NonIncrementalStrategy(), spec);
         final ISolverCoordinator coordinator = CONCURRENT ? new ConcurrentSolverCoordinator(Executors.newWorkStealingPool(THREADS)) : new SolverCoordinator();
         context.setCoordinator(coordinator);
         

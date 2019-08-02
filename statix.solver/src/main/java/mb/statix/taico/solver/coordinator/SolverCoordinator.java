@@ -12,7 +12,7 @@ import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 
 /**
@@ -94,7 +94,7 @@ public class SolverCoordinator extends ASolverCoordinator {
                 if (Thread.interrupted()) throw new InterruptedException();
                 
                 //If any progress can be made, store that information
-                SolverContext.setCurrentModule(solver.getOwner());
+                Context.setCurrentModule(solver.getOwner());
                 if (solver.solveStep()) {
                     anyProgress = true;
                     

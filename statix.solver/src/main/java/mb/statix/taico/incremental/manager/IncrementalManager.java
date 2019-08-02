@@ -12,7 +12,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.TOverrides;
 
 public class IncrementalManager implements Serializable {
@@ -164,7 +164,7 @@ public class IncrementalManager implements Serializable {
     public void startFirstPhase(Map<IModule, IConstraint> modules) {
         for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             //childSolver sets the solver on the state and adds it
-            ModuleSolver parentSolver = SolverContext.context().getState(entry.getKey().getParentId()).solver();
+            ModuleSolver parentSolver = Context.context().getState(entry.getKey().getParentId()).solver();
             parentSolver.childSolver(entry.getKey().getCurrentState(), entry.getValue());
         }
     }

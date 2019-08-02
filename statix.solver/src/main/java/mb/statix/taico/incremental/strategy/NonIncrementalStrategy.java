@@ -10,30 +10,30 @@ import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class NonIncrementalStrategy extends IncrementalStrategy {
     
     @Override
-    public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
+    public IChangeSet createChangeSet(Context oldContext, Collection<String> added, Collection<String> changed,
             Collection<String> removed) {
         //TODO Is this correct? Does this not allow some module access already?
         return new BaselineChangeSet(oldContext, added, changed, removed);
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, String requester, String id) {
+    public IModule getModule(Context context, Context oldContext, String requester, String id) {
         return context.getModuleManager().getModule(id);
     }
     
     @Override
-    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
+    public IModule getChildModule(Context context, Context oldContext, IModule requester, String childId) {
         //Always allow child access when we are not being incremental
         return context.getModuleManager().getModule(childId);
     }
     
     @Override
-    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
+    public Map<IModule, IConstraint> createInitialModules(Context context,
             IChangeSet changeSet,
             Map<String, IConstraint> moduleConstraints) {
         Map<IModule, IConstraint> newModules = new HashMap<>();

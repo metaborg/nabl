@@ -106,7 +106,7 @@ public class ModuleSolver implements IOwnable {
         }
 
         state.setSolver(this);
-        if (!separateSolver) SolverContext.context().getIncrementalManager().initSolver(this);
+        if (!separateSolver) Context.context().getIncrementalManager().initSolver(this);
     }
     
     /**
@@ -130,7 +130,7 @@ public class ModuleSolver implements IOwnable {
         
         if (!SplitModuleUtil.isSplitModule(state.owner().getId())) {
             //This module should solve in restricted mode
-            SolverContext.context().getIncrementalManager().registerNonSplit(id);
+            Context.context().getIncrementalManager().registerNonSplit(id);
         }
         this.state.coordinator().addSolver(solver);
         
@@ -248,7 +248,7 @@ public class ModuleSolver implements IOwnable {
      */
     public boolean solveStep() throws InterruptedException {
         if (!init) {
-            SolverContext.context().getIncrementalManager().solverStart(this);
+            Context.context().getIncrementalManager().solverStart(this);
             init = true;
         }
         IConstraint constraint = constraints.remove();
@@ -259,7 +259,7 @@ public class ModuleSolver implements IOwnable {
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
-            IncrementalManager im = SolverContext.context().getIncrementalManager();
+            IncrementalManager im = Context.context().getIncrementalManager();
             //TODO Dirty hack: printing the constraint will trigger a module delay exception if a variable is encountered from another module.
             //To "fix" this we unregister and reregister the module between the printing.
             im.executeUnrestricted(getOwner().getId(),
@@ -341,18 +341,18 @@ public class ModuleSolver implements IOwnable {
         String splitId = SplitModuleUtil.getSplitModuleId(ownerId);
         
         //TODO How to handle using old modules
-        IModule splitCurrent = SolverContext.context().getModuleManager().getModule(splitId);
+        IModule splitCurrent = Context.context().getModuleManager().getModule(splitId);
         if (splitCurrent != null) {
             //a. The split already exists in the current context, update it
             System.err.println("Split module " + splitId + " already exists in the current context, but was not created by the solver of the original module. State = " + splitCurrent.getTopCleanliness() + ". Updating...");
             SplitModuleUtil.updateSplitModule(splitCurrent);
-        } else if ((splitCurrent = SolverContext.context().getModuleUnchecked(splitId)) != null) {
+        } else if ((splitCurrent = Context.context().getModuleUnchecked(splitId)) != null) {
             //TODO This scenario depends on the strategy. Will the strategy create a new one?
             System.err.println("Split module " + splitId + " existed in the previous context, but not in the current");
             //b. The split already exists in the previous context: create a new one in the current context
             
             //Notify the incremental manager to make a decision over this split module. It might only be interested in the structure here
-            if (SolverContext.context().getIncrementalManager().createSplitModuleRequest(ownerId)) {
+            if (Context.context().getIncrementalManager().createSplitModuleRequest(ownerId)) {
                 System.err.println("Creating split module " + splitId + " after approval from the incremental manager");
                 splitCurrent = SplitModuleUtil.createSplitModule(getOwner(), true);
             } else {
@@ -414,7 +414,7 @@ public class ModuleSolver implements IOwnable {
         
         if (getOwner().getCurrentState().solver() == this) {
             //If we are the main solver of this module, we signal that we are done.
-            SolverContext.context().getIncrementalManager().solverDone(this);
+            Context.context().getIncrementalManager().solverDone(this);
             init = false;
         }
 

@@ -31,7 +31,11 @@ import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
-public class SolverContext implements Serializable {
+/**
+ * Class to represent the context. The context keeps track of all information necessary for
+ * modular solving.
+ */
+public class Context implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private final transient IncrementalStrategy strategy;
@@ -40,14 +44,14 @@ public class SolverContext implements Serializable {
     private final DependencyManager<?> dependencies;
     private final IncrementalManager incrementalManager;
     private transient ISolverCoordinator coordinator;
-    private transient SolverContext oldContext;
+    private transient Context oldContext;
     private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
     
 //    private Map<String, MSolverResult> solverResults = hashMap();
     private Map<String, IMState> states = hashMap();
     
-    private SolverContext(IncrementalStrategy strategy, Spec spec) {
+    private Context(IncrementalStrategy strategy, Spec spec) {
         this.strategy = strategy;
         this.spec = spec;
         this.incrementalManager = strategy.createManager();
@@ -60,7 +64,7 @@ public class SolverContext implements Serializable {
      * @return
      *      the old context
      */
-    public Optional<SolverContext> getOldContext() {
+    public Optional<Context> getOldContext() {
         return Optional.ofNullable(oldContext);
     }
     
@@ -548,7 +552,7 @@ public class SolverContext implements Serializable {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Commits the changes with regards to the previous solver context.
+     * Commits the changes with regards to the previous context.
      * This call copies over any information from the old context that is relevant and then removes
      * the links to the old context and the change set, finalizing this context.
      */
@@ -601,7 +605,7 @@ public class SolverContext implements Serializable {
     
     @Override
     public String toString() {
-        return "SolverContext(" + hashCode() + ") [strategy=" + strategy
+        return "Context(" + hashCode() + ") [strategy=" + strategy
                 + ", manager=" + manager
                 + ", oldContext=" + oldContext
                 + ", changeSet=" + changeSet
@@ -614,8 +618,7 @@ public class SolverContext implements Serializable {
     // --------------------------------------------------------------------------------------------
     
     /**
-     * Creates a solver context for when a clean build is requested or no previous results are
-     * available.
+     * Creates a context for when a clean build is requested or no previous results are available.
      * 
      * @param strategy
      *      the incremental strategy to use
@@ -623,17 +626,17 @@ public class SolverContext implements Serializable {
      *      the spec
      * 
      * @return
-     *      the new solver context
+     *      the new context
      */
-    public static SolverContext initialContext(IncrementalStrategy strategy, Spec spec) {
-        SolverContext newContext = new SolverContext(strategy, spec);
-        setSolverContext(newContext);
+    public static Context initialContext(IncrementalStrategy strategy, Spec spec) {
+        Context newContext = new Context(strategy, spec);
+        setContext(newContext);
         return newContext;
     }
 
     /**
-     * Creates a solver context for when a previous context is available as well as the changeset
-     * with regards to that previous context.
+     * Creates a context for when a previous context is available as well as the changeset with
+     * regards to that previous context.
      * 
      * @param strategy
      *      the incremental strategy to employ
@@ -643,12 +646,12 @@ public class SolverContext implements Serializable {
      *      the changeset
      * 
      * @return
-     *      the new solver context
+     *      the new context
      */
-    public static SolverContext incrementalContext(
-            IncrementalStrategy strategy, SolverContext previousContext, IMState previousRootState,
+    public static Context incrementalContext(
+            IncrementalStrategy strategy, Context previousContext, IMState previousRootState,
             IChangeSet changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
-        SolverContext newContext = new SolverContext(strategy, spec);
+        Context newContext = new Context(strategy, spec);
         newContext.oldContext = previousContext;
         newContext.changeSet = changeSet;
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
@@ -657,7 +660,7 @@ public class SolverContext implements Serializable {
         IMState newState = newContext.transferModule(previousRootState.getOwner());
         newContext.resetDependencies(newState.owner().getId()); //Reset dependencies of the top level
         //TODO Important we need to reset the dependants as well
-        setSolverContext(newContext);
+        setContext(newContext);
         
         //Prune removed children
         for (IModule child : changeSet.removed()) {
@@ -671,29 +674,29 @@ public class SolverContext implements Serializable {
     // --------------------------------------------------------------------------------------------
     // Thread specific accessors
     // --------------------------------------------------------------------------------------------
-    private static final ThreadLocal<SolverContext> currentContextThreadSensitive = new ThreadLocal<>();
-    private static SolverContext currentContext;
+    private static final ThreadLocal<Context> currentContextThreadSensitive = new ThreadLocal<>();
+    private static Context currentContext;
     
     private static transient final ThreadLocal<IModule> currentModuleThreadSensitive = new ThreadLocal<>();
     
     /**
      * @return
-     *      the current solver context
+     *      the current context
      */
-    public static SolverContext context() {
+    public static Context context() {
         return currentContext;
     }
     
-    public static void setSolverContext(SolverContext context) {
+    public static void setContext(Context context) {
         currentContext = context;
 //        currentContextThreadSensitive.set(context);
     }
     
-    public static void setThreadSensitiveSolverContext(SolverContext context) {
+    public static void setThreadSensitiveContext(Context context) {
         currentContextThreadSensitive.set(context);
     }
     
-    public static SolverContext getThreadSensitiveSolverContext() {
+    public static Context getThreadSensitiveContext() {
         return currentContextThreadSensitive.get();
     }
     
@@ -722,7 +725,7 @@ public class SolverContext implements Serializable {
         return currentModuleThreadSensitive.get();
     }
     
-//    public static SolverContext getThreadSensitiveSolverContext(SolverContext context) {
+//    public static Context getThreadSensitiveContext(Context context) {
 //        return currentContextThreadSensitive.get();
 //    }
     // --------------------------------------------------------------------------------------------

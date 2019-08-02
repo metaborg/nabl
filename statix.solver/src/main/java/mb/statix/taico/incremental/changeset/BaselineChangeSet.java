@@ -12,7 +12,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.Scopes;
 
 public class BaselineChangeSet extends AChangeSet {
@@ -26,14 +26,14 @@ public class BaselineChangeSet extends AChangeSet {
             NEW
     };
     
-    public BaselineChangeSet(SolverContext oldContext,
+    public BaselineChangeSet(Context oldContext,
             Collection<String> added, Collection<String> changed, Collection<String> removed) {
         super(oldContext, Arrays.asList(SUPPORTED), added, changed, removed);
         init(oldContext);
     }
     
     @Override
-    protected void init(SolverContext oldContext) {
+    protected void init(Context oldContext) {
         //1. Transitively flag removed children
         new HashSet<>(removed()).stream().flatMap(m -> m.getDescendants()).forEach(
                 m -> add(Flag.DELETED, FlagCondition.OverrideFlag, m));

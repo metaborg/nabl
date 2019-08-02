@@ -10,7 +10,7 @@ import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.QueryIncrementalManager;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 
 public class QueryAnalyzer {
@@ -23,7 +23,7 @@ public class QueryAnalyzer {
         
         //Now we need to solve dirty modules again.
         for (IModule module : dirty) {
-            SolverContext.context().addModule(module);
+            Context.context().addModule(module);
             
             //Add the initialization constraint as incomplete
             IMState state = module.getCurrentState();
@@ -60,7 +60,7 @@ public class QueryAnalyzer {
         module.setFlag(Flag.CLEAN);
         
         //Allow module access
-        SolverContext.context().<QueryIncrementalManager>getIncrementalManager().allowAccess(module.getId());
+        Context.context().<QueryIncrementalManager>getIncrementalManager().allowAccess(module.getId());
         
         //Resolve pending incompleteness
         IMState state = module.getCurrentState();

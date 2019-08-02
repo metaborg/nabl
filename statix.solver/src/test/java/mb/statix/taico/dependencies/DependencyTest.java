@@ -21,13 +21,13 @@ import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
 
 public class DependencyTest {
-    protected SolverContext oldContext;
-    protected SolverContext context;
+    protected Context oldContext;
+    protected Context context;
     protected IModule global;
     protected Scope globalScope;
 
@@ -35,7 +35,7 @@ public class DependencyTest {
     public void setUp() throws Exception {
         //Create a context
         Spec spec = createSpec();
-        oldContext = SolverContext.initialContext(IncrementalStrategy.of("combined"), spec);
+        oldContext = Context.initialContext(IncrementalStrategy.of("combined"), spec);
         
         //Create the global module
         global = Module.topLevelModule("global");
@@ -58,7 +58,7 @@ public class DependencyTest {
      * @return
      *      an incremental context with the given changed modules
      */
-    protected SolverContext incremental(Collection<String> changed) {
+    protected Context incremental(Collection<String> changed) {
         IMState previousRootState = global.getCurrentState();
         IChangeSet changeSet = new BaselineChangeSet(oldContext, empty(), changed, empty());
         
@@ -70,7 +70,7 @@ public class DependencyTest {
             initConstraints.put(module.getId(), new CFalse());
         }
         IncrementalStrategy strategy = IncrementalStrategy.of("combined");
-        SolverContext context = SolverContext.incrementalContext(strategy, oldContext, previousRootState, changeSet, initConstraints, oldContext.getSpec());
+        Context context = Context.incrementalContext(strategy, oldContext, previousRootState, changeSet, initConstraints, oldContext.getSpec());
         context.setCoordinator(mockCoordinator(global));
         
         //This step is normally done in the coordinator. It initializes the correct modules and removes or transfers dependencies

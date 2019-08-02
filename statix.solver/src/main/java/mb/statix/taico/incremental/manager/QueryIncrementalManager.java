@@ -12,7 +12,7 @@ import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
 
@@ -98,7 +98,7 @@ public class QueryIncrementalManager extends IncrementalManager {
         module.setFlag(Flag.CLEAN);
         
         //Allow module access
-        SolverContext.context().<QueryIncrementalManager>getIncrementalManager().allowAccess(module.getId());
+        Context.context().<QueryIncrementalManager>getIncrementalManager().allowAccess(module.getId());
         
         //Resolve pending incompleteness
         IMState state = module.getCurrentState();

@@ -1,6 +1,6 @@
 package mb.statix.taico.module;
 
-import static mb.statix.taico.solver.SolverContext.context;
+import static mb.statix.taico.solver.Context.context;
 
 import java.io.Serializable;
 import java.util.List;
@@ -26,7 +26,7 @@ import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.IOwnable;
 
@@ -220,10 +220,10 @@ public interface IModule extends Flaggable, Serializable {
     /**
      * Convenience method.
      * 
-     * @see SolverContext#getState(IModule)
+     * @see Context#getState(IModule)
      */
     default IMState getCurrentState() {
-        IMState state = SolverContext.context().getState(this);
+        IMState state = Context.context().getState(this);
         if (state == null) System.err.println("State of " + this + " is null!"); //TODO Remove
         return state;
     }

@@ -17,7 +17,7 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.taico.dot.DotPrinter;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class TDebug {
     /** The location where debug files will be written. */
@@ -73,7 +73,7 @@ public class TDebug {
      *      If writing fails for some reason.
      */
     public static void outputScopeGraph() {
-        IModule root = SolverContext.context().getRootModule();
+        IModule root = Context.context().getRootModule();
         outputScopeGraph(root.getScopeGraph(), "");
     }
     

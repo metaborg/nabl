@@ -29,7 +29,7 @@ import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.scopegraph.reference.TrackingNameResolution;
 import mb.statix.taico.solver.MConstraintContext;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 
@@ -168,7 +168,7 @@ public class QueryDetails implements IQueryDetails<Scope, ITerm, ITerm> {
         int oSize = queryResult.size();
         if (oSize != nSize) return QueryResultComparison.DIFFERENT_COUNT;
         
-        IMState state = SolverContext.context().getModuleUnchecked(owner).getCurrentState();
+        IMState state = Context.context().getModuleUnchecked(owner).getCurrentState();
         for (int i = 0; i < nSize; i++) {
             ITerm oldTerm = queryResult.get(i);
             ITerm newTerm = newResults.get(i);

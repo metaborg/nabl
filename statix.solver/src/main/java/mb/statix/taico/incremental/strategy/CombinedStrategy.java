@@ -13,7 +13,7 @@ import mb.statix.taico.incremental.manager.CombinedIncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class CombinedStrategy extends IncrementalStrategy {
     
@@ -23,13 +23,13 @@ public class CombinedStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
+    public IChangeSet createChangeSet(Context oldContext, Collection<String> added, Collection<String> changed,
             Collection<String> removed) {
         return new CombinedChangeSet(oldContext, added, changed, removed);
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, String requester, String id) throws ModuleDelayException {
+    public IModule getModule(Context context, Context oldContext, String requester, String id) throws ModuleDelayException {
         //TODO Move this method to the incremental manager
         if (requester.equals(id)) return context.getModuleManager().getModule(requester);
         
@@ -44,14 +44,14 @@ public class CombinedStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
+    public IModule getChildModule(Context context, Context oldContext, IModule requester, String childId) {
         //Child access works the same as normal access.
         return getModule(context, oldContext, requester.getId(), childId);
     }
     
     @Override
     protected IModule createFileModule(
-            SolverContext context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
+            Context context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
         boolean transferDeps = false;
         if (oldModule != null && oldModule.getTopCleanliness() == ModuleCleanliness.CLEAN) {
             transferDeps = true;

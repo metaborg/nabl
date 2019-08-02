@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public abstract class AChangeSet implements IChangeSet {
     private static final long serialVersionUID = 1L;
@@ -21,7 +21,7 @@ public abstract class AChangeSet implements IChangeSet {
     protected final EnumMap<ModuleCleanliness, Set<IModule>> modules = new EnumMap<>(ModuleCleanliness.class);
     protected final EnumMap<ModuleCleanliness, Set<String>> ids = new EnumMap<>(ModuleCleanliness.class);
     
-    public AChangeSet(SolverContext oldContext, Iterable<ModuleCleanliness> supported) {
+    public AChangeSet(Context oldContext, Iterable<ModuleCleanliness> supported) {
         this(oldContext, supported, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
     }
     
@@ -43,7 +43,7 @@ public abstract class AChangeSet implements IChangeSet {
      * @param removed
      *      the set of removed modules (names (top level) or ids)
      */
-    public AChangeSet(SolverContext oldContext, Iterable<ModuleCleanliness> supported, Collection<String> added, Collection<String> changed, Collection<String> removed) {
+    public AChangeSet(Context oldContext, Iterable<ModuleCleanliness> supported, Collection<String> added, Collection<String> changed, Collection<String> removed) {
         //Add all the required sets
         for (ModuleCleanliness mc : supported) {
             modules.put(mc, createSet());
@@ -69,7 +69,7 @@ public abstract class AChangeSet implements IChangeSet {
      * @return
      *      the module
      */
-    protected IModule getModule(SolverContext oldContext, String nameOrId) {
+    protected IModule getModule(Context oldContext, String nameOrId) {
         IModule module = oldContext.getModuleByNameOrId(nameOrId);
         
         //TODO Use id by using the name of the parent.
@@ -83,7 +83,7 @@ public abstract class AChangeSet implements IChangeSet {
      * @param oldContext
      *      the old context
      */
-    protected abstract void init(SolverContext oldContext);
+    protected abstract void init(Context oldContext);
 
     @Override
     public EnumMap<ModuleCleanliness, Set<IModule>> cleanlinessToModule() {

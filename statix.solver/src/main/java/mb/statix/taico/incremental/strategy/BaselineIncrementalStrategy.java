@@ -13,7 +13,7 @@ import mb.statix.taico.incremental.changeset.BaselineChangeSet;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 /**
  * Incremental strategy which is naive and simply redoes all modules that have changed and all
@@ -50,13 +50,13 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
 //    }
     
     @Override
-    public IChangeSet createChangeSet(SolverContext oldContext, Collection<String> added, Collection<String> changed,
+    public IChangeSet createChangeSet(Context oldContext, Collection<String> added, Collection<String> changed,
             Collection<String> removed) {
         return new BaselineChangeSet(oldContext, added, changed, removed);
     }
     
     @Override
-    public IModule getModule(SolverContext context, SolverContext oldContext, String requesterId, String id) {
+    public IModule getModule(Context context, Context oldContext, String requesterId, String id) {
         IModule module = context.getModuleManager().getModule(id);
         if (module != null) return module;
         
@@ -72,14 +72,14 @@ public class BaselineIncrementalStrategy extends IncrementalStrategy {
     }
     
     @Override
-    public IModule getChildModule(SolverContext context, SolverContext oldContext, IModule requester, String childId) {
+    public IModule getChildModule(Context context, Context oldContext, IModule requester, String childId) {
         //Child access works the same as normal access.
         return getModule(context, oldContext, requester.getId(), childId);
     }
     
     @Override
     protected IModule createFileModule(
-            SolverContext context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
+            Context context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
         boolean transferDeps = false;
         if (oldModule != null && oldModule.getTopCleanliness() == ModuleCleanliness.CLEAN) {
             transferDeps = true;

@@ -19,11 +19,11 @@ import mb.statix.taico.incremental.strategy.QueryIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.test.TestUtil;
 
 public class IChangeSetTest {
-    protected SolverContext context;
+    protected Context context;
     protected IModule global;
     protected Scope globalScope;
 
@@ -31,7 +31,7 @@ public class IChangeSetTest {
     public void setUp() throws Exception {
         //Create a context
         Spec spec = Spec.builder().noRelationLabel(mock(ITerm.class)).labels(new FiniteAlphabet<>()).build();
-        context = SolverContext.initialContext(new QueryIncrementalStrategy(), spec);
+        context = Context.initialContext(new QueryIncrementalStrategy(), spec);
         
         //Create the global module
         global = Module.topLevelModule("global");

@@ -6,7 +6,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class Flag implements Serializable, Comparable<Flag> {
     private static final long serialVersionUID = 1L;
@@ -44,7 +44,7 @@ public class Flag implements Serializable, Comparable<Flag> {
     }
     
     public IModule getModuleCause() {
-        return cause == null ? null : SolverContext.context().getModuleUnchecked(cause);
+        return cause == null ? null : Context.context().getModuleUnchecked(cause);
     }
 
     @Override

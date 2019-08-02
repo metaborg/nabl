@@ -27,7 +27,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
@@ -454,7 +454,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 Scope.matcher().map(Scope::getResource),
                 M.var().map(ITermVar::getResource)
             ).match(edge.scope())
-             .map(s -> SolverContext.context().getModuleUnchecked(s))
+             .map(s -> Context.context().getModuleUnchecked(s))
              .orElse(null);
     }
     

@@ -14,7 +14,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.TPrettyPrinter;
 
 public class DotPrinter {
@@ -68,10 +68,10 @@ public class DotPrinter {
         Stream<IMInternalScopeGraph<Scope, ITerm, ITerm>> modules;
         if (file == null) {
             //Use the root module and print all modules
-            root = SolverContext.context().getRootModule();
-            modules = SolverContext.context().getModules().stream().map(IModule::getScopeGraph);
+            root = Context.context().getRootModule();
+            modules = Context.context().getModules().stream().map(IModule::getScopeGraph);
         } else {
-            root = findFileModule(SolverContext.context(), file);
+            root = findFileModule(Context.context(), file);
             modules = root.getScopeGraph().getDescendantsIncludingSelf();
         }
         this.rootGraph = root.getScopeGraph();
@@ -106,7 +106,7 @@ public class DotPrinter {
      * @throws NullPointerException
      *      if the given module cannot be found.
      */
-    protected final IModule findFileModule(SolverContext context, String name) {
+    protected final IModule findFileModule(Context context, String name) {
         IModule module = context.getModulesOnLevel(1).get(name);
         if (module == null) throw new NullPointerException("Module " + name + " not found (in " + context.getModulesOnLevel(1) + ")");
         return module;

@@ -25,7 +25,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.solver.store.ModuleConstraintStore;
 import mb.statix.taico.unifier.DistributedUnifier;
@@ -189,12 +189,12 @@ public class SplitModuleUtil {
         if (!isSplitModule(module.getId())) throw new IllegalArgumentException("Expected a split module, but was " + module.getId());
         System.err.println("Creating split solver for " + module.getId());
         
-        SolverContext.context().getIncrementalManager().unregisterNonSplit(getMainModuleId(module.getId()));
-        IMState parentState = SolverContext.context().getState(module.getParentId());
+        Context.context().getIncrementalManager().unregisterNonSplit(getMainModuleId(module.getId()));
+        IMState parentState = Context.context().getState(module.getParentId());
         
         //Adds the new conjoined constraint to the completeness
         System.err.println("Critical Add:");
-        Completeness.criticalEdges(module.getInitialization(), SolverContext.context().getSpec(),
+        Completeness.criticalEdges(module.getInitialization(), Context.context().getSpec(),
                 (s, l) -> System.err.println("  | " + TPrettyPrinter.prettyPrint(s) + " -" + TPrettyPrinter.prettyPrint(l) + "->"));
         
         System.err.println("Adding constraints: " + module.getInitialization());
@@ -204,7 +204,7 @@ public class SplitModuleUtil {
         Set<IConstraint> constraints = parentState.solver().getStore().clearDelays();
         System.err.println("Critical Remove:");
         for (IConstraint constraint : constraints) {
-            Completeness.criticalEdges(constraint, SolverContext.context().getSpec(),
+            Completeness.criticalEdges(constraint, Context.context().getSpec(),
                     (s, l) -> System.err.println("  | " + TPrettyPrinter.prettyPrint(s) + " -" + TPrettyPrinter.prettyPrint(l) + "->"));
         }
         

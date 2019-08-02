@@ -9,7 +9,7 @@ import com.google.common.collect.MultimapBuilder;
 
 import mb.statix.taico.dependencies.details.IDependencyDetail;
 import mb.statix.taico.module.IModule;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.Modules;
 
 /**
@@ -120,7 +120,7 @@ public class Dependencies implements Serializable {
         Dependency dependency = new Dependency(owner, module, details);
         dependencies.put(module, dependency);
         
-        SolverContext.context().getDependencies(module).addDependant(owner, dependency);
+        Context.context().getDependencies(module).addDependant(owner, dependency);
         
         return dependency;
     }

@@ -1,6 +1,6 @@
 package mb.statix.taico.incremental.manager;
 
-import static mb.statix.taico.solver.SolverContext.context;
+import static mb.statix.taico.solver.Context.context;
 
 import java.util.Map;
 import java.util.Map.Entry;

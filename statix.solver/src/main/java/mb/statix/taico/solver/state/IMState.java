@@ -17,7 +17,7 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.IOwnable;
@@ -53,7 +53,7 @@ public interface IMState extends IOwnable, Serializable, IState {
     
     @Override
     public default Spec spec() {
-        return SolverContext.context().getSpec();
+        return Context.context().getSpec();
     }
     
     // --------------------------------------------------------------------------------------------
@@ -63,10 +63,10 @@ public interface IMState extends IOwnable, Serializable, IState {
     /**
      * Convenience method. Returns the current coordinator based on the context.
      * 
-     * @see SolverContext#getCoordinator()
+     * @see Context#getCoordinator()
      */
     public default ISolverCoordinator coordinator() {
-        return SolverContext.context().getCoordinator();
+        return Context.context().getCoordinator();
     }
     
     /**

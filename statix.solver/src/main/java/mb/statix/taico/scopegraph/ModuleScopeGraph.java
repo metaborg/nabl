@@ -27,7 +27,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.dot.DotPrinter;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
 import mb.statix.taico.util.TOverrides;
@@ -388,7 +388,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public Iterable<? extends IMInternalScopeGraph<Scope, ITerm, ITerm>> getChildren() {
-        return children.stream().map(s -> SolverContext.context().getState(s).scopeGraph())::iterator;
+        return children.stream().map(s -> Context.context().getState(s).scopeGraph())::iterator;
     }
     
     @Override

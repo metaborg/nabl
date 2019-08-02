@@ -19,19 +19,19 @@ import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.Module;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class MSTX_scope_graphTest {
     protected static MSTX_scope_graph stratego = new MSTX_scope_graph();
     protected IModule root;
     protected MSolverResult result;
-    protected SolverContext context;
+    protected Context context;
     protected ITerm noRelation;
     
     @Before
     public void setUp() throws Exception {
         Spec spec = createSpec(noRelation = label("%"));
-        context = SolverContext.initialContext(new NonIncrementalStrategy(), spec);
+        context = Context.initialContext(new NonIncrementalStrategy(), spec);
         root = Module.topLevelModule("root");
         result = MSolverResult.of(root.getCurrentState(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
     }

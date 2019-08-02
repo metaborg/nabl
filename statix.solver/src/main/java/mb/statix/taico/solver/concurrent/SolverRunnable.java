@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 /**
  * Implementation for a runnable that represents the execution of a single solver.
@@ -21,7 +21,7 @@ public class SolverRunnable implements Runnable {
     private final Consumer<Runnable> schedule;
     private final ProgressCounter progress;
     private final Consumer<ModuleSolver> onSuccess, onFailure;
-    private final Supplier<SolverContext> contextSupplier;
+    private final Supplier<Context> contextSupplier;
 
     private volatile boolean notified;
     private volatile boolean done;
@@ -38,7 +38,7 @@ public class SolverRunnable implements Runnable {
      * @param contextSupplier
      *      the supplier of the context
      */
-    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress, Supplier<SolverContext> contextSupplier) {
+    public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress, Supplier<Context> contextSupplier) {
         this(solver, schedule, progress, m -> {}, m -> {}, contextSupplier);
     }
 
@@ -57,7 +57,7 @@ public class SolverRunnable implements Runnable {
      *      the supplier of the context
      */
     public SolverRunnable(ModuleSolver solver, Consumer<Runnable> schedule, ProgressCounter progress,
-            Consumer<ModuleSolver> onSuccess, Consumer<ModuleSolver> onFailure, Supplier<SolverContext> contextSupplier) {
+            Consumer<ModuleSolver> onSuccess, Consumer<ModuleSolver> onFailure, Supplier<Context> contextSupplier) {
         this.solver = solver;
         this.schedule = schedule;
         this.progress = progress;
@@ -74,8 +74,8 @@ public class SolverRunnable implements Runnable {
         }
         
         //Set the thread sensitive fields for the current thread
-        SolverContext.setThreadSensitiveSolverContext(contextSupplier.get());
-        SolverContext.setCurrentModule(solver.getOwner());
+        Context.setThreadSensitiveContext(contextSupplier.get());
+        Context.setCurrentModule(solver.getOwner());
 
         try {
             do {

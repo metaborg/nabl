@@ -1,6 +1,6 @@
 package mb.statix.taico.dependencies;
 
-import static mb.statix.taico.solver.SolverContext.context;
+import static mb.statix.taico.solver.Context.context;
 
 import java.util.HashMap;
 import java.util.Map;

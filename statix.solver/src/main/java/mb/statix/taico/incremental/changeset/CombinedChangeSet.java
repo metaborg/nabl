@@ -14,7 +14,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.Scopes;
 
 public class CombinedChangeSet extends AChangeSet {
@@ -31,14 +31,14 @@ public class CombinedChangeSet extends AChangeSet {
             NEWCHILD
     };
     
-    public CombinedChangeSet(SolverContext oldContext,
+    public CombinedChangeSet(Context oldContext,
             Collection<String> added, Collection<String> changed, Collection<String> removed) {
         super(oldContext, Arrays.asList(SUPPORTED), added, changed, removed);
         init(oldContext);
     }
     
     @Override
-    protected void init(SolverContext oldContext) {
+    protected void init(Context oldContext) {
         //Dirty, new and removed are already flagged.
         
         //0. Flag newchild

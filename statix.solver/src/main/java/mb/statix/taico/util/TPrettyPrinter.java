@@ -17,11 +17,11 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 
 public class TPrettyPrinter {
     private static Map<Scope, Integer> scopeNumbers = new HashMap<>();
-    private static SolverContext context;
+    private static Context context;
     private static int scopeCounter;
     private static final IUnifier NULL_UNIFIER = PersistentUnifier.Immutable.of();
     
@@ -88,9 +88,9 @@ public class TPrettyPrinter {
      */
     public static int scopeNumber(Scope scope) {
         //Reset
-        if (context != SolverContext.context()) {
+        if (context != Context.context()) {
             scopeNumbers.clear();
-            context = SolverContext.context();
+            context = Context.context();
             scopeCounter = 0;
         }
         
@@ -111,7 +111,7 @@ public class TPrettyPrinter {
         }
 
         //We want to cut off the root string, and replace it with ~
-        String root = SolverContext.context().getRootModule().getId();
+        String root = Context.context().getRootModule().getId();
         if (root.length() == module.length()) {
             //For the root module itself, just print ~
             return "~";
@@ -298,7 +298,7 @@ public class TPrettyPrinter {
     //---------------------------------------------------------------------------------------------
     
     private static boolean moduleUniqueness() {
-        return SolverContext.context().getModuleManager().areModuleNamesUnique();
+        return Context.context().getModuleManager().areModuleNamesUnique();
     }
     
     public static List<String> convertList(List<? extends ITerm> list, IUnifier unifier) {

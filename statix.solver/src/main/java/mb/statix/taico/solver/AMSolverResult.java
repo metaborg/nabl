@@ -25,8 +25,8 @@ public abstract class AMSolverResult implements ISolverResult {
 
     @Override @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
 
-    @Value.Default public SolverContext context() {
-        return SolverContext.context();
+    @Value.Default public Context context() {
+        return Context.context();
     }
 
     /**

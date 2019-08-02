@@ -26,7 +26,7 @@ import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.progress.ProgressTrackerRunnable;
 import mb.statix.taico.solver.state.IMState;
 
@@ -41,7 +41,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     
     protected IncrementalStrategy strategy;
     protected IDebugContext debug;
-    protected SolverContext context;
+    protected Context context;
     protected ProgressTrackerRunnable progressPrinter;
     
     @Override
@@ -60,12 +60,12 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     }
     
     @Override
-    public void setContext(SolverContext context) {
+    public void setContext(Context context) {
         this.context = context;
     }
     
     @Override
-    public SolverContext getContext() {
+    public Context getContext() {
         return context;
     }
     

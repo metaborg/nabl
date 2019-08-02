@@ -17,7 +17,7 @@ import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 
 /**
@@ -50,13 +50,13 @@ public interface ISolverCoordinator {
      * @param context
      *      the context
      */
-    public void setContext(SolverContext context);
+    public void setContext(Context context);
     
     /**
      * @return
      *      the context that this coordinator is currently coordinating
      */
-    public SolverContext getContext();
+    public Context getContext();
     
     /**
      * @return

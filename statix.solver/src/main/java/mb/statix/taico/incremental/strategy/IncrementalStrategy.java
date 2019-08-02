@@ -30,7 +30,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
-import mb.statix.taico.solver.SolverContext;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 
 /**
@@ -59,7 +59,7 @@ public abstract class IncrementalStrategy {
      * @return
      *      the change set
      */
-    public abstract IChangeSet createChangeSet(SolverContext oldContext,
+    public abstract IChangeSet createChangeSet(Context oldContext,
             Collection<String> added, Collection<String> changed, Collection<String> removed);
     
     //---------------------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ public abstract class IncrementalStrategy {
      * delay the request or to answer the request with an old version of the module.
      * 
      * @param context
-     *      the solver context
+     *      the context
      * @param oldContext
      *      the previous context (can be null)
      * @param requester
@@ -86,7 +86,8 @@ public abstract class IncrementalStrategy {
      * @throws ModuleDelayException
      *      If the child access needs to be delayed.
      */
-    public abstract IModule getChildModule(SolverContext context, SolverContext oldContext,
+    @Deprecated
+    public abstract IModule getChildModule(Context context, Context oldContext,
             IModule requester, String childId) throws ModuleDelayException;
     
     //TODO Move this method to the incremental manager
@@ -109,7 +110,8 @@ public abstract class IncrementalStrategy {
      * @throws ModuleDelayException
      *      If the access is not allowed (yet) in the current context phase.
      */
-    public abstract IModule getModule(SolverContext context, SolverContext oldContext,
+    @Deprecated
+    public abstract IModule getModule(Context context, Context oldContext,
             String requesterId, String id) throws ModuleDelayException;
     
     //---------------------------------------------------------------------------------------------
@@ -123,8 +125,8 @@ public abstract class IncrementalStrategy {
      * All modules in the returned map will have a solver created for them, all modules that are
      * not in the map will be available, but won't be actively solving themselves.
      * <p>
-     * Implementors should use {@link #createFileModule(SolverContext, String, Set)} and
-     * {@link #reuseOldModule(SolverContext, IModule)} to create or reuse modules.
+     * Implementors should use {@link #createFileModule(Context, String, Set)} and
+     * {@link #reuseOldModule(Context, IModule)} to create or reuse modules.
      * 
      * @param context
      *      the context
@@ -136,9 +138,9 @@ public abstract class IncrementalStrategy {
      * @return
      *      a map from module to initialization constraints
      * 
-     * @see SolverContext#getPhase()
+     * @see Context#getPhase()
      */
-    public Map<IModule, IConstraint> createInitialModules(SolverContext context,
+    public Map<IModule, IConstraint> createInitialModules(Context context,
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
         Map<IModule, IConstraint> newModules = new HashMap<>();
@@ -175,7 +177,7 @@ public abstract class IncrementalStrategy {
      * @return
      *      the module
      */
-    protected IModule createModule(SolverContext context, IChangeSet changeSet, String childNameOrId, IConstraint initConstraint, @Nullable IModule oldModule) {
+    protected IModule createModule(Context context, IChangeSet changeSet, String childNameOrId, IConstraint initConstraint, @Nullable IModule oldModule) {
         int len = ModulePaths.pathLength(childNameOrId);
         if (len == 1) {
             //This is not a path, but just a file name
@@ -206,7 +208,7 @@ public abstract class IncrementalStrategy {
      *      the created module
      */
     protected IModule createFileModule(
-            SolverContext context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
+            Context context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
         System.err.println("[IS] Creating file module for " + childName);
 
         List<Scope> scopes = getScopes(initConstraint);
@@ -237,7 +239,7 @@ public abstract class IncrementalStrategy {
      *      the created module, or null
      */
     protected IModule createChildModule(
-            SolverContext context, IChangeSet changeSet, String childId, IConstraint initConstraint) {
+            Context context, IChangeSet changeSet, String childId, IConstraint initConstraint) {
         System.err.println("[IS] Creating child module for " + childId);
         
         String parent = ModulePaths.getParent(childId);
@@ -267,7 +269,7 @@ public abstract class IncrementalStrategy {
      * @param module
      *      the module
      */
-    protected void reuseOldModule(SolverContext context, IChangeSet changeSet, IModule module) {
+    protected void reuseOldModule(Context context, IChangeSet changeSet, IModule module) {
         System.err.println("[IS] Reusing old module " + module);
         IMState state = context.transferModule(module);
         for (IModule child : changeSet.removed()) {
