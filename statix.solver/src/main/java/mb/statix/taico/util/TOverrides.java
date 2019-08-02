@@ -18,7 +18,7 @@ public class TOverrides {
     /** If the log level should be overridden to the value below. */
     public static volatile boolean OVERRIDE_LOGLEVEL = true;
     /** The log level to use, has no effect if OVERRIDE_LOGLEVEL is false. */
-    public static volatile String LOGLEVEL = "none"; //"debug" "none"
+    public static volatile String LOGLEVEL = "info"; //"debug" "none" "info"
     /** If concurrency should be used. Uses the number of threads below. */
     public static volatile boolean CONCURRENT = false;
     /** The number of threads for concurrency. Has no effect if CONCURRENT is false. */
