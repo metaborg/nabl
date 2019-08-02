@@ -308,6 +308,8 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
             errors.addAll(result.getValue().errors());
             delays.putAll(result.getValue().delays());
         }
+        
+        //TODO Use a fake top state instead of the root state? Because errors might need to be moved to other locations.
         return MSolverResult.of(getRootState(), errors, delays, existentials);
     }
     
