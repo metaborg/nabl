@@ -157,7 +157,7 @@ public class QueryDetails implements IQueryDetails<Scope, ITerm, ITerm> {
 //        
 //        //Add reverse dependencies
 //        for (String module : details.getReachedModules()) {
-//            SolverContext.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
+//            Context.context().getModuleUnchecked(module).addDependant(state.owner().getId(), this);
 //        }
         
         return pathTerms;
