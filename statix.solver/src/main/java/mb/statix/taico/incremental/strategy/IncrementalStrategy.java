@@ -24,11 +24,13 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.dependencies.DependencyManager;
 import mb.statix.taico.dependencies.NameDependencies;
+import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModulePaths;
+import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
@@ -152,12 +154,20 @@ public abstract class IncrementalStrategy {
             
             if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);
-                if (module != null) newModules.put(module, entry.getValue());
+                if (module != null) {
+                    if (oldModule == null) module.setFlag(Flag.NEW);
+                    newModules.put(module, entry.getValue());
+                }
             } else {
                 //Old module is clean, we can reuse it
                 reuseOldModule(context, changeSet, oldModule);
             }
         });
+        
+        //Transfer the split module at the top level (TODO or prevent this from being created).
+        String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
+        IModule topSplit = context.getOldContext().map(c -> c.getModuleUnchecked(topSplitId)).orElse(null);
+        if (topSplit != null) reuseOldModule(context, changeSet, topSplit);
         
         return newModules;
     }
