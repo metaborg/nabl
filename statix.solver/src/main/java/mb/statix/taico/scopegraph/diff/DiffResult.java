@@ -20,17 +20,17 @@ public class DiffResult implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private Map<String, ScopeGraphDiff> diffs = Collections.synchronizedMap(new HashMap<>());
-    private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules;
     private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> addedModules;
+    private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules;
     
     public DiffResult() {
-        this.removedModules = Collections.synchronizedMap(new HashMap<>());
         this.addedModules   = Collections.synchronizedMap(new HashMap<>());
+        this.removedModules = Collections.synchronizedMap(new HashMap<>());
     }
     
-    protected DiffResult(Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules, Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> addedModules) {
-        this.removedModules = removedModules;
+    protected DiffResult(Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> addedModules, Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules) {
         this.addedModules = addedModules;
+        this.removedModules = removedModules;
     }
     
     public Map<String, ScopeGraphDiff> getDiffs() {

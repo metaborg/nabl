@@ -89,17 +89,19 @@ public class Diff {
                 getNew(sgNew.getOwnEdges(), sgOld.getOwnEdges());
         
         //Data
-        IRelation3.Transient<Scope, ITerm, ITerm> oldDataInst = instantiate(sgOld.getOwnData(), uOld);
-        IRelation3.Transient<Scope, ITerm, ITerm> newDataInst = instantiate(sgNew.getOwnData(), uNew);
+        IRelation3.Transient<Scope, ITerm, ITerm> oldDataInst = Context.executeInContext(cOld,
+                () -> instantiate(sgOld.getOwnData(), uOld));
+        IRelation3.Transient<Scope, ITerm, ITerm> newDataInst = Context.executeInContext(cNew,
+                () -> instantiate(sgNew.getOwnData(), uNew));
         
         IRelation3.Transient<Scope, ITerm, ITerm> newData     = getNew(oldDataInst, newDataInst);
         IRelation3.Transient<Scope, ITerm, ITerm> removedData = getNew(newDataInst, oldDataInst);
         
         //Convert data to names
-        IRelation3.Transient<Scope, ITerm, Name> newDataNames =
-                toNames(newData, d -> Names.getName(d, uNew).orElse(null));
-        IRelation3.Transient<Scope, ITerm, Name> removedDataNames =
-                toNames(removedData, d -> Names.getName(d, uOld).orElse(null));
+        IRelation3.Transient<Scope, ITerm, Name> newDataNames = Context.executeInContext(cNew,
+                () -> toNames(newData, d -> Names.getNameOrNull(d, uNew)));
+        IRelation3.Transient<Scope, ITerm, Name> removedDataNames = Context.executeInContext(cOld,
+                () -> toNames(removedData, d -> Names.getNameOrNull(d, uOld)));
         IRelation3.Transient<Scope, ITerm, Name> changedDataNames =
                 nameOverlap(newDataNames, removedDataNames);
         
