@@ -110,13 +110,13 @@ rules // multi file analysis
           //
           //TODO IMPORTANT The project constraint needs its own module, instead of merging with the global scope module?
         ; project-C := C(project-constraint, <map(stx--explode)> [global-scope])
-        ; mchanged-project := MAdded("", project-ast)
+        ; mchanged-project := MAdded("||", project-ast)
         case ?Cached(mpa@MProjectAnalysis(global-scope, initial-project-state)):
           //
           // 2. Create project change and constraint
           //
           project-C := C(project-constraint, <map(stx--explode)> [global-scope])
-        ; mchanged-project := MUnchanged("", mpa)
+        ; mchanged-project := MUnchanged("||", mpa)
           //TODO IMPORTANT It is possible for the project module to have a dependency on its child modules!
         otherwise:
           fatal-err(|"Unexpected change on project")
@@ -140,7 +140,7 @@ rules // multi file analysis
     ; fullresource-ast* := <map({\ c -> (m, ast) where ?MAdded(m, ast) + ?MChanged(m, ast, _) \})>
                            <filter(?MAdded(_, _) + ?MChanged(_, _, _))> mchanged*
     ; updatedresource*  := <filter(?MUnchanged(<id>, _))> mchanged*
-    ; project-solver-result := <filter(?("", <id>))> [full-state*, update-state*]
+    ; project-solver-result := <filter(?("||", <id>))> [full-state*, update-state*]
 
     // The full results (resource, analysis)
     ; file-result := <zip({ file-state', error*, warning*, note*, file-analysis: \
@@ -149,7 +149,7 @@ rules // multi file analysis
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> file-state
              ; file-analysis := MModuleAnalysis(file-state)
              ; <eq> (resource, resource') //TODO Temporary check
-      \})> (<filter(not(?("", _)))> fullresource-ast*, <filter(not(?("", _)))> full-state*)
+      \})> (<filter(not(?("||", _)))> fullresource-ast*, <filter(not(?("||", _)))> full-state*)
     
     // The updated results (resource, analysis)
     ; file-result2 := <map({ file-state', error*, warning*, note*, file-analysis: \
@@ -157,7 +157,7 @@ rules // multi file analysis
             (resource, Update(file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> file-state
              ; file-analysis := MModuleAnalysis(file-state)
-      \})> <filter(not(?("", _)))> update-state*
+      \})> <filter(not(?("||", _)))> update-state*
     
     ; mstx--end-phase(|"Stratego: processing results")
       //TODO Not really needed for modularized statix
