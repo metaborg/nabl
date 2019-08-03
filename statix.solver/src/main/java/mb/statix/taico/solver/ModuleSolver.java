@@ -32,9 +32,9 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
-import mb.statix.taico.incremental.manager.IncrementalManager;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.split.SplitModuleUtil;
+import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.concurrent.ConcurrentRedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.state.IMState;
@@ -182,6 +182,8 @@ public class ModuleSolver implements IOwnable {
             IDebugContext debug) throws InterruptedException {
         PrefixedDebugContext debug2 = new PrefixedDebugContext("", debug.subContext());
         ModuleSolver solver = new ModuleSolver(state, constraint, isComplete, debug2, true);
+        
+        state.setSolver(solver); //TODO sets the solver of this delegate state to the given solver
         while (solver.solveStep());
         return solver.finishSolver();
     }
@@ -259,11 +261,11 @@ public class ModuleSolver implements IOwnable {
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
-            IncrementalManager im = Context.context().getIncrementalManager();
-            //TODO Dirty hack: printing the constraint will trigger a module delay exception if a variable is encountered from another module.
-            //To "fix" this we unregister and reregister the module between the printing.
-            im.executeUnrestricted(getOwner().getId(),
-                    () -> proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier()))));
+//            IncrementalManager im = Context.context().getIncrementalManager();
+//            im.executeUnrestricted(getOwner().getId(),
+//                    () ->
+            proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier().unrestricted())));
+//            );
         }
         
         try {
