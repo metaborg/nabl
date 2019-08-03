@@ -270,8 +270,7 @@ public class ModuleSolver implements IOwnable {
         
         try {
             final Optional<MConstraintResult> maybeResult;
-            maybeResult =
-                    constraint.solve(state, new MConstraintContext(isComplete, subDebug));
+            maybeResult = solveConstraint(constraint, subDebug);
             addTime(constraint, 1, successCount, debug);
             
             reductions += 1;
@@ -329,6 +328,14 @@ public class ModuleSolver implements IOwnable {
             return false;
         }
         return true;
+    }
+    
+    private Optional<MConstraintResult> solveConstraint(IConstraint constraint, IDebugContext subDebug) throws InterruptedException, Delay {
+        try {
+            return constraint.solve(state, new MConstraintContext(isComplete, subDebug));
+        } catch (ModuleDelayException ex) {
+            throw Delay.ofModule(ex.getModule());
+        }
     }
     
     private void checkCreateSplitModule() {
