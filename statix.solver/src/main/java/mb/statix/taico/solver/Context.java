@@ -147,7 +147,7 @@ public class Context implements Serializable {
         if (isInitPhase()) return getModuleUnchecked(id);
         
         if (!getIncrementalManager().isAllowedAccess(requester.getId(), id)) {
-            throw new ModuleDelayException(id);
+            throw new ModuleDelayException(requester.getId(), id);
         }
         
         return strategy.getChildModule(this, oldContext, requester, id);
@@ -177,11 +177,24 @@ public class Context implements Serializable {
         return getModule(requester.getId(), id);
     }
     
-    public IModule getModule(String requester, String id) throws ModuleDelayException {
+    /**
+     * @param requester
+     *      the id of the module requesting the module with the given id
+     * @param id
+     *      the id of the requested module
+     * 
+     * @return
+     *      the requested module, if it exists, or null otherwise
+     * 
+     * @throws ModuleDelayException
+     *      If the given requester is not allowed to access modules or is not allowed to access
+     *      the given module in particular.
+     */
+    public @Nullable IModule getModule(String requester, String id) throws ModuleDelayException {
         if (isInitPhase()) return getModuleUnchecked(id);
         
         if (!getIncrementalManager().isAllowedAccess(requester, id)) {
-            throw new ModuleDelayException(id);
+            throw new ModuleDelayException(requester, id);
         }
         
         //TODO Also do the first part based on the strategy, to allow the strategy to delay.
