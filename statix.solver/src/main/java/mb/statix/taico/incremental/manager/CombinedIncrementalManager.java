@@ -35,6 +35,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
     
     @Override
     public void startFirstPhase(Map<IModule, IConstraint> modules) {
+        System.out.println("[CIM] Starting first phase...");
         this.initialModules = modules;
         setPhase(CombinedPhase.DirtyStructure);
         
@@ -68,7 +69,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
         for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             final IModule module = entry.getKey();
             final IConstraint init = entry.getValue();
-            
+            System.out.println(module + ": " + module.getTopCleanliness());
             switch (module.getTopCleanliness()) {
                 case DIRTY:
                 case NEW: //TODO Do added modules get this flag?
@@ -79,6 +80,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
                     break;
             }
         }
+        System.out.println("[CIM] Phase First started");
     }
 
     /**
@@ -289,7 +291,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
     @Override
     public void solverStart(ModuleSolver solver) {
-        System.err.println("[CIM] Solver start triggerd for " + solver.getOwner());
+        System.err.println("[CIM] Solver start triggerd for " + solver.getOwner() + " (separate=" + solver.isSeparateSolver() + ")");
 
 
     }
