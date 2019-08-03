@@ -81,6 +81,26 @@ public interface IUnifier {
      * Test if the unifier contains any cycles.
      */
     boolean isCyclic();
+    
+    /**
+     * Return an unrestricted version of this unifier. An unrestricted unifier can request
+     * variables from all modules at all times.
+     * 
+     * @throws UnsupportedOperationException
+     *      If this unifier is not meant for modular/incremental solving, or if it is transient.
+     */
+    default IUnifier unrestricted() {
+        throw new UnsupportedOperationException("You cannot make unifiers of the type " + getClass() + " unrestricted.");
+    }
+    
+    /**
+     * Test if this unifier is unrestricted.
+     * 
+     * @see #unrestricted()
+     */
+    default boolean isUnrestricted() {
+        return false;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on a single term

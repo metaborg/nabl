@@ -23,12 +23,21 @@ public class DistributedUnifier {
         private static final long serialVersionUID = 42L;
         
         private final String owner;
+        private final boolean unrestricted;
 
         Immutable(String owner, boolean finite, Map.Immutable<ITermVar, ITermVar> reps,
                 Map.Immutable<ITermVar, Integer> ranks,
                 Map.Immutable<ITermVar, ITerm> terms) {
+            this(owner, finite, reps, ranks, terms, false);
+        }
+        
+        Immutable(String owner, boolean finite, Map.Immutable<ITermVar, ITermVar> reps,
+                Map.Immutable<ITermVar, Integer> ranks,
+                Map.Immutable<ITermVar, ITerm> terms,
+                boolean unrestricted) {
             super(finite, reps, ranks, terms);
             this.owner = owner;
+            this.unrestricted = unrestricted;
         }
         
         // ----------------------------------------------------------------------------------------
@@ -40,7 +49,7 @@ public class DistributedUnifier {
             return term.match(Terms.<ITerm>cases().var(var -> {
                 final ITermVar rep;
                 final IModule target;
-                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                     rep = findRepFinal(var);
                     return findTermFinal(rep);
                 }
@@ -89,7 +98,7 @@ public class DistributedUnifier {
         public ITermVar findRep(ITermVar var) {
             //TODO Entails?
             final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
                 return findRepFinal(var);
             }
 
@@ -108,7 +117,7 @@ public class DistributedUnifier {
         protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isGroundFinal(var, stack, visited);
             } else {
                 return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
@@ -128,7 +137,7 @@ public class DistributedUnifier {
         protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isCyclicFinal(var, stack, visited);
             } else {
                 return target.getCurrentState().unifier().isCyclicFinal(var, stack, visited);
@@ -165,7 +174,6 @@ public class DistributedUnifier {
                 }
             }
         }
-        
 
         // ----------------------------------------------------------------------------------------
         // Own Variables
@@ -282,11 +290,15 @@ public class DistributedUnifier {
         @Override
         protected Map<ITermVar, ITerm> targetTerms(ITermVar var) {
             final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
                 return this.terms();
             }
             
             return module.getCurrentState().unifier().terms();
+        }
+        
+        private IModule getOwner(ITermVar var) {
+            return unrestricted ? Vars.getOwnerUnchecked(var) : Vars.getOwner(var, owner);
         }
         
         // ----------------------------------------------------------------------------------------
@@ -295,7 +307,22 @@ public class DistributedUnifier {
         
         @Override public DistributedUnifier.Transient melt() {
             return new DistributedUnifier.Transient(owner, finite, reps.get().asTransient(), ranks.asTransient(),
-                    terms.asTransient());
+                    terms.asTransient(), unrestricted);
+        }
+        
+        /**
+         * @return
+         *      an unrestricted version of this unifier
+         */
+        @Override
+        public DistributedUnifier.Immutable unrestricted() {
+            if (unrestricted) return this;
+            return new DistributedUnifier.Immutable(owner, finite, reps.get(), ranks, terms, true);
+        }
+        
+        @Override
+        public boolean isUnrestricted() {
+            return unrestricted;
         }
         
         public static DistributedUnifier.Immutable of(String owner) {
@@ -312,12 +339,21 @@ public class DistributedUnifier {
         private static final long serialVersionUID = 42L;
         
         private final String owner;
+        private final boolean unrestricted;
 
         Transient(String owner, boolean finite, Map.Transient<ITermVar, ITermVar> reps,
                 Map.Transient<ITermVar, Integer> ranks,
                 Map.Transient<ITermVar, ITerm> terms) {
+            this(owner, finite, reps, ranks, terms, false);
+        }
+        
+        Transient(String owner, boolean finite, Map.Transient<ITermVar, ITermVar> reps,
+                Map.Transient<ITermVar, Integer> ranks,
+                Map.Transient<ITermVar, ITerm> terms,
+                boolean unrestricted) {
             super(finite, reps, ranks, terms);
             this.owner = owner;
+            this.unrestricted = unrestricted;
         }
         
         // ----------------------------------------------------------------------------------------
@@ -329,19 +365,24 @@ public class DistributedUnifier {
             return term.match(Terms.<ITerm>cases().var(var -> {
                 final ITermVar rep;
                 final IModule target;
-                if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+                if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                     rep = findRepFinal(var);
                     return findTermFinal(rep);
                 }
                 
-                rep = target.getCurrentState().unifier().findRepFinal(var);
-                return target.getCurrentState().unifier().findTermFinal(rep);
+                DistributedUnifier.Immutable unifier = target.getCurrentState().unifier();
+                rep = unifier.findRepFinal(var);
+                return unifier.findTermFinal(rep);
             }).otherwise(t -> t));
         }
         
         protected ITerm findTermFinal(ITermVar rep) {
             return terms().getOrDefault(rep, rep);
         }
+        
+        // ----------------------------------------------------------------------------------------
+        // Recursive
+        // ----------------------------------------------------------------------------------------
         
         @Override
         protected ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
@@ -371,8 +412,9 @@ public class DistributedUnifier {
 
         @Override
         public ITermVar findRep(ITermVar var) {
+            //TODO Entails?
             final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
                 return findRepFinal(var);
             }
 
@@ -391,7 +433,7 @@ public class DistributedUnifier {
         protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isGroundFinal(var, stack, visited);
             } else {
                 return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
@@ -411,7 +453,7 @@ public class DistributedUnifier {
         protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
                 final java.util.Map<ITermVar, Boolean> visited) {
             final IModule target;
-            if (owner.equals(var.getResource()) || (target = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isCyclicFinal(var, stack, visited);
             } else {
                 return target.getCurrentState().unifier().isCyclicFinal(var, stack, visited);
@@ -449,7 +491,6 @@ public class DistributedUnifier {
                 }
             }
         }
-        
         
         // ----------------------------------------------------------------------------------------
         // Get own vars
@@ -566,11 +607,15 @@ public class DistributedUnifier {
         @Override
         protected Map<ITermVar, ITerm> targetTerms(ITermVar var) {
             final IModule module;
-            if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
+            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
                 return this.terms();
             }
             
             return module.getCurrentState().unifier().targetTerms(var);
+        }
+        
+        private IModule getOwner(ITermVar var) {
+            return unrestricted ? Vars.getOwnerUnchecked(var) : Vars.getOwner(var, owner);
         }
         
         // ----------------------------------------------------------------------------------------
@@ -578,9 +623,24 @@ public class DistributedUnifier {
         // ----------------------------------------------------------------------------------------
         
         @Override public DistributedUnifier.Immutable freeze() {
-            return new DistributedUnifier.Immutable(owner, finite, reps.freeze(), ranks.freeze(), terms.freeze());
+            return new DistributedUnifier.Immutable(owner, finite, reps.freeze(), ranks.freeze(), terms.freeze(), unrestricted);
         }
 
+        /**
+         * @return
+         *      an unrestricted version of this unifier
+         */
+        @Override
+        public DistributedUnifier.Transient unrestricted() {
+            if (unrestricted) return this;
+            return new DistributedUnifier.Transient(owner, finite, reps, ranks, terms, true);
+        }
+        
+        @Override
+        public boolean isUnrestricted() {
+            return unrestricted;
+        }
+        
         public static DistributedUnifier.Transient of(String owner) {
             return of(owner, true);
         }
