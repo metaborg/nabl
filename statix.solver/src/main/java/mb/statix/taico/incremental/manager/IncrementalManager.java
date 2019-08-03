@@ -211,7 +211,7 @@ public class IncrementalManager implements Serializable {
     // --------------------------------------------------------------------------------------------
     
     /**
-     * Called whenever a module solver is initialized.
+     * Called whenever a solver is initialized.
      * 
      * @param solver
      *      the solver
@@ -221,7 +221,7 @@ public class IncrementalManager implements Serializable {
     }
     
     /**
-     * Called whenever the solver is about to start.
+     * Called whenever a solver (including separate solvers) is about to start.
      * 
      * @param solver
      *      the solver
@@ -231,7 +231,7 @@ public class IncrementalManager implements Serializable {
     }
     
     /**
-     * Called whenever the solver is done. This updates the flags of the owner of the solver.
+     * Called whenever a solver is done. This updates the flags of the owner of the solver.
      * 
      * @param solver
      *      the solver
