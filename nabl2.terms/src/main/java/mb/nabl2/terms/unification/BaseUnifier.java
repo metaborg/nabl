@@ -38,6 +38,17 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     protected abstract java.util.Map<ITermVar, ITermVar> reps();
 
     protected abstract java.util.Map<ITermVar, ITerm> terms();
+    
+    /**
+     * @param var
+     *      the variable that is requested
+     * 
+     * @return
+     *      the terms of the target unifier
+     */
+    protected java.util.Map<ITermVar, ITerm> targetTerms(ITermVar var) {
+        return terms();
+    }
 
     ///////////////////////////////////////////
     // unifier functions
@@ -277,7 +288,10 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public boolean hasTerm(ITermVar var) {
-        return terms().containsKey(findRep(var));
+        //TODO Should we override this like so?
+        ITermVar rep = findRep(var);
+        return targetTerms(rep).containsKey(rep);
+//        return terms().containsKey(findRep(var));
     }
 
     @Override public ITerm findTerm(ITerm term) {
@@ -350,7 +364,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         if(!visited.containsKey(rep)) {
             stack.add(rep);
             visited.put(rep, null);
-            final ITerm term = terms().get(rep);
+            final ITerm term = targetTerms(rep).get(rep);
             instance = term != null ? findTermRecursive(term, stack, visited) : rep;
             visited.put(rep, instance);
             stack.remove(rep);
@@ -451,8 +465,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     protected MaybeNotInstantiatedBool equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
             final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar rep = findRep(var);
-        if(terms().containsKey(rep)) {
-            return equalTerms(terms().get(rep), term, stack, visited);
+        if(targetTerms(rep).containsKey(rep)) {
+            return equalTerms(targetTerms(rep).get(rep), term, stack, visited);
         } else {
             return MaybeNotInstantiatedBool.ofNotInstantiated(rep);
         }
@@ -470,8 +484,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         if(!visited.containsKey(pair)) {
             stack.add(pair);
             visited.put(pair, null);
-            final ITerm leftTerm = terms().get(leftRep);
-            final ITerm rightTerm = terms().get(rightRep);
+            final ITerm leftTerm = targetTerms(leftRep).get(leftRep);
+            final ITerm rightTerm = targetTerms(rightRep).get(rightRep);
             if(leftTerm == null && rightTerm == null) {
                 return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep, rightRep);
             } else if(leftTerm == null) {
@@ -535,7 +549,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         if(!visited.containsKey(rep)) {
             stack.add(rep);
             visited.put(rep, null);
-            final ITerm term = terms().get(rep);
+            final ITerm term = targetTerms(rep).get(rep);
             cyclic = term != null ? isCyclic(term.getVars().elementSet(), stack, visited) : false;
             visited.put(rep, cyclic);
             stack.remove(rep);
@@ -567,7 +581,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         if(!visited.containsKey(rep)) {
             stack.add(rep);
             visited.put(rep, null);
-            final ITerm term = terms().get(rep);
+            final ITerm term = targetTerms(rep).get(rep);
             ground = term != null ? isGround(term.getVars().elementSet(), stack, visited) : false;
             visited.put(rep, ground);
             stack.remove(rep);
@@ -600,7 +614,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         if(!visited.contains(rep)) {
             visited.add(rep);
             stack.push(rep);
-            final ITerm term = terms().get(rep);
+            final ITerm term = targetTerms(rep).get(rep);
             if(term != null) {
                 getVars(term.getVars().elementSet(), stack, visited, vars);
             } else {
@@ -660,14 +674,14 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return size.get();
     }
 
-    private TermSize size(final ITermVar var, final Set<ITermVar> stack,
+    protected TermSize size(final ITermVar var, final Set<ITermVar> stack,
             final java.util.Map<ITermVar, TermSize> visited) {
         final ITermVar rep = findRep(var);
         final TermSize size;
         if(!visited.containsKey(rep)) {
             stack.add(rep);
             visited.put(rep, null);
-            final ITerm term = terms().get(rep);
+            final ITerm term = targetTerms(rep).get(rep);
             size = term != null ? size(term, stack, visited) : TermSize.ZERO;
             visited.put(rep, size);
             stack.remove(rep);
@@ -764,7 +778,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         if(!visited.containsKey(rep)) {
             stack.put(rep, null);
             visited.put(rep, null);
-            final ITerm term = terms().get(rep);
+            final ITerm term = targetTerms(rep).get(rep);
             if(term != null) {
                 final String termString = toString(term, stack, visited, maxDepth);
                 toString = (stack.get(rep) != null ? "μ" + stack.get(rep) + "." : "") + termString;

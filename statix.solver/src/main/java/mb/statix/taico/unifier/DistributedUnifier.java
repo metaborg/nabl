@@ -279,7 +279,8 @@ public class DistributedUnifier {
         // Helper methods
         // ----------------------------------------------------------------------------------------
         
-        private Map<ITermVar, ITerm> targetTerms(ITermVar var) {
+        @Override
+        protected Map<ITermVar, ITerm> targetTerms(ITermVar var) {
             final IModule module;
             if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
                 return this.terms();
@@ -562,7 +563,8 @@ public class DistributedUnifier {
         // Helper methods
         // ----------------------------------------------------------------------------------------
         
-        private Map<ITermVar, ITerm> targetTerms(ITermVar var) {
+        @Override
+        protected Map<ITermVar, ITerm> targetTerms(ITermVar var) {
             final IModule module;
             if (owner.equals(var.getResource()) || (module = Vars.getOwner(var, owner)) == null) {
                 return this.terms();
