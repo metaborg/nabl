@@ -240,14 +240,18 @@ public class CResolveQuery implements IConstraint, Serializable {
      *      If the scope is not ground relative to the given unifier.
      */
     public Scope getScope(IUnifier unifier) throws Delay {
-        if(!unifier.isGround(scopeTerm)) {
-            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
-            throw Delay.ofVars(unifier.getVars(scopeTerm));
+        try {
+            if(!unifier.isGround(scopeTerm)) {
+                if (TDebug.QUERY_DELAY) System.err.println("Delaying query on the scope of the query: (not ground) " + scopeTerm);
+                throw Delay.ofVars(unifier.getVars(scopeTerm));
+            }
+            final Scope scope = AScope.matcher().match(scopeTerm, unifier)
+                    .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
+            
+            return scope;
+        } catch (ModuleDelayException ex) {
+            throw Delay.ofModule(ex.getModule());
         }
-        final Scope scope = AScope.matcher().match(scopeTerm, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
-        
-        return scope;
     }
 
     /**

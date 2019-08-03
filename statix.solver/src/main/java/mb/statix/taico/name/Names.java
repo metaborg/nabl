@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -114,6 +116,23 @@ public class Names {
                     return occurrence().match(t.getArgs().get(1), unifier).orElse(null);
                 })
         ).match(term, unifier);
+    }
+    
+    /**
+     * Attempts to retrieve the name of the given term. If the given term is an occurrence, it is
+     * converted to its corresponding name. If the given term is a tuple and the first argument is
+     * an occurrence, it is converted to its corresponding name. Otherwise, null is returned.
+     * 
+     * @param term
+     *      the term
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the name represented by the given term or contained in the given tuple, or null
+     */
+    public static @Nullable Name getNameOrNull(ITerm term, IUnifier unifier) {
+        return getName(term, unifier).orElse(null);
     }
     
     private static IMatcher<Name> occurrence() {
