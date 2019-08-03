@@ -89,6 +89,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
      */
     public boolean switchToDirtyStructurePhase(Set<ModuleSolver> finished,
             Set<ModuleSolver> failed, Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
+        setPhase(CombinedPhase.DirtyStructure);
         //TODO Update the changeset with the new modules
         
         //TODO Currently this is the first phase, but we might want to have one before this?
@@ -102,6 +103,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
      */
     public boolean switchToUnsureStructurePhase(Set<ModuleSolver> finished,
             Set<ModuleSolver> failed, Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
+        setPhase(CombinedPhase.UnsureStructure);
         //We have to determine all the circular dependencies that are still relevant now.
 
         //When solving an unsure module (partially), we need to keep some of its results from the previous run to compare against.
@@ -128,6 +130,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
     public boolean switchToFinalPhase(Set<ModuleSolver> finished,
             Set<ModuleSolver> failed, Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
         
+        setPhase(CombinedPhase.Final);
         //1. Diff the structures of the previous phases
         //2. Based on the diff, update the changeset with the changes (resolve some uncertainty)
         //3. Check for circular dependencies. Do we have any?
