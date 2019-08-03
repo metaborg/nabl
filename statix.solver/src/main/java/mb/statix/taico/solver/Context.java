@@ -8,6 +8,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.Sets;
 
@@ -672,62 +677,142 @@ public class Context implements Serializable {
     }
     
     // --------------------------------------------------------------------------------------------
-    // Thread specific accessors
+    // Context access
     // --------------------------------------------------------------------------------------------
-    private static final ThreadLocal<Context> currentContextThreadSensitive = new ThreadLocal<>();
-    private static Context currentContext;
-    
-    private static transient final ThreadLocal<IModule> currentModuleThreadSensitive = new ThreadLocal<>();
+    private static volatile Context currentContext;
+    private static volatile ThreadLocal<Context> currentContextThreadSensitive;
     
     /**
      * @return
      *      the current context
      */
     public static Context context() {
+        final ThreadLocal<Context> tsContext;
+        if ((tsContext = currentContextThreadSensitive) != null) {
+            return tsContext.get();
+        }
+        
         return currentContext;
     }
     
-    public static void setContext(Context context) {
+    /**
+     * Sets the current global context.
+     * 
+     * @param context
+     *      the context
+     */
+    public static synchronized void setContext(Context context) {
         currentContext = context;
-//        currentContextThreadSensitive.set(context);
     }
     
-    public static void setThreadSensitiveContext(Context context) {
+    private static Context _getCurrentContext() {
+        return currentContext;
+    }
+    
+    /**
+     * Executes the given runnable in the given context. Please note that other threads will not
+     * see the given context. In other words, the runnable must not depend on the given context
+     * with more than one thread. If multiple threads are required, use
+     * {@link #executeInContext(Context, Consumer)}.
+     * <p>
+     * NOTE: The given runnable must not call {@link #setContext(Context)} or behavior will become
+     * undefined.
+     * 
+     * @param context
+     *      the context
+     * @param runnable
+     *      the runnable to execute
+     */
+    public static synchronized void executeInContext(Context context, Runnable runnable) {
+        currentContextThreadSensitive = ThreadLocal.withInitial(Context::_getCurrentContext);
         currentContextThreadSensitive.set(context);
-    }
-    
-    public static Context getThreadSensitiveContext() {
-        return currentContextThreadSensitive.get();
-    }
-    
-    /**
-     * <b>Thread sensitive:</b> this method changes its behavior based on the calling thread.<p>
-     * 
-     * Sets the current module of the calling thread.
-     * 
-     * @param module
-     *      the module
-     */
-    public static void setCurrentModule(IModule module) {
-        currentModuleThreadSensitive.set(module);
+        try {
+            runnable.run();
+        } finally {
+            currentContextThreadSensitive = null;
+        }
     }
     
     /**
-     * <b>Thread sensitive:</b> this method changes its behavior based on the calling thread.<p>
+     * Executes the given supplier in the given context. Please note that other threads will not
+     * see the given context. In other words, the supplier must not depend on the given context
+     * with more than one thread. If multiple threads are required, use
+     * {@link #executeInContext(Context, Function)}.
+     * <p>
+     * NOTE: The given supplier must not call {@link #setContext(Context)} or behavior will become
+     * undefined.
      * 
-     * The module belonging to the solver of the current thread. If called from a thread not
-     * associated to a solver, this method returns null.
-     * 
-     * @return
-     *      the current module
+     * @param context
+     *      the context
+     * @param supplier
+     *      the supplier to execute
      */
-    public static IModule getCurrentModule() {
-        return currentModuleThreadSensitive.get();
+    public static synchronized <T> T executeInContext(Context context, Supplier<T> supplier) {
+        currentContextThreadSensitive = ThreadLocal.withInitial(Context::_getCurrentContext);
+        currentContextThreadSensitive.set(context);
+        try {
+            return supplier.get();
+        } finally {
+            currentContextThreadSensitive = null;
+        }
     }
     
-//    public static Context getThreadSensitiveContext(Context context) {
-//        return currentContextThreadSensitive.get();
-//    }
+    /**
+     * Executes the given consumer in the given context. The consumer can create new threads, but
+     * these threads need to execute the runnable that is supplied to the consumer in order to run
+     * with the given context. Care should be taken that all spawned threads complete before the
+     * consumer returns. Whenever the consumer returns, the context will no longer be the given
+     * context.
+     * <p>
+     * NOTE: The given consumer must not call {@link #setContext(Context)} or behavior will become
+     * undefined.
+     * 
+     * @param context
+     *      the context
+     * @param consumer
+     *      the consumer to execute
+     */
+    public static synchronized void executeInContext(Context context, Consumer<Runnable> consumer) {
+        currentContextThreadSensitive = ThreadLocal.withInitial(Context::_getCurrentContext);
+        currentContextThreadSensitive.set(context);
+        try {
+            consumer.accept(() -> {
+                final ThreadLocal<Context> tsContext = currentContextThreadSensitive;
+                if (tsContext != null) tsContext.set(context);
+            });
+        } finally {
+            currentContextThreadSensitive = null;
+        }
+    }
+    
+    /**
+     * Executes the given function in the given context. The function can create new threads, but
+     * these threads need to execute the runnable that is supplied to the function in order to run
+     * with the given context. Care should be taken that all spawned threads complete before the
+     * function returns. Whenever the function returns, the context will no longer be the given
+     * context and the context will be the original context.
+     * <p>
+     * NOTE: The given function must not call {@link #setContext(Context)} or behavior will become
+     * undefined.
+     * 
+     * @param context
+     *      the context
+     * @param function
+     *      the function to execute
+     */
+    public static synchronized <T> T executeInContext(Context context, Function<Runnable, T> function) {
+        currentContextThreadSensitive = ThreadLocal.withInitial(Context::_getCurrentContext);
+        currentContextThreadSensitive.set(context);
+        try {
+            return function.apply(() -> {
+                final ThreadLocal<Context> tsContext = currentContextThreadSensitive;
+                if (tsContext != null) tsContext.set(context);
+            });
+        } finally {
+            currentContextThreadSensitive = null;
+        }
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Serialization
     // --------------------------------------------------------------------------------------------
