@@ -21,6 +21,7 @@ public class IncrementalManager implements Serializable {
     protected volatile Object phase;
     protected boolean initPhase = true;
     protected Set<String> nonSplitModules = TOverrides.set();
+    protected Set<String> allowedTemporarily = TOverrides.set();
     
     // Module access
 
@@ -63,11 +64,11 @@ public class IncrementalManager implements Serializable {
      *      the runnable to execute
      */
     public void executeUnrestricted(String id, Runnable runnable) {
-        boolean removed = nonSplitModules.remove(id);
+        allowedTemporarily.add(id);
         try {
             runnable.run();
         } finally {
-            if (removed) nonSplitModules.add(id);
+            allowedTemporarily.remove(id);
         }
     }
     
@@ -87,11 +88,11 @@ public class IncrementalManager implements Serializable {
      */
     public <R> R executeUnrestricted(String id, Callable<R> callable) throws Exception {
         R tbr;
-        boolean removed = nonSplitModules.remove(id);
+        allowedTemporarily.add(id);
         try {
             tbr = callable.call();
         } finally {
-            if (removed) nonSplitModules.add(id);
+            allowedTemporarily.remove(id);
         }
         return tbr;
     }
@@ -118,8 +119,20 @@ public class IncrementalManager implements Serializable {
      *      true if access to the given module is allowed, false otherwise.
      */
     public boolean isAllowedAccess(String requester, String moduleId) {
+        if (isInitPhase() || isAllowedTemporarily(requester)) return true;
         if (requester.equals(moduleId)) return true;
         return !nonSplitModules.contains(requester);
+    }
+    
+    /**
+     * @param requester
+     *      the id of the requesting module
+     * 
+     * @return
+     *      true if this module is temporarily allowed to access other modules, false otherwise
+     */
+    public boolean isAllowedTemporarily(String requester) {
+        return allowedTemporarily.contains(requester);
     }
     
     // --------------------------------------------------------------------------------------------

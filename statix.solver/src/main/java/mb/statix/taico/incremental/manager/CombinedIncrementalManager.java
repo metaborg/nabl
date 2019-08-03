@@ -231,7 +231,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
     @Override
     public boolean isAllowedAccess(String requester, String moduleId) {
-        if (isInitPhase()) return true;
+        if (isInitPhase() || isAllowedTemporarily(requester)) return true;
         if (requester.equals(moduleId)) return true;
         
         switch (this.<CombinedPhase>getPhase()) {
