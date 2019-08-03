@@ -12,6 +12,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spoofax.StatixTerms;
@@ -239,9 +240,9 @@ public class TPrettyPrinter {
         return object.toString();
     }
     
-    //---------------------------------------------------------------------------------------------
-    //Matchers
-    //---------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // Matchers
+    // --------------------------------------------------------------------------------------------
     
     /**
      * @return
@@ -293,9 +294,9 @@ public class TPrettyPrinter {
         return SCOPE;
     }
     
-    //---------------------------------------------------------------------------------------------
-    //Helper methods
-    //---------------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // Helper methods
+    // --------------------------------------------------------------------------------------------
     
     private static boolean moduleUniqueness() {
         return Context.context().getModuleManager().areModuleNamesUnique();
@@ -316,5 +317,23 @@ public class TPrettyPrinter {
 
     private static String formatList(List<String> l) {
         return "[" + String.join(", ", l) + "]";
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Formatter
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Creates a term formatter which formats terms with the pretty printer.
+     * 
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the term formatter
+     */
+    public static TermFormatter formatter(IUnifier unifier) {
+        final IUnifier uunifier = unifier.unrestricted();
+        return t -> TPrettyPrinter.printTerm(t, uunifier);
     }
 }
