@@ -38,6 +38,12 @@ public class TOverrides {
      */
     public static volatile boolean USE_OBSERVER_MECHANISM_FOR_SELF = true;
     
+    /** If split modules should be used. */
+    public static volatile boolean SPLIT_MODULES = true;
+    
+    /** If enabled, cross module unification is made possible. */
+    public static volatile boolean CROSS_MODULE_UNIFICATION = true;
+    
     /**
      * The value of this integer determines what locking approach scope graphs use.
      * <p>

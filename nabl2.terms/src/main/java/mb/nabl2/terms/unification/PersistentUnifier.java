@@ -411,8 +411,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
                 final ITermVar rep = findRep(var);
                 assert !(term instanceof ITermVar);
-                if(terms.containsKey(rep)) {
-                    worklist.push(ImmutableTuple2.of(terms.get(rep), term));
+                java.util.Map<ITermVar, ITerm> target = allowCrossModuleUnification() ? targetTerms(rep) : terms;
+                if (target.containsKey(rep)) {
+                    worklist.push(ImmutableTuple2.of(target.get(rep), term));
                 } else if(isRigid.test(rep)) {
                     throw new _RigidVarsException(rep);
                 } else {

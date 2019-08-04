@@ -12,6 +12,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.Vars;
 
 public class DistributedUnifier {
@@ -225,6 +226,12 @@ public class DistributedUnifier {
         public static DistributedUnifier.Immutable of(String owner, boolean finite) {
             return new DistributedUnifier.Immutable(owner, finite, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
         }
+        
+        @Override
+        protected boolean allowCrossModuleUnification() {
+            //TODO Base this on more info, e.g. only cross module unification for split modules
+            return TOverrides.CROSS_MODULE_UNIFICATION;
+        }
     }
 
     public static class Transient extends PersistentUnifier.Transient {
@@ -426,6 +433,12 @@ public class DistributedUnifier {
         @Override
         public boolean isUnrestricted() {
             return unrestricted;
+        }
+        
+        @Override
+        protected boolean allowCrossModuleUnification() {
+            //TODO Base this on more info, e.g. only cross module unification for split modules
+            return TOverrides.CROSS_MODULE_UNIFICATION;
         }
         
         public static DistributedUnifier.Transient of(String owner) {

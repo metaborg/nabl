@@ -40,6 +40,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     protected abstract java.util.Map<ITermVar, ITerm> terms();
     
     /**
+     * Used by modular solving to redirect the request to the correct unifier.
+     * 
      * @param var
      *      the variable that is requested
      * 
@@ -48,6 +50,14 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
      */
     protected java.util.Map<ITermVar, ITerm> targetTerms(ITermVar var) {
         return terms();
+    }
+    
+    /**
+     * @return
+     *      true if cross module unification is allowed, false otherwise
+     */
+    protected boolean allowCrossModuleUnification() {
+        return false;
     }
 
     ///////////////////////////////////////////
