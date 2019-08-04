@@ -122,6 +122,21 @@ public interface IModule extends Flaggable, Serializable {
     }
     
     /**
+     * Executes the given consumer on each descendant of this module, excluding this module itself.
+     * The consumer will be called in a depth first fashion.
+     * 
+     * @param context
+     *      the context to look up modules in
+     * @param consumer
+     *      the consumer to execute on each module
+     */
+    default void getDescendants(Context context, Consumer<IModule> consumer) {
+        for (String childId : context.getScopeGraph(getId()).getChildIds()) {
+            context.getModuleUnchecked(childId).getDescendantsIncludingSelf(context, consumer);
+        }
+    }
+    
+    /**
      * Executes the given consumer on each descendant of this module, including this module itself.
      * The consumer will be called in a depth first fashion.
      * 
@@ -132,7 +147,7 @@ public interface IModule extends Flaggable, Serializable {
      */
     default void getDescendantsIncludingSelf(Context context, Consumer<IModule> consumer) {
         consumer.accept(this);
-        for (String childId : getScopeGraph().getChildIds()) {
+        for (String childId : context.getScopeGraph(getId()).getChildIds()) {
             context.getModuleUnchecked(childId).getDescendantsIncludingSelf(context, consumer);
         }
     }

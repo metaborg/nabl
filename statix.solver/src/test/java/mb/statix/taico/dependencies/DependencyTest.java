@@ -63,7 +63,7 @@ public class DependencyTest {
         IChangeSet changeSet = new BaselineChangeSet(oldContext, empty(), changed, empty());
         
         Map<String, IConstraint> initConstraints = new HashMap<>();
-        for (IModule module : oldContext.getModules()) {
+        for (IModule module : oldContext.getModulesOnLevel(1).values()) {
             //Skip the root module
             if (!ModulePaths.containsPathSeparator(module.getId())) continue;
             

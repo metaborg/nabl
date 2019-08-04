@@ -179,7 +179,7 @@ public abstract class IncrementalStrategy {
             //Make sure we don't reuse the same module multiple times
             Set<IModule> allToReuse = new HashSet<>();
             for (IModule module : reuseChildren) {
-                module.getDescendantsIncludingSelf(oldContext, m -> allToReuse.add(m));
+                module.getDescendants(oldContext, m -> allToReuse.add(m));
             }
             
             //Reuse all modules
