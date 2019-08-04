@@ -2,7 +2,6 @@ package mb.statix.taico.incremental.manager;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import mb.statix.constraints.CResolveQuery;
@@ -10,10 +9,9 @@ import mb.statix.solver.IConstraint;
 import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.Context;
-import mb.statix.taico.solver.query.QueryDetails;
 import mb.statix.taico.solver.state.IMState;
 
 public class QueryIncrementalManager extends IncrementalManager {
