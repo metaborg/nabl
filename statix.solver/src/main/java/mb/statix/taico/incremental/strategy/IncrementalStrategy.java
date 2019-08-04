@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -128,7 +129,8 @@ public abstract class IncrementalStrategy {
      * not in the map will be available, but won't be actively solving themselves.
      * <p>
      * Implementors should use {@link #createFileModule(Context, String, Set)} and
-     * {@link #reuseOldModule(Context, IModule)} to create or reuse modules.
+     * {@link #reuseOldModule(Context, IModule)} to create or reuse modules. Note that any modules
+     * that are new should be flagged with the NEW flag.
      * 
      * @param context
      *      the context
@@ -145,29 +147,57 @@ public abstract class IncrementalStrategy {
     public Map<IModule, IConstraint> createInitialModules(Context context,
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
+        System.err.println("[IS] Transferring constraint-supplied modules...");
+        Context oldContext = context.getOldContext().orElse(null);
         Map<IModule, IConstraint> newModules = new HashMap<>();
+        Set<IModule> reuseChildren = new HashSet<>();
         moduleConstraints.entrySet().stream()
         .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
         .forEachOrdered(entry -> {
             System.err.println("[IS] Encountered entry for " + entry.getKey());
-            IModule oldModule = context.getOldContext().map(c -> c.getModuleByNameOrId(entry.getKey())).orElse(null);
+            IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey());
             
             if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);
                 if (module != null) {
-                    if (oldModule == null) module.setFlag(Flag.NEW);
                     newModules.put(module, entry.getValue());
                 }
             } else {
                 //Old module is clean, we can reuse it
                 reuseOldModule(context, changeSet, oldModule);
+                reuseChildren.add(oldModule);
             }
         });
         
-        //Transfer the split module at the top level (TODO or prevent this from being created).
-        String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
-        IModule topSplit = context.getOldContext().map(c -> c.getModuleUnchecked(topSplitId)).orElse(null);
-        if (topSplit != null) reuseOldModule(context, changeSet, topSplit);
+        if (oldContext != null) {
+            System.err.println("[IS] Transferring child modules...");
+            //Remove all the descendants from the set to reuse the children of
+            for (IModule module : newModules.keySet()) {
+                module.getDescendantsIncludingSelf(oldContext, m -> reuseChildren.remove(m));
+            }
+            
+            //Make sure we don't reuse the same module multiple times
+            Set<IModule> allToReuse = new HashSet<>();
+            for (IModule module : reuseChildren) {
+                module.getDescendantsIncludingSelf(oldContext, m -> allToReuse.add(m));
+            }
+            
+            //Reuse all modules
+            for (IModule module : allToReuse) {
+                reuseOldModule(context, changeSet, module);
+            }
+            
+            //Transfer the split module at the top level (TODO or prevent this from being created).
+            //This module cannot have any children, so we do not need to worry about that
+            String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
+            IModule topSplit = oldContext.getModuleUnchecked(topSplitId);
+            if (topSplit != null) {
+                reuseOldModule(context, changeSet, topSplit);
+                
+                //INVARIANT: The split module of the top level does not have any children
+                assert topSplit.getScopeGraph().getChildIds().isEmpty() : "The top module split should not have any children!";
+            }
+        }
         
         return newModules;
     }
@@ -197,7 +227,7 @@ public abstract class IncrementalStrategy {
             return createFileModule(context, ModulePaths.getName(childNameOrId), initConstraint, oldModule);
         } else {
             //This is a path of a module that is not top level.
-            return createChildModule(context, changeSet, childNameOrId, initConstraint);
+            return createChildModule(context, changeSet, childNameOrId, initConstraint, oldModule);
         }
     }
     
@@ -226,6 +256,7 @@ public abstract class IncrementalStrategy {
         IModule rootOwner = context.getRootModule();
         IModule child = rootOwner.createChild(childName, scopes, initConstraint, false);
         rootOwner.addChild(child);
+        if (oldModule == null) child.addFlag(Flag.NEW);
         return child;
     }
     
@@ -244,12 +275,14 @@ public abstract class IncrementalStrategy {
      *      the child id
      * @param initConstraint
      *      the initialization constraint
+     * @param oldModule
+     *      the old module
      * 
      * @return
      *      the created module, or null
      */
     protected IModule createChildModule(
-            Context context, IChangeSet changeSet, String childId, IConstraint initConstraint) {
+            Context context, IChangeSet changeSet, String childId, IConstraint initConstraint, @Nullable IModule oldModule) {
         System.err.println("[IS] Creating child module for " + childId);
         
         String parent = ModulePaths.getParent(childId);
@@ -265,6 +298,7 @@ public abstract class IncrementalStrategy {
         
         IModule child = parentModule.createChild(ModulePaths.getName(childId), scopes, initConstraint, false);
         parentModule.addChild(child);
+        if (oldModule == null) child.setFlag(Flag.NEW);
         return child;
     }
     
@@ -285,7 +319,6 @@ public abstract class IncrementalStrategy {
         for (IModule child : changeSet.removed()) {
             state.scopeGraph().removeChild(child);
         }
-        //Does the parent module have a state at this point?
         module.getParent().getCurrentState().solver().noopSolver(state);
     }
     

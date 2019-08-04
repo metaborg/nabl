@@ -6,9 +6,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.metaborg.util.iterators.Iterables2;
 
@@ -96,7 +96,7 @@ public interface IModule extends Flaggable, Serializable {
      */
     default Stream<IModule> getDescendants() {
         return getChildren().stream()
-                .flatMap(m -> StreamSupport.stream(m.getDescendantsIncludingSelf().spliterator(), false));
+                .flatMap(m -> m.getDescendantsIncludingSelf());
     }
     
     /**
@@ -104,8 +104,37 @@ public interface IModule extends Flaggable, Serializable {
      *      all the modules that are descendent from this module, including this module itself
      */
     default Stream<IModule> getDescendantsIncludingSelf() {
-        return Streams.concat(Stream.of(this), getChildren().stream()
-                .flatMap(m -> StreamSupport.stream(m.getDescendantsIncludingSelf().spliterator(), false)));
+        return Streams.concat(Stream.of(this),
+                getChildren().stream().flatMap(m -> m.getDescendantsIncludingSelf()));
+    }
+    
+    /**
+     * @param context
+     *      the context to look up modules in
+     * 
+     * @return
+     *      all the modules that are descendent from this module, including this module itself
+     */
+    default Stream<IModule> getDescendantsIncludingSelf(Context context) {
+        return Streams.concat(Stream.of(this),
+                context.getScopeGraph(getId()).getChildIds().stream()
+                .flatMap(s -> context.getModuleUnchecked(s).getDescendantsIncludingSelf(context)));
+    }
+    
+    /**
+     * Executes the given consumer on each descendant of this module, including this module itself.
+     * The consumer will be called in a depth first fashion.
+     * 
+     * @param context
+     *      the context to look up modules in
+     * @param consumer
+     *      the consumer to execute on each module
+     */
+    default void getDescendantsIncludingSelf(Context context, Consumer<IModule> consumer) {
+        consumer.accept(this);
+        for (String childId : getScopeGraph().getChildIds()) {
+            context.getModuleUnchecked(childId).getDescendantsIncludingSelf(context, consumer);
+        }
     }
     
     /**
