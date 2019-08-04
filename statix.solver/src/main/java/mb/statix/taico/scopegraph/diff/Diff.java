@@ -71,12 +71,12 @@ public class Diff {
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = external
                 ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cNew.getScopeGraph(id).externalGraph()
                 : cNew.getScopeGraph(id);
-        IUnifier uNew = cNew.getState(id).unifier();
+        IUnifier uNew = cNew.getState(id).unifier().unrestricted();
         
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = external
                 ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cOld.getScopeGraph(id).externalGraph()
                 : cOld.getScopeGraph(id);
-        IUnifier uOld = cOld.getState(id).unifier();
+        IUnifier uOld = cOld.getState(id).unifier().unrestricted();
         
         //Scopes
         Set<Scope> newScopes     = getNew(sgOld.getScopes(), sgNew.getScopes());
