@@ -334,7 +334,9 @@ public class Context implements Serializable {
      *      the state associated with the given module in the current context
      */
     public IMState getState(String moduleId) {
-        return states.get(moduleId);
+        IMState state = states.get(moduleId);
+        if (state == null) System.err.println("State of " + moduleId + " is null!");
+        return state;
     }
     
     /**
