@@ -465,8 +465,9 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     protected MaybeNotInstantiatedBool equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
             final java.util.Map<Set2<ITermVar>, Boolean> visited) {
         final ITermVar rep = findRep(var);
-        if(targetTerms(rep).containsKey(rep)) {
-            return equalTerms(targetTerms(rep).get(rep), term, stack, visited);
+        java.util.Map<ITermVar, ITerm> terms = targetTerms(rep);
+        if(terms.containsKey(rep)) {
+            return equalTerms(terms.get(rep), term, stack, visited);
         } else {
             return MaybeNotInstantiatedBool.ofNotInstantiated(rep);
         }
