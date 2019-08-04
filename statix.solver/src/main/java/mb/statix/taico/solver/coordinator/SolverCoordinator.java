@@ -12,7 +12,6 @@ import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
 
 /**
@@ -76,6 +75,17 @@ public class SolverCoordinator extends ASolverCoordinator {
      */
     @Override
     protected void runToCompletion() throws InterruptedException {
+        try {
+            solverLoop();
+        } catch (Exception ex) {
+            failSolving(ex);
+            return;
+        }
+        
+        finishSolving();
+    }
+
+    private void solverLoop() throws InterruptedException {
         boolean anyProgress = true;
         while (true) {
             anyProgress = false;
@@ -94,7 +104,6 @@ public class SolverCoordinator extends ASolverCoordinator {
                 if (Thread.interrupted()) throw new InterruptedException();
                 
                 //If any progress can be made, store that information
-                Context.setCurrentModule(solver.getOwner());
                 if (solver.solveStep()) {
                     anyProgress = true;
                     
@@ -115,7 +124,5 @@ public class SolverCoordinator extends ASolverCoordinator {
                 }
             }
         }
-        
-        finishSolving();
     }
 }

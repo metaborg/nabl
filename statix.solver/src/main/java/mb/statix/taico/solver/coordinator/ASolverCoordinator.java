@@ -2,6 +2,8 @@ package mb.statix.taico.solver.coordinator;
 
 import static mb.statix.taico.util.TDebug.*;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,9 +26,9 @@ import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.progress.ProgressTrackerRunnable;
 import mb.statix.taico.solver.state.IMState;
 
@@ -227,6 +229,22 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     protected void finishSolving() {
         deinit();
         logDebugInfo(debug);
+    }
+    
+    /**
+     * Called whenever an unexpected exception is encountered while solving.
+     * This method will also call {@link #finishSolving()} to finish the solving process.
+     */
+    protected void failSolving(Exception ex) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        System.err.println("Solving failed:");
+        ex.printStackTrace();
+        
+        debug.error("Solving failed with an exception: {}", pw.toString());
+        finishSolving();
+        debug.error("Solving failed with an exception! (see above)");
     }
     
     /**
