@@ -50,7 +50,7 @@ public class DotPrinter {
             modules = root.getScopeGraph().getDescendantsIncludingSelf();
         }
         this.rootGraph = root.getScopeGraph();
-        this.unifier = root.getCurrentState().unifier();
+        this.unifier = root.getCurrentState().unifier().unrestricted();
         determineEdgesAndData(modules);
     }
     
@@ -75,7 +75,7 @@ public class DotPrinter {
             modules = root.getScopeGraph().getDescendantsIncludingSelf();
         }
         this.rootGraph = root.getScopeGraph();
-        this.unifier = root.getCurrentState().unifier();
+        this.unifier = root.getCurrentState().unifier().unrestricted();
         determineEdgesAndData(modules);
     }
     
@@ -89,7 +89,7 @@ public class DotPrinter {
      */
     public DotPrinter(IMInternalScopeGraph<Scope, ITerm, ITerm> graph, boolean includeChildren) {
         this.rootGraph = graph;
-        this.unifier = graph.getOwner().getCurrentState().unifier();
+        this.unifier = graph.getOwner().getCurrentState().unifier().unrestricted();
         this.includeChildren = includeChildren;
         determineEdgesAndData(graph.getDescendantsIncludingSelf());
     }
