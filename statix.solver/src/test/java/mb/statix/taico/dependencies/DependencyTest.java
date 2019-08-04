@@ -113,4 +113,26 @@ public class DependencyTest {
         assertTrue(dnA.getModuleDependantIds().isEmpty());
         assertSame(doA, context.getOldDependencies(A.getId()));
     }
+    
+    //TODO Move test to separate test file
+    @Test
+    public void testModuleTransfer() {
+        //B depends on A
+        IModule A = createChild(global, "A", globalScope);
+        IModule A1 = createChild(A, "A1", globalScope);
+        IModule B = createChild(global, "B", globalScope);
+        IModule B1 = createChild(B, "B1", globalScope);
+        
+        Dependencies doA = oldContext.getDependencies(A);
+        Dependencies doB = oldContext.getDependencies(B);
+        doB.addDependency(A);
+        assertTrue(doA.getModuleDependantIds().contains(B.getId()));
+        
+        //After transfer with no changes, this should still hold
+        context = incremental(empty());
+        NameDependencies dnA = context.getDependencies(A);
+        assertTrue(dnA.getModuleDependantIds().contains(B.getId()));
+        assertTrue(context.getModules().contains(A1));
+        assertTrue(context.getModules().contains(B1));
+    }
 }
