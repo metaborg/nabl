@@ -201,7 +201,9 @@ public class TPrettyPrinter {
             StringBuilder sb = new StringBuilder("[");
             for (Object obj : (Iterable<?>) object) {
                 sb.append(prettyPrint(obj, unifier));
+                sb.append(", ");
             }
+            if (sb.length() > 2) sb.setLength(sb.length() - 2);
             sb.append(']');
             return sb.toString();
         }
