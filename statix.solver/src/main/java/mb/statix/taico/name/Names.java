@@ -110,12 +110,12 @@ public class Names {
      */
     public static Optional<Name> getName(ITerm term, IUnifier unifier) {
         return M.cases(
-                occurrence(),
+                occurrence().map(Optional::of),
                 M.tuple(t -> {
-                    if (t.getArity() <= 0) return null;
-                    return occurrence().match(t.getArgs().get(1), unifier).orElse(null);
+                    if (t.getArity() <= 0) return Optional.<Name>empty();
+                    return occurrence().match(t.getArgs().get(1), unifier);
                 })
-        ).match(term, unifier);
+        ).match(term, unifier).get();
     }
     
     /**
