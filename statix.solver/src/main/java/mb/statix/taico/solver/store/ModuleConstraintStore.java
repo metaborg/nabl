@@ -11,6 +11,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
@@ -29,6 +31,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
+import mb.statix.taico.solver.state.DelegatingMState;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.TOverrides;
@@ -136,6 +139,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
 
     @Override
+    @Deprecated
     public void delay(IConstraint constraint, Delay delay) {
         final Delayed delayed = new Delayed(constraint);
         if (!delay.vars().isEmpty()) {
@@ -144,7 +148,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 synchronized (stuckOnVar) {
                     stuckOnVar.put(var, delayed);
                 }
-                if (!registerAsObserver(var, TDebug.DEV_OUT)) break;
+                if (!registerAsObserver(var, TDebug.DEV_OUT, null)) break;
             }
         } else if (!delay.criticalEdges().isEmpty()) {
             TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
@@ -152,7 +156,35 @@ public class ModuleConstraintStore implements IConstraintStore {
                 synchronized (stuckOnEdge) {
                     stuckOnEdge.put(edge, delayed);
                 }
-                if (!registerAsObserver(edge, TDebug.DEV_OUT)) break;
+                if (!registerAsObserver(edge, TDebug.DEV_OUT, null)) break;
+            }
+        } else if (delay.module() != null) {
+            TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
+            synchronized (stuckOnModule) {
+                stuckOnModule.put(delay.module(), delayed);
+            }
+        } else {
+            throw new IllegalArgumentException("delayed for no apparent reason");
+        }
+    }
+    
+    public void delay(IConstraint constraint, Delay delay, IMState state) {
+        final Delayed delayed = new Delayed(constraint);
+        if (!delay.vars().isEmpty()) {
+            TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
+            for (ITermVar var : delay.vars()) {
+                synchronized (stuckOnVar) {
+                    stuckOnVar.put(var, delayed);
+                }
+                if (!registerAsObserver(var, TDebug.DEV_OUT, state)) break;
+            }
+        } else if (!delay.criticalEdges().isEmpty()) {
+            TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            for (CriticalEdge edge : delay.criticalEdges()) {
+                synchronized (stuckOnEdge) {
+                    stuckOnEdge.put(edge, delayed);
+                }
+                if (!registerAsObserver(edge, TDebug.DEV_OUT, state)) break;
             }
         } else if (delay.module() != null) {
             TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
@@ -383,21 +415,23 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the variable
      * @param debug
      *      the debug
+     * @param state
+     *      the state of the owner of this constraint store
      * 
      * @return
      *      false if the var was immediately activated, true otherwise
      */
-    private boolean registerAsObserver(ITermVar termVar, IDebugContext debug) {
+    private boolean registerAsObserver(ITermVar termVar, IDebugContext debug, @Nullable IMState state) {
         final IModule varOwner;
         if (this.owner.equals(termVar.getResource()) || (varOwner = Vars.getOwnerUnchecked(termVar)) == null) return true;
         
-        final IMState state = varOwner.getCurrentState();
-        final ModuleConstraintStore varStore = state.solver().getStore();
+        if (state == null) state = Context.context().getState(this.owner);
+        final IMState varState = varOwner.getCurrentState();
+        final ModuleConstraintStore varStore = varState.solver().getStore();
         
         //Before checking, ensure that the other side cannot notify observers causing us to miss the event
         synchronized (varStore.varObservers) {
             IUnifier.Immutable unifier = state.unifier();
-            
             //If we are running concurrently, check if the variable was resolved between our stuck check and the registration.
             //TODO Optimization check if we are running concurrently
             //TODO Could we get a module delay exception here?
@@ -425,16 +459,25 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the edge
      * @param debug
      *      the debug context
+     * @param state
+     *      the state of the owner of this constraint store
      * 
      * @return
      *      false if the edge was immediately activated, true otherwise
      */
-    private boolean registerAsObserver(CriticalEdge edge, IDebugContext debug) {
+    private boolean registerAsObserver(CriticalEdge edge, IDebugContext debug, @Nullable IMState state) {
+        //TODO IMPORTANT We do not want to reactivate separate solvers after they have reported their result
         IModule owner = getEdgeCause(edge);
         if (owner == null) throw new IllegalStateException("Encountered edge without being able to determine the owner!");
         
         //A module doesn't have to register on itself
         if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return true;
+        
+        if (state instanceof DelegatingMState && this.owner.equals(owner.getId())) {
+            System.out.println("Running observer mechanism on a separate solver for " + this.owner);
+        } else if (state instanceof DelegatingMState) {
+            System.out.println("Using observer mechanism on a separate solver...");
+        }
         
         final IMState ownerState = owner.getCurrentState();
         RedirectingIncrementalCompleteness completeness = ownerState.solver().getCompleteness();

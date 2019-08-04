@@ -320,7 +320,7 @@ public class ModuleSolver implements IOwnable {
             }
             delayedLog.absorb(proxyDebug.copy());
             proxyDebug.commit();
-            constraints.delay(constraint, d);
+            constraints.delay(constraint, d, state);
             delays += 1;
         } catch (Exception ex) {
             System.err.println("FATAL: Exception encountered while solving!");
