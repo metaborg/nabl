@@ -47,8 +47,9 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
 
     @Override
     public void add(IConstraint constraint, IUnifier unifier) {
+        final IUnifier uunifier = unifier.unrestricted();
         Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
+            getVarOrScope(scopeTerm, uunifier).ifPresent(scope -> {
                 getTarget(scope).add(scope, label);
             });
         });
@@ -56,8 +57,9 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
 
     @Override
     public void remove(IConstraint constraint, IUnifier unifier) {
+        final IUnifier uunifier = unifier.unrestricted();
         Completeness.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-            getVarOrScope(scopeTerm, unifier).ifPresent(scope -> {
+            getVarOrScope(scopeTerm, uunifier).ifPresent(scope -> {
                 getTarget(scope).remove(scope, label);
             });
         });
@@ -65,9 +67,10 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
     
     @Override
     public void update(ITermVar var, IUnifier unifier) {
+        final IUnifier uunifier = unifier.unrestricted();
         final Multiset<ITerm> labels = incomplete.remove(var);
         if(labels != null) {
-            getVarOrScope(var, unifier).ifPresent(scope -> {
+            getVarOrScope(var, uunifier).ifPresent(scope -> {
                 //TODO TAICO: Remove this check
                 //TODO TAICO: This is a temporary check to assert the variable is equal
                 if (scope instanceof Scope) {
