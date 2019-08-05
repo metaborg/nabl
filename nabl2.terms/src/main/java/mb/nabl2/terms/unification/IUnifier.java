@@ -90,7 +90,17 @@ public interface IUnifier {
      *      If this unifier is not meant for modular/incremental solving, or if it is transient.
      */
     default IUnifier unrestricted() {
-        throw new UnsupportedOperationException("You cannot make unifiers of the type " + getClass() + " unrestricted.");
+        if (isUnrestricted()) return this;
+        throw new UnsupportedOperationException("Class " + getClass() + " is missing implementation for IUnifier#unrestricted");
+    }
+    
+    /**
+     * Return an restricted version of this unifier. An restricted unifier can get delays when
+     * requesting variables from other modules. This is the default behavior for a unifier.
+     */
+    default IUnifier restricted() {
+        if (!isUnrestricted()) return this;
+        throw new UnsupportedOperationException("Class " + getClass() + " is missing implementation for IUnifier#restricted");
     }
     
     /**
