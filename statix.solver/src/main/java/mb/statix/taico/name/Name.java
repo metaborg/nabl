@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Objects;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -20,7 +19,7 @@ public class Name implements Serializable {
     
     protected final String namespace;
     protected final List<ITerm> terms;
-    //private final ? position;
+    protected int hashCode;
     
     public Name(String namespace, List<ITerm> terms) {
         this.namespace = namespace;
@@ -125,11 +124,31 @@ public class Name implements Serializable {
         return new Name(namespace, terms);
     }
     
-    //---------------------------------------------------------------------------------------------
+    /**
+     * 
+     * @param relation
+     *      the relation
+     * 
+     * @return
+     *      a new NameAndRelation using the given relation
+     */
+    public NameAndRelation withRelation(ITerm relation) {
+        return new NameAndRelation(namespace, terms, relation);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Object methods
+    // --------------------------------------------------------------------------------------------
     
     @Override
     public int hashCode() {
-        return Objects.hash(namespace, terms);
+        if (hashCode != 0) return hashCode;
+        
+        int result = 1;
+        result = 31 * result + namespace.hashCode();
+        result = 31 * result + terms.hashCode();
+        if (result == 0) result = 1;
+        return hashCode = result;
     }
     
     @Override

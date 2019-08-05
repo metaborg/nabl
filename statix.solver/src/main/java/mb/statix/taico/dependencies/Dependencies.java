@@ -51,7 +51,7 @@ public class Dependencies implements Serializable {
      *      the dependency
      * 
      * @return
-     *      all the dependences on this module, or an empty list if there is no dependency
+     *      all the dependences on the given module, or an empty list if there is no dependency
      */
     public List<Dependency> getDependencies(String dependency) {
         return dependencies.get(dependency);
@@ -137,7 +137,7 @@ public class Dependencies implements Serializable {
      * @return
      *      the created dependency
      */
-    public Dependency addDependency(IModule module, IDependencyDetail... details) {
+    public final Dependency addDependency(IModule module, IDependencyDetail... details) {
         return addDependency(module.getId(), details);
     }
     

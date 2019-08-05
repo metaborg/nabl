@@ -1,7 +1,6 @@
 package mb.statix.taico.name;
 
 import java.util.List;
-import java.util.Objects;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
@@ -39,11 +38,27 @@ public class NameAndRelation extends Name {
         return new NameAndRelation(namespace, terms, relation);
     }
     
-    //---------------------------------------------------------------------------------------------
+    /**
+     * @return
+     *      a name representing this NameAndRelation without the relation
+     */
+    public Name toName() {
+        return new Name(namespace, terms);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Object methods
+    // --------------------------------------------------------------------------------------------
     
     @Override
     public int hashCode() {
-        return Objects.hash(namespace, terms, relation);
+        if (hashCode != 0) return hashCode;
+        int result = 1;
+        result = 31 * result + namespace.hashCode();
+        result = 31 * result + terms.hashCode();
+        result = 31 * result + relation.hashCode();
+        if (result == 0) result = 1;
+        return hashCode = result;
     }
     
     @Override

@@ -20,6 +20,10 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
     protected abstract SetMultimap<Tuple2<K, L>, V> fwdKL();
 
     protected abstract SetMultimap<V, Tuple2<L, K>> bwdV();
+    
+    @Override public SetMultimap<Tuple2<K, L>, V> _getForwardMap() {
+        return fwdKL();
+    }
 
     @Override public boolean contains(K key) {
         return fwdK().containsKey(key);

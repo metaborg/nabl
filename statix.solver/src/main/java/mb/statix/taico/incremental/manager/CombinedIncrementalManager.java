@@ -297,11 +297,11 @@ public class CombinedIncrementalManager extends IncrementalManager {
     }
 
     @Override
-    public void solverDone(ModuleSolver solver) {
+    public void solverDone(ModuleSolver solver, MSolverResult result) {
         System.err.println("[CIM] Solver done triggered for " + solver.getOwner() + ". Switching module over to clean.");
 
         //If this solver is done, do we count that as the solving having succeeded?
-        super.solverDone(solver);
+        super.solverDone(solver, result);
     }
 
     public static enum CombinedPhase {

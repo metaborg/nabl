@@ -23,8 +23,8 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.taico.dependencies.Dependencies;
 import mb.statix.taico.dependencies.DependencyManager;
-import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.manager.IncrementalManager;
@@ -352,9 +352,13 @@ public abstract class IncrementalStrategy {
         return new IncrementalManager();
     }
     
+    /**
+     * @return
+     *      a newly created dependency manager
+     */
     @SuppressWarnings("unchecked")
     public DependencyManager<?> createDependencyManager() {
-        return new DependencyManager<>((Function<String, NameDependencies> & Serializable) NameDependencies::new);
+        return new DependencyManager<>((Function<String, Dependencies> & Serializable) Dependencies::new);
     }
     
     //---------------------------------------------------------------------------------------------
@@ -391,9 +395,9 @@ public abstract class IncrementalStrategy {
                 return new BaselineIncrementalStrategy();
             case "query":
                 return new QueryIncrementalStrategy();
+            case "default":
             case "name":
                 return new NameIncrementalStrategy();
-            case "default":
             case "combined":
                 return new CombinedStrategy();
             //TODO Add more strategies here

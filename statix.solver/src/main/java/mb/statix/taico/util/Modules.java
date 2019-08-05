@@ -1,5 +1,6 @@
 package mb.statix.taico.util;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,5 +29,14 @@ public class Modules {
     
     public static IModule module(String requester, String moduleId) {
         return Context.context().getModule(requester, moduleId);
+    }
+    
+    public static Set<IModule> toModulesRemoveNull(Set<String> modules) {
+        Set<IModule> tbr = new HashSet<>();
+        for (String moduleId : modules) {
+            IModule module = moduleUnchecked(moduleId);
+            if (module != null) tbr.add(module);
+        }
+        return tbr;
     }
 }

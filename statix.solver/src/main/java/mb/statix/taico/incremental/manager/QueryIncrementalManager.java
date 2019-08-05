@@ -80,7 +80,8 @@ public class QueryIncrementalManager extends IncrementalManager {
     }
     
     @Override
-    public void solverDone(ModuleSolver solver) {
+    public void solverDone(ModuleSolver solver, MSolverResult result) {
+        if (solver.isSeparateSolver()) return;
         System.err.println("Solver done triggered on incremental manager for " + solver.getOwner() + ". Switching module over to clean.");
         switchToClean(solver.getOwner());
     }

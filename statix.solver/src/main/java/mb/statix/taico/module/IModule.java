@@ -292,7 +292,7 @@ public interface IModule extends Flaggable, Serializable {
      *      the name dependencies of this module
      */
     default Dependencies dependencies() {
-        return context().<NameDependencies>getDependencies(getId());
+        return context().getDependencies(getId());
     }
     
     /**

@@ -17,6 +17,7 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
     private final Map<String, D> map = TOverrides.hashMap();
     
     public DependencyManager(Function<String, D> creator) {
+        if (!(creator instanceof Serializable)) throw new IllegalArgumentException("The creator function needs to be serializable!");
         this.creator = creator;
     }
     

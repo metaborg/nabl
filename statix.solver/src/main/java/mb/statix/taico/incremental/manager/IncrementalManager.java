@@ -106,7 +106,7 @@ public class IncrementalManager implements Serializable {
      *      true if a split module should be created, false if not
      */
     public boolean createSplitModuleRequest(String id) {
-        return true;
+        return TOverrides.SPLIT_MODULES;
     }
     
     /**
@@ -236,7 +236,8 @@ public class IncrementalManager implements Serializable {
      * @param solver
      *      the solver
      */
-    public void solverDone(ModuleSolver solver) {
+    public void solverDone(ModuleSolver solver, MSolverResult result) {
+        if (solver.isSeparateSolver()) return;
         solver.getOwner().setFlag(Flag.CLEAN);
     }
     

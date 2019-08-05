@@ -420,12 +420,6 @@ public class ModuleSolver implements IOwnable {
         if(constraints.activeSize() > 0) {
             debug.warn("Expected no remaining active constraints, but got ", constraints.activeSize());
         }
-        
-        if (getOwner().getCurrentState().solver() == this) {
-            //If we are the main solver of this module, we signal that we are done.
-            Context.context().getIncrementalManager().solverDone(this);
-            init = false;
-        }
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         debug.info("Delayed log:");
@@ -436,7 +430,11 @@ public class ModuleSolver implements IOwnable {
         logTimes("delay", delayCount, debug);
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
-        return MSolverResult.of(state, failed, delayed, existentials);
+        MSolverResult result = MSolverResult.of(state, failed, delayed, existentials);
+        
+        Context.context().getIncrementalManager().solverDone(this, result);
+        init = false;
+        return result;
     }
 
     private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,

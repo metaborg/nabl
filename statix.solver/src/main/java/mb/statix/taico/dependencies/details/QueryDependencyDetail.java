@@ -76,6 +76,10 @@ public class QueryDependencyDetail implements IDependencyDetail {
     public Set<Scope> getVisitedScopes() {
         return Sets.union(edges.keySet(), data.keySet());
     }
+    
+    public Set<Scope> getDataScopes() {
+        return data.keySet();
+    }
 
     public CResolveQuery getOriginalConstraint() {
         return constraint;

@@ -6,7 +6,9 @@ import org.metaborg.util.functions.Function3;
 
 import com.google.common.annotations.Beta;
 
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 
 public interface IRelation3<K, L, V> {
@@ -16,6 +18,10 @@ public interface IRelation3<K, L, V> {
     java.util.Set<K> keySet();
 
     java.util.Set<V> valueSet();
+    
+    default SetMultimap<Tuple2<K, L>, V> _getForwardMap() {
+        throw new UnsupportedOperationException();
+    }
 
     boolean contains(K key);
 
