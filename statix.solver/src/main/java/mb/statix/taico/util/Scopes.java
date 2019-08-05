@@ -1,5 +1,14 @@
 package mb.statix.taico.util;
 
+import static mb.nabl2.terms.matching.TermMatch.M;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.scopegraph.terms.IScope;
@@ -185,5 +194,27 @@ public class Scopes {
      */
     public static IModule getOwner(IScope scope, String requester) throws ModuleDelayException {
         return Context.context().getModule(requester, scope.getResource());
+    }
+    
+    /**
+     * @param term
+     *      the term
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      a set of all the scopes that are in the given term
+     */
+    public static Set<Scope> getScopesInTerm(ITerm term, IUnifier unifier) {
+        return M.<Set<Scope>>casesFix(m -> Iterables2.from(
+                Scope.matcher().map(s -> Collections.singleton(s)),
+                M.listElems(m).map(l -> l.stream().flatMap(s -> s.stream()).collect(Collectors.toSet())),
+                M.tuple(t -> t.getArgs().stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
+                M.appl(t -> t.getArgs().stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
+                M.integer(t -> Collections.emptySet()),
+                M.string(t -> Collections.emptySet()),
+                M.var(t -> Collections.emptySet()),
+                M.term(t -> Collections.emptySet())
+        )).match(term, unifier).orElse(Collections.emptySet());
     }
 }
