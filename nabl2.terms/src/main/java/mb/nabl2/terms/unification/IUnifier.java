@@ -105,11 +105,13 @@ public interface IUnifier {
     
     /**
      * Test if this unifier is unrestricted.
+     * <p>
+     * If unsupported, the unifier is always unrestricted.
      * 
      * @see #unrestricted()
      */
     default boolean isUnrestricted() {
-        return false;
+        return true;
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

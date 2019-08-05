@@ -32,7 +32,7 @@ public class STX_get_ast_property extends StatixPrimitive {
             final TermIndex index = maybeIndex.get();
             final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, property);
             final ITerm value = analysis.state().termProperties().get(key);
-            return Optional.ofNullable(value).map(analysis.state().unifier()::findRecursive);
+            return Optional.ofNullable(value).map(analysis.state().unifier().unrestricted()::findRecursive);
         } else {
             return Optional.empty();
         }
