@@ -16,6 +16,8 @@ import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.Context;
+import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.unifier.DistributedUnifier;
 
 public class Diff {
     /**
@@ -70,10 +72,10 @@ public class Diff {
             boolean onlyContextFree) {
         //Determine the graphs and their unifiers from the context
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = scopeGraph(cNew, cOld, id, external);
-        IUnifier uNew = cNew.getState(id).unifier().unrestricted();
+        IUnifier uNew = unifier(cNew, id);
         
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = scopeGraph(cOld, cNew, id, external);
-        IUnifier uOld = cOld.getState(id).unifier().unrestricted();
+        IUnifier uOld = unifier(cOld, id);
         
         //Scopes
         Set<Scope> newScopes     = getNew(sgOld.getScopes(), sgNew.getScopes());
@@ -171,6 +173,23 @@ public class Diff {
         return external
                 ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) sgNew.externalGraph()
                 : sgNew;
+    }
+    
+    /**
+     * 
+     * @param cTarget
+     *      the context to get the unifier from
+     * @param id
+     *      the id of the module
+     * 
+     * @return
+     *      
+     */
+    private static IUnifier unifier(Context cTarget, String id) {
+        IMState state = cTarget.getState(id);
+        if (state == null) return DistributedUnifier.Immutable.of(id).unrestricted();
+        
+        return state.unifier().unrestricted();
     }
     
     /**
