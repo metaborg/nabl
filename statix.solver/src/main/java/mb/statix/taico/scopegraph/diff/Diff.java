@@ -14,6 +14,7 @@ import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.name.Name;
 import mb.statix.taico.name.Names;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.scopegraph.ModuleScopeGraph;
 import mb.statix.taico.solver.Context;
 
 public class Diff {
@@ -68,14 +69,10 @@ public class Diff {
             boolean external,
             boolean onlyContextFree) {
         //Determine the graphs and their unifiers from the context
-        IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = external
-                ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cNew.getScopeGraph(id).externalGraph()
-                : cNew.getScopeGraph(id);
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = scopeGraph(cNew, cOld, id, external);
         IUnifier uNew = cNew.getState(id).unifier().unrestricted();
         
-        IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = external
-                ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) cOld.getScopeGraph(id).externalGraph()
-                : cOld.getScopeGraph(id);
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = scopeGraph(cOld, cNew, id, external);
         IUnifier uOld = cOld.getState(id).unifier().unrestricted();
         
         //Scopes
@@ -144,6 +141,36 @@ public class Diff {
                 result.addRemovedChild(childId, cOld.getScopeGraph(childId));
             }
         }
+    }
+    
+    /**
+     * 
+     * @param cTarget
+     *      the context to get the scope graph from
+     * @param cOther
+     *      the context to retrieve an empty scope graph from 
+     * @param id
+     *      the id of the module
+     * @param external
+     *      if true, an external scope graph is returned, otherwise, an internal scope graph is
+     *      returned
+     * 
+     * @return
+     *      the scope graph of the module with the given id in the target context, or null if no
+     *      module with the given id exists in either context
+     */
+    private static IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph(Context cTarget, Context cOther, String id, boolean external) {
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = cTarget.getScopeGraph(id);
+        
+        if (sgNew == null) {
+            IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = cOther.getScopeGraph(id);
+            if (sgOld == null) return null;
+            return ModuleScopeGraph.empty(cOther.getScopeGraph(id));
+        }
+        
+        return external
+                ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) sgNew.externalGraph()
+                : sgNew;
     }
     
     /**
