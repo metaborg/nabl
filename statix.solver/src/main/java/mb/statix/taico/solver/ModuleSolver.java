@@ -340,13 +340,13 @@ public class ModuleSolver implements IOwnable {
     
     private void checkCreateSplitModule() {
         splitCheck = true;
-        String ownerId = getOwner().getId();
+        if (!TOverrides.SPLIT_MODULES) return;
         
         //We are a split module ourselves, no need to split further
+        String ownerId = getOwner().getId();
         if (SplitModuleUtil.isSplitModule(ownerId)) return;
         
         System.out.println(getOwner() + " is performing split check...");
-        
         String splitId = SplitModuleUtil.getSplitModuleId(ownerId);
         
         //TODO How to handle using old modules
@@ -369,7 +369,12 @@ public class ModuleSolver implements IOwnable {
             }
         } else {
             //c. The split module does not exist: create it
-            splitCurrent = SplitModuleUtil.createSplitModule(getOwner(), true);
+            if (Context.context().getIncrementalManager().createSplitModuleRequest(ownerId)) {
+                System.err.println("Creating split module " + splitId + " after approval from the incremental manager");
+                splitCurrent = SplitModuleUtil.createSplitModule(getOwner(), true);
+            } else {
+                System.err.println("NOT creating split module " + splitId + " after disapproval from the incremental manager");
+            }
         }
     }
 
