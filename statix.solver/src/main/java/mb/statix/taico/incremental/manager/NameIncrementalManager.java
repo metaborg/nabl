@@ -209,7 +209,7 @@ public class NameIncrementalManager extends IncrementalManager {
             final Tuple2<Name, ITerm> tuple = entry.getKey();
             final Scope scope = entry.getValue();
             NameAndRelation nar = tuple.getKey().withRelation(tuple.getValue());
-            for (Dependency dependency : dependencies.get(nar, scope)) {
+            for (Dependency dependency : dependencies.getNameDependencies(nar, scope)) {
                 String dependingModule = dependency.getOwner();
                 System.out.println(dependingModule + " depends on " + changedModule + ", and is affected by change of name " + nar + " in " + TPrettyPrinter.printScopeFancy(scope));
                 toRedo.add(dependingModule);
