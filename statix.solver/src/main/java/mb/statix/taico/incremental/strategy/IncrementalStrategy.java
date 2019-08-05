@@ -323,6 +323,7 @@ public abstract class IncrementalStrategy {
         for (IModule child : changeSet.removed()) {
             state.scopeGraph().removeChild(child);
         }
+        //TODO We have to transfer the old results
         module.getParent().getCurrentState().solver().noopSolver(state);
     }
     
