@@ -21,7 +21,6 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.dependencies.Dependencies;
 import mb.statix.taico.dependencies.Dependency;
-import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.incremental.Flaggable;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;

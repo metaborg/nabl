@@ -22,8 +22,19 @@ public class IncrementalManager implements Serializable {
     protected boolean initPhase = true;
     protected Set<String> nonSplitModules = TOverrides.set();
     protected Set<String> allowedTemporarily = TOverrides.set();
+    protected Map<IModule, MSolverResult> results = TOverrides.hashMap();
     
+    // --------------------------------------------------------------------------------------------
+    // Getters
+    // --------------------------------------------------------------------------------------------
+    
+    public Map<IModule, MSolverResult> getResults() {
+        return results;
+    }
+    
+    // --------------------------------------------------------------------------------------------
     // Module access
+    // --------------------------------------------------------------------------------------------
 
     /**
      * Registers that a module is not yet split.
@@ -239,6 +250,7 @@ public class IncrementalManager implements Serializable {
     public void solverDone(ModuleSolver solver, MSolverResult result) {
         if (solver.isSeparateSolver()) return;
         solver.getOwner().setFlag(Flag.CLEAN);
+        results.put(solver.getOwner(), result);
     }
     
     // --------------------------------------------------------------------------------------------

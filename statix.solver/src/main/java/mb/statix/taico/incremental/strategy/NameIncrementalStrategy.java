@@ -1,7 +1,11 @@
 package mb.statix.taico.incremental.strategy;
 
+import java.io.Serializable;
 import java.util.Collection;
+import java.util.function.Function;
 
+import mb.statix.taico.dependencies.DependencyManager;
+import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.NameChangeSet;
 import mb.statix.taico.incremental.manager.NameIncrementalManager;
@@ -10,7 +14,7 @@ import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
 
 public class NameIncrementalStrategy extends IncrementalStrategy {
-
+    
     @Override
     public NameIncrementalManager createManager() {
         return new NameIncrementalManager();
@@ -22,9 +26,16 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
         return new NameChangeSet(oldContext, added, changed, removed);
     }
     
+    @SuppressWarnings("unchecked")
     @Override
-    public IModule getModule(Context context, Context oldContext, String requesterId, String id) throws ModuleDelayException {
+    public DependencyManager<?> createDependencyManager() {
+        return new DependencyManager<>((Function<String, NameDependencies> & Serializable) NameDependencies::new);
+    }
+    
+    @Override
+    public IModule getModule(Context context, Context oldContext, String requester, String id) throws ModuleDelayException {
         //TODO Move this method to the incremental manager
+        if (requester.equals(id)) return context.getModuleManager().getModule(requester);
         
         IModule module = context.getModuleManager().getModule(id);
         if (module != null) return module;
@@ -32,11 +43,6 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
         if (oldContext == null) return null;
         module = oldContext.getModuleManager().getModule(id);
         if (module == null) return null;
-        
-        //TODO Move to IncrementalManager?
-//        if (!context.<NameIncrementalManager>getIncrementalManager().isAllowedAccess(id)) {
-//            throw new ModuleDelayException(id);
-//        }
         
         return module;
     }
@@ -47,3 +53,4 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
         return getModule(context, oldContext, requester.getId(), childId);
     }
 }
+

@@ -84,6 +84,7 @@ public class QueryIncrementalManager extends IncrementalManager {
         if (solver.isSeparateSolver()) return;
         System.err.println("Solver done triggered on incremental manager for " + solver.getOwner() + ". Switching module over to clean.");
         switchToClean(solver.getOwner());
+        results.put(solver.getOwner(), result);
     }
     
     public void switchToClean(IModule module) {
