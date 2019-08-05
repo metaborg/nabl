@@ -4,6 +4,7 @@ import static mb.statix.taico.util.TOverrides.hashMap;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -53,7 +54,7 @@ public class Context implements Serializable {
     private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
     
-//    private Map<String, MSolverResult> solverResults = hashMap();
+    private Map<IModule, MSolverResult> solverResults = hashMap();
     private Map<String, IMState> states = hashMap();
     
     private Context(IncrementalStrategy strategy, Spec spec) {
@@ -551,20 +552,20 @@ public class Context implements Serializable {
     // Solver results
     // --------------------------------------------------------------------------------------------
     
-//    public void addResult(String moduleId, MSolverResult result) {
-//        solverResults.put(moduleId, result);
-//    }
-//    
-//    public MSolverResult getResult(String moduleId) {
-//        return solverResults.get(moduleId);
-//    }
-//    
-//    public Map<String, MSolverResult> getResults() {
-//        return new HashMap<>(solverResults);
-//    }
+    public void addResult(IModule moduleId, MSolverResult result) {
+        solverResults.put(moduleId, result);
+    }
+    
+    public MSolverResult getResult(IModule module) {
+        return solverResults.get(module);
+    }
 
     public Map<IModule, MSolverResult> getResults() {
-        return coordinator.getResults();
+        return solverResults;
+    }
+    
+    public void setResults(Map<IModule, MSolverResult> results) {
+        this.solverResults = hashMap(results);
     }
     
     // --------------------------------------------------------------------------------------------
@@ -614,6 +615,11 @@ public class Context implements Serializable {
         for (IModule module : Sets.difference(oldContext.manager.getModules(), getModules())) {
             System.err.println("Removed module " + module);
         }
+        
+        //Transfer results from the coordinator to the context
+        solverResults = new HashMap<>(coordinator.getResults());
+        
+        //Clear now unnecessary fields
         oldContext = null;
         changeSet = null;
         //TODO probably need more here
