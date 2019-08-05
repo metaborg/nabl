@@ -91,7 +91,7 @@ public class DependencyTest {
         
         //After transfer with no changes, this should still hold
         context = incremental(empty());
-        NameDependencies dnA = context.getDependencies(A);
+        Dependencies dnA = context.getDependencies(A);
         assertTrue(dnA.getModuleDependantIds().contains(B.getId()));
     }
 
@@ -109,7 +109,7 @@ public class DependencyTest {
         
         //After transfer with changes to A, this should still hold
         context = incremental(list("A"));
-        NameDependencies dnA = context.getDependencies(A);
+        Dependencies dnA = context.getDependencies(A);
         assertTrue(dnA.getModuleDependantIds().isEmpty());
         assertSame(doA, context.getOldDependencies(A.getId()));
     }
@@ -130,7 +130,7 @@ public class DependencyTest {
         
         //After transfer with no changes, this should still hold
         context = incremental(empty());
-        NameDependencies dnA = context.getDependencies(A);
+        Dependencies dnA = context.getDependencies(A);
         assertTrue(dnA.getModuleDependantIds().contains(B.getId()));
         assertTrue(context.getModules().contains(A1));
         assertTrue(context.getModules().contains(B1));
