@@ -61,7 +61,12 @@ public class QueryIncrementalManager extends IncrementalManager {
     
     @Override
     public void initSolver(ModuleSolver solver) {
-        //On initialization, we want to add the init constraint of the m
+        if (solver.isSeparateSolver()) return;
+        
+        //On initialization, we want to add the init constraint of the module to the completeness
+        //to mark it as imcomplete.
+        //TODO This does not work properly (the above)
+        
         IModule module = solver.getOwner();
         if (module.getTopCleanliness().isCleanish()) return;
         

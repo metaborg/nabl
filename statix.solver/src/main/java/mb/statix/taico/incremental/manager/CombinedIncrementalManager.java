@@ -272,6 +272,8 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
     @Override
     public void initSolver(ModuleSolver solver) {
+        if (solver.isSeparateSolver()) return;
+        
         //TODO Is this the correct approach?
         //On initialization, we want to add the init constraint of the module if it is not clean
         IModule module = solver.getOwner();
