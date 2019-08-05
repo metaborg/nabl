@@ -1,5 +1,8 @@
 package mb.statix.taico.dependencies;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -21,7 +24,8 @@ public class NameDependencies extends Dependencies {
      * The owner of this dependencies object depends on the names in this table because of the
      * dependencies in this table.
      */
-    private IRelation3.Transient<NameAndRelation, Scope, Dependency> table = HashTrieRelation3.Transient.of();
+    private transient IRelation3.Transient<NameAndRelation, Scope, Dependency> table =
+            HashTrieRelation3.Transient.of();
 
     public NameDependencies(String owner) {
         super(owner);
@@ -122,5 +126,24 @@ public class NameDependencies extends Dependencies {
         copy.dependants.putAll(dependants);
         copy.table.putAll(table);
         return copy;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Serialization
+    // --------------------------------------------------------------------------------------------
+    
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+        IRelation3.Immutable<NameAndRelation, Scope, Dependency> frozen = table.freeze();
+        out.writeObject(frozen);
+        table = frozen.melt();
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        IRelation3.Immutable<NameAndRelation, Scope, Dependency> frozen =
+                (IRelation3.Immutable<NameAndRelation, Scope, Dependency>) in.readObject();
+        table = frozen.melt();
     }
 }
