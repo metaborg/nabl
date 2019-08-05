@@ -214,9 +214,16 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
             solvers.clear();
         }
         
-        if (!startNextPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) return false;
+        if (!startNextPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) {
+            results.clear();
+            results.putAll(context.getIncrementalManager().getResults());
+            return false;
+        }
         
         debug.info("Starting new phase: {}", context.<Object>getPhase());
+        
+        //Clear all results before starting the next phase
+        results.clear();
         return true;
     }
     
