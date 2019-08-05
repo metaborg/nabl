@@ -23,6 +23,7 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.spec.Spec;
 import mb.statix.taico.dot.DotPrinter;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModulePaths;
@@ -645,5 +646,50 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(printDot(includeChildren));
         }
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Static creation
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Creates an empty scope graph for the given module based on the spec (from the context).
+     * The returned scope graph will have the given module as owner, but has no parent scopes and
+     * cannot extend any foreign scopes.
+     * 
+     * @param module
+     *      the module
+     * 
+     * @return
+     *      an empty scope graph for the given module
+     */
+    public static ModuleScopeGraph empty(IModule module) {
+        Spec spec = Context.context().getSpec();
+        return new ModuleScopeGraph(
+                module,
+                spec.edgeLabels(),
+                spec.relationLabels(),
+                spec.noRelationLabel(),
+                Collections.emptyList());
+    }
+    
+    /**
+     * Creates an empty scope graph with the same details as the given graph. More specifically,
+     * the returned graph will have the same owner, edge labels, data labels, no data label and
+     * parent scopes as the given graph, but all other information is removed.
+     * 
+     * @param graph
+     *      the graph
+     * 
+     * @return
+     *      an empty scope graph based on the given scope graph
+     */
+    public static ModuleScopeGraph empty(IMInternalScopeGraph<Scope, ITerm, ITerm> graph) {
+        return new ModuleScopeGraph(
+                graph.getOwner(),
+                graph.getEdgeLabels(),
+                graph.getDataLabels(),
+                graph.getNoDataLabel(),
+                graph.getParentScopes());
     }
 }
