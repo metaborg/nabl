@@ -175,20 +175,18 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         
         Set<ModuleSolver> finishedSolvers = new HashSet<>();
         Set<ModuleSolver> failedSolvers = new HashSet<>();
+        //All the solvers that are still remaining are stuck
+        Set<ModuleSolver> stuckSolvers = new HashSet<>(solvers);
         
         for (Entry<IModule, MSolverResult> result : results.entrySet()) {
             if (result.getValue().hasErrors()) {
                 failedSolvers.add(result.getKey().getCurrentState().solver());
             } else if (result.getValue().hasDelays()) {
-                System.err.println("FATAL:");
-                throw new IllegalStateException("It should not be possible for a solver to be finished and have delays!");
+                stuckSolvers.add(result.getKey().getCurrentState().solver());
             } else {
                 finishedSolvers.add(result.getKey().getCurrentState().solver());
             }
         }
-        
-        //All the solvers that are still remaining are stuck
-        Set<ModuleSolver> stuckSolvers = new HashSet<>(solvers);
         
         int failed = (int) results.values().stream().filter(r -> r.hasErrors()).count();
         debug.info("Phase {} finished: {} done, {} failed, {} stuck",
@@ -209,6 +207,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
             for (ModuleSolver solver : solvers) {
                 sub.info(solver.getOwner().getId());
                 
+                //NOTE: This adds results to the results map
                 results.put(solver.getOwner(), solver.finishSolver());
             }
             

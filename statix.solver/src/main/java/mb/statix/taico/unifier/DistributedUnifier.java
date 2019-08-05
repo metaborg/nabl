@@ -215,6 +215,12 @@ public class DistributedUnifier {
         }
         
         @Override
+        public DistributedUnifier.Immutable restricted() {
+            if (!unrestricted) return this;
+            return new DistributedUnifier.Immutable(owner, finite, reps.get(), ranks, terms, false);
+        }
+        
+        @Override
         public boolean isUnrestricted() {
             return unrestricted;
         }
@@ -428,6 +434,16 @@ public class DistributedUnifier {
         public DistributedUnifier.Transient unrestricted() {
             if (unrestricted) return this;
             return new DistributedUnifier.Transient(owner, finite, reps, ranks, terms, true);
+        }
+        
+        /**
+         * @return
+         *      a restricted version of this unifier
+         */
+        @Override
+        public DistributedUnifier.Transient restricted() {
+            if (!unrestricted) return this;
+            return new DistributedUnifier.Transient(owner, finite, reps, ranks, terms, false);
         }
         
         @Override

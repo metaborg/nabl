@@ -131,7 +131,12 @@ public interface IModule extends Flaggable, Serializable {
      *      the consumer to execute on each module
      */
     default void getDescendants(Context context, Consumer<IModule> consumer) {
-        for (String childId : context.getScopeGraph(getId()).getChildIds()) {
+        IMInternalScopeGraph<Scope, ITerm, ITerm> graph = context.getScopeGraph(getId());
+        if (graph == null) {
+            System.err.println("Unable to get children of " + this + ": state is null!");
+            return;
+        }
+        for (String childId : graph.getChildIds()) {
             context.getModuleUnchecked(childId).getDescendantsIncludingSelf(context, consumer);
         }
     }
@@ -147,7 +152,13 @@ public interface IModule extends Flaggable, Serializable {
      */
     default void getDescendantsIncludingSelf(Context context, Consumer<IModule> consumer) {
         consumer.accept(this);
-        for (String childId : context.getScopeGraph(getId()).getChildIds()) {
+        IMInternalScopeGraph<Scope, ITerm, ITerm> graph = context.getScopeGraph(getId());
+        if (graph == null) {
+            System.err.println("Unable to get children of " + this + ": state is null!");
+            return;
+        }
+        
+        for (String childId : graph.getChildIds()) {
             context.getModuleUnchecked(childId).getDescendantsIncludingSelf(context, consumer);
         }
     }

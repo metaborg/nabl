@@ -35,6 +35,7 @@ import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.util.TOverrides;
 
 /**
  * The incremental strategy determines how the incremental solving proceeds.
@@ -161,6 +162,7 @@ public abstract class IncrementalStrategy {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);
                 if (module != null) {
                     newModules.put(module, entry.getValue());
+                    if (oldModule == null) module.addFlag(Flag.NEW);
                 }
             } else {
                 //Old module is clean, we can reuse it
@@ -173,7 +175,7 @@ public abstract class IncrementalStrategy {
             System.err.println("[IS] Transferring child modules...");
             //Remove all the descendants from the set to reuse the children of
             for (IModule module : newModules.keySet()) {
-                module.getDescendantsIncludingSelf(oldContext, m -> reuseChildren.remove(m));
+                module.getDescendants(oldContext, m -> reuseChildren.remove(m));
             }
             
             //Make sure we don't reuse the same module multiple times
@@ -182,20 +184,22 @@ public abstract class IncrementalStrategy {
                 module.getDescendants(oldContext, m -> allToReuse.add(m));
             }
             
-            //Reuse all modules
-            for (IModule module : allToReuse) {
-                reuseOldModule(context, changeSet, module);
-            }
+            //Reuse all modules, in the correct order
+            allToReuse.stream()
+            .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getId(), b.getId()))
+            .forEachOrdered(module -> reuseOldModule(context, changeSet, module));
             
             //Transfer the split module at the top level (TODO or prevent this from being created).
             //This module cannot have any children, so we do not need to worry about that
-            String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
-            IModule topSplit = oldContext.getModuleUnchecked(topSplitId);
-            if (topSplit != null) {
-                reuseOldModule(context, changeSet, topSplit);
-                
-                //INVARIANT: The split module of the top level does not have any children
-                assert topSplit.getScopeGraph().getChildIds().isEmpty() : "The top module split should not have any children!";
+            if (TOverrides.SPLIT_MODULES) {
+                String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
+                IModule topSplit = oldContext.getModuleUnchecked(topSplitId);
+                if (topSplit != null) {
+                    reuseOldModule(context, changeSet, topSplit);
+                    
+                    //INVARIANT: The split module of the top level does not have any children
+                    assert topSplit.getScopeGraph().getChildIds().isEmpty() : "The top module split should not have any children!";
+                }
             }
         }
         
@@ -298,7 +302,7 @@ public abstract class IncrementalStrategy {
         
         IModule child = parentModule.createChild(ModulePaths.getName(childId), scopes, initConstraint, false);
         parentModule.addChild(child);
-        if (oldModule == null) child.setFlag(Flag.NEW);
+        if (oldModule == null) child.addFlag(Flag.NEW);
         return child;
     }
     

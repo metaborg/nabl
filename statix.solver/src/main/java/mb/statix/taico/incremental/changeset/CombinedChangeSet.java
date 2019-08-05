@@ -2,7 +2,6 @@ package mb.statix.taico.incremental.changeset;
 
 import static mb.statix.taico.module.ModuleCleanliness.*;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -144,11 +143,5 @@ public class CombinedChangeSet extends AChangeSet {
         System.err.println("  UnsureCh: (" + hasUnsureChild().size() + ") " + hasUnsureChildIds());
         System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
         
-    }
-    
-    //TODO Temporary
-    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
-        System.out.println("Serializing CombinedChangeSet");
-        stream.defaultWriteObject();
     }
 }
