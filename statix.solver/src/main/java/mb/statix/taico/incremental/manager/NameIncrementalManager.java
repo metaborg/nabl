@@ -82,7 +82,9 @@ public class NameIncrementalManager extends IncrementalManager {
                 case DIRTY:
                 case NEW:
                     ModuleSolver parentSolver = context().getState(module.getParentId()).solver();
+                    ModuleSolver oldSolver = context().getState(module).solver();
                     parentSolver.childSolver(module.getCurrentState(), init);
+                    if (oldSolver != null) oldSolver.cleanUpForReplacement();
                     break;
                 default:
                     break;

@@ -77,7 +77,7 @@ public interface IMState extends IOwnable, Serializable, IState {
      */
     public ModuleSolver solver();
     
-    public void setSolver(ModuleSolver solver);
+    public void setSolver(@Nullable ModuleSolver solver);
 
     // --------------------------------------------------------------------------------------------
     // Variables

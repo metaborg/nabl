@@ -154,6 +154,46 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
+     * Creates a solver for the given state that does not do any solving.
+     * Uses the given result to add the delayed/failed constraints from.
+     * 
+     * @param state
+     *      the state
+     * @param result
+     *      the result
+     * 
+     * @return
+     *      the new solver
+     */
+    public ModuleSolver noopSolver(IMState state, MSolverResult result) {
+        PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
+        ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
+        solver.constraints.fillFromResult(result);
+        solver.completeness.fillFromResult(result);
+        solver.fillFailedFromResult(result);
+        this.state.coordinator().addSolver(solver);
+        return solver;
+    }
+    
+    /**
+     * Fills failed constraints from the result.
+     * 
+     * @param result
+     */
+    private void fillFailedFromResult(MSolverResult result) {
+        failed.addAll(result.errors());
+    }
+    
+    /**
+     * Cleans up this solver (removes from the completeness) in order for it to be replaced with
+     * a different solver.
+     */
+    public void cleanUpForReplacement() {
+        System.err.println("Cleaning up solver of " + getOwner() + " for replacement solver");
+        completeness.removeAll(constraints.delayedConstraints(), state.unifier());
+    }
+
+    /**
      * Solves the given arguments separately from other solvers. Separate solvers are not allowed
      * to cross module boundaries. 
      * 

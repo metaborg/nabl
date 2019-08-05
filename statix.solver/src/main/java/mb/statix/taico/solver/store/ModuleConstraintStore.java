@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -30,6 +31,7 @@ import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.Context;
+import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.taico.solver.state.DelegatingMState;
 import mb.statix.taico.solver.state.IMState;
@@ -499,6 +501,37 @@ public class ModuleConstraintStore implements IConstraintStore {
             ).match(edge.scope())
              .map(s -> Context.context().getModuleUnchecked(s))
              .orElse(null);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Fills the stuck maps from the given result.
+     * 
+     * @param result
+     */
+    public void fillFromResult(MSolverResult result) {
+        for (Entry<IConstraint, Delay> entry : result.delays().entrySet()) {
+            IConstraint constraint = entry.getKey();
+            Delay delay = entry.getValue();
+            if (!delay.vars().isEmpty()) {
+                Delayed delayed = new Delayed(constraint);
+                for (ITermVar var : delay.vars()) {
+                    stuckOnVar.put(var, delayed);
+                }
+            } else if (!delay.criticalEdges().isEmpty()) {
+                Delayed delayed = new Delayed(constraint);
+                for (CriticalEdge edge : delay.criticalEdges()) {
+                    stuckOnEdge.put(edge, delayed);
+                }
+            } else if (delay.module() != null) {
+                stuckOnModule.put(delay.module(), new Delayed(constraint));
+            } else {
+                throw new UnsupportedOperationException("Encountered delay without variables, edges and no module. Cannot determine reason for delay.");
+            }
+        }
     }
     
     @Override

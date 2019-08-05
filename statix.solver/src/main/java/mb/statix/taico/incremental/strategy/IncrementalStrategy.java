@@ -34,6 +34,7 @@ import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
+import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TOverrides;
 
@@ -323,8 +324,9 @@ public abstract class IncrementalStrategy {
         for (IModule child : changeSet.removed()) {
             state.scopeGraph().removeChild(child);
         }
-        //TODO We have to transfer the old results
-        module.getParent().getCurrentState().solver().noopSolver(state);
+        //TODO Test this result transfer
+        MSolverResult result = context.getOldContext().get().getResult(module);
+        module.getParent().getCurrentState().solver().noopSolver(state, result);
     }
     
     /**

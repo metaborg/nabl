@@ -592,11 +592,13 @@ public class Context implements Serializable {
 //        }
         
         //For all modules for which we have state, migrate the module itself as well
+        //Also clear solvers
         for (IMState state : states.values()) {
             if (!manager.hasModule(state.owner().getId())) {
                 System.err.println("Migrating module " + state.owner() + ": state is present, but module is not in current context!");
                 addModule(state.owner());
             }
+            state.setSolver(null);
         }
         
         //Transfer all dependencies that are not present yet, create dependencies for other modules

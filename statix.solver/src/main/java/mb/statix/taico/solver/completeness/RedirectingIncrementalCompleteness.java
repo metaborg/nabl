@@ -21,6 +21,7 @@ import mb.statix.spec.Spec;
 import mb.statix.taico.observers.EdgeCompleteManager;
 import mb.statix.taico.observers.EdgeCompleteObserver;
 import mb.statix.taico.solver.Context;
+import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.util.Scopes;
 
 public class RedirectingIncrementalCompleteness extends IncrementalCompleteness implements EdgeCompleteManager {
@@ -117,6 +118,24 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         if (this.owner.equals(owner)) return this;
         
         return Context.context().getModuleUnchecked(owner).getCurrentState().solver().getCompleteness();
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Adds incompleteness based on the remaining constraints in the given result.
+     * 
+     * @param result
+     *      the solver result
+     */
+    public void fillFromResult(MSolverResult result) {
+        for (IConstraint constraint : result.delays().keySet()) {
+            add(constraint, result.unifier());
+        }
+        
+        //TODO Do we also need to transfer failed modules?
     }
     
     // --------------------------------------------------------------------------------------------

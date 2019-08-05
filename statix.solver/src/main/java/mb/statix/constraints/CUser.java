@@ -27,8 +27,11 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
+import mb.statix.taico.solver.MSolverResult;
+import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.spec.ModuleBoundary;
 
@@ -189,7 +192,12 @@ public class CUser implements IConstraint, Serializable {
                     if (child != null) {
                         System.err.println("Reusing old child: " + child);
                         //Reuse an old child if it is clean (1), and add the child to the scope graph of the state owner (2)
-                        state.solver().noopSolver(child.getCurrentState());
+                        MSolverResult result = Context.context().getOldContext().get().getResult(child);
+                        ModuleSolver oldChildSolver = child.getCurrentState().solver();
+                        state.solver().noopSolver(child.getCurrentState(), result);
+                        if (oldChildSolver != null) {
+                            oldChildSolver.cleanUpForReplacement();
+                        }
                         state.owner().addChild(child);
                     } else {
                         //Create the child module + state (1), create the state (2), create the child solver (3) and add the child to the scope graph of the state owner (4)
