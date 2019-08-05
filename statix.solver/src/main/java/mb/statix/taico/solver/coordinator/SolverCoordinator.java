@@ -125,4 +125,10 @@ public class SolverCoordinator extends ASolverCoordinator {
             }
         }
     }
+    
+    @Override
+    public void preventSolverStart() {}
+    
+    @Override
+    public void allowSolverStart() {}
 }

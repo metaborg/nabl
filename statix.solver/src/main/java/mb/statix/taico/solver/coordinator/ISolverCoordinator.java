@@ -228,4 +228,17 @@ public interface ISolverCoordinator {
             printModuleHierarchy(child, sub);
         }
     }
+
+    /**
+     * Prevents execution of solvers until {@link #allowSolverStart()} is called.
+     * 
+     * @throws IllegalStateException
+     *      If there are already solvers running.
+     */
+    public void preventSolverStart();
+    
+    /**
+     * Allowes start execution of solvers.
+     */
+    public void allowSolverStart();
 }

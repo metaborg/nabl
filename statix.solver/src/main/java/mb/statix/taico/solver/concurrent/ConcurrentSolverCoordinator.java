@@ -28,6 +28,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     
     private Consumer<MSolverResult> onFinished;
     private MSolverResult finalResult;
+    private volatile boolean paused;
     
     /**
      * Creates a new concurrent solver coordinator with a work stealing pool. This pool uses the
@@ -78,7 +79,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         SolverRunnable runner = new SolverRunnable(solver, executors::submit, progressCounter, this::finishSuccessfulSolver, this::finishFailedSolver);
         solver.getStore().setStoreObserver(store -> runner.notifyOfWork());
         solvers.put(solver, runner);
-        runner.schedule();
+        if (!paused) runner.schedule();
     }
     
     /**
@@ -225,5 +226,20 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         while (finalResult == null) {
             wait();
         }
+    }
+    
+    @Override
+    public void preventSolverStart() {
+        if (!solvers.isEmpty()) throw new IllegalStateException("It is only allowed to pause whenever no solvers are running yet!");
+        paused = true;
+    }
+    
+    @Override
+    public void allowSolverStart() {
+        if (!paused) throw new IllegalStateException("It is only allowed to resume when actually paused.");
+        for (SolverRunnable runnable : solvers.values()) {
+            runnable.schedule();
+        }
+        paused = false;
     }
 }
