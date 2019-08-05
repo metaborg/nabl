@@ -1,5 +1,7 @@
 package mb.statix.taico.incremental.manager;
 
+import static mb.statix.taico.util.TOverrides.SPLIT_MODULES;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,6 +45,8 @@ public class IncrementalManager implements Serializable {
      *      the non-split module
      */
     public void registerNonSplit(String id) {
+        if (!SPLIT_MODULES) return;
+        
         System.err.println("Registering " + id + " as non split (made restricted)");
         assert !SplitModuleUtil.isSplitModule(id) : "Registration of a non split module expects a non-split module!";
         nonSplitModules.add(id);
@@ -58,6 +62,8 @@ public class IncrementalManager implements Serializable {
      *      if the module was unregistered
      */
     public boolean unregisterNonSplit(String id) {
+        if (!SPLIT_MODULES) return true;
+        
         if (nonSplitModules.remove(id)) {
             System.err.println("Unregistering " + id + " as non split (made unrestricted)");
             return true;
@@ -117,7 +123,7 @@ public class IncrementalManager implements Serializable {
      *      true if a split module should be created, false if not
      */
     public boolean createSplitModuleRequest(String id) {
-        return TOverrides.SPLIT_MODULES;
+        return SPLIT_MODULES;
     }
     
     /**
@@ -132,7 +138,7 @@ public class IncrementalManager implements Serializable {
     public boolean isAllowedAccess(String requester, String moduleId) {
         if (isInitPhase() || isAllowedTemporarily(requester)) return true;
         if (requester.equals(moduleId)) return true;
-        return !nonSplitModules.contains(requester);
+        return !SPLIT_MODULES || !nonSplitModules.contains(requester);
     }
     
     /**
