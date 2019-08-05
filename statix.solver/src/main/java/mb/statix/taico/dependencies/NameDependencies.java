@@ -111,7 +111,8 @@ public class NameDependencies extends Dependencies {
         QueryDependencyDetail qdetail = dependency.getDetails(QueryDependencyDetail.class);
         final NameAndRelation nar = ndetail.toNameAndRelation();
         
-        //TODO maybe we don't want to do this for every data scope, but rather find a different way of storing things
+        //TODO maybe we don't want to do this for every data scope, but rather find a different
+        //     way of storing things
         for (Scope scope : qdetail.getDataScopes()) {
             table.put(nar, scope, dependency);
         }
