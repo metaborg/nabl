@@ -106,7 +106,7 @@ public class ModuleSolver implements IOwnable {
         }
 
         state.setSolver(this);
-        if (!separateSolver) Context.context().getIncrementalManager().initSolver(this);
+        Context.context().getIncrementalManager().initSolver(this);
     }
     
     /**
@@ -148,7 +148,6 @@ public class ModuleSolver implements IOwnable {
      */
     public ModuleSolver noopSolver(IMState state) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
-        // TODO Should report no constriants to solve, is this still true with CTrue?
         ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
         this.state.coordinator().addSolver(solver);
         return solver;
@@ -514,7 +513,7 @@ public class ModuleSolver implements IOwnable {
         return sb.toString();
     }
 
-    public static TermFormatter shallowTermFormatter(final IUnifier.Immutable unifier) {
+    public static TermFormatter shallowTermFormatter(final IUnifier unifier) {
         return new UnifierFormatter(unifier, 3);
     }
     
