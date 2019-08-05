@@ -1,6 +1,5 @@
 package mb.statix.taico.solver.coordinator;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -22,13 +21,12 @@ import mb.statix.taico.solver.state.IMState;
  */
 public class SolverCoordinator extends ASolverCoordinator {
     protected final Set<ModuleSolver> solvers = new HashSet<>();
-    protected final Map<IModule, MSolverResult> results = new HashMap<>();
     
     public SolverCoordinator() {}
     
     @Override
     public Map<IModule, MSolverResult> getResults() {
-        return results;
+        return context.getResults();
     }
     
     @Override
@@ -96,7 +94,7 @@ public class SolverCoordinator extends ASolverCoordinator {
                 //If this solver is done, store its result and continue.
                 if (solver.isDone()) {
                     solvers.remove(solver);
-                    results.put(solver.getOwner(), solver.finishSolver());
+                    context.addResult(solver.getOwner(), solver.finishSolver());
                     continue;
                 }
                 
@@ -113,7 +111,7 @@ public class SolverCoordinator extends ASolverCoordinator {
                 
                 if (solver.hasFailed()) {
                     solvers.remove(solver);
-                    results.put(solver.getOwner(), solver.finishSolver());
+                    context.addResult(solver.getOwner(), solver.finishSolver());
                     continue;
                 }
             }

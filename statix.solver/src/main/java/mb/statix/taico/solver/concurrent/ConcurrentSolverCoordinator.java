@@ -21,7 +21,7 @@ import mb.statix.taico.solver.state.IMState;
 
 public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());
-    private final Map<IModule, MSolverResult> results = Collections.synchronizedMap(new HashMap<>());
+    private final Object resultsSync = new Object();
     private final ProgressCounter progressCounter = new ProgressCounter(this::onFinishPhase);
     protected final ExecutorService executors;
     private StuckDetector stuckDetector;
@@ -50,7 +50,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
 
     @Override
     public Map<IModule, MSolverResult> getResults() {
-        return results;
+        return context.getResults();
     }
     
     /**
@@ -97,7 +97,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
             }
         }
         
-        results.put(solver.getOwner(), solver.finishSolver());
+        synchronized (resultsSync) {
+            context.addResult(solver.getOwner(), solver.finishSolver());
+        }
     }
     
     /**
@@ -115,7 +117,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
             }
         }
         
-        results.put(solver.getOwner(), solver.finishSolver());
+        synchronized (resultsSync) {
+            context.addResult(solver.getOwner(), solver.finishSolver());
+        }
     }
     
     @Override
@@ -157,6 +161,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     @Override
     protected boolean startNextPhase(Set<ModuleSolver> finishedSolvers, Set<ModuleSolver> failedSolvers,
             Set<ModuleSolver> stuckSolvers, Map<IModule, MSolverResult> results) {
+        //TODO How to stop all the solvers that are still in "waiting" mode?
         progressCounter.switchToPending();
         if (!context.getIncrementalManager().finishPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) return false;
         progressCounter.switchToDone();

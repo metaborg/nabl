@@ -127,10 +127,13 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
             throws InterruptedException {
         init(strategy, state, null, debug);
         
+        preventSolverStart();
         Map<IModule, IConstraint> modules = strategy.createInitialModules(context, changeSet, constraints);
         
         if (context.isInitPhase()) context.finishInitPhase();
         scheduleModules(modules);
+        allowSolverStart();
+        
         runToCompletion();
         
         return collectResults(modules.keySet());
