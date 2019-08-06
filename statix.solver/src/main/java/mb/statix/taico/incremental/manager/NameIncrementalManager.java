@@ -19,7 +19,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.taico.dependencies.Dependency;
 import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.dependencies.details.QueryDependencyDetail;
-import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.name.Name;
 import mb.statix.taico.name.NameAndRelation;
@@ -162,7 +161,6 @@ public class NameIncrementalManager extends IncrementalManager {
         System.out.println("Effective diff result of phase " + phaseCounter + ":");
         eDiff.print(System.out);
         
-        final IChangeSet changeSet = context().getChangeSet();
         Set<String> toRedo = new HashSet<>();
         
         //Now we need to check if the dependants are affected
@@ -178,7 +176,7 @@ public class NameIncrementalManager extends IncrementalManager {
             
             //For each dependant module, do a lookup of the corresponding names
             for (String dependant : oldContext.getDependencies(changedModule).getModuleDependantIds()) {
-                if (changeSet.removedIds().contains(dependant)) {
+                if (eDiff.getRemovedModules().containsKey(dependant)) {
                     System.err.println("Encountered REMOVED dependant " + dependant + ", skipping");
                     continue;
                 }
@@ -192,7 +190,7 @@ public class NameIncrementalManager extends IncrementalManager {
             
             for (Entry<String, Dependency> entry2 : oldContext.getDependencies(changedModule).getDependants().entries()) {
                 final String dependant = entry2.getKey();
-                if (changeSet.removedIds().contains(dependant)) {
+                if (eDiff.getRemovedModules().containsKey(dependant)) {
                     System.err.println("Encountered REMOVED dependant " + dependant + ", skipping");
                     continue;
                 }
