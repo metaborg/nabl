@@ -30,7 +30,7 @@ public class TOverrides {
     public static volatile boolean OUTPUT_SCOPE_GRAPH_MULTI = true;
     
     /** If a diff should be generated after an incremental analysis. */
-    public static volatile boolean OUTPUT_DIFF = true;
+    public static volatile boolean OUTPUT_DIFF = false;
     
     /**
      * If true, the observer mechanism is used for own critical edges.
