@@ -208,7 +208,7 @@ public class Scopes {
     public static Set<Scope> getScopesInTerm(ITerm term, IUnifier unifier) {
         return M.<Set<Scope>>casesFix(m -> Iterables2.from(
                 Scope.matcher().map(s -> Collections.singleton(s)),
-                M.listElems().map(l -> l.stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
+                M.listElems(m).map(l -> l.stream().flatMap(s -> s.stream()).collect(Collectors.toSet())),
                 M.tuple(t -> t.getArgs()).map(l -> l.stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
                 M.appl(t -> t.getArgs()).map(l -> l.stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
                 M.term(t -> Collections.emptySet())
