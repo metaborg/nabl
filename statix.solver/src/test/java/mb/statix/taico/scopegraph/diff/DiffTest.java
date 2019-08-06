@@ -33,7 +33,7 @@ public class DiffTest {
         assertTrue(effective.getDiffs().containsKey("Global"));
         
         //The data should have been moved
-        ScopeGraphDiff ediff = effective.getDiffs().get("Global");
+        IScopeGraphDiff<Scope, ITerm, ITerm> ediff = effective.getDiffs().get("Global");
         assertTrue(ediff.getAddedData().contains(globalScope, label, data));
         
         //Check that the original remains and still has the scope but not the data

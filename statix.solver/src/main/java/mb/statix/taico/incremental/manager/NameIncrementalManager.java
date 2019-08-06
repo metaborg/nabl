@@ -25,7 +25,7 @@ import mb.statix.taico.name.Name;
 import mb.statix.taico.name.NameAndRelation;
 import mb.statix.taico.scopegraph.diff.Diff;
 import mb.statix.taico.scopegraph.diff.DiffResult;
-import mb.statix.taico.scopegraph.diff.ScopeGraphDiff;
+import mb.statix.taico.scopegraph.diff.IScopeGraphDiff;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
@@ -172,9 +172,9 @@ public class NameIncrementalManager extends IncrementalManager {
         //      -> Check if m depends on the changes made
         //  -> For each module m that depends on us with dependency d
         //      -> Check if d is affected by changes to edges and scopes
-        for (Entry<String, ScopeGraphDiff> entry : eDiff.getDiffs().entrySet()) {
+        for (Entry<String, IScopeGraphDiff<Scope, ITerm, ITerm>> entry : eDiff.getDiffs().entrySet()) {
             final String changedModule = entry.getKey();
-            final ScopeGraphDiff sgDiff = entry.getValue();
+            final IScopeGraphDiff<Scope, ITerm, ITerm> sgDiff = entry.getValue();
             
             //For each dependant module, do a lookup of the corresponding names
             for (String dependant : oldContext.getDependencies(changedModule).getModuleDependantIds()) {
@@ -247,7 +247,7 @@ public class NameIncrementalManager extends IncrementalManager {
      * @param sgDiff
      *      the diff of the changed module
      */
-    private void checkEdgeAndScopeDependencies(String dependant, Set<String> toRedo, QueryDependencyDetail detail, ScopeGraphDiff sgDiff) {
+    private void checkEdgeAndScopeDependencies(String dependant, Set<String> toRedo, QueryDependencyDetail detail, IScopeGraphDiff<Scope, ITerm, ITerm> sgDiff) {
         for (Tuple2<Scope, ITerm> added : sgDiff.getAddedEdges()._getForwardMap().keySet()) {
             if (detail.canBeAffectedByEdgeAddition(added.getKey(), added.getValue())) {
                 toRedo.add(dependant);

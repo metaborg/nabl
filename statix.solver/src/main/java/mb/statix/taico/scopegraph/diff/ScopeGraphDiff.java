@@ -5,11 +5,22 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.name.Name;
+import mb.statix.taico.name.Names;
+import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.solver.Context;
 
+/**
+ * Class to represent a scope graph diff.
+ * <p>
+ * The scope graph diff should be treated as immutable. Otherwise, issues can arise.
+ * The collections returned by the different methods in this class should never be modified.
+ * Modifications to this scope graph diff could affect other diffs as well.
+ */
 public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
     protected Set<Scope> addedScopes;
     protected Set<Scope> removedScopes;
@@ -151,12 +162,7 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
         }
     }
     
-    /**
-     * Creates a new ScopeGraphDiff which only has the addedScopes and removedScopes retained.
-     * 
-     * @return
-     *      the new ScopeGraphDiff
-     */
+    @Override
     public ScopeGraphDiff retainScopes() {
         return new ScopeGraphDiff(
                 addedScopes, removedScopes,
@@ -164,6 +170,16 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
                 HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
                 HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
                 HashTrieRelation3.Transient.of());
+    }
+    
+    @Override
+    public ScopeGraphDiff inverse() {
+        return new ScopeGraphDiff(
+                removedScopes, addedScopes,
+                removedEdges, addedEdges,
+                removedData, addedData,
+                removedDataNames, addedDataNames, changedDataNames
+        );
     }
     
     // --------------------------------------------------------------------------------------------
@@ -179,6 +195,10 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
     // Static initializers
     // --------------------------------------------------------------------------------------------
     
+    /**
+     * @return
+     *      an empty scope graph diff
+     */
     public static ScopeGraphDiff empty() {
         return new ScopeGraphDiff(
                 new HashSet<>(), new HashSet<>(),
@@ -186,5 +206,67 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
                 HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
                 HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
                 HashTrieRelation3.Transient.of());
+    }
+    
+    /**
+     * Creates a scope graph diff for a new module.
+     * 
+     * @param context
+     *      the context of the module
+     * @param unifier
+     *      the unifier of the module
+     * @param scopeGraph
+     *      the scope graph
+     * 
+     * @return
+     *      the diff of the scope graph
+     */
+    public static ScopeGraphDiff newModule(Context context, IUnifier unifier,
+            IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
+        IRelation3.Transient<Scope, ITerm, Name> newDataNames = Context.executeInContext(context,
+                () -> Diff.toNames(scopeGraph.getOwnData(), d -> Names.getNameOrNull(d, unifier)));
+        
+        return new ScopeGraphDiff(
+                scopeGraph.getScopes(),                                               //+ scopes
+                new HashSet<>(),                                                      //- scopes
+                (IRelation3.Transient<Scope, ITerm, Scope>) scopeGraph.getOwnEdges(), //+ edges
+                HashTrieRelation3.Transient.of(),                                     //- edges
+                (IRelation3.Transient<Scope, ITerm, ITerm>) scopeGraph.getOwnData(),  //+ data
+                HashTrieRelation3.Transient.of(),                                     //- data
+                newDataNames,                                                         //+ names
+                HashTrieRelation3.Transient.of(),                                     //- names
+                HashTrieRelation3.Transient.of()                                      //~ names
+        );
+    }
+    
+    /**
+     * Creates a scope graph diff for a removed module.
+     * 
+     * @param context
+     *      the context of the module
+     * @param unifier
+     *      the unifier of the module
+     * @param scopeGraph
+     *      the scope graph
+     * 
+     * @return
+     *      the diff of the scope graph
+     */
+    public static ScopeGraphDiff removedModule(Context context, IUnifier unifier,
+            IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
+        IRelation3.Transient<Scope, ITerm, Name> deletedNames = Context.executeInContext(context,
+                () -> Diff.toNames(scopeGraph.getOwnData(), d -> Names.getNameOrNull(d, unifier)));
+        
+        return new ScopeGraphDiff(
+                new HashSet<>(),                                                      //+ scopes
+                scopeGraph.getScopes(),                                               //- scopes
+                HashTrieRelation3.Transient.of(),                                     //+ edges
+                (IRelation3.Transient<Scope, ITerm, Scope>) scopeGraph.getOwnEdges(), //- edges
+                HashTrieRelation3.Transient.of(),                                     //+ data
+                (IRelation3.Transient<Scope, ITerm, ITerm>) scopeGraph.getOwnData(),  //- data
+                HashTrieRelation3.Transient.of(),                                     //+ names
+                deletedNames,                                                         //- names
+                HashTrieRelation3.Transient.of()                                      //~ names
+        );
     }
 }

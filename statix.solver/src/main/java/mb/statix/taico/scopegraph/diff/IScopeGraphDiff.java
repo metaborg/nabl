@@ -106,12 +106,29 @@ public interface IScopeGraphDiff<S extends D, L, D> {
     // --------------------------------------------------------------------------------------------
     
     /**
-     * Converts this diff into an effective diff.
+     * Creates an effective diff for this diff in the given diff result.
      * 
      * @param target
      *      the diff result to append to
      */
     void toEffectiveDiff(DiffResult target);
+    
+    /**
+     * Creates a new ScopeGraphDiff which only has the addedScopes and removedScopes retained.
+     * 
+     * @return
+     *      the new diff
+     */
+    ScopeGraphDiff retainScopes();
+    
+    /**
+     * Creates a scope graph diff which is the inverse of this diff. That is, added items become
+     * removed items and vice versa.
+     * 
+     * @return
+     *      the new inverse diff
+     */
+    IScopeGraphDiff<S, L, D> inverse();
     
     // --------------------------------------------------------------------------------------------
     // Convenience methods

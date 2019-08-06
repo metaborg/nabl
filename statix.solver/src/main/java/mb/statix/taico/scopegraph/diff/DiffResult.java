@@ -19,7 +19,7 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 public class DiffResult implements Serializable {
     private static final long serialVersionUID = 1L;
     
-    private Map<String, ScopeGraphDiff> diffs = Collections.synchronizedMap(new HashMap<>());
+    private Map<String, IScopeGraphDiff<Scope, ITerm, ITerm>> diffs = Collections.synchronizedMap(new HashMap<>());
     private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> addedModules;
     private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules;
     
@@ -33,7 +33,7 @@ public class DiffResult implements Serializable {
         this.removedModules = removedModules;
     }
     
-    public Map<String, ScopeGraphDiff> getDiffs() {
+    public Map<String, IScopeGraphDiff<Scope, ITerm, ITerm>> getDiffs() {
         return diffs;
     }
     
@@ -49,7 +49,7 @@ public class DiffResult implements Serializable {
         return removedModules;
     }
 
-    public void addDiff(String module, ScopeGraphDiff diff) {
+    public void addDiff(String module, IScopeGraphDiff<Scope, ITerm, ITerm> diff) {
         diffs.put(module, diff);
     }
     
@@ -75,7 +75,7 @@ public class DiffResult implements Serializable {
      *      the diff of the given module
      */
     ScopeGraphDiff getOrCreateDiff(String module) {
-        return diffs.computeIfAbsent(module, m -> ScopeGraphDiff.empty());
+        return (ScopeGraphDiff) diffs.computeIfAbsent(module, m -> ScopeGraphDiff.empty());
     }
     
     public DiffResult toEffectiveDiff() {
@@ -83,7 +83,7 @@ public class DiffResult implements Serializable {
         
         //We need to move the different declarations to the owners of the scopes
         synchronized (diffs) {
-            for (Entry<String, ScopeGraphDiff> entry : diffs.entrySet()) {
+            for (Entry<String, IScopeGraphDiff<Scope, ITerm, ITerm>> entry : diffs.entrySet()) {
                 final String module = entry.getKey();
                 final ScopeGraphDiff diff = entry.getValue().retainScopes();
                 effective.addDiff(module, diff);
@@ -91,7 +91,7 @@ public class DiffResult implements Serializable {
         }
         
         synchronized (diffs) {
-            for (ScopeGraphDiff diff : diffs.values()) {
+            for (IScopeGraphDiff<Scope, ITerm, ITerm> diff : diffs.values()) {
                 diff.toEffectiveDiff(effective);
             }
         }
@@ -110,7 +110,7 @@ public class DiffResult implements Serializable {
             stream.println("| | " + module);
         }
         stream.println("| Scope graph diffs");
-        for (Entry<String, ScopeGraphDiff> entry : diffs.entrySet()) {
+        for (Entry<String, IScopeGraphDiff<Scope, ITerm, ITerm>> entry : diffs.entrySet()) {
             if (entry.getValue().isEmpty()) {
                 stream.println("| | " + entry.getKey() + ": UNCHANGED");
             } else {

@@ -161,7 +161,7 @@ public class Diff {
      *      the scope graph of the module with the given id in the target context, or null if no
      *      module with the given id exists in either context
      */
-    private static IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph(Context cTarget, Context cOther, String id, boolean external) {
+    protected static IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph(Context cTarget, Context cOther, String id, boolean external) {
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = cTarget.getScopeGraph(id);
         
         if (sgNew == null) {
@@ -185,7 +185,7 @@ public class Diff {
      * @return
      *      
      */
-    private static IUnifier unifier(Context cTarget, String id) {
+    protected static IUnifier unifier(Context cTarget, String id) {
         IMState state = cTarget.getState(id);
         if (state == null) return DistributedUnifier.Immutable.of(id).unrestricted();
         
@@ -201,7 +201,7 @@ public class Diff {
      * @return
      *      everything in newSet that is not in oldSet
      */
-    private static <S> Set<S> getNew(Set<S> oldSet, Set<S> newSet) {
+    protected static <S> Set<S> getNew(Set<S> oldSet, Set<S> newSet) {
         Set<S> added = new HashSet<>();
         for (S s : newSet) {
             if (!oldSet.contains(s)) added.add(s);
@@ -218,7 +218,7 @@ public class Diff {
      * @return
      *      everything in newRel that is not in oldRel
      */
-    private static <S, L, D> IRelation3.Transient<S, L, D> getNew(IRelation3<S, L, D> oldRel, IRelation3<S, L, D> newRel) {
+    protected static <S, L, D> IRelation3.Transient<S, L, D> getNew(IRelation3<S, L, D> oldRel, IRelation3<S, L, D> newRel) {
         IRelation3.Transient<S, L, D> added = HashTrieRelation3.Transient.of();
         for (S s : oldRel.keySet()) {
             for (Entry<L, D> entry : oldRel.get(s)) {
@@ -241,7 +241,7 @@ public class Diff {
      * @return
      *      the instantiated terms
      */
-    private static <S, L> IRelation3.Transient<S, L, ITerm> instantiate(IRelation3<S, L, ITerm> rel, IUnifier unifier) {
+    protected static <S, L> IRelation3.Transient<S, L, ITerm> instantiate(IRelation3<S, L, ITerm> rel, IUnifier unifier) {
         IRelation3.Transient<S, L, ITerm> tbr = HashTrieRelation3.Transient.of();
         for (S s : rel.keySet()) {
             for (Entry<L, ITerm> entry : rel.get(s)) {
@@ -263,7 +263,7 @@ public class Diff {
      * @return
      *      the names that are in both
      */
-    private static <S, L, D> IRelation3.Transient<S, L, Name> nameOverlap(
+    protected static <S, L, D> IRelation3.Transient<S, L, Name> nameOverlap(
             IRelation3.Transient<S, L, Name> newData, IRelation3.Transient<S, L, Name> removedData) {
         HashTrieRelation3.Transient<S, L, Name> tbr = HashTrieRelation3.Transient.of();
         for (S s : newData.keySet()) {
@@ -294,7 +294,7 @@ public class Diff {
      * @return
      *      the given relation, but with data converted to names
      */
-    private static <S, L, D> IRelation3.Transient<S, L, Name> toNames(IRelation3<S, L, D> data, Function<D, Name> dataToName) {
+    protected static <S, L, D> IRelation3.Transient<S, L, Name> toNames(IRelation3<S, L, D> data, Function<D, Name> dataToName) {
         HashTrieRelation3.Transient<S, L, Name> tbr = HashTrieRelation3.Transient.of();
         for (S s : data.keySet()) {
             for (Entry<L, D> entry : data.get(s)) {
