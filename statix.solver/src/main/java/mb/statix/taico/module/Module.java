@@ -74,7 +74,11 @@ public class Module implements IModule {
         //Reuse an existing child module if possible
         String childId = ModulePaths.build(this.id, name);
         IModule child = context().getModuleUnchecked(childId);
-        if (child == null) child = new Module(name, this);
+        if (child == null) {
+            child = new Module(name, this);
+        } else if (!context().getModuleManager().hasModule(childId)) {
+            context().addModule(child);
+        }
         child.setFlag(Flag.NEW);
         child.setInitialization(constraint);
         new MState(child, getScopeGraph().createChild(child, canExtend));
