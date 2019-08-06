@@ -70,6 +70,11 @@ public class Diff {
             Context cNew, Context cOld,
             boolean external,
             boolean onlyContextFree) {
+        System.err.println("Diffing " + id + ", external=" + external);
+        if (result.hasDiffResult(id)) {
+            System.err.println("There is already a diff result for module " + id + ", not redoing diff!");
+            return;
+        }
         //Determine the graphs and their unifiers from the context
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = scopeGraph(cNew, cOld, id, external);
         IUnifier uNew = unifier(cNew, id);
