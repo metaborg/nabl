@@ -1,7 +1,9 @@
 package mb.statix.taico.scopegraph.diff;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -70,11 +72,7 @@ public class Diff {
             Context cNew, Context cOld,
             boolean external,
             boolean onlyContextFree) {
-        System.err.println("Diffing " + id + ", external=" + external);
-        if (result.hasDiffResult(id)) {
-            System.err.println("There is already a diff result for module " + id + ", not redoing diff!");
-            return;
-        }
+        if (result.hasDiffResult(id)) return;
         //Determine the graphs and their unifiers from the context
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = scopeGraph(cNew, cOld, id, external);
         IUnifier uNew = unifier(cNew, id);
@@ -118,7 +116,9 @@ public class Diff {
         result.addDiff(id, diff);
         
         //Child modules
-        for (String childId : sgNew.getChildIds()) {
+        Queue<String> queue = new LinkedList<>(sgNew.getChildIds());
+        while (!queue.isEmpty()) {
+            String childId = queue.poll();
             if (!cNew.getModuleManager().hasModule(childId)) {
                 System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
                 continue;
@@ -134,10 +134,14 @@ public class Diff {
                 //Child is in new but not in old -> added
                 IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cNew.getScopeGraph(childId);
                 result.addAddedChild(childId, sg);
+                result.addDiff(childId, ScopeGraphDiff.newModule(cNew, uNew, sg));
+                queue.addAll(sg.getChildIds());
             }
         }
         
-        for (String childId : sgOld.getChildIds()) {
+        queue.addAll(sgOld.getChildIds());
+        while (!queue.isEmpty()) {
+            String childId = queue.poll();
             if (!cOld.getModuleManager().hasModule(childId)) {
                 System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
                 continue;
@@ -145,7 +149,10 @@ public class Diff {
             //TODO Should split modules be included here?
             if (!sgNew.getChildIds().contains(childId)) {
                 //Child is in old but not in new -> removed
-                result.addRemovedChild(childId, cOld.getScopeGraph(childId));
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cOld.getScopeGraph(childId);
+                result.addRemovedChild(childId, sg);
+                result.addDiff(childId, ScopeGraphDiff.removedModule(cOld, uOld, sg));
+                queue.addAll(sg.getChildIds());
             }
         }
     }
