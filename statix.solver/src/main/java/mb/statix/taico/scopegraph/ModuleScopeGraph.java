@@ -480,7 +480,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                         msg.addDatum(scope, e.getKey(), data);
                         for (Scope s : Scopes.getScopesInTerm(data, unifier)) {
                             if (!owner.getId().equals(scope.getResource())) continue;
-                            scopes.add(s);
+                            if (!msg.scopes.contains(s)) scopes.add(s);
                         }
                     }
                 }
