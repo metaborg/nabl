@@ -113,7 +113,7 @@ public class Names {
                 occurrence().map(Optional::of),
                 M.tuple(t -> {
                     if (t.getArity() <= 0) return Optional.<Name>empty();
-                    return occurrence().match(t.getArgs().get(1), unifier);
+                    return occurrence().match(t.getArgs().get(0), unifier);
                 })
         ).match(term, unifier).get();
     }
