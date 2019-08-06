@@ -12,6 +12,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.Vars;
 
@@ -53,7 +54,8 @@ public class DistributedUnifier {
                     return findTermFinal(rep);
                 }
                 
-                DistributedUnifier.Immutable unifier = target.getCurrentState().unifier();
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                if (unifier == null) return var;
                 rep = unifier.findRepFinal(var);
                 return unifier.findTermFinal(rep);
             }).otherwise(t -> t));
@@ -70,12 +72,13 @@ public class DistributedUnifier {
         @Override
         public ITermVar findRep(ITermVar var) {
             //TODO Entails?
-            final IModule module;
-            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return findRepFinal(var);
             }
 
-            return module.getCurrentState().unifier().findRepFinal(var);
+            DistributedUnifier.Immutable unifier = getUnifier(target);
+            return unifier == null ? var : unifier.findRepFinal(var);
         }
         
         protected ITermVar findRepFinal(ITermVar var) {
@@ -93,7 +96,8 @@ public class DistributedUnifier {
             if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isGroundFinal(var, stack, visited);
             } else {
-                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? false : unifier.isGroundFinal(var, stack, visited);
             }
         }
         
@@ -113,7 +117,8 @@ public class DistributedUnifier {
             if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isCyclicFinal(var, stack, visited);
             } else {
-                return target.getCurrentState().unifier().isCyclicFinal(var, stack, visited);
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? isCyclicFinal(var, stack, visited) : unifier.isCyclicFinal(var, stack, visited);
             }
         }
         
@@ -188,11 +193,21 @@ public class DistributedUnifier {
                 return this.terms();
             }
             
-            return module.getCurrentState().unifier().terms();
+            DistributedUnifier.Immutable unifier = getUnifier(module);
+            return unifier == null ? this.terms() : unifier.terms();
         }
         
         private IModule getOwner(ITermVar var) {
             return unrestricted ? Vars.getOwnerUnchecked(var) : Vars.getOwner(var, owner);
+        }
+        
+        private DistributedUnifier.Immutable getUnifier(IModule target) {
+            IMState state = target.getCurrentState();
+            if (state == null) {
+                System.err.println("Current state of target is null: " + target + ", requester = " + owner);
+                return null;
+            }
+            return state.unifier();
         }
         
         // ----------------------------------------------------------------------------------------
@@ -276,7 +291,8 @@ public class DistributedUnifier {
                     return findTermFinal(rep);
                 }
                 
-                DistributedUnifier.Immutable unifier = target.getCurrentState().unifier();
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                if (unifier == null) return var;
                 rep = unifier.findRepFinal(var);
                 return unifier.findTermFinal(rep);
             }).otherwise(t -> t));
@@ -293,12 +309,13 @@ public class DistributedUnifier {
         @Override
         public ITermVar findRep(ITermVar var) {
             //TODO Entails?
-            final IModule module;
-            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return findRepFinal(var);
             }
 
-            return module.getCurrentState().unifier().findRepFinal(var);
+            DistributedUnifier.Immutable unifier = getUnifier(target);
+            return unifier == null ? var : unifier.findRepFinal(var);
         }
         
         protected ITermVar findRepFinal(ITermVar var) {
@@ -316,7 +333,8 @@ public class DistributedUnifier {
             if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isGroundFinal(var, stack, visited);
             } else {
-                return target.getCurrentState().unifier().isGroundFinal(var, stack, visited);
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? false : unifier.isGroundFinal(var, stack, visited);
             }
         }
         
@@ -336,7 +354,8 @@ public class DistributedUnifier {
             if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
                 return isCyclicFinal(var, stack, visited);
             } else {
-                return target.getCurrentState().unifier().isCyclicFinal(var, stack, visited);
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? isCyclicFinal(var, stack, visited) : unifier.isCyclicFinal(var, stack, visited);
             }
         }
         
@@ -411,11 +430,21 @@ public class DistributedUnifier {
                 return this.terms();
             }
             
-            return module.getCurrentState().unifier().targetTerms(var);
+            DistributedUnifier.Immutable unifier = getUnifier(module);
+            return unifier == null ? this.terms() : unifier.targetTerms(var);
         }
         
         private IModule getOwner(ITermVar var) {
             return unrestricted ? Vars.getOwnerUnchecked(var) : Vars.getOwner(var, owner);
+        }
+        
+        private DistributedUnifier.Immutable getUnifier(IModule target) {
+            IMState state = target.getCurrentState();
+            if (state == null) {
+                System.err.println("Current state of target is null: " + target + ", requester = " + owner);
+                return null;
+            }
+            return state.unifier();
         }
         
         // ----------------------------------------------------------------------------------------
