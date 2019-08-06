@@ -3,6 +3,7 @@ package mb.statix.taico.module;
 import static mb.statix.taico.solver.Context.context;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -62,6 +63,21 @@ public interface IModule extends Flaggable, Serializable {
     default IModule getParent() {
         final String parentId = getParentId();
         return parentId == null ? null : context().getModuleUnchecked(parentId);
+    }
+    
+    /**
+     * Convenience method for getting all parent modules.
+     * 
+     * @return
+     *      the parents of this module
+     */
+    default Iterable<IModule> getParents() {
+        List<IModule> tbr = new ArrayList<>();
+        IModule parent = this;
+        while ((parent = parent.getParent()) != null) {
+            tbr.add(parent);
+        }
+        return tbr;
     }
     
     // --------------------------------------------------------------------------------------------
