@@ -2,7 +2,9 @@ package mb.statix.taico.incremental.manager;
 
 import static mb.statix.taico.solver.Context.context;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -39,6 +41,12 @@ public class NameIncrementalManager extends IncrementalManager {
      * This could be used to fix/detect circular dependencies.
      */
     private SetMultimap<Integer, IModule> phases = MultimapBuilder.hashKeys().hashSetValues().build();
+    private SetMultimap<Integer, IModule> actualPhases = MultimapBuilder.hashKeys().hashSetValues().build();
+    /**
+     * Stores the reason why the module is in the set of modules to redo in the last phase.
+     * Cleared at the start of each phase.
+     */
+    private Map<String, RedoReason> redoReasons = new HashMap<>();
     private int phaseCounter = -1;
     /**
      * A set of modules that have been processed by this solving process so far. If we encounter
@@ -90,6 +98,7 @@ public class NameIncrementalManager extends IncrementalManager {
         setPhase(phaseCounter);
         phases.putAll(phaseCounter, modules);
         processedModules.addAll(modules);
+        redoReasons.clear();
         
         System.err.println("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
         System.err.println("[NIM] Starting phase " + phaseCounter + " with modules " + modules);
@@ -200,10 +209,52 @@ public class NameIncrementalManager extends IncrementalManager {
             }
         }
         
+        for (String id : toRedo) {
+            redoReasons.put(id, RedoReason.DIFF);
+        }
+        
         //TODO IMPORTANT check for cyclic
         System.err.println("[NIM] TODO: Checking for cyclic dependencies SHOULD happen here");
         
         return toRedo;
+    }
+    
+    /**
+     * Normalizes the modules to redo by doing the following:
+     * 
+     * 1) removing all child modules of modules also in the set<br>
+     * 2) removing all modules that were also redone in the last phase because of the diff
+     * 
+     * 
+     * @param moduleIds
+     *      the ids of the modules
+     * 
+     * @return
+     *      the set of modules to redo
+     */
+    private Set<IModule> normalizeToRedo(Set<String> moduleIds) {
+        Set<IModule> modules = Modules.toModules(moduleIds);
+        Set<IModule> doneInLastPhase = actualPhases.get(getPhase());
+        Iterator<IModule> it = modules.iterator();
+        while (it.hasNext()) {
+            IModule module = it.next();
+            
+            //If we redid this module in the last phase, then we should not redo it again in the next phase
+            //TODO Unless if things are circular and we want to redo it again
+            if (doneInLastPhase.contains(module) && redoReasons.get(module.getId()) == RedoReason.DIFF) {
+                it.remove();
+                continue;
+            }
+            
+            for (IModule parent : module.getParents()) {
+                if (modules.contains(parent)) {
+                    it.remove();
+                    break;
+                }
+            }
+        }
+        
+        return modules;
     }
 
     /**
@@ -275,12 +326,17 @@ public class NameIncrementalManager extends IncrementalManager {
         int phase = getPhase();
         System.err.println("[NIM] Finished phase " + phase);
         
-        Set<String> toRedo = diff(finished, failed, stuck, results);
-        if (toRedo.isEmpty()) {
+        actualPhases.putAll(phase, results.keySet());
+        processedModules.addAll(results.keySet());
+        
+        Set<String> toRedoIds = diff(finished, failed, stuck, results);
+        if (toRedoIds.isEmpty()) {
             System.out.println("[NIM] No modules left to redo, solving done :)");
             return false;
         }
-        startPhaseWithIds(toRedo);
+        
+        Set<IModule> toRedo = normalizeToRedo(toRedoIds);
+        startPhase(toRedo);
         return true;
     }
 
@@ -346,6 +402,15 @@ public class NameIncrementalManager extends IncrementalManager {
         
         results.put(solver.getOwner(), result);
         super.solverDone(solver, result);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Redo reason
+    // --------------------------------------------------------------------------------------------
+    
+    public static enum RedoReason {
+        DIFF,
+        CIRCULAR
     }
 }
 
