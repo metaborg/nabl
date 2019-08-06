@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -32,6 +33,28 @@ public class TPrettyPrinter {
     public static final IMatcher<String> LABEL = M.cases(
             M.appl1("Label", M.stringValue(), (t, s) -> s),
             M.appl0("Decl", t -> "decl"));
+    
+    /**
+     * Prints the given iterable by applying the given function to each element.
+     * 
+     * @param iterable
+     *      the iterable
+     * @param function
+     *      the function
+     * 
+     * @return
+     *      the string [a, b, ..., n]
+     */
+    public static <T> String print(Iterable<T> iterable, Function<T, String> function) {
+        StringBuilder sb = new StringBuilder("[");
+        for (T t : iterable) {
+            sb.append(function.apply(t));
+            sb.append(", ");
+        }
+        if (sb.length() > 1) sb.setLength(sb.length() - 2);
+        sb.append(']');
+        return sb.toString();
+    }
     
     /**
      * Prints the given scope with the module it belongs to and a unique id.

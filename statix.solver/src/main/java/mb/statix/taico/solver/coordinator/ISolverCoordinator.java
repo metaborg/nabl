@@ -1,6 +1,7 @@
 package mb.statix.taico.solver.coordinator;
 
 import static mb.statix.taico.util.TDebug.*;
+import static mb.statix.taico.util.TPrettyPrinter.*;
 
 import java.util.Collection;
 import java.util.Map;
@@ -19,6 +20,7 @@ import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.util.TPrettyPrinter;
 
 /**
  * Interface to represent a coordinator for the solving process.
@@ -166,7 +168,7 @@ public interface ISolverCoordinator {
         for (Entry<IModule, MSolverResult> entry : getResults().entrySet()) {
             String id = entry.getKey().getId();
             if (entry.getValue().hasErrors()) {
-                fail.info(id);
+                fail.info(printModule(id));
                 if (COORDINATOR_EXTENDED_SUMMARY) {
                     failDetails.info("[{}] Failed constraints:", id);
                     IDebugContext sub = failDetails.subContext();
@@ -175,7 +177,7 @@ public interface ISolverCoordinator {
                     }
                 }
             } else if (entry.getValue().hasDelays()) {
-                stuck.info(id);
+                stuck.info(printModule(id));
                 if (COORDINATOR_EXTENDED_SUMMARY) {
                     stuckDetails.info("[{}] Stuck constraints:", id);
                     IDebugContext sub = stuckDetails.subContext();
@@ -191,7 +193,7 @@ public interface ISolverCoordinator {
                     }
                 }
             } else {
-               success.info(id); 
+               success.info(printModule(id)); 
             }
         }
         
@@ -222,7 +224,9 @@ public interface ISolverCoordinator {
      *      the debug context to print to
      */
     public default void printModuleHierarchy(IModule module, IDebugContext context) {
-        context.info("{}: dependencies={}", module.getId(), module.getDependencyIds());
+        context.info("{}: dependencies={}",
+                printModule(module.getId()),
+                print(module.getDependencyIds(), TPrettyPrinter::printModule));
         IDebugContext sub = context.subContext();
         for (IModule child : module.getChildren()) {
             printModuleHierarchy(child, sub);
