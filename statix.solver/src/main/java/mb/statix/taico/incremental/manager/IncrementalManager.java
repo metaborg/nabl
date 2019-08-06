@@ -263,6 +263,22 @@ public class IncrementalManager implements Serializable {
     // Other
     // --------------------------------------------------------------------------------------------
 
+    /**
+     * Determines if the given child may be transferred to the current context instead of creating
+     * it anew with the given constraint.
+     * 
+     * @param oldModule
+     *      the old module
+     * @param constraint
+     *      the new creation constraint
+     * 
+     * @return
+     *      true if the child may be transferred, false otherwise
+     */
+    public boolean allowTransferChild(IModule oldModule, IConstraint constraint) {
+        return false;
+    }
+    
     @Override
     public String toString() {
         return "IncrementalManager [phase=" + phase + ", initPhase=" + initPhase + "]";

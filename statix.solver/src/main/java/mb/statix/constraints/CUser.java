@@ -188,7 +188,7 @@ public class CUser implements IConstraint, Serializable {
                     
                     String modName = rule.moduleString().build(appl._1());
                     
-                    IModule child = state.owner().getChildIfClean(modName, canExtend, new CUser(name(), newArgs));
+                    IModule child = state.owner().getChildIfAllowed(modName, canExtend, new CUser(name(), newArgs));
                     if (child != null) {
                         System.err.println("Reusing old child: " + child);
                         //Reuse an old child if it is clean (1), and add the child to the scope graph of the state owner (2)

@@ -196,8 +196,8 @@ public interface IModule extends Flaggable, Serializable {
     }
     
     /**
-     * Gets the child with the given name if it is clean. If no child with the given name exists
-     * or if the child is not clean, this method returns null.
+     * Gets the child with the given name if it is allowed by the incremental manager. If no child
+     * with the given name exists or if the child may not be transferred, this method returns null.
      * <p>
      * If the child exists, its scopes are substituted for the given scopes and its initialization
      * is updated. The state of the child is reused.
@@ -212,14 +212,14 @@ public interface IModule extends Flaggable, Serializable {
      * @return
      *      the child if clean, or null otherwise
      */
-    default IModule getChildIfClean(String name, List<Scope> canExtend, IConstraint constraint) {
+    default IModule getChildIfAllowed(String name, List<Scope> canExtend, IConstraint constraint) {
         IModule oldModule;
         try {
             oldModule = getChild(name);
         } catch (ModuleDelayException ex) {
             return null;
         }
-        if (oldModule == null || oldModule.getTopCleanliness() != ModuleCleanliness.CLEAN) return null;
+        if (oldModule == null || !context().getIncrementalManager().allowTransferChild(oldModule, constraint)) return null;
         
         context().transferModule(oldModule);
         oldModule.getScopeGraph().substitute(canExtend);
