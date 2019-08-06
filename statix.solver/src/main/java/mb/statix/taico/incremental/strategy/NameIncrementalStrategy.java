@@ -16,6 +16,7 @@ import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.NameChangeSet;
 import mb.statix.taico.incremental.manager.NameIncrementalManager;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.module.split.SplitModuleUtil;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
@@ -76,11 +77,11 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
             System.err.println("[NIS] Encountered entry for " + entry.getKey());
             IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey());
             
-            if (oldModule == null) {
+            if (oldModule == null || oldModule.getTopCleanliness() == ModuleCleanliness.DIRTY) {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);
                 if (module != null) {
                     newModules.put(module, entry.getValue());
-                    module.addFlag(Flag.NEW);
+                    if (oldModule == null) module.addFlag(Flag.NEW);
                 }
             } else {
                 reuseOldModule(context, changeSet, oldModule);

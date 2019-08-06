@@ -6,9 +6,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
@@ -33,19 +34,19 @@ import mb.statix.taico.util.TPrettyPrinter;
 
 public class NameIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;
-    private Map<IModule, IConstraint> initialModules;
+    private Map<IModule, IConstraint> initConstraints;
     /**
      * The idea of this map is to keep track of all the modules that are processed in each phase.
      * This could be used to fix/detect circular dependencies.
      */
-    private ListMultimap<Integer, IModule> phases = MultimapBuilder.hashKeys().arrayListValues().build();
+    private SetMultimap<Integer, IModule> phases = MultimapBuilder.hashKeys().hashSetValues().build();
     private int phaseCounter = -1;
     /**
      * A set of modules that have been processed by this solving process so far. If we encounter
      * the same modules again, we need to add them to the set that we are redoing, because they
      * must have a mutual dependency.
      */
-    private Set<String> processedModules = new HashSet<>();
+    private Set<IModule> processedModules = new HashSet<>();
 
     // --------------------------------------------------------------------------------------------
     // Phase
@@ -60,35 +61,49 @@ public class NameIncrementalManager extends IncrementalManager {
     }
     
     @Override
-    public void startFirstPhase(Map<IModule, IConstraint> modules) {
-        this.initialModules = modules;
-        startPhase(modules.keySet());
+    public void startFirstPhase(Map<IModule, IConstraint> initConstraints) {
+        this.initConstraints = initConstraints;
+        Set<IModule> modules = initConstraints.keySet().stream()
+                .filter(this::acceptFirstPhaseModule)
+                .collect(Collectors.toSet());
+        startPhase(modules);
+    }
+    
+    /**
+     * @param module
+     *      the module
+     * 
+     * @return
+     *      true if this module should be scheduled for the first phase, false otherwise
+     */
+    private boolean acceptFirstPhaseModule(IModule module) {
+        switch (module.getTopCleanliness()) {
+            case DIRTY:
+            case NEW:
+                return true;
+            default:
+                return false;
+        }
     }
     
     private void startPhase(Set<IModule> modules) {
         phaseCounter++;
         setPhase(phaseCounter);
         phases.putAll(phaseCounter, modules);
+        processedModules.addAll(modules);
         
         System.err.println("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
         System.err.println("[NIM] Starting phase " + phaseCounter + " with modules " + modules);
         
         context().getCoordinator().preventSolverStart();
         for (IModule module : modules) {
-            IConstraint init = initialModules.get(module);
+            IConstraint init = initConstraints.get(module);
             if (init == null) init = module.getInitialization();
             
-            switch (module.getTopCleanliness()) {
-                case DIRTY:
-                case NEW:
-                    ModuleSolver parentSolver = context().getState(module.getParentId()).solver();
-                    ModuleSolver oldSolver = context().getState(module).solver();
-                    parentSolver.childSolver(module.getCurrentState(), init);
-                    if (oldSolver != null) oldSolver.cleanUpForReplacement();
-                    break;
-                default:
-                    break;
-            }
+            ModuleSolver parentSolver = context().getState(module.getParentId()).solver();
+            ModuleSolver oldSolver = context().getState(module).solver();
+            parentSolver.childSolver(module.getCurrentState(), init);
+            if (oldSolver != null) oldSolver.cleanUpForReplacement();
         }
         context().getCoordinator().allowSolverStart();
         System.err.println("[NIM] Phase " + phaseCounter + " started");
@@ -214,7 +229,7 @@ public class NameIncrementalManager extends IncrementalManager {
             NameAndRelation nar = tuple.getKey().withRelation(tuple.getValue());
             for (Dependency dependency : dependencies.getNameDependencies(nar, scope)) {
                 String dependingModule = dependency.getOwner();
-                System.out.println(dependingModule + " depends on " + changedModule + ", and is affected by change of name " + nar + " in " + TPrettyPrinter.printScopeFancy(scope));
+                System.out.println(dependingModule + " depends on " + changedModule + ", and is affected by change of name " + nar + " in " + TPrettyPrinter.printScope(scope));
                 toRedo.add(dependingModule);
             }
         }
