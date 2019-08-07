@@ -68,7 +68,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
         System.err.println("[NIS] Transferring constraint-supplied modules...");
-        Context oldContext = context.getOldContext().orElse(null);
+        Context oldContext = context.getOldContext();
         Map<IModule, IConstraint> newModules = new HashMap<>();
         Set<IModule> reuseChildren = new HashSet<>();
         moduleConstraints.entrySet().stream()

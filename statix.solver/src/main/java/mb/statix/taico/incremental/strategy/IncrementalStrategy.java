@@ -150,7 +150,7 @@ public abstract class IncrementalStrategy {
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
         System.err.println("[IS] Transferring constraint-supplied modules...");
-        Context oldContext = context.getOldContext().orElse(null);
+        Context oldContext = context.getOldContext();
         Map<IModule, IConstraint> newModules = new HashMap<>();
         Set<IModule> reuseChildren = new HashSet<>();
         moduleConstraints.entrySet().stream()
@@ -325,7 +325,7 @@ public abstract class IncrementalStrategy {
             state.scopeGraph().removeChild(child);
         }
         //TODO Test this result transfer
-        MSolverResult result = context.getOldContext().get().getResult(module);
+        MSolverResult result = context.getOldContext().getResult(module);
         module.getParent().getCurrentState().solver().noopSolver(state, result);
     }
     

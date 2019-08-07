@@ -145,7 +145,7 @@ public class NameIncrementalManager extends IncrementalManager {
             Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
         System.err.println("[NIM] Computing diff to determine modules for next phase");
         
-        Context oldContext = context().getOldContext().get();
+        Context oldContext = context().getOldContext();
         if (oldContext == null) throw new IllegalStateException("The old context should not be null!");
         
         DiffResult diff = new DiffResult();

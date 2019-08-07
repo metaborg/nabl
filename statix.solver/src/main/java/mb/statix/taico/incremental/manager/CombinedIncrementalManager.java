@@ -154,7 +154,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
         final ISolverCoordinator coordinator = context().getCoordinator();
         final IModule root = coordinator.getRootModule();
         System.err.println("[CIM] Diff in final phase");
-        DiffResult diff = Diff.diff(root.getId(), context(), context().getOldContext().get(), true);
+        DiffResult diff = Diff.diff(root.getId(), context(), context().getOldContext(), true);
         diff.print(System.err);
         
         System.err.println("[CIM] Effective diff in final phase");

@@ -127,7 +127,7 @@ public class DiffResult implements Serializable {
                         context.getUnifierOrDefault(module, DistributedUnifier.NULL_UNIFIER),
                         context,
                         context.getOldUnifierOrDefault(module, DistributedUnifier.NULL_UNIFIER),
-                        context.getOldContext().orElse(null));
+                        context.getOldContext());
             }
         }
     }
