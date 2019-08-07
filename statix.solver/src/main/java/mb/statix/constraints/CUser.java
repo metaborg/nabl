@@ -27,6 +27,7 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MConstraintContext;
 import mb.statix.taico.solver.MConstraintResult;
@@ -179,36 +180,9 @@ public class CUser implements IConstraint, Serializable {
                         proxyDebug.info("{} rejected (mismatching arguments)", ruleOrModb);
                         unsuccessfulLog.absorb(proxyDebug.clear());
                         continue;
-                    }                     
-                    
-                    //We don't always want to statically store the child relation. We want to base this on the current owner.
-                    List<Scope> canExtend = new ArrayList<>();
-                    for (ITerm term : newArgs) {
-                        Scope scope = Scope.matcher().match(term).orElse(null);
-                        if (scope != null) canExtend.add(scope);
                     }
-                    
-                    String modName = rule.moduleString().build(appl._1());
-                    
-                    IModule child = state.owner().getChildIfAllowed(modName, canExtend, skipModuleBoundary(newArgs));
-                    if (child != null) {
-                        System.err.println("Reusing old child: " + child);
-                        //Reuse an old child if it is clean (1), and add the child to the scope graph of the state owner (2)
-                        MSolverResult result = Context.context().getOldContext().get().getResult(child);
-                        ModuleSolver oldChildSolver = child.getCurrentState().solver();
-                        state.solver().noopSolver(child.getCurrentState(), result);
-                        if (oldChildSolver != null) {
-                            oldChildSolver.cleanUpForReplacement();
-                        }
-                        state.owner().addChild(child);
-                    } else {
-                        //Create the child module + state (1), create the state (2), create the child solver (3) and add the child to the scope graph of the state owner (4)
-                        //This needs to happen in this precise ordering to prevent concurrency issues. The third call makes the new child module
-                        //available to the rest of the world.
-                        child = state.owner().createChild(modName, canExtend, skipModuleBoundary(newArgs), false);
-                        state.solver().childSolver(child.getCurrentState(), appl._2());
-                        state.owner().addChild(child);
-                    }
+
+                    createChild(state, rule, newArgs, appl);
 
                     proxyDebug.info("{} accepted", ruleOrModb);
                     proxyDebug.commit();
@@ -238,6 +212,64 @@ public class CUser implements IConstraint, Serializable {
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);
         return Optional.empty();
+    }
+
+    /**
+     * Creates a new child module from the given module boundary and result.
+     * 
+     * @param state
+     *      the state of the parent module
+     * @param rule
+     *      the module boundary
+     * @param newArgs
+     *      the arguments passed to the module boundary
+     * @param appl
+     *      the application of the rule
+     * 
+     * @return
+     *      the created child module
+     */
+    private IModule createChild(IMState state, ModuleBoundary rule, List<ITerm> newArgs,
+            Tuple2<Immutable, IConstraint> appl) {
+        //Determine the scopes that the child can extend (order matters)
+        List<Scope> canExtend = new ArrayList<>();
+        for (ITerm term : newArgs) {
+            Scope scope = Scope.matcher().match(term).orElse(null);
+            if (scope != null) canExtend.add(scope);
+        }
+        
+        //The name of the module has to be built
+        String modName = rule.moduleString().build(appl._1());
+        
+        ModuleSolver oldChildSolver, newChildSolver;
+        
+        //If an old child module should be reused, it will be returned here.
+        IModule child = state.owner().getChildIfAllowed(modName, canExtend, skipModuleBoundary(newArgs));
+        if (child != null) {
+            //TODO This code has never been tested
+            
+            //Reuse an old child if it is clean
+            System.err.println("Reusing old child module: " + child);
+            
+            MSolverResult result = Context.context().getOldContext().getResult(child);
+            IMState childState = child.getCurrentState();
+            oldChildSolver = childState.solver();
+            newChildSolver = state.solver().noopSolver(childState, result);
+        } else {
+            //Lookup the old child solver before it is replaced by the call to createChild.
+            String childId = ModulePaths.build(state.owner().getId(), modName);
+            oldChildSolver = Context.context().getSolver(childId);
+            
+            child = state.owner().createChild(modName, canExtend, skipModuleBoundary(newArgs), false);
+            newChildSolver = state.solver().childSolver(child.getCurrentState(), appl._2());
+        }
+        
+        //If there was an old child solver, replace it with the new one
+        if (oldChildSolver != null) oldChildSolver.cleanUpForReplacement(newChildSolver);
+        
+        //Make the child module available to the rest of the world
+        state.owner().addChild(child);
+        return child;
     }
 
     /**
