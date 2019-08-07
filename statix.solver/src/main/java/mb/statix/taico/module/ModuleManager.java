@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
+import mb.statix.taico.module.split.SplitModuleUtil;
+
 public class ModuleManager implements Serializable {
     private static final long serialVersionUID = 1L;
     
@@ -212,11 +214,29 @@ public class ModuleManager implements Serializable {
      * @return
      *      a map from module NAME to module
      */
-    public synchronized Map<String, IModule> getModulesOnLevel(int level) {
+    public Map<String, IModule> getModulesOnLevel(int level) {
+        return getModulesOnLevel(level, true);
+    }
+    
+    /**
+     * Gets the modules on a particular level.
+     * For example, a value of 0 yields all top level modules, while a value of 1 would yield all
+     * children of top level modules.
+     * 
+     * @param level
+     *      the level of modules to get
+     * @param includeSplitModules
+     *      if split modules should be included
+     * 
+     * @return
+     *      a map from module NAME to module
+     */
+    public synchronized Map<String, IModule> getModulesOnLevel(int level, boolean includeSplitModules) {
         Map<String, IModule> levelModules = new HashMap<>();
         for (Entry<String, IModule> entry : modules.entrySet()) {
             String id = entry.getKey();
             if (ModulePaths.pathLength(id) - 1 != level) continue;
+            if (!includeSplitModules && SplitModuleUtil.isSplitModule(id)) continue;
             IModule module = entry.getValue();
             levelModules.put(module.getName(), module);
         }
