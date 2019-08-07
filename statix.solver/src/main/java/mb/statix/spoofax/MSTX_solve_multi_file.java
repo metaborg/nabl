@@ -148,7 +148,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         newContext.commitChanges();
         TTimings.endPhase("commit changes");
 
-        //Return a tuple of 2 lists, one for added + changed (dirty) results, one for cached (clirty) results.
+        //Return a tuple of 2 lists, one for added + changed (dirty) results, one for cached (unsure) results.
         TTimings.startPhase("collect results");
         List<ITerm> fullResults = results.entrySet().stream()
                 .filter(e -> order.containsKey(e.getKey())) //TODO Should not be needed

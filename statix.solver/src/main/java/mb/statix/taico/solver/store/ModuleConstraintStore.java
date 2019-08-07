@@ -384,6 +384,10 @@ public class ModuleConstraintStore implements IConstraintStore {
             notifyObserver();
         }
     }
+    
+    // --------------------------------------------------------------------------------------------
+    // Observers
+    // --------------------------------------------------------------------------------------------
 
     /**
      * Notifies the observer if there is any.

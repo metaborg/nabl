@@ -93,7 +93,7 @@ public class NameIncrementalManager extends IncrementalManager {
         }
     }
     
-    private void startPhase(Set<IModule> modules) {
+    public void startPhase(Set<IModule> modules) {
         phaseCounter++;
         setPhase(phaseCounter);
         phases.putAll(phaseCounter, modules);
@@ -149,17 +149,7 @@ public class NameIncrementalManager extends IncrementalManager {
         if (oldContext == null) throw new IllegalStateException("The old context should not be null!");
         
         DiffResult diff = new DiffResult();
-        for (Entry<IModule, MSolverResult> entry : results.entrySet()) {
-            final IModule module = entry.getKey();
-            final MSolverResult result = entry.getValue();
-            if (result.hasErrors()) {
-                //Module failed
-                System.out.println("Module " + module + " failed. It is likely that the diff will be vast.");
-            } else if (result.hasDelays()) {
-                //Module got stuck
-                System.out.println("Module " + module + " got stuck. It is likely that the diff will be vast.");
-            }
-            
+        for (IModule module : results.keySet()) {
             Diff.diff(diff, module.getId(), context(), oldContext, true, false); // Last boolean might need to change to true depending on split modules
         }
         
@@ -339,12 +329,12 @@ public class NameIncrementalManager extends IncrementalManager {
         }
         
         Set<String> toRedoIds = diff(finished, failed, stuck, results);
-        if (toRedoIds.isEmpty()) {
+        Set<IModule> toRedo = normalizeToRedo(toRedoIds);
+        if (toRedo.isEmpty()) {
             System.out.println("[NIM] No modules left to redo, solving done :)");
             return false;
         }
         
-        Set<IModule> toRedo = normalizeToRedo(toRedoIds);
         startPhase(toRedo);
         return true;
     }
