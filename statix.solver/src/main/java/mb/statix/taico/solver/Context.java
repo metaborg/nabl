@@ -36,6 +36,7 @@ import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.unifier.DistributedUnifier;
 
 /**
  * Class to represent the context. The context keeps track of all information necessary for
@@ -412,6 +413,64 @@ public class Context implements Serializable {
         if (oldContext == null) return null;
         
         return oldContext.getScopeGraph(id);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Unifiers
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @param id
+     *      the id of the module
+     * 
+     * @return
+     *      the unifier of the given module in the current context, or null if there is none
+     */
+    public DistributedUnifier.Immutable getUnifier(String id) {
+        IMState state = getState(id);
+        return state == null ? null : state.unifier();
+    }
+    
+    /**
+     * @param id
+     *      the id of the module
+     * @param def
+     *      the unifier to return if there is no state for the given module
+     * 
+     * @return
+     *      the unifier of the given module in the current context, or def if there is none
+     */
+    public DistributedUnifier.Immutable getUnifierOrDefault(String id, DistributedUnifier.Immutable def) {
+        IMState state = getState(id);
+        return state == null ? def : state.unifier();
+    }
+    
+    /**
+     * @param id
+     *      the id of the module
+     * 
+     * @return
+     *      the unifier of the given module in the previous context, or null if there is none
+     */
+    public DistributedUnifier.Immutable getOldUnifier(String id) {
+        if (oldContext == null) return null;
+        
+        return oldContext.getUnifier(id);
+    }
+    
+    /**
+     * @param id
+     *      the id of the module
+     * @param def
+     *      the default unifier
+     * 
+     * @return
+     *      the unifier of the given module in the previous context, or def if there is none
+     */
+    public DistributedUnifier.Immutable getOldUnifierOrDefault(String id, DistributedUnifier.Immutable def) {
+        if (oldContext == null) return null;
+        
+        return oldContext.getUnifierOrDefault(id, def);
     }
     
     // --------------------------------------------------------------------------------------------

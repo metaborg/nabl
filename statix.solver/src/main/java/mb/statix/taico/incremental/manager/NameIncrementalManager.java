@@ -1,6 +1,7 @@
 package mb.statix.taico.incremental.manager;
 
 import static mb.statix.taico.solver.Context.context;
+import static mb.statix.taico.util.TPrettyPrinter.printScope;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +32,6 @@ import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.util.Modules;
-import mb.statix.taico.util.TPrettyPrinter;
 
 public class NameIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;
@@ -278,7 +278,7 @@ public class NameIncrementalManager extends IncrementalManager {
             NameAndRelation nar = tuple.getKey().withRelation(tuple.getValue());
             for (Dependency dependency : dependencies.getNameDependencies(nar, scope)) {
                 String dependingModule = dependency.getOwner();
-                System.out.println(dependingModule + " depends on " + changedModule + ", and is affected by change of name " + nar + " in " + TPrettyPrinter.printScope(scope));
+                System.out.println(dependingModule + " depends on " + changedModule + ", and is affected by change of name " + nar + " in " + printScope(scope));
                 toRedo.add(dependingModule);
             }
         }
@@ -312,9 +312,9 @@ public class NameIncrementalManager extends IncrementalManager {
         for (Scope scope : sgDiff.getRemovedScopes()) {
             if (detail.isAffectedByScopeRemoval(scope)) {
                 if (toRedo.add(dependant)) {
-                    System.out.println("Scope removal was relevant for " + dependant + " (not yet added)! Scope " + TPrettyPrinter.printScopeFancy(scope));
+                    System.out.println("Scope removal was relevant for " + dependant + " (not yet added)! Scope " + printScope(scope));
                 } else {
-                    System.out.println("Scope removal was irrelevant for " + dependant + " (already added)! Scope " + TPrettyPrinter.printScopeFancy(scope));
+                    System.out.println("Scope removal was irrelevant for " + dependant + " (already added)! Scope " + printScope(scope));
                 }
             }
         }
@@ -385,20 +385,22 @@ public class NameIncrementalManager extends IncrementalManager {
 
     @Override
     public void initSolver(ModuleSolver solver) {
-        System.err.println("[NIM] Solver init triggered for " + solver.getOwner() + ". (separate=" + solver.isSeparateSolver() + ")");
+        if (solver.isSeparateSolver()) return;
+        System.err.println("[NIM] Solver init triggered for " + solver.getOwner());
         super.initSolver(solver);
     }
 
     @Override
     public void solverStart(ModuleSolver solver) {
-        System.err.println("[NIM] Solver start triggered for " + solver.getOwner() + " (separate=" + solver.isSeparateSolver() + ")");
+        if (solver.isSeparateSolver()) return;
+        System.err.println("[NIM] Solver start triggered for " + solver.getOwner());
         super.solverStart(solver);
     }
 
     @Override
     public void solverDone(ModuleSolver solver, MSolverResult result) {
-        System.err.println("[NIM] Solver done triggered for " + solver.getOwner() + " (separate=" + solver.isSeparateSolver() + ")");
         if (solver.isSeparateSolver()) return;
+        System.err.println("[NIM] Solver done triggered for " + solver.getOwner());
         
         results.put(solver.getOwner(), result);
         super.solverDone(solver, result);

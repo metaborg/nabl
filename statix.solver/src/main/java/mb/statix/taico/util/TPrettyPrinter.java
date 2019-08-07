@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.IUnifier;
@@ -25,6 +27,7 @@ public class TPrettyPrinter {
     private static Map<Scope, Integer> scopeNumbers = new HashMap<>();
     private static Context context;
     private static int scopeCounter;
+    private static boolean fixScopeNumbers;
     private static final IUnifier NULL_UNIFIER = PersistentUnifier.Immutable.of();
     
     //Matchers
@@ -34,26 +37,16 @@ public class TPrettyPrinter {
             M.appl1("Label", M.stringValue(), (t, s) -> s),
             M.appl0("Decl", t -> "decl"));
     
-    /**
-     * Prints the given iterable by applying the given function to each element.
-     * 
-     * @param iterable
-     *      the iterable
-     * @param function
-     *      the function
-     * 
-     * @return
-     *      the string [a, b, ..., n]
-     */
-    public static <T> String print(Iterable<T> iterable, Function<T, String> function) {
-        StringBuilder sb = new StringBuilder("[");
-        for (T t : iterable) {
-            sb.append(function.apply(t));
-            sb.append(", ");
-        }
-        if (sb.length() > 1) sb.setLength(sb.length() - 2);
-        sb.append(']');
-        return sb.toString();
+    public static void fixScopeNumbers() {
+        fixScopeNumbers = true;
+        scopeCounter = 0;
+        context = Context.context();
+    }
+    
+    public static void unfixScopeNumbers() {
+        fixScopeNumbers = false;
+        scopeCounter = 0;
+        context = Context.context();
     }
     
     /**
@@ -112,7 +105,7 @@ public class TPrettyPrinter {
      */
     public static int scopeNumber(Scope scope) {
         //Reset
-        if (context != Context.context()) {
+        if (!fixScopeNumbers && context != Context.context()) {
             scopeNumbers.clear();
             context = Context.context();
             scopeCounter = 0;
@@ -121,27 +114,49 @@ public class TPrettyPrinter {
         return scopeNumbers.computeIfAbsent(scope, s -> scopeCounter++);
     }
     
-    public static String printModule(IModule module) {
-        if (moduleUniqueness()) {
-            return module.getName();
+    public static String printModule(IModule module, boolean longFormat) {
+        //Root modules       -> ~
+        //Module for project -> <project> / ~%<project>
+        //Unique modules     -> module name
+        //Other              -> short path
+        if (module.getParentId() == null) {
+            return "~";
+        } else if (!longFormat && moduleUniqueness()) {
+            if (module.getName().equals("||")) {
+                return "<project>";
+            } else {
+                return module.getName();
+            }
         } else {
             return printModule(module.getId());
         }
     }
     
-    public static String printModule(String module) {
-        if (moduleUniqueness()) {
-            return ModulePaths.getName(module);
-        }
-
-        //We want to cut off the root string, and replace it with ~
+    public static String printModule(String module, boolean longFormat) {
+        //Root modules       -> ~
+        //Module for project -> <project> / ~%<project>
+        //Unique modules     -> module name
+        //Other              -> short path
         String root = Context.context().getRootModule().getId();
         if (root.length() == module.length()) {
             //For the root module itself, just print ~
             return "~";
-            //sb.append(base.replace("eclipse:///", ""));
         }
-        return new StringBuilder("~").append(module, root.length(), module.length()).toString();
+        
+        String module2 = module.replace("||", "<project>");
+        if (!longFormat && moduleUniqueness()) {
+            return ModulePaths.getName(module2);
+        }
+        
+        return new StringBuilder("~").append(module2, root.length(), module2.length()).toString();
+    }
+    
+    public static String printModule(IModule module) {
+        return printModule(module, false);
+    }
+    
+    public static String printModule(String module) {
+        return printModule(module, false);
     }
     
     public static String printLabel(ITerm term) {
@@ -209,11 +224,22 @@ public class TPrettyPrinter {
         return printScopeFancy(scope) + " -" + printLabel(label) + "->";
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Printing objects
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Pretty prints the given object using with an empty unifier within the current context.
+     */
     public static String prettyPrint(Object object) {
         return prettyPrint(object, NULL_UNIFIER);
     }
     
+    /**
+     * Pretty prints the given object using the given unifier within the current context.
+     */
     public static String prettyPrint(Object object, IUnifier unifier) {
+        if (object instanceof IModule) return printModule((IModule) object);
         if (object instanceof Scope) return printScope((Scope) object);
         if (object instanceof ITerm) return printTerm((ITerm) object, unifier);
         if (object instanceof Entry) {
@@ -247,6 +273,7 @@ public class TPrettyPrinter {
             IRelation3<Object, ?, ?> rel = (IRelation3<Object, ?, ?>) object;
             StringBuilder sb = new StringBuilder("{");
             for (Object key : rel.keySet()) {
+                int len = sb.length();
                 for (Entry<?, ?> obj : rel.get(key)) {
                     sb.append('(');
                     sb.append(prettyPrint(key, unifier));
@@ -254,8 +281,9 @@ public class TPrettyPrinter {
                     sb.append(prettyPrint(obj.getKey(), unifier));
                     sb.append(")=");
                     sb.append(prettyPrint(obj.getValue(), unifier));
+                    sb.append(", ");
                 }
-                sb.append(", ");
+                if (sb.length() == len) sb.append(", ");
             }
             if (sb.length() > 2) sb.setLength(sb.length() - 2);
             sb.append('}');
@@ -263,6 +291,36 @@ public class TPrettyPrinter {
         }
         
         return object.toString();
+    }
+    
+    /**
+     * Pretty prints the given object using the given unifier within the given context.
+     */
+    public static String prettyPrint(Object object, IUnifier unifier, @Nullable Context context) {
+        if (context == null) return prettyPrint(object, unifier);
+        return Context.executeInContext(context, () -> prettyPrint(object, unifier));
+    }
+    
+    /**
+     * Prints the given iterable by applying the given function to each element.
+     * 
+     * @param iterable
+     *      the iterable
+     * @param function
+     *      the function
+     * 
+     * @return
+     *      the string [a, b, ..., n]
+     */
+    public static <T> String print(Iterable<T> iterable, Function<T, String> function) {
+        StringBuilder sb = new StringBuilder("[");
+        for (T t : iterable) {
+            sb.append(function.apply(t));
+            sb.append(", ");
+        }
+        if (sb.length() > 1) sb.setLength(sb.length() - 2);
+        sb.append(']');
+        return sb.toString();
     }
     
     // --------------------------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import mb.statix.taico.util.TOverrides;
 import mb.statix.taico.util.Vars;
 
 public class DistributedUnifier {
+    public static final DistributedUnifier.Immutable NULL_UNIFIER = Immutable.of("|~|%|~|");
 
     public static class Immutable extends PersistentUnifier.Immutable {
 

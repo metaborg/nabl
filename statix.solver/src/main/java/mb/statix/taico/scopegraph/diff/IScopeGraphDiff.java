@@ -1,14 +1,21 @@
 package mb.statix.taico.scopegraph.diff;
 
 import static mb.statix.taico.util.TPrettyPrinter.prettyPrint;
+import static mb.statix.taico.util.TPrettyPrinter.fixScopeNumbers;
+import static mb.statix.taico.util.TPrettyPrinter.unfixScopeNumbers;
 
 import java.io.PrintStream;
 import java.util.Set;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import com.google.common.collect.Sets;
 
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.taico.name.Name;
+import mb.statix.taico.solver.Context;
 
 /**
  * Interface to represent a diff of scope graphs
@@ -143,7 +150,6 @@ public interface IScopeGraphDiff<S extends D, L, D> {
                 Sets.union(getRemovedDataNames().valueSet(), getChangedDataNames().valueSet()));
     }
     
-    
     /**
      * Prints this diff to the given stream. Please note that this method can lock the given stream
      * for quite a while.
@@ -154,42 +160,82 @@ public interface IScopeGraphDiff<S extends D, L, D> {
      *      the indentation before the bar
      */
     public default void print(PrintStream stream, int indent) {
+        IUnifier unifier = PersistentUnifier.Immutable.of();
+        Context context = Context.context();
+        print(stream, indent, unifier, context, unifier, context);
+    }
+    
+    /**
+     * Prints this diff to the given stream. Please note that this method can lock the given stream
+     * for quite a while.
+     * 
+     * @param stream
+     *      the stream to print to
+     * @param indent
+     *      the indentation before the bar
+     * @param aUnifier
+     *      the unifier for added elements
+     * @param aContext
+     *      the context for the added unifier
+     * @param rUnifier
+     *      the unifier for removed elements
+     * @param rContext
+     *      the context for removed unifier
+     */
+    public default void print(PrintStream stream, int indent, IUnifier aUnifier, @Nullable Context aContext, IUnifier rUnifier, @Nullable Context rContext) {
+        if (aContext == null) aContext = Context.context();
+        if (rContext == null) rContext = aContext;
+        
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < indent; i++) {
             sb.append("| ");
         }
-        String base = sb.toString();
+        final String base = sb.toString();
+        
+        fixScopeNumbers();
+        final String as = prettyPrint(getAddedScopes(), aUnifier, aContext);
+        final String rs = prettyPrint(getRemovedScopes(), rUnifier, rContext);
+        final String ae = prettyPrint(getAddedEdges(), aUnifier, aContext);
+        final String re = prettyPrint(getRemovedEdges(), rUnifier, rContext);
+        final String ad = prettyPrint(getAddedData(), aUnifier, aContext);
+        final String rd = prettyPrint(getRemovedData(), rUnifier, rContext);
+        final String adn = prettyPrint(getAddedDataNames(), aUnifier, aContext);
+        final String rdn = prettyPrint(getRemovedDataNames(), rUnifier, rContext);
+        final String cdn = prettyPrint(getChangedDataNames(), aUnifier, aContext);
+        unfixScopeNumbers();
+        
+        //Print as one large block
         synchronized (stream) {
             stream.print(base);
             stream.print("addedScopes=");
-            stream.println(prettyPrint(getAddedScopes()));
+            stream.println(as);
             stream.print(base);
             stream.print("removedScopes=");
-            stream.println(prettyPrint(getRemovedScopes()));
+            stream.println(rs);
             
             stream.print(base);
             stream.print("addedEdges=");
-            stream.println(prettyPrint(getAddedEdges()));
+            stream.println(ae);
             stream.print(base);
             stream.print("removedEdges=");
-            stream.println(prettyPrint(getRemovedEdges()));
+            stream.println(re);
             
             stream.print(base);
             stream.print("addedData=");
-            stream.println(prettyPrint(getAddedData()));
+            stream.println(ad);
             stream.print(base);
             stream.print("removedData=");
-            stream.println(prettyPrint(getRemovedData()));
+            stream.println(rd);
             
             stream.print(base);
             stream.print("addedDataNames=");
-            stream.println(prettyPrint(getAddedDataNames()));
+            stream.println(adn);
             stream.print(base);
             stream.print("removedDataNames=");
-            stream.println(prettyPrint(getRemovedDataNames()));
+            stream.println(rdn);
             stream.print(base);
             stream.print("changedDataNames=");
-            stream.println(prettyPrint(getChangedDataNames()));
+            stream.println(cdn);
         }
     }
     
@@ -203,5 +249,17 @@ public interface IScopeGraphDiff<S extends D, L, D> {
         + ",\n addedDataNames=" + prettyPrint(getAddedDataNames())
         + ",\n removedDataNames=" + prettyPrint(getRemovedDataNames())
         + ",\n changedDataNames=" + prettyPrint(getChangedDataNames()) + "]";
+    }
+    
+    public default String print(IUnifier aUnifier, Context cAdded, IUnifier rUnifier, Context cRemoved) {
+        return "IScopeGraphDiff [addedScopes=" + prettyPrint(getAddedScopes(), aUnifier, cAdded)
+        + ",\n removedScopes=" + prettyPrint(getRemovedScopes(), rUnifier, cRemoved)
+        + ",\n addedEdges=" + prettyPrint(getAddedEdges(), aUnifier, cAdded)
+        + ",\n removedEdges=" + prettyPrint(getRemovedEdges(), rUnifier, cRemoved)
+        + ",\n addedData=" + prettyPrint(getAddedData(), aUnifier, cAdded)
+        + ",\n removedData=" + prettyPrint(getRemovedData(), rUnifier, cRemoved)
+        + ",\n addedDataNames=" + prettyPrint(getAddedDataNames(), aUnifier, cAdded)
+        + ",\n removedDataNames=" + prettyPrint(getRemovedDataNames(), rUnifier, cRemoved)
+        + ",\n changedDataNames=" + prettyPrint(getChangedDataNames(), aUnifier, cAdded) + "]";
     }
 }

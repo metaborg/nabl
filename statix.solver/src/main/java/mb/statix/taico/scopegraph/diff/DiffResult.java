@@ -1,5 +1,7 @@
 package mb.statix.taico.scopegraph.diff;
 
+import static mb.statix.taico.util.TPrettyPrinter.*;
+
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.Collections;
@@ -10,6 +12,8 @@ import java.util.Map.Entry;
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.scopegraph.IMInternalScopeGraph;
+import mb.statix.taico.solver.Context;
+import mb.statix.taico.unifier.DistributedUnifier;
 
 /**
  * Class which holds the results of a diff on scope graph. This diff contains
@@ -100,22 +104,30 @@ public class DiffResult implements Serializable {
     }
     
     public void print(PrintStream stream) {
+        final Context context = Context.context();
+        
         stream.println("Diff:");
         stream.println("| Added Modules:");
         for (String module : addedModules.keySet()) {
-            stream.println("| | " + module);
+            stream.println("| | " + printModule(module, true));
         }
         stream.println("| Removed Modules:");
         for (String module : removedModules.keySet()) {
-            stream.println("| | " + module);
+            stream.println("| | " + printModule(module, true));
         }
         stream.println("| Scope graph diffs");
         for (Entry<String, IScopeGraphDiff<Scope, ITerm, ITerm>> entry : diffs.entrySet()) {
+            final String module = entry.getKey();
+            
             if (entry.getValue().isEmpty()) {
-                stream.println("| | " + entry.getKey() + ": UNCHANGED");
+                stream.println("| | " + printModule(module, true) + ": UNCHANGED");
             } else {
-                stream.println("| | " + entry.getKey() + ":");
-                entry.getValue().print(stream, 3);
+                stream.println("| | " + printModule(module, true) + ":");
+                entry.getValue().print(stream, 3,
+                        context.getUnifierOrDefault(module, DistributedUnifier.NULL_UNIFIER),
+                        context,
+                        context.getOldUnifierOrDefault(module, DistributedUnifier.NULL_UNIFIER),
+                        context.getOldContext().orElse(null));
             }
         }
     }
