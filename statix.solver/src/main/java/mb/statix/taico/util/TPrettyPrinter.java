@@ -31,7 +31,8 @@ public class TPrettyPrinter {
     private static final IUnifier NULL_UNIFIER = PersistentUnifier.Immutable.of();
     
     //Matchers
-    public static final IMatcher<String> SCOPE = Scope.matcher().map(TPrettyPrinter::printScopeFancy);
+    public static final IMatcher<String> SCOPE = Scope.matcher().map(TPrettyPrinter::printScope);
+    public static final IMatcher<String> SCOPE_FANCY = Scope.matcher().map(TPrettyPrinter::printScopeFancy);
     public static final IMatcher<String> VAR = M.var(v -> "?" + printModule(v.getResource()) + "-" + v.getName());
     public static final IMatcher<String> LABEL = M.cases(
             M.appl1("Label", M.stringValue(), (t, s) -> s),
@@ -170,6 +171,14 @@ public class TPrettyPrinter {
     public static String printTerm(ITerm term, IUnifier unifier) {
         try {
             return term(unifier).match(term, unifier).get();
+        } catch (IllegalStateException ex) {
+            return term.toString();
+        }
+    }
+    
+    public static String printTerm(ITerm term, IUnifier unifier, boolean fancyScopes) {
+        try {
+            return term(unifier, fancyScopes).match(term, unifier).get();
         } catch (IllegalStateException ex) {
             return term.toString();
         }
@@ -328,15 +337,31 @@ public class TPrettyPrinter {
     // --------------------------------------------------------------------------------------------
     
     /**
+     * @param unifier
+     *      the unifier to use for variables
+     * 
      * @return
      *      a matcher which converts any statix term to a string
      */
     public static IMatcher<String> term(IUnifier unifier) {
+        return term(unifier, false);
+    }
+    
+    /**
+     * @param unifier
+     *      the unifier to use for variables
+     * @param fancyScopes
+     *      if true, scopes are printed fancily
+     * 
+     * @return
+     *      a matcher which converts any statix term to a string
+     */
+    public static IMatcher<String> term(IUnifier unifier, boolean fancyScopes) {
         //@formatter:off
         return M.cases(
                 M.stringValue(),
                 LABEL,
-                SCOPE,
+                fancyScopes ? SCOPE_FANCY : SCOPE,
                 occurrence(unifier),
                 list(unifier),
                 tuple(unifier),
@@ -375,6 +400,10 @@ public class TPrettyPrinter {
     
     public static IMatcher<String> scope() {
         return SCOPE;
+    }
+    
+    public static IMatcher<String> scopeFancy() {
+        return SCOPE_FANCY;
     }
     
     // --------------------------------------------------------------------------------------------

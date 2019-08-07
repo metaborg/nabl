@@ -464,7 +464,7 @@ public class DotPrinter {
      *      the label of the data node
      */
     private final String dataLabel(ITerm data) {
-        return escape(trim(TPrettyPrinter.printTerm(data, unifier)));
+        return escape(trim(TPrettyPrinter.printTerm(data, unifier, true)));
     }
     
     /**
