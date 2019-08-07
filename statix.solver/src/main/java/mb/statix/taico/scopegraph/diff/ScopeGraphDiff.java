@@ -107,36 +107,89 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
     }
     
     // --------------------------------------------------------------------------------------------
+    // Modifications
+    // --------------------------------------------------------------------------------------------
+    
+    private void addEdge(Scope source, ITerm label, Scope target) {
+        if (removedEdges.contains(source, label, target)) {
+            removedEdges.remove(source, label, target);
+        } else {
+            addedEdges.put(source, label, target);
+        }
+    }
+    
+    private void removeEdge(Scope source, ITerm label, Scope target) {
+        if (addedEdges.contains(source, label, target)) {
+            addedEdges.remove(source, label, target);
+        } else {
+            removedEdges.put(source, label, target);
+        }
+    }
+    
+    private void addData(Scope source, ITerm label, ITerm data) {
+        if (removedData.contains(source, label, data)) {
+            removedData.remove(source, label, data);
+        } else {
+            addedData.put(source, label, data);
+        }
+    }
+    
+    private void removeData(Scope source, ITerm label, ITerm data) {
+        if (addedData.contains(source, label, data)) {
+            addedData.remove(source, label, data);
+        } else {
+            removedData.put(source, label, data);
+        }
+    }
+    
+    private void addDataName(Scope source, ITerm label, Name name) {
+        if (removedDataNames.contains(source, label, name)) {
+            removedDataNames.remove(source, label, name);
+        } else {
+            addedDataNames.put(source, label, name);
+        }
+    }
+    
+    private void removeDataName(Scope source, ITerm label, Name name) {
+        if (addedDataNames.contains(source, label, name)) {
+            addedDataNames.remove(source, label, name);
+        } else {
+            removedDataNames.put(source, label, name);
+        }
+    }
+    
+    // --------------------------------------------------------------------------------------------
     // Other
     // --------------------------------------------------------------------------------------------
     
+
     @Override
     public void toEffectiveDiff(DiffResult target) {
         for (Scope scope : addedEdges.keySet()) {
             ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
             for (Entry<ITerm, Scope> entry : addedEdges.get(scope)) {
-                diff.addedEdges.put(scope, entry.getKey(), entry.getValue());
+                diff.addEdge(scope, entry.getKey(), entry.getValue());
             }
         }
         
         for (Scope scope : removedEdges.keySet()) {
             ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
             for (Entry<ITerm, Scope> entry : removedEdges.get(scope)) {
-                diff.removedEdges.put(scope, entry.getKey(), entry.getValue());
+                diff.removeEdge(scope, entry.getKey(), entry.getValue());
             }
         }
         
         for (Scope scope : addedData.keySet()) {
             ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
             for (Entry<ITerm, ITerm> entry : addedData.get(scope)) {
-                diff.addedData.put(scope, entry.getKey(), entry.getValue());
+                diff.addData(scope, entry.getKey(), entry.getValue());
             }
         }
         
         for (Scope scope : removedData.keySet()) {
             ScopeGraphDiff diff = target.getOrCreateDiff(scope.getResource());
             for (Entry<ITerm, ITerm> entry : removedData.get(scope)) {
-                diff.removedData.put(scope, entry.getKey(), entry.getValue());
+                diff.removeData(scope, entry.getKey(), entry.getValue());
             }
         }
         
