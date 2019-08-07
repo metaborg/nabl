@@ -52,6 +52,7 @@ public class ModuleSolver implements IOwnable {
     private boolean separateSolver;
     private boolean init;
     private boolean splitCheck;
+    private boolean noopSolver;
     
     private IsComplete isComplete;
     
@@ -149,6 +150,7 @@ public class ModuleSolver implements IOwnable {
     public ModuleSolver noopSolver(IMState state) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
+        solver.noopSolver = true;
         this.state.coordinator().addSolver(solver);
         return solver;
     }
@@ -168,6 +170,7 @@ public class ModuleSolver implements IOwnable {
     public ModuleSolver noopSolver(IMState state, MSolverResult result) {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
+        solver.noopSolver = true;
         solver.constraints.fillFromResult(result);
         solver.completeness.fillFromResult(result);
         solver.fillFailedFromResult(result);
@@ -251,6 +254,14 @@ public class ModuleSolver implements IOwnable {
      */
     public boolean isSeparateSolver() {
         return separateSolver;
+    }
+    
+    /**
+     * @return
+     *      true if this solver is a no-op solver
+     */
+    public boolean isNoopSolver() {
+        return noopSolver;
     }
     
     /**
