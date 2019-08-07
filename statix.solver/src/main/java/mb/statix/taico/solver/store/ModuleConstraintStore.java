@@ -492,6 +492,25 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     /**
+     * Activates all the (variable) observers of this store.
+     */
+    public void activateAllObservers() {
+        for (Entry<ITermVar, ModuleConstraintStore> entry : varObservers.entries()) {
+            entry.getValue().activateFromVar(entry.getKey(), TDebug.DEV_OUT);
+        }
+    }
+    
+    /**
+     * Transfers all the observers to the given store.
+     * 
+     * @param store
+     *      the store
+     */
+    public void transferAllObservers(ModuleConstraintStore store) {
+        store.varObservers.putAll(this.varObservers);
+    }
+    
+    /**
      * @param edge
      *      the edge
      * 

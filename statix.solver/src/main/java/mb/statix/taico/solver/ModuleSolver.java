@@ -188,12 +188,26 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
-     * Cleans up this solver (removes from the completeness) in order for it to be replaced with
-     * a different solver.
+     * Cleans up this solver in order for it to be replaced with a different solver.
+     * 
+     * This cleans the completeness and activates all observers.
      */
     public void cleanUpForReplacement() {
         System.err.println("Cleaning up solver of " + getOwner() + " for replacement solver");
         completeness.removeAll(constraints.delayedConstraints(), state.unifier());
+        constraints.activateAllObservers();
+    }
+    
+    /**
+     * Cleans up this solver in order for it to be replaced with the given solver.
+     * 
+     * This cleans the completeness and transfers observers.
+     */
+    public void cleanUpForReplacement(ModuleSolver replacement) {
+        System.err.println("Cleaning up solver of " + getOwner() + " for replacement solver");
+        completeness.removeAll(constraints.delayedConstraints(), state.unifier());
+        //TODO It is possible that requests will never be answered because the variable in question no longer exists.
+        constraints.transferAllObservers(replacement.constraints);
     }
 
     /**
