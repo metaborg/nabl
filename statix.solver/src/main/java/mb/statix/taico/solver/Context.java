@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,9 +16,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.Sets;
 
-import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CTrue;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
@@ -32,17 +29,15 @@ import mb.statix.taico.incremental.strategy.IncrementalStrategy;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleManager;
 import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.scopegraph.IMInternalScopeGraph;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.coordinator.ISolverCoordinator;
 import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.unifier.DistributedUnifier;
 
 /**
  * Class to represent the context. The context keeps track of all information necessary for
  * modular solving.
  */
-public class Context implements Serializable {
+public class Context implements IContext, Serializable {
     private static final long serialVersionUID = 1L;
     
     private final transient IncrementalStrategy strategy;
@@ -65,14 +60,9 @@ public class Context implements Serializable {
         this.dependencies = strategy.createDependencyManager();
     }
     
-    /**
-     * NOTE: This method should only be used by the strategy.
-     * 
-     * @return
-     *      the old context
-     */
-    public Optional<Context> getOldContext() {
-        return Optional.ofNullable(oldContext);
+    @Override
+    public @Nullable Context getOldContext() {
+        return oldContext;
     }
     
     /**
@@ -274,8 +264,17 @@ public class Context implements Serializable {
      * @see ModuleManager#getModulesOnLevel(int)
      */
     public Map<String, IModule> getModulesOnLevel(int level) {
-        //TODO IMPORTANT does not include old modules
         return manager.getModulesOnLevel(level);
+    }
+    
+    /**
+     * @return
+     *      a map from module NAME to module
+     * 
+     * @see ModuleManager#getModulesOnLevel(int, boolean)
+     */
+    public Map<String, IModule> getModulesOnLevel(int level, boolean includeSplitModules) {
+        return manager.getModulesOnLevel(level, includeSplitModules);
     }
     
     /**
@@ -328,26 +327,9 @@ public class Context implements Serializable {
     // States
     // --------------------------------------------------------------------------------------------
     
-    /**
-     * @param module
-     *      the id of the module
-     * 
-     * @return
-     *      the state associated with the given module in the current context
-     */
+    @Override
     public IMState getState(String moduleId) {
         return states.get(moduleId);
-    }
-    
-    /**
-     * @param module
-     *      the module
-     * 
-     * @return
-     *      the state associated with the given module in the current context
-     */
-    public IMState getState(IModule module) {
-        return states.get(module.getId());
     }
     
     /**
@@ -384,93 +366,6 @@ public class Context implements Serializable {
         setState(oldModule, newState);
         if (!manager.hasModule(oldModule.getId())) addModule(oldModule);
         return newState;
-    }
-    
-    // --------------------------------------------------------------------------------------------
-    // Scope Graphs
-    // --------------------------------------------------------------------------------------------
-    
-    /**
-     * @param id
-     *      the id of the module
-     * 
-     * @return
-     *      the scope graph of the given module in the current context
-     */
-    public IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph(String id) {
-        IMState state = getState(id);
-        return state == null ? null : state.scopeGraph();
-    }
-    
-    /**
-     * @param id
-     *      the id of the module
-     * 
-     * @return
-     *      the scope graph of the given module in the previous context
-     */
-    public IMInternalScopeGraph<Scope, ITerm, ITerm> getOldScopeGraph(String id) {
-        if (oldContext == null) return null;
-        
-        return oldContext.getScopeGraph(id);
-    }
-    
-    // --------------------------------------------------------------------------------------------
-    // Unifiers
-    // --------------------------------------------------------------------------------------------
-    
-    /**
-     * @param id
-     *      the id of the module
-     * 
-     * @return
-     *      the unifier of the given module in the current context, or null if there is none
-     */
-    public DistributedUnifier.Immutable getUnifier(String id) {
-        IMState state = getState(id);
-        return state == null ? null : state.unifier();
-    }
-    
-    /**
-     * @param id
-     *      the id of the module
-     * @param def
-     *      the unifier to return if there is no state for the given module
-     * 
-     * @return
-     *      the unifier of the given module in the current context, or def if there is none
-     */
-    public DistributedUnifier.Immutable getUnifierOrDefault(String id, DistributedUnifier.Immutable def) {
-        IMState state = getState(id);
-        return state == null ? def : state.unifier();
-    }
-    
-    /**
-     * @param id
-     *      the id of the module
-     * 
-     * @return
-     *      the unifier of the given module in the previous context, or null if there is none
-     */
-    public DistributedUnifier.Immutable getOldUnifier(String id) {
-        if (oldContext == null) return null;
-        
-        return oldContext.getUnifier(id);
-    }
-    
-    /**
-     * @param id
-     *      the id of the module
-     * @param def
-     *      the default unifier
-     * 
-     * @return
-     *      the unifier of the given module in the previous context, or def if there is none
-     */
-    public DistributedUnifier.Immutable getOldUnifierOrDefault(String id, DistributedUnifier.Immutable def) {
-        if (oldContext == null) return null;
-        
-        return oldContext.getUnifierOrDefault(id, def);
     }
     
     // --------------------------------------------------------------------------------------------
