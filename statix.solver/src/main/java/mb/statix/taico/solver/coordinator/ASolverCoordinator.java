@@ -136,7 +136,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         
         runToCompletion();
         
-        return collectResults(modules.keySet());
+        return collectResults();
     }
     
     /**
@@ -284,29 +284,29 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     
     /**
      * Creates a map with all the results from module <b>NAME</b> to solver result.
-     * The returned map will only contain results for modules present in the given collection. 
-     * 
-     * @param modules
-     *      the modules to return results for
+     * The returned map will only contain results for top level modules that are not split modules.
      * 
      * @return
      *      the results of the given modules
      */
-    protected Map<String, ISolverResult> collectResults(Collection<IModule> modules) {
+    protected Map<String, ISolverResult> collectResults() {
+        Collection<IModule> expectedResults = context.getModulesOnLevel(1, false).values();
         Map<String, ISolverResult> results = new HashMap<>();
-        for (Entry<IModule, MSolverResult> entry : getResults().entrySet()) {
-            //Skip all modules that are not in the initial set.
-            if (!modules.contains(entry.getKey())) continue;
+        Map<IModule, ? extends ISolverResult> mResults = getResults();
+        for (Entry<IModule, ? extends ISolverResult> entry : mResults.entrySet()) {
+            final IModule fileModule = entry.getKey();
             
-            IModule fileModule = entry.getKey();
+            //Skip all modules that are not top level
+            if (!expectedResults.contains(fileModule)) continue;
+            
+            final ISolverResult fileResult = entry.getValue();
             Set<IConstraint> errors = new LinkedHashSet<>();
             Map<IConstraint, Delay> delays = new LinkedHashMap<>();
-            ISolverResult fileResult = entry.getValue();
             errors.addAll(fileResult.errors());
             delays.putAll(fileResult.delays());
             
             for (IModule module : (Iterable<IModule>) fileModule.getDescendants()::iterator) {
-                ISolverResult result = getResults().get(module);
+                ISolverResult result = mResults.get(module);
                 errors.addAll(result.errors());
                 delays.putAll(result.delays());
             }
@@ -323,15 +323,16 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
      */
     protected MSolverResult aggregateResults() {
         //If there is only one result, we have nothing to aggregate
-        if (getResults().size() == 1) {
-            return getResults().values().stream().findFirst().get();
+        Map<IModule, MSolverResult> results = getResults();
+        if (results.size() == 1) {
+            return results.values().stream().findFirst().get();
         }
         
         //TODO Instead of aggregating results, we should perhaps return the results of the top module?
         Set<IConstraint> errors = new LinkedHashSet<>();
         Map<IConstraint, Delay> delays = new LinkedHashMap<>();
-        Map<ITermVar, ITermVar> existentials = getResults().get(root.getOwner()).existentials();
-        for (Entry<IModule, MSolverResult> result : getResults().entrySet()) {
+        Map<ITermVar, ITermVar> existentials = results.get(root.getOwner()).existentials();
+        for (Entry<IModule, MSolverResult> result : results.entrySet()) {
             errors.addAll(result.getValue().errors());
             delays.putAll(result.getValue().delays());
         }
