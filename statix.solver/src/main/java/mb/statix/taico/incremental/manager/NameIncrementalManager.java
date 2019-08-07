@@ -31,6 +31,8 @@ import mb.statix.taico.scopegraph.diff.IScopeGraphDiff;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
+import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.Modules;
 
 public class NameIncrementalManager extends IncrementalManager {
@@ -97,10 +99,12 @@ public class NameIncrementalManager extends IncrementalManager {
         phaseCounter++;
         setPhase(phaseCounter);
         phases.putAll(phaseCounter, modules);
+        
+        System.err.println("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
+        
         processedModules.addAll(modules);
         redoReasons.clear();
         
-        System.err.println("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
         System.err.println("[NIM] Starting phase " + phaseCounter + " with modules " + modules);
         
         context().getCoordinator().preventSolverStart();
@@ -109,12 +113,46 @@ public class NameIncrementalManager extends IncrementalManager {
             if (init == null) init = module.getInitialization();
             
             ModuleSolver parentSolver = context().getState(module.getParentId()).solver();
-            ModuleSolver oldSolver = context().getState(module).solver();
-            parentSolver.childSolver(module.getCurrentState(), init);
-            if (oldSolver != null) oldSolver.cleanUpForReplacement();
+            ModuleSolver oldSolver = context().getSolver(module);
+            ModuleSolver newSolver = parentSolver.childSolver(module.getCurrentState(), init);
+            if (oldSolver != null) oldSolver.cleanUpForReplacement(newSolver);
+            
+            resetChildren(module);
+            //TODO IMPORTANT #12 We need to remove the child modules, (remove their state / reset their state). Otherwise we can get stale values from the children, breaking the solving process!.
         }
         context().getCoordinator().allowSolverStart();
         System.err.println("[NIM] Phase " + phaseCounter + " started");
+    }
+    
+    /**
+     * Each child module needs to have a "clean" state at the start of the solving phase.
+     * Otherwise, it would be possible for other modules to use outdated results of modules that
+     * will be redone. We need to bring their availability to "does not exist yet" as normal.
+     * 
+     * Currently, this method only clears the unifier of the module.
+     * 
+     * @param module
+     */
+    private void resetChildren(IModule module) {
+        Context context = context();
+        for (IModule child : (Iterable<IModule>) module.getDescendants()::iterator) {
+            IMState state = context.getState(child);
+            if (state == null) continue;
+            
+            state.setUnifier(DistributedUnifier.Immutable.of(child.getId()));
+            
+            //Normally, the only way to obtain a variable from a child module is when that child
+            //module is already created.
+            
+            //The variable from the parent could then redirect to a child variable (unlikely), OR
+            //the child module introduces something into the scope graph that has that variable.
+            //In theory it should be good enough to just remove the module alltogether, since the
+            //requests for it's variables SHOULD be blocked by the completeness. However, I am not
+            //certain if this is the case.
+            
+            //A solution to this problem is to have it created, empty solver, empty unifier, and
+            //add constraints to it whenever the child module is actually created.
+        }
     }
 
     /**
