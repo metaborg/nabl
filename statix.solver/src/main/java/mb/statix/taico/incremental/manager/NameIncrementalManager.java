@@ -323,11 +323,20 @@ public class NameIncrementalManager extends IncrementalManager {
     @Override
     public boolean finishPhase(Set<ModuleSolver> finished, Set<ModuleSolver> failed,
             Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
-        int phase = getPhase();
-        System.err.println("[NIM] Finished phase " + phase);
+        final Set<IModule> actualModules = determineActualModules(finished, failed, stuck);
         
-        actualPhases.putAll(phase, results.keySet());
-        processedModules.addAll(results.keySet());
+        int phase = getPhase();
+        //TODO Check if we get results for the stub solvers that we created for the unchanged solvers. We want to ignore these.
+        System.err.println("[NIM] Finished phase " + phase + " with modules " + actualModules);
+        
+        actualPhases.putAll(phase, actualModules);
+        processedModules.addAll(actualModules);
+        
+        //Do not compute a diff if this was a clean run
+        if (actualModules.containsAll(context().getModulesOnLevel(1).values())) {
+            System.out.println("[NIM] Last phase was the equivalent of a clean run, solving done :/");
+            return false;
+        }
         
         Set<String> toRedoIds = diff(finished, failed, stuck, results);
         if (toRedoIds.isEmpty()) {
@@ -338,6 +347,23 @@ public class NameIncrementalManager extends IncrementalManager {
         Set<IModule> toRedo = normalizeToRedo(toRedoIds);
         startPhase(toRedo);
         return true;
+    }
+
+    private Set<IModule> determineActualModules(Set<ModuleSolver> finished, Set<ModuleSolver> failed, Set<ModuleSolver> stuck) {
+        Set<IModule> actualModules = new HashSet<>();
+        for (ModuleSolver solver : finished) {
+            if (solver.isNoopSolver()) continue;
+            actualModules.add(solver.getOwner());
+        }
+        for (ModuleSolver solver : failed) {
+            if (solver.isNoopSolver()) continue;
+            actualModules.add(solver.getOwner());
+        }
+        for (ModuleSolver solver : stuck) {
+            if (solver.isNoopSolver()) continue;
+            actualModules.add(solver.getOwner());
+        }
+        return actualModules;
     }
 
     // --------------------------------------------------------------------------------------------
