@@ -40,14 +40,16 @@ public class TPrettyPrinter {
     
     public static void fixScopeNumbers() {
         fixScopeNumbers = true;
-        scopeCounter = 0;
         context = Context.context();
     }
     
     public static void unfixScopeNumbers() {
         fixScopeNumbers = false;
-        scopeCounter = 0;
-        context = Context.context();
+        if (context != Context.context()) {
+            scopeNumbers.clear();
+            scopeCounter = 0;
+            context = Context.context();
+        }
     }
     
     /**

@@ -587,7 +587,12 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public String toString() {
-        return "SG<" + owner.getId() + ", " + id + "_" + copyId + ">";
+        return "SG<" +
+                "owner=" + TPrettyPrinter.printModule(owner) +
+                ", scopes=" + TPrettyPrinter.prettyPrint(scopes) +
+                ", edges=" + TPrettyPrinter.prettyPrint(edges) +
+                ", data=" + TPrettyPrinter.prettyPrint(data) +
+                ">";
     }
     
     // --------------------------------------------------------------------------------------------

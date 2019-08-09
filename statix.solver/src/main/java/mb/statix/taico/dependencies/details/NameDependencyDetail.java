@@ -56,4 +56,17 @@ public class NameDependencyDetail implements IDependencyDetail {
         if (name instanceof NameAndRelation) return (NameAndRelation) name;
         return name.withRelation(relation);
     }
+
+    @Override
+    public String toString() {
+        if (relation == null) return "Name<" + name + ">";
+        Name name;
+        if (this.name instanceof NameAndRelation) {
+            name = ((NameAndRelation) this.name).toName();
+        } else {
+            name = this.name;
+        }
+        
+        return "Name<" + name + " for " + relation + ">";
+    }
 }

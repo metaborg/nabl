@@ -11,6 +11,7 @@ import mb.statix.taico.dependencies.details.IDependencyDetail;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.Modules;
+import mb.statix.taico.util.TPrettyPrinter;
 
 /**
  * Class to represent dependencies of a module.
@@ -186,7 +187,7 @@ public class Dependencies implements Serializable {
      * @return
      *      the given dependency
      */
-    protected Dependency addDependant(String module, Dependency dependency) {
+    public Dependency addDependant(String module, Dependency dependency) {
         dependants.put(module, dependency);
         return dependency;
     }
@@ -213,5 +214,33 @@ public class Dependencies implements Serializable {
     @Override
     public String toString() {
         return dependencies.toString();
+    }
+
+    public String print(boolean pretty, int indent) {
+        StringBuilder base = new StringBuilder();
+        for (int i = 0; i < indent; i++) base.append("| ");
+        final String s = base.toString();
+        
+        final StringBuilder sb = new StringBuilder();
+        sb.append(s + "Dependencies of ");
+        sb.append(pretty ? TPrettyPrinter.printModule(owner) : owner);
+        sb.append(" {\n");
+        
+        sb.append(s + "| DEPENDENCIES: {\n");
+        for (Dependency dependency : dependencies.values()) {
+            sb.append(s + "| | ");
+            sb.append(dependency.print(pretty));
+            sb.append("\n");
+        }
+        sb.append(s + "| }\n");
+        sb.append(s + "| DEPENDANTS: {\n");
+        for (Dependency dependency : dependants.values()) {
+            sb.append(s + "| | ");
+            sb.append(dependency.print(pretty));
+            sb.append("\n");
+        }
+        sb.append(s + "| }\n");
+        sb.append(s + "}");
+        return sb.toString();
     }
 }

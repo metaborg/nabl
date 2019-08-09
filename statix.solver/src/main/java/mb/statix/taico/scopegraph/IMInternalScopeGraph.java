@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -16,6 +17,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.module.IModule;
+import mb.statix.taico.util.TPrettyPrinter;
 
 public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L, D> {
     /**
@@ -309,4 +311,54 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      *      the write lock for this scope graph (not for children)
      */
     Lock getWriteLock();
+
+    default String print(boolean pretty, int indent) {
+        if (pretty) TPrettyPrinter.fixScopeNumbers();
+        StringBuilder base = new StringBuilder();
+        for (int i = 0; i < indent; i++) base.append("| ");
+        final String s = base.toString();
+        
+        final StringBuilder sb = new StringBuilder();
+        sb.append(s + "ScopeGraph of ");
+        sb.append(pretty ? TPrettyPrinter.printModule(getOwner()) : getOwner());
+        sb.append(" {\n");
+        
+        sb.append(s + "| SCOPES: {\n");
+        for (S scope : getScopes()) {
+            sb.append(s + "| | ");
+            sb.append(pretty ? TPrettyPrinter.prettyPrint(scope) : scope);
+            sb.append("\n");
+        }
+        sb.append(s + "| }\n");
+        sb.append(s + "| EDGES: {\n");
+        for (S scope : getOwnEdges().keySet()) {
+            for (Entry<L, S> entry : getOwnEdges().get(scope)) {
+                sb.append(s + "| | ");
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(scope) : scope);
+                sb.append(" -");
+                sb.append(TPrettyPrinter.prettyPrint(entry.getKey()));
+                sb.append(" -> ");
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(entry.getValue()) : entry.getValue());
+                sb.append("\n");
+            }
+        }
+        sb.append(s + "| }\n");
+        sb.append(s + "| DATA: {\n");
+        for (S scope : getOwnData().keySet()) {
+            for (Entry<L, D> entry : getOwnData().get(scope)) {
+                sb.append(s + "| | ");
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(scope) : scope);
+                sb.append(" -");
+                sb.append(TPrettyPrinter.prettyPrint(entry.getKey()));
+                sb.append("-> ");
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(entry.getValue()) : entry.getValue());
+                sb.append("\n");
+            }
+        }
+        sb.append(s + "| }\n");
+        sb.append(s + "}");
+        
+        if (pretty) TPrettyPrinter.unfixScopeNumbers();
+        return sb.toString();
+    }
 }

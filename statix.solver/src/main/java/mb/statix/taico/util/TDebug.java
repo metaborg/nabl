@@ -1,5 +1,7 @@
 package mb.statix.taico.util;
 
+import static mb.statix.taico.util.TPrettyPrinter.printModule;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -105,5 +107,56 @@ public class TDebug {
     
     private static String sanitizeName(String name) {
         return name.replace("eclipse:///", "").replace("/", "").replace(":", "");
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Debugging
+    // --------------------------------------------------------------------------------------------
+    public static void out(Object msg) {
+        synchronized (System.err) {
+            System.out.println(msg);
+        }
+    }
+    
+    public static void err(Object msg) {
+        synchronized (System.out) {
+            System.err.println(msg);
+        }
+    }
+    
+    public static void debugContext(Context context, boolean pretty) {
+        System.out.println("Debug context " + System.identityHashCode(context));
+        
+        System.out.println("Modules: ");
+        IModule root = context.getRootModule();
+        printModuleHierarchy(root, 1);
+        
+        System.out.println("Unifiers: ");
+        for (IModule module : context.getModules()) {
+            System.out.println("| " + module + ":");
+            System.out.println(context.getUnifier(module).print(pretty, 2));
+        }
+        
+        System.out.println("Scope graphs: ");
+        for (IModule module : context.getModules()) {
+            System.out.println("| " + module + ":");
+            System.out.println(context.getScopeGraph(module).print(pretty, 2));
+        }
+        
+        System.out.println("Dependencies: ");
+        for (IModule module : context.getModules()) {
+            System.out.println("| " + module + ":");
+            System.out.println(context.getDependencies(module).print(pretty, 2));
+        }
+    }
+    
+    private static void printModuleHierarchy(IModule module, int indent) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < indent; i++) sb.append("| ");
+        sb.append(printModule(module));
+        System.out.println(sb.toString());
+        for (IModule child : module.getChildren()) {
+            printModuleHierarchy(child, indent + 1);
+        }
     }
 }

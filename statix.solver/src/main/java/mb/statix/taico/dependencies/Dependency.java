@@ -1,11 +1,13 @@
 package mb.statix.taico.dependencies;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import mb.statix.taico.dependencies.details.IDependencyDetail;
+import mb.statix.taico.util.TPrettyPrinter;
 
 /**
  * Class to model a dependency {@code A -> B} with details.
@@ -110,6 +112,14 @@ public class Dependency implements Serializable {
         return details.containsKey(clazz);
     }
     
+    /**
+     * @return
+     *      the details of this dependency
+     */
+    public Collection<IDependencyDetail> getDetails() {
+        return details.values();
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Object methods
     // --------------------------------------------------------------------------------------------
@@ -125,6 +135,22 @@ public class Dependency implements Serializable {
                 .collect(Collectors.joining(", "));
         
         return owner + " -> " + dependant + " | <" + detailString + ">";
+    }
+    
+    public String print(boolean pretty) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(pretty ? TPrettyPrinter.printModule(owner) : owner);
+        sb.append(" -> ");
+        sb.append(pretty ? TPrettyPrinter.printModule(dependant) : dependant);
+        if (!details.isEmpty()) {
+            sb.append(" | <");
+            String detailString = details.values().stream()
+                    .map(IDependencyDetail::toString)
+                    .collect(Collectors.joining(", "));
+            sb.append(detailString);
+            sb.append(">");
+        }
+        return sb.toString();
     }
     
     /**

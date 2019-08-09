@@ -13,7 +13,9 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.solver.state.IMState;
+import mb.statix.taico.util.TDebug;
 import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TPrettyPrinter;
 import mb.statix.taico.util.Vars;
 
 public class DistributedUnifier {
@@ -204,10 +206,7 @@ public class DistributedUnifier {
         
         private DistributedUnifier.Immutable getUnifier(IModule target) {
             IMState state = target.getCurrentState();
-            if (state == null) {
-                System.err.println("Current state of target is null: " + target + ", requester = " + owner);
-                return null;
-            }
+            if (state == null) return null;
             return state.unifier();
         }
         
@@ -253,6 +252,38 @@ public class DistributedUnifier {
         protected boolean allowCrossModuleUnification() {
             //TODO Base this on more info, e.g. only cross module unification for split modules
             return TOverrides.CROSS_MODULE_UNIFICATION;
+        }
+        
+        public String print(boolean pretty, int indent) {
+            StringBuilder base = new StringBuilder();
+            for (int i = 0; i < indent; i++) base.append("| ");
+            final String s = base.toString();
+            
+            final StringBuilder sb = new StringBuilder();
+            sb.append(s + "Unifier {\n");
+            sb.append(s + "| TERMS: {\n");
+            for(ITermVar var : terms().keySet()) {
+                sb.append(s + "| | ");
+                sb.append(var);
+                sb.append(" |-> ");
+                ITerm term = terms().get(var);
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(term) : term);
+                sb.append("\n");
+            }
+            sb.append(s + "| }\n");
+            
+            sb.append(s + "| REPS: {\n");
+            for(ITermVar var : reps().keySet()) {
+                sb.append(s + "| | ");
+                sb.append(var);
+                sb.append(" |-> ");
+                ITermVar rep = reps().get(var);
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(rep) : rep);
+                sb.append("\n");
+            }
+            sb.append(s + "| }\n");
+            sb.append(s + "}");
+            return sb.toString();
         }
     }
 
@@ -441,10 +472,7 @@ public class DistributedUnifier {
         
         private DistributedUnifier.Immutable getUnifier(IModule target) {
             IMState state = target.getCurrentState();
-            if (state == null) {
-                System.err.println("Current state of target is null: " + target + ", requester = " + owner);
-                return null;
-            }
+            if (state == null) return null;
             return state.unifier();
         }
         
