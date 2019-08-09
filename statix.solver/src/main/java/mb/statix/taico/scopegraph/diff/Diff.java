@@ -232,11 +232,11 @@ public class Diff {
      */
     protected static <S, L, D> IRelation3.Transient<S, L, D> getNew(IRelation3<S, L, D> oldRel, IRelation3<S, L, D> newRel) {
         IRelation3.Transient<S, L, D> added = HashTrieRelation3.Transient.of();
-        for (S s : oldRel.keySet()) {
-            for (Entry<L, D> entry : oldRel.get(s)) {
+        for (S s : newRel.keySet()) {
+            for (Entry<L, D> entry : newRel.get(s)) {
                 final L l = entry.getKey();
                 final D d = entry.getValue();
-                if (!newRel.contains(s, l, d)) added.put(s, l, d);
+                if (!oldRel.contains(s, l, d)) added.put(s, l, d);
             }
         }
         return added;
