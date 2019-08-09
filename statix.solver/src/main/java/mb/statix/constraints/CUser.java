@@ -35,6 +35,7 @@ import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.spec.ModuleBoundary;
+import mb.statix.taico.util.Scopes;
 
 /**
  * Implementation for a user constraint (rule application).
@@ -232,11 +233,7 @@ public class CUser implements IConstraint, Serializable {
     private IModule createChild(IMState state, ModuleBoundary rule, List<ITerm> newArgs,
             Tuple2<Immutable, IConstraint> appl) {
         //Determine the scopes that the child can extend (order matters)
-        List<Scope> canExtend = new ArrayList<>();
-        for (ITerm term : newArgs) {
-            Scope scope = Scope.matcher().match(term).orElse(null);
-            if (scope != null) canExtend.add(scope);
-        }
+        List<Scope> canExtend = Scopes.getScopeTerms(newArgs);
         
         //The name of the module has to be built
         String modName = rule.moduleString().build(appl._1());

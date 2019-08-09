@@ -2,7 +2,9 @@ package mb.statix.taico.util;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -194,6 +196,25 @@ public class Scopes {
      */
     public static IModule getOwner(IScope scope, String requester) throws ModuleDelayException {
         return Context.context().getModule(requester, scope.getResource());
+    }
+    
+    /**
+     * Returns a list of the terms in the given list that represent scopes.
+     * The order of the returned scopes corresponds to the original order.
+     * 
+     * @param terms
+     *      the terms
+     * 
+     * @return
+     *      the terms in the given list that represent scopes
+     */
+    public static List<Scope> getScopeTerms(List<ITerm> terms) {
+        List<Scope> scopes = new ArrayList<>();
+        for (ITerm term : terms) {
+            Scope scope = Scope.matcher().match(term).orElse(null);
+            if (scope != null) scopes.add(scope);
+        }
+        return scopes;
     }
     
     /**
