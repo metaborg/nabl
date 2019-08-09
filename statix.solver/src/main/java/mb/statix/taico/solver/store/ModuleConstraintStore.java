@@ -256,7 +256,9 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
 
         //TODO This checks if the event sending optimization is even worth it in these cases.
-        if (counter > 0) System.out.println("Caching stores for variable activation relieved " + counter + " notifications");
+        if (stores.size() > 0) {
+            System.out.println("Caching stores for variable activation relieved " + counter + " notifications");
+        }
         
         //Notify each store only once
         for (ModuleConstraintStore store : stores) {
