@@ -5,10 +5,18 @@ import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.regexp.impl.FiniteAlphabet;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.collections.HashTrieRelation3;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 import mb.statix.taico.module.IModule;
@@ -29,7 +37,19 @@ public class TestUtil {
     }
     
     public static Spec createSpec(ITerm noRelationLabel) {
-        return Spec.builder().noRelationLabel(noRelationLabel).labels(new FiniteAlphabet<>()).build();
+        return Spec.builder()
+                .noRelationLabel(noRelationLabel)
+                .labels(new FiniteAlphabet<>())
+                .build();
+    }
+    
+    public static Spec createSpec(ITerm noRelationLabel, ITerm edgeLabel, ITerm dataLabel) {
+        return Spec.builder()
+                .noRelationLabel(noRelationLabel)
+                .labels(new FiniteAlphabet<>(Iterables2.from(noRelationLabel, edgeLabel, dataLabel)))
+                .addEdgeLabels(edgeLabel)
+                .addRelationLabels(dataLabel)
+                .build();
     }
     
     /**
@@ -73,5 +93,76 @@ public class TestUtil {
      */
     public static <T> List<T> empty() {
         return Collections.emptyList();
+    }
+    
+    /**
+     * Convenient way to create a new set.
+     * 
+     * @param items
+     *      the items to add to the set
+     * 
+     * @return
+     *      a set with the given items
+     */
+    @SafeVarargs
+    public static <T> Set<T> set(T... items) {
+        return new HashSet<>(list(items));
+    }
+    
+    /**
+     * Convenient way to create an empty set.
+     * 
+     * @return
+     *      an empty set (immutable)
+     */
+    public static <T> Set<T> emptySet() {
+        return Collections.emptySet();
+    }
+    
+    /**
+     * @param objects
+     *      the items for in the relation
+     * 
+     * @return
+     *      a relation with the given items
+     */
+    @SuppressWarnings("unchecked")
+    public static <T, U, V> IRelation3.Transient<T, U, V> relation(Object... objects) {
+        IRelation3.Transient<T, U, V> rel = HashTrieRelation3.Transient.of();
+        for (int i = 0; i < objects.length; i += 3) {
+            rel.put((T) objects[i], (U) objects[i + 1], (V) objects[i + 2]);
+        }
+        return rel;
+    }
+    
+    /**
+     * @param tuples
+     *      the tuples for in the relation
+     * 
+     * @return
+     *      a relation with the given items
+     */
+    @SuppressWarnings("unchecked")
+    public static <T, U, V> IRelation3.Transient<T, U, V> relation(Tuple3<T, U, V>... tuples) {
+        IRelation3.Transient<T, U, V> rel = HashTrieRelation3.Transient.of();
+        for (Tuple3<T, U, V> tuple : tuples) {
+            rel.put(tuple._1(), tuple._2(), tuple._3());
+        }
+        return rel;
+    }
+    
+    /**
+     * @param t
+     *      t
+     * @param u
+     *      u
+     * @param v
+     *      v
+     * 
+     * @return
+     *      a tuple
+     */
+    public static <T, U, V> Tuple3<T, U, V> tuple(T t, U u, V v) {
+        return ImmutableTuple3.of(t, u, v);
     }
 }

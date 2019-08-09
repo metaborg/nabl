@@ -1,11 +1,15 @@
 package mb.statix.taico.scopegraph.diff;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static org.junit.Assert.assertTrue;
+import static mb.statix.taico.util.test.TestUtil.*;
+import static org.junit.Assert.*;
+
+import java.util.Set;
 
 import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
 
 public class DiffTest {
@@ -41,5 +45,17 @@ public class DiffTest {
         assertTrue(effective.getDiffs().get("A").getAddedScopes().contains(aScope));
         assertTrue(effective.getDiffs().get("A").getAddedData().isEmpty());
     }
-
+    
+    @Test
+    public void testGetNewSets() {
+        Set<String> nSet = Diff.getNew(set("A", "B"), set("B", "C"));
+        assertEquals(set("C"), nSet);
+    }
+    
+    @Test
+    public void testGetNewRelations() {
+        IRelation3<Integer, Integer, Integer> nRel = Diff.getNew(relation(0, 0, 0, 1, 1, 1), relation(1, 1, 1, 2, 2, 2));
+        assertEquals(1, nRel.keySet().size());
+        assertTrue(nRel.contains(2, 2, 2));
+    }
 }
