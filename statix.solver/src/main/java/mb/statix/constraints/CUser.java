@@ -319,6 +319,15 @@ public class CUser implements IConstraint, Serializable {
         return tbr;
     }
     
+    /**
+     * @return
+     *      true if this user constraint will not execute a module boundary if encountered, false
+     *      otherwise
+     */
+    public boolean isSkipModuleBoundaryUser() {
+        return skipModuleBoundary;
+    }
+    
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append(name);

@@ -17,24 +17,20 @@ public class ScopeIdentity {
      */
     public static void userTrace(@Nullable IConstraint constraint, StringBuilder sb) {
         //We want to know the trace of IRules that were triggered, that is the runtime path.
-        boolean done = false;
-        while(constraint != null) {
+        while (constraint != null) {
             if (!(constraint instanceof CUser)) {
                 constraint = constraint.cause().orElse(null);
                 continue;
             }
             
-            if (done) {
-                System.err.println("Encountered user constraint after being done! Inconsistency in the logic.");
-            }
-            
             CUser user = (CUser) constraint;
+            if (!user.isSkipModuleBoundaryUser()) break;
+            
+            //If no rule was applied, we don't have to continue any more
             IRule rule = user.getAppliedRule();
-            if (rule == null) {
-                //We shouldn't have to continue here any more
-                done = true;
-                continue;
-            }
+            if (rule == null) break;
+            
+            //Collect the rule signature
             sb.append('.').append(rule.signature());
             
             constraint = constraint.cause().orElse(null);
