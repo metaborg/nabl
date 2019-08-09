@@ -434,7 +434,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         final IModule varOwner;
         if (this.owner.equals(termVar.getResource()) || (varOwner = Vars.getOwnerUnchecked(termVar)) == null) return true;
         
-        if (state == null) state = Context.context().getState(this.owner);
+        if (state == null) state = context().getState(this.owner);
         final IMState varState = varOwner.getCurrentState();
         final ModuleConstraintStore varStore = varState.solver().getStore();
         
@@ -442,7 +442,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         synchronized (varStore.varObservers) {
             IUnifier.Immutable unifier = state.unifier();
             //If we are running concurrently, check if the variable was resolved between our stuck check and the registration.
-            //TODO Optimization check if we are running concurrently
+            //TODO OPTIMIZATION check if we are running concurrently
             //TODO Could we get a module delay exception here?
             if (!unifier.isGround(termVar)) {
                 debug.info("Registering {} as observer on {}, waiting on var {}", owner, varOwner, termVar);
