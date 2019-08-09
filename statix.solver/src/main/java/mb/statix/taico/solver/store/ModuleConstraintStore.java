@@ -1,6 +1,7 @@
 package mb.statix.taico.solver.store;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.taico.solver.Context.context;
 import static mb.statix.taico.util.TDebug.STORE_DEBUG;
 
 import java.util.Collection;
@@ -501,13 +502,19 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     /**
-     * Transfers all the observers to the given store.
+     * Transfers all the observers to the given store and activates all observers for which the
+     * unifier has a value.
      * 
      * @param store
      *      the store
      */
-    public void transferAllObservers(ModuleConstraintStore store) {
-        store.varObservers.putAll(this.varObservers);
+    public void transferAllObservers(ModuleConstraintStore store, IUnifier unifier) {
+        System.out.println("Transferring " + varObservers.size() + " observers for module " + owner);
+        synchronized (store.varObservers) {
+            store.varObservers.putAll(this.varObservers);
+        }
+        
+        store.propagateVariableActivation(unifier.varSet(), TDebug.DEV_OUT);
     }
     
     /**
@@ -600,7 +607,7 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      all the constraints that were removed 
      */
     public Set<IConstraint> clearDelays() {
-        Set<IConstraint> tbr = getAllRemainingConstraints();
+        Set<IConstraint> tbr = delayedConstraints();
         stuckOnVar.clear();
         stuckOnEdge.clear();
         stuckOnModule.clear();

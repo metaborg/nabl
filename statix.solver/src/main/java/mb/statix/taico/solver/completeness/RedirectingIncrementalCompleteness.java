@@ -3,6 +3,7 @@ package mb.statix.taico.solver.completeness;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MultimapBuilder;
@@ -27,7 +28,8 @@ import mb.statix.taico.util.Scopes;
 public class RedirectingIncrementalCompleteness extends IncrementalCompleteness implements EdgeCompleteManager {
     private final String owner;
     
-    private final SetMultimap<CriticalEdge, EdgeCompleteObserver> observers = MultimapBuilder.hashKeys().hashSetValues().build();
+    private SetMultimap<CriticalEdge, EdgeCompleteObserver> observers = MultimapBuilder.hashKeys().hashSetValues().build();
+    private boolean delayMode;
     
     public RedirectingIncrementalCompleteness(String owner, Spec spec) {
         super(spec);
@@ -43,7 +45,9 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
 
     @Override
     public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
-        return getTarget(scope)._isComplete(scope, label);
+        final RedirectingIncrementalCompleteness target = getTarget(scope);
+        if (target == this && delayMode) return false;
+        return target._isComplete(scope, label);
     }
 
     @Override
@@ -117,7 +121,7 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         
         if (this.owner.equals(owner)) return this;
         
-        return Context.context().getModuleUnchecked(owner).getCurrentState().solver().getCompleteness();
+        return Context.context().getSolver(owner).getCompleteness();
     }
     
     // --------------------------------------------------------------------------------------------
@@ -135,7 +139,41 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
             add(constraint, result.unifier());
         }
         
-        //TODO Do we also need to transfer failed modules?
+        for (IConstraint constraint : result.errors()) {
+            add(constraint, result.unifier());
+        }
+    }
+    
+    public boolean isInDelayMode() {
+        return delayMode;
+    }
+    
+    /**
+     * Sets the delay mode to the given value. If delay mode is enabled, this completeness will
+     * report that all its scopes/edges are incomplete, but will still redirect to other
+     * completenesses whenever it should.
+     * 
+     * If delay mode is deactivated, all observers are checked to see if they should be activated,
+     * and are activated if necessary.
+     * 
+     * @param delayMode
+     *      the new value for the delay mode
+     */
+    public void switchDelayMode(boolean delayMode) {
+        if (this.delayMode == delayMode) return;
+        
+        this.delayMode = delayMode;
+        if (delayMode) return;
+        
+        synchronized (observers) {
+            for (CriticalEdge ce : observers.keySet()) {
+                if (!super._isComplete((Scope) ce.scope(), ce.label())) continue;
+                
+                for (EdgeCompleteObserver observer : observers.removeAll(ce)) {
+                    observer.accept(ce);
+                }
+            }
+        }
     }
     
     // --------------------------------------------------------------------------------------------
@@ -149,7 +187,46 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
 
     @Override
     public boolean alreadyResolved(Scope scope, ITerm label) {
-        return super._isComplete(scope, label);
+        return !delayMode && super._isComplete(scope, label);
+    }
+    
+    /**
+     * Transfers the information in this completeness to the given completeness.
+     * This method assumes that the transfer is to a completeness that is more incomplete than the
+     * current completeness.
+     * 
+     * The observers are transferred first.
+     * The given constraints are removed from this completeness before the incomplete data is
+     * transferred.
+     * 
+     * @param completeness
+     *      the completeness to transfer to
+     */
+    @Deprecated
+    public void transfer(RedirectingIncrementalCompleteness completeness, Set<IConstraint> delayed, IUnifier unifier) {
+        //Swap the observers with an unmodifiable map
+        SetMultimap<CriticalEdge, EdgeCompleteObserver> copy;
+        SetMultimap<CriticalEdge, EdgeCompleteObserver> replacement =
+                MultimapBuilder.hashKeys().hashSetValues().build();
+        
+        //TODO Concurrency, the observers should not be modified after this point
+        synchronized (observers) {
+            copy = observers;
+            observers = replacement;
+        }
+        
+        //Remove all the delayed constraints that are passed to us to "clear" this completeness
+        //from its owners constraints, but to free it otherwise.
+        removeAll(delayed, unifier);
+        completeness.incomplete.putAll(this.incomplete);
+        
+        for (Entry<CriticalEdge, EdgeCompleteObserver> entry : copy.entries()) {
+            CriticalEdge ce = entry.getKey();
+            if (!completeness._registerObserver((Scope) ce.scope(), ce.label(), entry.getValue())) {
+                System.err.println("Transfer resulted in observers getting triggered, this should not occur!");
+                throw new IllegalStateException("Transfer of completeness immediately activated ");
+            }
+        }
     }
     
     // --------------------------------------------------------------------------------------------

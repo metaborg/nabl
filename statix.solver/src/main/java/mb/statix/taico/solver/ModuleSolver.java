@@ -87,6 +87,12 @@ public class ModuleSolver implements IOwnable {
     }
     
     private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver) {
+        this(state, constraint, _isComplete, debug, separateSolver,
+                TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(state.owner().getId(), state.spec())
+                                      : new RedirectingIncrementalCompleteness(state.owner().getId(), state.spec()));
+    }
+    
+    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver, RedirectingIncrementalCompleteness completeness) {
         final String owner = state.owner().getId();
         this.state = state;
         this.debug = debug;
@@ -97,13 +103,13 @@ public class ModuleSolver implements IOwnable {
         //Create the constraint store and the completeness. Also add the initial constraints
         Iterable<IConstraint> constraintList = constraint == null ? Collections.emptyList() : Collections.singletonList(constraint);
         this.constraints = new ModuleConstraintStore(owner, constraintList, debug);
-        this.completeness = TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(owner, state.spec()) : new RedirectingIncrementalCompleteness(owner, state.spec());
+        this.completeness = completeness;
         this.completeness.addAll(constraintList, state.unifier());
         
         if (_isComplete == null) {
-            this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier());
+            this.isComplete = (s, l, u) -> this.completeness.isComplete(s, l, state.unifier());
         } else {
-            this.isComplete = (s, l, u) -> completeness.isComplete(s, l, state.unifier()) && _isComplete.test(s, l, u);
+            this.isComplete = (s, l, u) -> this.completeness.isComplete(s, l, state.unifier()) && _isComplete.test(s, l, u);
         }
 
         state.setSolver(this);
@@ -128,6 +134,45 @@ public class ModuleSolver implements IOwnable {
         String id = state.owner().getId();
         PrefixedDebugContext debug = this.debug.createSibling(id);
         ModuleSolver solver = new ModuleSolver(state, constraint, this.isComplete, debug, false);
+        
+        if (!SplitModuleUtil.isSplitModule(state.owner().getId())) {
+            //This module should solve in restricted mode
+            Context.context().getIncrementalManager().registerNonSplit(id);
+        }
+        this.state.coordinator().addSolver(solver);
+        
+        return solver;
+    }
+    
+    /**
+     * Creates a solver as a child of this solver, reusing the completeness from the given solver
+     * if it is not null.
+     * <p>
+     * <b>NOTE</b>: This method adds the created solver to the coordinator.<br>
+     * <b>NOTE</b>: This method sets the solver of the given state to the created solver.
+     * 
+     * @param state
+     *      the newly created state for this solver
+     * @param constraints
+     *      the constraints to solve
+     * @param oldSolver
+     *      the old solver
+     * 
+     * @return
+     *      the new solver
+     */
+    public ModuleSolver childSolver(IMState state, IConstraint constraint, @Nullable ModuleSolver oldSolver) {
+        String id = state.owner().getId();
+        PrefixedDebugContext debug = this.debug.createSibling(id);
+        ModuleSolver solver;
+        if (oldSolver == null) {
+            solver = new ModuleSolver(state, constraint, this.isComplete, debug, false);
+        } else {
+            //Reuse the old completeness
+            assert oldSolver.completeness.isInDelayMode() : "The old solver should have a completeness in delay mode! (" + id + ")";
+            solver = new ModuleSolver(state, constraint, this.isComplete, debug, false, oldSolver.completeness);
+            solver.completeness.switchDelayMode(false);
+        }
         
         if (!SplitModuleUtil.isSplitModule(state.owner().getId())) {
             //This module should solve in restricted mode
@@ -188,26 +233,16 @@ public class ModuleSolver implements IOwnable {
     }
     
     /**
-     * Cleans up this solver in order for it to be replaced with a different solver.
-     * 
-     * This cleans the completeness and activates all observers.
-     */
-    public void cleanUpForReplacement() {
-        System.err.println("Cleaning up solver of " + getOwner() + " for replacement solver");
-        completeness.removeAll(constraints.delayedConstraints(), state.unifier());
-        constraints.activateAllObservers();
-    }
-    
-    /**
      * Cleans up this solver in order for it to be replaced with the given solver.
      * 
      * This cleans the completeness and transfers observers.
      */
-    public void cleanUpForReplacement(ModuleSolver replacement) {
+    public void replaceWith(ModuleSolver replacement) {
         System.err.println("Cleaning up solver of " + getOwner() + " for replacement solver");
-        completeness.removeAll(constraints.delayedConstraints(), state.unifier());
+        assert constraints.activeSize() == 0 : "Solver to be replaced has ACTIVE constraints!";
+        
         //TODO It is possible that requests will never be answered because the variable in question no longer exists.
-        constraints.transferAllObservers(replacement.constraints);
+        constraints.transferAllObservers(replacement.constraints, replacement.state.unifier());
     }
 
     /**
@@ -300,6 +335,14 @@ public class ModuleSolver implements IOwnable {
      */
     public boolean hasFailed() {
         return !failed.isEmpty();
+    }
+    
+    /**
+     * @return
+     *      all the failed constraints
+     */
+    public Set<IConstraint> getFailed() {
+        return failed;
     }
     
     /**

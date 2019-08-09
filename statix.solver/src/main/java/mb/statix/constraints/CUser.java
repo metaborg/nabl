@@ -258,11 +258,11 @@ public class CUser implements IConstraint, Serializable {
             oldChildSolver = Context.context().getSolver(childId);
             
             child = state.owner().createChild(modName, canExtend, skipModuleBoundary(newArgs), false);
-            newChildSolver = state.solver().childSolver(child.getCurrentState(), appl._2());
+            newChildSolver = state.solver().childSolver(child.getCurrentState(), appl._2(), oldChildSolver);
         }
         
         //If there was an old child solver, replace it with the new one
-        if (oldChildSolver != null) oldChildSolver.cleanUpForReplacement(newChildSolver);
+        if (oldChildSolver != null) oldChildSolver.replaceWith(newChildSolver);
         
         //Make the child module available to the rest of the world
         state.owner().addChild(child);

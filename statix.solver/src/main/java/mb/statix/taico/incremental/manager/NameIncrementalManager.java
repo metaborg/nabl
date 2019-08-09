@@ -15,6 +15,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.terms.Scope;
@@ -34,6 +35,7 @@ import mb.statix.taico.solver.ModuleSolver;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.unifier.DistributedUnifier;
 import mb.statix.taico.util.Modules;
+import mb.statix.taico.util.TDebug;
 
 public class NameIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;
@@ -107,17 +109,31 @@ public class NameIncrementalManager extends IncrementalManager {
         
         System.err.println("[NIM] Starting phase " + phaseCounter + " with modules " + modules);
         
-        context().getCoordinator().preventSolverStart();
+        Context context = context();
+        context.getCoordinator().preventSolverStart();
         for (IModule module : modules) {
             IConstraint init = initConstraints.get(module);
-            if (init == null) init = module.getInitialization();
+            if (init == null) {
+                init = module.getInitialization();
+            } else {
+                module.setInitialization(init);
+            }
             
-            ModuleSolver parentSolver = context().getState(module.getParentId()).solver();
-            ModuleSolver oldSolver = context().getSolver(module);
-            ModuleSolver newSolver = parentSolver.childSolver(module.getCurrentState(), init);
-            if (oldSolver != null) oldSolver.cleanUpForReplacement(newSolver);
+            ModuleSolver parentSolver = context.getSolver(module.getParentId());
+            ModuleSolver oldSolver = context.getSolver(module);
             
-            resetChildren(module);
+            //Determine descendants BEFORE resetting the scope graph (which clears children)
+            Set<IModule> descendants = module.getDescendants().collect(Collectors.toSet());
+            
+            //Reset the unifier, completeness and IMPORTANT the scope graph 
+            resetModule(module, true);
+            ModuleSolver newSolver = parentSolver.childSolver(module.getCurrentState(), init, oldSolver);
+            if (oldSolver != null) oldSolver.replaceWith(newSolver);
+            
+            //Reset children
+            for (IModule child : descendants) {
+                resetModule(child, true);
+            }
             //TODO IMPORTANT #12 We need to remove the child modules, (remove their state / reset their state). Otherwise we can get stale values from the children, breaking the solving process!.
         }
         context().getCoordinator().allowSolverStart();
@@ -128,19 +144,22 @@ public class NameIncrementalManager extends IncrementalManager {
      * Each child module needs to have a "clean" state at the start of the solving phase.
      * Otherwise, it would be possible for other modules to use outdated results of modules that
      * will be redone. We need to bring their availability to "does not exist yet" as normal.
+     * <p>
+     * This method does 3 things per child module. <br>
+     * 1. Completeness = delay all local           <br>
+     * 2. Completeness -= own delays + failures    <br>
+     * 3. Unifier = {}                             <br>
+     * 4. ScopeGraph = {}
      * 
-     * Currently, this method only clears the unifier of the module.
-     * 
-     * @param module
+     * @param parent
+     *      the module to reset the children of
      */
-    private void resetChildren(IModule module) {
-        Context context = context();
-        for (IModule child : (Iterable<IModule>) module.getDescendants()::iterator) {
-            IMState state = context.getState(child);
-            if (state == null) continue;
-            
-            state.setUnifier(DistributedUnifier.Immutable.of(child.getId()));
-            
+    private void resetChildren(IModule parent) {
+        //TODO Should include children that have been removed (removed children of module up for
+        //     redo is not possible with current changesets, but we might want this in the future)
+        for (IModule child : (Iterable<IModule>) parent.getDescendants()::iterator) {
+            resetModule(child, true);
+
             //Normally, the only way to obtain a variable from a child module is when that child
             //module is already created.
             
@@ -153,6 +172,44 @@ public class NameIncrementalManager extends IncrementalManager {
             //A solution to this problem is to have it created, empty solver, empty unifier, and
             //add constraints to it whenever the child module is actually created.
         }
+    }
+
+    /**
+     * Resets the module.
+     * <p>
+     * This method does 3 things:               <br>
+     * 1. Completeness = delay all local        <br>
+     * 2. Completeness -= own delays + failures <br>
+     * 3. Unifier = {}                          <br>
+     * 4. ScopeGraph = {}
+     * 
+     * @param module
+     *      the module to reset
+     * @param clearScopeGraph
+     *      if true, the scope graph will be cleared
+     */
+    private void resetModule(IModule module, boolean clearScopeGraph) {
+        IMState state = module.getCurrentState();
+        if (state == null) return;
+        
+        System.err.println("Resetting module " + module);
+        ModuleSolver solver = state.solver();
+        if (solver == null) return;
+        
+        //1. Completeness = delay all local
+        solver.getCompleteness().switchDelayMode(true);
+        
+        //2. Completeness -= own delays + fails
+        //(this can activate observers, which will immediately be delayed again)
+        IUnifier oldUnifier = state.unifier();
+        solver.getCompleteness().removeAll(solver.getStore().delayedConstraints(), oldUnifier);
+        solver.getCompleteness().removeAll(solver.getFailed(), oldUnifier);
+        
+        //3. Clear unifier
+        state.setUnifier(DistributedUnifier.Immutable.of(module.getId()));
+        
+        //4. Clear scope graph
+        if (clearScopeGraph) state.scopeGraph().clear();
     }
 
     /**
@@ -207,6 +264,14 @@ public class NameIncrementalManager extends IncrementalManager {
         //      -> Check if m depends on the changes made
         //  -> For each module m that depends on us with dependency d
         //      -> Check if d is affected by changes to edges and scopes
+        
+        for (String removed : eDiff.getRemovedModules().keySet()) {
+            for (String moduleId : context().getOldDependencies(removed).getModuleDependantIds()) {
+                System.err.println("Adding " + moduleId + " to redo because " + removed + " was removed.");
+                toRedo.add(moduleId);
+            }
+        }
+        
         for (Entry<String, IScopeGraphDiff<Scope, ITerm, ITerm>> entry : eDiff.getDiffs().entrySet()) {
             final String changedModule = entry.getKey();
             final IScopeGraphDiff<Scope, ITerm, ITerm> sgDiff = entry.getValue();
@@ -214,8 +279,8 @@ public class NameIncrementalManager extends IncrementalManager {
             //For each dependant module, do a lookup of the corresponding names
             for (String dependant : oldContext.getDependencies(changedModule).getModuleDependantIds()) {
                 if (eDiff.getRemovedModules().containsKey(dependant)) {
-                    System.err.println("Encountered REMOVED dependant " + dependant + ", skipping");
-                    continue;
+                    System.err.println("(1) Encountered REMOVED dependant " + dependant + ", skipping");
+                    //continue;
                 }
                 NameDependencies dependencies = oldContext.getDependencies(dependant);
                 
@@ -228,7 +293,7 @@ public class NameIncrementalManager extends IncrementalManager {
             for (Entry<String, Dependency> entry2 : oldContext.getDependencies(changedModule).getDependants().entries()) {
                 final String dependant = entry2.getKey();
                 if (eDiff.getRemovedModules().containsKey(dependant)) {
-                    System.err.println("Encountered REMOVED dependant " + dependant + ", skipping");
+                    System.err.println("(2) Encountered REMOVED dependant " + dependant + ", skipping");
                     continue;
                 }
                 final Dependency dependency = entry2.getValue();
@@ -261,7 +326,7 @@ public class NameIncrementalManager extends IncrementalManager {
      *      the set of modules to redo
      */
     private Set<IModule> normalizeToRedo(Set<String> moduleIds) {
-        Set<IModule> modules = Modules.toModules(moduleIds);
+        Set<IModule> modules = Modules.toModulesRemoveNull(moduleIds); //TODO IMPORTANT Temporary removeNull
         Set<IModule> doneInLastPhase = actualPhases.get(getPhase());
         Iterator<IModule> it = modules.iterator();
         while (it.hasNext()) {

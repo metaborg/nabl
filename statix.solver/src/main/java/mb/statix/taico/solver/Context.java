@@ -21,6 +21,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
 import mb.statix.taico.dependencies.Dependencies;
+import mb.statix.taico.dependencies.Dependency;
 import mb.statix.taico.dependencies.DependencyManager;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
@@ -58,6 +59,10 @@ public class Context implements IContext, Serializable {
         this.spec = spec;
         this.incrementalManager = strategy.createManager();
         this.dependencies = strategy.createDependencyManager();
+    }
+    
+    public IncrementalStrategy getStrategy() {
+        return strategy;
     }
     
     @Override
@@ -443,6 +448,26 @@ public class Context implements IContext, Serializable {
     }
     
     /**
+     * Transfers the dependants of the old module.
+     * 
+     * @param moduleId
+     *      the id of the module to transfer dependants of
+     * 
+     * @throws IllegalStateException
+     *      If the old context is null, or if this module is unknown in the old context.
+     */
+    public void transferDependants(String moduleId) {
+        if (oldContext == null) throw new IllegalStateException("The old context is null!");
+        Dependencies oDeps = getOldDependencies(moduleId);
+        if (oDeps == null) throw new IllegalStateException("The given module is unknown in the old context.");
+        
+        Dependencies nDeps = getDependencies(moduleId);
+        for (Dependency d : oDeps.getDependants().values()) {
+            nDeps.addDependant(d.getOwner(), d);
+        }
+    }
+    
+    /**
      * Resets the dependencies of the module with the given id.
      * 
      * @param moduleId
@@ -504,8 +529,8 @@ public class Context implements IContext, Serializable {
     // Solver results
     // --------------------------------------------------------------------------------------------
     
-    public void addResult(IModule moduleId, MSolverResult result) {
-        solverResults.put(moduleId, result);
+    public void addResult(IModule module, MSolverResult result) {
+        solverResults.put(module, result);
     }
     
     public MSolverResult getResult(IModule module) {
