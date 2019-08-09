@@ -19,11 +19,10 @@ public class DelegatingModuleScopeGraph extends ModuleScopeGraph {
     private final boolean clearScopes;
     
     public DelegatingModuleScopeGraph(ModuleScopeGraph original, boolean clearScopes) {
-        super(original.id, original.getOwner(), original.getEdgeLabels(), original.getDataLabels(), original.getNoDataLabel(), original.getParentScopes());
+        super(original.getOwner(), original.getEdgeLabels(), original.getDataLabels(), original.getNoDataLabel(), original.getParentScopes());
         
         this.original = original;
         this.clearScopes = clearScopes;
-        this.scopeCounter = original.scopeCounter;
     }
 
     @Override

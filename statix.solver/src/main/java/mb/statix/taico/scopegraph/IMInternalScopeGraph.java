@@ -21,6 +21,11 @@ import mb.statix.taico.util.TPrettyPrinter;
 
 public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L, D> {
     /**
+     * Clears the scopes, edges, data and children of this scope graph.
+     */
+    void clear();
+    
+    /**
      * @param sourceScope
      *      the source scope
      * @param label
@@ -45,21 +50,6 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      *      true if this scope graph changed as a result of this call, false otherwise
      */
     boolean addDatum(S scope, L relation, D datum);
-    
-    /**
-     * Creates a new scope in this scope graph.
-     * 
-     * @param base
-     *      the base string to use for the scope name
-     * 
-     * @return
-     *      the newly created scope
-     * 
-     * @deprecated
-     *      Use {@link #createScopeWithIdentity(String)} instead.
-     */
-    @Deprecated
-    S createScope(String base);
     
     /**
      * Creates a new scope in this scope graph, with the given identity.
@@ -241,9 +231,9 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
                     .flatMap(m -> StreamSupport.stream(m.getDescendantsIncludingSelf().spliterator(), false)));
     }
     
-    //---------------------------------------------------------------------------------------------
-    //Getters for the internal data structures of the scope graph
-    //---------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------
+    // Getters for the internal data structures of the scope graph
+    // ---------------------------------------------------------------------------------------------
     
     /**
      * @return

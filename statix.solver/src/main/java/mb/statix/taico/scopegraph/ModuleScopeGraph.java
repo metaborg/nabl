@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -31,37 +30,33 @@ import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.IOwnable;
 import mb.statix.taico.util.Scopes;
 import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TPrettyPrinter;
 import mb.statix.util.Capsules;
 
 public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITerm>, IOwnable {
     private static final long serialVersionUID = 1L;
     
-    private static AtomicInteger idCounter = new AtomicInteger();
-    //Constants for this module
+    //Identity
     private final IModule owner;
+    
+    //Labels
     private final io.usethesource.capsule.Set.Immutable<ITerm> edgeLabels;
     private final io.usethesource.capsule.Set.Immutable<ITerm> dataLabels;
     private final ITerm noDataLabel;
     
-    /** Scopes from parent that you can extend. Used for checking if an edge addition is valid. */
-    private final io.usethesource.capsule.Set.Immutable<? extends Scope> canExtend;
+    //Scopes, edges and data
+    private io.usethesource.capsule.Set.Immutable<? extends Scope> canExtend;
     private List<? extends Scope> parentScopes;
-    
-    //Scope graph graph
-    private final HashSet<String> children = new HashSet<>();
-    
     private final Set<Scope> scopes = synchronizedSet(new HashSet<>());
     private transient IRelation3.Transient<Scope, ITerm, Scope> edges = HashTrieRelation3.Transient.of();
     private transient IRelation3.Transient<Scope, ITerm, ITerm> data = HashTrieRelation3.Transient.of();
-
-    protected int scopeCounter;
-    protected int id;
-    private int copyId;
     
-    protected transient ReadWriteLock lock;
-    protected transient boolean useLock;
+    //Child graphs
+    private final HashSet<String> children = new HashSet<>();
     
-    protected volatile transient int currentModification;
+    //Locking
+    private transient ReadWriteLock lock;
+    private transient boolean useLock;
     
     public ModuleScopeGraph(
             IModule owner,
@@ -69,17 +64,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             Iterable<ITerm> dataLabels,
             ITerm noDataLabel,
             List<? extends Scope> canExtend) {
-        this(idCounter.getAndIncrement(), owner, edgeLabels, dataLabels, noDataLabel, canExtend);
-    }
-    
-    protected ModuleScopeGraph(
-            int id,
-            IModule owner,
-            Iterable<ITerm> edgeLabels,
-            Iterable<ITerm> dataLabels,
-            ITerm noDataLabel,
-            List<? extends Scope> canExtend) {
-        this.id = id;
         this.owner = owner;
         this.edgeLabels = edgeLabels instanceof io.usethesource.capsule.Set.Immutable ? (io.usethesource.capsule.Set.Immutable<ITerm>) edgeLabels : Capsules.newSet(edgeLabels);
         this.dataLabels = dataLabels instanceof io.usethesource.capsule.Set.Immutable ? (io.usethesource.capsule.Set.Immutable<ITerm>) dataLabels : Capsules.newSet(dataLabels);
@@ -90,20 +74,22 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         if (this.useLock) lock = TOverrides.readWriteLock();
     }
     
-    /**
-     * @return
-     *      true if locks should be used, false if synchronized should be used
-     */
-    private boolean useLock() {
-        if (!CONCURRENT || SYNC_SCOPEGRAPHS == 0) return true;
-        
-        return SYNC_SCOPEGRAPHS - ModulePaths.pathLength(owner.getId()) > 0;
-    }
-    
     @Override
     public IModule getOwner() {
         return owner;
     }
+    
+    @Override
+    public void clear() {
+        edges = HashTrieRelation3.Transient.of();
+        data = HashTrieRelation3.Transient.of();
+        scopes.clear();
+        children.clear();
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Labels
+    // --------------------------------------------------------------------------------------------
     
     @Override
     public ITerm getNoDataLabel() {
@@ -120,17 +106,16 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         return dataLabels;
     }
     
-    @Override
-    public io.usethesource.capsule.Set<Scope> getAllScopes() {
-        throw new UnsupportedOperationException("Directly getting all scopes!");
-    }
-    
-    @Override
+    // --------------------------------------------------------------------------------------------
+    // Edges and data
+    // --------------------------------------------------------------------------------------------
+
+    @Deprecated @Override
     public IRelation3<Scope, ITerm, Scope> getEdges() {
         throw new UnsupportedOperationException("Directly getting edges!");
     }
     
-    @Override
+    @Deprecated @Override
     public IRelation3<Scope, ITerm, ITerm> getData() {
         throw new UnsupportedOperationException("Directly getting data!");
     }
@@ -145,21 +130,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         return edges;
     }
     
-    @Override
-    public Set<Scope> getScopes() {
-        return scopes;
-    }
-    
-    @Override
-    public io.usethesource.capsule.Set.Immutable<? extends Scope> getExtensibleScopes() {
-        return canExtend;
-    }
-    
-    @Override
-    public List<? extends Scope> getParentScopes() {
-        return parentScopes;
-    }
-
     @Override
     public Set<Scope> getEdges(Scope scope, ITerm label) {
         System.err.println("WARNING: Unchecked access to edges: " + scope + " -" + label + "->");
@@ -267,23 +237,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     @Override
-    public Scope createScope(String base) {
-        int i = ++scopeCounter;
-        
-        String name = base.replaceAll("-", "_") + "-" + i;
-        Scope scope = Scope.of(owner.getId(), name);
-        scopes.add(scope);
-        return scope;
-    }
-    
-    @Override
-    public Scope createScopeWithIdentity(String identity) {
-        Scope scope = Scope.of(owner.getId(), identity);
-        scopes.add(scope);
-        return scope;
-    }
-
-    @Override
     public boolean addEdge(Scope sourceScope, ITerm label, Scope targetScope) {
         if (!getScopes().contains(sourceScope) && !getExtensibleScopes().contains(sourceScope)) {
             throw new IllegalArgumentException(
@@ -334,6 +287,37 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     }
     
     // --------------------------------------------------------------------------------------------
+    // Scopes
+    // --------------------------------------------------------------------------------------------
+    
+    @Deprecated @Override
+    public io.usethesource.capsule.Set<Scope> getAllScopes() {
+        throw new UnsupportedOperationException("Directly getting all scopes!");
+    }
+    
+    @Override
+    public Set<Scope> getScopes() {
+        return scopes;
+    }
+    
+    @Override
+    public io.usethesource.capsule.Set.Immutable<? extends Scope> getExtensibleScopes() {
+        return canExtend;
+    }
+    
+    @Override
+    public List<? extends Scope> getParentScopes() {
+        return parentScopes;
+    }
+    
+    @Override
+    public Scope createScopeWithIdentity(String identity) {
+        Scope scope = Scope.of(owner.getId(), identity);
+        scopes.add(scope);
+        return scope;
+    }
+
+    // --------------------------------------------------------------------------------------------
     // Children
     // --------------------------------------------------------------------------------------------
     
@@ -350,7 +334,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public ModuleScopeGraph addChild(IModule child) {
-        currentModification++;
         //TODO Unsafe cast
         ModuleScopeGraph childSg = (ModuleScopeGraph) child.getScopeGraph();
         
@@ -388,7 +371,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public Iterable<? extends IMInternalScopeGraph<Scope, ITerm, ITerm>> getChildren() {
-        return children.stream().map(s -> Context.context().getState(s).scopeGraph())::iterator;
+        return children.stream().map(Context.context()::getScopeGraph)::iterator;
     }
     
     @Override
@@ -416,6 +399,10 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         }
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Other graphs
+    // --------------------------------------------------------------------------------------------
+    
     @Deprecated
     @Override
     public synchronized void substitute(List<? extends Scope> newScopes) {
@@ -426,6 +413,8 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         //Sometimes the order of constraints changes the scope numbers, so substitution is necessary.
         List<? extends Scope> oldScopes = parentScopes;
         parentScopes = newScopes;
+        canExtend = Capsules.newSet(newScopes);
+        
         //scopes should be stored as strings in the sets to avoid substitution
         IRelation3.Transient<Scope, ITerm, Scope> newEdges = HashTrieRelation3.Transient.of();
         IRelation3.Transient<Scope, ITerm, ITerm> newData = HashTrieRelation3.Transient.of();
@@ -523,6 +512,20 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         return new DelegatingModuleScopeGraph(this, clearScopes);
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Locks
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @return
+     *      true if locks should be used, false if synchronized should be used
+     */
+    private boolean useLock() {
+        if (!CONCURRENT || SYNC_SCOPEGRAPHS == 0) return true;
+        
+        return SYNC_SCOPEGRAPHS - ModulePaths.pathLength(owner.getId()) > 0;
+    }
+    
     @Override
     public Lock getReadLock() {
         return lock.readLock();
@@ -541,7 +544,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         this.owner = original.owner;
         this.canExtend = original.canExtend;
         this.children.addAll(original.children);
-        this.copyId = original.copyId;
         
         IRelation3.Immutable<Scope, ITerm, ITerm> nData = original.data.freeze();
         original.data = nData.melt();
@@ -554,9 +556,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         this.dataLabels = original.dataLabels;
         this.edgeLabels = original.edgeLabels;
         this.noDataLabel = original.noDataLabel;
-        this.id = idCounter.getAndIncrement();
         this.parentScopes = original.parentScopes;
-        this.scopeCounter = original.scopeCounter;
         this.scopes.addAll(original.scopes);
         this.useLock = useLock();
         if (useLock) this.lock = TOverrides.readWriteLock();
@@ -570,20 +570,6 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     // --------------------------------------------------------------------------------------------
     // Object methods
     // --------------------------------------------------------------------------------------------
-    
-    @Override
-    public int hashCode() {
-        return this.id;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-        if (!(obj instanceof ModuleScopeGraph)) return false;
-        ModuleScopeGraph other = (ModuleScopeGraph) obj;
-        return this.id == other.id;
-    }
     
     @Override
     public String toString() {
