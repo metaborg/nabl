@@ -73,7 +73,7 @@ public class NameChangeSet extends AChangeSet {
                     
                     Flag oldFlag = depModule.getTopFlag();
                     //If we already have a flag with the same cause, we don't want to visit this module again
-                    if (!add(new Flag(UNSURE, moduleLevel + 1, moduleId), FlagCondition.AddFlagIfNotSameCause, depModule)) {
+                    if (!add(new Flag(UNSURE, moduleLevel + 1, moduleId), FlagCondition.FlagIfClean, depModule)) {
                         continue;
                     }
                     
