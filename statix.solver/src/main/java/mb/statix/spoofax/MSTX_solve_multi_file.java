@@ -158,7 +158,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 .collect(Collectors.toList());
         
         List<ITerm> updateResults = results.entrySet().stream()
-                .filter(e -> order.containsKey(e.getKey())) //TODO Should not be needed
                 .filter(e -> !added.contains(e.getKey()) && !changed.contains(e.getKey()))
                 .sorted((a, b) -> Integer.compare(order.get(a.getKey()), order.get(b.getKey())))
                 .map(e -> B.newTuple(B.newString(e.getKey()), B.newBlob(e.getValue())))
