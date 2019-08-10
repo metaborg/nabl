@@ -24,7 +24,7 @@ public class ScopeIdentity {
             }
             
             CUser user = (CUser) constraint;
-            if (!user.isSkipModuleBoundaryUser()) break;
+            if (user.isSkipModuleBoundaryUser()) break;
             
             //If no rule was applied, we don't have to continue any more
             IRule rule = user.getAppliedRule();
