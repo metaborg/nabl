@@ -37,6 +37,7 @@ import mb.statix.spoofax.StatixTerms;
 import mb.statix.taico.dependencies.details.IDependencyDetail;
 import mb.statix.taico.dependencies.details.NameDependencyDetail;
 import mb.statix.taico.dependencies.details.QueryDependencyDetail;
+import mb.statix.taico.dependencies.details.QueryResultDependencyDetail;
 import mb.statix.taico.module.IModule;
 import mb.statix.taico.name.NameAndRelation;
 import mb.statix.taico.name.Names;
@@ -264,17 +265,19 @@ public class CResolveQuery implements IConstraint, Serializable {
      */
     public void createDependencies(IModule module, QueryResult result) {
         QueryDependencyDetail queryDetail = new QueryDependencyDetail(
-                module.getId(), this, result.edges, result.data, result.pathTerms, result.paths);
+                module.getId(), this, result.edges, result.data);
+        QueryResultDependencyDetail resultDetail = new QueryResultDependencyDetail(result.paths);
         IDependencyDetail[] details;
         
         final NameAndRelation name = result.name;
         if (name == null) {
-            details = new IDependencyDetail[1];
-        } else {
             details = new IDependencyDetail[2];
-            details[1] = new NameDependencyDetail(name, name.getRelation());
+        } else {
+            details = new IDependencyDetail[3];
+            details[2] = new NameDependencyDetail(name, name.getRelation());
         }
         details[0] = queryDetail;
+        details[1] = resultDetail;
         
         module.dependencies().addMultiDependency(queryDetail.getReachedModules(), details);
 //        //Add reverse dependencies
