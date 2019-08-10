@@ -33,6 +33,11 @@ public class NDependencies extends Dependencies implements Serializable {
         return dependency;
     }
     
+    @Override
+    public void clear() {
+        dependencies.clear();
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Dependants
     // --------------------------------------------------------------------------------------------

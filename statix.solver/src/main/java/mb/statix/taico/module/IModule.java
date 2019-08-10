@@ -358,14 +358,6 @@ public interface IModule extends Flaggable, Serializable {
         return dependencies().getModuleDependencyIds();
     }
     
-    default Set<? extends IModule> getDependants() {
-        return dependencies().getModuleDependants();
-    }
-    
-    default Set<String> getDependantIds() {
-        return dependencies().getModuleDependantIds();
-    }
-    
     // --------------------------------------------------------------------------------------------
     // Other
     // --------------------------------------------------------------------------------------------

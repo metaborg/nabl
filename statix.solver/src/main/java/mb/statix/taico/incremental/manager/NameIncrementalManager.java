@@ -210,6 +210,8 @@ public class NameIncrementalManager extends IncrementalManager {
         
         //4. Clear scope graph
         if (clearScopeGraph) state.scopeGraph().clear();
+        
+        context().resetDependencies(module.getId());
     }
 
     /**

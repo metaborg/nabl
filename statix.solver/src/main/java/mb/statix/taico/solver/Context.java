@@ -447,26 +447,6 @@ public class Context implements IContext, Serializable {
     }
     
     /**
-     * Transfers the dependants of the old module.
-     * 
-     * @param moduleId
-     *      the id of the module to transfer dependants of
-     * 
-     * @throws IllegalStateException
-     *      If the old context is null, or if this module is unknown in the old context.
-     */
-    public void transferDependants(String moduleId) {
-        if (oldContext == null) throw new IllegalStateException("The old context is null!");
-        Dependencies oDeps = getOldDependencies(moduleId);
-        if (oDeps == null) throw new IllegalStateException("The given module is unknown in the old context.");
-        
-        Dependencies nDeps = getDependencies(moduleId);
-        for (Dependency d : oDeps.getDependants().values()) {
-            nDeps.addDependant(d.getOwner(), d);
-        }
-    }
-    
-    /**
      * Resets the dependencies of the module with the given id.
      * 
      * @param moduleId

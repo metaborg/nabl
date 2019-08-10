@@ -70,8 +70,15 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
      */
     public D setDependencies(String moduleId, D dependencies) {
         D old;
-        if ((old = map.putIfAbsent(moduleId, dependencies)) != null) {
+        if ((old = map.putIfAbsent(moduleId, dependencies)) != null && old != dependencies) {
             System.err.println("Replacing dependencies of " + moduleId + " with new dependencies!");
+            for (IDependencyObserver observer : observers) {
+                observer.removeDependencies(old.getDependencies().values());
+                for (Dependency dependency : dependencies.getDependencies().values()) {
+                    observer.onDependencyAdded(dependency);
+                }
+            }
+            
             return old;
         }
         return null;

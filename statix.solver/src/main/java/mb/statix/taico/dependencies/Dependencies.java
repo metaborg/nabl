@@ -40,6 +40,11 @@ public class Dependencies implements Serializable {
      */
     public void clear() {
         dependencies.clear();
+        Context context = Context.context();
+        for (IModule module : context.getModules()) {
+            Dependencies deps = context.getDependencies(module);
+            deps.dependants.removeAll(owner);
+        }
     }
     
     // --------------------------------------------------------------------------------------------
