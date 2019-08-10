@@ -44,8 +44,11 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
     @Override
     public DependencyManager<?> createDependencyManager(Context oldContext) {
         DependencyManager<?> tbr;
-        if (oldContext != null) {
+        
+        reuse: if (oldContext != null) {
             tbr = oldContext.getDependencyManager();
+            //If the type of the dependency manager is not correct, we cannot reuse it.
+            if (!tbr.getCreator().apply(" ").getClass().equals(NDependencies.class)) break reuse;
             
             //Check if the observers match our settings
             List<Class<?>> expected = TSettings.getDependencyObservers().stream().map(Object::getClass).collect(Collectors.toList());
