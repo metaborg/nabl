@@ -17,7 +17,7 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     private static final long serialVersionUID = 1L;
     
     //TODO OPTIMIZATION Might benefit from being a MapMultimap instead
-    private LightWeightHashTrieRelation3.Transient<NameAndRelation, Scope, Dependency> nameDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private transient LightWeightHashTrieRelation3.Transient<NameAndRelation, Scope, Dependency> nameDependencies = LightWeightHashTrieRelation3.Transient.of();
     
     @Override
     public synchronized Set<Dependency> getDependencies(NameAndRelation nameRel, Scope scope) {

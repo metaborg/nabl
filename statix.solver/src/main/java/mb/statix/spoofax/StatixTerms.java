@@ -55,6 +55,7 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.modular.module.IModuleStringComponent;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -67,7 +68,6 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.IRule;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
-import mb.statix.taico.module.IModuleStringComponent;
 import mb.statix.taico.module.ModuleString;
 import mb.statix.taico.spec.ModuleBoundary;
 

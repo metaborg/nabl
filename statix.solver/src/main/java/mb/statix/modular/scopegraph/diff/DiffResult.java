@@ -6,10 +6,17 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.Map.Entry;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.Tuple2;
+import mb.statix.modular.dependencies.Dependency;
+import mb.statix.modular.dependencies.DependencyManager;
+import mb.statix.modular.name.Name;
 import mb.statix.modular.scopegraph.IMInternalScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.unifier.DistributedUnifier;
@@ -130,5 +137,69 @@ public class DiffResult implements Serializable {
                         context.getOldContext());
             }
         }
+    }
+    
+    /**
+     * Determines the dependencies that are affected by the given diff.
+     * 
+     * Please note that the given function can be called multiple times with the same dependency.
+     * 
+     * @param context
+     *      the context to get the dependencies from
+     * @param function
+     *      a PURE function converting the dependency to some value R
+     * 
+     * @return
+     *      a set with all the converted dependencies
+     */
+    public <R> Set<R> getDependencies(Context context, Function<Dependency, R> function) {
+        Set<R> tbr = new HashSet<>();
+        DependencyManager<?> manager = context.getDependencyManager();
+        for (IScopeGraphDiff<Scope, ITerm, ITerm> diff : diffs.values()) {
+            for (Tuple2<Scope, ITerm> edge : diff.getAddedEdges()._getForwardMap().keySet()) {
+                for (Dependency dependency : manager.edgeAddition().affectedByEdgeAddition(edge._1(), edge._2())) {
+                    tbr.add(function.apply(dependency));
+                }
+            }
+            
+            for (Tuple2<Scope, ITerm> edge : diff.getRemovedEdges()._getForwardMap().keySet()) {
+                for (Dependency dependency : manager.edgeRemoval().affectedByEdgeRemoval(edge._1(), edge._2())) {
+                    tbr.add(function.apply(dependency));
+                }
+            }
+            
+            //TODO Do not use names but just straight data?
+            for (Tuple2<Scope, ITerm> edge : diff.getAddedDataNames()._getForwardMap().keySet()) {
+                final Scope scope = edge._1();
+                final ITerm label = edge._2();
+                for (Name name : diff.getAddedDataNames().get(scope, label)) {
+                    for (Dependency dependency : manager.dataAddition().affectedByDataAddition(name.withRelation(label), scope)) {
+                        tbr.add(function.apply(dependency));
+                    }
+                }
+            }
+            
+            for (Tuple2<Scope, ITerm> edge : diff.getRemovedDataNames()._getForwardMap().keySet()) {
+                final Scope scope = edge._1();
+                final ITerm label = edge._2();
+                for (Name name : diff.getRemovedDataNames().get(scope, label)) {
+                    for (Dependency dependency : manager.dataRemoveOrChange().affectedByDataRemovalOrChange(name.withRelation(label), scope)) {
+                        tbr.add(function.apply(dependency));
+                    }
+                }
+            }
+            
+            for (Tuple2<Scope, ITerm> edge : diff.getChangedDataNames()._getForwardMap().keySet()) {
+                final Scope scope = edge._1();
+                final ITerm label = edge._2();
+                for (Name name : diff.getChangedDataNames().get(scope, label)) {
+                    for (Dependency dependency : manager.dataRemoveOrChange().affectedByDataRemovalOrChange(name.withRelation(label), scope)) {
+                        tbr.add(function.apply(dependency));
+                    }
+                }
+            }
+        }
+        
+        return tbr;
     }
 }

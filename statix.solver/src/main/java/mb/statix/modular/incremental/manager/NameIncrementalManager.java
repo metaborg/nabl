@@ -1,39 +1,28 @@
 package mb.statix.modular.incremental.manager;
 
 import static mb.statix.modular.solver.Context.context;
-import static mb.statix.modular.util.TPrettyPrinter.printScope;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
-import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.modular.dependencies.Dependency;
-import mb.statix.modular.dependencies.NameDependencies;
-import mb.statix.modular.dependencies.details.QueryDependencyDetail;
 import mb.statix.modular.module.IModule;
-import mb.statix.modular.name.Name;
-import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.scopegraph.diff.Diff;
 import mb.statix.modular.scopegraph.diff.DiffResult;
-import mb.statix.modular.scopegraph.diff.IScopeGraphDiff;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
 import mb.statix.modular.util.Modules;
 import mb.statix.modular.util.TDebug;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.solver.MSolverResult;
 
@@ -257,52 +246,8 @@ public class NameIncrementalManager extends IncrementalManager {
         System.out.println("Effective diff result of phase " + phaseCounter + ":");
         eDiff.print(System.out);
         
-        Set<String> toRedo = new HashSet<>();
-        
-        //Now we need to check if the dependants are affected
-        
-        //For each modified scope graph
-        //  -> For each module m that depends on us
-        //      -> Check if m depends on the changes made
-        //  -> For each module m that depends on us with dependency d
-        //      -> Check if d is affected by changes to edges and scopes
-        
-        for (String removed : eDiff.getRemovedModules().keySet()) {
-            for (String moduleId : context().getOldDependencies(removed).getModuleDependantIds()) {
-                System.err.println("Adding " + moduleId + " to redo because " + removed + " was removed.");
-                toRedo.add(moduleId);
-            }
-        }
-        
-        for (Entry<String, IScopeGraphDiff<Scope, ITerm, ITerm>> entry : eDiff.getDiffs().entrySet()) {
-            final String changedModule = entry.getKey();
-            final IScopeGraphDiff<Scope, ITerm, ITerm> sgDiff = entry.getValue();
-            
-            //For each dependant module, do a lookup of the corresponding names
-            for (String dependant : oldContext.getDependencies(changedModule).getModuleDependantIds()) {
-                if (eDiff.getRemovedModules().containsKey(dependant)) {
-                    System.err.println("(1) Encountered REMOVED dependant " + dependant + ", skipping");
-                    //continue;
-                }
-                NameDependencies dependencies = oldContext.getDependencies(dependant);
-                
-                //Iterate over the changes (hopefully the smallest set)
-                checkNameDependencies(changedModule, toRedo, dependencies, sgDiff.getAddedDataNames().inverse());
-                checkNameDependencies(changedModule, toRedo, dependencies, sgDiff.getRemovedDataNames().inverse());
-                checkNameDependencies(changedModule, toRedo, dependencies, sgDiff.getChangedDataNames().inverse());
-            }
-            
-            for (Entry<String, Dependency> entry2 : oldContext.getDependencies(changedModule).getDependants().entries()) {
-                final String dependant = entry2.getKey();
-                if (eDiff.getRemovedModules().containsKey(dependant)) {
-                    System.err.println("(2) Encountered REMOVED dependant " + dependant + ", skipping");
-                    continue;
-                }
-                final Dependency dependency = entry2.getValue();
-                QueryDependencyDetail qdetail = dependency.getDetails(QueryDependencyDetail.class);
-                checkEdgeAndScopeDependencies(dependant, toRedo, qdetail, sgDiff);
-            }
-        }
+        //Determine the dependencies
+        Set<String> toRedo = diff.getDependencies(context(), Dependency::getDependant);
         
         for (String id : toRedo) {
             redoReasons.put(id, RedoReason.DIFF);
@@ -350,69 +295,6 @@ public class NameIncrementalManager extends IncrementalManager {
         }
         
         return modules;
-    }
-
-    /**
-     * Checks if 
-     * @param changedModule
-     *      the module that was changed
-     * @param toRedo
-     *      the set of modules to redo
-     * @param dependencies
-     *      the dependencies of the dependent module
-     * @param changed
-     *      the changed names
-     */
-    private void checkNameDependencies(String changedModule, Set<String> toRedo,
-            NameDependencies dependencies, IRelation3<Name, ITerm, Scope> changed) {
-        //For each changed name
-        //  -> Check if m has an entry for this name
-        for (Entry<Tuple2<Name, ITerm>, Scope> entry : changed._getForwardMap().entrySet()) {
-            final Tuple2<Name, ITerm> tuple = entry.getKey();
-            final Scope scope = entry.getValue();
-            NameAndRelation nar = tuple.getKey().withRelation(tuple.getValue());
-            for (Dependency dependency : dependencies.getNameDependencies(nar, scope)) {
-                String dependingModule = dependency.getOwner();
-                System.out.println(dependingModule + " depends on " + changedModule + ", and is affected by change of name " + nar + " in " + printScope(scope));
-                toRedo.add(dependingModule);
-            }
-        }
-    }
-    
-    /**
-     * Checks added edges, removed edges and removed scopes.
-     * 
-     * @param dependant
-     *      the module that depends on the changed module
-     * @param toRedo
-     *      the set of modules to redo
-     * @param detail
-     *      the dependency detail for queries
-     * @param sgDiff
-     *      the diff of the changed module
-     */
-    private void checkEdgeAndScopeDependencies(String dependant, Set<String> toRedo, QueryDependencyDetail detail, IScopeGraphDiff<Scope, ITerm, ITerm> sgDiff) {
-        for (Tuple2<Scope, ITerm> added : sgDiff.getAddedEdges()._getForwardMap().keySet()) {
-            if (detail.canBeAffectedByEdgeAddition(added.getKey(), added.getValue())) {
-                toRedo.add(dependant);
-            }
-        }
-        
-        for (Tuple2<Scope, ITerm> added : sgDiff.getRemovedEdges()._getForwardMap().keySet()) {
-            if (detail.canBeAffectedByEdgeRemoval(added.getKey(), added.getValue())) {
-                toRedo.add(dependant);
-            }
-        }
-        
-        for (Scope scope : sgDiff.getRemovedScopes()) {
-            if (detail.canBeAffectedByScopeRemoval(scope)) {
-                if (toRedo.add(dependant)) {
-                    System.out.println("Scope removal was relevant for " + dependant + " (not yet added)! Scope " + printScope(scope));
-                } else {
-                    System.out.println("Scope removal was irrelevant for " + dependant + " (already added)! Scope " + printScope(scope));
-                }
-            }
-        }
     }
     
     @Override

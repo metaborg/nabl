@@ -1,5 +1,6 @@
 package mb.statix.modular.util;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,23 +22,25 @@ import com.google.common.collect.Multimaps;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
 
-public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>> {
+public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private final Map<K1, Multimap<K2, V>> map;
     private final Function<K1, Multimap<K2, V>> function;
     
     public MapMultimap() {
         this.map = new HashMap<>();
-        this.function = x -> MultimapBuilder.hashKeys().hashSetValues().build();
+        this.function = (Function<K1, Multimap<K2, V>> & Serializable) x -> MultimapBuilder.hashKeys().hashSetValues().build();
     }
     
     public MapMultimap(Map<K1, Multimap<K2, V>> baseMap) {
         this.map = baseMap;
-        this.function = x -> MultimapBuilder.hashKeys().hashSetValues().build();
+        this.function = (Function<K1, Multimap<K2, V>> & Serializable) x -> MultimapBuilder.hashKeys().hashSetValues().build();
     }
     
     public MapMultimap(Map<K1, Multimap<K2, V>> baseMap, Supplier<Multimap<K2, V>> supplier) {
         this.map = baseMap;
-        this.function = x -> supplier.get();
+        this.function = (Function<K1, Multimap<K2, V>> & Serializable) x -> supplier.get();
     }
     
     public boolean isEmpty() {
@@ -145,6 +148,6 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>> {
     public static <K1, K2, V> MapMultimap<K1, K2, V> concurrent(MultimapBuilder builder) {
         return new MapMultimap<>(
                 new ConcurrentHashMap<>(),
-                () -> Multimaps.synchronizedMultimap(builder.build()));
+                (Supplier<Multimap<K2, V>> & Serializable) () -> Multimaps.synchronizedMultimap(builder.build()));
     }
 }

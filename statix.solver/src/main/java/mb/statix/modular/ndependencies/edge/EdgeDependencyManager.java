@@ -19,7 +19,7 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
     private static final long serialVersionUID = 1L;
     
     //The sparser the map is populated, the more sense it makes to go with the tuple approach instead.
-    private LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> edgeDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private transient LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> edgeDependencies = LightWeightHashTrieRelation3.Transient.of();
     
     @Override
     public synchronized Iterable<Dependency> getDependencies(Scope scope) {
