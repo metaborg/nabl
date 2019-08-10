@@ -87,8 +87,11 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
      *      the new dependencies
      */
     public D resetDependencies(String moduleId) {
-        D deps = creator.apply(moduleId);
-        map.put(moduleId, deps);
+        D deps = getDependencies(moduleId);
+        for (IDependencyObserver observer : observers) {
+            observer.removeDependencies(deps.getDependencies().values());
+        }
+        deps.clear();
         return deps;
     }
     

@@ -35,6 +35,13 @@ public class Dependencies implements Serializable {
         return owner;
     }
     
+    /**
+     * Clears all the dependencies.
+     */
+    public void clear() {
+        dependencies.clear();
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Dependencies
     // --------------------------------------------------------------------------------------------
