@@ -1,5 +1,6 @@
 package mb.statix.scopegraph.reference;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 public interface LabelWF<L> {
@@ -22,8 +23,15 @@ public interface LabelWF<L> {
 
     boolean accepting() throws ResolutionException, InterruptedException;
 
+    /**
+     * NOTE: The returned LabelWF is serializable
+     * 
+     * @return
+     *      a label wf that matches any path
+     */
     static <L> LabelWF<L> ANY() {
-        return new LabelWF<L>() {
+        class SerializableLabelWF implements LabelWF<L>, Serializable {
+            private static final long serialVersionUID = 1L;
 
             @Override public Optional<LabelWF<L>> step(L l) {
                 return Optional.of(this);
@@ -36,8 +44,9 @@ public interface LabelWF<L> {
             @Override public boolean accepting() {
                 return true;
             }
-
         };
+        
+        return new SerializableLabelWF();
     }
 
 }
