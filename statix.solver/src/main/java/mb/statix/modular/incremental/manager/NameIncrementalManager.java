@@ -247,7 +247,7 @@ public class NameIncrementalManager extends IncrementalManager {
         eDiff.print(System.out);
         
         //Determine the dependencies
-        Set<String> toRedo = diff.getDependencies(context(), Dependency::getDependant);
+        Set<String> toRedo = diff.getDependencies(context(), Dependency::getOwner);
         
         for (String id : toRedo) {
             redoReasons.put(id, RedoReason.DIFF);

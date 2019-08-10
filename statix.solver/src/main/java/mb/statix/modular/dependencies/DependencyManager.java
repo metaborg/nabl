@@ -35,6 +35,10 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
         this.creator = creator;
     }
     
+    public Function<String, D> getCreator() {
+        return creator;
+    }
+    
     /**
      * @param moduleId
      *      the id of the module
