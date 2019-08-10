@@ -16,27 +16,51 @@ import mb.statix.taico.util.TPrettyPrinter;
  */
 public class Dependency implements Serializable {
     private static final long serialVersionUID = 1L;
-    
     private final String owner;
     private final String dependant;
-    private final Map<Class<? extends IDependencyDetail>, IDependencyDetail> details = new HashMap<>();
+    private final Map<Class<? extends IDependencyDetail>, IDependencyDetail> details;
     
     /**
      * @param owner
-     *      the id of the module that depends upon the dependant
+     *      the owner
      * @param dependant
-     *      the id of the module that is depended upon
+     *      the dependant
      * @param details
-     *      the details
+     *      the dependency details
      */
-    public Dependency(String owner, String dependant, IDependencyDetail... details) {
+    public Dependency(String owner, String dependant, Map<Class<? extends IDependencyDetail>, IDependencyDetail> details) {
         this.owner = owner;
         this.dependant = dependant;
+        this.details = details;
+    }
+    
+    /**
+     * @param owner
+     *      the owner
+     * @param dependant
+     *      the dependant
+     * @param details
+     *      the dependency details
+     */
+    public Dependency(String owner, String dependant, IDependencyDetail... details) {
+        this(owner, dependant, new HashMap<>());
         for (IDependencyDetail detail : details) {
             this.details.put(detail.getClass(), detail);
         }
     }
     
+    /**
+     * Protected constructor for {@link FakeDependency}.
+     * 
+     * @param owner
+     *      the owner
+     */
+    protected Dependency(String owner) {
+        this.owner = owner;
+        this.dependant = null;
+        this.details = null;
+    }
+
     /**
      * For a dependency relation A -> B, this method returns A.
      * 
@@ -46,7 +70,7 @@ public class Dependency implements Serializable {
      * @see #getDepender()
      *      This method is the same as getDepender()
      */
-    public String getOwner() {
+    public final String getOwner() {
         return owner;
     }
     
@@ -59,7 +83,7 @@ public class Dependency implements Serializable {
      * @see #getOwner()
      *      This method is the same as getOwner()
      */
-    public String getDepender() {
+    public final String getDepender() {
         return owner;
     }
     
@@ -72,7 +96,7 @@ public class Dependency implements Serializable {
      * @see #getDependedUpon()
      *      This method is the same as getDependedUpon()
      */
-    public String getDependant() {
+    public final String getDependant() {
         return dependant;
     }
     
@@ -85,7 +109,7 @@ public class Dependency implements Serializable {
      * @see #getDependant()
      *      This method is the same as getDependant()
      */
-    public String getDependedUpon() {
+    public final String getDependedUpon() {
         return dependant;
     }
     
@@ -121,21 +145,8 @@ public class Dependency implements Serializable {
     }
     
     // --------------------------------------------------------------------------------------------
-    // Object methods
+    // Debugging methods
     // --------------------------------------------------------------------------------------------
-    
-    @Override
-    public String toString() {
-        if (details.isEmpty()) {
-            return owner + " -> " + dependant;
-        }
-        
-        String detailString = details.values().stream()
-                .map(IDependencyDetail::toString)
-                .collect(Collectors.joining(", "));
-        
-        return owner + " -> " + dependant + " | <" + detailString + ">";
-    }
     
     public String print(boolean pretty) {
         StringBuilder sb = new StringBuilder();
@@ -153,6 +164,44 @@ public class Dependency implements Serializable {
         return sb.toString();
     }
     
+    // --------------------------------------------------------------------------------------------
+    // Object methods
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public String toString() {
+        if (details.isEmpty()) {
+            return owner + " -> " + dependant;
+        }
+        
+        String detailString = details.values().stream()
+                .map(IDependencyDetail::toString)
+                .collect(Collectors.joining(", "));
+        
+        return owner + " -> " + dependant + " | <" + detailString + ">";
+    }
+    
+    /**
+     * Special equality relation that gives reference equality and equality with
+     * {@link FakeDependency}.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof FakeDependency)) return false;
+        
+        return owner.equals(((Dependency) obj).owner);
+    }
+    
+    @Override
+    public int hashCode() {
+        return owner.hashCode();
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
+    
     /**
      * Checks if this dependency is equal to the given dependency, excluding the dependant.
      * 
@@ -168,5 +217,42 @@ public class Dependency implements Serializable {
         if (!this.details.equals(other.details)) return false;
         
         return true;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Static creators
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * Creates a new fake dependency that is equal to all dependencies with the same owner.
+     * Can be used to remove dependencies from maps efficiently.
+     * 
+     * @param owner
+     *      the owner of the dependency
+     * 
+     * @return
+     *      the fake dependency
+     */
+    public static Dependency fake(String owner) {
+        return new FakeDependency(owner);
+    }
+    
+    /**
+     * Fake dependency class to be able to remove dependencies from hashmaps easily.
+     */
+    private static class FakeDependency extends Dependency {
+        private static final long serialVersionUID = 1L;
+        
+        private FakeDependency(String owner) {
+            super(owner);
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (!(obj instanceof Dependency)) return false;
+            
+            return getOwner().equals(((Dependency) obj).getOwner());
+        }
     }
 }
