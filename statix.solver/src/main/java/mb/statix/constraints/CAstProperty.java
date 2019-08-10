@@ -12,11 +12,11 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MConstraintContext;
-import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.state.IMState;
 
 public class CAstProperty implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;

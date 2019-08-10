@@ -20,9 +20,9 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.statix.taico.dot.DotPrinter;
-import mb.statix.taico.util.TOverrides;
-import mb.statix.taico.util.TTimings;
+import mb.statix.modular.dot.DotPrinter;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TTimings;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;

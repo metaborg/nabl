@@ -2,8 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.taico.util.TOverrides.LOGLEVEL;
-import static mb.statix.taico.util.TOverrides.OVERRIDE_LOGLEVEL;
+import static mb.statix.modular.util.TOverrides.*;
 
 import java.util.Arrays;
 import java.util.Collection;

@@ -21,6 +21,9 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.Constraints;
+import mb.statix.modular.util.TDebug;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TTimings;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
@@ -28,9 +31,6 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
-import mb.statix.taico.util.TDebug;
-import mb.statix.taico.util.TOverrides;
-import mb.statix.taico.util.TTimings;
 
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);

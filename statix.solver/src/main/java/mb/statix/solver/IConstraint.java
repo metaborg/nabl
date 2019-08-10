@@ -22,9 +22,9 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
-import mb.statix.taico.solver.MConstraintContext;
-import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.state.IMState;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
 
 /**
  * Interface to represent a constraint.

@@ -19,15 +19,15 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.modular.util.TDebug;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TTimings;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
-import mb.statix.taico.util.TDebug;
-import mb.statix.taico.util.TOverrides;
-import mb.statix.taico.util.TTimings;
 
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);

@@ -12,13 +12,13 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.unifier.DistributedUnifier;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.MConstraintContext;
-import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.state.IMState;
-import mb.statix.taico.unifier.DistributedUnifier;
 
 /**
  * Implementation for an equality constraint.

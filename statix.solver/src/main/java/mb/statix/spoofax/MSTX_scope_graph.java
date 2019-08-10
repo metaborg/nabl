@@ -12,7 +12,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.taico.dot.DotPrinter;
+import mb.statix.modular.dot.DotPrinter;
 import mb.statix.taico.solver.MSolverResult;
 
 public class MSTX_scope_graph extends StatixPrimitive {

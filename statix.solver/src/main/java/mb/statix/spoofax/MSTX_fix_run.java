@@ -12,7 +12,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.taico.util.TTimings;
+import mb.statix.modular.util.TTimings;
 
 public class MSTX_fix_run extends StatixPrimitive {
 

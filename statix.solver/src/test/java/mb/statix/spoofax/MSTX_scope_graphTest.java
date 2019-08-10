@@ -2,7 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.taico.util.test.TestUtil.*;
+import static mb.statix.modular.util.test.TestUtil.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,13 +13,13 @@ import org.junit.Test;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.modular.incremental.strategy.NonIncrementalStrategy;
+import mb.statix.modular.module.IModule;
+import mb.statix.modular.module.Module;
+import mb.statix.modular.solver.Context;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
-import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.Module;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.Context;
 
 public class MSTX_scope_graphTest {
     protected static MSTX_scope_graph stratego = new MSTX_scope_graph();

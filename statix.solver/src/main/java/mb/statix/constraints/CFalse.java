@@ -8,10 +8,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MConstraintContext;
-import mb.statix.taico.solver.MConstraintResult;
-import mb.statix.taico.solver.state.IMState;
 
 /**
  * Implementation for the {@code false} constraint.

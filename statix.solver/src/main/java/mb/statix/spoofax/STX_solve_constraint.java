@@ -17,15 +17,15 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.constraints.CExists;
+import mb.statix.modular.util.TDebug;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TTimings;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 import mb.statix.spec.Spec;
-import mb.statix.taico.util.TDebug;
-import mb.statix.taico.util.TOverrides;
-import mb.statix.taico.util.TTimings;
 
 public class STX_solve_constraint extends StatixPrimitive {
 

@@ -19,6 +19,14 @@ import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
+import mb.statix.modular.module.IModule;
+import mb.statix.modular.module.ModulePaths;
+import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.ModuleSolver;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.Scopes;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -26,16 +34,8 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.ModulePaths;
-import mb.statix.taico.solver.Context;
-import mb.statix.taico.solver.MConstraintContext;
-import mb.statix.taico.solver.MConstraintResult;
 import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.solver.ModuleSolver;
-import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.spec.ModuleBoundary;
-import mb.statix.taico.util.Scopes;
 
 /**
  * Implementation for a user constraint (rule application).

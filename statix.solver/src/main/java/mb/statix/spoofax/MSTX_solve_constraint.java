@@ -2,7 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.taico.util.TOverrides.*;
+import static mb.statix.modular.util.TOverrides.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,20 +20,20 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CExists;
+import mb.statix.modular.incremental.strategy.NonIncrementalStrategy;
+import mb.statix.modular.module.IModule;
+import mb.statix.modular.module.Module;
+import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.concurrent.ConcurrentSolverCoordinator;
+import mb.statix.modular.solver.coordinator.ISolverCoordinator;
+import mb.statix.modular.solver.coordinator.SolverCoordinator;
+import mb.statix.modular.util.TDebug;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TTimings;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
-import mb.statix.taico.incremental.strategy.NonIncrementalStrategy;
-import mb.statix.taico.module.IModule;
-import mb.statix.taico.module.Module;
-import mb.statix.taico.solver.Context;
-import mb.statix.taico.solver.concurrent.ConcurrentSolverCoordinator;
-import mb.statix.taico.solver.coordinator.ISolverCoordinator;
-import mb.statix.taico.solver.coordinator.SolverCoordinator;
-import mb.statix.taico.util.TDebug;
-import mb.statix.taico.util.TOverrides;
-import mb.statix.taico.util.TTimings;
 
 public class MSTX_solve_constraint extends StatixPrimitive {
     @Inject public MSTX_solve_constraint() {

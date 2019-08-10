@@ -12,11 +12,11 @@ import com.google.common.collect.Multiset;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.modular.observers.EdgeCompleteObserver;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
-import mb.statix.taico.observers.EdgeCompleteObserver;
-import mb.statix.taico.util.TDebug;
 
 public class IncrementalCompleteness implements ICompleteness {
 
