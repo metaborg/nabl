@@ -2,7 +2,6 @@ package mb.statix.taico.solver;
 
 import static mb.statix.taico.util.TOverrides.hashMap;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -812,18 +811,4 @@ public class Context implements IContext, Serializable {
             currentContextThreadSensitive = null;
         }
     }
-    
-    // --------------------------------------------------------------------------------------------
-    // Serialization
-    // --------------------------------------------------------------------------------------------
-    
-    private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-    }
-    
-    private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
-        System.out.println("Serializing context " + this);
-        stream.defaultWriteObject();
-    }
-    
 }

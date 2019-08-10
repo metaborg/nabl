@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.collect.MultimapBuilder;
+
 import mb.statix.taico.solver.concurrent.locking.DummyReadWriteLock;
 
 public class TOverrides {
@@ -87,6 +89,27 @@ public class TOverrides {
      */
     public static <K, V> Map<K, V> hashMap(Map<K, V> map) {
         return CONCURRENT ? new ConcurrentHashMap<>(map) : new HashMap<>(map);
+    }
+    
+    /**
+     * If concurrency is enabled, this method returns a {@link MapMultimap} with a
+     * {@link ConcurrentHashMap} as backing map and synchronized multimaps for the backing
+     * multimaps. Otherwise, this method returns a normal {@link MapMultimap} (backed by a
+     * {@link HashMap} and a normal hash keys, hash set values multimap.
+     * 
+     * @return
+     *      either a concurrent or non concurrent version of the multimap
+     */
+    public static <K1, K2, V> MapMultimap<K1, K2, V> mapSetMultimap() {
+        return CONCURRENT
+                ? MapMultimap.concurrent(MultimapBuilder.hashKeys().hashSetValues())
+                : new MapMultimap<>();
+    }
+    
+    public static <K1, K2, V> MapMultimap<K1, K2, V> mapListMultimap() {
+        return CONCURRENT
+                ? MapMultimap.concurrent(MultimapBuilder.hashKeys().arrayListValues())
+                : new MapMultimap<>();
     }
     
     /**

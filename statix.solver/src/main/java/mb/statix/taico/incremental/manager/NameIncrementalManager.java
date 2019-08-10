@@ -397,13 +397,13 @@ public class NameIncrementalManager extends IncrementalManager {
         }
         
         for (Tuple2<Scope, ITerm> added : sgDiff.getRemovedEdges()._getForwardMap().keySet()) {
-            if (detail.isAffectedByEdgeRemoval(added.getKey(), added.getValue())) {
+            if (detail.canBeAffectedByEdgeRemoval(added.getKey(), added.getValue())) {
                 toRedo.add(dependant);
             }
         }
         
         for (Scope scope : sgDiff.getRemovedScopes()) {
-            if (detail.isAffectedByScopeRemoval(scope)) {
+            if (detail.canBeAffectedByScopeRemoval(scope)) {
                 if (toRedo.add(dependant)) {
                     System.out.println("Scope removal was relevant for " + dependant + " (not yet added)! Scope " + printScope(scope));
                 } else {

@@ -181,23 +181,6 @@ public class Dependency implements Serializable {
         return owner + " -> " + dependant + " | <" + detailString + ">";
     }
     
-    /**
-     * Special equality relation that gives reference equality and equality with
-     * {@link FakeDependency}.
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (!(obj instanceof FakeDependency)) return false;
-        
-        return owner.equals(((Dependency) obj).owner);
-    }
-    
-    @Override
-    public int hashCode() {
-        return owner.hashCode();
-    }
-    
     // --------------------------------------------------------------------------------------------
     // Other
     // --------------------------------------------------------------------------------------------
@@ -217,42 +200,5 @@ public class Dependency implements Serializable {
         if (!this.details.equals(other.details)) return false;
         
         return true;
-    }
-    
-    // --------------------------------------------------------------------------------------------
-    // Static creators
-    // --------------------------------------------------------------------------------------------
-    
-    /**
-     * Creates a new fake dependency that is equal to all dependencies with the same owner.
-     * Can be used to remove dependencies from maps efficiently.
-     * 
-     * @param owner
-     *      the owner of the dependency
-     * 
-     * @return
-     *      the fake dependency
-     */
-    public static Dependency fake(String owner) {
-        return new FakeDependency(owner);
-    }
-    
-    /**
-     * Fake dependency class to be able to remove dependencies from hashmaps easily.
-     */
-    private static class FakeDependency extends Dependency {
-        private static final long serialVersionUID = 1L;
-        
-        private FakeDependency(String owner) {
-            super(owner);
-        }
-        
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == this) return true;
-            if (!(obj instanceof Dependency)) return false;
-            
-            return getOwner().equals(((Dependency) obj).getOwner());
-        }
     }
 }
