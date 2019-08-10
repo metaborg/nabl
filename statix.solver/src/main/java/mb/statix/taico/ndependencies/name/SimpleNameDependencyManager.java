@@ -9,7 +9,6 @@ import com.google.common.collect.SetMultimap;
 
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.dependencies.Dependency;
-import mb.statix.taico.dependencies.details.NameDependencyDetail;
 import mb.statix.taico.name.NameAndRelation;
 
 public class SimpleNameDependencyManager implements INameDependencyManager, Serializable {
@@ -36,14 +35,28 @@ public class SimpleNameDependencyManager implements INameDependencyManager, Seri
     }
     
     @Override
-    public void removeDependencies(Collection<Dependency> dependencies) {
+    public synchronized void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
-            nameDependencies.remove(getNameFromDependency(dependency), dependency);
+            nameDependencies.remove(INameDependencyManager.getNameFromDependency(dependency), dependency);
         }
     }
     
-    private NameAndRelation getNameFromDependency(Dependency dependency) {
-        NameDependencyDetail detail = dependency.getDetails(NameDependencyDetail.class);
-        return detail.toNameAndRelation();
+    @Override
+    public void onDependencyAdded(Dependency dependency) {
+        addDependency(INameDependencyManager.getNameFromDependency(dependency), dependency);
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Affect
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public int dataAdditionAffectScore() {
+        return 1; //O(1) lookup, SOMETIMES reports affected when this is not the case
+    }
+    
+    @Override
+    public int dataRemovalOrChangeAffectScore() {
+        return 3; //O(1) lookup, OFTEN reports affected when this is not the case
     }
 }

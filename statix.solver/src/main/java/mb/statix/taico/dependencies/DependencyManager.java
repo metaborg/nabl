@@ -1,13 +1,20 @@
 package mb.statix.taico.dependencies;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import mb.statix.taico.dependencies.affect.IDataAdditionAffect;
+import mb.statix.taico.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.taico.dependencies.affect.IEdgeAdditionAffect;
+import mb.statix.taico.dependencies.affect.IEdgeRemovalAffect;
+import mb.statix.taico.ndependencies.observer.IDependencyObserver;
 import mb.statix.taico.util.TOverrides;
 
 public class DependencyManager<D extends Dependencies> implements Serializable, Iterable<Entry<String, D>> {
@@ -15,6 +22,13 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
     
     private final Function<String, D> creator;
     private final Map<String, D> map = TOverrides.hashMap();
+    
+    private List<IDependencyObserver> observers = new ArrayList<>();
+    
+    private IEdgeAdditionAffect edgeAdd;
+    private IEdgeRemovalAffect edgeRemove;
+    private IDataAdditionAffect dataAdd;
+    private IDataRemovalOrChangeAffect dataRemoveOrChange;
     
     public DependencyManager(Function<String, D> creator) {
         if (!(creator instanceof Serializable)) throw new IllegalArgumentException("The creator function needs to be serializable!");
@@ -101,5 +115,76 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
      */
     public Collection<D> dependencies() {
         return map.values();
+    }
+    
+    // -------------------------------------------------------------------------------------------
+    // Observers
+    // -------------------------------------------------------------------------------------------
+    
+    public List<IDependencyObserver> getObservers() {
+        return observers;
+    }
+    
+    public void registerObserver(IDependencyObserver observer) {
+        observers.add(observer);
+        
+        //Check affects
+        updateAffect(observer);
+    }
+
+    public void onDependencyAdded(Dependency dependency) {
+        for (IDependencyObserver observer : observers) {
+            observer.onDependencyAdded(dependency);
+        }
+    }
+    
+    // -------------------------------------------------------------------------------------------
+    // Affect
+    // -------------------------------------------------------------------------------------------
+    
+    private void updateAffect(IDependencyObserver observer) {
+        if (observer instanceof IEdgeAdditionAffect) {
+            IEdgeAdditionAffect newEdgeAdd = (IEdgeAdditionAffect) observer;
+            if (edgeAdd == null || newEdgeAdd.edgeAdditionAffectScore() > edgeAdd.edgeAdditionAffectScore()) {
+                edgeAdd = newEdgeAdd;
+            }
+        }
+        
+        if (observer instanceof IEdgeRemovalAffect) {
+            IEdgeRemovalAffect newEdgeRemove = (IEdgeRemovalAffect) observer;
+            if (edgeRemove == null || newEdgeRemove.edgeRemovalAffectScore() > edgeRemove.edgeRemovalAffectScore()) {
+                edgeRemove = newEdgeRemove;
+            }
+        }
+        
+        if (observer instanceof IDataAdditionAffect) {
+            IDataAdditionAffect newDataAdd = (IDataAdditionAffect) observer;
+            if (dataAdd == null || newDataAdd.dataAdditionAffectScore() > dataAdd.dataAdditionAffectScore()) {
+                dataAdd = newDataAdd;
+            }
+        }
+        
+        if (observer instanceof IDataRemovalOrChangeAffect) {
+            IDataRemovalOrChangeAffect newDataRemoveOrChange = (IDataRemovalOrChangeAffect) observer;
+            if (dataRemoveOrChange == null || newDataRemoveOrChange.dataRemovalOrChangeAffectScore() > dataRemoveOrChange.dataRemovalOrChangeAffectScore()) {
+                dataRemoveOrChange = newDataRemoveOrChange;
+            }
+        }
+    }
+    
+    public IEdgeAdditionAffect edgeAddition() {
+        return edgeAdd;
+    }
+    
+    public IEdgeRemovalAffect edgeRemoval() {
+        return edgeRemove;
+    }
+    
+    public IDataAdditionAffect dataAddition() {
+        return dataAdd;
+    }
+    
+    public IDataRemovalOrChangeAffect dataRemoveOrChange() {
+        return dataRemoveOrChange;
     }
 }

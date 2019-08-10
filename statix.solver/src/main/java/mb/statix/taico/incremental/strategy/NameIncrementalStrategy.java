@@ -10,7 +10,6 @@ import java.util.function.Function;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.dependencies.DependencyManager;
-import mb.statix.taico.dependencies.NameDependencies;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
 import mb.statix.taico.incremental.changeset.NameChangeSet;
@@ -19,6 +18,7 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.module.split.SplitModuleUtil;
+import mb.statix.taico.ndependencies.NDependencies;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.TOverrides;
@@ -39,7 +39,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
     @SuppressWarnings("unchecked")
     @Override
     public DependencyManager<?> createDependencyManager() {
-        return new DependencyManager<>((Function<String, NameDependencies> & Serializable) NameDependencies::new);
+        return new DependencyManager<>((Function<String, NDependencies> & Serializable) NDependencies::new);
     }
     
     @Override

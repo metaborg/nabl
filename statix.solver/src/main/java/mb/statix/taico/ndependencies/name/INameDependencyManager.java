@@ -5,10 +5,16 @@ import java.util.Collection;
 
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.dependencies.Dependency;
+import mb.statix.taico.dependencies.affect.IDataAdditionAffect;
+import mb.statix.taico.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.taico.dependencies.details.NameDependencyDetail;
 import mb.statix.taico.name.NameAndRelation;
-import mb.statix.taico.solver.Context;
+import mb.statix.taico.ndependencies.observer.IDependencyObserver;
 
-public interface INameDependencyManager extends Serializable {
+/**
+ * Optimal (if not simple) for data addition, suboptimal for removal/changes.
+ */
+public interface INameDependencyManager extends IDependencyObserver, IDataAdditionAffect, IDataRemovalOrChangeAffect, Serializable {
     
     /**
      * The dependencies on the given name and relation in the given scope.
@@ -39,20 +45,28 @@ public interface INameDependencyManager extends Serializable {
     public boolean addDependency(NameAndRelation nameRel, Scope scope, Dependency dependency);
     
     /**
-     * Removes the given dependencies.
+     * @param dependency
+     *      the dependency
      * 
-     * @param dependencies
-     *      the dependencies to remove
+     * @return
+     *      the name and relation of the given dependency
      */
-    public void removeDependencies(Collection<Dependency> dependencies);
+    public static NameAndRelation getNameFromDependency(Dependency dependency) {
+        NameDependencyDetail detail = dependency.getDetails(NameDependencyDetail.class);
+        return detail.toNameAndRelation();
+    }
     
-    /**
-     * Resets the dependencies of the given module.
-     * 
-     * @param module
-     *      the module to reset
-     */
-    public default void resetDependencies(String module) {
-        removeDependencies(Context.context().getDependencies(module).getDependencies().values());
+    // --------------------------------------------------------------------------------------------
+    // Affect
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    default Iterable<Dependency> affectedByDataAddition(NameAndRelation nameAndRelation, Scope scope) {
+        return getDependencies(nameAndRelation, scope);
+    }
+    
+    @Override
+    default Iterable<Dependency> affectedByDataRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+        return getDependencies(nameAndRelation, scope);
     }
 }

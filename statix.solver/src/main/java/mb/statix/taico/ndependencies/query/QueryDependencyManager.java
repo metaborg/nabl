@@ -51,6 +51,20 @@ public class QueryDependencyManager implements IQueryDependencyManager, Serializ
     }
     
     // --------------------------------------------------------------------------------------------
+    // Affect
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public int edgeRemovalAffectScore() {
+        return 0; //O(n) (small n) lookup, EXACT
+    }
+    
+    @Override
+    public int dataRemovalOrChangeAffectScore() {
+        return 0; //O(n) (small n) lookup, EXACT
+    }
+    
+    // --------------------------------------------------------------------------------------------
     // Serialization
     // --------------------------------------------------------------------------------------------
     

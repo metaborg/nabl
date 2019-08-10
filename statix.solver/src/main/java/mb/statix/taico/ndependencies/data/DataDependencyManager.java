@@ -1,4 +1,4 @@
-package mb.statix.taico.ndependencies.edge;
+package mb.statix.taico.ndependencies.data;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -15,40 +15,40 @@ import mb.statix.taico.dependencies.Dependency;
 import mb.statix.taico.dependencies.details.SimpleQueryDependencyDetail;
 import mb.statix.taico.util.LightWeightHashTrieRelation3;
 
-public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Serializable {
+public class DataDependencyManager implements IDataDependencyManager<ITerm>, Serializable {
     private static final long serialVersionUID = 1L;
     
     //The sparser the map is populated, the more sense it makes to go with the tuple approach instead.
-    private LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> edgeDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> dataDependencies = LightWeightHashTrieRelation3.Transient.of();
     
     @Override
     public synchronized Iterable<Dependency> getDependencies(Scope scope) {
-        return edgeDependencies.get(scope).stream().map(Tuple2::_2)::iterator;
+        return dataDependencies.get(scope).stream().map(Tuple2::_2)::iterator;
     }
     
     @Override
     public synchronized Set<Dependency> getDependencies(Scope scope, ITerm label) {
-        return edgeDependencies.get(scope, label);
+        return dataDependencies.get(scope, label);
     }
     
     @Override
     public synchronized boolean addDependency(Scope scope, ITerm label, Dependency dependency) {
-        return edgeDependencies.put(scope, label, dependency);
+        return dataDependencies.put(scope, label, dependency);
     }
     
     @Override
     public synchronized void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
-            for (Entry<Scope, ITerm> entry : getEdges(dependency)) {
-                edgeDependencies.remove(entry.getKey(), entry.getValue(), dependency);
+            for (Entry<Scope, ITerm> entry : getData(dependency)) {
+                dataDependencies.remove(entry.getKey(), entry.getValue(), dependency);
             }
         }
     }
     
     @Override
     public synchronized void onDependencyAdded(Dependency dependency) {
-        for (Entry<Scope, ITerm> entry : getEdges(dependency)) {
-            edgeDependencies.put(entry.getKey(), entry.getValue(), dependency);
+        for (Entry<Scope, ITerm> entry : getData(dependency)) {
+            dataDependencies.put(entry.getKey(), entry.getValue(), dependency);
         }
     }
     
@@ -56,9 +56,9 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
     // Helpers
     // --------------------------------------------------------------------------------------------
     
-    private static Collection<Entry<Scope, ITerm>> getEdges(Dependency dependency) {
+    private static Collection<Entry<Scope, ITerm>> getData(Dependency dependency) {
         SimpleQueryDependencyDetail detail = dependency.getDetails(SimpleQueryDependencyDetail.class);
-        return detail.getRelevantEdges().entries();
+        return detail.getRelevantData().entries();
     }
     
     // --------------------------------------------------------------------------------------------
@@ -66,12 +66,12 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public int edgeAdditionAffectScore() {
+    public int dataAdditionAffectScore() {
         return 0; //O(1) lookup, exact
     }
     
     @Override
-    public int edgeRemovalAffectScore() {
+    public int dataRemovalOrChangeAffectScore() {
         return 2; //O(1) lookup, but SOMETIMES reports affected when this is not the case
     }
     
@@ -81,9 +81,9 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
     
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
-        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen = edgeDependencies.freeze();
+        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen = dataDependencies.freeze();
         out.writeObject(frozen);
-        this.edgeDependencies = frozen.melt();
+        this.dataDependencies = frozen.melt();
     }
     
     @SuppressWarnings("unchecked")
@@ -91,6 +91,6 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
         in.defaultReadObject();
         LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen =
                 (LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency>) in.readObject();
-        this.edgeDependencies = frozen.melt();
+        this.dataDependencies = frozen.melt();
     }
 }

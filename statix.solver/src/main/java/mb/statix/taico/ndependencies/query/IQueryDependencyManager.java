@@ -4,11 +4,20 @@ import java.io.Serializable;
 import java.util.Collection;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.dependencies.Dependency;
-import mb.statix.taico.solver.Context;
+import mb.statix.taico.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.taico.dependencies.affect.IEdgeRemovalAffect;
+import mb.statix.taico.dependencies.details.QueryResultDependencyDetail;
+import mb.statix.taico.name.NameAndRelation;
+import mb.statix.taico.ndependencies.observer.IDependencyObserver;
 
-public interface IQueryDependencyManager extends Serializable {
+/**
+ * Optimal for edge removal, data removal and data change.
+ */
+public interface IQueryDependencyManager extends IDependencyObserver, IDataRemovalOrChangeAffect, IEdgeRemovalAffect, Serializable {
     /**
      * The dependencies of the given scope.
      * 
@@ -48,21 +57,28 @@ public interface IQueryDependencyManager extends Serializable {
      */
     public boolean addDependency(Scope scope, ITerm label, Dependency dependency);
     
-    /**
-     * Removes the given dependencies.
-     * 
-     * @param dependencies
-     *      the dependencies to remove
-     */
-    public void removeDependencies(Collection<Dependency> dependencies);
+    @Override
+    public default void onDependencyAdded(Dependency dependency) {
+        QueryResultDependencyDetail qrdd = dependency.getDetails(QueryResultDependencyDetail.class);
+        for (IResolutionPath<Scope, ITerm, ITerm> path : qrdd.getPaths()) {
+            addDependency(path.getPath().getTarget(), path.getLabel(), dependency);
+            for (IStep<Scope, ITerm> step : path.getPath()) {
+                addDependency(step.getSource(), step.getLabel(), dependency);
+            }
+        }
+    }
     
-    /**
-     * Resets the dependencies of the given module.
-     * 
-     * @param module
-     *      the module to reset
-     */
-    public default void resetDependencies(String module) {
-        removeDependencies(Context.context().getDependencies(module).getDependencies().values());
+    // --------------------------------------------------------------------------------------------
+    // Affect
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    default Iterable<Dependency> affectedByDataRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+        return getDependencies(scope, nameAndRelation.getRelation());
+    }
+    
+    @Override
+    default Iterable<Dependency> affectedByEdgeRemoval(Scope scope, ITerm label) {
+        return getDependencies(scope, label);
     }
 }

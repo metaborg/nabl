@@ -436,6 +436,11 @@ public class ModuleConstraintStore implements IConstraintStore {
         
         if (state == null) state = context().getState(this.owner);
         final IMState varState = varOwner.getCurrentState();
+        if (varState == null) {
+            TDebug.debugContext(context(), false);
+            
+            throw new NullPointerException();
+        }
         final ModuleConstraintStore varStore = varState.solver().getStore();
         
         //Before checking, ensure that the other side cannot notify observers causing us to miss the event

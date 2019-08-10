@@ -1,4 +1,4 @@
-package mb.statix.taico.ndependencies.edge;
+package mb.statix.taico.ndependencies.data;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -6,11 +6,12 @@ import java.util.Collection;
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.dependencies.Dependency;
-import mb.statix.taico.dependencies.affect.IEdgeAdditionAffect;
-import mb.statix.taico.dependencies.affect.IEdgeRemovalAffect;
+import mb.statix.taico.dependencies.affect.IDataAdditionAffect;
+import mb.statix.taico.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.taico.name.NameAndRelation;
 import mb.statix.taico.ndependencies.observer.IDependencyObserver;
 
-public interface IEdgeDependencyManager<T> extends IDependencyObserver, IEdgeAdditionAffect, IEdgeRemovalAffect, Serializable {
+public interface IDataDependencyManager<T> extends IDependencyObserver, IDataAdditionAffect, IDataRemovalOrChangeAffect, Serializable {
     /**
      * The dependencies of the given scope.
      * 
@@ -55,12 +56,12 @@ public interface IEdgeDependencyManager<T> extends IDependencyObserver, IEdgeAdd
     // --------------------------------------------------------------------------------------------
     
     @Override
-    default Iterable<Dependency> affectedByEdgeAddition(Scope scope, ITerm label) {
-        return getDependencies(scope, label);
+    default Iterable<Dependency> affectedByDataAddition(NameAndRelation nameAndRelation, Scope scope) {
+        return getDependencies(scope, nameAndRelation.getRelation());
     }
     
     @Override
-    default Iterable<Dependency> affectedByEdgeRemoval(Scope scope, ITerm label) {
-        return getDependencies(scope, label);
+    default Iterable<Dependency> affectedByDataRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+        return getDependencies(scope, nameAndRelation.getRelation());
     }
 }

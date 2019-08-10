@@ -9,7 +9,6 @@ import java.util.Set;
 
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.dependencies.Dependency;
-import mb.statix.taico.dependencies.details.NameDependencyDetail;
 import mb.statix.taico.dependencies.details.QueryDependencyDetail;
 import mb.statix.taico.name.NameAndRelation;
 import mb.statix.taico.util.LightWeightHashTrieRelation3;
@@ -31,11 +30,25 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     }
     
     @Override
-    public synchronized void removeDependencies(Collection<Dependency> dependencies) {
+    public void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
-            NameAndRelation nar = getNameFromDependency(dependency);
-            for (Scope scope : getScopesFromDependency(dependency)) {
-                nameDependencies.remove(nar, scope, dependency);
+            NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
+            Set<Scope> scopes = getScopesFromDependency(dependency);
+            synchronized (this) {
+                for (Scope scope : scopes) {
+                    nameDependencies.remove(nar, scope, dependency);
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void onDependencyAdded(Dependency dependency) {
+        NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
+        Set<Scope> scopes = getScopesFromDependency(dependency);
+        synchronized (this) {
+            for (Scope scope : scopes) {
+                nameDependencies.put(nar, scope, dependency);
             }
         }
     }
@@ -44,14 +57,23 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     // Helpers
     // --------------------------------------------------------------------------------------------
     
-    private NameAndRelation getNameFromDependency(Dependency dependency) {
-        NameDependencyDetail detail = dependency.getDetails(NameDependencyDetail.class);
-        return detail.toNameAndRelation();
-    }
-    
-    private Set<Scope> getScopesFromDependency(Dependency dependency) {
+    private static Set<Scope> getScopesFromDependency(Dependency dependency) {
         QueryDependencyDetail detail = dependency.getDetails(QueryDependencyDetail.class);
         return detail.getDataScopes();
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Affect
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public int dataAdditionAffectScore() {
+        return 0; //O(1) lookup, exact
+    }
+    
+    @Override
+    public int dataRemovalOrChangeAffectScore() {
+        return 2; //O(1) lookup, but sometimes reports affected when this is not the case
     }
     
     // --------------------------------------------------------------------------------------------
