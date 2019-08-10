@@ -30,7 +30,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     protected final DataWF<D> dataWF; // default: true
     private final DataLeq<D> dataEquiv; // default: false
     private final Predicate2<S, L> isDataComplete; // default: true
-    private final String requester; // default: null
+    protected final String requester; // default: null
 
     public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
             Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, L> isDataComplete,

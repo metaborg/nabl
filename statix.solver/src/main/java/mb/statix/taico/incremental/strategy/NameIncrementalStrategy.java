@@ -4,9 +4,11 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.taico.dependencies.DependencyManager;
@@ -22,6 +24,8 @@ import mb.statix.taico.ndependencies.NDependencies;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TSettings;
+import mb.statix.taico.util.TTimings;
 
 public class NameIncrementalStrategy extends IncrementalStrategy {
     
@@ -38,8 +42,29 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
     
     @SuppressWarnings("unchecked")
     @Override
-    public DependencyManager<?> createDependencyManager() {
-        return new DependencyManager<>((Function<String, NDependencies> & Serializable) NDependencies::new);
+    public DependencyManager<?> createDependencyManager(Context oldContext) {
+        DependencyManager<?> tbr;
+        if (oldContext != null) {
+            tbr = oldContext.getDependencyManager();
+            
+            //Check if the observers match our settings
+            List<Class<?>> expected = TSettings.getDependencyObservers().stream().map(Object::getClass).collect(Collectors.toList());
+            List<Class<?>> actual = tbr.getObservers().stream().map(Object::getClass).collect(Collectors.toList());
+            if (!expected.equals(actual)) {
+                TTimings.startPhase("Rebuilding indices");
+                System.err.println("Dependency observers mismatch, rebuilding indices...");
+                tbr.clearObservers();
+                tbr.registerObservers(TSettings.getDependencyObservers());
+                tbr.refreshObservers();
+                TTimings.endPhase("Rebuilding indices");
+            }
+            
+            return tbr;
+        }
+        
+        tbr = new DependencyManager<>((Function<String, NDependencies> & Serializable) NDependencies::new);
+        tbr.registerObservers(TSettings.getDependencyObservers());
+        return tbr;
     }
     
     @Override
@@ -67,6 +92,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
     public Map<IModule, IConstraint> createInitialModules(Context context,
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
+        //We do NOT transfer dependencies since we transfer the entire dependency manager for this strategy.
         System.err.println("[NIS] Transferring constraint-supplied modules...");
         Context oldContext = context.getOldContext();
         Map<IModule, IConstraint> newModules = new HashMap<>();
@@ -81,10 +107,15 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);
                 if (module != null) {
                     newModules.put(module, entry.getValue());
-                    if (oldModule == null) module.addFlag(Flag.NEW);
+                    if (oldModule == null) {
+                        module.addFlag(Flag.NEW);
+                    } else {
+                        //Reset the dependencies for any old module that is dirty
+                        context.resetDependencies(module.getId());
+                    }
                 }
             } else {
-                reuseOldModule(context, changeSet, oldModule);
+                reuseOldModule(context, changeSet, oldModule, false);
                 reuseChildren.add(oldModule);
             }
         });
@@ -101,7 +132,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
             //Reuse all modules, in the correct order
             allToReuse.stream()
             .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getId(), b.getId()))
-            .forEachOrdered(module -> reuseOldModule(context, changeSet, module));
+            .forEachOrdered(module -> reuseOldModule(context, changeSet, module, false));
             
             //Transfer the split module at the top level (TODO or prevent this from being created).
             //This module cannot have any children, so we do not need to worry about that
@@ -109,7 +140,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
                 String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
                 IModule topSplit = oldContext.getModuleUnchecked(topSplitId);
                 if (topSplit != null) {
-                    reuseOldModule(context, changeSet, topSplit);
+                    reuseOldModule(context, changeSet, topSplit, false);
                     
                     //INVARIANT: The split module of the top level does not have any children
                     assert topSplit.getScopeGraph().getChildIds().isEmpty() : "The top module split should not have any children!";

@@ -32,11 +32,13 @@ import mb.statix.taico.module.IModule;
 import mb.statix.taico.module.ModuleCleanliness;
 import mb.statix.taico.module.ModulePaths;
 import mb.statix.taico.module.split.SplitModuleUtil;
+import mb.statix.taico.ndependencies.observer.IDependencyObserver;
 import mb.statix.taico.scopegraph.reference.ModuleDelayException;
 import mb.statix.taico.solver.Context;
 import mb.statix.taico.solver.MSolverResult;
 import mb.statix.taico.solver.state.IMState;
 import mb.statix.taico.util.TOverrides;
+import mb.statix.taico.util.TSettings;
 
 /**
  * The incremental strategy determines how the incremental solving proceeds.
@@ -167,7 +169,7 @@ public abstract class IncrementalStrategy {
                 }
             } else {
                 //Old module is clean, we can reuse it
-                reuseOldModule(context, changeSet, oldModule);
+                reuseOldModule(context, changeSet, oldModule, true);
                 reuseChildren.add(oldModule);
             }
         });
@@ -188,7 +190,7 @@ public abstract class IncrementalStrategy {
             //Reuse all modules, in the correct order
             allToReuse.stream()
             .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getId(), b.getId()))
-            .forEachOrdered(module -> reuseOldModule(context, changeSet, module));
+            .forEachOrdered(module -> reuseOldModule(context, changeSet, module, true));
             
             //Transfer the split module at the top level (TODO or prevent this from being created).
             //This module cannot have any children, so we do not need to worry about that
@@ -196,7 +198,7 @@ public abstract class IncrementalStrategy {
                 String topSplitId = SplitModuleUtil.getSplitModuleId(context.getRootModule().getId());
                 IModule topSplit = oldContext.getModuleUnchecked(topSplitId);
                 if (topSplit != null) {
-                    reuseOldModule(context, changeSet, topSplit);
+                    reuseOldModule(context, changeSet, topSplit, true);
                     
                     //INVARIANT: The split module of the top level does not have any children
                     assert topSplit.getScopeGraph().getChildIds().isEmpty() : "The top module split should not have any children!";
@@ -317,10 +319,12 @@ public abstract class IncrementalStrategy {
      *      the change set
      * @param module
      *      the module
+     * @param transferDependencies
+     *      if dependencies should be transferred
      */
-    protected void reuseOldModule(Context context, IChangeSet changeSet, IModule module) {
+    protected void reuseOldModule(Context context, IChangeSet changeSet, IModule module, boolean transferDependencies) {
         System.err.println("[IS] Reusing old module " + module);
-        IMState state = context.transferModule(module);
+        IMState state = context.transferModule(module, transferDependencies);
         for (IModule child : changeSet.removed()) {
             state.scopeGraph().removeChild(child);
         }
@@ -356,12 +360,23 @@ public abstract class IncrementalStrategy {
     }
     
     /**
+     * NOTE: This method has to register the dependency observers from
+     * {@link TSettings#getDependencyObservers()}.
+     * 
+     * @param oldContext
+     *      the old context (can be null)
+     * 
      * @return
      *      a newly created dependency manager
      */
     @SuppressWarnings("unchecked")
-    public DependencyManager<?> createDependencyManager() {
-        return new DependencyManager<>((Function<String, Dependencies> & Serializable) Dependencies::new);
+    public DependencyManager<?> createDependencyManager(@Nullable Context oldContext) {
+        DependencyManager<?> tbr = new DependencyManager<>((Function<String, Dependencies> & Serializable) Dependencies::new);
+        for (IDependencyObserver observer : TSettings.getDependencyObservers()) {
+            tbr.registerObserver(observer);
+        }
+        
+        return tbr;
     }
     
     //---------------------------------------------------------------------------------------------

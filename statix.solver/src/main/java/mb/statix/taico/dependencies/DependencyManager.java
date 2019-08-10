@@ -70,7 +70,7 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
      */
     public D setDependencies(String moduleId, D dependencies) {
         D old;
-        if ((old = map.putIfAbsent(moduleId, dependencies)) != null && old != dependencies) {
+        if ((old = map.putIfAbsent(moduleId, dependencies)) != null && !dependencies.isCopyOf(old)) {
             System.err.println("Replacing dependencies of " + moduleId + " with new dependencies!");
             for (IDependencyObserver observer : observers) {
                 observer.removeDependencies(old.getDependencies().values());
@@ -135,16 +135,43 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
         return observers;
     }
     
+    public void registerObservers(Iterable<IDependencyObserver> observers) {
+        for (IDependencyObserver observer : observers) {
+            registerObserver(observer);
+        }
+    }
+    
     public void registerObserver(IDependencyObserver observer) {
         observers.add(observer);
         
         //Check affects
         updateAffect(observer);
     }
+    
+    public void clearObservers() {
+        observers.clear();
+        edgeAdd = null;
+        edgeRemove = null;
+        dataAdd = null;
+        dataRemoveOrChange = null;
+    }
 
     public void onDependencyAdded(Dependency dependency) {
         for (IDependencyObserver observer : observers) {
             observer.onDependencyAdded(dependency);
+        }
+    }
+    
+    /**
+     * Resends all the dependencies to the observers.
+     */
+    public void refreshObservers() {
+        for (D dependencies : map.values()) {
+            for (Dependency dependency : dependencies.getDependencies().values()) {
+                for (IDependencyObserver observer : observers) {
+                    observer.onDependencyAdded(dependency);
+                }
+            }
         }
     }
     

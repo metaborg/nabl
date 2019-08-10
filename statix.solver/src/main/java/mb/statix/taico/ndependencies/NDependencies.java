@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
-import com.google.common.collect.ListMultimap;
+import com.google.common.collect.SetMultimap;
 
 import mb.statix.taico.dependencies.Dependencies;
 import mb.statix.taico.dependencies.Dependency;
@@ -43,7 +43,7 @@ public class NDependencies extends Dependencies implements Serializable {
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public ListMultimap<String, Dependency> getDependants() {
+    public SetMultimap<String, Dependency> getDependants() {
         return dependants; //Is always empty
     }
     

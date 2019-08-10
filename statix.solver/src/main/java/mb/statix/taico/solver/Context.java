@@ -20,7 +20,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
 import mb.statix.taico.dependencies.Dependencies;
-import mb.statix.taico.dependencies.Dependency;
 import mb.statix.taico.dependencies.DependencyManager;
 import mb.statix.taico.incremental.Flag;
 import mb.statix.taico.incremental.changeset.IChangeSet;
@@ -53,11 +52,12 @@ public class Context implements IContext, Serializable {
     private Map<IModule, MSolverResult> solverResults = hashMap();
     private Map<String, IMState> states = hashMap();
     
-    private Context(IncrementalStrategy strategy, Spec spec) {
+    private Context(IncrementalStrategy strategy, Spec spec, @Nullable Context oldContext) {
         this.strategy = strategy;
         this.spec = spec;
+        this.oldContext = oldContext;
         this.incrementalManager = strategy.createManager();
-        this.dependencies = strategy.createDependencyManager();
+        this.dependencies = strategy.createDependencyManager(oldContext);
     }
     
     public IncrementalStrategy getStrategy() {
@@ -310,6 +310,8 @@ public class Context implements IContext, Serializable {
      * 
      * @param oldModule
      *      the old module
+     * @param transferDependencies
+     *      if dependencies should be transferred
      * 
      * @return
      *      the state for the module
@@ -317,13 +319,13 @@ public class Context implements IContext, Serializable {
      * @throws IllegalStateException
      *      If the old module could not be transferred
      */
-    public IMState transferModule(IModule oldModule) {
+    public IMState transferModule(IModule oldModule, boolean transferDependencies) {
         if (oldContext == null) throw new IllegalStateException("Cannot transfer module " + oldModule + ": there is no old context to transfer from!");
         if (!oldContext.manager.hasModule(oldModule.getId())) throw new IllegalStateException("Cannot transfer module " + oldModule + ": module is unknown in the old context!");
         if (manager.hasModule(oldModule.getId())) throw new IllegalStateException("Cannot transfer module " + oldModule + ": there is already a new module with the same id!");
         
         IMState state = reuseOldState(oldModule);
-        transferDependencies(oldModule.getId());
+        if (transferDependencies) transferDependencies(oldModule.getId());
         return state;
     }
     
@@ -613,7 +615,7 @@ public class Context implements IContext, Serializable {
      *      the new context
      */
     public static Context initialContext(IncrementalStrategy strategy, Spec spec) {
-        Context newContext = new Context(strategy, spec);
+        Context newContext = new Context(strategy, spec, null);
         setContext(newContext);
         return newContext;
     }
@@ -635,13 +637,12 @@ public class Context implements IContext, Serializable {
     public static Context incrementalContext(
             IncrementalStrategy strategy, Context previousContext, IMState previousRootState,
             IChangeSet changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
-        Context newContext = new Context(strategy, spec);
-        newContext.oldContext = previousContext;
+        Context newContext = new Context(strategy, spec, previousContext);
         newContext.changeSet = changeSet;
         newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
         
         //TODO IMPORTANT validate that the state used here is the correct one (should it be the one stored, or the one in the context corresponding to the root?)
-        IMState newState = newContext.transferModule(previousRootState.getOwner());
+        IMState newState = newContext.transferModule(previousRootState.getOwner(), false);
         newContext.resetDependencies(newState.owner().getId()); //Reset dependencies of the top level
         //TODO Important we need to reset the dependants as well
         setContext(newContext);

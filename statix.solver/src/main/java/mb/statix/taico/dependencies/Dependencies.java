@@ -1,11 +1,10 @@
 package mb.statix.taico.dependencies;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 
 import mb.statix.taico.dependencies.details.IDependencyDetail;
 import mb.statix.taico.module.IModule;
@@ -20,8 +19,8 @@ public class Dependencies implements Serializable {
     private static final long serialVersionUID = 1L;
     
     protected final String owner;
-    protected final ListMultimap<String, Dependency> dependencies = MultimapBuilder.hashKeys().arrayListValues().build();
-    protected final ListMultimap<String, Dependency> dependants = MultimapBuilder.hashKeys().arrayListValues().build();
+    protected final SetMultimap<String, Dependency> dependencies = MultimapBuilder.hashKeys().hashSetValues().build();
+    protected final SetMultimap<String, Dependency> dependants = MultimapBuilder.hashKeys().hashSetValues().build();
     
     public Dependencies(String owner) {
         this.owner = owner;
@@ -55,7 +54,7 @@ public class Dependencies implements Serializable {
      * @return
      *      a multimap with all the modules that this module depends on
      */
-    public ListMultimap<String, Dependency> getDependencies() {
+    public SetMultimap<String, Dependency> getDependencies() {
         return dependencies;
     }
     
@@ -66,7 +65,7 @@ public class Dependencies implements Serializable {
      * @return
      *      all the dependences on the given module, or an empty list if there is no dependency
      */
-    public List<Dependency> getDependencies(String dependency) {
+    public Set<Dependency> getDependencies(String dependency) {
         return dependencies.get(dependency);
     }
     
@@ -77,7 +76,7 @@ public class Dependencies implements Serializable {
      * @return
      *      all the dependences on this module, or an empty list if there is no dependency
      */
-    public List<Dependency> getDependencies(IModule dependency) {
+    public Set<Dependency> getDependencies(IModule dependency) {
         return getDependencies(dependency.getId());
     }
     
@@ -162,7 +161,7 @@ public class Dependencies implements Serializable {
      * @return
      *      a multimap with all the modules that depend on this module
      */
-    public ListMultimap<String, Dependency> getDependants() {
+    public SetMultimap<String, Dependency> getDependants() {
         return dependants;
     }
     
@@ -217,6 +216,17 @@ public class Dependencies implements Serializable {
         copy.dependencies.putAll(dependencies);
         copy.dependants.putAll(dependants);
         return copy;
+    }
+    
+    /**
+     * @param original
+     *      the presumed original
+     * 
+     * @return
+     *      if these dependencies are a copy of the given dependencies (or vice versa)
+     */
+    public boolean isCopyOf(Dependencies original) {
+        return this.dependencies.equals(original.dependencies) && this.dependants.equals(original.dependants);
     }
     
     // --------------------------------------------------------------------------------------------

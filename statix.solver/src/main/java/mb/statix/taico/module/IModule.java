@@ -237,7 +237,7 @@ public interface IModule extends Flaggable, Serializable {
         }
         if (oldModule == null || !context().getIncrementalManager().allowTransferChild(oldModule, constraint)) return null;
         
-        context().transferModule(oldModule);
+        context().transferModule(oldModule, true);
         oldModule.getScopeGraph().substitute(canExtend);
         //TODO We potentially need to replace some of the old arguments with new ones in the old module results?
         oldModule.setInitialization(constraint);

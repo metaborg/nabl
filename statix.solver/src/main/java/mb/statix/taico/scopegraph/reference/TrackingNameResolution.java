@@ -1,6 +1,9 @@
 package mb.statix.taico.scopegraph.reference;
 
+import static mb.statix.taico.util.TOptimizations.QUERY_TRACK_ONLY_OTHER_SCOPES;
+
 import java.util.Set;
+import java.util.function.Function;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Predicate2;
@@ -16,6 +19,7 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.taico.util.TDebug;
 
 public class TrackingNameResolution<S extends D, L, D> extends FastNameResolution<S, L, D> {
@@ -23,6 +27,7 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
     //TODO However, we might want to be able to determine when we reach the same query again, and not add it twice in that case.
     private ListMultimap<S, LabelWF<L>> edgeMap = MultimapBuilder.hashKeys().arrayListValues().build();
     private ListMultimap<S, LabelWF<L>> dataMap = MultimapBuilder.hashKeys().arrayListValues().build();
+    private final Function<S, String> scopeToModule;
     
     //if scope x changed, redo the queries in it.
     
@@ -30,14 +35,19 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
 
     public TrackingNameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv,
-            Predicate2<S, L> isDataComplete, @Nullable String requester) {
+            Predicate2<S, L> isDataComplete, @Nullable String requester, Function<S, String> scopeToModule) {
         super(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv, isDataComplete, requester);
+        this.scopeToModule = scopeToModule;
     }
     
     @Override
     protected Set<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
         S scope = path.getTarget(); //the current scope
-        dataMap.put(scope, re);
+        
+        //Ignore our own scopes in the tracking if enabled
+        if (!QUERY_TRACK_ONLY_OTHER_SCOPES || !requester.equals(scopeToModule.apply(scope))) {
+            dataMap.put(scope, re);
+        }
         
         if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", data edge requested=" + l);
         return super.getData(re, path, l);
@@ -46,7 +56,11 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
     @Override
     protected Set<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
         S scope = path.getTarget(); //the current scope
-        edgeMap.put(scope, re);
+        
+        //Ignore our own scopes in the tracking if enabled
+        if (!QUERY_TRACK_ONLY_OTHER_SCOPES || !requester.equals(scopeToModule.apply(scope))) {
+            edgeMap.put(scope, re);
+        }
 
         if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", edge requested=" + l);
         return super.getEdges(re, path, l);
@@ -69,7 +83,8 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
     }
 
     public static class Builder<S extends D, L, D> extends FastNameResolution.Builder<S, L, D> {
-
+        private Function<S, String> scopeToModule;
+        
         @Override
         public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
@@ -112,10 +127,15 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
             return this;
         }
         
+        public Builder<S, L, D> withScopeToModule(Function<S, String> scopeToModule) {
+            this.scopeToModule = scopeToModule;
+            return this;
+        }
+        
         @Override
         public TrackingNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
             return new TrackingNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
-                    dataEquiv, isDataComplete, requester);
+                    dataEquiv, isDataComplete, requester, scopeToModule);
         }
 
     }
