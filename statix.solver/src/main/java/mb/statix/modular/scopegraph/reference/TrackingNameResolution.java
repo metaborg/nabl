@@ -20,7 +20,6 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.terms.Scope;
 
 public class TrackingNameResolution<S extends D, L, D> extends FastNameResolution<S, L, D> {
     //TODO LabelWF only has identity equality, so it makes no sense to put it in a set over a list.
