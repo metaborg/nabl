@@ -5,6 +5,8 @@ import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import mb.nabl2.terms.ITerm;
@@ -13,12 +15,14 @@ import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.modular.module.split.SplitModuleUtil;
 import mb.statix.modular.name.Name;
+import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.name.Names;
 import mb.statix.modular.scopegraph.IMInternalScopeGraph;
 import mb.statix.modular.scopegraph.ModuleScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TriConsumer;
 import mb.statix.scopegraph.terms.Scope;
 
 public class Diff {
@@ -101,9 +105,9 @@ public class Diff {
         
         //Convert data to names
         IRelation3.Transient<Scope, ITerm, Name> newDataNames = Context.executeInContext(cNew,
-                () -> toNames(newData, d -> Names.getNameOrNull(d, uNew)));
+                () -> toNames(newData, (d, l) -> Names.getNameOrNull(d, l, uNew)));
         IRelation3.Transient<Scope, ITerm, Name> removedDataNames = Context.executeInContext(cOld,
-                () -> toNames(removedData, d -> Names.getNameOrNull(d, uOld)));
+                () -> toNames(removedData, (d, l) -> Names.getNameOrNull(d, l, uOld)));
         IRelation3.Transient<Scope, ITerm, Name> changedDataNames =
                 nameOverlap(newDataNames, removedDataNames);
         
@@ -128,7 +132,6 @@ public class Diff {
                 if (onlyContextFree && SplitModuleUtil.isSplitModule(childId)) continue;
                 
                 //Child is contained in both, create a diff
-                //Verify that the child is contained in both
                 diff(result, childId, cNew, cOld, external, onlyContextFree);
             } else {
                 //Child is in new but not in old -> added
@@ -306,16 +309,16 @@ public class Diff {
      * @return
      *      the given relation, but with data converted to names
      */
-    protected static <S, L, D> IRelation3.Transient<S, L, Name> toNames(IRelation3<S, L, D> data, Function<D, Name> dataToName) {
+    protected static <S, L, D> IRelation3.Transient<S, L, Name> toNames(IRelation3<S, L, D> data, BiFunction<D, L, NameAndRelation> dataToName) {
         HashTrieRelation3.Transient<S, L, Name> tbr = HashTrieRelation3.Transient.of();
         for (S s : data.keySet()) {
             for (Entry<L, D> entry : data.get(s)) {
-                Name name = dataToName.apply(entry.getValue());
+                NameAndRelation name = dataToName.apply(entry.getValue(), entry.getKey());
                 if (name == null) {
                     System.err.println("DIFF: Skipping data " + entry.getValue() + " at scope " + s + " relation " + entry.getKey() + ": cannot convert to name");
                     continue;
                 }
-                tbr.put(s, entry.getKey(), dataToName.apply(entry.getValue()));
+                tbr.put(s, entry.getKey(), name);
             }
         }
         return tbr;
