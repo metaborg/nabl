@@ -128,49 +128,21 @@ public class NameIncrementalManager extends IncrementalManager {
         context().getCoordinator().allowSolverStart();
         System.err.println("[NIM] Phase " + phaseCounter + " started");
     }
-    
-    /**
-     * Each child module needs to have a "clean" state at the start of the solving phase.
-     * Otherwise, it would be possible for other modules to use outdated results of modules that
-     * will be redone. We need to bring their availability to "does not exist yet" as normal.
-     * <p>
-     * This method does 3 things per child module. <br>
-     * 1. Completeness = delay all local           <br>
-     * 2. Completeness -= own delays + failures    <br>
-     * 3. Unifier = {}                             <br>
-     * 4. ScopeGraph = {}
-     * 
-     * @param parent
-     *      the module to reset the children of
-     */
-    private void resetChildren(IModule parent) {
-        //TODO Should include children that have been removed (removed children of module up for
-        //     redo is not possible with current changesets, but we might want this in the future)
-        for (IModule child : (Iterable<IModule>) parent.getDescendants()::iterator) {
-            resetModule(child, true);
-
-            //Normally, the only way to obtain a variable from a child module is when that child
-            //module is already created.
-            
-            //The variable from the parent could then redirect to a child variable (unlikely), OR
-            //the child module introduces something into the scope graph that has that variable.
-            //In theory it should be good enough to just remove the module alltogether, since the
-            //requests for it's variables SHOULD be blocked by the completeness. However, I am not
-            //certain if this is the case.
-            
-            //A solution to this problem is to have it created, empty solver, empty unifier, and
-            //add constraints to it whenever the child module is actually created.
-        }
-    }
 
     /**
      * Resets the module.
      * <p>
-     * This method does 3 things:               <br>
+     * Normally, the only way to obtain a variable from a child module is when that child module
+     * is already created. However, when redoing modules, it would still be possible to retrieve
+     * old values from the child module from another module. To prevent this, we have to reset the
+     * module to some kind of fresh state.
+     * <p>
+     * This method does 5 things:               <br>
      * 1. Completeness = delay all local        <br>
      * 2. Completeness -= own delays + failures <br>
      * 3. Unifier = {}                          <br>
-     * 4. ScopeGraph = {}
+     * 4. ScopeGraph = {}                       <br>
+     * 5. Dependencies = {}
      * 
      * @param module
      *      the module to reset
