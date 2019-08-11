@@ -160,6 +160,185 @@ public class Diff {
         }
     }
     
+    public static void effectiveDiff(
+            DiffResult result,
+            Set<String> processed,
+            String id,
+            Context cNew, Context cOld,
+            boolean external,
+            boolean onlyContextFree) {
+        if (!processed.add(id)) return;
+        //Determine the graphs and their unifiers from the context
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = scopeGraph(cNew, cOld, id, external);
+        IUnifier uNew = unifier(cNew, id);
+        
+        IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = scopeGraph(cOld, cNew, id, external);
+        IUnifier uOld = unifier(cOld, id);
+        
+        ScopeGraphDiff ownDiff = result.getOrCreateDiff(id);
+        
+        //Scopes
+        getNew(sgOld.getScopes(), sgNew.getScopes(), s -> ownDiff.getAddedScopes().add(s));
+        getNew(sgNew.getScopes(), sgOld.getScopes(), s -> ownDiff.getRemovedScopes().add(s));
+        
+        //Edges
+        getNew(sgOld.getOwnEdges(), sgNew.getOwnEdges(),
+                (s, l, t) -> result.getOrCreateDiff(s.getResource()).addEdge(s, l, t));
+        getNew(sgNew.getOwnEdges(), sgOld.getOwnEdges(),
+                (s, l, t) -> result.getOrCreateDiff(s.getResource()).removeEdge(s, l, t));
+        
+        //Data
+        IRelation3.Transient<Scope, ITerm, ITerm> oldDataInst = Context.executeInContext(cOld,
+                () -> instantiate(sgOld.getOwnData(), uOld));
+        IRelation3.Transient<Scope, ITerm, ITerm> newDataInst = Context.executeInContext(cNew,
+                () -> instantiate(sgNew.getOwnData(), uNew));
+        
+        Context.executeInContext(cNew, () ->
+            getNew(oldDataInst, newDataInst,
+                    (s, r, d) -> {
+                        ScopeGraphDiff diff = result.getOrCreateDiff(s.getResource());
+                        diff.addData(s, r, d);
+                        NameAndRelation nar = Names.getNameOrNull(d, r, uNew);
+                        if (nar == null) {
+                            System.err.println("DIFF: Skipping data " + d + " at scope " + s + " relation " + r + ": cannot convert to name");
+                        } else {
+                            diff.addDataName(s, r, nar);
+                        }
+                    })
+        );
+        Context.executeInContext(cOld, () ->
+            getNew(newDataInst, oldDataInst,
+                    (s, r, d) -> {
+                        ScopeGraphDiff diff = result.getOrCreateDiff(s.getResource());
+                        diff.removeData(s, r, d);
+                        
+                        NameAndRelation nar = Names.getNameOrNull(d, r, uNew);
+                        if (nar == null) {
+                            System.err.println("DIFF: Skipping data " + d + " at scope " + s + " relation " + r + ": cannot convert to name");
+                        } else {
+                            diff.removeDataName(s, r, nar);
+                        }
+                    })
+        );
+        
+        //Child modules
+        Queue<String> queue = new LinkedList<>(sgNew.getChildIds());
+        while (!queue.isEmpty()) {
+            String childId = queue.poll();
+            if (!cNew.getModuleManager().hasModule(childId)) {
+                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
+                continue;
+            }
+            if (sgOld.getChildIds().contains(childId)) {
+                //Ignore split modules
+                if (onlyContextFree && SplitModuleUtil.isSplitModule(childId)) continue;
+                
+                //Child is contained in both, create a diff
+                effectiveDiff(result, processed, childId, cNew, cOld, external, onlyContextFree);
+            } else {
+                //Child is in new but not in old -> added
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cNew.getScopeGraph(childId);
+                result.addAddedChild(childId, sg);
+                //TODO Handle added modules
+                newEffectiveModule(result, processed, childId, cNew, uNew, sg);
+                queue.addAll(sg.getChildIds());
+            }
+        }
+        
+        queue.addAll(sgOld.getChildIds());
+        while (!queue.isEmpty()) {
+            String childId = queue.poll();
+            if (!cOld.getModuleManager().hasModule(childId)) {
+                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
+                continue;
+            }
+            //TODO Should split modules be included here?
+            if (!sgNew.getChildIds().contains(childId)) {
+                //Child is in old but not in new -> removed
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cOld.getScopeGraph(childId);
+                result.addRemovedChild(childId, sg);
+                removedEffectiveModule(result, processed, childId, cOld, uOld, sg);
+                queue.addAll(sg.getChildIds());
+            }
+        }
+    }
+    
+    protected static void newEffectiveModule(
+            DiffResult result,
+            Set<String> processed,
+            String id,
+            Context context,
+            IUnifier unifier,
+            IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
+        if (!processed.add(id)) return;
+        
+        ScopeGraphDiff ownDiff = result.getOrCreateDiff(id);
+        ownDiff.getAddedScopes().addAll(scopeGraph.getScopes());
+        
+        for (Scope scope : scopeGraph.getOwnEdges().keySet()) {
+            ScopeGraphDiff diff = result.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Scope> entry : scopeGraph.getOwnEdges().get(scope)) {
+                diff.addEdge(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        Context.executeInContext(context, () -> {
+            for (Scope scope : scopeGraph.getOwnData().keySet()) {
+                ScopeGraphDiff diff = result.getOrCreateDiff(scope.getResource());
+                for (Entry<ITerm, ITerm> entry : scopeGraph.getOwnData().get(scope)) {
+                    ITerm actualData = unifier.findRecursive(entry.getValue());
+                    ITerm relation = entry.getKey();
+                    diff.addData(scope, relation, actualData);
+                    
+                    NameAndRelation name = Names.getNameOrNull(actualData, relation, unifier);
+                    if (name == null) {
+                        System.err.println("DIFF: Skipping data " + actualData + " at scope " + scope + " relation " + relation + ": cannot convert to name");
+                    } else {
+                        diff.addDataName(scope, relation, name);
+                    }
+                }
+            }
+        });
+    }
+    
+    protected static void removedEffectiveModule(
+            DiffResult result,
+            Set<String> processed,
+            String id,
+            Context context,
+            IUnifier unifier,
+            IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
+        if (!processed.add(id)) return;
+        
+        ScopeGraphDiff ownDiff = result.getOrCreateDiff(id);
+        ownDiff.getRemovedScopes().addAll(scopeGraph.getScopes());
+        
+        for (Scope scope : scopeGraph.getOwnEdges().keySet()) {
+            ScopeGraphDiff diff = result.getOrCreateDiff(scope.getResource());
+            for (Entry<ITerm, Scope> entry : scopeGraph.getOwnEdges().get(scope)) {
+                diff.removeEdge(scope, entry.getKey(), entry.getValue());
+            }
+        }
+        
+        Context.executeInContext(context, () -> {
+            for (Scope scope : scopeGraph.getOwnData().keySet()) {
+                ScopeGraphDiff diff = result.getOrCreateDiff(scope.getResource());
+                for (Entry<ITerm, ITerm> entry : scopeGraph.getOwnData().get(scope)) {
+                    ITerm actualData = unifier.findRecursive(entry.getValue());
+                    ITerm relation = entry.getKey();
+                    diff.removeData(scope, relation, actualData);
+                    
+                    NameAndRelation name = Names.getNameOrNull(actualData, relation, unifier);
+                    if (name == null) {
+                        System.err.println("DIFF: Skipping data " + actualData + " at scope " + scope + " relation " + relation + ": cannot convert to name");
+                    } else {
+                        diff.removeDataName(scope, relation, name);
+                    }
+                }
+            }
+        });
+    }
+    
     /**
      * 
      * @param cTarget
@@ -322,5 +501,41 @@ public class Diff {
             }
         }
         return tbr;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Effective Diff
+    // --------------------------------------------------------------------------------------------
+    
+    /**
+     * @param oldSet
+     *      the old set
+     * @param newSet
+     *      the new set
+     * @param target
+     *      a consumer which is called with each new element 
+     */
+    protected static <S> void getNew(Set<S> oldSet, Set<S> newSet, Consumer<S> target) {
+        for (S s : newSet) {
+            if (!oldSet.contains(s)) target.accept(s);
+        }
+    }
+    
+    /**
+     * @param oldRel
+     *      the old relation
+     * @param newRel
+     *      the new relation
+     * @param target
+     *      a consumer which is called with each new triplet
+     */
+    protected static <S, L, D> void getNew(IRelation3<S, L, D> oldRel, IRelation3<S, L, D> newRel, TriConsumer<S, L, D> target) {
+        for (S s : newRel.keySet()) {
+            for (Entry<L, D> entry : newRel.get(s)) {
+                final L l = entry.getKey();
+                final D d = entry.getValue();
+                if (!oldRel.contains(s, l, d)) target.accept(s, l, d);
+            }
+        }
     }
 }
