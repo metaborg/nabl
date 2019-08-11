@@ -121,6 +121,32 @@ public class Names {
     /**
      * Attempts to retrieve the name of the given term. If the given term is an occurrence, it is
      * converted to its corresponding name. If the given term is a tuple and the first argument is
+     * an occurrence, it is converted to its corresponding name. Otherwise, an empty optional is
+     * returned.
+     * 
+     * @param term
+     *      the term
+     * @param relation
+     *      the relation
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the name represented by the given term or contained in the given tuple
+     */
+    public static Optional<NameAndRelation> getName(ITerm term, ITerm relation, IUnifier unifier) {
+        return M.cases(
+                occurrence(relation).map(Optional::of),
+                M.tuple(t -> {
+                    if (t.getArity() <= 0) return Optional.<NameAndRelation>empty();
+                    return occurrence(relation).match(t.getArgs().get(0), unifier);
+                })
+        ).match(term, unifier).get();
+    }
+    
+    /**
+     * Attempts to retrieve the name of the given term. If the given term is an occurrence, it is
+     * converted to its corresponding name. If the given term is a tuple and the first argument is
      * an occurrence, it is converted to its corresponding name. Otherwise, null is returned.
      * 
      * @param term
@@ -135,9 +161,33 @@ public class Names {
         return getName(term, unifier).orElse(null);
     }
     
+    /**
+     * Attempts to retrieve the name of the given term. If the given term is an occurrence, it is
+     * converted to its corresponding name. If the given term is a tuple and the first argument is
+     * an occurrence, it is converted to its corresponding name. Otherwise, null is returned.
+     * 
+     * @param term
+     *      the term
+     * @param relation
+     *      the relation
+     * @param unifier
+     *      the unifier
+     * 
+     * @return
+     *      the name represented by the given term or contained in the given tuple, or null
+     */
+    public static @Nullable NameAndRelation getNameOrNull(ITerm term, ITerm relation, IUnifier unifier) {
+        return getName(term, relation, unifier).orElse(null);
+    }
+    
     private static IMatcher<Name> occurrence() {
         return M.appl3(StatixTerms.OCCURRENCE_OP, M.stringValue(), M.listElems(M.term()), M.term(),
                 (t, n, l, p) -> new Name(n, l));
+    }
+    
+    private static IMatcher<NameAndRelation> occurrence(ITerm relation) {
+        return M.appl3(StatixTerms.OCCURRENCE_OP, M.stringValue(), M.listElems(M.term()), M.term(),
+                (t, n, l, p) -> new NameAndRelation(n, l, relation));
     }
     
     /**
