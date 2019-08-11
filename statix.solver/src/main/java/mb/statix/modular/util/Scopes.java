@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
@@ -230,9 +231,37 @@ public class Scopes {
         return M.<Set<Scope>>casesFix(m -> Iterables2.from(
                 Scope.matcher().map(s -> Collections.singleton(s)),
                 M.listElems(m).map(l -> l.stream().flatMap(s -> s.stream()).collect(Collectors.toSet())),
-                M.tuple(t -> t.getArgs()).map(l -> l.stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
                 M.appl(t -> t.getArgs()).map(l -> l.stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
                 M.term(t -> Collections.emptySet())
         )).match(term, unifier).orElse(Collections.emptySet());
+    }
+    
+    /**
+     * The given consumer is called for each scope encountered in the given term.
+     * <p>
+     * Please note that the consumer can be called with the same scope multiple times.
+     * 
+     * @param term
+     *      the term
+     * @param unifier
+     *      the unifier
+     * @param consumer
+     *      the consumer
+     */
+    public static void getScopesInTerm(ITerm term, IUnifier unifier, Consumer<Scope> consumer) {
+        Scope scope = Scope.matcher().match(term, unifier).orElse(null);
+        if (scope != null) {
+            consumer.accept(scope);
+            return;
+        }
+        
+        List<? extends ITerm> list = M.cases(
+                M.listElems(),
+                M.appl(t -> t.getArgs()))
+            .match(term, unifier).orElse(null);
+        if (list == null) return;
+        for (ITerm listTerm : list) {
+            getScopesInTerm(listTerm, unifier, consumer);
+        }
     }
 }

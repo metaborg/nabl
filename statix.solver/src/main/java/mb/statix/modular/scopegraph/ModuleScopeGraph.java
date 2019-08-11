@@ -16,6 +16,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Consumer;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
@@ -447,10 +448,14 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         
         IUnifier.Immutable unifier = owner.getCurrentState().unifier();
         
+        //Start from all the parent scopes. All our edges and declarations in these scopes can make
+        //our scopes and data visible.
         Queue<Scope> scopes = new LinkedList<>(parentScopes);
-        scopes.addAll(this.scopes);
         final IRelation3<Scope, ITerm, Scope> ownEdges = getOwnEdges();
         final IRelation3<Scope, ITerm, ITerm> ownData = getOwnData();
+        final Consumer<Scope> scopeConsumer = s -> {
+            if (owner.getId().equals(s.getResource()) && !msg.scopes.contains(s)) scopes.add(s);
+        };
         if (useLock) {
             getReadLock().lock();
             try {
@@ -467,10 +472,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                     for (Entry<ITerm, ITerm> e : ownData.get(scope)) {
                         ITerm data = e.getValue();
                         msg.addDatum(scope, e.getKey(), data);
-                        for (Scope s : Scopes.getScopesInTerm(data, unifier)) {
-                            if (!owner.getId().equals(scope.getResource())) continue;
-                            if (!msg.scopes.contains(s)) scopes.add(s);
-                        }
+                        Scopes.getScopesInTerm(data, unifier, scopeConsumer);
                     }
                 }
             } finally {
@@ -493,10 +495,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
                     for (Entry<ITerm, ITerm> e : ownData.get(scope)) {
                         ITerm data = e.getValue();
                         msg.addDatum(scope, e.getKey(), data);
-                        for (Scope s : Scopes.getScopesInTerm(data, unifier)) {
-                            if (!owner.getId().equals(scope.getResource())) continue;
-                            scopes.add(s);
-                        }
+                        Scopes.getScopesInTerm(data, unifier, scopeConsumer);
                     }
                 }
             }
