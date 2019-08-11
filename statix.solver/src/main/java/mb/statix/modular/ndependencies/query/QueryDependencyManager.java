@@ -11,10 +11,10 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.QueryResultDependencyDetail;
-import mb.statix.modular.util.LightWeightHashTrieRelation3;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.util.collection.LightWeightHashTrieRelation3;
 
 public class QueryDependencyManager implements IQueryDependencyManager, Serializable {
     private static final long serialVersionUID = 1L;

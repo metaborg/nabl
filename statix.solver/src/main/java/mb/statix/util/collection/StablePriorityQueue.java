@@ -1,4 +1,4 @@
-package mb.statix.modular.util;
+package mb.statix.util.collection;
 
 import java.io.Serializable;
 import java.util.AbstractQueue;
@@ -7,6 +7,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
+/**
+ * Priority queue implementation that is stable. This means that whenever there are elements of
+ * equal priority in the queue, the element that was inserted first will get a lower index than
+ * the element that was inserted later.
+ *
+ * @param <E>
+ *      the type of elements
+ */
 public class StablePriorityQueue<E> extends AbstractQueue<E> implements Serializable {
     private static final long serialVersionUID = 1L;
     

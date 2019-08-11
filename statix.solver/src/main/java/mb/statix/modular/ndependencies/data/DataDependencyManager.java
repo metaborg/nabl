@@ -12,8 +12,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
-import mb.statix.modular.util.LightWeightHashTrieRelation3;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.util.collection.LightWeightHashTrieRelation3;
 
 public class DataDependencyManager implements IDataDependencyManager<ITerm>, Serializable {
     private static final long serialVersionUID = 1L;

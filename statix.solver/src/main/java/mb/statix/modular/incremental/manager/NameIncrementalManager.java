@@ -15,6 +15,7 @@ import com.google.common.collect.SetMultimap;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.module.IModule;
+import mb.statix.modular.module.Modules;
 import mb.statix.modular.scopegraph.diff.Diff;
 import mb.statix.modular.scopegraph.diff.DiffResult;
 import mb.statix.modular.solver.Context;
@@ -22,7 +23,6 @@ import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
-import mb.statix.modular.util.Modules;
 import mb.statix.modular.util.TDebug;
 import mb.statix.solver.IConstraint;
 

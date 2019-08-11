@@ -3,7 +3,7 @@ package mb.statix.modular.incremental;
 import static mb.statix.modular.module.ModuleCleanliness.*;
 
 import mb.statix.modular.module.ModuleCleanliness;
-import mb.statix.modular.util.StablePriorityQueue;
+import mb.statix.util.collection.StablePriorityQueue;
 
 public interface Flaggable {
     /**

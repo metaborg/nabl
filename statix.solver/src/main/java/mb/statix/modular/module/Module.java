@@ -6,9 +6,9 @@ import java.util.List;
 
 import mb.statix.modular.incremental.Flag;
 import mb.statix.modular.solver.state.MState;
-import mb.statix.modular.util.StablePriorityQueue;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.util.collection.StablePriorityQueue;
 
 /**
  * Basic implementation of {@link IModule}. The identifiers are not automatically generated.

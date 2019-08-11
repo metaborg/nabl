@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import mb.statix.modular.incremental.Flag;
 import mb.statix.modular.incremental.Flaggable;
-import mb.statix.modular.util.StablePriorityQueue;
+import mb.statix.util.collection.StablePriorityQueue;
 
 public class FlaggableTest {
 

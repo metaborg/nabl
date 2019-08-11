@@ -1,4 +1,4 @@
-package mb.statix.modular.util;
+package mb.statix.util.collection;
 
 import java.io.Serializable;
 

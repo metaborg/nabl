@@ -1,7 +1,14 @@
-package mb.statix.modular.util;
+package mb.statix.util.function;
 
 import java.util.Objects;
 
+/**
+ * Consumer for three values.
+ *
+ * @param <T> the first input to the function
+ * @param <U> the second input to the function
+ * @param <V> the third input to the function
+ */
 @FunctionalInterface
 public interface TriConsumer<T, U, V> {
     /**

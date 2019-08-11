@@ -7,7 +7,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
@@ -22,8 +21,8 @@ import mb.statix.modular.scopegraph.ModuleScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
-import mb.statix.modular.util.TriConsumer;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.util.function.TriConsumer;
 
 public class Diff {
     /**

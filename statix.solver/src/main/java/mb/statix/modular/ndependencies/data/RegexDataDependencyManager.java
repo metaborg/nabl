@@ -12,11 +12,11 @@ import com.google.common.collect.Multimap;
 import mb.nabl2.terms.ITerm;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.QueryDependencyDetail;
-import mb.statix.modular.util.MapMultimap;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.util.collection.MapMultimap;
 
 public class RegexDataDependencyManager implements IDataDependencyManager<LabelWF<ITerm>>, Serializable {
     private static final long serialVersionUID = 1L;

@@ -1,11 +1,9 @@
-package mb.statix.modular.util;
+package mb.statix.util.collection;
 
 import static org.junit.Assert.*;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import mb.statix.modular.util.StablePriorityQueue;
 
 /**
  * Test class for {@link StablePriorityQueue}.

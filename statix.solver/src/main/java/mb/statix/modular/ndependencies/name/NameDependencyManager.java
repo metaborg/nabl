@@ -10,8 +10,8 @@ import java.util.Set;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.QueryDependencyDetail;
 import mb.statix.modular.name.NameAndRelation;
-import mb.statix.modular.util.LightWeightHashTrieRelation3;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.util.collection.LightWeightHashTrieRelation3;
 
 public class NameDependencyManager implements INameDependencyManager, Serializable {
     private static final long serialVersionUID = 1L;

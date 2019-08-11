@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.common.collect.MultimapBuilder;
 
 import mb.statix.modular.solver.concurrent.locking.DummyReadWriteLock;
+import mb.statix.util.collection.MapMultimap;
 
 public class TOverrides {
     /** Redirect STX_solve_constraint to MSTX_solve_constraint. */

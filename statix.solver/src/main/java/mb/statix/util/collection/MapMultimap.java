@@ -1,4 +1,4 @@
-package mb.statix.modular.util;
+package mb.statix.util.collection;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -7,10 +7,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,26 +20,37 @@ import com.google.common.collect.Multimaps;
 
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
+import mb.statix.modular.util.TPrettyPrinter;
+import mb.statix.util.function.SerializableFunction;
+import mb.statix.util.function.SerializableSupplier;
+import mb.statix.util.function.TriConsumer;
 
+/**
+ * Note that MapMultimap is best suited when there are many {@code K2} entries per {@code K1} key.
+ * 
+ * @param <K1> the type of the first key
+ * @param <K2> the type of the second key
+ * @param <V> the type of values
+ */
 public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Serializable {
     private static final long serialVersionUID = 1L;
     
     private final Map<K1, Multimap<K2, V>> map;
-    private final Function<K1, Multimap<K2, V>> function;
+    private final SerializableFunction<K1, Multimap<K2, V>> function;
     
     public MapMultimap() {
         this.map = new HashMap<>();
-        this.function = (Function<K1, Multimap<K2, V>> & Serializable) x -> MultimapBuilder.hashKeys().hashSetValues().build();
+        this.function = x -> MultimapBuilder.hashKeys().hashSetValues().build();
     }
     
     public MapMultimap(Map<K1, Multimap<K2, V>> baseMap) {
         this.map = baseMap;
-        this.function = (Function<K1, Multimap<K2, V>> & Serializable) x -> MultimapBuilder.hashKeys().hashSetValues().build();
+        this.function = x -> MultimapBuilder.hashKeys().hashSetValues().build();
     }
     
-    public MapMultimap(Map<K1, Multimap<K2, V>> baseMap, Supplier<Multimap<K2, V>> supplier) {
+    public MapMultimap(Map<K1, Multimap<K2, V>> baseMap, SerializableSupplier<Multimap<K2, V>> supplier) {
         this.map = baseMap;
-        this.function = (Function<K1, Multimap<K2, V>> & Serializable) x -> supplier.get();
+        this.function = x -> supplier.get();
     }
     
     public boolean isEmpty() {
@@ -129,6 +139,28 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Seri
                         .map(e2 -> ImmutableTuple3.of(e1.getKey(), e2.getKey(), e2.getValue())));
     }
     
+    /**
+     * @deprecated Use {@link #forEach(TriConsumer)} instead.
+     */
+    @Override @Deprecated
+    public void forEach(Consumer<? super Tuple3<K1, K2, V>> action) {
+        for (K1 k1 : map.keySet()) {
+            Multimap<K2, V> nmap = map.get(k1);
+            for (Entry<K2, V> entry : nmap.entries()) {
+                action.accept(ImmutableTuple3.of(k1, entry.getKey(), entry.getValue()));
+            }
+        }
+    }
+    
+    public void forEach(TriConsumer<K1, K2, V> action) {
+        for (K1 k1 : map.keySet()) {
+            Multimap<K2, V> nmap = map.get(k1);
+            for (Entry<K2, V> entry : nmap.entries()) {
+                action.accept(k1, entry.getKey(), entry.getValue());
+            }
+        }
+    }
+    
     @Override
     public String toString() {
         return TPrettyPrinter.prettyPrint(map);
@@ -148,6 +180,6 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Seri
     public static <K1, K2, V> MapMultimap<K1, K2, V> concurrent(MultimapBuilder builder) {
         return new MapMultimap<>(
                 new ConcurrentHashMap<>(),
-                (Supplier<Multimap<K2, V>> & Serializable) () -> Multimaps.synchronizedMultimap(builder.build()));
+                () -> Multimaps.synchronizedMultimap(builder.build()));
     }
 }

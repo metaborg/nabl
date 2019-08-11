@@ -8,8 +8,8 @@ import com.google.common.collect.SetMultimap;
 
 import mb.statix.modular.dependencies.details.IDependencyDetail;
 import mb.statix.modular.module.IModule;
+import mb.statix.modular.module.Modules;
 import mb.statix.modular.solver.Context;
-import mb.statix.modular.util.Modules;
 import mb.statix.modular.util.TPrettyPrinter;
 
 /**
