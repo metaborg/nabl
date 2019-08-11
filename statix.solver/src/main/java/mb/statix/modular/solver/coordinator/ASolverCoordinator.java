@@ -22,6 +22,7 @@ import mb.statix.modular.incremental.changeset.IChangeSet;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.progress.ProgressTrackerRunnable;
 import mb.statix.modular.solver.state.IMState;
@@ -30,7 +31,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
-import mb.statix.taico.solver.MSolverResult;
 
 /**
  * Abstract class with the basis of a solver coordinator. A solver coordinator coordinates the

@@ -18,13 +18,13 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.scopegraph.diff.Diff;
 import mb.statix.modular.scopegraph.diff.DiffResult;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
 import mb.statix.modular.util.Modules;
 import mb.statix.modular.util.TDebug;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MSolverResult;
 
 public class NameIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;

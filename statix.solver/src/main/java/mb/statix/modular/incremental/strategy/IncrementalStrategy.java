@@ -33,12 +33,12 @@ import mb.statix.modular.module.split.SplitModuleUtil;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TSettings;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MSolverResult;
 
 /**
  * The incremental strategy determines how the incremental solving proceeds.

@@ -1,7 +1,8 @@
 package mb.statix.modular.solver.coordinator;
 
 import static mb.statix.modular.util.TDebug.*;
-import static mb.statix.modular.util.TPrettyPrinter.*;
+import static mb.statix.modular.util.TPrettyPrinter.print;
+import static mb.statix.modular.util.TPrettyPrinter.printModule;
 
 import java.util.Collection;
 import java.util.Map;
@@ -12,6 +13,7 @@ import mb.statix.modular.incremental.changeset.IChangeSet;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.util.TPrettyPrinter;
@@ -20,7 +22,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
-import mb.statix.taico.solver.MSolverResult;
 
 /**
  * Interface to represent a coordinator for the solving process.

@@ -9,10 +9,10 @@ import mb.statix.modular.dependencies.details.QueryDependencyDetail;
 import mb.statix.modular.incremental.Flag;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MSolverResult;
 
 public class QueryIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;

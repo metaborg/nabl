@@ -7,7 +7,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.statix.taico.module.ModuleString;
 
 @Value.Immutable
 @Serial.Version(42L)

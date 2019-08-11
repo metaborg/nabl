@@ -31,7 +31,6 @@ import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
-import mb.statix.taico.solver.MSolverResult;
 
 /**
  * Class to represent the context. The context keeps track of all information necessary for

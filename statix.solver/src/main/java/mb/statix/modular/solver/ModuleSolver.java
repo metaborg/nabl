@@ -41,7 +41,6 @@ import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
-import mb.statix.taico.solver.MSolverResult;
 
 public class ModuleSolver implements IOwnable {
     private final IMState state;

@@ -7,11 +7,11 @@ import java.util.function.Consumer;
 
 import mb.statix.modular.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.modular.module.IModule;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.MSolverResult;
 
 /**
  * A sequential solver coordinator. Modules are solved one after the other.

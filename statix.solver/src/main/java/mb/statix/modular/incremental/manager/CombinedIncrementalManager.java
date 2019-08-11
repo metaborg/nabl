@@ -9,12 +9,12 @@ import java.util.Set;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.scopegraph.diff.Diff;
 import mb.statix.modular.scopegraph.diff.DiffResult;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.util.TDebug;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MSolverResult;
 
 public class CombinedIncrementalManager extends IncrementalManager {
     private static final long serialVersionUID = 1L;

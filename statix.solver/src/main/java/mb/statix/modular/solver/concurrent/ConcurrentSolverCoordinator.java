@@ -11,13 +11,13 @@ import java.util.function.Consumer;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
 import mb.statix.modular.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.modular.module.IModule;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.coordinator.ASolverCoordinator;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.MSolverResult;
 
 public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private final Map<ModuleSolver, SolverRunnable> solvers = Collections.synchronizedMap(new HashMap<>());

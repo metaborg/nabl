@@ -26,6 +26,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.modular.solver.state.DelegatingMState;
 import mb.statix.modular.solver.state.IMState;
@@ -38,7 +39,6 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.taico.solver.MSolverResult;
 
 public class ModuleConstraintStore implements IConstraintStore {
     private final String owner;

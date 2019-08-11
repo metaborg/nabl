@@ -24,8 +24,10 @@ import mb.statix.modular.module.ModulePaths;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MConstraintContext;
 import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.spec.ModuleBoundary;
 import mb.statix.modular.util.Scopes;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
@@ -34,8 +36,6 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
 import mb.statix.spec.IRule;
-import mb.statix.taico.solver.MSolverResult;
-import mb.statix.taico.spec.ModuleBoundary;
 
 /**
  * Implementation for a user constraint (rule application).

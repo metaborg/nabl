@@ -16,6 +16,7 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.modular.observers.EdgeCompleteManager;
 import mb.statix.modular.observers.EdgeCompleteObserver;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.util.Scopes;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
@@ -23,7 +24,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.spec.Spec;
-import mb.statix.taico.solver.MSolverResult;
 
 public class RedirectingIncrementalCompleteness extends IncrementalCompleteness implements EdgeCompleteManager {
     private final String owner;

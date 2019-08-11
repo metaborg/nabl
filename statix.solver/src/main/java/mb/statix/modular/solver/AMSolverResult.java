@@ -12,7 +12,6 @@ import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
-import mb.statix.taico.solver.MSolverResult;
 
 @Value.Immutable
 @Serial.Version(42L)

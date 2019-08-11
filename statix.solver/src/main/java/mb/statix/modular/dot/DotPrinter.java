@@ -13,9 +13,9 @@ import mb.nabl2.util.collections.IRelation3;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.scopegraph.IMInternalScopeGraph;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.taico.solver.MSolverResult;
 
 public class DotPrinter {
     protected final IMInternalScopeGraph<Scope, ITerm, ITerm> rootGraph;

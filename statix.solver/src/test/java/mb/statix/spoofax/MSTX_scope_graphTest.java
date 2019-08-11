@@ -17,9 +17,9 @@ import mb.statix.modular.incremental.strategy.NonIncrementalStrategy;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.Module;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
-import mb.statix.taico.solver.MSolverResult;
 
 public class MSTX_scope_graphTest {
     protected static MSTX_scope_graph stratego = new MSTX_scope_graph();

@@ -16,13 +16,13 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TTimings;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
-import mb.statix.taico.solver.MSolverResult;
 
 public class MSTX_solve_multi_project extends StatixPrimitive {
 

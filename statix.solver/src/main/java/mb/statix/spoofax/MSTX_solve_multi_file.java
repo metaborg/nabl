@@ -28,6 +28,7 @@ import mb.statix.modular.incremental.changeset.IChangeSet;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
 import mb.statix.modular.scopegraph.diff.Diff;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.concurrent.ConcurrentSolverCoordinator;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.coordinator.SolverCoordinator;
@@ -39,7 +40,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
-import mb.statix.taico.solver.MSolverResult;
 
 public class MSTX_solve_multi_file extends StatixPrimitive {
 

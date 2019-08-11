@@ -12,10 +12,10 @@ import mb.statix.modular.incremental.Flag;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.split.SplitModuleUtil;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.solver.IConstraint;
-import mb.statix.taico.solver.MSolverResult;
 
 public class IncrementalManager implements Serializable {
     private static final long serialVersionUID = 1L;
