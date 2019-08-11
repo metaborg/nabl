@@ -38,6 +38,12 @@ public class NameAndRelation extends Name {
         return new NameAndRelation(namespace, terms, relation);
     }
     
+    @Override
+    public NameAndRelation withRelation(ITerm relation) {
+        if (this.relation.equals(relation)) return this;
+        return super.withRelation(relation);
+    }
+    
     /**
      * @return
      *      a name representing this NameAndRelation without the relation
