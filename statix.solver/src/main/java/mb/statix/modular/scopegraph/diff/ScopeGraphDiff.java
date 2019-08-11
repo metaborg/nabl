@@ -110,7 +110,7 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
     // Modifications
     // --------------------------------------------------------------------------------------------
     
-    private void addEdge(Scope source, ITerm label, Scope target) {
+    public void addEdge(Scope source, ITerm label, Scope target) {
         if (removedEdges.contains(source, label, target)) {
             removedEdges.remove(source, label, target);
         } else {
@@ -118,7 +118,7 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
         }
     }
     
-    private void removeEdge(Scope source, ITerm label, Scope target) {
+    public void removeEdge(Scope source, ITerm label, Scope target) {
         if (addedEdges.contains(source, label, target)) {
             addedEdges.remove(source, label, target);
         } else {
@@ -126,7 +126,7 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
         }
     }
     
-    private void addData(Scope source, ITerm label, ITerm data) {
+    public void addData(Scope source, ITerm label, ITerm data) {
         if (removedData.contains(source, label, data)) {
             removedData.remove(source, label, data);
         } else {
@@ -134,7 +134,7 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
         }
     }
     
-    private void removeData(Scope source, ITerm label, ITerm data) {
+    public void removeData(Scope source, ITerm label, ITerm data) {
         if (addedData.contains(source, label, data)) {
             addedData.remove(source, label, data);
         } else {
@@ -142,17 +142,21 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
         }
     }
     
-    private void addDataName(Scope source, ITerm label, Name name) {
+    public void addDataName(Scope source, ITerm label, Name name) {
+        if (changedDataNames.contains(source, label, name)) return;
         if (removedDataNames.contains(source, label, name)) {
             removedDataNames.remove(source, label, name);
+            changedDataNames.put(source, label, name);
         } else {
             addedDataNames.put(source, label, name);
         }
     }
     
-    private void removeDataName(Scope source, ITerm label, Name name) {
+    public void removeDataName(Scope source, ITerm label, Name name) {
+        if (changedDataNames.contains(source, label, name)) return;
         if (addedDataNames.contains(source, label, name)) {
             addedDataNames.remove(source, label, name);
+            changedDataNames.put(source, label, name);
         } else {
             removedDataNames.put(source, label, name);
         }
@@ -277,14 +281,17 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
     public static ScopeGraphDiff newModule(Context context, IUnifier unifier,
             IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
         IRelation3.Transient<Scope, ITerm, Name> newDataNames = Context.executeInContext(context,
-                () -> Diff.toNames(scopeGraph.getOwnData(), d -> Names.getNameOrNull(d, unifier)));
+                () -> Diff.toNames(scopeGraph.getOwnData(), (d, r) -> Names.getNameOrNull(d, r, unifier)));
+        
+        IRelation3.Transient<Scope, ITerm, ITerm> newData = Context.executeInContext(context,
+                () -> Diff.instantiate(scopeGraph.getOwnData(), unifier));
         
         return new ScopeGraphDiff(
                 scopeGraph.getScopes(),                                               //+ scopes
                 new HashSet<>(),                                                      //- scopes
                 (IRelation3.Transient<Scope, ITerm, Scope>) scopeGraph.getOwnEdges(), //+ edges
                 HashTrieRelation3.Transient.of(),                                     //- edges
-                (IRelation3.Transient<Scope, ITerm, ITerm>) scopeGraph.getOwnData(),  //+ data
+                newData,                                                              //+ data
                 HashTrieRelation3.Transient.of(),                                     //- data
                 newDataNames,                                                         //+ names
                 HashTrieRelation3.Transient.of(),                                     //- names
@@ -308,7 +315,10 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
     public static ScopeGraphDiff removedModule(Context context, IUnifier unifier,
             IMInternalScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
         IRelation3.Transient<Scope, ITerm, Name> deletedNames = Context.executeInContext(context,
-                () -> Diff.toNames(scopeGraph.getOwnData(), d -> Names.getNameOrNull(d, unifier)));
+                () -> Diff.toNames(scopeGraph.getOwnData(), (d, r) -> Names.getNameOrNull(d, r, unifier)));
+        
+        IRelation3.Transient<Scope, ITerm, ITerm> deletedData = Context.executeInContext(context,
+                () -> Diff.instantiate(scopeGraph.getOwnData(), unifier));
         
         return new ScopeGraphDiff(
                 new HashSet<>(),                                                      //+ scopes
@@ -316,7 +326,7 @@ public class ScopeGraphDiff implements IScopeGraphDiff<Scope, ITerm, ITerm> {
                 HashTrieRelation3.Transient.of(),                                     //+ edges
                 (IRelation3.Transient<Scope, ITerm, Scope>) scopeGraph.getOwnEdges(), //- edges
                 HashTrieRelation3.Transient.of(),                                     //+ data
-                (IRelation3.Transient<Scope, ITerm, ITerm>) scopeGraph.getOwnData(),  //- data
+                deletedData,                                                          //- data
                 HashTrieRelation3.Transient.of(),                                     //+ names
                 deletedNames,                                                         //- names
                 HashTrieRelation3.Transient.of()                                      //~ names
