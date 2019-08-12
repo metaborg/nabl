@@ -30,6 +30,8 @@ abstract class AStep<S, L> implements IStep<S, L> {
     }
 
     @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
+        if (getSource().equals(getTarget())) return Set.Immutable.of(getSource());
+        
         return Set.Immutable.of(getSource(), getTarget());
     }
 
