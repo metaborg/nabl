@@ -11,6 +11,7 @@ import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.modular.dependencies.Dependency;
+import mb.statix.modular.dependencies.details.NameDependencyDetail;
 import mb.statix.modular.dependencies.details.QueryDependencyDetail;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.reference.LabelWF;
@@ -22,6 +23,11 @@ public class RegexDataDependencyManager implements IDataDependencyManager<LabelW
     private static final long serialVersionUID = 1L;
     
     private MapMultimap<Scope, LabelWF<ITerm>, Dependency> dataDependencies = TOverrides.mapSetMultimap();
+    private final boolean rejectNames;
+    
+    public RegexDataDependencyManager(boolean rejectNames) {
+        this.rejectNames = rejectNames;
+    }
     
     @Override
     public Collection<Dependency> getDependencies(Scope scope) {
@@ -64,6 +70,7 @@ public class RegexDataDependencyManager implements IDataDependencyManager<LabelW
     
     @Override
     public synchronized void onDependencyAdded(Dependency dependency) {
+        if (rejectNames && dependency.hasDetails(NameDependencyDetail.class)) return;
         for (Entry<Scope, LabelWF<ITerm>> entry : getData(dependency)) {
             dataDependencies.put(entry.getKey(), entry.getValue(), dependency);
         }
@@ -74,12 +81,22 @@ public class RegexDataDependencyManager implements IDataDependencyManager<LabelW
     // --------------------------------------------------------------------------------------------
     
     @Override
+    public int dataNameAdditionAffectScore() {
+        return 1; //O(n) lookup, exact
+    }
+    
+    @Override
+    public int dataNameRemovalOrChangeAffectScore() {
+        return 3; //O(n) lookup, SOMETIMES reports affected when this is not the case
+    }
+    
+    @Override
     public int dataAdditionAffectScore() {
         return 1; //O(n) lookup, exact
     }
     
     @Override
-    public int dataRemovalOrChangeAffectScore() {
+    public int dataRemovalAffectScore() {
         return 3; //O(n) lookup, SOMETIMES reports affected when this is not the case
     }
     

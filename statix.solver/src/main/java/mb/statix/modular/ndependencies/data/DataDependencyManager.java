@@ -11,6 +11,7 @@ import java.util.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
+import mb.statix.modular.dependencies.details.NameDependencyDetail;
 import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.util.collection.LightWeightHashTrieRelation3;
@@ -20,6 +21,11 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     
     //The sparser the map is populated, the more sense it makes to go with the tuple approach instead.
     private transient LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> dataDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private final boolean rejectNames;
+    
+    public DataDependencyManager(boolean rejectNames) {
+        this.rejectNames = rejectNames;
+    }
     
     @Override
     public synchronized Iterable<Dependency> getDependencies(Scope scope) {
@@ -47,6 +53,7 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     
     @Override
     public synchronized void onDependencyAdded(Dependency dependency) {
+        if (rejectNames && dependency.hasDetails(NameDependencyDetail.class)) return;
         for (Entry<Scope, ITerm> entry : getData(dependency)) {
             dataDependencies.put(entry.getKey(), entry.getValue(), dependency);
         }
@@ -66,12 +73,22 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     // --------------------------------------------------------------------------------------------
     
     @Override
+    public int dataNameAdditionAffectScore() {
+        return 0; //O(1) lookup, exact
+    }
+    
+    @Override
+    public int dataNameRemovalOrChangeAffectScore() {
+        return 2; //O(1) lookup, but SOMETIMES reports affected when this is not the case
+    }
+    
+    @Override
     public int dataAdditionAffectScore() {
         return 0; //O(1) lookup, exact
     }
     
     @Override
-    public int dataRemovalOrChangeAffectScore() {
+    public int dataRemovalAffectScore() {
         return 2; //O(1) lookup, but SOMETIMES reports affected when this is not the case
     }
     

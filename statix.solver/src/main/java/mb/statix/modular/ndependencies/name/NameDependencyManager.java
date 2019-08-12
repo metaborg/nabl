@@ -33,6 +33,7 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     public void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
             NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
+            if (nar == null) continue;
             Set<Scope> scopes = getScopesFromDependency(dependency);
             synchronized (this) {
                 for (Scope scope : scopes) {
@@ -45,6 +46,7 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     @Override
     public void onDependencyAdded(Dependency dependency) {
         NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
+        if (nar == null) return;
         Set<Scope> scopes = getScopesFromDependency(dependency);
         synchronized (this) {
             for (Scope scope : scopes) {
@@ -67,12 +69,12 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public int dataAdditionAffectScore() {
+    public int dataNameAdditionAffectScore() {
         return 0; //O(1) lookup, exact
     }
     
     @Override
-    public int dataRemovalOrChangeAffectScore() {
+    public int dataNameRemovalOrChangeAffectScore() {
         return 2; //O(1) lookup, but sometimes reports affected when this is not the case
     }
     

@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.util.Collection;
 
 import mb.statix.modular.dependencies.Dependency;
-import mb.statix.modular.dependencies.affect.IDataAdditionAffect;
-import mb.statix.modular.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.modular.dependencies.affect.IDataNameAdditionAffect;
+import mb.statix.modular.dependencies.affect.IDataNameRemovalOrChangeAffect;
 import mb.statix.modular.dependencies.details.NameDependencyDetail;
 import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
@@ -14,7 +14,7 @@ import mb.statix.scopegraph.terms.Scope;
 /**
  * Optimal (if not simple) for data addition, suboptimal for removal/changes.
  */
-public interface INameDependencyManager extends IDependencyObserver, IDataAdditionAffect, IDataRemovalOrChangeAffect, Serializable {
+public interface INameDependencyManager extends IDependencyObserver, IDataNameAdditionAffect, IDataNameRemovalOrChangeAffect, Serializable {
     
     /**
      * The dependencies on the given name and relation in the given scope.
@@ -53,7 +53,7 @@ public interface INameDependencyManager extends IDependencyObserver, IDataAdditi
      */
     public static NameAndRelation getNameFromDependency(Dependency dependency) {
         NameDependencyDetail detail = dependency.getDetails(NameDependencyDetail.class);
-        return detail.toNameAndRelation();
+        return detail == null ? null : detail.toNameAndRelation();
     }
     
     // --------------------------------------------------------------------------------------------
@@ -61,12 +61,12 @@ public interface INameDependencyManager extends IDependencyObserver, IDataAdditi
     // --------------------------------------------------------------------------------------------
     
     @Override
-    default Iterable<Dependency> affectedByDataAddition(NameAndRelation nameAndRelation, Scope scope) {
+    default Iterable<Dependency> affectedByDataNameAddition(NameAndRelation nameAndRelation, Scope scope) {
         return getDependencies(nameAndRelation, scope);
     }
     
     @Override
-    default Iterable<Dependency> affectedByDataRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+    default Iterable<Dependency> affectedByDataNameRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
         return getDependencies(nameAndRelation, scope);
     }
 }

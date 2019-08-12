@@ -5,7 +5,7 @@ import java.util.Collection;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.modular.dependencies.Dependency;
-import mb.statix.modular.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.modular.dependencies.affect.IDataNameRemovalOrChangeAffect;
 import mb.statix.modular.dependencies.affect.IEdgeRemovalAffect;
 import mb.statix.modular.dependencies.details.QueryResultDependencyDetail;
 import mb.statix.modular.name.NameAndRelation;
@@ -17,7 +17,7 @@ import mb.statix.scopegraph.terms.Scope;
 /**
  * Optimal for edge removal, data removal and data change.
  */
-public interface IQueryDependencyManager extends IDependencyObserver, IDataRemovalOrChangeAffect, IEdgeRemovalAffect, Serializable {
+public interface IQueryDependencyManager extends IDependencyObserver, IDataNameRemovalOrChangeAffect, IEdgeRemovalAffect, Serializable {
     /**
      * The dependencies of the given scope.
      * 
@@ -73,7 +73,7 @@ public interface IQueryDependencyManager extends IDependencyObserver, IDataRemov
     // --------------------------------------------------------------------------------------------
     
     @Override
-    default Iterable<Dependency> affectedByDataRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+    default Iterable<Dependency> affectedByDataNameRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
         return getDependencies(scope, nameAndRelation.getRelation());
     }
     

@@ -10,14 +10,22 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import mb.nabl2.terms.ITerm;
 import mb.statix.modular.dependencies.affect.IDataAdditionAffect;
-import mb.statix.modular.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.modular.dependencies.affect.IDataNameAdditionAffect;
+import mb.statix.modular.dependencies.affect.IDataNameRemovalOrChangeAffect;
+import mb.statix.modular.dependencies.affect.IDataRemovalAffect;
 import mb.statix.modular.dependencies.affect.IEdgeAdditionAffect;
 import mb.statix.modular.dependencies.affect.IEdgeRemovalAffect;
+import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
 import mb.statix.modular.util.TOverrides;
+import mb.statix.scopegraph.terms.Scope;
 
-public class DependencyManager<D extends Dependencies> implements Serializable, Iterable<Entry<String, D>> {
+public class DependencyManager<D extends Dependencies> implements Serializable, Iterable<Entry<String, D>>,
+    IEdgeAdditionAffect, IEdgeRemovalAffect,
+    IDataAdditionAffect, IDataRemovalAffect,
+    IDataNameAdditionAffect, IDataNameRemovalOrChangeAffect {
     private static final long serialVersionUID = 1L;
     
     private final Function<String, D> creator;
@@ -28,7 +36,9 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
     private IEdgeAdditionAffect edgeAdd;
     private IEdgeRemovalAffect edgeRemove;
     private IDataAdditionAffect dataAdd;
-    private IDataRemovalOrChangeAffect dataRemoveOrChange;
+    private IDataRemovalAffect dataRemove;
+    private IDataNameAdditionAffect dataNameAdd;
+    private IDataNameRemovalOrChangeAffect dataNameRemoveOrChange;
     
     public DependencyManager(Function<String, D> creator) {
         if (!(creator instanceof Serializable)) throw new IllegalArgumentException("The creator function needs to be serializable!");
@@ -156,8 +166,8 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
         observers.clear();
         edgeAdd = null;
         edgeRemove = null;
-        dataAdd = null;
-        dataRemoveOrChange = null;
+        dataNameAdd = null;
+        dataNameRemoveOrChange = null;
     }
 
     public void onDependencyAdded(Dependency dependency) {
@@ -205,27 +215,85 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
             }
         }
         
-        if (observer instanceof IDataRemovalOrChangeAffect) {
-            IDataRemovalOrChangeAffect newDataRemoveOrChange = (IDataRemovalOrChangeAffect) observer;
-            if (dataRemoveOrChange == null || newDataRemoveOrChange.dataRemovalOrChangeAffectScore() > dataRemoveOrChange.dataRemovalOrChangeAffectScore()) {
-                dataRemoveOrChange = newDataRemoveOrChange;
+        if (observer instanceof IDataRemovalAffect) {
+            IDataRemovalAffect newDataRemove = (IDataRemovalAffect) observer;
+            if (dataRemove == null || newDataRemove.dataRemovalAffectScore() > dataRemove.dataRemovalAffectScore()) {
+                dataRemove = newDataRemove;
+            }
+        }
+        
+        if (observer instanceof IDataNameAdditionAffect) {
+            IDataNameAdditionAffect newDataAdd = (IDataNameAdditionAffect) observer;
+            if (dataNameAdd == null || newDataAdd.dataNameAdditionAffectScore() > dataNameAdd.dataNameAdditionAffectScore()) {
+                dataNameAdd = newDataAdd;
+            }
+        }
+        
+        if (observer instanceof IDataNameRemovalOrChangeAffect) {
+            IDataNameRemovalOrChangeAffect newDataRemoveOrChange = (IDataNameRemovalOrChangeAffect) observer;
+            if (dataNameRemoveOrChange == null || newDataRemoveOrChange.dataNameRemovalOrChangeAffectScore() > dataNameRemoveOrChange.dataNameRemovalOrChangeAffectScore()) {
+                dataNameRemoveOrChange = newDataRemoveOrChange;
             }
         }
     }
     
-    public IEdgeAdditionAffect edgeAddition() {
-        return edgeAdd;
+    @Override
+    public Iterable<Dependency> affectedByEdgeAddition(Scope scope, ITerm label) {
+        return edgeAdd.affectedByEdgeAddition(scope, label);
     }
     
-    public IEdgeRemovalAffect edgeRemoval() {
-        return edgeRemove;
+    @Override
+    public Iterable<Dependency> affectedByEdgeRemoval(Scope scope, ITerm label) {
+        return edgeRemove.affectedByEdgeRemoval(scope, label);
     }
     
-    public IDataAdditionAffect dataAddition() {
-        return dataAdd;
+    @Override
+    public Iterable<Dependency> affectedByDataAddition(Scope scope, ITerm relation) {
+        return dataAdd.affectedByDataAddition(scope, relation);
     }
     
-    public IDataRemovalOrChangeAffect dataRemoveOrChange() {
-        return dataRemoveOrChange;
+    @Override
+    public Iterable<Dependency> affectedByDataRemoval(Scope scope, ITerm relation) {
+        return dataRemove.affectedByDataRemoval(scope, relation);
+    }
+    
+    @Override
+    public Iterable<Dependency> affectedByDataNameAddition(NameAndRelation nameAndRelation, Scope scope) {
+        return dataNameAdd.affectedByDataNameAddition(nameAndRelation, scope);
+    }
+    
+    @Override
+    public Iterable<Dependency> affectedByDataNameRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+        return dataNameRemoveOrChange.affectedByDataNameRemovalOrChange(nameAndRelation, scope);
+    }
+    
+    @Override
+    public int edgeAdditionAffectScore() {
+        return edgeAdd == null ? -1 : edgeAdd.edgeAdditionAffectScore();
+    }
+    
+    @Override
+    public int edgeRemovalAffectScore() {
+        return edgeRemove == null ? -1 : edgeRemove.edgeRemovalAffectScore();
+    }
+    
+    @Override
+    public int dataAdditionAffectScore() {
+        return dataAdd == null ? -1 : dataAdd.dataAdditionAffectScore();
+    }
+    
+    @Override
+    public int dataRemovalAffectScore() {
+        return dataRemove == null ? -1 : dataRemove.dataRemovalAffectScore();
+    }
+    
+    @Override
+    public int dataNameAdditionAffectScore() {
+        return dataNameAdd == null ? -1 : dataNameAdd.dataNameAdditionAffectScore();
+    }
+    
+    @Override
+    public int dataNameRemovalOrChangeAffectScore() {
+        return dataNameRemoveOrChange == null ? -1 : dataNameRemoveOrChange.dataNameRemovalOrChangeAffectScore();
     }
 }

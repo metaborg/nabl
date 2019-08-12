@@ -37,13 +37,17 @@ public class SimpleNameDependencyManager implements INameDependencyManager, Seri
     @Override
     public synchronized void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
-            nameDependencies.remove(INameDependencyManager.getNameFromDependency(dependency), dependency);
+            NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
+            if (nar == null) continue;
+            nameDependencies.remove(nar, dependency);
         }
     }
     
     @Override
     public void onDependencyAdded(Dependency dependency) {
-        addDependency(INameDependencyManager.getNameFromDependency(dependency), dependency);
+        NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
+        if (nar == null) return;
+        addDependency(nar, dependency);
     }
     
     // --------------------------------------------------------------------------------------------
@@ -51,12 +55,12 @@ public class SimpleNameDependencyManager implements INameDependencyManager, Seri
     // --------------------------------------------------------------------------------------------
     
     @Override
-    public int dataAdditionAffectScore() {
+    public int dataNameAdditionAffectScore() {
         return 1; //O(1) lookup, SOMETIMES reports affected when this is not the case
     }
     
     @Override
-    public int dataRemovalOrChangeAffectScore() {
+    public int dataNameRemovalOrChangeAffectScore() {
         return 3; //O(1) lookup, OFTEN reports affected when this is not the case
     }
 }

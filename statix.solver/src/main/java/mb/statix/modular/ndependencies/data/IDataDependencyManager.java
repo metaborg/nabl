@@ -6,12 +6,14 @@ import java.util.Collection;
 import mb.nabl2.terms.ITerm;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.affect.IDataAdditionAffect;
-import mb.statix.modular.dependencies.affect.IDataRemovalOrChangeAffect;
+import mb.statix.modular.dependencies.affect.IDataNameAdditionAffect;
+import mb.statix.modular.dependencies.affect.IDataNameRemovalOrChangeAffect;
+import mb.statix.modular.dependencies.affect.IDataRemovalAffect;
 import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
 import mb.statix.scopegraph.terms.Scope;
 
-public interface IDataDependencyManager<T> extends IDependencyObserver, IDataAdditionAffect, IDataRemovalOrChangeAffect, Serializable {
+public interface IDataDependencyManager<T> extends IDependencyObserver, IDataAdditionAffect, IDataRemovalAffect, IDataNameAdditionAffect, IDataNameRemovalOrChangeAffect, Serializable {
     /**
      * The dependencies of the given scope.
      * 
@@ -56,12 +58,22 @@ public interface IDataDependencyManager<T> extends IDependencyObserver, IDataAdd
     // --------------------------------------------------------------------------------------------
     
     @Override
-    default Iterable<Dependency> affectedByDataAddition(NameAndRelation nameAndRelation, Scope scope) {
+    default Iterable<Dependency> affectedByDataNameAddition(NameAndRelation nameAndRelation, Scope scope) {
         return getDependencies(scope, nameAndRelation.getRelation());
     }
     
     @Override
-    default Iterable<Dependency> affectedByDataRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
+    default Iterable<Dependency> affectedByDataNameRemovalOrChange(NameAndRelation nameAndRelation, Scope scope) {
         return getDependencies(scope, nameAndRelation.getRelation());
+    }
+    
+    @Override
+    default Iterable<Dependency> affectedByDataAddition(Scope scope, ITerm relation) {
+        return getDependencies(scope, relation);
+    }
+    
+    @Override
+    default Iterable<Dependency> affectedByDataRemoval(Scope scope, ITerm relation) {
+        return getDependencies(scope, relation);
     }
 }

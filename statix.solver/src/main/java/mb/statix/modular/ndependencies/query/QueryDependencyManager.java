@@ -60,7 +60,7 @@ public class QueryDependencyManager implements IQueryDependencyManager, Serializ
     }
     
     @Override
-    public int dataRemovalOrChangeAffectScore() {
+    public int dataNameRemovalOrChangeAffectScore() {
         return 0; //O(n) (small n) lookup, EXACT
     }
     

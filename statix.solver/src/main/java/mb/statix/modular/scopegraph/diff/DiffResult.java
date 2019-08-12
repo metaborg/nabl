@@ -20,6 +20,7 @@ import mb.statix.modular.name.Name;
 import mb.statix.modular.scopegraph.IMInternalScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.terms.Scope;
 
 /**
@@ -155,46 +156,85 @@ public class DiffResult implements Serializable {
     public <R> Set<R> getDependencies(Context context, Function<Dependency, R> function) {
         Set<R> tbr = new HashSet<>();
         DependencyManager<?> manager = context.getDependencyManager();
+        
+        boolean ea = manager.edgeAdditionAffectScore() != -1;
+        boolean er = manager.edgeRemovalAffectScore() != -1;
+        boolean da = manager.dataAdditionAffectScore() != -1;
+        boolean dr = manager.dataRemovalAffectScore() != -1;
+        boolean dna = manager.dataNameAdditionAffectScore() != -1;
+        boolean dnroc = manager.dataNameRemovalOrChangeAffectScore() != -1;
         for (IScopeGraphDiff<Scope, ITerm, ITerm> diff : diffs.values()) {
-            for (Tuple2<Scope, ITerm> edge : diff.getAddedEdges()._getForwardMap().keySet()) {
-                for (Dependency dependency : manager.edgeAddition().affectedByEdgeAddition(edge._1(), edge._2())) {
-                    tbr.add(function.apply(dependency));
+            System.out.println("Checking diff...");
+            if (ea) {
+                for (Tuple2<Scope, ITerm> edge : diff.getAddedEdges()._getForwardMap().keySet()) {
+                    for (Dependency dependency : manager.affectedByEdgeAddition(edge._1(), edge._2())) {
+                        System.out.println("Found dependency for edge addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        tbr.add(function.apply(dependency));
+                    }
                 }
             }
             
-            for (Tuple2<Scope, ITerm> edge : diff.getRemovedEdges()._getForwardMap().keySet()) {
-                for (Dependency dependency : manager.edgeRemoval().affectedByEdgeRemoval(edge._1(), edge._2())) {
-                    tbr.add(function.apply(dependency));
+            if (er) {
+                for (Tuple2<Scope, ITerm> edge : diff.getRemovedEdges()._getForwardMap().keySet()) {
+                    for (Dependency dependency : manager.affectedByEdgeRemoval(edge._1(), edge._2())) {
+                        System.out.println("Found dependency for edge removal: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        tbr.add(function.apply(dependency));
+                    }
+                }
+            }
+            
+            if (da) {
+                for (Tuple2<Scope, ITerm> edge : diff.getAddedData()._getForwardMap().keySet()) {
+                    for (Dependency dependency : manager.affectedByDataAddition(edge._1(), edge._2())) {
+                        System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        tbr.add(function.apply(dependency));
+                    }
+                }
+            }
+            
+            if (dr) {
+                for (Tuple2<Scope, ITerm> edge : diff.getRemovedData()._getForwardMap().keySet()) {
+                    for (Dependency dependency : manager.affectedByDataRemoval(edge._1(), edge._2())) {
+                        System.out.println("Found dependency for data removal: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        tbr.add(function.apply(dependency));
+                    }
                 }
             }
             
             //TODO Do not use names but just straight data?
-            for (Tuple2<Scope, ITerm> edge : diff.getAddedDataNames()._getForwardMap().keySet()) {
-                final Scope scope = edge._1();
-                final ITerm label = edge._2();
-                for (Name name : diff.getAddedDataNames().get(scope, label)) {
-                    for (Dependency dependency : manager.dataAddition().affectedByDataAddition(name.withRelation(label), scope)) {
-                        tbr.add(function.apply(dependency));
+            if (dna) {
+                for (Tuple2<Scope, ITerm> edge : diff.getAddedDataNames()._getForwardMap().keySet()) {
+                    final Scope scope = edge._1();
+                    final ITerm label = edge._2();
+                    for (Name name : diff.getAddedDataNames().get(scope, label)) {
+                        for (Dependency dependency : manager.affectedByDataNameAddition(name.withRelation(label), scope)) {
+                            System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(scope, label));
+                            tbr.add(function.apply(dependency));
+                        }
                     }
                 }
             }
             
-            for (Tuple2<Scope, ITerm> edge : diff.getRemovedDataNames()._getForwardMap().keySet()) {
-                final Scope scope = edge._1();
-                final ITerm label = edge._2();
-                for (Name name : diff.getRemovedDataNames().get(scope, label)) {
-                    for (Dependency dependency : manager.dataRemoveOrChange().affectedByDataRemovalOrChange(name.withRelation(label), scope)) {
-                        tbr.add(function.apply(dependency));
+            if (dnroc) {
+                for (Tuple2<Scope, ITerm> edge : diff.getRemovedDataNames()._getForwardMap().keySet()) {
+                    final Scope scope = edge._1();
+                    final ITerm label = edge._2();
+                    for (Name name : diff.getRemovedDataNames().get(scope, label)) {
+                        for (Dependency dependency : manager.affectedByDataNameRemovalOrChange(name.withRelation(label), scope)) {
+                            System.out.println("Found dependency for data removal: " + TPrettyPrinter.printEdge(scope, label));
+                            tbr.add(function.apply(dependency));
+                        }
                     }
                 }
-            }
-            
-            for (Tuple2<Scope, ITerm> edge : diff.getChangedDataNames()._getForwardMap().keySet()) {
-                final Scope scope = edge._1();
-                final ITerm label = edge._2();
-                for (Name name : diff.getChangedDataNames().get(scope, label)) {
-                    for (Dependency dependency : manager.dataRemoveOrChange().affectedByDataRemovalOrChange(name.withRelation(label), scope)) {
-                        tbr.add(function.apply(dependency));
+                
+                for (Tuple2<Scope, ITerm> edge : diff.getChangedDataNames()._getForwardMap().keySet()) {
+                    final Scope scope = edge._1();
+                    final ITerm label = edge._2();
+                    for (Name name : diff.getChangedDataNames().get(scope, label)) {
+                        for (Dependency dependency : manager.affectedByDataNameRemovalOrChange(name.withRelation(label), scope)) {
+                            System.out.println("Found dependency for data change: " + TPrettyPrinter.printEdge(scope, label));
+                            tbr.add(function.apply(dependency));
+                        }
                     }
                 }
             }

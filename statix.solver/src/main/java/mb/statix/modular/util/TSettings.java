@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import mb.statix.modular.ndependencies.data.RegexDataDependencyManager;
 import mb.statix.modular.ndependencies.edge.RegexEdgeDependencyManager;
 import mb.statix.modular.ndependencies.name.NameDependencyManager;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
@@ -17,7 +18,8 @@ public class TSettings {
     public static final Supplier<IDependencyObserver>[] DEPENDENCY_OBSERVERS = new Supplier[] {
             RegexEdgeDependencyManager::new,
             NameDependencyManager::new,
-            QueryDependencyManager::new
+            QueryDependencyManager::new,
+            () -> new RegexDataDependencyManager(true)
     };
     
     /**
