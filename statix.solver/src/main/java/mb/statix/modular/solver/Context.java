@@ -656,6 +656,18 @@ public class Context implements IContext, Serializable {
         return newContext;
     }
     
+    /**
+     * Creates a context specially for testing purposes.
+     * This method should not be used outside testing.
+     */
+    public static Context testContext(IncrementalStrategy strategy, Spec spec,
+            @Nullable Context oldContext, @Nullable IChangeSet changeSet) {
+        Context newContext = new Context(strategy, spec, oldContext);
+        newContext.changeSet = changeSet;
+        setContext(newContext);
+        return newContext;
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Context access
     // --------------------------------------------------------------------------------------------
