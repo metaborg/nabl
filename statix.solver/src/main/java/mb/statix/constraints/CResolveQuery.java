@@ -21,11 +21,13 @@ import mb.statix.modular.dependencies.details.IDependencyDetail;
 import mb.statix.modular.dependencies.details.NameDependencyDetail;
 import mb.statix.modular.dependencies.details.QueryDependencyDetail;
 import mb.statix.modular.dependencies.details.QueryResultDependencyDetail;
+import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.name.Names;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.scopegraph.reference.TrackingNameResolution;
+import mb.statix.modular.scopegraph.reference.TrackingNameResolutionLabel;
 import mb.statix.modular.solver.MConstraintContext;
 import mb.statix.modular.solver.MConstraintResult;
 import mb.statix.modular.solver.query.MConstraintQueries;
@@ -123,7 +125,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     @Override
     public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
-        QueryResult result = resolveQuery(state, params);
+        QueryLabelResult result = resolveQuery(state, params);
         if (result == null) return Optional.empty();
         
         createDependencies(state.owner(), result);
@@ -157,7 +159,7 @@ public class CResolveQuery implements IConstraint, Serializable {
      *      If query resolution is delayed on an incomplete edge, incomplete data, a module or
      *      otherwise cannot be completed at this moment in time.
      */
-    public QueryResult resolveQuery(IMState state, MConstraintContext params)
+    public QueryLabelResult resolveQuery(IMState state, MConstraintContext params)
             throws InterruptedException, Delay {
         final IUnifier unifier = state.unifier();
         final Scope scope = getScope(unifier);
@@ -184,12 +186,12 @@ public class CResolveQuery implements IConstraint, Serializable {
             }
         };
         
-        final TrackingNameResolution<Scope, ITerm, ITerm> nameResolution;
+        final TrackingNameResolutionLabel<Scope, ITerm, ITerm> nameResolution;
         final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
         try {
             final MConstraintQueries cq = new MConstraintQueries(state, params);
             // @formatter:off
-            nameResolution = TrackingNameResolution.<Scope, ITerm, ITerm>builder()
+            nameResolution = TrackingNameResolutionLabel.<Scope, ITerm, ITerm>builder()
                         .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
                         .withDataWF(cq.getDataWF(filter.getDataWF()))
                         .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
@@ -225,7 +227,7 @@ public class CResolveQuery implements IConstraint, Serializable {
 
         final List<ITerm> pathTerms =
                 paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
-        return new QueryResult(name, pathTerms, paths, nameResolution);
+        return new QueryLabelResult(name, pathTerms, paths, nameResolution);
     }
     
     /**
@@ -266,6 +268,40 @@ public class CResolveQuery implements IConstraint, Serializable {
      */
     public void createDependencies(IModule module, QueryResult result) {
         QueryDependencyDetail queryDetail = new QueryDependencyDetail(
+                module.getId(), this, result.edges, result.data);
+        QueryResultDependencyDetail resultDetail = new QueryResultDependencyDetail(result.paths);
+        IDependencyDetail[] details;
+        
+        final NameAndRelation name = result.name;
+        if (name == null) {
+            details = new IDependencyDetail[2];
+        } else {
+            details = new IDependencyDetail[3];
+            details[2] = new NameDependencyDetail(name, name.getRelation());
+        }
+        details[0] = queryDetail;
+        details[1] = resultDetail;
+        
+        module.dependencies().addMultiDependency(queryDetail.getReachedModules(), details);
+//        //Add reverse dependencies
+//        for (String module : details.getReachedModules()) {
+//            //TODO We used to have a single dependency with all the modules introduced by that dependency, we no longer have that
+//            state.owner().dependencies().addDependency(module, details);
+//            //TODO Make the dependant have the query details instead of the query
+//            moduleUnchecked(module).addDependant(state.owner().getId(), this);
+//        }
+    }
+    
+    /**
+     * Creates the dependencies for this query with the given query result.
+     * 
+     * @param module
+     *      the module which executed the query (owner of the state)
+     * @param result
+     *      the result of the query
+     */
+    public void createDependencies(IModule module, QueryLabelResult result) {
+        SimpleQueryDependencyDetail queryDetail = new SimpleQueryDependencyDetail(
                 module.getId(), this, result.edges, result.data);
         QueryResultDependencyDetail resultDetail = new QueryResultDependencyDetail(result.paths);
         IDependencyDetail[] details;
@@ -346,6 +382,30 @@ public class CResolveQuery implements IConstraint, Serializable {
                 NameAndRelation name, List<ITerm> pathTerms,
                 Set<IResolutionPath<Scope, ITerm, ITerm>> paths,
                 TrackingNameResolution<Scope, ITerm, ITerm> nameResolution) {
+            this.name = name;
+            this.pathTerms = pathTerms;
+            this.paths = paths;
+            this.edges = nameResolution.getTrackedEdges();
+            this.data = nameResolution.getTrackedData();
+        }
+    }
+    
+    /**
+     * Class to represent the result of a query.
+     */
+    public static class QueryLabelResult implements Serializable {
+        private static final long serialVersionUID = 1L;
+        
+        public final NameAndRelation name;
+        public final List<ITerm> pathTerms;
+        public final Set<IResolutionPath<Scope, ITerm, ITerm>> paths;
+        public final Multimap<Scope, ITerm> edges;
+        public final Multimap<Scope, ITerm> data;
+        
+        public QueryLabelResult(
+                NameAndRelation name, List<ITerm> pathTerms,
+                Set<IResolutionPath<Scope, ITerm, ITerm>> paths,
+                TrackingNameResolutionLabel<Scope, ITerm, ITerm> nameResolution) {
             this.name = name;
             this.pathTerms = pathTerms;
             this.paths = paths;
