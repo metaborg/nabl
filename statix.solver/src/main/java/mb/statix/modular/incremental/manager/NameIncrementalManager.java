@@ -214,15 +214,11 @@ public class NameIncrementalManager extends IncrementalManager {
         System.out.println("Effective diff result of phase " + phaseCounter + ":");
         eDiff.print(System.out);
         
-//        DiffResult eDiff = diff.toEffectiveDiff();
-//        System.out.println("Effective diff result of phase " + phaseCounter + ":");
-//        eDiff.print(System.out);
-        
-        
         //TODO IMPORTANT Assert that there are no more dependencies on modules that have been removed, since those modules will be redone.
         //Determine the dependencies
         Set<String> toRedo = eDiff.getDependencies(context(), Dependency::getOwner);
-        //Dependencies are reset because the depending modules will be redone and will have their dependencies reset
+        
+        //Do not redo any removed modules
         for (String module : eDiff.getRemovedModules()) {
             toRedo.remove(module);
         }
@@ -286,8 +282,6 @@ public class NameIncrementalManager extends IncrementalManager {
         
         actualPhases.putAll(phase, actualModules);
         processedModules.addAll(actualModules);
-        
-        TDebug.debugContext(context(), false);
         
         //Do not compute a diff if this was a clean run
         if (actualModules.containsAll(context().getModulesOnLevel(1).values())) {
