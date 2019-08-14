@@ -2,10 +2,13 @@ module statix/lang/menus
 
 imports
 
+  nabl2/api
+
   signatures/statix/lang/-
   statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
+  statix/lang/nonoverlapping
 
   pp
 
@@ -59,6 +62,24 @@ rules // Debugging
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with ast' := <normalize(|a)> ast
+
+rules // Debugging
+
+  show-nonoverlapping-aterm: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-nonoverlapping-ast>
+    with filename := <guarantee-extension(|"normalized.aterm")> path;
+         result   := <nabl2-simplify-ast-indices> ast
+
+  format-nonoverlapping: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-nonoverlapping-ast>
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[nonoverlapping.[ext]])> path;
+         result   := <pp-Statix-string> ast
+
+  get-nonoverlapping-ast: (_, _, ast, path, project-path) -> ast'
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with ast' := <normalize(|a);make-nonoverlapping(|a)> ast
 
 rules // Debugging
 

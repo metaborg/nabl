@@ -1,0 +1,177 @@
+module statix/lang/nonoverlapping
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/rule-order
+  statix/lang/statics/util
+  statix/lang/normalize/util
+
+rules
+
+  make-nonoverlapping(|a) =
+    ?ast
+  ; nabl2-custom-analysis-info-msg(|"Make rules non-overlapping...")
+  ; cps := <get-constraint-patterns(|a);log(|"cps")> ast
+  ; sops := <get-sort-ops(|a);log(|"sops")> ast
+  ; <topdown(try(expand-rules(|a,cps,sops)))> ast
+
+  expand-rules(|a,cps,sops): Rules(r*) -> Rules(r'*)
+    with
+      r'* := <flatmap(expand-rule(|a,cps,sops) <+ MkSingleton)> r*
+
+  expand-rule(|a,cps,sops): Rule(C(x, ps), vs, C) -> r*
+    with <log(|"r")> x;
+      d := <norm-get-ast-decl(|a)> x
+    ; ps' := <nonoverlapping-patterns-desugar;log(|"ps'")> ps
+    ; ps* := < raw-lookup;log(|"all ps*")
+             ; filter(where(<patterns-lt> (<id>, ps')));log(|"net ps*")
+             > (d, cps)
+    ; r* := < expand-patterns(|sops,ps*);log(|"es")
+            ; map(!Rule(C(x, <nonoverlapping-patterns-resugar>), vs, C))
+            > ps'
+
+  /* Expand pattern relative to a list of other patterns
+   *
+   * @param sops : [Type * [Pattern]]
+   * @param p* : [Pattern]
+   * @type Pattern -> [Pattern]
+   */
+  expand-pattern(|sops,p*): p@As(v, p') -> e*
+    with ty := <norm-get-ast-type> p
+       ; e* := < expand-pattern(|sops,p*)
+               ; map(<mk-As(|ty)> (v, <id>))
+               > p'
+  expand-pattern(|sops,p*): p@Wld() -> e*
+    with ty := <norm-get-ast-type> p
+       ; if p'*@[_|_] := <filter(is-constr)> p* then
+           e* := < type-patterns(|sops)
+                 ; mapconcat(expand-pattern(|sops,p'*))
+                 > ty
+         else
+           e* := [p]
+         end
+  expand-pattern(|sops,p*): p@Var(_) -> e*
+    with ty := <norm-get-ast-type> p
+       ; if p'*@[_|_] := <filter(is-constr)> p* then
+           e* := < type-patterns(|sops)
+                 ; mapconcat(expand-pattern(|sops,p*))
+                 ; map(<mk-As(|ty)> (p, <id>))
+                 > ty
+         else
+           e* := [p]
+         end
+  expand-pattern(|sops,p*): p@Op(x, ps) -> e*
+    with ty := <norm-get-ast-type> p
+       ; if ps*@[_|_] := <filter(is-constr;\ Op(x', ps') -> ps' where <raw-eq> (x, x'); <raw-eq> (<length> ps, <length> ps') \)> p* then
+           e* := < expand-patterns(|sops,ps*)
+                 ; map(<mk-Op(|ty)> (x, <id>))
+                 > ps
+         else
+           e* := [p]
+         end
+  expand-pattern(|sops,p*): p@Tuple(ps) -> e*
+    with ty := <norm-get-ast-type> p
+       ; if ps*@[_|_] := <filter(is-constr;\ Tuple(ps') -> ps' where <raw-eq> (<length> ps, <length> ps') \)> p* then
+           e* := < expand-patterns(|sops,ps*)
+                 ; map(mk-Tuple)
+                 > ps
+         else
+           e* := [p]
+         end
+  expand-pattern(|sops,p*): p@ListTail([hd], tl) -> e*
+    with ty := <norm-get-ast-type> p
+       ; if ps*@[_|_] := <filter(is-constr;\ ListTail([hd], tl) -> [hd, tl] \)> p* then
+           e* := < expand-patterns(|sops,ps*)
+                 ; map(\ [hd, tl] -> <mk-ListTail> ([hd], tl) \)
+                 > [hd, tl]
+         else
+           e* := [p]
+         end
+  expand-pattern(|sops,p*): p@List([]) -> e*
+    with ty := <norm-get-ast-type> p
+       ; e* := [p]
+
+  expand-patterns(|sops,ps*): ps -> e*
+    with e* := < add-indices
+               ; map(\ (i, p) -> <expand-pattern(|sops,<map(index(|i))> ps*)> p \)
+               ; list-cart
+               ; filter(use-expansion(|ps*))
+               > ps
+
+  // NOTE Relies in the fact that this is already done for subterms for correctness,
+  //      otherwise the left-to-right behaviour of pattern comparison gets in the way.
+  //      E.g., `(x, [])` is ordered after `([], [_|_])`, but the second is not
+  //      an instance of the first.
+  use-expansion(|ps*): ps -> ps
+    where <map(not(<zip(patterns-geq)> (<id>, ps)))> ps*
+
+
+rules
+
+  // @type _ -> [(occurrence * [[Pattern]]]
+  get-constraint-patterns(|a) =
+    collect-all(\ Rule(C(x, ps), _, _) -> (<norm-get-ast-decl(|a)> x, <nonoverlapping-patterns-desugar> ps) \)
+  ; group-by(Fst, Snd)
+
+
+rules
+
+  // @type Sort -> Type
+  sort-to-type(|a): SimpleSort(x)    -> SORT(<norm-get-ast-decl(|a)> x)
+  sort-to-type(|a): IntSort()        -> INT()
+  sort-to-type(|a): StringSort()     -> STRING()
+  sort-to-type(|a): PathSort()       -> PATH()
+  sort-to-type(|a): LabelSort()      -> LABEL()
+  sort-to-type(|a): OccurrenceSort() -> OCCURRENCE()
+  sort-to-type(|a): ScopeSort()      -> SCOPE()
+  sort-to-type(|a): AstIdSort()      -> AST_ID()
+  sort-to-type(|a): ListSort(sort)   -> LIST(<sort-to-type(|a)> sort)
+  sort-to-type(|a): TupleSort(sort*) -> TUPLE(<map(sort-to-type(|a))> sort*)
+
+
+  // @type Type -> [Pattern]
+  type-patterns(|sops): ty@SORT(_) -> <raw-lookup <+ ![]> (ty, sops)
+  type-patterns(|sops): LIST(ty)   -> [ <mk-Nil(|ty)>
+                                      , <mk-ListTail> ( [<mk-Wld(|ty)>]
+                                                      , <mk-Wld(|LIST(ty))>
+                                                      )
+                                      ]
+  type-patterns(|sops): TUPLE(tys) -> [ <mk-Tuple> (<map(mk-Wld(|<id>))> tys) ]
+  type-patterns(|sops): ty         -> <fatal-err(|"Cannot generate patterns for type ")>
+
+
+  // @type _ -> [Type * [Pattern]]
+  get-sort-ops(|a) =
+    collect-all(get-op-entry(|a))
+  ; group-by(Fst, Snd)
+
+  get-op-entry(|a):
+      OpDecl(x, type) -> (ty, op)
+    with (ty, args) := <get-op-args(|a)> type
+       ; op := <mk-Op(|ty)> (x, args)
+
+  get-op-args(|a):
+      ConstOp(sort) -> (<sort-to-type(|a)> sort, [])
+  get-op-args(|a):
+      ArrowOp(params, sort) -> (<sort-to-type(|a)> sort, <map(mk-Wld(|<sort-to-type(|a)>))> params)
+
+
+rules
+
+  nonoverlapping-patterns-desugar =
+    topdown(try(
+      \ List([x|xs]){a*} -> ListTail([x], List(xs){a*}){a*} \
+    ))
+
+  nonoverlapping-patterns-resugar =
+    bottomup(try(
+      \ ListTail([x], ListTail(xs,tl)){a*} -> ListTail([x|xs],tl){a*} \
+    + \ ListTail([x], List(xs)){a*}        -> List([x|xs]){a*} \
+    ))
+
+rules
+
+  log(|msg) = with(strip-annos; debug(<concat-strings> [msg, ": "]))

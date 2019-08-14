@@ -1,0 +1,58 @@
+module overlapping-rules/nonlinear-patterns
+
+signature
+  sorts S constructors
+    F : int -> S
+    G : S
+    H : S * S -> S
+
+rules
+
+  // FIXME
+  p04 : int * int
+  p04(x,x). // p04(x,y) :- x == y.
+  p04(x,y). // p04(x,y) :- x != y.
+
+rules  
+
+  p05 : list(int) * int
+  p05(xs@[y], y).
+  p05(xs, y). // p05(xs@[], y).
+              // p05(xs@[_|[_|_]], y).
+
+rules
+
+  p09 : S * S
+  p09(x@G(), x).
+  p09(x, y). // p09(x@F(_), y).
+             // p09(x@H(_, _), y).
+
+rules
+
+  // TODO Are the inequalities necessary, and correct?
+  p13 : int * int * int
+  p13(x, x, y). // p13(x, z, y) :- x == z, x != y.
+  p13(x, y, x). // p13(x, y, z) :- x == z, x != y.
+
+rules
+
+  p14 : S
+//p14(x@F(x)).
+
+rules
+
+  p15 : S * S
+  p15(H(x@F(_),G()),x).
+  p15(H(F(_),x@G()),x).
+
+rules
+
+  p16 : S * S
+//p16(H(x@G(),G()),x).
+//p16(H(G(),x@G()),x).
+
+rules
+
+  p17 : S * S
+  p17(x@G(),x).
+  p17(G(),x).

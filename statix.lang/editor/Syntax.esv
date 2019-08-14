@@ -22,7 +22,7 @@ views
 menus
 
   menu: "Syntax" (openeditor)
-    
+
     action: "Show parsed AST"       = show-parsed-aterm (source)
     action: "Format parsed AST"     = format-parsed (source)
 
@@ -40,6 +40,11 @@ menus
 
     action: "Show normalized AST"   = show-normalized-aterm
     action: "Format normalized AST" = format-normalized
+
+    separator
+
+    action: "Show non-overlapping AST"   = show-nonoverlapping-aterm
+    action: "Format non-overlapping AST" = format-nonoverlapping
 
     separator
 
