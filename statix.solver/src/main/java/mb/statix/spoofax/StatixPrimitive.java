@@ -31,6 +31,7 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.constraints.CConj;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
@@ -128,7 +129,11 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         final StringBuilder message = new StringBuilder();
         message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
                 .append("\n");
-        formatTrace(constraint, unifier, message);
+        formatTrace(5, constraint, unifier, message);
+        
+        //Truncate the message if it is too long
+        if (message.length() > 6000) message.setLength(6000);
+        
         return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
     }
 
@@ -164,15 +169,31 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     private ITerm makeOriginTerm(ITerm term) {
         return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
     }
+    
+    private static void formatTrace(int depth, @Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
+        for (int i = 0; constraint != null && i < depth;) {
+            if (!(constraint instanceof CConj)) {
+                sb.append("<br>");
+                sb.append("&gt;&nbsp;");
+                String c = constraint.toString(Solver.shallowTermFormatter(unifier));
+                c = c.replace("&", "&amp;");
+                c = c.replace("<", "&lt;");
+                c = c.replace(">", "&gt;");
+                sb.append(c);
+                i++;
+            }
+            constraint = constraint.cause().orElse(null);
+        }
+    }
 
     private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
         while(constraint != null) {
             sb.append("<br>");
             sb.append("&gt;&nbsp;");
             String c = constraint.toString(Solver.shallowTermFormatter(unifier));
-            c = c.replaceAll("&", "&amp;");
-            c = c.replaceAll("<", "&lt;");
-            c = c.replaceAll(">", "&gt;");
+            c = c.replace("&", "&amp;");
+            c = c.replace("<", "&lt;");
+            c = c.replace(">", "&gt;");
             sb.append(c);
             constraint = constraint.cause().orElse(null);
         }
