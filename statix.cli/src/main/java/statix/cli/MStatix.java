@@ -21,6 +21,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.statix.modular.dot.DotPrinter;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TTimings;
 import picocli.CommandLine;
@@ -66,9 +67,13 @@ public class MStatix implements Callable<Void> {
     @Option(names = { "-l", "--language" }, required = true, description = "language under test") private String language;
     @Option(names = { "-o", "--output" }, description = "csv output for results") private String output;
     @Option(names = { "-g", "--outputgraph" }, description = "dot output for scope graph") private String outputGraph;
+    @Option(names = { "-d", "--outputdiff" }, description = "diff output for incremental") private String outputDiff;
     @Option(names = { "-s", "--seed" }, description = "seed for random changes") private long seed;
+    @Option(names = { "-split", "--splitmodules" }, description = "if split modules should be enabled") private boolean splitModules;
+    
     @Option(names = { "-cin", "--contextin" }, description = "file to load context") private String contextIn;
     @Option(names = { "-cout", "--contextout" }, description = "file to save context", defaultValue = "default.context") private String contextOut;
+    
     @Option(names = { "-c", "--count" }, description = "amount of runs", defaultValue = "1") private int count;
     @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
     @Option(names = { "--observerself" }, description = "observer mechanism for own module", defaultValue = "true") private boolean observer;
@@ -152,6 +157,13 @@ public class MStatix implements Callable<Void> {
         
         //Set sync scopegraphs mechanism
         TOverrides.SYNC_SCOPEGRAPHS = syncSgs;
+        
+        TOverrides.SPLIT_MODULES = splitModules;
+        
+        if (outputDiff != null) {
+            TDebug.DIFF_OVERRIDE_FILE = outputDiff;
+            TOverrides.OUTPUT_DIFF = true;
+        }
     }
     
     /**
