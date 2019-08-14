@@ -437,6 +437,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (state == null) state = context().getState(this.owner);
         final IMState varState = varOwner.getCurrentState();
         if (varState == null) {
+            System.err.println("CRASHED!");
             TDebug.debugContext(context(), false);
             
             throw new NullPointerException();

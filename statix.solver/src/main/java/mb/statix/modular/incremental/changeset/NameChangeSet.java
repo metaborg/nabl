@@ -9,6 +9,7 @@ import java.util.HashSet;
 import mb.statix.modular.incremental.Flag;
 import mb.statix.modular.module.ModuleCleanliness;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.util.TDebug;
 
 public class NameChangeSet extends AChangeSet {
     private static final long serialVersionUID = 1L;
@@ -39,10 +40,10 @@ public class NameChangeSet extends AChangeSet {
         //3. Flag all the remaining modules as clean.
         add(Flag.CLEAN, FlagCondition.DontFlag, oldContext.getModules().stream().filter(m -> m.getTopCleanliness() == CLEAN));
 
-        System.err.println("Based on the files, we identified:");
-        System.err.println("  Removed:  (" + removed().size()        + ") " + removedIds());
-        System.err.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
-        System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
+        if (TDebug.CHANGESET) System.out.println("Based on the files, we identified:");
+        if (TDebug.CHANGESET) System.out.println("  Removed:  (" + removed().size()        + ") " + removedIds());
+        if (TDebug.CHANGESET) System.out.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
+        if (TDebug.CHANGESET) System.out.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
         
     }
 }

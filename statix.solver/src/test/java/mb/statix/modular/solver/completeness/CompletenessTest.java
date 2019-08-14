@@ -75,7 +75,6 @@ public class CompletenessTest {
         CTellEdge constraint = new CTellEdge(aScope, edgeLabel, globalScope);
         
         //Critical edge s -EDGE-> globalScope
-        System.out.println(solver);
         solver.getCompleteness().add(constraint, aState.unifier());
         solver.getStore().delay(constraint, Delay.ofCriticalEdge(CriticalEdge.of(aScope, edgeLabel)), aState);
         

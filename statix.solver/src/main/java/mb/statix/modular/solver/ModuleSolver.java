@@ -16,7 +16,6 @@ import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableMap;
 
-import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
@@ -30,7 +29,6 @@ import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.solver.store.ModuleConstraintStore;
 import mb.statix.modular.util.IOwnable;
 import mb.statix.modular.util.TOverrides;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.Completeness;
@@ -482,42 +480,6 @@ public class ModuleSolver implements IOwnable {
             } else {
                 System.err.println("NOT creating split module " + splitId + " after disapproval from the incremental manager");
             }
-        }
-    }
-
-    //TODO Remove
-    /**
-     * @param scope
-     *      the scope of the edge
-     * @param label
-     *      the label of the edge
-     * 
-     * @return
-     *      true if the given edge is complete for this module (no children are checked), false
-     *      otherwise
-     */
-    public boolean isCompleteSelf(Scope scope, ITerm label) {
-        return completeness.isComplete(scope, label, state.unifier()) && isComplete.test(scope, label, state);
-    }
-    
-    public void computeCompleteness(Set<String> incompleteModules, Scope scope, ITerm label) {
-        if (COMPLETENESS) System.err.println("Completeness of " + getOwner() + " got query for " + scope + "-" + label + ".");
-        
-        //We, or one of our parents will be the scope owner
-        
-        //Check if we ourselves are incomplete. If we are, we cannot be sure that all our children have been created, so we will stop there.
-        if (!isCompleteSelf(scope, label)) {
-            incompleteModules.add(getOwner().getId());
-            return;
-        }
-        
-        //TODO Not all our children might have been created yet, but we must ensure that this list is complete
-        //Check our children
-        for (IModule child : getOwner().getChildren()) {
-            //Only delegate to children who get passed the scope
-            if (!child.getScopeGraph().getExtensibleScopes().contains(scope)) continue;
-            
-            child.getCurrentState().solver().computeCompleteness(incompleteModules, scope, label);
         }
     }
     

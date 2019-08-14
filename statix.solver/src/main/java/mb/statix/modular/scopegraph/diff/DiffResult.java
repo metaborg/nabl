@@ -19,6 +19,7 @@ import mb.statix.modular.dependencies.DependencyManager;
 import mb.statix.modular.name.Name;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.unifier.DistributedUnifier;
+import static mb.statix.modular.util.TDebug.DEPENDENCY_FOUND;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.terms.Scope;
 
@@ -163,11 +164,10 @@ public class DiffResult implements Serializable {
         boolean dna = manager.dataNameAdditionAffectScore() != -1;
         boolean dnroc = manager.dataNameRemovalOrChangeAffectScore() != -1;
         for (IScopeGraphDiff<Scope, ITerm, ITerm> diff : diffs.values()) {
-            System.out.println("Checking diff...");
             if (ea) {
                 for (Tuple2<Scope, ITerm> edge : diff.getAddedEdges()._getForwardMap().keySet()) {
                     for (Dependency dependency : manager.affectedByEdgeAddition(edge._1(), edge._2())) {
-                        System.out.println("Found dependency for edge addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        if (DEPENDENCY_FOUND) System.out.println("Found dependency for edge addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
                         tbr.add(function.apply(dependency));
                     }
                 }
@@ -176,7 +176,7 @@ public class DiffResult implements Serializable {
             if (er) {
                 for (Tuple2<Scope, ITerm> edge : diff.getRemovedEdges()._getForwardMap().keySet()) {
                     for (Dependency dependency : manager.affectedByEdgeRemoval(edge._1(), edge._2())) {
-                        System.out.println("Found dependency for edge removal: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        if (DEPENDENCY_FOUND) System.out.println("Found dependency for edge removal: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
                         tbr.add(function.apply(dependency));
                     }
                 }
@@ -185,7 +185,7 @@ public class DiffResult implements Serializable {
             if (da) {
                 for (Tuple2<Scope, ITerm> edge : diff.getAddedData()._getForwardMap().keySet()) {
                     for (Dependency dependency : manager.affectedByDataAddition(edge._1(), edge._2())) {
-                        System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        if (DEPENDENCY_FOUND) System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
                         tbr.add(function.apply(dependency));
                     }
                 }
@@ -194,7 +194,7 @@ public class DiffResult implements Serializable {
             if (dr) {
                 for (Tuple2<Scope, ITerm> edge : diff.getRemovedData()._getForwardMap().keySet()) {
                     for (Dependency dependency : manager.affectedByDataRemoval(edge._1(), edge._2())) {
-                        System.out.println("Found dependency for data removal: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
+                        if (DEPENDENCY_FOUND) System.out.println("Found dependency for data removal: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
                         tbr.add(function.apply(dependency));
                     }
                 }
@@ -207,7 +207,7 @@ public class DiffResult implements Serializable {
                     final ITerm label = edge._2();
                     for (Name name : diff.getAddedDataNames().get(scope, label)) {
                         for (Dependency dependency : manager.affectedByDataNameAddition(name.withRelation(label), scope)) {
-                            System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(scope, label));
+                            if (DEPENDENCY_FOUND) System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(scope, label));
                             tbr.add(function.apply(dependency));
                         }
                     }
@@ -220,7 +220,7 @@ public class DiffResult implements Serializable {
                     final ITerm label = edge._2();
                     for (Name name : diff.getRemovedDataNames().get(scope, label)) {
                         for (Dependency dependency : manager.affectedByDataNameRemovalOrChange(name.withRelation(label), scope)) {
-                            System.out.println("Found dependency for data removal: " + TPrettyPrinter.printEdge(scope, label));
+                            if (DEPENDENCY_FOUND) System.out.println("Found dependency for data removal: " + TPrettyPrinter.printEdge(scope, label));
                             tbr.add(function.apply(dependency));
                         }
                     }
@@ -231,7 +231,7 @@ public class DiffResult implements Serializable {
                     final ITerm label = edge._2();
                     for (Name name : diff.getChangedDataNames().get(scope, label)) {
                         for (Dependency dependency : manager.affectedByDataNameRemovalOrChange(name.withRelation(label), scope)) {
-                            System.out.println("Found dependency for data change: " + TPrettyPrinter.printEdge(scope, label));
+                            if (DEPENDENCY_FOUND) System.out.println("Found dependency for data change: " + TPrettyPrinter.printEdge(scope, label));
                             tbr.add(function.apply(dependency));
                         }
                     }

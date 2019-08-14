@@ -1,6 +1,7 @@
 package mb.statix.modular.incremental.strategy;
 
 import static mb.statix.modular.module.ModuleCleanliness.CLEAN;
+import static mb.statix.modular.util.TDebug.INCREMENTAL_STRATEGY;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -152,14 +153,14 @@ public abstract class IncrementalStrategy implements Serializable {
     public Map<IModule, IConstraint> createInitialModules(Context context,
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
-        System.err.println("[IS] Transferring constraint-supplied modules...");
+        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Transferring constraint-supplied modules...");
         Context oldContext = context.getOldContext();
         Map<IModule, IConstraint> newModules = new HashMap<>();
         Set<IModule> reuseChildren = new HashSet<>();
         moduleConstraints.entrySet().stream()
         .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
         .forEachOrdered(entry -> {
-            System.err.println("[IS] Encountered entry for " + entry.getKey());
+            if (INCREMENTAL_STRATEGY) System.out.println("[IS] Encountered entry for " + entry.getKey());
             IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey());
             
             if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
@@ -176,7 +177,7 @@ public abstract class IncrementalStrategy implements Serializable {
         });
         
         if (oldContext != null) {
-            System.err.println("[IS] Transferring child modules...");
+            if (INCREMENTAL_STRATEGY) System.out.println("[IS] Transferring child modules...");
             //Remove all the descendants from the set to reuse the children of
             for (IModule module : newModules.keySet()) {
                 module.getDescendants(oldContext, m -> reuseChildren.remove(m));
@@ -257,7 +258,7 @@ public abstract class IncrementalStrategy implements Serializable {
      */
     protected IModule createFileModule(
             Context context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
-        System.err.println("[IS] Creating file module for " + childName);
+        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Creating file module for " + childName);
 
         List<Scope> scopes = getScopes(initConstraint);
         
@@ -291,7 +292,7 @@ public abstract class IncrementalStrategy implements Serializable {
      */
     protected IModule createChildModule(
             Context context, IChangeSet changeSet, String childId, IConstraint initConstraint, @Nullable IModule oldModule) {
-        System.err.println("[IS] Creating child module for " + childId);
+        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Creating child module for " + childId);
         
         String parent = ModulePaths.getParent(childId);
         IModule parentModule = context.getModuleUnchecked(parent);
@@ -324,7 +325,7 @@ public abstract class IncrementalStrategy implements Serializable {
      *      if dependencies should be transferred
      */
     protected void reuseOldModule(Context context, IChangeSet changeSet, IModule module, boolean transferDependencies) {
-        System.err.println("[IS] Reusing old module " + module);
+        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Reusing old module " + module);
         IMState state = context.transferModule(module, transferDependencies);
         for (IModule child : changeSet.removed()) {
             state.scopeGraph().removeChild(child);

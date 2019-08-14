@@ -26,7 +26,6 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.modular.incremental.MChange;
 import mb.statix.modular.incremental.changeset.IChangeSet;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
-import mb.statix.modular.scopegraph.diff.Diff;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.concurrent.ConcurrentSolverCoordinator;
@@ -60,7 +59,6 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
     
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        
         TTimings.startPhase("init");
         final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Invalid incremental strategy: " + terms.get(0)));
@@ -99,19 +97,19 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             MChange change = tuple._1();
             switch (change.getChangeType()) {
                 case REMOVED:
-                    System.err.println("Removed: " + change.getModule());
+                    if (TDebug.CHANGESET) System.out.println("Removed: " + change.getModule());
                     removed.add(change.getModule());
                     continue;
                 case CHANGED:
-                    System.err.println("Changed: " + change.getModule());
+                    if (TDebug.CHANGESET) System.out.println("Changed: " + change.getModule());
                     changed.add(change.getModule());
                     break;
                 case ADDED:
-                    System.err.println("Added: " + change.getModule());
+                    if (TDebug.CHANGESET) System.out.println("Added: " + change.getModule());
                     added.add(change.getModule());
                     break;
                 default:
-                    System.err.println("Unchanged: " + change.getModule());
+                    if (TDebug.CHANGESET) System.out.println("Unchanged: " + change.getModule());
                     break;
             }
             order.put(change.getModule(), i++);
@@ -142,7 +140,7 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         }
         TTimings.endPhase("solving");
         
-        if (OUTPUT_DIFF) Diff.diff(initial.state().owner().getId(), newContext, oldContext, true).print(System.out);
+        if (OUTPUT_DIFF) TDebug.outputDiff(oldContext, newContext, "");
         
         TTimings.startPhase("commit changes");
         newContext.commitChanges();

@@ -6,7 +6,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
 
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
@@ -15,6 +18,8 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.modular.dot.DotPrinter;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.scopegraph.IMInternalScopeGraph;
+import mb.statix.modular.scopegraph.diff.Diff;
+import mb.statix.modular.scopegraph.diff.DiffResult;
 import mb.statix.modular.solver.Context;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
@@ -25,6 +30,8 @@ public class TDebug {
     /** The location where debug files will be written. */
     public static final String DEBUG_FILE_PATH = "/home/taico/spoofax";
     private static final String DEBUG_SCOPE_GRAPH_DOT_FILE = "yyyy.MM.dd 'at' HH_mm_ss";
+    private static final String DEBUG_DIFF_FILE = "yyyy.MM.dd 'at' HH_mm_ss";
+    public static String DIFF_OVERRIDE_FILE;
     
     public static final boolean QUERY_DELAY = false;
     /** If false, no debug messages will be created for the constraint solving in ModuleSolver. */
@@ -42,9 +49,14 @@ public class TDebug {
     /** Debug info about delegation and events regarding the store. */
     public static final boolean STORE_DEBUG = false;
     
+    public static final boolean CHANGESET = false;
+    
     /** The interval at which progress is listed (in ms). */
     public static final long PROGRESS_TRACKER_INTERVAL = 30000;
     
+    // --------------------------------------------------------------------------------------------
+    // Coordinator
+    // --------------------------------------------------------------------------------------------
     /** The level at which the coordinator should log its messages. */
     public static final Level COORDINATOR_LEVEL = Level.Info;
     
@@ -54,16 +66,52 @@ public class TDebug {
     /** If true and COORDINATOR_SUMMARY is true, more details are printed when the coordinator finishes. */
     public static final boolean COORDINATOR_EXTENDED_SUMMARY = true;
     
+    /** If a module hierarchy should be added to the summary. */
+    public static final boolean COORDINATOR_HIERARCHY = false;
+    
+    // --------------------------------------------------------------------------------------------
+    // Dependencies
+    // --------------------------------------------------------------------------------------------
+    
+    /** If a message should be logged whenever a dependency is found. */
+    public static final boolean DEPENDENCY_FOUND = false;
+    
+    // --------------------------------------------------------------------------------------------
+    // Incremental Strategy and Manager
+    // --------------------------------------------------------------------------------------------
+    
+    /** Initialization of modules */
+    public static final boolean INCREMENTAL_STRATEGY = false;
+    
+    public static final boolean INCREMENTAL_MANAGER = false;
+    
+    public static final boolean INCREMENTAL_MANAGER_DIFFS = false;
+    
+    // --------------------------------------------------------------------------------------------
+    
     public static final IDebugContext DEV_NULL = new NullDebugContext();
     public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), TOverrides.LOGLEVEL.equalsIgnoreCase("none") ? Level.Error : Level.parse(TOverrides.LOGLEVEL));
     
     public static String print() {
-        return "QUERY_DELAY=" + QUERY_DELAY +
-                ", CONSTRAINT_SOLVING=" + CONSTRAINT_SOLVING +
-                ", COMPLETENESS=" + COMPLETENESS +
-                ", COMPLETENESS_DETAILS=" + COMPLETENESS_DETAILS +
-                ", QUERY_DEBUG=" + QUERY_DEBUG +
-                ", STORE_DEBUG=" + STORE_DEBUG;
+        StringBuilder sb = new StringBuilder();
+        try {
+            for (Field f : TDebug.class.getFields()) {
+                if (f.getType() != boolean.class) continue;
+                sb.append(f.getName()).append('=').append(f.get(null)).append(", ");
+            }
+        } catch (Exception ex) {
+            System.err.println("Unable to print debug fields reflectively!");
+            ex.printStackTrace();
+            return "ERROR";
+        }
+        sb.setLength(sb.length() - 2);
+        return sb.toString();
+//        return "QUERY_DELAY=" + QUERY_DELAY +
+//                ", CONSTRAINT_SOLVING=" + CONSTRAINT_SOLVING +
+//                ", COMPLETENESS=" + COMPLETENESS +
+//                ", COMPLETENESS_DETAILS=" + COMPLETENESS_DETAILS +
+//                ", QUERY_DEBUG=" + QUERY_DEBUG +
+//                ", STORE_DEBUG=" + STORE_DEBUG;
     }
     
     /**
@@ -109,20 +157,35 @@ public class TDebug {
         return name.replace("eclipse:///", "").replace("/", "").replace(":", "");
     }
     
-    // --------------------------------------------------------------------------------------------
-    // Debugging
-    // --------------------------------------------------------------------------------------------
-    public static void out(Object msg) {
-        synchronized (System.err) {
-            System.out.println(msg);
+    public static void outputDiff(Context oldContext, Context newContext, String nameSuffix) {
+        String rootId = Context.context().getRootModule().getId();
+        DiffResult result = new DiffResult();
+        Diff.effectiveDiff(result, new HashSet<>(), rootId, newContext, oldContext, true, false);
+        
+        File file;
+        if (DIFF_OVERRIDE_FILE == null) {
+            File folder = new File(DEBUG_FILE_PATH);
+            if (!folder.exists() && !folder.mkdirs()) throw new RuntimeException("Unable to create debug folder " + DEBUG_FILE_PATH);
+            
+            SimpleDateFormat format = new SimpleDateFormat(DEBUG_DIFF_FILE);
+            String name = format.format(System.currentTimeMillis());
+            file = new File(folder, (sanitizeName(rootId) + "_" + nameSuffix + "_" + name + ".diff").replace(' ', '_'));
+        } else {
+            file = new File(DIFF_OVERRIDE_FILE);
+            File folder = file.getParentFile();
+            if (folder != null && !folder.exists() && !folder.mkdirs()) throw new RuntimeException("Unable to create output folder " + folder);
+        }
+        
+        try (PrintStream ps = new PrintStream(file)) {
+            result.print(ps);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
     
-    public static void err(Object msg) {
-        synchronized (System.out) {
-            System.err.println(msg);
-        }
-    }
+    // --------------------------------------------------------------------------------------------
+    // Debugging
+    // --------------------------------------------------------------------------------------------
     
     public static void debugContext(Context context, boolean pretty) {
         System.out.println("Debug context " + System.identityHashCode(context));

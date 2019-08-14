@@ -118,7 +118,6 @@ public class Diff {
                         newDataNames, removedDataNames, changedDataNames);
         result.addDiff(id, diff);
         
-        //Child modules
         Queue<String> queue = new LinkedList<>(sgNew.getChildIds());
         while (!queue.isEmpty()) {
             String childId = queue.poll();

@@ -237,7 +237,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
      */
     protected void finishSolving() {
         deinit();
-        logDebugInfo(debug);
+        if (COORDINATOR_SUMMARY) logSummary(debug);
     }
     
     /**

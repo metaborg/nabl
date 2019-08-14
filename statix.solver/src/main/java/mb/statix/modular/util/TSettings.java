@@ -4,22 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import mb.statix.modular.ndependencies.data.RegexDataDependencyManager;
-import mb.statix.modular.ndependencies.edge.RegexEdgeDependencyManager;
+import mb.statix.modular.ndependencies.data.DataDependencyManager;
+import mb.statix.modular.ndependencies.edge.EdgeDependencyManager;
 import mb.statix.modular.ndependencies.name.NameDependencyManager;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
 import mb.statix.modular.ndependencies.query.QueryDependencyManager;
 
 public class TSettings {
+    
+    //TODO Make non-final for evaluation, to be able to change it
     /**
      * The observers for the dependencies.
      */
     @SuppressWarnings("unchecked")
     public static final Supplier<IDependencyObserver>[] DEPENDENCY_OBSERVERS = new Supplier[] {
-            RegexEdgeDependencyManager::new,
+            EdgeDependencyManager::new,
             NameDependencyManager::new,
             QueryDependencyManager::new,
-            () -> new RegexDataDependencyManager(true)
+            () -> new DataDependencyManager(true)
     };
     
     /**

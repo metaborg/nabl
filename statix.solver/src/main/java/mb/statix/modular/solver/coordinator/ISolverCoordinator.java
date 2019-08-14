@@ -148,27 +148,25 @@ public interface ISolverCoordinator {
                     throws InterruptedException;
     
     /**
-     * Logs debug output.
+     * Logs a summary of solving.
      * 
      * @param debug
      *      the debug context to log to
      */
-    public default void logDebugInfo(IDebugContext debug) {
-        if (!COORDINATOR_SUMMARY) return;
-        
-        debug.info("Debug output.");
-        debug.info("Module hierarchy:");
-        printModuleHierarchy(getRootState().owner(), debug.subContext());
-        
+    public default void logSummary(IDebugContext debug) {
         LazyDebugContext success = new LazyDebugContext(debug.subContext());
         LazyDebugContext fail = new LazyDebugContext(debug.subContext());
         LazyDebugContext stuck = new LazyDebugContext(debug.subContext());
         LazyDebugContext failDetails = new LazyDebugContext(debug.subContext().subContext());
         LazyDebugContext stuckDetails = new LazyDebugContext(debug.subContext().subContext());
+        int nrFailed = 0;
+        int nrStuck = 0;
+        int nrSuccess = 0;
         
         for (Entry<IModule, MSolverResult> entry : getResults().entrySet()) {
             String id = entry.getKey().getId();
             if (entry.getValue().hasErrors()) {
+                nrFailed++;
                 fail.info(printModule(id));
                 if (COORDINATOR_EXTENDED_SUMMARY) {
                     failDetails.info("[{}] Failed constraints:", id);
@@ -178,6 +176,7 @@ public interface ISolverCoordinator {
                     }
                 }
             } else if (entry.getValue().hasDelays()) {
+                nrStuck++;
                 stuck.info(printModule(id));
                 if (COORDINATOR_EXTENDED_SUMMARY) {
                     stuckDetails.info("[{}] Stuck constraints:", id);
@@ -194,25 +193,73 @@ public interface ISolverCoordinator {
                     }
                 }
             } else {
+                nrSuccess++;
                success.info(printModule(id)); 
             }
         }
         
-        debug.info("Finished modules:");
-        success.commit();
+        if (nrFailed == 0 && nrStuck == 0) {
+            debug.info("Solving completed successfully without failures.");
+        } else {
+            debug.info("Solving completed but {} modules failed and {} modules got stuck", nrFailed, nrStuck);
+        }
         
-        debug.info("Stuck modules:");
-        stuck.commit();
+        if (COORDINATOR_HIERARCHY) {
+            debug.info("Module hierarchy:");
+            printModuleHierarchy(getRootState().owner(), debug.subContext());
+        }
         
-        debug.info("Failed modules:");
-        fail.commit();
+        if (nrSuccess > 0) {
+            debug.info("Successful modules:");
+            success.commit();
+        }
+        
+        if (nrStuck > 0) {
+            debug.info("Stuck modules:");
+            stuck.commit();
+        }
+        
+        if (nrFailed > 0) {
+            debug.info("Failed modules:");
+            fail.commit();
+        }
         
         if (COORDINATOR_EXTENDED_SUMMARY) {
-            debug.info("Stuck output:");
+            debug.info("Stuck constraints:");
             stuckDetails.commit();
             
-            debug.info("Failed output:");
+            debug.info("Failed constraints:");
             failDetails.commit();
+        }
+        
+        if (nrFailed == 0 && nrStuck == 0) {
+            debug.info("Solving completed successfully without failures.");
+        } else {
+            debug.info("Solving completed but {} modules failed and {} modules got stuck", nrFailed, nrStuck);
+        }
+    }
+    
+    /**
+     * Logs a short summary of the solving.
+     * 
+     * @param debug
+     *      the debug context
+     */
+    public default void logShortSummary(IDebugContext debug) {
+        int nrFailed = 0;
+        int nrStuck = 0;
+        for (MSolverResult result : getResults().values()) {
+            if (result.hasErrors()) {
+                nrFailed++;
+            } else if (result.hasDelays()) {
+                nrStuck++;
+            }
+        }
+        
+        if (nrFailed == 0 && nrStuck == 0) {
+            debug.info("Solving completed successfully without failures.");
+        } else {
+            debug.info("Solving completed but {} modules failed and {} modules got stuck", nrFailed, nrStuck);
         }
     }
     

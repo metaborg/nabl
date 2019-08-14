@@ -78,7 +78,7 @@ public class StuckDetector implements Runnable {
     public void printSolverState() {
         TTimings.startPhase("Stuck Detector");
         IDebugContext debug = new LoggerDebugContext(LoggerUtils.logger(StuckDetector.class));
-        coordinator.logDebugInfo(debug);
+        coordinator.logSummary(debug);
         
         debug._info("Reported remaining solvers 'working': {}", coordinator.getProgressCounter().getAmountWorking());
         
