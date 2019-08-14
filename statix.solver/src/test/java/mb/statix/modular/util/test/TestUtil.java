@@ -20,6 +20,7 @@ import mb.nabl2.util.collections.IRelation3;
 import mb.statix.modular.module.IModule;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
+import mb.statix.spoofax.StatixTerms;
 
 public class TestUtil {
 
@@ -164,5 +165,48 @@ public class TestUtil {
      */
     public static <T, U, V> Tuple3<T, U, V> tuple(T t, U u, V v) {
         return ImmutableTuple3.of(t, u, v);
+    }
+    
+    /**
+     * @param namespace
+     *      the namespace of the occurrence
+     * @param name
+     *      the name of the occurrence
+     * @param scope
+     *      the scope to associate with the data
+     * 
+     * @return
+     *      data with the given occurrence (<pre>Class{"A"}</pre>) and associated scope
+     */
+    public static ITerm createData(String namespace, String name, Scope scope) {
+        return associate(occurence(namespace, name), scope);
+    }
+    
+    /**
+     * @param namespace
+     *      the namespace of the occurrence
+     * @param name
+     *      the name of the occurrence
+     * 
+     * @return
+     *      an occurrence with the given namespace and name, e.g. <pre>Class{"A"}</pre>
+     */
+    public static ITerm occurence(String namespace, String name) {
+        return B.newAppl(StatixTerms.OCCURRENCE_OP, B.newString(namespace), B.newList(B.newString(name)), B.newInt(0));
+    }
+    
+    /**
+     * Creates a new tuple with the given scope associated to the given occurrence.
+     * 
+     * @param occurrence
+     *      the occurrence
+     * @param associated
+     *      the associated scope
+     * 
+     * @return
+     *      the tuple
+     */
+    public static ITerm associate(ITerm occurrence, Scope associated) {
+        return B.newTuple(occurrence, associated);
     }
 }

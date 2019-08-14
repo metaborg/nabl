@@ -10,6 +10,7 @@ import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.Context;
 
 public class QueryIncrementalStrategy extends IncrementalStrategy {
+    private static final long serialVersionUID = 1L;
     
     @Override
     public QueryIncrementalManager createManager() {

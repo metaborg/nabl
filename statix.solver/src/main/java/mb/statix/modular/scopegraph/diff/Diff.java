@@ -134,10 +134,10 @@ public class Diff {
                 diff(result, childId, cNew, cOld, external, onlyContextFree);
             } else {
                 //Child is in new but not in old -> added
-                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cNew.getScopeGraph(childId);
-                result.addAddedChild(childId, sg);
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cNew, cOld, childId, external);
+                result.addAddedChild(childId);
                 result.addDiff(childId, ScopeGraphDiff.newModule(cNew, uNew, sg));
-                queue.addAll(sg.getChildIds());
+                queue.addAll(sg.getChildIds()); //These modules will be recognized as new (always), which is good
             }
         }
         
@@ -151,10 +151,10 @@ public class Diff {
             //TODO Should split modules be included here?
             if (!sgNew.getChildIds().contains(childId)) {
                 //Child is in old but not in new -> removed
-                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cOld.getScopeGraph(childId);
-                result.addRemovedChild(childId, sg);
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cOld, cNew, childId, external);
+                result.addRemovedChild(childId);
                 result.addDiff(childId, ScopeGraphDiff.removedModule(cOld, uOld, sg));
-                queue.addAll(sg.getChildIds());
+                queue.addAll(sg.getChildIds()); //These modules will be recognized as removed (always), which is good
             }
         }
     }
@@ -236,11 +236,11 @@ public class Diff {
                 effectiveDiff(result, processed, childId, cNew, cOld, external, onlyContextFree);
             } else {
                 //Child is in new but not in old -> added
-                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cNew.getScopeGraph(childId);
-                result.addAddedChild(childId, sg);
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cNew, cOld, childId, external);
+                result.addAddedChild(childId);
                 //TODO Handle added modules
                 newEffectiveModule(result, processed, childId, cNew, uNew, sg);
-                queue.addAll(sg.getChildIds());
+                queue.addAll(sg.getChildIds()); //These modules will be recognized as new (always), which is good
             }
         }
         
@@ -254,10 +254,10 @@ public class Diff {
             //TODO Should split modules be included here?
             if (!sgNew.getChildIds().contains(childId)) {
                 //Child is in old but not in new -> removed
-                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = cOld.getScopeGraph(childId);
-                result.addRemovedChild(childId, sg);
+                IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cOld, cNew, childId, external);
+                result.addRemovedChild(childId);
                 removedEffectiveModule(result, processed, childId, cOld, uOld, sg);
-                queue.addAll(sg.getChildIds());
+                queue.addAll(sg.getChildIds()); //These modules will be recognized as removed (always), which is good
             }
         }
     }
@@ -360,12 +360,14 @@ public class Diff {
         if (sgNew == null) {
             IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = cOther.getScopeGraph(id);
             if (sgOld == null) return null;
-            return ModuleScopeGraph.empty(cOther.getScopeGraph(id));
+            return ModuleScopeGraph.empty(sgOld);
         }
         
-        return external
-                ? (IMInternalScopeGraph<Scope, ITerm, ITerm>) sgNew.externalGraph()
-                : sgNew;
+        if (external) {
+            return (IMInternalScopeGraph<Scope, ITerm, ITerm>) Context.executeInContext(cTarget, sgNew::externalGraph);
+        }
+        
+        return sgNew;
     }
     
     /**

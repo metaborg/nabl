@@ -15,7 +15,6 @@ import mb.statix.modular.scopegraph.ModuleScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
-import mb.statix.spoofax.StatixTerms;
 
 public class ExternalGraphTest {
     private IModule global;
@@ -70,28 +69,5 @@ public class ExternalGraphTest {
         assertEquals(extGraph.getScopes(), set(AScope));
         assertTrue(extGraph.getOwnEdges().contains(AScope, edgeLabel, globalScope));
         assertTrue(extGraph.getOwnData().contains(globalScope, dataLabel));
-    }
-    
-    private ITerm createData(String namespace, String name, Scope scope) {
-        return associate(occurence(namespace, name), scope);
-    }
-    
-    private ITerm occurence(String namespace, String name) {
-        return B.newAppl(StatixTerms.OCCURRENCE_OP, B.newString(namespace), B.newList(B.newString(name), B.newInt(0)));
-    }
-    
-    /**
-     * Creates a new tuple with the given scope associated to the given occurrence.
-     * 
-     * @param occurrence
-     *      the occurrence
-     * @param associated
-     *      the associated scope
-     * 
-     * @return
-     *      the tuple
-     */
-    private ITerm associate(ITerm occurrence, Scope associated) {
-        return B.newTuple(occurrence, associated);
     }
 }

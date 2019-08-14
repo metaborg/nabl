@@ -16,6 +16,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 
 public class CombinedStrategy extends IncrementalStrategy {
+    private static final long serialVersionUID = 1L;
     
     @Override
     public CombinedIncrementalManager createManager() {

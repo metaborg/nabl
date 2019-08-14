@@ -103,13 +103,13 @@ public class TOverrides {
      */
     public static <K1, K2, V> MapMultimap<K1, K2, V> mapSetMultimap() {
         return CONCURRENT
-                ? MapMultimap.concurrent(MultimapBuilder.hashKeys().hashSetValues())
+                ? MapMultimap.concurrent(x -> Multimaps.synchronizedMultimap(MultimapBuilder.hashKeys().hashSetValues().build()))
                 : new MapMultimap<>();
     }
     
     public static <K1, K2, V> MapMultimap<K1, K2, V> mapListMultimap() {
         return CONCURRENT
-                ? MapMultimap.concurrent(MultimapBuilder.hashKeys().arrayListValues())
+                ? MapMultimap.concurrent(x -> Multimaps.synchronizedMultimap(MultimapBuilder.hashKeys().arrayListValues().build()))
                 : new MapMultimap<>();
     }
     

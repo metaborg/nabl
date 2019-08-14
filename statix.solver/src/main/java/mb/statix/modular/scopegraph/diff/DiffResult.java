@@ -1,6 +1,6 @@
 package mb.statix.modular.scopegraph.diff;
 
-import static mb.statix.modular.util.TPrettyPrinter.*;
+import static mb.statix.modular.util.TPrettyPrinter.printModule;
 
 import java.io.PrintStream;
 import java.io.Serializable;
@@ -8,16 +8,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.Map.Entry;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.DependencyManager;
 import mb.statix.modular.name.Name;
-import mb.statix.modular.scopegraph.IMInternalScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.unifier.DistributedUnifier;
 import mb.statix.modular.util.TPrettyPrinter;
@@ -32,15 +31,15 @@ public class DiffResult implements Serializable {
     private static final long serialVersionUID = 1L;
     
     private Map<String, IScopeGraphDiff<Scope, ITerm, ITerm>> diffs = Collections.synchronizedMap(new HashMap<>());
-    private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> addedModules;
-    private Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules;
+    private Set<String> addedModules;
+    private Set<String> removedModules;
     
     public DiffResult() {
-        this.addedModules   = Collections.synchronizedMap(new HashMap<>());
-        this.removedModules = Collections.synchronizedMap(new HashMap<>());
+        this.addedModules   = Collections.synchronizedSet(new HashSet<>());
+        this.removedModules = Collections.synchronizedSet(new HashSet<>());
     }
     
-    protected DiffResult(Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> addedModules, Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> removedModules) {
+    protected DiffResult(Set<String> addedModules, Set<String> removedModules) {
         this.addedModules = addedModules;
         this.removedModules = removedModules;
     }
@@ -53,11 +52,11 @@ public class DiffResult implements Serializable {
      * @return
      *      a map of added modules 
      */
-    public Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> getAddedModules() {
+    public Set<String> getAddedModules() {
         return addedModules;
     }
     
-    public Map<String, IMInternalScopeGraph<Scope, ITerm, ITerm>> getRemovedModules() {
+    public Set<String> getRemovedModules() {
         return removedModules;
     }
 
@@ -69,12 +68,12 @@ public class DiffResult implements Serializable {
         return diffs.containsKey(module);
     }
     
-    public void addRemovedChild(String id, IMInternalScopeGraph<Scope, ITerm, ITerm> graph) {
-        removedModules.put(id, graph);
+    public void addRemovedChild(String id) {
+        removedModules.add(id);
     }
     
-    public void addAddedChild(String id, IMInternalScopeGraph<Scope, ITerm, ITerm> graph) {
-        addedModules.put(id, graph);
+    public void addAddedChild(String id) {
+        addedModules.add(id);
     }
     
     /**
@@ -116,11 +115,11 @@ public class DiffResult implements Serializable {
         
         stream.println("Diff:");
         stream.println("| Added Modules:");
-        for (String module : addedModules.keySet()) {
+        for (String module : addedModules) {
             stream.println("| | " + printModule(module, true));
         }
         stream.println("| Removed Modules:");
-        for (String module : removedModules.keySet()) {
+        for (String module : removedModules) {
             stream.println("| | " + printModule(module, true));
         }
         stream.println("| Scope graph diffs");

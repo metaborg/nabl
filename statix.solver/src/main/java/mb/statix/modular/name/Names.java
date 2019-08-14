@@ -141,7 +141,7 @@ public class Names {
                     if (t.getArity() <= 0) return Optional.<NameAndRelation>empty();
                     return occurrence(relation).match(t.getArgs().get(0), unifier);
                 })
-        ).match(term, unifier).get();
+        ).match(term, unifier).orElse(Optional.empty());
     }
     
     /**

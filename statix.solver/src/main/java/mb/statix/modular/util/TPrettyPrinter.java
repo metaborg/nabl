@@ -172,7 +172,7 @@ public class TPrettyPrinter {
     
     public static String printTerm(ITerm term, IUnifier unifier) {
         try {
-            return term(unifier).match(term, unifier).get();
+            return term(unifier).match(unifier.findRecursive(term), unifier).get();
         } catch (IllegalStateException ex) {
             return term.toString();
         }
@@ -180,7 +180,7 @@ public class TPrettyPrinter {
     
     public static String printTerm(ITerm term, IUnifier unifier, boolean fancyScopes) {
         try {
-            return term(unifier, fancyScopes).match(term, unifier).get();
+            return term(unifier, fancyScopes).match(unifier.findRecursive(term), unifier).get();
         } catch (IllegalStateException ex) {
             return term.toString();
         }
@@ -420,9 +420,9 @@ public class TPrettyPrinter {
         List<String> tbr = new ArrayList<>(list.size());
         for (ITerm term : list) {
             try {
-                tbr.add(term(unifier).match(term, unifier).get());
+                tbr.add(term(unifier).match(unifier.findRecursive(term), unifier).get());
             } catch (IllegalStateException ex) {
-                System.err.println("Term is not ground: " + ex);
+                System.err.println("Prettyprinter: Term is not ground: " + ex);
                 tbr.add(term.toString());
             }
         }

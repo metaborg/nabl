@@ -26,6 +26,8 @@ import mb.statix.solver.IConstraint;
  * so we redo all modules if modules are added.
  */
 public class BaselineIncrementalStrategy extends IncrementalStrategy {
+    private static final long serialVersionUID = 1L;
+    
 //    @Override
 //    public void clearDirtyModules(IChangeSet changeSet, ModuleManager manager) {
 //        if (!changeSet.added().isEmpty()) {

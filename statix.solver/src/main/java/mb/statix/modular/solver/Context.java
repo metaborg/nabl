@@ -39,7 +39,7 @@ import mb.statix.spec.Spec;
 public class Context implements IContext, Serializable {
     private static final long serialVersionUID = 1L;
     
-    private final transient IncrementalStrategy strategy;
+    private final IncrementalStrategy strategy;
     private final Spec spec;
     private final ModuleManager manager = new ModuleManager();
     private final DependencyManager<?> dependencies;

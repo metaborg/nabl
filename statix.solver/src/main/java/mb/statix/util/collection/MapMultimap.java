@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Multimaps;
 
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
@@ -51,6 +50,11 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Seri
     public MapMultimap(Map<K1, Multimap<K2, V>> baseMap, SerializableSupplier<Multimap<K2, V>> supplier) {
         this.map = baseMap;
         this.function = x -> supplier.get();
+    }
+    
+    public MapMultimap(Map<K1, Multimap<K2, V>> baseMap, SerializableFunction<K1, Multimap<K2, V>> function) {
+        this.map = baseMap;
+        this.function = function;
     }
     
     public boolean isEmpty() {
@@ -170,16 +174,13 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Seri
      * Creates a new concurrent {@link MapMultimap}, using a {@link ConcurrentHashMap} as a backing
      * map and synchronized multimaps from the given builder as backing multimaps.
      * 
-     * @param builder
-     *      the builder to create multimaps with
+     * @param function
+     *      the function to create (concurrent!) multimaps with
      * 
      * @return
      *      a concurrent {@link MapMultimap}
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static <K1, K2, V> MapMultimap<K1, K2, V> concurrent(MultimapBuilder builder) {
-        return new MapMultimap<>(
-                new ConcurrentHashMap<>(),
-                () -> Multimaps.synchronizedMultimap(builder.build()));
+    public static <K1, K2, V> MapMultimap<K1, K2, V> concurrent(SerializableFunction<K1, Multimap<K2, V>> function) {
+        return new MapMultimap<>(new ConcurrentHashMap<>(), function);
     }
 }

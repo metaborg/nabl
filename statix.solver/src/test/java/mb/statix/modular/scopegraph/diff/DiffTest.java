@@ -10,14 +10,9 @@ import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IRelation3;
-import mb.statix.modular.scopegraph.diff.Diff;
-import mb.statix.modular.scopegraph.diff.DiffResult;
-import mb.statix.modular.scopegraph.diff.IScopeGraphDiff;
-import mb.statix.modular.scopegraph.diff.ScopeGraphDiff;
 import mb.statix.scopegraph.terms.Scope;
 
 public class DiffTest {
-
     @Test
     public void testEffectiveDiff() {
         DiffResult result = new DiffResult();

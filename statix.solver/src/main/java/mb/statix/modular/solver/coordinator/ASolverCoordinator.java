@@ -251,7 +251,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         System.err.println("Solving failed:");
         ex.printStackTrace();
         
-        debug.error("Solving failed with an exception: {}", pw.toString());
+        debug.error("Solving failed with an exception: {}", sw.toString());
         finishSolving();
         debug.error("Solving failed with an exception! (see above)");
     }

@@ -45,12 +45,13 @@ import mb.statix.solver.IConstraint;
  * 
  * NOTE: The strategy does not have state itself.
  */
-public abstract class IncrementalStrategy {
+public abstract class IncrementalStrategy implements Serializable {
+    private static final long serialVersionUID = 1L;
     
     //---------------------------------------------------------------------------------------------
     // Change Sets
     //---------------------------------------------------------------------------------------------
-    
+
     /**
      * Creates a new changeset for this strategy.
      * 

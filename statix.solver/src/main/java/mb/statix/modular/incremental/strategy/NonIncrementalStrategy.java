@@ -13,6 +13,7 @@ import mb.statix.modular.solver.Context;
 import mb.statix.solver.IConstraint;
 
 public class NonIncrementalStrategy extends IncrementalStrategy {
+    private static final long serialVersionUID = 1L;
     
     @Override
     public IChangeSet createChangeSet(Context oldContext, Collection<String> added, Collection<String> changed,

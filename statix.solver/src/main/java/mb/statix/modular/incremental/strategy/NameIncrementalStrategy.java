@@ -28,6 +28,7 @@ import mb.statix.modular.util.TTimings;
 import mb.statix.solver.IConstraint;
 
 public class NameIncrementalStrategy extends IncrementalStrategy {
+    private static final long serialVersionUID = 1L;
     
     @Override
     public NameIncrementalManager createManager() {

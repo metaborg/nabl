@@ -232,6 +232,7 @@ public class Scopes {
                 Scope.matcher().map(s -> Collections.singleton(s)),
                 M.listElems(m).map(l -> l.stream().flatMap(s -> s.stream()).collect(Collectors.toSet())),
                 M.appl(t -> t.getArgs()).map(l -> l.stream().flatMap(i -> Optionals.stream(m.match(i, unifier)).flatMap(c -> c.stream())).collect(Collectors.toSet())),
+                M.var(v -> m.match(unifier.findRecursive(v), unifier).orElseGet(Collections::emptySet)),
                 M.term(t -> Collections.emptySet())
         )).match(term, unifier).orElse(Collections.emptySet());
     }
@@ -249,19 +250,31 @@ public class Scopes {
      *      the consumer
      */
     public static void getScopesInTerm(ITerm term, IUnifier unifier, Consumer<Scope> consumer) {
-        Scope scope = Scope.matcher().match(term, unifier).orElse(null);
+        ITerm instantiatedTerm = unifier.findRecursive(term);
+        _getScopesInTerm(instantiatedTerm, consumer);
+    }
+    
+    private static void _getScopesInTerm(ITerm term, Consumer<Scope> consumer) {
+        Scope scope = Scope.matcher().match(term).orElse(null);
         if (scope != null) {
             consumer.accept(scope);
             return;
         }
         
-        List<? extends ITerm> list = M.cases(
-                M.listElems(),
-                M.appl(t -> t.getArgs()))
-            .match(term, unifier).orElse(null);
+        List<? extends ITerm> list;
+        try {
+            list = M.cases(
+                    M.listElems(),
+                    M.appl(t -> t.getArgs()))
+                .match(term).orElse(null);
+        } catch (IllegalStateException ex) {
+            System.err.println("Unable to find scopes in term " + TPrettyPrinter.prettyPrint(term) + ": " + ex.getMessage());
+            return;
+        }
+        
         if (list == null) return;
         for (ITerm listTerm : list) {
-            getScopesInTerm(listTerm, unifier, consumer);
+            _getScopesInTerm(listTerm, consumer);
         }
     }
 }
