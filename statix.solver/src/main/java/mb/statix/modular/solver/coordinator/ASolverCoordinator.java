@@ -128,6 +128,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         init(strategy, state, null, debug);
         
         preventSolverStart();
+        addSolver(root);
         Map<IModule, IConstraint> modules = strategy.createInitialModules(context, changeSet, constraints);
         
         if (context.isInitPhase()) context.finishInitPhase();
@@ -157,7 +158,6 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
      *      the modules to schedule
      */
     protected void scheduleModules(Map<IModule, IConstraint> modules) {
-        addSolver(root);
         context.getIncrementalManager().startFirstPhase(modules);
     }
     

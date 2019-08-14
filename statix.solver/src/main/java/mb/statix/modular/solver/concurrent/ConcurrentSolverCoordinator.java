@@ -27,8 +27,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     private StuckDetector stuckDetector;
     
     private Consumer<MSolverResult> onFinished;
-    private MSolverResult finalResult;
+    private volatile MSolverResult finalResult;
     private volatile boolean paused;
+    private volatile boolean roundDone;
     
     /**
      * Creates a new concurrent solver coordinator with a work stealing pool. This pool uses the
@@ -125,7 +126,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     @Override
     public MSolverResult solve(IMState state, IConstraint constraint, IDebugContext debug) throws InterruptedException {
         solveAsync(state, constraint, debug, null);
-        awaitCompletion();
+        runToCompletion();
         return finalResult;
     }
     
@@ -153,8 +154,16 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
      * Called whenever the current phase is finished.
      */
     private void onFinishPhase() {
-        if (!finishPhase()) {
-            finishSolving();
+        try {
+            System.out.println("COUNTER HAS INFORMED US THAT THE PHASE IS FINISHED :party:");
+            roundDone = true;
+            synchronized (this) {
+                notifyAll();
+            }
+        } catch (Exception ex) {
+            System.err.println("Uncaught exception in coordinator: ");
+            ex.printStackTrace();
+            throw ex;
         }
     }
 
@@ -162,9 +171,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     protected boolean startNextPhase(Set<ModuleSolver> finishedSolvers, Set<ModuleSolver> failedSolvers,
             Set<ModuleSolver> stuckSolvers, Map<IModule, MSolverResult> results) {
         //TODO How to stop all the solvers that are still in "waiting" mode?
-        progressCounter.switchToPending();
+        preventSolverStart();
         if (!context.getIncrementalManager().finishPhase(finishedSolvers, failedSolvers, stuckSolvers, results)) return false;
-        progressCounter.switchToDone();
+        allowSolverStart();
         return true;
     }
 
@@ -176,9 +185,18 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
      */
     @Override
     protected void finishSolving() {
+        System.out.println("FinishSolving called");
         super.finishSolving();
+        System.out.println("Super call done");
         
-        finalResult = aggregateResults();
+        try {
+            finalResult = aggregateResults();
+        } catch (Exception ex) {
+            System.err.println("ERROR while aggregating results!");
+            ex.printStackTrace();
+        }
+        
+        System.out.println("Results aggregated");
         try {
             if (onFinished != null) {
                 try {
@@ -190,7 +208,7 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         } finally {
             //Notify any thread that is waiting for the final result that it has been obtained.
             synchronized (this) {
-                notify();
+                notifyAll();
             }
         }
     }
@@ -223,27 +241,39 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
     
     /**
      * Awaits the completion of this coordinator.
-     * 
-     * @throws InterruptedException
-     *      
      */
-    private synchronized void awaitCompletion() throws InterruptedException {
-        while (finalResult == null) {
-            wait();
+    private synchronized void awaitCompletion() {
+        try {
+            while (true) {
+                wait();
+                
+                if (!roundDone) continue;
+                
+                if (!finishPhase()) {
+                    finishSolving();
+                    break;
+                }
+                roundDone = false;
+            }
+        } catch (Exception ex) {
+            failSolving(ex);
         }
     }
     
     @Override
     public void preventSolverStart() {
+        if (paused) return;
         if (!solvers.isEmpty()) throw new IllegalStateException("It is only allowed to pause whenever no solvers are running yet!");
         paused = true;
     }
     
     @Override
     public void allowSolverStart() {
-        if (!paused) throw new IllegalStateException("It is only allowed to resume when actually paused.");
-        for (SolverRunnable runnable : solvers.values()) {
-            runnable.schedule();
+        if (!paused) return;
+        synchronized (solvers) {
+            for (SolverRunnable runnable : solvers.values()) {
+                runnable.schedule();
+            }
         }
         paused = false;
     }

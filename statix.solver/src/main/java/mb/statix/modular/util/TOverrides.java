@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
 
 import mb.statix.modular.solver.concurrent.locking.DummyReadWriteLock;
 import mb.statix.util.collection.MapMultimap;
