@@ -9,6 +9,7 @@ import java.util.Set;
 
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.QueryDependencyDetail;
+import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
 import mb.statix.modular.name.NameAndRelation;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.util.collection.LightWeightHashTrieRelation3;
@@ -61,7 +62,9 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     
     private static Set<Scope> getScopesFromDependency(Dependency dependency) {
         QueryDependencyDetail detail = dependency.getDetails(QueryDependencyDetail.class);
-        return detail.getDataScopes();
+        if (detail != null) return detail.getDataScopes();
+        SimpleQueryDependencyDetail detail2 = dependency.getDetails(SimpleQueryDependencyDetail.class);
+        return detail2.getDataScopes();
     }
     
     // --------------------------------------------------------------------------------------------
