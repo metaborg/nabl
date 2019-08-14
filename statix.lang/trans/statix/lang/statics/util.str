@@ -9,9 +9,12 @@ imports
 
 rules
 
-  is-var = ?Var(_)
+  is-var    = ?Var(_) + ?As(_, <is-var>)
+  is-wld    = ?Wld() + ?As(_, <is-var>)
+  is-constr = not(is-var + is-wld)
+            ; try(?As(_, <is-constr>))
 
-  all-vars = collect-all(is-var)
+  all-vars = collect-all(?Var(_))
 
 rules
 
@@ -27,17 +30,36 @@ rules
   raw-eq = where((strip-annos, strip-annos); eq)
   raw-union = union(raw-eq)
   raw-elem = elem(raw-eq)
-  raw-lookup = lookup((id,Fst);raw-eq)
+  raw-lookup = lookup((id,Fst);raw-eq);Snd
   raw-diff = diff(raw-eq) 
   raw-make-set = foldr(![], union(raw-eq), ![<id>]) 
 
   topdown-om(s) = s <+ all(topdown-om(s))
 
-  group-by(s): [] -> []
-  group-by(s): [x|ys] -> [xs|<group-by(s)> ys']
+  partitions(s): [] -> []
+  partitions(s): [x|ys] -> [xs|<partitions(s)> ys']
     with
       (xs', ys') := <partition(\ x' -> x' where <s> (x, x') \)> ys
     ; xs := [x|xs']
+
+  // list n of lists m1, ..., mn to list m1 * ... * mn of lists n
+  // <list-cart> [ [1,2], ["a","b"], [true,false] ]
+  //   => [ [1,"a",true], [1,"a",false]
+  //      , [1,"b",true], [1,"b",false]
+  //      , [2,"a",true], [2,"a",false]
+  //      , [2,"b",true], [2,"b",false]
+  //      ]
+  list-cart: [] -> []
+  list-cart: [xs] -> <map(MkSingleton)> xs
+  list-cart: [xs|xss] -> <cart(![<Fst>|<Snd>])> (xs, <list-cart> xss)
+
+  flatmap(s): [] -> []
+  flatmap(s): [x|xs] -> <conc> (<s> x, <flatmap(s)> xs)
+
+  // @param key : a -> k
+  // @param val : a -> v
+  // @type List(a) -> List(k * List(v))
+  external group-by(key,val|)
 
 rules
 

@@ -28,10 +28,13 @@ rules
   < fatal-err(|"Missing AST index")
   + nabl2-get-ast-property(|a,prop)
 
-  norm-get-ast-decl-type(|a) =
+  norm-get-ast-decl(|a) =
     not(nabl2-get-ast-index)
   < fatal-err(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
+
+  norm-get-ast-decl-type(|a) =
+    norm-get-ast-decl(|a)
   ; nabl2-get-type(|a)
 
   norm-get-ast-decl-property(|a,prop) =
@@ -111,6 +114,8 @@ rules // smart constructors for typed terms
   mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
     with tys := <map(norm-get-ast-type)> ps;
          ty := PRED(tys)
+
+  mk-As(|ty): (v, t) -> <norm-set-ast-type(|ty)> As(v, t)
 
   mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, p)
 
