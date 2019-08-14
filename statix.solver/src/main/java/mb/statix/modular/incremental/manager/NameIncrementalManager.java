@@ -206,20 +206,26 @@ public class NameIncrementalManager extends IncrementalManager {
         Context oldContext = context().getOldContext();
         if (oldContext == null) throw new IllegalStateException("The old context should not be null!");
         
-        DiffResult diff = new DiffResult();
+        DiffResult eDiff = new DiffResult();
         for (IModule module : results.keySet()) {
-            Diff.diff(diff, module.getId(), context(), oldContext, true, false); // Last boolean might need to change to true depending on split modules
+            Diff.effectiveDiff(eDiff, new HashSet<>(), module.getId(), context(), oldContext, true, false); // Last boolean might need to change to true depending on split modules
         }
         
-        System.out.println("Diff result of phase " + phaseCounter + ":");
-        diff.print(System.out);
-        
-        DiffResult eDiff = diff.toEffectiveDiff();
         System.out.println("Effective diff result of phase " + phaseCounter + ":");
         eDiff.print(System.out);
         
+//        DiffResult eDiff = diff.toEffectiveDiff();
+//        System.out.println("Effective diff result of phase " + phaseCounter + ":");
+//        eDiff.print(System.out);
+        
+        
+        //TODO IMPORTANT Assert that there are no more dependencies on modules that have been removed, since those modules will be redone.
         //Determine the dependencies
-        Set<String> toRedo = diff.getDependencies(context(), Dependency::getOwner);
+        Set<String> toRedo = eDiff.getDependencies(context(), Dependency::getOwner);
+        //Dependencies are reset because the depending modules will be redone and will have their dependencies reset
+        for (String module : eDiff.getRemovedModules()) {
+            toRedo.remove(module);
+        }
         
         for (String id : toRedo) {
             redoReasons.put(id, RedoReason.DIFF);
