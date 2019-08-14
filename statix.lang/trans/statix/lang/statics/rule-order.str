@@ -14,7 +14,7 @@ rules
   detect-overlapping-rules: ast -> or-e*
     with
       head*   := <collect-om(?Rule(<id>, _, _), conc)> ast
-    ; o-head* := <group-by(rule-head-cmp(patterns-eq))> head*
+    ; o-head* := <partitions(rule-head-cmp(patterns-eq))> head*
     ; or-e*   := <filter(overlap-errors);concat> o-head*
 
   rule-head-cmp(s): (C(x1, p1*), C(x2, p2*)) -> <id>
@@ -41,10 +41,24 @@ rules
     prim("STX_compare_patterns")
 
   patterns-eq =
+    try(pattern-lists-to-tuples);
     compare-patterns; <eq> (<id>, 0)
 
   patterns-lt =
+    try(pattern-lists-to-tuples);
     compare-patterns; <lt> (<id>, 0)
 
+  patterns-leq =
+    try(pattern-lists-to-tuples);
+    compare-patterns; <lt+eq> (<id>, 0)
+
   patterns-gt =
+    try(pattern-lists-to-tuples);
     compare-patterns; <gt> (<id>, 0)
+
+  patterns-geq =
+    try(pattern-lists-to-tuples);
+    compare-patterns; <gt+eq> (<id>, 0)
+
+  pattern-lists-to-tuples =
+    (!Tuple(<is-list>), !Tuple(<is-list>))

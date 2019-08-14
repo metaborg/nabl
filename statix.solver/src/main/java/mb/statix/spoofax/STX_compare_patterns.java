@@ -13,6 +13,8 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 
 public class STX_compare_patterns extends StatixPrimitive {
 
@@ -22,10 +24,10 @@ public class STX_compare_patterns extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return M.tuple2(StatixTerms.pattern(), StatixTerms.pattern(), (t, p1, p2) -> {
-            return B.newInt(Pattern.leftRightOrdering.compare(p1, p2));
-        }).match(term).map(Optional::of)
-                .orElseThrow(() -> new InterpreterException("Expected tuple of patterns, got " + term + "."));
+        final Tuple2<Pattern, Pattern> ps = M.tuple2(StatixTerms.pattern(), StatixTerms.pattern(), (t, p1, p2) -> {
+            return ImmutableTuple2.of(p1, p2);
+        }).match(term).orElseThrow(() -> new InterpreterException("Expected tuple of patterns, got " + term + "."));
+        return Pattern.leftRightOrdering.compare(ps._1(), ps._2()).map(B::newInt);
     }
 
 }
