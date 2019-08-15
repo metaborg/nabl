@@ -14,8 +14,8 @@ rules
   make-nonoverlapping(|a) =
     ?ast
   ; nabl2-custom-analysis-info-msg(|"Make rules non-overlapping...")
-  ; cps := <get-constraint-patterns(|a);log(|"cps")> ast
-  ; sops := <get-sort-ops(|a);log(|"sops")> ast
+  ; cps := <get-constraint-patterns(|a)> ast
+  ; sops := <get-sort-ops(|a)> ast
   ; <topdown(try(expand-rules(|a,cps,sops)))> ast
 
   expand-rules(|a,cps,sops): Rules(r*) -> Rules(r'*)
@@ -23,13 +23,13 @@ rules
       r'* := <flatmap(expand-rule(|a,cps,sops) <+ MkSingleton)> r*
 
   expand-rule(|a,cps,sops): Rule(C(x, ps), vs, C) -> r*
-    with <log(|"r")> x;
+    with
       d := <norm-get-ast-decl(|a)> x
-    ; ps' := <nonoverlapping-patterns-desugar;log(|"ps'")> ps
-    ; ps* := < raw-lookup;log(|"all ps*")
-             ; filter(where(<patterns-lt> (<id>, ps')));log(|"net ps*")
+    ; ps' := <nonoverlapping-patterns-desugar> ps
+    ; ps* := < raw-lookup
+             ; filter(where(<patterns-lt> (<id>, ps')))
              > (d, cps)
-    ; r* := < expand-patterns(|sops,ps*);log(|"es")
+    ; r* := < expand-patterns(|sops,ps*)
             ; map(!Rule(C(x, <nonoverlapping-patterns-resugar>), vs, C))
             > ps'
 
@@ -171,7 +171,3 @@ rules
       \ ListTail([x], ListTail(xs,tl)){a*} -> ListTail([x|xs],tl){a*} \
     + \ ListTail([x], List(xs)){a*}        -> List([x|xs]){a*} \
     ))
-
-rules
-
-  log(|msg) = with(strip-annos; debug(<concat-strings> [msg, ": "]))
