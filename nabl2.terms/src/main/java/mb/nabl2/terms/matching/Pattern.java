@@ -11,7 +11,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -20,6 +22,8 @@ import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 
 public abstract class Pattern implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -67,6 +71,14 @@ public abstract class Pattern implements Serializable {
             return MaybeNotInstantiatedBool.ofNotInstantiated(stuckVars);
         }
     }
+
+    public final Tuple2<ITerm, Multimap<ITermVar, ITerm>> asTerm() {
+        final ImmutableMultimap.Builder<ITermVar, ITerm> builder = ImmutableMultimap.builder();
+        final ITerm term = asTerm(builder);
+        return ImmutableTuple2.of(term, builder.build());
+    }
+
+    public abstract ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities);
 
     ///////////////////////////////////////////////////////////////////////////
     // Pattern ordering                                                      //

@@ -5,3 +5,7 @@ menus
   menu: "Evaluate" (openeditor)
 
     action: "Evaluate Test" = editor-evaluate
+    
+    separator
+
+    action: "Evaluation Pair" = editor-evaluation-pair

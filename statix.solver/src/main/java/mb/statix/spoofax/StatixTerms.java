@@ -88,7 +88,7 @@ public class StatixTerms {
     public static IMatcher<ListMultimap<String, Rule>> rules() {
         return M.listElems(M.req(rule())).map(rules -> {
             final ImmutableListMultimap.Builder<String, Rule> builder =
-                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
+                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
             rules.stream().forEach(rule -> {
                 builder.put(rule.name(), rule);
             });

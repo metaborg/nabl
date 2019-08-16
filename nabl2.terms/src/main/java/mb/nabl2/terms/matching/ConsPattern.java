@@ -1,13 +1,16 @@
 package mb.nabl2.terms.matching;
 
+import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Set;
 
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
+import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
@@ -54,6 +57,10 @@ class ConsPattern extends Pattern {
                 })
             );
         }).match(unifier.findTerm(term)).orElse(MaybeNotInstantiatedBool.ofResult(false));
+    }
+
+    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+        return B.newCons(head.asTerm(equalities), (IListTerm)tail.asTerm(equalities));
     }
 
     @Override public String toString() {

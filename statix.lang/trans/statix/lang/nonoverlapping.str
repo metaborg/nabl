@@ -17,6 +17,16 @@ rules
   ; cps := <get-constraint-patterns(|a)> ast
   ; sops := <get-sort-ops(|a)> ast
   ; <topdown(try(expand-rules(|a,cps,sops)))> ast
+  ; eliminate-pattern-wildcards // FIXME Remove wildcards in patterns to prevent crash in Pattern::toTerm
+
+
+  eliminate-pattern-wildcards =
+    topdown(try(eliminate-pattern-wildcard))
+
+  eliminate-pattern-wildcard: wld@Wld() -> v
+    with ty := <norm-get-ast-type> wld
+       ; v := <mk-fresh-Var(|ty)> "wld"
+  
 
   expand-rules(|a,cps,sops): Rules(r*) -> Rules(r'*)
     with

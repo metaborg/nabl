@@ -1,7 +1,10 @@
 package mb.nabl2.terms.matching;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -39,6 +42,10 @@ class IntPattern extends Pattern {
             })
         );
         // @formatter:on
+    }
+
+    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+        return B.newInt(value);
     }
 
     @Override public String toString() {

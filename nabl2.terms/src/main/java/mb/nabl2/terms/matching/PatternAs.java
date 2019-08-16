@@ -5,6 +5,7 @@ import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -55,6 +56,14 @@ class PatternAs extends Pattern {
 
     @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier);
+    }
+
+    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+        final ITerm term = pattern.asTerm(equalities);
+        if(!var.isWildcard()) {
+            equalities.put(var.getVar(), term);
+        }
+        return term;
     }
 
     @Override public String toString() {

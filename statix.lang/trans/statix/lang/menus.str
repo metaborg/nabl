@@ -12,7 +12,7 @@ imports
 
   pp
 
-rules // Debugging
+rules // Parsing
 
   show-parsed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path;
@@ -23,7 +23,7 @@ rules // Debugging
          filename := <guarantee-extension(|$[formatted.[ext]])> path;
          result   := <pp-Statix-string> ast
 
-rules // Debugging
+rules // Desugaring
 
   show-desugared-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"desugared.aterm")> path;
@@ -34,7 +34,7 @@ rules // Debugging
          filename := <guarantee-extension(|$[desugared.[ext]])> path;
          result   := <desugar-all;pp-Statix-string> ast
 
-rules // Debugging
+rules // Analysis
 
   show-analyzed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path;
@@ -45,7 +45,7 @@ rules // Debugging
          filename := <guarantee-extension(|$[analyzed.[ext]])> path;
          result   := <pp-Statix-string> ast
 
-rules // Debugging
+rules // Normalization
 
   show-normalized-aterm: (_, _, _, path, project-path) -> (filename, result)
     where ast := <get-normalized-ast>
@@ -63,7 +63,7 @@ rules // Debugging
           <not(nabl2-analysis-has-errors)> a
     with ast' := <normalize(|a)> ast
 
-rules // Debugging
+rules // Non-overlapping rules
 
   show-nonoverlapping-aterm: (_, _, _, path, project-path) -> (filename, result)
     where ast := <get-nonoverlapping-ast>
@@ -80,14 +80,3 @@ rules // Debugging
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with ast' := <normalize(|a);make-nonoverlapping(|a)> ast
-
-rules // Debugging
-
-  // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  show-explicated-aterm: (_, _, ast, path, project-path) -> (filename, result)
-    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          <not(nabl2-analysis-has-errors)> a
-    with ast' := <normalize(|a)> ast;
-         filename := <guarantee-extension(|"explicated.aterm")> path;
-         result   := <explicate-all(|a);nabl2-simplify-ast-indices> ast'
-

@@ -121,19 +121,25 @@ public abstract class ARule {
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    public static final java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
+    public static final LeftRightOrder leftRightPatternOrdering = new LeftRightOrder();
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    private static class LeftRightPatternOrder implements Comparator<Rule> {
+    public static class LeftRightOrder {
 
-        private static final Comparator<Pattern> patternComparator = Pattern.leftRightOrdering.asComparator();
-
-        @Override public int compare(Rule r1, Rule r2) {
+        public Optional<Integer> compare(Rule r1, Rule r2) {
             final Pattern p1 = P.newTuple(r1.params());
             final Pattern p2 = P.newTuple(r2.params());
-            return patternComparator.compare(p1, p2);
+            return Pattern.leftRightOrdering.compare(p1, p2);
+        }
+
+        public Comparator<Rule> asComparator() {
+            return new Comparator<Rule>() {
+                @Override public int compare(Rule r1, Rule r2) {
+                    return LeftRightOrder.this.compare(r1, r2).orElse(0);
+                }
+            };
         }
 
     }

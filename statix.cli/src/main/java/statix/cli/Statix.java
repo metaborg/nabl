@@ -4,15 +4,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 import org.apache.commons.vfs2.FileObject;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.core.action.EndNamedGoal;
@@ -23,16 +16,12 @@ import org.metaborg.core.language.ILanguage;
 import org.metaborg.core.language.ILanguageImpl;
 import org.metaborg.core.messages.IMessage;
 import org.metaborg.core.messages.IMessagePrinter;
-import org.metaborg.core.messages.Message;
-import org.metaborg.core.messages.MessageSeverity;
-import org.metaborg.core.messages.MessageType;
 import org.metaborg.core.messages.WithLocationStreamMessagePrinter;
 import org.metaborg.core.project.IProject;
 import org.metaborg.core.transform.ITransformConfig;
 import org.metaborg.core.transform.TransformConfig;
 import org.metaborg.spoofax.core.Spoofax;
 import org.metaborg.spoofax.core.shell.CLIUtils;
-import org.metaborg.spoofax.core.syntax.JSGLRParserConfiguration;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
 import org.metaborg.spoofax.core.unit.ISpoofaxInputUnit;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
@@ -40,8 +29,6 @@ import org.metaborg.spoofax.core.unit.ISpoofaxTransformUnit;
 import org.metaborg.util.concurrent.IClosableLock;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-import org.spoofax.interpreter.core.Tools;
-import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
 import com.google.common.collect.Iterables;
@@ -55,48 +42,47 @@ import picocli.CommandLine.RunLast;
 import picocli.CommandLine.Spec;
 
 @Command(name = "java -jar statix.jar", description = "Type check and evaluate Statix files.", separator = "=")
-public class Statix implements Callable<Void> {
+public class Statix {
 
     private static final ILogger logger = LoggerUtils.logger(Statix.class);
 
     @Spec private CommandSpec spec;
     @Option(names = { "-h", "--help" }, description = "show usage help", usageHelp = true) private boolean usageHelp;
-    @Option(names = { "-i", "--interactive" }, description = "interactive mode") private boolean interactive;
-    @Parameters(paramLabel = "FILE", description = "files to check and evaluate") private String file;
 
-    private Spoofax S;
+    Spoofax S;
     private CLIUtils cli;
-    private ILanguageImpl lang;
-    private IProject project;
-    private IContext context;
-    private IMessagePrinter messagePrinter;
-    private TransformActionContrib evalAction;
+    ILanguageImpl lang;
+    IProject project;
+    IContext context;
+    PrintStream msgStream = System.out;
+    IMessagePrinter messagePrinter;
 
-    @Override public Void call() throws MetaborgException, IOException {
-        S = new Spoofax();
+    public Statix() throws MetaborgException {
+        S = new Spoofax(new StatixCLIModule());
         cli = new CLIUtils(S);
         lang = loadLanguage();
         project = cli.getOrCreateCWDProject();
         context = S.contextService.get(project.location(), project, lang);
-        final PrintStream msgStream = System.out;
+        msgStream = System.out;
         messagePrinter = new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, msgStream);
-        evalAction = getAction("Evaluate Test", lang);
-        final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = loadFile(file);
-        if(!maybeAnalysisUnit.isPresent()) {
-            return null;
-        }
-        final ISpoofaxAnalyzeUnit analysisUnit = maybeAnalysisUnit.get();
-        final IStrategoTerm ast = analysisUnit.ast();
-        if(ast != null && Tools.isTermAppl(ast) && Tools.hasConstructor((IStrategoAppl) analysisUnit.ast(), "Test")) {
-            messagePrinter.print(new Message("Evaluating test.", MessageSeverity.NOTE, MessageType.INTERNAL,
-                    analysisUnit.source(), null, null), false);
-            final String typing = transform(analysisUnit, evalAction);
-            msgStream.println(typing);
-        }
-        if(interactive) {
-            repl();
-        }
-        return null;
+    }
+
+    @Command(name = "test") public void
+            test(@Parameters(paramLabel = "FILE", description = "Statix test file to evaluate") String file)
+                    throws MetaborgException {
+        new StatixTest(this).run(file);
+    }
+
+    @Command(name = "generate") public void
+            generate(@Parameters(paramLabel = "FILE", description = "Statix test file to generate from") String file)
+                    throws MetaborgException {
+        new StatixGenerate(this).run(file);
+    }
+
+    @Command(name = "repl") public void
+            repl(@Parameters(paramLabel = "FILE", description = "Statix file to load") String file)
+                    throws MetaborgException, IOException {
+        new StatixRepl(this).run(file);
     }
 
     private ILanguageImpl loadLanguage() throws MetaborgException {
@@ -122,7 +108,7 @@ public class Statix implements Callable<Void> {
         throw new MetaborgException("Failed to load language from path or resources.");
     }
 
-    private Optional<ISpoofaxAnalyzeUnit> loadFile(String file) throws MetaborgException {
+    Optional<ISpoofaxAnalyzeUnit> loadFile(String file) throws MetaborgException {
         final FileObject resource = S.resourceService.resolve(file);
         final String text;
         try {
@@ -139,7 +125,7 @@ public class Statix implements Callable<Void> {
         return analysisUnit;
     }
 
-    private Optional<ISpoofaxParseUnit> parse(ISpoofaxInputUnit inputUnit) throws MetaborgException {
+    Optional<ISpoofaxParseUnit> parse(ISpoofaxInputUnit inputUnit) throws MetaborgException {
         final ILanguageImpl lang = context.language();
         if(!S.syntaxService.available(lang)) {
             throw new MetaborgException("Parsing not available.");
@@ -158,7 +144,7 @@ public class Statix implements Callable<Void> {
         return Optional.of(parseUnit);
     }
 
-    private Optional<ISpoofaxAnalyzeUnit> analyze(ISpoofaxParseUnit parseUnit) throws MetaborgException {
+    Optional<ISpoofaxAnalyzeUnit> analyze(ISpoofaxParseUnit parseUnit) throws MetaborgException {
         if(!S.analysisService.available(lang)) {
             throw new MetaborgException("Analysis not available.");
         }
@@ -178,7 +164,7 @@ public class Statix implements Callable<Void> {
         return Optional.of(analysisUnit);
     }
 
-    private TransformActionContrib getAction(String name, ILanguageImpl lang) throws MetaborgException {
+    TransformActionContrib getAction(String name, ILanguageImpl lang) throws MetaborgException {
         final ITransformGoal goal = new EndNamedGoal(name);
         if(!S.actionService.available(lang, goal)) {
             throw new MetaborgException("Cannot find transformation " + name);
@@ -192,7 +178,7 @@ public class Statix implements Callable<Void> {
         return action;
     }
 
-    private String transform(ISpoofaxAnalyzeUnit analysisUnit, TransformActionContrib action) throws MetaborgException {
+    IStrategoTerm transform(ISpoofaxAnalyzeUnit analysisUnit, TransformActionContrib action) throws MetaborgException {
         final ITransformConfig config = new TransformConfig(true);
         final ISpoofaxTransformUnit<ISpoofaxAnalyzeUnit> transformUnit =
                 S.transformService.transform(analysisUnit, context, action, config);
@@ -200,47 +186,24 @@ public class Statix implements Callable<Void> {
             messagePrinter.print(message, false);
         }
         if(!transformUnit.valid()) {
-            throw new MetaborgException("Failed to transform " + analysisUnit.source());
+            throw new MetaborgException("Failed to transform " + transformUnit.source());
         }
-        final String details = S.strategoCommon.toString(transformUnit.ast());
-        return details;
+        return transformUnit.ast();
     }
 
-    private void repl() throws IOException, MetaborgException {
-        final Terminal terminal = TerminalBuilder.builder().build();
-        final LineReader reader =
-                LineReaderBuilder.builder().terminal(terminal).option(LineReader.Option.AUTO_FRESH_LINE, true).build();
-        final ILanguageImpl lang = context.language();
-        final JSGLRParserConfiguration config = new JSGLRParserConfiguration("CommandLine");
-        while(true) {
-            final String line;
-            try {
-                line = reader.readLine("> ");
-            } catch(UserInterruptException e) {
-                continue;
-            } catch(EndOfFileException e) {
-                return;
-            }
-            final ISpoofaxInputUnit inputUnit = S.unitService.inputUnit(line, lang, null, config);
-            final Optional<ISpoofaxParseUnit> maybeParseUnit = parse(inputUnit);
-            if(!maybeParseUnit.isPresent()) {
-                continue;
-            }
-            final ISpoofaxParseUnit parseUnit = maybeParseUnit.get();
-            terminal.writer().println(S.strategoCommon.toString(parseUnit.ast()));
-            final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = analyze(parseUnit);
-            if(!maybeAnalysisUnit.isPresent()) {
-                continue;
-            }
-            final ISpoofaxAnalyzeUnit analysisUnit = maybeAnalysisUnit.get();
-            final String typing = transform(analysisUnit, evalAction);
-            terminal.writer().println(typing);
-        }
+    String format(IStrategoTerm term) throws MetaborgException {
+        return S.strategoCommon.toString(term);
     }
 
     public static void main(String... args) {
-        final CommandLine cmd = new CommandLine(new Statix());
-        cmd.parseWithHandlers(new RunLast().andExit(0), CommandLine.defaultExceptionHandler().andExit(1), args);
+        CommandLine cmd;
+        try {
+            cmd = new CommandLine(new Statix());
+            cmd.parseWithHandlers(new RunLast().andExit(0), CommandLine.defaultExceptionHandler().andExit(1), args);
+        } catch(MetaborgException e) {
+            logger.error("Cannot initialize Statix CLI", e);
+            System.exit(1);
+        }
     }
 
 }

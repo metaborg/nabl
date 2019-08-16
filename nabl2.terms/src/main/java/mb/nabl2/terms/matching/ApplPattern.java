@@ -1,9 +1,12 @@
 package mb.nabl2.terms.matching;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -55,6 +58,10 @@ class ApplPattern extends Pattern {
             })
         );
         // @formatter:on
+    }
+
+    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+        return B.newAppl(op, args.stream().map(a -> a.asTerm(equalities)).collect(ImmutableList.toImmutableList()));
     }
 
     @Override public String toString() {

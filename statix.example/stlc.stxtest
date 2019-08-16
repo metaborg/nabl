@@ -1,0 +1,45 @@
+resolve {s e T}
+
+  new s, typeOfExp(s, e) == T
+
+signature
+  sorts ID = string                         // $x$
+
+  sorts Exp constructors                    // $e$ :=
+    Unit    : Exp                           //      | ()
+    Fun     : ID * Type * Exp -> Exp        //      | fun ($x$ : $T$) { $e$ }
+    Var     : ID -> Exp                     //      | $x$
+    App     : Exp * Exp -> Exp              //      | $e$ $e$
+
+  sorts Type constructors
+    UNIT : Type
+    FUN  : Type * Type -> Type
+
+  relations
+    typeOfDecl : occurrence -> Type
+
+  namespaces
+    Var  : string
+
+  name-resolution
+    labels P R
+    resolve Var filter P* min $ < P
+
+rules
+
+  typeOfExp : scope * Exp -> Type
+
+  typeOfExp(_, Unit()) = UNIT().
+
+  typeOfExp(s, Fun(x, S, e)) = FUN(S, T) :- {s_fun}
+    new s_fun, s_fun -P-> s,
+    s_fun -> Var{x@x} with typeOfDecl S,
+    typeOfExp(s_fun, e) == T.
+
+  typeOfExp(s, Var(x)) = T :-
+    typeOfDecl of Var{x@x} in s |-> [(_, (_, T))].
+
+  typeOfExp(s, App(e1, e2)) = T :- {S U}
+    typeOfExp(s, e1) == FUN(S, T),
+    typeOfExp(s, e2) == U,
+    U == S.

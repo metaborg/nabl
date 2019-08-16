@@ -83,18 +83,18 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ///////////////////////////////////////
 
     protected void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> overlappingRules = spec.overlappingRules();
-        if(!overlappingRules.isEmpty()) {
-            logger.error("+-------------------------+");
-            logger.error("| FOUND OVERLAPPING RULES |");
-            logger.error("+-------------------------+");
-            for(Map.Entry<String, Collection<Rule>> entry : overlappingRules.asMap().entrySet()) {
+        final ListMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rulesWithEquivalentPatterns();
+        if(!rulesWithEquivalentPatterns.isEmpty()) {
+            logger.error("+--------------------------------------+");
+            logger.error("| FOUND RULES WITH EQUIVALENT PATTERNS |");
+            logger.error("+--------------------------------------+");
+            for(Map.Entry<String, Collection<Rule>> entry : rulesWithEquivalentPatterns.asMap().entrySet()) {
                 logger.error("| Overlapping rules for: {}", entry.getKey());
                 for(Rule rule : entry.getValue()) {
                     logger.error("| * {}", rule);
                 }
             }
-            logger.error("+-------------------------+");
+            logger.error("+--------------------------------------+");
         }
     }
 

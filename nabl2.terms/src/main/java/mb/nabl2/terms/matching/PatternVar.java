@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -53,6 +54,13 @@ class PatternVar extends Pattern {
             subst.put(var, term);
             return MaybeNotInstantiatedBool.ofResult(true);
         }
+    }
+
+    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+        if(isWildcard()) {
+            throw new IllegalArgumentException("Cannot convert wildcard");
+        }
+        return var;
     }
 
     @Override public String toString() {

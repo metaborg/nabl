@@ -1,9 +1,11 @@
 package mb.nabl2.terms.matching;
 
+import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -36,6 +38,10 @@ class NilPattern extends Pattern {
             );
         }).match(unifier.findTerm(term)).orElse(MaybeNotInstantiatedBool.ofResult(false));
         // @formatter:on
+    }
+
+    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+        return B.newNil();
     }
 
     @Override public String toString() {
