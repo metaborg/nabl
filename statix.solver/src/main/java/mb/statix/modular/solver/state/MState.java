@@ -136,9 +136,17 @@ public class MState implements IMState {
     @Override
     public Scope freshScope(String base, IConstraint constraint) {
         StringBuilder sb = new StringBuilder();
-        sb.append(base);
-        ScopeIdentity.userTrace(constraint, sb);
-        return scopeGraph.createScopeWithIdentity(sb.toString());
+        final String name;
+//        if (TOptimizations.SCOPE_HASHES) {
+//            ScopeIdentity.userTrace(constraint, sb);
+//            name = base + "_" + sb.toString().hashCode();
+//        } else {
+            sb.append(base);
+            ScopeIdentity.userTrace(constraint, sb);
+            name = sb.toString();
+//        }
+        
+        return scopeGraph.createScopeWithIdentity(name);
     }
 
     @Override

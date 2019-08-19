@@ -40,11 +40,12 @@ public class TTimings {
         runFixed = false;
     }
     
-    public static void startNewRun() {
-        if (runFixed) return;
+    public static int startNewRun() {
+        if (runFixed) return runCounter;
         
         results.put(++runCounter, new LinkedHashMap<>());
         runTime.put(runCounter, DateFormat.getInstance().format(new Date()));
+        return runCounter;
     }
     
     public static void startPhase(String name, String... details) {
@@ -133,7 +134,7 @@ public class TTimings {
         return new File(folder, name + ".csv");
     }
     
-    private static class PhaseDetails {
+    public static class PhaseDetails {
         private long start;
         private long end;
         private String[] details;

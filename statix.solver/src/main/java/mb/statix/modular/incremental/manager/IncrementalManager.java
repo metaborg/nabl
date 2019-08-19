@@ -283,4 +283,13 @@ public class IncrementalManager implements Serializable {
     public String toString() {
         return "IncrementalManager [phase=" + phase + ", initPhase=" + initPhase + "]";
     }
+
+    public void wipe() {
+        if (nonSplitModules != null) nonSplitModules.clear();
+        nonSplitModules = null;
+        if (results != null) results.clear();
+        results = null;
+        if (allowedTemporarily != null) allowedTemporarily.clear();
+        allowedTemporarily = null;
+    }
 }

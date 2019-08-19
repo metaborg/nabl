@@ -357,4 +357,14 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     private static IDebugContext createDebug(Level level) {
         return new LoggerDebugContext(LoggerUtils.logger("Coordinator"), level);
     }
+    
+    @Override
+    public void wipe() {
+        this.context = null;
+        this.debug = null;
+        this.progressPrinter = null;
+        this.root = null;
+        this.rootState = null;
+        this.strategy = null;
+    }
 }

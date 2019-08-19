@@ -24,6 +24,7 @@ import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.modular.util.TTimings;
 import mb.statix.solver.IConstraint;
 
@@ -92,7 +93,8 @@ public class NameIncrementalManager extends IncrementalManager {
         phaseCounter++;
         setPhase(phaseCounter);
         phases.putAll(phaseCounter, modules);
-        TTimings.startPhase("incremental phase " + phaseCounter, "%s", modules);
+        TTimings.startPhase("incremental phase " + phaseCounter,
+                modules.size() == context().getModuleManager()._getModules().size() ? modules.size() + " modules" : TPrettyPrinter.prettyPrint(modules));
         
         //System.out.println("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
         
@@ -279,7 +281,7 @@ public class NameIncrementalManager extends IncrementalManager {
     public boolean finishPhase(Set<ModuleSolver> finished, Set<ModuleSolver> failed,
             Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
         int phase = getPhase();
-        TTimings.endPhase("Incremental phase " + phase);
+        TTimings.endPhase("incremental phase " + phase);
         
         final Set<IModule> actualModules = determineActualModules(finished, failed, stuck);
         
@@ -398,6 +400,25 @@ public class NameIncrementalManager extends IncrementalManager {
     public static enum RedoReason {
         DIFF,
         CIRCULAR
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Other
+    // --------------------------------------------------------------------------------------------
+    
+    @Override
+    public void wipe() {
+        super.wipe();
+        if (this.actualPhases != null) this.actualPhases.clear();
+        this.actualPhases = null;
+        if (this.initConstraints != null) this.initConstraints.clear();
+        this.initConstraints = null;
+        if (this.phases != null) this.phases.clear();
+        this.phases = null;
+        if (this.processedModules != null) this.processedModules.clear();
+        this.processedModules = null;
+        if (this.redoReasons != null) this.redoReasons.clear();
+        this.redoReasons = null;
     }
 }
 

@@ -28,6 +28,7 @@ import mb.statix.modular.solver.concurrent.ConcurrentRedirectingIncrementalCompl
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.solver.store.ModuleConstraintStore;
 import mb.statix.modular.util.IOwnable;
+import mb.statix.modular.util.TOptimizations;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -402,7 +403,7 @@ public class ModuleSolver implements IOwnable {
                 constraints.activateFromVars(result.vars(), subDebug);
                 
                 //If we do not use the observer mechanism for our own constraints, just activate all the edges that are potentially affected
-                if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF) constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
+                if (!TOptimizations.USE_OBSERVER_MECHANISM_FOR_SELF) constraints.activateFromEdges(Completeness.criticalEdges(constraint, state.spec(), state.unifier()), subDebug);
             } else {
                 completeness.remove(constraint, state.unifier());
                 subDebug.error("Failed");

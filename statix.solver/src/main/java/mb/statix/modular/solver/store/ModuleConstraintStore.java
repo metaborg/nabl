@@ -31,6 +31,7 @@ import mb.statix.modular.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.modular.solver.state.DelegatingMState;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.util.TDebug;
+import mb.statix.modular.util.TOptimizations;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.Vars;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -235,7 +236,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
 
     private void propagateVariableActivation(Iterable<? extends ITermVar> vars, IDebugContext debug) {
-        Set<ModuleConstraintStore> stores = new HashSet<>();
+        Set<ModuleConstraintStore> stores = TOverrides.CONCURRENT ? new HashSet<>() : null;
         //Activate all observers
         int counter = 0;
         for (ITermVar termVar : vars) {
@@ -251,18 +252,18 @@ public class ModuleConstraintStore implements IConstraintStore {
                 if (!store.activateFromVar(termVar, debug)) continue; //Activate but don't propagate
                 
                 //Only send the event near the end
-                if (!stores.add(store)) counter++;
+                if (stores != null && !stores.add(store)) counter++;
             }
         }
 
         //TODO This checks if the event sending optimization is even worth it in these cases.
-        if (stores.size() > 0) {
+        if (stores != null && !stores.isEmpty()) {
             System.out.println("Caching stores for variable activation relieved " + counter + " notifications");
-        }
-        
-        //Notify each store only once
-        for (ModuleConstraintStore store : stores) {
-            store.notifyObserver();
+            
+            //Notify each store only once
+            for (ModuleConstraintStore store : stores) {
+                store.notifyObserver();
+            }
         }
     }
     
@@ -486,7 +487,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (owner == null) throw new IllegalStateException("Encountered edge without being able to determine the owner!");
         
         //A module doesn't have to register on itself
-        if (!TOverrides.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return true;
+        if (!TOptimizations.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return true;
         
         if (state instanceof DelegatingMState && this.owner.equals(owner.getId())) {
             System.out.println("Running observer mechanism on a separate solver for " + this.owner);

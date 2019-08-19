@@ -77,11 +77,8 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
                 StatixTerms.constraint(),
                 (t, mc, c) -> ImmutableTuple2.of(mc, c));
         
-        TTimings.startPhase("constraint matching");
         final List<Tuple2<MChange, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints, but was " + term));
-        TTimings.endPhase("constraint matching");
-        
         
         TTimings.startPhase("changeset");
         //Temporarily set the context to the previous context for the changeset
@@ -142,9 +139,9 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         
         if (OUTPUT_DIFF) TDebug.outputDiff(oldContext, newContext, "");
         
-        TTimings.startPhase("commit changes");
+        //Explicitly assign null to allow for garbage collection
+        oldContext = null;
         newContext.commitChanges();
-        TTimings.endPhase("commit changes");
 
         //Return a tuple of 2 lists, one for added + changed (dirty) results, one for cached (unsure) results.
         TTimings.startPhase("collect results");

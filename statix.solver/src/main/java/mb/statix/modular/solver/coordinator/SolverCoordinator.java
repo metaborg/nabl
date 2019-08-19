@@ -129,4 +129,10 @@ public class SolverCoordinator extends ASolverCoordinator {
     
     @Override
     public void allowSolverStart() {}
+    
+    @Override
+    public void wipe() {
+        super.wipe();
+        this.solvers.clear();
+    }
 }

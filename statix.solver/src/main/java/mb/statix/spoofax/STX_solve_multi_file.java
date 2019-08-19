@@ -62,10 +62,8 @@ public class STX_solve_multi_file extends StatixPrimitive {
                 resource_constraint -> solveConstraint(initial.state().withResource(resource_constraint._1()),
                         resource_constraint._2(), debug);
         
-        TTimings.startPhase("constraint matching");
         final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
-        TTimings.endPhase("constraint matching");
         TTimings.endPhase("init");
         
         TTimings.startPhase("solving");

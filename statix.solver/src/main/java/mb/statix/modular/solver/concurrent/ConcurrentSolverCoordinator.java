@@ -277,4 +277,12 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         }
         paused = false;
     }
+    
+    @Override
+    public void wipe() {
+        super.wipe();
+        this.finalResult = null;
+        this.onFinished = null;
+        this.solvers.clear();
+    }
 }

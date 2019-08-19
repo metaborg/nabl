@@ -37,19 +37,11 @@ public class TOverrides {
     /** If a diff should be generated after an incremental analysis. */
     public static boolean OUTPUT_DIFF = true;
     
-    /**
-     * If true, the observer mechanism is used for own critical edges.
-     * Otherwise, the"just redo whenever the critical edge MIGHT have changed" variant is used. 
-     */
-    public static boolean USE_OBSERVER_MECHANISM_FOR_SELF = true;
-    
     /** If split modules should be used. */
     public static boolean SPLIT_MODULES = false;
     
     /** If enabled, cross module unification is made possible. */
     public static boolean CROSS_MODULE_UNIFICATION = false;
-    
-    public static boolean REGEX_TRACKING = true;
     
     /**
      * The value of this integer determines what locking approach scope graphs use.
@@ -66,7 +58,7 @@ public class TOverrides {
     public static String print() {
         return "Concurrent=" + (CONCURRENT ? THREADS : "false") +
                 ", Loglevel=" + (OVERRIDE_LOGLEVEL ? LOGLEVEL : "not overridden") +
-                ", UseObserverMechanismSelf=" + USE_OBSERVER_MECHANISM_FOR_SELF +
+                ", UseObserverMechanismSelf=" + TOptimizations.USE_OBSERVER_MECHANISM_FOR_SELF +
                 ", DependencyObservers=[" + TSettings.getDependencyObservers().stream().map(o -> o.getClass().getSimpleName()).collect(Collectors.joining(", ")) + "]";
     }
     

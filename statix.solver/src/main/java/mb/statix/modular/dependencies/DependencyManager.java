@@ -296,4 +296,16 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
     public int dataNameRemovalOrChangeAffectScore() {
         return dataNameRemoveOrChange == null ? -1 : dataNameRemoveOrChange.dataNameRemovalOrChangeAffectScore();
     }
+
+    public void wipe() {
+        this.dataAdd = null;
+        this.dataNameAdd = null;
+        this.dataNameRemoveOrChange = null;
+        this.dataRemove = null;
+        this.edgeAdd = null;
+        this.edgeRemove = null;
+        this.map.clear();
+        this.observers.clear();
+        this.observers = null;
+    }
 }

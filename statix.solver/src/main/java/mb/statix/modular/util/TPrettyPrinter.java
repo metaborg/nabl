@@ -25,7 +25,7 @@ import mb.statix.spoofax.StatixTerms;
 
 public class TPrettyPrinter {
     private static Map<Scope, Integer> scopeNumbers = new HashMap<>();
-    private static Context context;
+    private static int context;
     private static int scopeCounter;
     private static boolean fixScopeNumbers;
     private static final IUnifier NULL_UNIFIER = PersistentUnifier.Immutable.of();
@@ -40,16 +40,22 @@ public class TPrettyPrinter {
     
     public static void fixScopeNumbers() {
         fixScopeNumbers = true;
-        context = Context.context();
+        context = System.identityHashCode(Context.context());
     }
     
     public static void unfixScopeNumbers() {
         fixScopeNumbers = false;
-        if (context != Context.context()) {
+        if (context != System.identityHashCode(Context.context())) {
             scopeNumbers.clear();
             scopeCounter = 0;
-            context = Context.context();
+            context = 0;
         }
+    }
+    
+    public static void resetScopeNumbers() {
+        scopeNumbers.clear();
+        scopeCounter = 0;
+        context = 0;
     }
     
     /**
@@ -107,10 +113,11 @@ public class TPrettyPrinter {
      *      the unique number associated with the given scope
      */
     public static int scopeNumber(Scope scope) {
+        int nHash;
         //Reset
-        if (!fixScopeNumbers && context != Context.context()) {
+        if (!fixScopeNumbers && System.identityHashCode(context) != (nHash = System.identityHashCode(Context.context()))) {
             scopeNumbers.clear();
-            context = Context.context();
+            context = nHash;
             scopeCounter = 0;
         }
         

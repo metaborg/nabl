@@ -576,13 +576,30 @@ public class Context implements IContext, Serializable {
             System.err.println("Removed module " + module);
         }
         
-        //Transfer results from the coordinator to the context
-        solverResults = new HashMap<>(coordinator.getResults());
-        
         //Clear now unnecessary fields
         oldContext = null;
         changeSet = null;
+        coordinator.wipe();
+        coordinator = null;
+        incrementalManager.wipe();
+        labelCache.clear();
+        labelCache = LabelCache.fake();
         //TODO probably need more here
+    }
+    
+    public void wipe() {
+        this.changeSet = null;
+        if (this.coordinator != null) this.coordinator.wipe();
+        this.coordinator = null;
+        this.dependencies.wipe();
+        this.incrementalManager.wipe();
+        this.initConstraints = null;
+        this.labelCache = null;
+        this.manager.clearModules();
+        this.oldContext = null;
+        this.solverResults = null;
+        if (this.states != null) this.states.clear();
+        this.states = null;
     }
     
     // --------------------------------------------------------------------------------------------

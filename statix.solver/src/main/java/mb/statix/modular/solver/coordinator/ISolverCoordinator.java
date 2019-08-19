@@ -293,4 +293,6 @@ public interface ISolverCoordinator {
      * Allowes start execution of solvers.
      */
     public void allowSolverStart();
+
+    public void wipe();
 }
