@@ -100,7 +100,6 @@ public class MStatix implements Callable<Void> {
     @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
     @Option(names = { "--observerself" }, description = "observer mechanism for own module", defaultValue = "true") private boolean observer;
 //    @Option(names = { "--scopehash" }, description = "use scope hashes", defaultValue = "true") private boolean scopehash;
-    @Option(names = { "--labelcache" }, description = "use label cache", defaultValue = "true") private boolean labelcache;
     @Option(
             names = { "--syncscopegraphs" },
             description = "use synchronized (1), locks (2) or combined locking (3) for locking scope graphs",
@@ -432,7 +431,6 @@ public class MStatix implements Callable<Void> {
         //Set optimizations
         TOptimizations.USE_OBSERVER_MECHANISM_FOR_SELF = observer;
 //        TOptimizations.SCOPE_HASHES = scopehash;
-        TOptimizations.LABEL_CACHE = labelcache;
         
         //Clean the other debug settings. These will be set elsewhere if necessary for output
         TOverrides.OUTPUT_DIFF = false;
