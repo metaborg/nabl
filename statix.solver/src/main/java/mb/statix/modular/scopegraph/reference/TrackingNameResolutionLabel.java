@@ -11,6 +11,8 @@ import org.metaborg.util.functions.Predicate2;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 
+import mb.statix.modular.solver.Context;
+import mb.statix.modular.util.LabelCache;
 import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IScopePath;
@@ -24,6 +26,7 @@ public class TrackingNameResolutionLabel<S extends D, L, D> extends FastNameReso
     private Multimap<S, L> edgeMap = MultimapBuilder.hashKeys().hashSetValues().build();
     private Multimap<S, L> dataMap = MultimapBuilder.hashKeys().hashSetValues().build();
     private final Function<S, String> scopeToModule;
+    private final transient LabelCache cache;
     
     //if scope x changed, redo the queries in it.
     
@@ -34,6 +37,7 @@ public class TrackingNameResolutionLabel<S extends D, L, D> extends FastNameReso
             Predicate2<S, L> isDataComplete, @Nullable String requester, Function<S, String> scopeToModule) {
         super(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv, isDataComplete, requester);
         this.scopeToModule = scopeToModule;
+        this.cache = Context.context().getLabelCache();
     }
     
     @Override
@@ -42,7 +46,7 @@ public class TrackingNameResolutionLabel<S extends D, L, D> extends FastNameReso
         
         //Ignore our own scopes in the tracking if enabled
         if (!QUERY_TRACK_ONLY_OTHER_SCOPES || !requester.equals(scopeToModule.apply(scope))) {
-            dataMap.put(scope, l);
+            dataMap.put(cache.getUnsafe(scope), cache.getUnsafe(l));
         }
         
         if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", data edge requested=" + l);
@@ -55,7 +59,7 @@ public class TrackingNameResolutionLabel<S extends D, L, D> extends FastNameReso
         
         //Ignore our own scopes in the tracking if enabled
         if (!QUERY_TRACK_ONLY_OTHER_SCOPES || !requester.equals(scopeToModule.apply(scope))) {
-            edgeMap.put(scope, l);
+            edgeMap.put(cache.getUnsafe(scope), cache.getUnsafe(l));
         }
 
         if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", edge requested=" + l);
