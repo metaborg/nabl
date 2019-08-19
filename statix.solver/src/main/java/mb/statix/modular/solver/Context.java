@@ -27,8 +27,6 @@ import mb.statix.modular.module.ModulePaths;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
-import mb.statix.modular.util.LabelCache;
-import mb.statix.modular.util.TOptimizations;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
@@ -49,7 +47,6 @@ public class Context implements IContext, Serializable {
     private transient Context oldContext;
     private transient IChangeSet changeSet;
     private transient Map<String, IConstraint> initConstraints;
-    private transient LabelCache labelCache;
     
     private Map<IModule, MSolverResult> solverResults = hashMap();
     private Map<String, IMState> states = hashMap();
@@ -60,11 +57,6 @@ public class Context implements IContext, Serializable {
         this.oldContext = oldContext;
         this.incrementalManager = strategy.createManager();
         this.dependencies = strategy.createDependencyManager(oldContext);
-        this.labelCache = TOptimizations.LABEL_CACHE ? new LabelCache() : LabelCache.fake();
-    }
-    
-    public LabelCache getLabelCache() {
-        return labelCache;
     }
     
     public IncrementalStrategy getStrategy() {
@@ -589,8 +581,6 @@ public class Context implements IContext, Serializable {
         coordinator.wipe();
         coordinator = null;
         incrementalManager.wipe();
-        labelCache.clear();
-        labelCache = LabelCache.fake();
         //TODO probably need more here
     }
     
@@ -601,7 +591,6 @@ public class Context implements IContext, Serializable {
         this.dependencies.wipe();
         this.incrementalManager.wipe();
         this.initConstraints = null;
-        this.labelCache = null;
         this.manager.clearModules();
         this.oldContext = null;
         this.solverResults = null;
@@ -827,18 +816,5 @@ public class Context implements IContext, Serializable {
         } finally {
             currentContextThreadSensitive = null;
         }
-    }
-    
-    // --------------------------------------------------------------------------------------------
-    // Serialization
-    // --------------------------------------------------------------------------------------------
-    
-    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-        out.defaultWriteObject();
-    }
-    
-    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        this.labelCache = LabelCache.fake();
     }
 }

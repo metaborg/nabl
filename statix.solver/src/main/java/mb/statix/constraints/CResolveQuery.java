@@ -28,7 +28,6 @@ import mb.statix.modular.name.Names;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.scopegraph.reference.TrackingNameResolution;
 import mb.statix.modular.scopegraph.reference.TrackingNameResolutionLabel;
-import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MConstraintContext;
 import mb.statix.modular.solver.MConstraintResult;
 import mb.statix.modular.solver.query.MConstraintQueries;
@@ -278,7 +277,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             details = new IDependencyDetail[2];
         } else {
             details = new IDependencyDetail[3];
-            details[2] = new NameDependencyDetail(name, Context.context().getLabelCache().get(name.getRelation()));
+            details[2] = new NameDependencyDetail(name, name.getRelation());
         }
         details[0] = queryDetail;
         details[1] = resultDetail;
@@ -312,7 +311,7 @@ public class CResolveQuery implements IConstraint, Serializable {
             details = new IDependencyDetail[2];
         } else {
             details = new IDependencyDetail[3];
-            details[2] = new NameDependencyDetail(name, Context.context().getLabelCache().get(name.getRelation()));
+            details[2] = new NameDependencyDetail(name, name.getRelation());
         }
         details[0] = queryDetail;
         details[1] = resultDetail;
