@@ -1,7 +1,5 @@
 package statix.cli;
 
-import java.util.function.Function;
-
 import org.metaborg.spoofax.core.Spoofax;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoList;
@@ -66,6 +64,7 @@ public class StrategoUtil {
             IStrategoTerm head = headerItems[i];
             result = factory.makeListCons(head, result, original.getAnnotations());
         }
+        result.putAttachment(original.getAttachment(null));
         return result;
     }
     
@@ -114,6 +113,7 @@ public class StrategoUtil {
             IStrategoTerm head = headerItems[i];
             result = factory.makeListCons(head, result, original.getAnnotations());
         }
+        result.putAttachment(original.getAttachment(null));
         return result;
     }
     
@@ -163,6 +163,7 @@ public class StrategoUtil {
             IStrategoTerm head = headerItems[i];
             result = factory.makeListCons(head, result, original.getAnnotations());
         }
+        result.putAttachment(original.getAttachment(null));
         return result;
     }
     
@@ -172,9 +173,15 @@ public class StrategoUtil {
         
         final ITermFactory factory = S.termFactoryService.getGeneric();
         
+        //Replace the child, keeping the attachment
         IStrategoTerm[] children = original.getAllSubterms();
+        newTerm.putAttachment(children[index].getAttachment(null));
         children[index] = newTerm;
-        return factory.makeAppl(original.getConstructor(), children, original.getAnnotations());
+        
+        //Replace the application, keeping the attachment
+        IStrategoAppl newAppl = factory.makeAppl(original.getConstructor(), children, original.getAnnotations());
+        newAppl.putAttachment(original.getAttachment(null));
+        return newAppl;
     }
     
     //---------------------------------------------------------------------------------------------
@@ -252,6 +259,7 @@ public class StrategoUtil {
                 //If we are applicable, replace the item in the list and stop looking
                 IStrategoAppl newClass = classChange.apply(clazz);
                 if (newClass != null) {
+                    newClass.putAttachment(clazz.getAttachment(null));
                     newClasses = replaceItemInList(S, classes, i, newClass);
                 } else {
                     newClasses = removeItemFromList(S, classes, i);
@@ -263,6 +271,34 @@ public class StrategoUtil {
         }
         
         if (newClasses == null) throw new NotApplicableException("No class found or none of the classes were applicable");
+        return replaceClasses(S, ast, newClasses);
+    }
+    
+    public static IStrategoAppl alterClasslike(Spoofax S, IStrategoTerm ast, ITransformation classlikeChange) {
+        IStrategoList classes = getClasses(ast);
+        
+        IStrategoList newClasses = null;
+        int i = -1;
+        for (IStrategoTerm clazzTerm : classes) {
+            i++;
+            IStrategoAppl clazz = M.appl(clazzTerm);
+            
+            try {
+                //If we are applicable, replace the item in the list and stop looking
+                IStrategoAppl newClass = classlikeChange.apply(clazz);
+                if (newClass != null) {
+                    newClass.putAttachment(clazz.getAttachment(null));
+                    newClasses = replaceItemInList(S, classes, i, newClass);
+                } else {
+                    newClasses = removeItemFromList(S, classes, i);
+                }
+                break;
+            } catch (NotApplicableException ex) {
+                continue;
+            }
+        }
+        
+        if (newClasses == null) throw new NotApplicableException("No classlike found or none of the classes were applicable");
         return replaceClasses(S, ast, newClasses);
     }
     
@@ -334,6 +370,7 @@ public class StrategoUtil {
                 //If we are applicable, replace the item in the list and stop looking
                 IStrategoAppl newMethod = methodChange.apply(method);
                 if (newMethod != null) {
+                    newMethod.putAttachment(method.getAttachment(null));
                     newDeclarations = replaceItemInList(S, declarations, i, newMethod);
                 } else {
                     newDeclarations = removeItemFromList(S, declarations, i);

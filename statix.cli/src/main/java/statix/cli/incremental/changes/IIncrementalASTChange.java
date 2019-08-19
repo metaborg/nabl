@@ -15,6 +15,10 @@ public abstract class IIncrementalASTChange extends IncrementalChange {
     public IIncrementalASTChange(String group, String sort) {
         super(group, sort);
     }
+    
+    protected IIncrementalASTChange(String group, String sort, String args) {
+        super(group, sort, args);
+    }
 
     /**
      * Applies this AST transformation to the given AST term.

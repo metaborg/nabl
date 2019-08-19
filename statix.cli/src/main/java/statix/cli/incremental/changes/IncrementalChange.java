@@ -19,6 +19,7 @@ public abstract class IncrementalChange {
     
     private String sort;
     private String group;
+    protected String arguments;
     
     public IncrementalChange(String group, String sort) {
         this.group = group;
@@ -29,12 +30,22 @@ public abstract class IncrementalChange {
         ALL.put("*", "*", this);
     }
     
+    public IncrementalChange(String group, String sort, String arguments) {
+        this.group = group;
+        this.sort = sort;
+        this.arguments = arguments;
+    }
+    
     public String getSort() {
         return sort;
     }
     
     public String getGroup() {
         return group;
+    }
+    
+    public String getArguments() {
+        return arguments;
     }
     
     public boolean onSource() {
@@ -112,6 +123,15 @@ public abstract class IncrementalChange {
         return false;
     }
     
+
+    /**
+     * @return
+     *      if this change has a specific file it targets
+     */
+    public boolean hasFile() {
+        return false;
+    }
+    
     //---------------------------------------------------------------------------------------------
     
     /**
@@ -126,13 +146,33 @@ public abstract class IncrementalChange {
      *      If the given input does not map to at least one change.
      */
     public static void parse(List<IncrementalChange> changes, String input) {
-        String[] parts = input.split(":", 2);
+        String[] parts = input.split(":", 3);
         String group = parts[0];
-        String name = parts.length == 2 ? parts[1] : "*";
+        String name = parts.length == 2 || parts.length == 3 ? parts[1] : "*";
         
         Set<IncrementalChange> set = ALL.get(group, name);
         if (set.isEmpty()) throw new IllegalArgumentException("String " + input + " does not match any incremental changes");
-        changes.addAll(set);
+        if (parts.length == 3) {
+            if (set.size() > 1) throw new IllegalArgumentException("String " + input + " is not valid. One can only specify arguments for individual changes");
+            IncrementalChange change = set.iterator().next();
+            changes.add(change.withArguments(parts[2]));
+        } else {
+            changes.addAll(set);
+        }
+    }
+
+    /**
+     * @param args
+     *      the arguments
+     * 
+     * @return
+     *      a new incremental change with the given arguments
+     * 
+     * @throws UnsupportedOperationException
+     *      If this change does not support arguments.
+     */
+    public IncrementalChange withArguments(String args) {
+        throw new UnsupportedOperationException("You cannot add arguments to " + group + ":" + sort);
     }
 
     /**
@@ -168,6 +208,7 @@ public abstract class IncrementalChange {
         int result = 1;
         result = prime * result + group.hashCode();
         result = prime * result + sort.hashCode();
+        result = prime * result + (arguments == null ? 0 : arguments.hashCode());
         return result;
     }
 
@@ -180,11 +221,15 @@ public abstract class IncrementalChange {
         IncrementalChange other = (IncrementalChange) obj;
         if (!group.equals(other.group)) return false;
         if (!sort.equals(other.sort)) return false;
+        if ((arguments == null && other.arguments != null) || !arguments.equals(other.arguments)) return false;
         return true;
     }
 
     @Override
     public String toString() {
+        if (arguments != null) {
+            return group + ":" + sort + ":" + arguments;
+        }
         return group + ":" + sort;
     }
 }

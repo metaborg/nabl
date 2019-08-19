@@ -1,7 +1,13 @@
 package statix.cli;
 
+import static mb.nabl2.terms.matching.TermMatch.M;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
 import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.messages.IMessage;
 import org.metaborg.core.messages.IMessagePrinter;
@@ -14,14 +20,6 @@ import org.metaborg.util.concurrent.IClosableLock;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.terms.IStrategoTerm;
-
-import static mb.nabl2.terms.matching.TermMatch.M;
-
-import java.io.File;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
@@ -76,11 +74,20 @@ public class StatixAnalyze {
     }
     
     /**
+     * Unloads the context.
+     */
+    public void unloadContext() {
+        try {
+            context.clear();
+        } catch (NullPointerException ex) {}
+        context.unload();
+    }
+    
+    /**
      * Clears all analysis results so far, i.e. performs a clean run.
      */
-    public void clearAnalysisResults() {
-        context.load();
-        context.clear();
+    public void clearAnalysisResults() throws MetaborgException {
+        StatixUtil.initContext(context);
     }
     
     /**
@@ -88,6 +95,8 @@ public class StatixAnalyze {
      * 
      * @param files
      *      the files that were changed
+     * @param print
+     *      if the output should be printed
      * 
      * @return
      *      the results of the analysis
@@ -95,9 +104,9 @@ public class StatixAnalyze {
      * @throws MetaborgException
      *      If any of the analysis results are not valid. 
      */
-    public ISpoofaxAnalyzeResults cleanAnalysis(Iterable<ISpoofaxParseUnit> files) throws MetaborgException {
+    public ISpoofaxAnalyzeResults cleanAnalysis(Iterable<ISpoofaxParseUnit> files, boolean print) throws MetaborgException {
         clearAnalysisResults();
-        return analyzeAll(files);
+        return analyzeAll(files, print);
     }
     
     public ISolverResult getAnalysisResult(String resource) {
@@ -185,6 +194,8 @@ public class StatixAnalyze {
      * 
      * @param files
      *      the files that were changed
+     * @param print
+     *      if the output should be printed
      * 
      * @return
      *      the results of the analysis
@@ -192,14 +203,14 @@ public class StatixAnalyze {
      * @throws MetaborgException
      *      If any of the analysis results are not valid. 
      */
-    public ISpoofaxAnalyzeResults analyzeAll(Iterable<ISpoofaxParseUnit> files) throws MetaborgException {
+    public ISpoofaxAnalyzeResults analyzeAll(Iterable<ISpoofaxParseUnit> files, boolean print) throws MetaborgException {
         ISpoofaxAnalyzeResults results;
         
         try (IClosableLock lock = context.write()) {
             results = S.analysisService.analyzeAll(files, context);
         }
         
-        if (printer != null) {
+        if (print && printer != null) {
             for (ISpoofaxAnalyzeUnit analysisUnit : results.results()) {
                 for (IMessage message : analysisUnit.messages()) {
                     printer.print(message, false);

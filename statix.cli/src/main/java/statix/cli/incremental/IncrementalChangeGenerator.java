@@ -56,6 +56,14 @@ public class IncrementalChangeGenerator {
             return change.create(data, parse, randomness);
         }
         
+        if (change.hasFile()) {
+            File file = new File(change.getArguments());
+            logger.info("Applying " + change + " in parse mode to " + file);
+            ISpoofaxParseUnit unit = change.parse(data, parse, randomness, file.toString());
+            files.remove(file);
+            return unit;
+        }
+        
         if (change.supportsParse()) {
             List<File> options = new ArrayList<>(files);
             while (!options.isEmpty()) {

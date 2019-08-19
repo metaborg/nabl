@@ -89,6 +89,23 @@ public class StatixUtil {
         }
     }
     
+    public static void initContext(IConstraintContext context) throws MetaborgException {
+        try {
+            Field f = ConstraintContext.class.getDeclaredField("state");
+            f.setAccessible(true);
+            Method m = ConstraintContext.class.getDeclaredMethod("initState");
+            m.setAccessible(true);
+            
+            try(IClosableLock lock = context.read()) {
+                f.set(context, m.invoke(context));
+            }
+        } catch (Exception ex) {
+            System.err.println("Unable to init context");
+            ex.printStackTrace();
+            throw new MetaborgException("Unable to init context", ex);
+        }
+    }
+    
     /**
      * Reads the given file as a string.
      * 
