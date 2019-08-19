@@ -39,7 +39,7 @@ public class STX_solve_constraint extends StatixPrimitive {
         if (TOverrides.MODULES_OVERRIDE) return callModularized(env, term, terms);
         
         TTimings.startNewRun();
-        TTimings.startPhase("STX_solve_constraint", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Input: " + term.toString());
+        TTimings.startPhase("STX_solve_constraint", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print());
         
         try {
             return super._call(env, term, terms);

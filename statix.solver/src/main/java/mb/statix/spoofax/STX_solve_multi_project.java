@@ -41,7 +41,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
     
     @Override
     protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        TTimings.startPhase("STX_solve_multi_project", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print(), "Input: " + term.toString());
+        TTimings.startPhase("STX_solve_multi_project", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print());
         
         try {
             return super._call(env, term, terms);
