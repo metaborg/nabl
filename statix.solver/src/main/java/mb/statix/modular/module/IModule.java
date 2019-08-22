@@ -99,10 +99,11 @@ public interface IModule extends Flaggable, Serializable {
      * differing results.
      * 
      * @return
-     *      the scope graph of this module
+     *      the scope graph of this module, or null if this module does not have a state
      */
     default IMInternalScopeGraph<Scope, ITerm, ITerm> getScopeGraph() {
-        return getCurrentState().scopeGraph();
+        IMState state = getCurrentState();
+        return state == null ? null : state.scopeGraph();
     }
     
     /**

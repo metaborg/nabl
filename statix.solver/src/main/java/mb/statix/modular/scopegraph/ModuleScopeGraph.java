@@ -1,6 +1,7 @@
 package mb.statix.modular.scopegraph;
 
 import static mb.statix.modular.util.TOverrides.*;
+import static mb.statix.modular.util.TPrettyPrinter.printModule;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -138,7 +139,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             return getTransitiveEdges(scope, label);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getTransitiveEdges(scope, label);
+            IModule scopeOwner = Scopes.getOwner(scope, owner);
+            IMInternalScopeGraph<Scope, ITerm, ITerm> graph = scopeOwner.getScopeGraph();
+            if (graph == null) {
+                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                return Collections.emptySet();
+            }
+            return graph.getTransitiveEdges(scope, label);
         }
     }
     
@@ -147,7 +154,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label);
         } else {
-            return Scopes.getOwner(scope, requester).getScopeGraph().getTransitiveEdges(scope, label);
+            IModule scopeOwner = Scopes.getOwner(scope, requester);
+            IMInternalScopeGraph<Scope, ITerm, ITerm> graph = scopeOwner.getScopeGraph();
+            if (graph == null) {
+                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                return Collections.emptySet();
+            }
+            return graph.getTransitiveEdges(scope, label);
         }
     }
     
@@ -158,7 +171,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             return getTransitiveData(scope, relation);
         } else {
             //TODO IMPORTANT Should the requester be the owner of this scope graph? Or should it be the one asking this query?
-            return Scopes.getOwner(scope, owner).getScopeGraph().getTransitiveData(scope, relation);
+            IModule scopeOwner = Scopes.getOwner(scope, owner);
+            IMInternalScopeGraph<Scope, ITerm, ITerm> graph = owner.getScopeGraph();
+            if (graph == null) {
+                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                return Collections.emptySet();
+            }
+            return graph.getTransitiveData(scope, relation);
         }
     }
     
@@ -167,7 +186,13 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveData(scope, relation);
         } else {
-            return Scopes.getOwner(scope, requester).getScopeGraph().getTransitiveData(scope, relation);
+            IModule scopeOwner = Scopes.getOwner(scope, requester);
+            IMInternalScopeGraph<Scope, ITerm, ITerm> graph = scopeOwner.getScopeGraph();
+            if (graph == null) {
+                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                return Collections.emptySet();
+            }
+            return graph.getTransitiveData(scope, relation);
         }
     }
     
