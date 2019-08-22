@@ -25,6 +25,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.ModuleManager;
 import mb.statix.modular.module.ModulePaths;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
+import mb.statix.modular.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
@@ -596,6 +597,7 @@ public class Context implements IContext, Serializable {
         this.solverResults = null;
         if (this.states != null) this.states.clear();
         this.states = null;
+        RedirectingIncrementalCompleteness.RECOVERY.clear();
     }
     
     // --------------------------------------------------------------------------------------------

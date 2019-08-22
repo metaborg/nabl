@@ -17,7 +17,9 @@ import mb.statix.modular.observers.EdgeCompleteManager;
 import mb.statix.modular.observers.EdgeCompleteObserver;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
+import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.util.Scopes;
+import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
@@ -26,6 +28,7 @@ import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.spec.Spec;
 
 public class RedirectingIncrementalCompleteness extends IncrementalCompleteness implements EdgeCompleteManager {
+    public static final Map<String, RedirectingIncrementalCompleteness> RECOVERY = TOverrides.hashMap();
     private final String owner;
     
     private SetMultimap<CriticalEdge, EdgeCompleteObserver> observers = MultimapBuilder.hashKeys().hashSetValues().build();
@@ -121,7 +124,21 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         
         if (this.owner.equals(owner)) return this;
         
-        return Context.context().getSolver(owner).getCompleteness();
+        //TODO IMPORTANT TEMPORARY CHECK
+        ModuleSolver solver = Context.context().getSolver(owner);
+        if (solver == null) {
+            System.err.println("Cannot find the owner of the given term: owner=" + owner + " requested by " + this.owner + ", term=" + term);
+            return getOrCreateRecovery(owner);
+        }
+        return solver.getCompleteness();
+    }
+
+    private static RedirectingIncrementalCompleteness getOrCreateRecovery(final String owner) {
+        return RECOVERY.computeIfAbsent(owner, o -> {
+            RedirectingIncrementalCompleteness ric = new RedirectingIncrementalCompleteness(owner, Context.context().getSpec());
+            ric.switchDelayMode(true);
+            return ric;
+        });
     }
     
     // --------------------------------------------------------------------------------------------
