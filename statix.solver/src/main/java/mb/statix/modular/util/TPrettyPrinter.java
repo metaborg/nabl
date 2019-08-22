@@ -40,16 +40,20 @@ public class TPrettyPrinter {
     
     public static void fixScopeNumbers() {
         fixScopeNumbers = true;
-        context = System.identityHashCode(Context.context());
+        context = Context.context().hashCode();
     }
     
     public static void unfixScopeNumbers() {
         fixScopeNumbers = false;
-        if (context != System.identityHashCode(Context.context())) {
-            scopeNumbers.clear();
-            scopeCounter = 0;
-            context = 0;
-        }
+//        if (context != Context.context().hashCode()) {
+//            scopeNumbers.clear();
+//            scopeCounter = 0;
+//            context = 0;
+//        }
+    }
+    
+    public static boolean scopeNumbersFixed() {
+        return fixScopeNumbers;
     }
     
     public static void resetScopeNumbers() {
@@ -115,7 +119,7 @@ public class TPrettyPrinter {
     public static int scopeNumber(Scope scope) {
         int nHash;
         //Reset
-        if (!fixScopeNumbers && System.identityHashCode(context) != (nHash = System.identityHashCode(Context.context()))) {
+        if (!fixScopeNumbers && context != (nHash = Context.context().hashCode())) {
             scopeNumbers.clear();
             context = nHash;
             scopeCounter = 0;

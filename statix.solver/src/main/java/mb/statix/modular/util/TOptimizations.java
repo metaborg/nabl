@@ -7,8 +7,6 @@ public class TOptimizations {
      */
     public static final boolean QUERY_TRACK_ONLY_OTHER_SCOPES = true;
     
-    public static boolean LABEL_CACHE = true;
-    
     /**
      * If true, the observer mechanism is used for own critical edges.
      * Otherwise, the"just redo whenever the critical edge MIGHT have changed" variant is used. 
