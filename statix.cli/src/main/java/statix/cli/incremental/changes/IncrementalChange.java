@@ -132,6 +132,22 @@ public abstract class IncrementalChange {
         return false;
     }
     
+    /**
+     * @return
+     *      if this change should only be applied to files with a specific number of usages
+     */
+    public boolean hasUsageCount() {
+        return false;
+    }
+    
+    /**
+     * @return
+     *      the number of usages required for applying this change
+     */
+    public int usageCount() {
+        return -1;
+    }
+    
     //---------------------------------------------------------------------------------------------
     
     /**

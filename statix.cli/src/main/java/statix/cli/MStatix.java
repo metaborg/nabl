@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,8 +20,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.core.MetaborgException;
+import org.metaborg.core.messages.IMessage;
+import org.metaborg.core.messages.MessageSeverity;
 import org.metaborg.spoofax.core.Spoofax;
 import org.metaborg.spoofax.core.analysis.ISpoofaxAnalyzeResults;
+import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -94,7 +98,7 @@ public class MStatix implements Callable<Void> {
     @Option(names = { "-wc", "--warmupCount" }, description = "the amount of warmup runs") private int warmupCount;
     
     @Option(names = { "-cin", "--contextin" }, description = "file to load context") private String contextIn;
-    @Option(names = { "-cout", "--contextout" }, description = "file to save context", defaultValue = "default.context") private String contextOut;
+    @Option(names = { "-cout", "--contextout" }, description = "file to save context") private String contextOut;
     
     @Option(names = { "-c", "--count" }, description = "amount of runs", defaultValue = "1") private int count;
     @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
@@ -185,6 +189,9 @@ public class MStatix implements Callable<Void> {
             }
             endTimedRun(clean);
             
+            //Only save the context once
+            contextOut = null;
+            
             //Be sure to unload the context
             unloadContext();
             random = createRandom();
@@ -246,6 +253,8 @@ public class MStatix implements Callable<Void> {
             ISpoofaxParseUnit modified = incrementalAnalysis(files, run + "i");
             endTimedRun(false);
             
+            //Only save the context once
+            contextOut = null;
             unloadContext();
             random = createRandom();
             loadContext(run + "c");
@@ -320,11 +329,7 @@ public class MStatix implements Callable<Void> {
         ISpoofaxAnalyzeResults results = analyze.cleanAnalysis(parsed, true);
         TTimings.endPhase("analysis full");
         
-        //TODO Do something with results
-        
-//        for (ISpoofaxAnalyzeUnit result : results.results()) {
-//            result.messages()
-//        }
+        writeFailedResults(results, run);
         
         saveContext();
         writeScopeGraph(run);
@@ -361,6 +366,8 @@ public class MStatix implements Callable<Void> {
         ISpoofaxAnalyzeResults results = analyze.cleanAnalysis(parsed, true);
         TTimings.endPhase("analysis full");
         
+        writeFailedResults(results, run);
+        
         saveContext();
         writeScopeGraph(run);
     }
@@ -383,7 +390,7 @@ public class MStatix implements Callable<Void> {
         
         TTimings.startPhase("incremental change + parse");
         IncrementalChangeGenerator generator = new IncrementalChangeGenerator(data, parse, random, files, ichanges);
-        ISpoofaxParseUnit modifiedUnit = generator.tryApply();
+        ISpoofaxParseUnit modifiedUnit = generator.tryApply(this, run);
         TTimings.endPhase("incremental change + parse");
         
         writeChangeToFile(modifiedUnit, run);
@@ -393,8 +400,8 @@ public class MStatix implements Callable<Void> {
         TTimings.startPhase("analysis full");
         ISpoofaxAnalyzeResults results = analyze.analyzeAll(Iterables2.singleton(modifiedUnit), true);
         TTimings.endPhase("analysis full");
-        
-        //TODO Do something with results
+
+        writeFailedResults(results, run);
         
         saveContext();
         writeScopeGraph(run);
@@ -442,7 +449,7 @@ public class MStatix implements Callable<Void> {
         writeTimings();
     }
     
-    //---------------------------------------------------------------------------------------------
+    //------------------------------------writeExpectedUsages---------------------------------------------------------
     //Other
     //---------------------------------------------------------------------------------------------
     
@@ -510,7 +517,7 @@ public class MStatix implements Callable<Void> {
      */
     public void writeScopeGraph(String run) {
         writeIndividualScopeGraphs(run);
-        if (outputGraph == null || outputGraph.isEmpty()) return;
+        if (outputGraph == null || outputGraph.isEmpty() || Context.context() == null) return;
         TPrettyPrinter.resetScopeNumbers();
         TTimings.startPhase("printing scope graph");
         DotPrinter printer = new DotPrinter(null);
@@ -529,12 +536,11 @@ public class MStatix implements Callable<Void> {
      * Writes each scope graph of a top level module to file.
      */
     public void writeIndividualScopeGraphs(String run) {
-        if (!outputIndividualGraphs) return;
+        if (!outputIndividualGraphs || Context.context() == null) return;
         
         TTimings.startPhase("printing individual scope graphs");
         
         for (IModule module : Context.context().getModulesOnLevel(1, false).values()) {
-            TPrettyPrinter.resetScopeNumbers();
             DotPrinter printer = new DotPrinter(module.getScopeGraph(), true);
             
             File outputFile = new File(outputGraph + "_" + run + "_" + module.getId().replaceAll("\\W", "_") + ".dot");
@@ -578,6 +584,57 @@ public class MStatix implements Callable<Void> {
     }
     
     /**
+     * Saves failed results to a file.
+     * 
+     * @param results
+     *      the results
+     * 
+     * @return
+     *      a list of paths for the files that failed
+     * 
+     * @throws MetaborgException
+     *      If an I/O error occurs.
+     */
+    public List<String> writeFailedResults(ISpoofaxAnalyzeResults results, String run) throws MetaborgException {
+        List<String> failed = new ArrayList<>();
+        for (ISpoofaxAnalyzeUnit unit : results.results()) {
+            for (IMessage msg : unit.messages()) {
+                if (msg.severity() == MessageSeverity.ERROR) {
+                    failed.add(unit.source().getName().getPath());
+                    break;
+                }
+            }
+        }
+        
+        Collections.sort(failed);
+        
+        if (outputFolder == null) return failed;
+        File file = new File(outputFolder, "failed_" + run + ".txt");
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            for (String s : failed) {
+                bw.write(s);
+                bw.newLine();
+            }
+        } catch (IOException ex) {
+            throw new MetaborgException(ex);
+        }
+        return failed;
+    }
+    
+    public void writeExpectedUsages(List<File> expectedUsages, String run) throws MetaborgException {
+        if (outputFolder == null) return;
+        File file = new File(outputFolder, "expected_" + run + ".txt");
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            for (File f : expectedUsages) {
+                bw.write(f.getPath());
+                bw.newLine();
+            }
+        } catch (IOException ex) {
+            throw new MetaborgException(ex);
+        }
+    }
+    
+    /**
      * Writes the different timings csv files.
      */
     public void writeTimings() {
@@ -601,7 +658,8 @@ public class MStatix implements Callable<Void> {
             reducedDetail.put(phase, nMap);
             filterDetailed(map).forEachOrdered(e -> nMap.put(e.getKey(), e.getValue()));
             
-            long analysisTime = retrieveAnalysisTime(map);
+            Long analysisTime = retrieveAnalysisTime(map);
+            if (analysisTime == null) continue;
             if (type) {
                 cleanTimes.add(analysisTime);
             } else {
@@ -645,13 +703,13 @@ public class MStatix implements Callable<Void> {
         });
     }
     
-    private long retrieveAnalysisTime(Map<String, PhaseDetails> map) {
+    private Long retrieveAnalysisTime(Map<String, PhaseDetails> map) {
         return map.entrySet().stream()
                 .filter(e -> e.getKey().equals("analysis full"))
                 .map(e -> e.getValue())
                 .reduce((a, b) -> {throw new IllegalStateException();})
-                .orElseThrow(() -> new IllegalStateException("Time not found!"))
-                .duration();
+                .map(PhaseDetails::duration)
+                .orElse(null);
     }
     
     //---------------------------------------------------------------------------------------------

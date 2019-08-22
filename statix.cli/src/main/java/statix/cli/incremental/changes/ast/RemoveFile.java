@@ -28,9 +28,14 @@ public class RemoveFile extends IIncrementalASTChange {
     
     @Override
     public IncrementalChange withArguments(String args) {
-        File file = new File(args);
-        if (!file.exists()) throw new IllegalArgumentException("The file " + file + " does not exist!");
-        return new RemoveFile(args);
+        try {
+            Integer.parseInt(args);
+            return new RemoveFile(args);
+        } catch (NumberFormatException ex) {
+            File file = new File(args);
+            if (!file.exists()) throw new IllegalArgumentException("The file " + file + " does not exist!");
+            return new RemoveFile(args);
+        }
     }
     
     @Override
@@ -38,4 +43,25 @@ public class RemoveFile extends IIncrementalASTChange {
         return arguments != null;
     }
 
+    @Override
+    public boolean hasUsageCount() {
+        if (arguments == null) return false;
+        try {
+            Integer.parseInt(arguments);
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    @Override
+    public int usageCount() {
+        if (arguments == null) return -1;
+        
+        try {
+            return Integer.parseInt(arguments);
+        } catch (Exception ex) {
+            return -1;
+        }
+    }
 }
