@@ -576,16 +576,22 @@ public class ModuleConstraintStore implements IConstraintStore {
     @Override
     public Map<IConstraint, Delay> delayed() {
         final Multimap<IConstraint, ITermVar> varStuck = MultimapBuilder.hashKeys().hashSetValues().build();
-        stuckOnVar.entries().stream().filter(e -> !e.getValue().activated)
-                .forEach(e -> varStuck.put(e.getValue().constraint, e.getKey()));
+        synchronized (stuckOnVar) {
+            stuckOnVar.entries().stream().filter(e -> !e.getValue().activated)
+                    .forEach(e -> varStuck.put(e.getValue().constraint, e.getKey()));
+        }
 
         final Multimap<IConstraint, CriticalEdge> edgeStuck = MultimapBuilder.hashKeys().hashSetValues().build();
-        stuckOnEdge.entries().stream().filter(e -> !e.getValue().activated)
-                .forEach(e -> edgeStuck.put(e.getValue().constraint, e.getKey()));
+        synchronized (stuckOnEdge) {
+            stuckOnEdge.entries().stream().filter(e -> !e.getValue().activated)
+                    .forEach(e -> edgeStuck.put(e.getValue().constraint, e.getKey()));
+        }
 
         final Map<IConstraint, String> moduleStuck = new HashMap<>();
-        stuckOnModule.entries().stream().filter(e -> !e.getValue().activated)
-                .forEach(e -> moduleStuck.put(e.getValue().constraint, e.getKey()));
+        synchronized (stuckOnModule) {
+            stuckOnModule.entries().stream().filter(e -> !e.getValue().activated)
+                    .forEach(e -> moduleStuck.put(e.getValue().constraint, e.getKey()));
+        }
         
         final Set<IConstraint> stuck = new HashSet<>();
         stuck.addAll(varStuck.keys());
