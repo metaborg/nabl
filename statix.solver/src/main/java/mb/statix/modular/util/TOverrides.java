@@ -43,6 +43,9 @@ public class TOverrides {
     /** If enabled, cross module unification is made possible. */
     public static boolean CROSS_MODULE_UNIFICATION = false;
     
+    /** If enabled (default), solving of a module stops immediately on failure. */
+    public static boolean STOP_IMMEDIATELY_ON_FAILURE = true;
+    
     /**
      * The value of this integer determines what locking approach scope graphs use.
      * <p>

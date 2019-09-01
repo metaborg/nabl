@@ -1,5 +1,7 @@
 package mb.statix.modular.solver.coordinator;
 
+import static mb.statix.modular.util.TOverrides.STOP_IMMEDIATELY_ON_FAILURE;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -109,7 +111,7 @@ public class SolverCoordinator extends ASolverCoordinator {
                     while (solver.solveStep());
                 }
                 
-                if (solver.hasFailed()) {
+                if (solver.isDone() || (STOP_IMMEDIATELY_ON_FAILURE && solver.hasFailed())) {
                     solvers.remove(solver);
                     context.addResult(solver.getOwner(), solver.finishSolver());
                     continue;

@@ -1,5 +1,7 @@
 package mb.statix.modular.solver.concurrent;
 
+import static mb.statix.modular.util.TOverrides.STOP_IMMEDIATELY_ON_FAILURE;
+
 import java.util.function.Consumer;
 
 import mb.statix.modular.solver.ModuleSolver;
@@ -75,7 +77,7 @@ public class SolverRunnable implements Runnable {
                 } while (solver.solveStep());
 
                 //If we are done, signal that we are no longer working and return
-                if (done = (solver.isDone() || solver.hasFailed())) {
+                if (done = (solver.isDone() || (STOP_IMMEDIATELY_ON_FAILURE && solver.hasFailed()))) {
                     setWorkingFalse();
                     onCompletion();
                     return;
@@ -210,7 +212,7 @@ public class SolverRunnable implements Runnable {
             if (working || pending) return false;
             
             wasDone = done;
-            done = (solver.isDone() || solver.hasFailed());
+            done = (solver.isDone() || (STOP_IMMEDIATELY_ON_FAILURE && solver.hasFailed()));
             if (wasDone && done) {
                 //If we were done and still are, just return false.
                 return false;
@@ -235,7 +237,7 @@ public class SolverRunnable implements Runnable {
         synchronized (this) {
             if (!done || working || pending) return;
             
-            done = (solver.isDone() || solver.hasFailed());
+            done = (solver.isDone() || (STOP_IMMEDIATELY_ON_FAILURE && solver.hasFailed()));
             if (done) return;
             
             pending = true;
