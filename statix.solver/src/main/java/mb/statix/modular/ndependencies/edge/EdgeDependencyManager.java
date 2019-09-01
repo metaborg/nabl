@@ -12,32 +12,37 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
+import mb.statix.modular.name.NameAndRelation;
+import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.util.collection.LightWeightHashTrieRelation3;
+import mb.statix.util.collection.MapMultimap;
 
 public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Serializable {
     private static final long serialVersionUID = 1L;
     
     //The sparser the map is populated, the more sense it makes to go with the tuple approach instead.
-    private transient LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> edgeDependencies = LightWeightHashTrieRelation3.Transient.of();
+//    private transient LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> edgeDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private MapMultimap<Scope, ITerm, Dependency> edgeDependencies = TOverrides.mapSetMultimap();
     
     @Override
-    public synchronized Iterable<Dependency> getDependencies(Scope scope) {
-        return edgeDependencies.get(scope).stream().map(Tuple2::_2)::iterator;
+    public Iterable<Dependency> getDependencies(Scope scope) {
+        return edgeDependencies.get2(scope).values();
+//        return edgeDependencies.get(scope).stream().map(Entry::getValue)::iterator;
     }
     
     @Override
-    public synchronized Set<Dependency> getDependencies(Scope scope, ITerm label) {
-        return edgeDependencies.get(scope, label);
+    public Set<Dependency> getDependencies(Scope scope, ITerm label) {
+        return (Set<Dependency>) edgeDependencies.get(scope, label);
     }
     
     @Override
-    public synchronized boolean addDependency(Scope scope, ITerm label, Dependency dependency) {
+    public boolean addDependency(Scope scope, ITerm label, Dependency dependency) {
         return edgeDependencies.put(scope, label, dependency);
     }
     
     @Override
-    public synchronized void removeDependencies(Collection<Dependency> dependencies) {
+    public void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
             for (Entry<Scope, ITerm> entry : getEdges(dependency)) {
                 edgeDependencies.remove(entry.getKey(), entry.getValue(), dependency);
@@ -46,7 +51,7 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
     }
     
     @Override
-    public synchronized void onDependencyAdded(Dependency dependency) {
+    public void onDependencyAdded(Dependency dependency) {
         for (Entry<Scope, ITerm> entry : getEdges(dependency)) {
             edgeDependencies.put(entry.getKey(), entry.getValue(), dependency);
         }
@@ -79,18 +84,18 @@ public class EdgeDependencyManager implements IEdgeDependencyManager<ITerm>, Ser
     // Serialization
     // --------------------------------------------------------------------------------------------
     
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen = edgeDependencies.freeze();
-        out.writeObject(frozen);
-        this.edgeDependencies = frozen.melt();
-    }
-    
-    @SuppressWarnings("unchecked")
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen =
-                (LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency>) in.readObject();
-        this.edgeDependencies = frozen.melt();
-    }
+//    private void writeObject(ObjectOutputStream out) throws IOException {
+//        out.defaultWriteObject();
+//        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen = edgeDependencies.freeze();
+//        out.writeObject(frozen);
+//        this.edgeDependencies = frozen.melt();
+//    }
+//    
+//    @SuppressWarnings("unchecked")
+//    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+//        in.defaultReadObject();
+//        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen =
+//                (LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency>) in.readObject();
+//        this.edgeDependencies = frozen.melt();
+//    }
 }

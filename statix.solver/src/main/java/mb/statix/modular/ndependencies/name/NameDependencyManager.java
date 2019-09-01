@@ -11,22 +11,25 @@ import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.QueryDependencyDetail;
 import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
 import mb.statix.modular.name.NameAndRelation;
+import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.util.collection.LightWeightHashTrieRelation3;
+import mb.statix.util.collection.MapMultimap;
 
 public class NameDependencyManager implements INameDependencyManager, Serializable {
     private static final long serialVersionUID = 1L;
     
     //TODO OPTIMIZATION Might benefit from being a MapMultimap instead
-    private transient LightWeightHashTrieRelation3.Transient<NameAndRelation, Scope, Dependency> nameDependencies = LightWeightHashTrieRelation3.Transient.of();
+//    private transient LightWeightHashTrieRelation3.Transient<NameAndRelation, Scope, Dependency> nameDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private MapMultimap<NameAndRelation, Scope, Dependency> nameDependencies = TOverrides.mapSetMultimap();
     
     @Override
-    public synchronized Set<Dependency> getDependencies(NameAndRelation nameRel, Scope scope) {
-        return nameDependencies.get(nameRel, scope);
+    public Set<Dependency> getDependencies(NameAndRelation nameRel, Scope scope) {
+        return (Set<Dependency>) nameDependencies.get(nameRel, scope);
     }
     
     @Override
-    public synchronized boolean addDependency(NameAndRelation nameRel, Scope scope, Dependency dependency) {
+    public boolean addDependency(NameAndRelation nameRel, Scope scope, Dependency dependency) {
         return nameDependencies.put(nameRel, scope, dependency);
     }
     
@@ -49,11 +52,11 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
         NameAndRelation nar = INameDependencyManager.getNameFromDependency(dependency);
         if (nar == null) return;
         Set<Scope> scopes = getScopesFromDependency(dependency);
-        synchronized (this) {
+//        synchronized (this) {
             for (Scope scope : scopes) {
                 nameDependencies.put(nar, scope, dependency);
             }
-        }
+//        }
     }
     
     // --------------------------------------------------------------------------------------------
@@ -85,18 +88,18 @@ public class NameDependencyManager implements INameDependencyManager, Serializab
     // Serialization
     // --------------------------------------------------------------------------------------------
     
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-        LightWeightHashTrieRelation3.Immutable<NameAndRelation, Scope, Dependency> frozen = nameDependencies.freeze();
-        out.writeObject(frozen);
-        this.nameDependencies = frozen.melt();
-    }
-    
-    @SuppressWarnings("unchecked")
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        LightWeightHashTrieRelation3.Immutable<NameAndRelation, Scope, Dependency> frozen =
-                (LightWeightHashTrieRelation3.Immutable<NameAndRelation, Scope, Dependency>) in.readObject();
-        this.nameDependencies = frozen.melt();
-    }
+//    private void writeObject(ObjectOutputStream out) throws IOException {
+//        out.defaultWriteObject();
+//        LightWeightHashTrieRelation3.Immutable<NameAndRelation, Scope, Dependency> frozen = nameDependencies.freeze();
+//        out.writeObject(frozen);
+//        this.nameDependencies = frozen.melt();
+//    }
+//    
+//    @SuppressWarnings("unchecked")
+//    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+//        in.defaultReadObject();
+//        LightWeightHashTrieRelation3.Immutable<NameAndRelation, Scope, Dependency> frozen =
+//                (LightWeightHashTrieRelation3.Immutable<NameAndRelation, Scope, Dependency>) in.readObject();
+//        this.nameDependencies = frozen.melt();
+//    }
 }

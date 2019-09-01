@@ -13,14 +13,17 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.dependencies.details.NameDependencyDetail;
 import mb.statix.modular.dependencies.details.SimpleQueryDependencyDetail;
+import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.util.collection.LightWeightHashTrieRelation3;
+import mb.statix.util.collection.MapMultimap;
 
 public class DataDependencyManager implements IDataDependencyManager<ITerm>, Serializable {
     private static final long serialVersionUID = 1L;
     
     //The sparser the map is populated, the more sense it makes to go with the tuple approach instead.
-    private transient LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> dataDependencies = LightWeightHashTrieRelation3.Transient.of();
+//    private transient LightWeightHashTrieRelation3.Transient<Scope, ITerm, Dependency> dataDependencies = LightWeightHashTrieRelation3.Transient.of();
+    private MapMultimap<Scope, ITerm, Dependency> dataDependencies = TOverrides.mapSetMultimap();
     private final boolean rejectNames;
     
     public DataDependencyManager(boolean rejectNames) {
@@ -28,13 +31,14 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     }
     
     @Override
-    public synchronized Iterable<Dependency> getDependencies(Scope scope) {
-        return dataDependencies.get(scope).stream().map(Tuple2::_2)::iterator;
+    public Iterable<Dependency> getDependencies(Scope scope) {
+        return dataDependencies.get2(scope).values();
+//        return dataDependencies.get(scope).stream().map(Entry::getValue)::iterator;
     }
     
     @Override
-    public synchronized Set<Dependency> getDependencies(Scope scope, ITerm label) {
-        return dataDependencies.get(scope, label);
+    public Set<Dependency> getDependencies(Scope scope, ITerm label) {
+        return (Set<Dependency>) dataDependencies.get(scope, label);
     }
     
     @Override
@@ -43,7 +47,7 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     }
     
     @Override
-    public synchronized void removeDependencies(Collection<Dependency> dependencies) {
+    public void removeDependencies(Collection<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
             for (Entry<Scope, ITerm> entry : getData(dependency)) {
                 dataDependencies.remove(entry.getKey(), entry.getValue(), dependency);
@@ -52,7 +56,7 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     }
     
     @Override
-    public synchronized void onDependencyAdded(Dependency dependency) {
+    public void onDependencyAdded(Dependency dependency) {
         if (rejectNames && dependency.hasDetails(NameDependencyDetail.class)) return;
         for (Entry<Scope, ITerm> entry : getData(dependency)) {
             dataDependencies.put(entry.getKey(), entry.getValue(), dependency);
@@ -96,18 +100,18 @@ public class DataDependencyManager implements IDataDependencyManager<ITerm>, Ser
     // Serialization
     // --------------------------------------------------------------------------------------------
     
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen = dataDependencies.freeze();
-        out.writeObject(frozen);
-        this.dataDependencies = frozen.melt();
-    }
-    
-    @SuppressWarnings("unchecked")
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen =
-                (LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency>) in.readObject();
-        this.dataDependencies = frozen.melt();
-    }
+//    private void writeObject(ObjectOutputStream out) throws IOException {
+//        out.defaultWriteObject();
+//        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen = dataDependencies.freeze();
+//        out.writeObject(frozen);
+//        this.dataDependencies = frozen.melt();
+//    }
+//    
+//    @SuppressWarnings("unchecked")
+//    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+//        in.defaultReadObject();
+//        LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency> frozen =
+//                (LightWeightHashTrieRelation3.Immutable<Scope, ITerm, Dependency>) in.readObject();
+//        this.dataDependencies = frozen.melt();
+//    }
 }
