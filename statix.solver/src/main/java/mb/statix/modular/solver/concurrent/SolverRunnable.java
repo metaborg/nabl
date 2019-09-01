@@ -87,6 +87,9 @@ public class SolverRunnable implements Runnable {
             done = true;
             setWorkingFalse();
             throw new RuntimeException("FATAL: Solver executor of module " + solver.getOwner() + " was interrupted unexpectedly! Giving up.", e);
+        } catch (Exception ex) {
+            System.err.println("FATAL: Unexpected exception while solving!");
+            ex.printStackTrace();
         } finally {
             if (done) {
                 progress.switchToDone();
