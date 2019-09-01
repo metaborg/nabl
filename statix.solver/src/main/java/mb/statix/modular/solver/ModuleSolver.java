@@ -367,11 +367,7 @@ public class ModuleSolver implements IOwnable {
     
         IDebugContext subDebug = CONSTRAINT_SOLVING ? proxyDebug.subContext() : DEV_NULL;
         if(proxyDebug.isEnabled(Level.Info)) {
-//            IncrementalManager im = Context.context().getIncrementalManager();
-//            im.executeUnrestricted(getOwner().getId(),
-//                    () ->
             proxyDebug.info("Solving {}", constraint.toString(ModuleSolver.shallowTermFormatter(state.unifier().unrestricted())));
-//            );
         }
         
         try {
