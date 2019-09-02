@@ -11,6 +11,7 @@ imports
   nabl2/shared/-
   nabl2/runtime/analysis/-
   nabl2/runtime/editor/-
+  nabl2/runtime/transform/-
 
 rules // ###### Analysis execution ######
 
