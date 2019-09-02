@@ -6,9 +6,13 @@ import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.scopegraph.INameResolution;
+import mb.statix.scopegraph.reference.FastNameResolution;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.IsComplete;
@@ -76,6 +80,11 @@ public class Solver {
             sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
         }
         return sb.toString();
+    }
+
+    public static INameResolution.Builder<Scope, ITerm, ITerm> nameResolutionBuilder() {
+        return FastNameResolution.builder();
+
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier unifier) {
