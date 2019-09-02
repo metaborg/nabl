@@ -51,10 +51,10 @@ public class StatixGenerate {
                             .orElseThrow(() -> new MetaborgException("Expected constraint"));
             final Spec spec = StatixTerms.spec().match(strategoTerms.fromStratego(evalPair.getSubterm(1)))
                     .orElseThrow(() -> new MetaborgException("Expected spec"));
+            STX.messagePrinter.print(new Message("Generating random terms.", MessageSeverity.NOTE, MessageType.INTERNAL,
+                    analysisUnit.source(), null, null), false);
             final RandomTermGenerator rtg = new RandomTermGenerator(spec, constraint);
             while(true) {
-                STX.messagePrinter.print(new Message("Generating random terms.", MessageSeverity.NOTE,
-                        MessageType.INTERNAL, analysisUnit.source(), null, null), false);
                 Optional<SearchState> state = rtg.next();
                 if(!state.isPresent()) {
                     break;

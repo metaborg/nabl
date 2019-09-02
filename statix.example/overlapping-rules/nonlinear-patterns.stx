@@ -42,8 +42,8 @@ rules
 rules
 
   p15 : S * S
-  p15(H(x@F(_),G()),x).
-  p15(H(F(_),x@G()),x).
+//p15(H(x@F(_),G()),x).
+//p15(H(F(_),x@G()),x).
 
 rules
 

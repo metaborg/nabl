@@ -22,7 +22,7 @@ signature
     Var  : string
 
   name-resolution
-    labels P R
+    labels P
     resolve Var filter P* min $ < P
 
 rules
