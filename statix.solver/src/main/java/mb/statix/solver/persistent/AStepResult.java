@@ -14,7 +14,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 
 @Value.Immutable
-abstract class AConstraintResult {
+abstract class AStepResult {
 
     @Value.Parameter public abstract State state();
 
@@ -26,17 +26,17 @@ abstract class AConstraintResult {
 
     @Value.Parameter public abstract Map<ITermVar, ITermVar> existentials();
 
-    public static ConstraintResult of(State newState) {
-        return ConstraintResult.of(newState, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(),
+    public static StepResult of(State newState) {
+        return StepResult.of(newState, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(),
                 ImmutableMap.of());
     }
 
-    public static ConstraintResult ofNew(State newState, Collection<IConstraint> newConstraints) {
-        return ConstraintResult.of(newState, ImmutableList.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of());
+    public static StepResult ofNew(State newState, Collection<IConstraint> newConstraints) {
+        return StepResult.of(newState, ImmutableList.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of());
     }
 
-    public static ConstraintResult ofDelay(State newState, Delay delay, IConstraint c) {
-        return ConstraintResult.of(newState, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(delay, c),
+    public static StepResult ofDelay(State newState, Delay delay, IConstraint c) {
+        return StepResult.of(newState, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(delay, c),
                 ImmutableMap.of());
     }
 

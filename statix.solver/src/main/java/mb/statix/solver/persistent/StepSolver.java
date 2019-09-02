@@ -74,7 +74,7 @@ import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.Rule;
 import mb.statix.spoofax.StatixTerms;
 
-public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintResult>, SolverException> {
+public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
 
     private State state;
     private Map<ITermVar, ITermVar> existentials;
@@ -127,13 +127,13 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                     proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 }
                 try {
-                    final Optional<ConstraintResult> maybeResult;
+                    final Optional<StepResult> maybeResult;
                     maybeResult = step(constraint);
                     addTime(constraint, 1, successCount, debug);
                     progress = true;
                     reductions += 1;
                     if(maybeResult.isPresent()) {
-                        final ConstraintResult result = maybeResult.get();
+                        final StepResult result = maybeResult.get();
                         state = result.state();
                         if(existentials == null) {
                             existentials = result.existentials();
@@ -223,7 +223,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         debug.info("# ----- {} -----", "-");
     }
 
-    private Optional<ConstraintResult> step(final IConstraint constraint) throws Delay, InterruptedException {
+    private Optional<StepResult> step(final IConstraint constraint) throws Delay, InterruptedException {
         try {
             return constraint.matchOrThrow(this);
         } catch(SolverException ex) {
@@ -232,16 +232,16 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
     }
 
-    @Override public Optional<ConstraintResult> caseConj(CConj c) throws SolverException {
+    @Override public Optional<StepResult> caseConj(CConj c) throws SolverException {
         // @formatter:off
         final List<IConstraint> newConstraints = ImmutableList.of(
                 c.left().withCause(c.cause().orElse(null)),
                 c.right().withCause(c.cause().orElse(null)));
         // @formatter:on
-        return Optional.of(ConstraintResult.ofNew(state, newConstraints));
+        return Optional.of(StepResult.ofNew(state, newConstraints));
     }
 
-    @Override public Optional<ConstraintResult> caseEqual(CEqual c) throws SolverException {
+    @Override public Optional<StepResult> caseEqual(CEqual c) throws SolverException {
         final ITerm term1 = c.term1();
         final ITerm term2 = c.term2();
         IDebugContext debug = params.debug();
@@ -256,7 +256,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 final Set<ITermVar> updatedVars = result.result()._1().varSet();
                 final Map<Delay, IConstraint> delayedConstraints =
                         Solver.rigidsToDelays(result.result()._2(), c.cause());
-                return Optional.of(ConstraintResult.of(newState, updatedVars, ImmutableList.of(), delayedConstraints,
+                return Optional.of(StepResult.of(newState, updatedVars, ImmutableList.of(), delayedConstraints,
                         ImmutableMap.of()));
             } else {
                 if(debug.isEnabled(Level.Info)) {
@@ -272,7 +272,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
     }
 
-    @Override public Optional<ConstraintResult> caseExists(CExists c) throws SolverException {
+    @Override public Optional<StepResult> caseExists(CExists c) throws SolverException {
         final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
         State newState = state;
         for(ITermVar var : c.vars()) {
@@ -284,15 +284,15 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
         final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-        return Optional.of(ConstraintResult.of(newState, ImmutableSet.of(), ImmutableList.of(newConstraint),
+        return Optional.of(StepResult.of(newState, ImmutableSet.of(), ImmutableList.of(newConstraint),
                 ImmutableMap.of(), existentials));
     }
 
-    @Override public Optional<ConstraintResult> caseFalse(CFalse c) throws SolverException {
+    @Override public Optional<StepResult> caseFalse(CFalse c) throws SolverException {
         return Optional.empty();
     }
 
-    @Override public Optional<ConstraintResult> caseInequal(CInequal c) throws SolverException {
+    @Override public Optional<StepResult> caseInequal(CInequal c) throws SolverException {
         final ITerm term1 = c.term1();
         final ITerm term2 = c.term2();
 
@@ -301,14 +301,14 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             if(result) {
                 return Optional.empty();
             } else {
-                return Optional.of(ConstraintResult.of(state));
+                return Optional.of(StepResult.of(state));
             }
         }, vars -> {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(vars), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(vars), c));
         });
     }
 
-    @Override public Optional<ConstraintResult> caseNew(CNew c) throws SolverException {
+    @Override public Optional<StepResult> caseNew(CNew c) throws SolverException {
         final List<ITerm> terms = c.terms();
 
         final List<IConstraint> newConstraints = Lists.newArrayList();
@@ -319,10 +319,10 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             newConstraints.add(new CEqual(t, ss._1(), c));
             newState = ss._2();
         }
-        return Optional.of(ConstraintResult.ofNew(newState, newConstraints));
+        return Optional.of(StepResult.ofNew(newState, newConstraints));
     }
 
-    @Override public Optional<ConstraintResult> caseResolveQuery(CResolveQuery c) throws SolverException {
+    @Override public Optional<StepResult> caseResolveQuery(CResolveQuery c) throws SolverException {
         final ITerm relation = c.relation();
         final IQueryFilter filter = c.filter();
         final IQueryMin min = c.min();
@@ -331,7 +331,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
         }
         final Scope scope = AScope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
@@ -362,18 +362,18 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             final List<ITerm> pathTerms =
                     paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
-            return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(C)));
+            return Optional.of(StepResult.ofNew(state, ImmutableList.of(C)));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             return Optional.of(
-                    ConstraintResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
+                    StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
         } catch(IncompleteEdgeException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             return Optional.of(
-                    ConstraintResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
+                    StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
         } catch(ResolutionDelayException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            return Optional.of(ConstraintResult.ofDelay(state, e.getCause(), c));
+            return Optional.of(StepResult.ofDelay(state, e.getCause(), c));
         } catch(ResolutionException e) {
             params.debug().info("Query resolution failed: {}", e.getMessage());
             return Optional.empty();
@@ -382,17 +382,17 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
     }
 
-    @Override public Optional<ConstraintResult> caseTellEdge(CTellEdge c) throws SolverException {
+    @Override public Optional<StepResult> caseTellEdge(CTellEdge c) throws SolverException {
         final ITerm sourceTerm = c.sourceTerm();
         final ITerm label = c.label();
         final ITerm targetTerm = c.targetTerm();
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(sourceTerm)), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(sourceTerm)), c));
         }
         if(!unifier.isGround(targetTerm)) {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(targetTerm)), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(targetTerm)), c));
         }
         final Scope source = AScope.matcher().match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
@@ -402,17 +402,17 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         final Scope target = AScope.matcher().match(targetTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph().addEdge(source, label, target);
-        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
+        return Optional.of(StepResult.of(state.withScopeGraph(scopeGraph)));
     }
 
-    @Override public Optional<ConstraintResult> caseTellRel(CTellRel c) throws SolverException {
+    @Override public Optional<StepResult> caseTellRel(CTellRel c) throws SolverException {
         final ITerm scopeTerm = c.scopeTerm();
         final ITerm relation = c.relation();
         final ITerm datumTerm = c.datumTerm();
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
         }
         final Scope scope = AScope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
@@ -422,43 +422,43 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                 state.scopeGraph().addDatum(scope, relation, datumTerm);
-        return Optional.of(ConstraintResult.of(state.withScopeGraph(scopeGraph)));
+        return Optional.of(StepResult.of(state.withScopeGraph(scopeGraph)));
     }
 
-    @Override public Optional<ConstraintResult> caseTermId(CAstId c) throws SolverException {
+    @Override public Optional<StepResult> caseTermId(CAstId c) throws SolverException {
         final ITerm term = c.astTerm();
         final ITerm idTerm = c.idTerm();
 
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(term)), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(term)), c));
         }
         final CEqual eq;
         final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
         if(maybeScope.isPresent()) {
             final AScope scope = maybeScope.get();
             eq = new CEqual(idTerm, scope);
-            return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(eq)));
+            return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
         } else {
             final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
             if(maybeIndex.isPresent()) {
                 final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
                 eq = new CEqual(idTerm, indexTerm);
-                return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(eq)));
+                return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
             } else {
                 return Optional.empty();
             }
         }
     }
 
-    @Override public Optional<ConstraintResult> caseTermProperty(CAstProperty c) throws SolverException {
+    @Override public Optional<StepResult> caseTermProperty(CAstProperty c) throws SolverException {
         final ITerm idTerm = c.idTerm();
         final ITerm prop = c.property();
         final ITerm value = c.value();
 
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(idTerm))) {
-            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(idTerm)), c));
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(idTerm)), c));
         }
         final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
         if(maybeIndex.isPresent()) {
@@ -469,7 +469,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 props.putAll(state.termProperties());
                 props.put(key, value);
                 final State newState = state.withTermProperties(props.build());
-                return Optional.of(ConstraintResult.of(newState));
+                return Optional.of(StepResult.of(newState));
             } else {
                 return Optional.empty();
             }
@@ -478,11 +478,11 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
     }
 
-    @Override public Optional<ConstraintResult> caseTrue(CTrue c) throws SolverException {
-        return Optional.of(ConstraintResult.of(state));
+    @Override public Optional<StepResult> caseTrue(CTrue c) throws SolverException {
+        return Optional.of(StepResult.of(state));
     }
 
-    @Override public Optional<ConstraintResult> caseUser(CUser c) throws SolverException {
+    @Override public Optional<StepResult> caseUser(CUser c) throws SolverException {
         final String name = c.name();
         final List<ITerm> args = c.args();
 
@@ -510,11 +510,11 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 proxyDebug.info("Rule delayed (unsolved guard constraint)");
                 unsuccessfulLog.absorb(proxyDebug.clear());
                 unsuccessfulLog.flush(debug);
-                return Optional.of(ConstraintResult.ofDelay(state, d, c));
+                return Optional.of(StepResult.ofDelay(state, d, c));
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(instantiatedBody)));
+            return Optional.of(StepResult.ofNew(state, ImmutableList.of(instantiatedBody)));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);
