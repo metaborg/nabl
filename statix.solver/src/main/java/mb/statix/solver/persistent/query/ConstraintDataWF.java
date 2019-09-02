@@ -40,7 +40,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
             if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(state, result, isComplete, debug).isPresent()) {
+            if(Solver.entails(state, result, isComplete, debug)) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }

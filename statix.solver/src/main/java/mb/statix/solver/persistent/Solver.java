@@ -1,14 +1,23 @@
 package mb.statix.solver.persistent;
 
+import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 
+import com.google.common.collect.ImmutableMap;
+
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.CEqual;
+import mb.statix.scopegraph.INameResolution;
+import mb.statix.scopegraph.reference.FastNameResolution;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.IsComplete;
@@ -30,8 +39,8 @@ public class Solver {
         //return new StepSolver(state, isComplete, debug).solve(constraint);
     }
 
-    public static Optional<SolverResult> entails(State state, final IConstraint constraint, final IsComplete isComplete,
-            final IDebugContext debug) throws InterruptedException, Delay {
+    public static boolean entails(State state, final IConstraint constraint, final IsComplete isComplete,
+            final IDebugContext debug) throws Delay, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraint, state.unifier()));
         }
@@ -40,10 +49,10 @@ public class Solver {
         final SolverResult result = Solver.solve(state, constraint, isComplete, debug.subContext());
         if(result.hasErrors()) {
             debug.info("Constraints not entailed");
-            return Optional.empty();
+            return false;
         } else if(result.delays().isEmpty()) {
             debug.info("Constraints entailed");
-            return Optional.of(result);
+            return true;
         } else {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");
             // FIXME this doesn't remove rigid vars, as they are not part of State.vars()
@@ -76,6 +85,20 @@ public class Solver {
             sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
         }
         return sb.toString();
+    }
+
+    public static INameResolution.Builder<Scope, ITerm, ITerm> nameResolutionBuilder() {
+        return FastNameResolution.builder();
+
+    }
+
+    public static Map<Delay, IConstraint> rigidsToDelays(Iterable<? extends Map.Entry<ITermVar, ITerm>> rigids,
+            Optional<IConstraint> cause) {
+        final ImmutableMap.Builder<Delay, IConstraint> delays = ImmutableMap.builder();
+        rigids.forEach(p -> {
+            delays.put(Delay.ofVar(p.getKey()), new CEqual(p.getKey(), p.getValue(), cause.orElse(null)));
+        });
+        return delays.build();
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier unifier) {

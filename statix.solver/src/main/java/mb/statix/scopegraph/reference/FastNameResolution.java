@@ -215,7 +215,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         return new Builder<>();
     }
 
-    public static class Builder<S extends D, L, D> {
+    public static class Builder<S extends D, L, D> implements INameResolution.Builder<S, L, D> {
 
         private LabelWF<L> labelWF = LabelWF.ANY();
         private LabelOrder<L> labelOrder = LabelOrder.NONE();
@@ -225,37 +225,37 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         private DataLeq<D> dataEquiv = DataLeq.NONE();
         private Predicate2<S, L> isDataComplete = (s, r) -> true;
 
-        public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
+        @Override public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
             return this;
         }
 
-        public Builder<S, L, D> withLabelOrder(LabelOrder<L> labelOrder) {
+        @Override public Builder<S, L, D> withLabelOrder(LabelOrder<L> labelOrder) {
             this.labelOrder = labelOrder;
             return this;
         }
 
-        public Builder<S, L, D> withEdgeComplete(Predicate2<S, L> isEdgeComplete) {
+        @Override public Builder<S, L, D> withEdgeComplete(Predicate2<S, L> isEdgeComplete) {
             this.isEdgeComplete = isEdgeComplete;
             return this;
         }
 
-        public Builder<S, L, D> withDataWF(DataWF<D> dataWF) {
+        @Override public Builder<S, L, D> withDataWF(DataWF<D> dataWF) {
             this.dataWF = dataWF;
             return this;
         }
 
-        public Builder<S, L, D> withDataEquiv(DataLeq<D> dataEquiv) {
+        @Override public Builder<S, L, D> withDataEquiv(DataLeq<D> dataEquiv) {
             this.dataEquiv = dataEquiv;
             return this;
         }
 
-        public Builder<S, L, D> withDataComplete(Predicate2<S, L> isDataComplete) {
+        @Override public Builder<S, L, D> withDataComplete(Predicate2<S, L> isDataComplete) {
             this.isDataComplete = isDataComplete;
             return this;
         }
 
-        public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
+        @Override public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
             return new FastNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
                     dataEquiv, isDataComplete);
         }

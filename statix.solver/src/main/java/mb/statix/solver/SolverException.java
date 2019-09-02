@@ -8,7 +8,7 @@ public abstract class SolverException extends Throwable {
         super(msg, null, false, false);
     }
 
-    public abstract void rethrow() throws Delay, InterruptedException;
+    public abstract void rethrow() throws InterruptedException;
 
     public static class SolverInterrupted extends SolverException {
 

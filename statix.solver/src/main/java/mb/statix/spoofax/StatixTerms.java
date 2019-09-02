@@ -48,8 +48,6 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CPathLt;
-import mb.statix.constraints.CPathMatch;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
@@ -135,12 +133,6 @@ public class StatixTerms {
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return new CNew(ts);
-                }),
-                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
-                    return new CPathLt(lt, l1, l2);
-                }),
-                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
-                    return new CPathMatch(re, lbls);
                 }),
                 M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
                         (c, rel, filter, min, scope, result) -> {

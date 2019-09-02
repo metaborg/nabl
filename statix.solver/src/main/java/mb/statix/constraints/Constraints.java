@@ -25,8 +25,6 @@ public final class Constraints {
                 Function1<CFalse,R> onFalse,
                 Function1<CInequal,R> onInequal,
                 Function1<CNew,R> onNew,
-                Function1<CPathLt,R> onPathLt,
-                Function1<CPathMatch,R> onPathMatch,
                 Function1<CResolveQuery,R> onResolveQuery,
                 Function1<CTellEdge,R> onTellEdge,
                 Function1<CTellRel,R> onTellRel,
@@ -59,14 +57,6 @@ public final class Constraints {
 
             @Override public R caseNew(CNew c) {
                 return onNew.apply(c);
-            }
-
-            @Override public R casePathLt(CPathLt c) {
-                return onPathLt.apply(c);
-            }
-
-            @Override public R casePathMatch(CPathMatch c) {
-                return onPathMatch.apply(c);
             }
 
             @Override public R caseResolveQuery(CResolveQuery c) {
@@ -109,8 +99,6 @@ public final class Constraints {
                 CheckedFunction1<CFalse, R, E> onFalse,
                 CheckedFunction1<CInequal, R, E> onInequal,
                 CheckedFunction1<CNew, R, E> onNew,
-                CheckedFunction1<CPathLt, R, E> onPathLt,
-                CheckedFunction1<CPathMatch, R, E> onPathMatch,
                 CheckedFunction1<CResolveQuery, R, E> onResolveQuery,
                 CheckedFunction1<CTellEdge, R, E> onTellEdge,
                 CheckedFunction1<CTellRel, R, E> onTellRel,
@@ -143,14 +131,6 @@ public final class Constraints {
 
             @Override public R caseNew(CNew c) throws E {
                 return onNew.apply(c);
-            }
-
-            @Override public R casePathLt(CPathLt c) throws E {
-                return onPathLt.apply(c);
-            }
-
-            @Override public R casePathMatch(CPathMatch c) throws E {
-                return onPathMatch.apply(c);
             }
 
             @Override public R caseResolveQuery(CResolveQuery c) throws E {

@@ -1,9 +1,11 @@
 package mb.nabl2.terms.unification;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -78,32 +80,32 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right)
                 throws OccursException {
             final IUnifier.Transient unifier = melt();
-            return unifier.unify(left, right).map(diff -> {
-                return new BaseUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(left, right).map(result -> {
+                return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
             });
         }
 
-        @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right,
-                Predicate1<ITermVar> isRigid) throws OccursException, RigidVarsException {
+        @Override public Optional<Result<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>>>
+                unify(ITerm left, ITerm right, Predicate1<ITermVar> isRigid) throws OccursException {
             final IUnifier.Transient unifier = melt();
-            return unifier.unify(left, right, isRigid).map(diff -> {
-                return new BaseUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(left, right, isRigid).map(result -> {
+                return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
             });
         }
 
         @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(IUnifier other)
                 throws OccursException {
             final IUnifier.Transient unifier = melt();
-            return unifier.unify(other).map(diff -> {
-                return new BaseUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(other).map(result -> {
+                return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
             });
         }
 
-        @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(IUnifier other,
-                Predicate1<ITermVar> isRigid) throws OccursException, RigidVarsException {
+        @Override public Optional<Result<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>>>
+                unify(IUnifier other, Predicate1<ITermVar> isRigid) throws OccursException {
             final IUnifier.Transient unifier = melt();
-            return unifier.unify(other, isRigid).map(diff -> {
-                return new BaseUnifier.Result<>(diff, unifier.freeze());
+            return unifier.unify(other, isRigid).map(result -> {
+                return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
             });
         }
 
@@ -117,25 +119,25 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retain(ITermVar var) {
             final IUnifier.Transient unifier = melt();
             ISubstitution.Immutable result = unifier.retain(var);
-            return new BaseUnifier.Result<>(result, unifier.freeze());
+            return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
             final IUnifier.Transient unifier = melt();
             ISubstitution.Immutable result = unifier.retainAll(vars);
-            return new BaseUnifier.Result<>(result, unifier.freeze());
+            return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> remove(ITermVar var) {
             final IUnifier.Transient unifier = melt();
             ISubstitution.Immutable result = unifier.remove(var);
-            return new BaseUnifier.Result<>(result, unifier.freeze());
+            return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final IUnifier.Transient unifier = melt();
             ISubstitution.Immutable result = unifier.removeAll(vars);
-            return new BaseUnifier.Result<>(result, unifier.freeze());
+            return new BaseUnifier.ImmutableResult<>(result, unifier.freeze());
         }
 
         @Override public IUnifier.Transient melt() {
@@ -208,33 +210,21 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         ///////////////////////////////////////////
 
         @Override public Optional<IUnifier.Immutable> unify(ITerm left, ITerm right) throws OccursException {
-            try {
-                return new Unify(left, right).apply();
-            } catch(RigidVarsException e) {
-                throw new IllegalStateException(e);
-            }
+            return new Unify(left, right).apply().map(Tuple2::_1);
         }
 
-        @Override public Optional<IUnifier.Immutable> unify(ITerm left, ITerm right, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException {
+        @Override public Optional<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>> unify(ITerm left,
+                ITerm right, Predicate1<ITermVar> isRigid) throws OccursException {
             return new Unify(left, right, isRigid).apply();
         }
 
         @Override public Optional<IUnifier.Immutable> unify(IUnifier other) throws OccursException {
-            try {
-                return new Unify(other).apply();
-            } catch(RigidVarsException e) {
-                throw new IllegalStateException(e);
-            }
+            return new Unify(other).apply().map(Tuple2::_1);
         }
 
-        @Override public Optional<IUnifier.Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws OccursException {
-            try {
-                return new Unify(other, isRigid).apply();
-            } catch(RigidVarsException e) {
-                throw new IllegalStateException(e);
-            }
+        @Override public Optional<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>> unify(IUnifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException {
+            return new Unify(other, isRigid).apply();
         }
 
         private class Unify {
@@ -242,7 +232,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             private final Predicate1<ITermVar> isRigid;
 
             public final Deque<Tuple2<ITerm, ITerm>> worklist = Lists.newLinkedList();
-            public final Set<ITermVar> result = Sets.newHashSet();
+            public final List<ITermVar> result = Lists.newArrayList();
+            public final List<Tuple2<ITermVar, ITerm>> rigids = Lists.newArrayList();
 
             public Unify(ITerm left, ITerm right) {
                 this(left, right, v -> false);
@@ -272,15 +263,12 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 }
             }
 
-            public Optional<IUnifier.Immutable> apply() throws OccursException, RigidVarsException {
+            public Optional<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>> apply()
+                    throws OccursException {
                 while(!worklist.isEmpty()) {
                     final Tuple2<ITerm, ITerm> work = worklist.pop();
-                    try {
-                        if(!unifyTerms(work._1(), work._2())) {
-                            return Optional.empty();
-                        }
-                    } catch(_RigidVarsException ex) {
-                        throw ex.exception;
+                    if(!unifyTerms(work._1(), work._2())) {
+                        return Optional.empty();
                     }
                 }
                 if(isFinite()) {
@@ -290,7 +278,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                         throw new OccursException(cyclicVars);
                     }
                 }
-                return Optional.of(diffUnifier(result));
+                final IUnifier.Immutable diffUnifier = diffUnifier(result);
+                return Optional.of(ImmutableTuple2.of(diffUnifier, rigids));
             }
 
             private boolean unifyTerms(final ITerm _left, final ITerm _right) {
@@ -414,7 +403,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 if(terms.containsKey(rep)) {
                     worklist.push(ImmutableTuple2.of(terms.get(rep), term));
                 } else if(isRigid.test(rep)) {
-                    throw new _RigidVarsException(rep);
+                    rigids.add(ImmutableTuple2.of(rep, term));
                 } else {
                     terms.__put(rep, term);
                     result.add(rep);
@@ -429,7 +418,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                     return true;
                 }
                 if(isRigid.test(leftRep) && isRigid.test(rightRep)) {
-                    throw new _RigidVarsException(leftRep, rightRep);
+                    rigids.add(ImmutableTuple2.of(leftRep, rightRep));
+                    return true;
                 }
                 final int leftRank = ranks.getOrDefault(leftRep, 1);
                 final int rightRank = ranks.getOrDefault(rightRep, 1);
@@ -529,7 +519,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         // diffUnifier(Set<ITermVar>)
         ///////////////////////////////////////////
 
-        private IUnifier.Immutable diffUnifier(Set<ITermVar> vars) {
+        private IUnifier.Immutable diffUnifier(Collection<ITermVar> vars) {
             final Map.Transient<ITermVar, ITermVar> diffReps = Map.Transient.of();
             final Map.Transient<ITermVar, ITerm> diffTerms = Map.Transient.of();
             for(ITermVar var : vars) {

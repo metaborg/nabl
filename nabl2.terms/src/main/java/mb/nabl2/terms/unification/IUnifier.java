@@ -1,5 +1,6 @@
 package mb.nabl2.terms.unification;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
@@ -9,6 +10,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.Tuple2;
 
 /**
  * Unification
@@ -162,16 +164,16 @@ public interface IUnifier {
          */
         Optional<Result<Immutable>> unify(ITerm term1, ITerm term2) throws OccursException;
 
-        Optional<Result<Immutable>> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        Optional<Result<Tuple2<Immutable, Collection<Tuple2<ITermVar, ITerm>>>>> unify(ITerm term1, ITerm term2,
+                Predicate1<ITermVar> isRigid) throws OccursException;
 
         /**
          * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
          */
         Optional<Result<Immutable>> unify(IUnifier other) throws OccursException;
 
-        Optional<Result<Immutable>> unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        Optional<Result<Tuple2<Immutable, Collection<Tuple2<ITermVar, ITerm>>>>> unify(IUnifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException;
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -226,16 +228,16 @@ public interface IUnifier {
          */
         Optional<Immutable> unify(ITerm term1, ITerm term2) throws OccursException;
 
-        Optional<Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        Optional<Tuple2<Immutable, Collection<Tuple2<ITermVar, ITerm>>>> unify(ITerm term1, ITerm term2,
+                Predicate1<ITermVar> isRigid) throws OccursException;
 
         /**
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
         Optional<Immutable> unify(IUnifier other) throws OccursException;
 
-        Optional<Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        Optional<Tuple2<Immutable, Collection<Tuple2<ITermVar, ITerm>>>> unify(IUnifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException;
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed

@@ -32,15 +32,14 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         this.debug = debug;
     }
 
-    @Override public boolean leq(ITerm datum1, ITerm datum2)
-            throws ResolutionException, InterruptedException {
+    @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
         final IUnifier unifier = state.unifier();
         try {
             final IConstraint result;
             if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(state, result, isComplete, debug).isPresent()) {
+            if(Solver.entails(state, result, isComplete, debug)) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
