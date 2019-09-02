@@ -15,8 +15,6 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CPathLt;
-import mb.statix.constraints.CPathMatch;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
@@ -51,10 +49,6 @@ public interface IConstraint {
 
         R caseNew(CNew c);
 
-        R casePathLt(CPathLt c);
-
-        R casePathMatch(CPathMatch c);
-
         R caseResolveQuery(CResolveQuery c);
 
         R caseTellEdge(CTellEdge c);
@@ -88,10 +82,6 @@ public interface IConstraint {
         R caseInequal(CInequal c) throws E;
 
         R caseNew(CNew c) throws E;
-
-        R casePathLt(CPathLt c) throws E;
-
-        R casePathMatch(CPathMatch c) throws E;
 
         R caseResolveQuery(CResolveQuery c) throws E;
 

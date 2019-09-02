@@ -128,8 +128,6 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onFalse -> Stream.empty(),
             onInequal -> Stream.empty(),
             onNew -> Stream.empty(),
-            onPathLt -> Stream.empty(),
-            onPathMatch -> Stream.empty(),
             onResolveQuery -> Stream.empty(),
             onTellEdge -> Stream.empty(),
             onTellRel -> Stream.empty(),

@@ -41,7 +41,7 @@ class ConstraintLabelOrder implements LabelOrder<ITerm> {
             if((result = constraint.apply(ImmutableList.of(l1, l2), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(state, result, isComplete, debug.subContext()).isPresent()) {
+            if(Solver.entails(state, result, isComplete, debug.subContext())) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Ordered {} < {}", unifier.toString(l1), unifier.toString(l2));
                 }

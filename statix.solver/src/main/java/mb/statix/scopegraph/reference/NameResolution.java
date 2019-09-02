@@ -63,7 +63,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         for(L l : max_L) {
             final Set<IResolutionPath<S, L, D>> env1 = env_L(smaller(L, l), re, path);
             envBuilder.addAll(env1);
-            if(!dataEquiv.alwaysTrue() || env1.isEmpty()) {
+            if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
                 final Set<IResolutionPath<S, L, D>> env2 = env_l(l, re, path);
                 envBuilder.addAll(minus(env2, env1));
             }

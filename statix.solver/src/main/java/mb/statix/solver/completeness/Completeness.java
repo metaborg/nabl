@@ -37,8 +37,6 @@ public class Completeness {
             onFalse -> null,
             onInequal -> null,
             onNew -> null,
-            onPathLt -> null,
-            onPathMatch -> null,
             onResolveQuery -> null,
             onTellEdge -> {
                 criticalEdge.apply(onTellEdge.sourceTerm(), onTellEdge.label());

@@ -27,7 +27,6 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
-import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 
 @Value.Immutable
@@ -65,13 +64,7 @@ public abstract class ARule {
         // 3. Solve constraint
         try {
             final IConstraint constraint = new CExists(args, instBody);
-            final Optional<SolverResult> solverResult =
-                    Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext());
-            if(solverResult.isPresent()) {
-                return Optional.of(true);
-            } else {
-                return Optional.of(false);
-            }
+            return Optional.of(Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
         } catch(Delay d) {
             return Optional.empty();
         }
@@ -121,7 +114,7 @@ public abstract class ARule {
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    public static java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
+    public static final java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.

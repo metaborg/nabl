@@ -806,12 +806,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     // class Result
     ///////////////////////////////////////////
 
-    protected static class Result<T> implements IUnifier.Immutable.Result<T> {
+    protected static class ImmutableResult<T> implements IUnifier.Immutable.Result<T> {
 
         private final T result;
         private final IUnifier.Immutable unifier;
 
-        public Result(T result, IUnifier.Immutable unifier) {
+        public ImmutableResult(T result, IUnifier.Immutable unifier) {
             this.result = result;
             this.unifier = unifier;
         }
@@ -825,23 +825,5 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         }
 
     }
-
-    protected static class _RigidVarsException extends RuntimeException {
-
-        private static final long serialVersionUID = 1L;
-
-        public final RigidVarsException exception;
-
-        public _RigidVarsException(ITermVar... vars) {
-            this(new RigidVarsException(vars));
-        }
-
-        public _RigidVarsException(RigidVarsException exception) {
-            super("rigid vars", exception, false, false);
-            this.exception = exception;
-        }
-
-    }
-
 
 }

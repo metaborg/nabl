@@ -4,6 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,22 +16,19 @@ import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import mb.nabl2.regexp.IRegExpMatcher;
-import mb.nabl2.relations.IRelation;
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CAstId;
@@ -41,8 +39,6 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CPathLt;
-import mb.statix.constraints.CPathMatch;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
@@ -142,18 +138,33 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         if(existentials == null) {
                             existentials = result.existentials();
                         }
-                        if(!result.constraints().isEmpty()) {
+                        final IUnifier.Immutable unifier = state.unifier();
+
+                        // updates from unified variables
+                        completeness.updateAll(result.updatedVars(), state.unifier());
+                        constraints.activateFromVars(result.updatedVars(), subDebug);
+
+                        // add new constraints
+                        constraints.addAll(result.newConstraints());
+                        completeness.addAll(result.newConstraints(), unifier); // must come before ICompleteness::remove
+                        if(!result.newConstraints().isEmpty()) {
                             subDebug.info("Simplified to:");
-                            for(IConstraint newConstraint : result.constraints()) {
-                                if(subDebug.isEnabled(Level.Info)) {
-                                    subDebug.info(" * {}", Solver.toString(newConstraint, state.unifier()));
-                                }
-                                completeness.add(newConstraint, state.unifier()); // must come before ICompleteness::remove
-                                constraints.add(newConstraint);
+                            for(IConstraint newConstraint : result.newConstraints()) {
+                                subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
                             }
                         }
-                        completeness.updateAll(result.vars(), state.unifier());
-                        constraints.activateFromVars(result.vars(), subDebug);
+
+                        // add delayed constraints
+                        result.delayedConstraints().forEach((d, c) -> constraints.delay(c, d));
+                        completeness.addAll(result.delayedConstraints().values(), unifier); // must come before ICompleteness::remove
+                        if(!result.delayedConstraints().isEmpty()) {
+                            subDebug.info("Delayed:");
+                            for(IConstraint delayedConstraint : result.delayedConstraints().values()) {
+                                if(subDebug.isEnabled(Level.Info)) {
+                                    subDebug.info(" * {}", Solver.toString(delayedConstraint, state.unifier()));
+                                }
+                            }
+                        }
                     } else {
                         subDebug.error("Failed");
                         failed.add(constraint);
@@ -164,6 +175,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                             break outer;
                         }
                     }
+                    // remove current constraint
                     final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
                     constraints.activateFromEdges(removedEdges, subDebug);
                     proxyDebug.commit();
@@ -221,8 +233,12 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
     }
 
     @Override public Optional<ConstraintResult> caseConj(CConj c) throws SolverException {
-        final List<IConstraint> newConstraints = ImmutableList.of(c.left().withCause(c), c.right().withCause(c));
-        return Optional.of(ConstraintResult.ofConstraints(state, newConstraints));
+        // @formatter:off
+        final List<IConstraint> newConstraints = ImmutableList.of(
+                c.left().withCause(c.cause().orElse(null)),
+                c.right().withCause(c.cause().orElse(null)));
+        // @formatter:on
+        return Optional.of(ConstraintResult.ofNew(state, newConstraints));
     }
 
     @Override public Optional<ConstraintResult> caseEqual(CEqual c) throws SolverException {
@@ -231,13 +247,17 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {
-            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
+            final Result<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>> result;
             if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification succeeded: {}", result.result());
                 }
                 final State newState = state.withUnifier(result.unifier());
-                return Optional.of(ConstraintResult.of(newState, ImmutableList.of(), result.result().varSet()));
+                final Set<ITermVar> updatedVars = result.result()._1().varSet();
+                final Map<Delay, IConstraint> delayedConstraints =
+                        Solver.rigidsToDelays(result.result()._2(), c.cause());
+                return Optional.of(ConstraintResult.of(newState, updatedVars, ImmutableList.of(), delayedConstraints,
+                        ImmutableMap.of()));
             } else {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
@@ -249,8 +269,6 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
             }
             return Optional.empty();
-        } catch(RigidVarsException e) {
-            throw Delay.ofVars(e.vars());
         }
     }
 
@@ -265,8 +283,9 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
         }
         final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
-        final IConstraint newConstraint = c.constraint().apply(subst).withCause(c);
-        return Optional.of(ConstraintResult.ofConstraints(newState, newConstraint).withExistentials(existentials));
+        final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+        return Optional.of(ConstraintResult.of(newState, ImmutableSet.of(), ImmutableList.of(newConstraint),
+                ImmutableMap.of(), existentials));
     }
 
     @Override public Optional<ConstraintResult> caseFalse(CFalse c) throws SolverException {
@@ -285,80 +304,22 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 return Optional.of(ConstraintResult.of(state));
             }
         }, vars -> {
-            throw Delay.ofVars(vars);
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(vars), c));
         });
     }
 
     @Override public Optional<ConstraintResult> caseNew(CNew c) throws SolverException {
         final List<ITerm> terms = c.terms();
 
-        final List<IConstraint> constraints = Lists.newArrayList();
+        final List<IConstraint> newConstraints = Lists.newArrayList();
         State newState = state;
         for(ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");
             Tuple2<Scope, State> ss = newState.freshScope(base);
-            constraints.add(new CEqual(t, ss._1(), c));
+            newConstraints.add(new CEqual(t, ss._1(), c));
             newState = ss._2();
         }
-        return Optional.of(ConstraintResult.ofConstraints(newState, constraints));
-    }
-
-    @Override public Optional<ConstraintResult> casePathLt(CPathLt c) throws SolverException {
-        final IRelation<ITerm> lt = c.lt();
-        final ITerm label1Term = c.label1Term();
-        final ITerm label2Term = c.label2Term();
-
-        final IUnifier unifier = state.unifier();
-        if(!(unifier.isGround(label1Term))) {
-            throw Delay.ofVars(unifier.getVars(label1Term));
-        }
-        if(!(unifier.isGround(label2Term))) {
-            throw Delay.ofVars(unifier.getVars(label2Term));
-        }
-        final ITerm label1 = StatixTerms.label().match(label1Term, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label1Term)));
-        final ITerm label2 = StatixTerms.label().match(label2Term, unifier)
-                .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(label2Term)));
-        if(lt.contains(label1, label2)) {
-            return Optional.of(ConstraintResult.of(state));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    @Override public Optional<ConstraintResult> casePathMatch(CPathMatch c) throws SolverException {
-        final IRegExpMatcher<ITerm> re = c.re();
-        final IListTerm labelsTerm = c.labelsTerm();
-
-        final IUnifier unifier = state.unifier();
-        // @formatter:off
-        return ((IListTerm) unifier.findTerm(labelsTerm)).matchOrThrow(ListTerms.checkedCases(
-            cons -> {
-                final ITerm labelTerm = cons.getHead();
-                if(!unifier.isGround(labelTerm)) {
-                    throw Delay.ofVars(unifier.getVars(labelTerm));
-                }
-                final ITerm label = StatixTerms.label().match(labelTerm, unifier)
-                        .orElseThrow(() -> new IllegalArgumentException("Expected label, got " + unifier.toString(labelTerm)));
-                final IRegExpMatcher<ITerm> newRe = re.match(label);
-                if(newRe.isEmpty()) {
-                    return Optional.empty();
-                } else {
-                    return Optional.of(ConstraintResult.ofConstraints(state, new CPathMatch(newRe, cons.getTail(), c)));
-                }
-            },
-            nil -> {
-                if(re.isAccepting()) {
-                    return Optional.of(ConstraintResult.of(state));
-                } else {
-                    return Optional.empty();
-                }
-            },
-            var -> {
-                throw Delay.ofVar(var);
-            }
-        ));
-        // @formatter:on
+        return Optional.of(ConstraintResult.ofNew(newState, newConstraints));
     }
 
     @Override public Optional<ConstraintResult> caseResolveQuery(CResolveQuery c) throws SolverException {
@@ -370,7 +331,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            throw Delay.ofVars(unifier.getVars(scopeTerm));
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
         }
         final Scope scope = AScope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
@@ -401,16 +362,18 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
             final List<ITerm> pathTerms =
                     paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
-            return Optional.of(ConstraintResult.ofConstraints(state, C));
+            return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(C)));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
+            return Optional.of(
+                    ConstraintResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
         } catch(IncompleteEdgeException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
+            return Optional.of(
+                    ConstraintResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
         } catch(ResolutionDelayException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            throw e.getCause();
+            return Optional.of(ConstraintResult.ofDelay(state, e.getCause(), c));
         } catch(ResolutionException e) {
             params.debug().info("Query resolution failed: {}", e.getMessage());
             return Optional.empty();
@@ -426,10 +389,10 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {
-            throw Delay.ofVars(unifier.getVars(sourceTerm));
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(sourceTerm)), c));
         }
         if(!unifier.isGround(targetTerm)) {
-            throw Delay.ofVars(unifier.getVars(targetTerm));
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(targetTerm)), c));
         }
         final Scope source = AScope.matcher().match(sourceTerm, unifier).orElseThrow(
                 () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
@@ -449,7 +412,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IUnifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
-            throw Delay.ofVars(unifier.getVars(scopeTerm));
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
         }
         final Scope scope = AScope.matcher().match(scopeTerm, unifier)
                 .orElseThrow(() -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
@@ -468,20 +431,20 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
-            throw Delay.ofVars(unifier.getVars(term));
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(term)), c));
         }
         final CEqual eq;
         final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
         if(maybeScope.isPresent()) {
             final AScope scope = maybeScope.get();
             eq = new CEqual(idTerm, scope);
-            return Optional.of(ConstraintResult.ofConstraints(state, eq));
+            return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(eq)));
         } else {
             final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
             if(maybeIndex.isPresent()) {
                 final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
                 eq = new CEqual(idTerm, indexTerm);
-                return Optional.of(ConstraintResult.ofConstraints(state, eq));
+                return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(eq)));
             } else {
                 return Optional.empty();
             }
@@ -495,7 +458,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
 
         final IUnifier unifier = state.unifier();
         if(!(unifier.isGround(idTerm))) {
-            throw Delay.ofVars(unifier.getVars(idTerm));
+            return Optional.of(ConstraintResult.ofDelay(state, Delay.ofVars(unifier.getVars(idTerm)), c));
         }
         final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
         if(maybeIndex.isPresent()) {
@@ -547,11 +510,11 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                 proxyDebug.info("Rule delayed (unsolved guard constraint)");
                 unsuccessfulLog.absorb(proxyDebug.clear());
                 unsuccessfulLog.flush(debug);
-                throw d;
+                return Optional.of(ConstraintResult.ofDelay(state, d, c));
             }
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(ConstraintResult.ofConstraints(state, instantiatedBody));
+            return Optional.of(ConstraintResult.ofNew(state, ImmutableList.of(instantiatedBody)));
         }
         debug.info("No rule applies");
         unsuccessfulLog.flush(debug);
