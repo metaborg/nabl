@@ -63,7 +63,7 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Seri
     
     public Collection<? extends Entry<K2, V>> get(K1 k1) {
         Multimap<K2, V> nmap = map.get(k1);
-        if (nmap == null) return Collections.emptyList();
+        if (nmap == null) return Collections.emptySet();
         return nmap.entries();
     }
     
@@ -75,7 +75,7 @@ public class MapMultimap<K1, K2, V> implements Iterable<Tuple3<K1, K2, V>>, Seri
     
     public Collection<V> get(K1 k1, K2 k2) {
         Multimap<K2, V> nmap = map.get(k1);
-        if (nmap == null) return null;
+        if (nmap == null) return Collections.emptySet();
         return nmap.get(k2);
     }
     

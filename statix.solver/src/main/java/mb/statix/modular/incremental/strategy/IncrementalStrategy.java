@@ -161,7 +161,7 @@ public abstract class IncrementalStrategy implements Serializable {
         .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
         .forEachOrdered(entry -> {
             if (INCREMENTAL_STRATEGY) System.out.println("[IS] Encountered entry for " + entry.getKey());
-            IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey());
+            IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey(), false);
             
             if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);

@@ -83,6 +83,9 @@ public class Diff {
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = scopeGraph(cOld, cNew, id, external);
         IUnifier uOld = unifier(cOld, id);
         
+        //Ignore library modules
+        if (sgNew.getOwner().isLibraryModule() || sgOld.getOwner().isLibraryModule()) return;
+        
         //Scopes
         Set<Scope> newScopes     = getNew(sgOld.getScopes(), sgNew.getScopes());
         Set<Scope> removedScopes = getNew(sgNew.getScopes(), sgOld.getScopes());
@@ -131,7 +134,7 @@ public class Diff {
                 
                 //Child is contained in both, create a diff
                 diff(result, childId, cNew, cOld, external, onlyContextFree);
-            } else {
+            } else if (!cNew.getModuleUnchecked(childId).isLibraryModule()) {
                 //Child is in new but not in old -> added
                 IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cNew, cOld, childId, external);
                 result.addAddedChild(childId);
@@ -148,7 +151,7 @@ public class Diff {
                 continue;
             }
             //TODO Should split modules be included here?
-            if (!sgNew.getChildIds().contains(childId)) {
+            if (!sgNew.getChildIds().contains(childId) &&  !cOld.getModuleUnchecked(childId).isLibraryModule()) {
                 //Child is in old but not in new -> removed
                 IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cOld, cNew, childId, external);
                 result.addRemovedChild(childId);
@@ -172,6 +175,9 @@ public class Diff {
         
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgOld = scopeGraph(cOld, cNew, id, external);
         IUnifier uOld = unifier(cOld, id);
+        
+        //Ignore library modules
+        if (sgNew.getOwner().isLibraryModule() || sgOld.getOwner().isLibraryModule()) return;
         
         ScopeGraphDiff ownDiff = result.getOrCreateDiff(id);
         
@@ -233,7 +239,7 @@ public class Diff {
                 
                 //Child is contained in both, create a diff
                 effectiveDiff(result, processed, childId, cNew, cOld, external, onlyContextFree);
-            } else {
+            } else if (!cNew.getModuleUnchecked(childId).isLibraryModule()) {
                 //Child is in new but not in old -> added
                 IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cNew, cOld, childId, external);
                 result.addAddedChild(childId);
@@ -251,7 +257,7 @@ public class Diff {
                 continue;
             }
             //TODO Should split modules be included here?
-            if (!sgNew.getChildIds().contains(childId)) {
+            if (!sgNew.getChildIds().contains(childId) &&  !cOld.getModuleUnchecked(childId).isLibraryModule()) {
                 //Child is in old but not in new -> removed
                 IMInternalScopeGraph<Scope, ITerm, ITerm> sg = scopeGraph(cOld, cNew, childId, external);
                 result.addRemovedChild(childId);

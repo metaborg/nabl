@@ -7,6 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -342,6 +343,64 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         scopes.add(scope);
         return scope;
     }
+    
+    @Override
+    public void substituteForLibrary(Scope original, Scope replacement) {
+        if (!ModulePaths.containsPathSeparator(owner.getId())) {
+           if (scopes.size() != 1) throw new IllegalStateException("The root module should have a single global scope!");
+           
+           assert original == null : "Replacing our scope with the given replacement";
+           original = scopes.stream().findFirst().get();
+           scopes.clear();
+           scopes.add(replacement);
+           
+           for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
+               child.substituteForLibrary(original, replacement);
+           }
+           
+           //Add the scope to the extensible/parent scopes
+           parentScopes = Collections.singletonList(replacement);
+           canExtend = Capsules.newSet(parentScopes);
+           return;
+        }
+        
+        if (!canExtend.contains(original)) return;
+        
+        //Update the parentScopes and the extensible scopes
+        List<Scope> nParentScopes = new ArrayList<>(parentScopes);
+        nParentScopes.set(nParentScopes.indexOf(original), replacement);
+        parentScopes = nParentScopes;
+        canExtend = Capsules.newSet(parentScopes);
+        
+        for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : getChildren()) {
+            child.substituteForLibrary(original, replacement);
+        }
+        
+        if (!getOwnEdges().contains(original) && !getOwnData().contains(original)) return;
+        
+        IRelation3.Transient<Scope, ITerm, Scope> newEdges = HashTrieRelation3.Transient.of();
+        newEdges.putAll(getOwnEdges());
+        newEdges.remove(original);
+        IRelation3.Transient<Scope, ITerm, ITerm> newData = HashTrieRelation3.Transient.of();
+        newData.putAll(getOwnData());
+        newData.remove(original);
+        for (Entry<ITerm, Scope> e : getOwnEdges().get(original)) {
+            newEdges.put(replacement, e.getKey(), e.getValue());
+        }
+        for (Entry<ITerm, ITerm> e : getOwnData().get(original)) {
+            newData.put(replacement, e.getKey(), e.getValue());
+        }
+        
+        if (useLock) {
+            getWriteLock().lock();
+            edges = newEdges;
+            data = newData;
+            getWriteLock().unlock();
+        } else {
+            edges = newEdges;
+            data = newData;
+        }
+    }
 
     // --------------------------------------------------------------------------------------------
     // Children
@@ -443,13 +502,19 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
         
         //scopes should be stored as strings in the sets to avoid substitution
         IRelation3.Transient<Scope, ITerm, Scope> newEdges = HashTrieRelation3.Transient.of();
+        newEdges.putAll(getOwnEdges());
         IRelation3.Transient<Scope, ITerm, ITerm> newData = HashTrieRelation3.Transient.of();
+        newData.putAll(getOwnData());
         for (int i = 0; i < oldScopes.size(); i++) {
             Scope oldScope = oldScopes.get(i);
             Scope newScope = parentScopes.get(i);
+            if (oldScope.equals(newScope)) continue;
+            
+            newEdges.remove(oldScope);
             for (Entry<ITerm, Scope> e : getOwnEdges().get(oldScope)) {
                 newEdges.put(newScope, e.getKey(), e.getValue());
             }
+            newData.remove(oldScope);
             for (Entry<ITerm, ITerm> e : getOwnData().get(oldScope)) {
                 newData.put(newScope, e.getKey(), e.getValue());
             }

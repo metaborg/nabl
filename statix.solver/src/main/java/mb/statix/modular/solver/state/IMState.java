@@ -209,4 +209,18 @@ public interface IMState extends IOwnable, Serializable, IState {
     public default IMState copy() {
         return copy(scopeGraph().copy());
     }
+    
+    /**
+     * Creates a new library state with the given module as owner.
+     * 
+     * @param module
+     *      the owner of the state to create
+     * 
+     * @return
+     *      a new library state
+     * 
+     * @throws IllegalArgumentException
+     *      If the given module does not have the same id as the owner of this state.
+     */
+    public IMState toLibraryState(IModule module);
 }

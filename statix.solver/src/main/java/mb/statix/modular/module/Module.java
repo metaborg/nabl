@@ -21,6 +21,7 @@ public class Module implements IModule {
     private final String id;                                               //Stateless
     private IConstraint initialization;                                    //Stateful, old value unimportant
     private StablePriorityQueue<Flag> flags = new StablePriorityQueue<>(); //Stateful, old value unimportant
+    private transient boolean libraryModule;
     
     /**
      * Creates a new top level module.
@@ -30,7 +31,7 @@ public class Module implements IModule {
      * @param spec
      *      the spec
      */
-    private Module(String name) {
+    protected Module(String name) {
         this.name = name;
         this.parentId = null;
         this.id = (parentId == null ? name : ModulePaths.build(parentId, name));
@@ -45,7 +46,7 @@ public class Module implements IModule {
      * @param parent
      *      the parent module
      */
-    private Module(String name, IModule parent) {
+    protected Module(String name, IModule parent) {
         this.name = name;
         this.parentId = parent == null ? null : parent.getId();
         this.id = (parentId == null ? name : ModulePaths.build(parentId, name));
@@ -95,6 +96,16 @@ public class Module implements IModule {
         return flags;
     }
     
+    @Override
+    public boolean isLibraryModule() {
+        return libraryModule;
+    }
+    
+    @Override
+    public void setLibraryModule() {
+        libraryModule = true;
+    }
+    
     // --------------------------------------------------------------------------------------------
     // Initialization
     // --------------------------------------------------------------------------------------------
@@ -125,7 +136,7 @@ public class Module implements IModule {
      * @param original
      *      the module to copy
      */
-    private Module(Module original) {
+    protected Module(Module original) {
         this.name = original.name;
         this.parentId = original.parentId;
         this.id = original.id;
@@ -173,5 +184,24 @@ public class Module implements IModule {
         Module module = new Module(name);
         MState.topLevelState(module);
         return module;
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    // Serialization
+    // --------------------------------------------------------------------------------------------
+    
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+        out.defaultWriteObject();
+        out.writeBoolean(libraryModule);
+    }
+    
+    private void readObject(java.io.ObjectInputStream in)
+        throws java.io.IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        try {
+            this.libraryModule = in.readBoolean();
+        } catch (java.io.OptionalDataException | java.io.EOFException ex) {
+            //Ignore, old version
+        }
     }
 }

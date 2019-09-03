@@ -70,7 +70,7 @@ public abstract class AChangeSet implements IChangeSet {
      *      the module
      */
     protected IModule getModule(Context oldContext, String nameOrId) {
-        IModule module = oldContext.getModuleByNameOrId(nameOrId);
+        IModule module = oldContext.getModuleByNameOrId(nameOrId, false);
         
         //TODO Use id by using the name of the parent.
         if (module == null) throw new IllegalStateException("Encountered module that is unknown: " + nameOrId);

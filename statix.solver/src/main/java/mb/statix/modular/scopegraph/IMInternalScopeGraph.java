@@ -292,6 +292,12 @@ public interface IMInternalScopeGraph<S, L, D> extends IMExternalScopeGraph<S, L
      */
     IMInternalScopeGraph<Scope, ITerm, ITerm> copy();
     
+
+    /**
+     * Substitutes the given original scope with the given replacement scope.
+     */
+    void substituteForLibrary(Scope original, Scope replacement);
+    
     //---------------------------------------------------------------------------------------------
     //Other
     //---------------------------------------------------------------------------------------------

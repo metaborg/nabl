@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.MultimapBuilder;
@@ -97,12 +98,33 @@ public class ModuleManager implements Serializable {
      *      If the given name is not unique on its level
      */
     public synchronized IModule getModuleByName(String name, int level) {
+        return getModuleByName(name, level, true);
+    }
+    
+    /**
+     * @param name
+     *      the name of the module
+     * @param level
+     *      the level on which to find the module
+     * @param includeLibraryModules
+     *      if library modules should be included
+     * 
+     * @return
+     *      the given module, or null if no module with the given name exists
+     * 
+     * @throws IllegalStateException
+     *      If the given name is not unique on its level
+     */
+    public synchronized IModule getModuleByName(String name, int level, boolean includeLibraryModules) {
         Set<IModule> mods = moduleNames.get(name);
         IModule found = null;
         for (IModule module : mods) {
+            if (!includeLibraryModules && module.isLibraryModule()) continue;
             if (ModulePaths.pathLength(module.getId()) - 1 != level) continue;
             
-            if (found != null) throw new IllegalStateException("[ModuleManager] Module " + name + " is not unique on its level. Use a full id instead");
+            if (found != null) {
+                throw new IllegalStateException("[ModuleManager] Module " + name + " is not unique on its level. Use a full id instead");
+            }
             found = module;
         }
         
@@ -148,6 +170,18 @@ public class ModuleManager implements Serializable {
             System.err.println("[ModuleManager] Module " + old.getId() + " replaced with new version.");
         } else {
             System.err.println("[ModuleManager] Duplicate ID " + old.getId() + " discovered when adding module.");
+        }
+    }
+    
+    /**
+     * Adds all the modules in the given iterable.
+     * 
+     * @param modules
+     *      the modules to add
+     */
+    public synchronized void addModules(Iterable<IModule> modules) {
+        for (IModule module : modules) {
+            addModule(module);
         }
     }
     
@@ -215,7 +249,24 @@ public class ModuleManager implements Serializable {
      *      a map from module NAME to module
      */
     public Map<String, IModule> getModulesOnLevel(int level) {
-        return getModulesOnLevel(level, true);
+        return getModulesOnLevel(level, true, m -> true);
+    }
+    
+    /**
+     * Gets the modules on a particular level.
+     * For example, a value of 0 yields all top level modules, while a value of 1 would yield all
+     * children of top level modules.
+     * 
+     * @param level
+     *      the level of modules to get
+     * @param filter
+     *      the filter to apply
+     * 
+     * @return
+     *      a map from module NAME to module
+     */
+    public Map<String, IModule> getModulesOnLevel(int level, Predicate<IModule> filter) {
+        return getModulesOnLevel(level, true, filter);
     }
     
     /**
@@ -227,17 +278,20 @@ public class ModuleManager implements Serializable {
      *      the level of modules to get
      * @param includeSplitModules
      *      if split modules should be included
+     * @param filter
+     *      the filter to apply
      * 
      * @return
      *      a map from module NAME to module
      */
-    public synchronized Map<String, IModule> getModulesOnLevel(int level, boolean includeSplitModules) {
+    public synchronized Map<String, IModule> getModulesOnLevel(int level, boolean includeSplitModules, Predicate<IModule> filter) {
         Map<String, IModule> levelModules = new HashMap<>();
         for (Entry<String, IModule> entry : modules.entrySet()) {
             String id = entry.getKey();
             if (ModulePaths.pathLength(id) - 1 != level) continue;
             if (!includeSplitModules && SplitModuleUtil.isSplitModule(id)) continue;
             IModule module = entry.getValue();
+            if (!filter.test(module)) continue;
             levelModules.put(module.getName(), module);
         }
         return levelModules;

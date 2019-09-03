@@ -77,6 +77,24 @@ public class MState implements IMState {
         this.termProperties = new HashMap<>();
     }
     
+    /**
+     * Private constructor for creating library modules.
+     * 
+     * @param original
+     *      the original state
+     * @param module
+     *      the module
+     */
+    private MState(MState original, IModule module) {
+        this.owner = module;
+        this.scopeGraph = original.scopeGraph();
+        this.vars = original.vars();
+        this.varCounter = original.varCounter;
+        this.unifier = original.unifier();
+        this.solver = original.solver();
+        this.termProperties = new HashMap<>();
+    }
+    
     @Override
     public IModule owner() {
         return owner;
@@ -190,6 +208,15 @@ public class MState implements IMState {
     @Override
     public MState copy(IMInternalScopeGraph<Scope, ITerm, ITerm> graph) {
         return new MState(this, new HashSet<>(vars), graph);
+    }
+    
+    @Override
+    public MState toLibraryState(IModule module) {
+        if (!this.owner.getId().equals(module.getId())) {
+            throw new IllegalArgumentException("The given module must be the same as the owner of this state!");
+        }
+        
+        return new MState(this, module);
     }
     
     // --------------------------------------------------------------------------------------------

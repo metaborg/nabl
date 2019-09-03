@@ -377,4 +377,9 @@ public interface IModule extends Flaggable, Serializable {
      */
     @Deprecated
     IModule copy();
+
+    
+    boolean isLibraryModule();
+    
+    void setLibraryModule();
 }

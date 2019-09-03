@@ -129,11 +129,14 @@ public class TPrettyPrinter {
     }
     
     public static String printModule(IModule module, boolean longFormat) {
+        //Library modules    -> <library>%id
         //Root modules       -> ~
         //Module for project -> <project> / ~%<project>
         //Unique modules     -> module name
         //Other              -> short path
-        if (module.getParentId() == null) {
+        if (module.isLibraryModule()) {
+            return "<library>" + ModulePaths.PATH_SEPARATOR + module.getId();
+        } else if (module.getParentId() == null) {
             return "~";
         } else if (!longFormat && moduleUniqueness()) {
             if (module.getName().equals("||")) {
@@ -150,6 +153,7 @@ public class TPrettyPrinter {
         //Root modules       -> ~
         //Module for project -> <project> / ~%<project>
         //Unique modules     -> module name
+        //Library modules    -> <library>%id
         //Other              -> short path
         String root = Context.context().getRootModule().getId();
         if (root.length() == module.length()) {
@@ -160,6 +164,11 @@ public class TPrettyPrinter {
         String module2 = module.replace("||", "<project>");
         if (!longFormat && moduleUniqueness()) {
             return ModulePaths.getName(module2);
+        }
+        
+        //If the char at the supposed separator is not a separator, we are dealing with a library module
+        if (module2.length() < root.length() || module2.charAt(root.length()) != ModulePaths.PATH_SEPARATOR_CHAR) {
+            return "<library>" + ModulePaths.PATH_SEPARATOR + module2;
         }
         
         return new StringBuilder("~").append(module2, root.length(), module2.length()).toString();

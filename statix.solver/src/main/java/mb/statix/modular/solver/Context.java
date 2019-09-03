@@ -2,13 +2,18 @@ package mb.statix.modular.solver;
 
 import static mb.statix.modular.util.TOverrides.hashMap;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -21,6 +26,7 @@ import mb.statix.modular.incremental.Flag;
 import mb.statix.modular.incremental.changeset.IChangeSet;
 import mb.statix.modular.incremental.manager.IncrementalManager;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
+import mb.statix.modular.library.Library;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.ModuleManager;
 import mb.statix.modular.module.ModulePaths;
@@ -47,7 +53,6 @@ public class Context implements IContext, Serializable {
     private transient ISolverCoordinator coordinator;
     private transient Context oldContext;
     private transient IChangeSet changeSet;
-    private transient Map<String, IConstraint> initConstraints;
     
     private Map<IModule, MSolverResult> solverResults = hashMap();
     private Map<String, IMState> states = hashMap();
@@ -67,14 +72,6 @@ public class Context implements IContext, Serializable {
     @Override
     public @Nullable Context getOldContext() {
         return oldContext;
-    }
-    
-    /**
-     * @return
-     *      the constraints
-     */
-    public Map<String, IConstraint> getInitialConstraints() {
-        return initConstraints;
     }
     
     /**
@@ -101,7 +98,7 @@ public class Context implements IContext, Serializable {
                 throw new IllegalStateException("Encountered a module without initialization but no previous context is available: " + childNameOrId);
             }
             
-            IModule child = oldContext.getModuleByNameOrId(childNameOrId);
+            IModule child = oldContext.getModuleByNameOrId(childNameOrId, false);
             if (child == null) {
                 throw new IllegalStateException("Encountered a module without initialization that was not present in the previous context: " + childNameOrId);
             }
@@ -238,7 +235,7 @@ public class Context implements IContext, Serializable {
      */
     public IModule getRootModule() {
         if (coordinator != null) return coordinator.getRootModule();
-        return manager.getModulesOnLevel(0).values().stream().findFirst().get();
+        return getModulesOnLevel(0, true, false).values().stream().findFirst().get();
     }
     
     /**
@@ -275,10 +272,20 @@ public class Context implements IContext, Serializable {
      * @return
      *      a map from module NAME to module
      * 
+     * @see ModuleManager#getModulesOnLevel(int, Predicate)
+     */
+    public Map<String, IModule> getModulesOnLevel(int level, Predicate<IModule> filter) {
+        return manager.getModulesOnLevel(level, filter);
+    }
+    
+    /**
+     * @return
+     *      a map from module NAME to module
+     * 
      * @see ModuleManager#getModulesOnLevel(int, boolean)
      */
-    public Map<String, IModule> getModulesOnLevel(int level, boolean includeSplitModules) {
-        return manager.getModulesOnLevel(level, includeSplitModules);
+    public Map<String, IModule> getModulesOnLevel(int level, boolean includeSplitModules, boolean includeLibraryModules) {
+        return manager.getModulesOnLevel(level, includeSplitModules, m -> includeLibraryModules ? true : !m.isLibraryModule());
     }
     
     /**
@@ -290,16 +297,18 @@ public class Context implements IContext, Serializable {
      * 
      * @param nameOrId
      *      the name or id of the module
+     * @param includeLibraryModules
+     *      if library modules should be included
      * 
      * @return
      *      the module, or null if no such module exists
      */
-    public IModule getModuleByNameOrId(String nameOrId) {
+    public IModule getModuleByNameOrId(String nameOrId, boolean includeLibraryModules) {
         IModule module;
         if (ModulePaths.containsPathSeparator(nameOrId)) {
             module = manager.getModule(nameOrId);
         } else {
-            module = manager.getModuleByName(nameOrId, 1);
+            module = manager.getModuleByName(nameOrId, 1, includeLibraryModules);
         }
         
         return module;
@@ -515,7 +524,7 @@ public class Context implements IContext, Serializable {
     }
     
     public MSolverResult getResult(IModule module) {
-        return solverResults.get(module);
+        return solverResults == null ? null : solverResults.get(module);
     }
 
     public Map<IModule, MSolverResult> getResults() {
@@ -561,6 +570,7 @@ public class Context implements IContext, Serializable {
         
         //Transfer all dependencies that are not present yet, create dependencies for other modules
         for (IModule module : manager._getModules()) {
+            if (module.isLibraryModule()) continue;
             String id = module.getId();
             if (!dependencies.hasDependencies(id)) {
                 System.err.println("There are no dependencies for module " + id + "!!!");
@@ -591,7 +601,6 @@ public class Context implements IContext, Serializable {
         this.coordinator = null;
         this.dependencies.wipe();
         this.incrementalManager.wipe();
-        this.initConstraints = null;
         this.manager.clearModules();
         this.oldContext = null;
         this.solverResults = null;
@@ -632,6 +641,7 @@ public class Context implements IContext, Serializable {
     public static Context initialContext(IncrementalStrategy strategy, Spec spec) {
         Context newContext = new Context(strategy, spec, null);
         setContext(newContext);
+        
         return newContext;
     }
 
@@ -643,8 +653,14 @@ public class Context implements IContext, Serializable {
      *      the incremental strategy to employ
      * @param previousContext
      *      the previous context
+     * @param previousRootState
+     *      the previous root state
      * @param changeSet
      *      the changeset
+     * @param initConstraints
+     *      the initial constraints for modules (must be mutable, can be modified!)
+     * @param spec
+     *      the spec
      * 
      * @return
      *      the new context
@@ -654,7 +670,7 @@ public class Context implements IContext, Serializable {
             IChangeSet changeSet, Map<String, IConstraint> initConstraints, Spec spec) {
         Context newContext = new Context(strategy, spec, previousContext);
         newContext.changeSet = changeSet;
-        newContext.initConstraints = newContext.fixInitConstraints(initConstraints);
+        newContext.fixInitConstraints(initConstraints);
         
         //TODO IMPORTANT validate that the state used here is the correct one (should it be the one stored, or the one in the context corresponding to the root?)
         IMState newState = newContext.transferModule(previousRootState.getOwner(), false);
@@ -665,6 +681,35 @@ public class Context implements IContext, Serializable {
         //Prune removed children
         for (IModule child : changeSet.removed()) {
             newState.scopeGraph().removeChild(child);
+        }
+        
+        int prevHash = previousContext.libraryHash();
+        if (prevHash != 0) {
+            Set<IModule> libRoots = new HashSet<>();
+            
+            //Transfer library modules as is
+            for (IModule module : previousContext.manager._getModules()) {
+                if (!module.isLibraryModule()) continue;
+                newContext.manager.addModule(module);
+                IMState state = previousContext.getState(module);
+                
+                newContext.states.put(module.getId(), state);
+                ModuleSolver.librarySolver(state);
+                
+                if (ModulePaths.pathLength(module.getId()) == 1) {
+                    libRoots.add(module);
+                }
+            }
+
+            //Add the library as child of the root
+            for (IModule libRoot : libRoots) {
+                newState.scopeGraph().addChild(libRoot);
+            }
+        }
+        
+        for (Library lib : libraries) {
+            if (lib.hashCode() == prevHash) continue;
+            lib.addToContext(newContext, newState);
         }
         
         ModuleSolver.topLevelSolver(newState, null, new NullDebugContext()); //TODO Does not happen in the clean context, why?
@@ -818,5 +863,37 @@ public class Context implements IContext, Serializable {
         } finally {
             currentContextThreadSensitive = null;
         }
+    }
+    
+    
+    // --------------------------------------------------------------------------------------------
+    // Libraries
+    // --------------------------------------------------------------------------------------------
+    private static Set<Library> libraries = new HashSet<>();
+    
+    public static void addLibrary(Library library) {
+        libraries.add(library);
+    }
+    
+    public static void clearLibraries() {
+        libraries.clear();
+    }
+    
+    /**
+     * Saves this context as a library to the given file.
+     * 
+     * @param file
+     *      the file to save to
+     * 
+     * @throws IOException
+     *      If an I/O error occurs.
+     */
+    public void saveAsLibrary(File file) throws IOException {
+        Library library = new Library(manager._getModules(), this);
+        library.saveAsLibrary(file);
+    }
+    
+    private int libraryHash() {
+        return manager._getModules().stream().filter(IModule::isLibraryModule).collect(Collectors.toSet()).hashCode();
     }
 }

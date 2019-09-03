@@ -64,7 +64,7 @@ public class DependencyTest {
         IChangeSet changeSet = new BaselineChangeSet(oldContext, empty(), changed, empty());
         
         Map<String, IConstraint> initConstraints = new HashMap<>();
-        for (IModule module : oldContext.getModulesOnLevel(1).values()) {
+        for (IModule module : oldContext.getModulesOnLevel(1, true, false).values()) {
             //Skip the root module
             if (!ModulePaths.containsPathSeparator(module.getId())) continue;
             
@@ -75,7 +75,7 @@ public class DependencyTest {
         context.setCoordinator(mockCoordinator(global));
         
         //This step is normally done in the coordinator. It initializes the correct modules and removes or transfers dependencies
-        strategy.createInitialModules(context, changeSet, context.getInitialConstraints());
+        strategy.createInitialModules(context, changeSet, initConstraints);
         return context;
     }
     

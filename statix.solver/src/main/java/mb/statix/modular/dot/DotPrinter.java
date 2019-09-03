@@ -44,10 +44,10 @@ public class DotPrinter {
         if (file == null) {
             //Use the root module and print all modules
             root = initial.state().getOwner();
-            modules = initial.context().getModules().stream().map(IModule::getScopeGraph);
+            modules = initial.context().getModules().stream().filter(m -> !m.isLibraryModule()).map(IModule::getScopeGraph);
         } else {
             root = findFileModule(initial.context(), file);
-            modules = root.getScopeGraph().getDescendantsIncludingSelf();
+            modules = root.getScopeGraph().getDescendantsIncludingSelf().filter(sg -> !sg.getOwner().isLibraryModule());
         }
         this.rootGraph = root.getScopeGraph();
         this.unifier = root.getCurrentState().unifier().unrestricted();
@@ -69,10 +69,10 @@ public class DotPrinter {
         if (file == null) {
             //Use the root module and print all modules
             root = Context.context().getRootModule();
-            modules = Context.context().getModules().stream().map(IModule::getScopeGraph);
+            modules = Context.context().getModules().stream().filter(m -> !m.isLibraryModule()).map(IModule::getScopeGraph);
         } else {
             root = findFileModule(Context.context(), file);
-            modules = root.getScopeGraph().getDescendantsIncludingSelf();
+            modules = root.getScopeGraph().getDescendantsIncludingSelf().filter(sg -> !sg.getOwner().isLibraryModule());
         }
         this.rootGraph = root.getScopeGraph();
         this.unifier = root.getCurrentState().unifier().unrestricted();
@@ -91,7 +91,7 @@ public class DotPrinter {
         this.rootGraph = graph;
         this.unifier = graph.getOwner().getCurrentState().unifier().unrestricted();
         this.includeChildren = includeChildren;
-        determineEdgesAndData(graph.getDescendantsIncludingSelf());
+        determineEdgesAndData(graph.getDescendantsIncludingSelf().filter(sg -> !sg.getOwner().isLibraryModule()));
     }
     
     /**
@@ -107,8 +107,8 @@ public class DotPrinter {
      *      if the given module cannot be found.
      */
     protected final IModule findFileModule(Context context, String name) {
-        IModule module = context.getModulesOnLevel(1).get(name);
-        if (module == null) throw new NullPointerException("Module " + name + " not found (in " + context.getModulesOnLevel(1) + ")");
+        IModule module = context.getModulesOnLevel(1, true, false).get(name);
+        if (module == null) throw new NullPointerException("Module " + name + " not found (in " + context.getModulesOnLevel(1, true, false) + ")");
         return module;
     }
     
@@ -353,6 +353,7 @@ public class DotPrinter {
         startModule(graph, indent);
         if (includeChildren) {
             for (IMInternalScopeGraph<Scope, ITerm, ITerm> child : graph.getChildren()) {
+                if (child.getOwner().isLibraryModule()) continue;
                 printModuleHierarchy(child, indent + 2);
             }
         }

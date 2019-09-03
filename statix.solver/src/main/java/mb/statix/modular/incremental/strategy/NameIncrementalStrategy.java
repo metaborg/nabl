@@ -105,7 +105,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
         .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
         .forEachOrdered(entry -> {
             System.err.println("[NIS] Encountered entry for " + entry.getKey());
-            IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey());
+            IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey(), false);
             
             if (oldModule == null || oldModule.getTopCleanliness() == ModuleCleanliness.DIRTY) {
                 IModule module = createModule(context, changeSet, entry.getKey(), entry.getValue(), oldModule);

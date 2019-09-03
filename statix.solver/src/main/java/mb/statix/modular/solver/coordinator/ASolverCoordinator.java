@@ -290,7 +290,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
      *      the results of the given modules
      */
     protected Map<String, ISolverResult> collectResults() {
-        Collection<IModule> expectedResults = context.getModulesOnLevel(1, false).values();
+        Collection<IModule> expectedResults = context.getModulesOnLevel(1, false, false).values();
         Map<String, ISolverResult> results = new HashMap<>();
         Map<IModule, ? extends ISolverResult> mResults = getResults();
         for (Entry<IModule, ? extends ISolverResult> entry : mResults.entrySet()) {

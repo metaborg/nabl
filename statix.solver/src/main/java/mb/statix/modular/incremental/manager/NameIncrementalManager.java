@@ -292,7 +292,7 @@ public class NameIncrementalManager extends IncrementalManager {
         processedModules.addAll(actualModules);
         
         //Do not compute a diff if this was a clean run
-        if (actualModules.containsAll(context().getModulesOnLevel(1).values())) {
+        if (actualModules.containsAll(context().getModulesOnLevel(1, true, false).values())) {
             System.out.println("[NIM] Last phase was the equivalent of a clean run, solving done :/");
             return false;
         }

@@ -38,6 +38,7 @@ import mb.statix.solver.log.FakeLazyDebugContext;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.log.PrefixedDebugContext;
 import mb.statix.solver.persistent.Solver;
 
@@ -85,13 +86,40 @@ public class ModuleSolver implements IOwnable {
         return new ModuleSolver(state, constraint, (s, l, st) -> true, topDebug, false);
     }
     
+    /**
+     * Creates a special solver for a library module. The returned solver does not have debug
+     * output and functions like a stronger version of the noop solver.
+     * <p>
+     * This solver will not be initialized with the incremental manager, to avoid special behavior
+     * that is unwanted for the library.
+     * <p>
+     * The solver is not added to the coordinator, since there will never be any solving to do for
+     * this module, nor should it show up in the results of the solving process.
+     * 
+     * @param state
+     *      the state of the module
+     * 
+     * @return
+     *      the created solver
+     */
+    public static ModuleSolver librarySolver(IMState state) {
+        PrefixedDebugContext debug = new PrefixedDebugContext(state.owner().getId(), new NullDebugContext());
+        ModuleSolver solver = new ModuleSolver(state, null, (s, l, st) -> true, debug, false, false);
+        solver.noopSolver = true;
+        return solver;
+    }
+    
     private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver) {
-        this(state, constraint, _isComplete, debug, separateSolver,
+        this(state, constraint, _isComplete, debug, separateSolver, true);
+    }
+    
+    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver, boolean initSolver) {
+        this(state, constraint, _isComplete, debug, separateSolver, initSolver,
                 TOverrides.CONCURRENT ? new ConcurrentRedirectingIncrementalCompleteness(state.owner().getId(), state.spec())
                                       : new RedirectingIncrementalCompleteness(state.owner().getId(), state.spec()));
     }
     
-    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver, RedirectingIncrementalCompleteness completeness) {
+    private ModuleSolver(IMState state, IConstraint constraint, IsComplete _isComplete, PrefixedDebugContext debug, boolean separateSolver, boolean initSolver, RedirectingIncrementalCompleteness completeness) {
         final String owner = state.owner().getId();
         this.state = state;
         this.debug = debug;
@@ -112,7 +140,7 @@ public class ModuleSolver implements IOwnable {
         }
 
         state.setSolver(this);
-        Context.context().getIncrementalManager().initSolver(this);
+        if (initSolver) Context.context().getIncrementalManager().initSolver(this);
     }
     
     /**
@@ -169,7 +197,7 @@ public class ModuleSolver implements IOwnable {
         } else {
             //Reuse the old completeness
             assert oldSolver.completeness.isInDelayMode() : "The old solver should have a completeness in delay mode! (" + id + ")";
-            solver = new ModuleSolver(state, constraint, this.isComplete, debug, false, oldSolver.completeness);
+            solver = new ModuleSolver(state, constraint, this.isComplete, debug, false, true, oldSolver.completeness);
             solver.completeness.switchDelayMode(false);
         }
         
@@ -195,6 +223,7 @@ public class ModuleSolver implements IOwnable {
         PrefixedDebugContext debug = this.debug.createSibling(state.owner().getId());
         ModuleSolver solver = new ModuleSolver(state, null, this.isComplete, debug, false);
         solver.noopSolver = true;
+        //TODO Can it be avoided that the noopsolver has to be added to the coordinator?
         this.state.coordinator().addSolver(solver);
         return solver;
     }
@@ -218,6 +247,7 @@ public class ModuleSolver implements IOwnable {
         solver.constraints.fillFromResult(result);
         solver.completeness.fillFromResult(result);
         solver.fillFailedFromResult(result);
+        //TODO Can it be avoided that the noopsolver has to be added to the coordinator?
         this.state.coordinator().addSolver(solver);
         return solver;
     }
