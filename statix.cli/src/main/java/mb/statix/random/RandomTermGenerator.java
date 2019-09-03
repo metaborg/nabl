@@ -41,7 +41,7 @@ public class RandomTermGenerator {
         stack.push(startNode);
     }
 
-    public Optional<SearchState> next() throws MetaborgException {
+    public Optional<SearchState> next() throws MetaborgException, InterruptedException {
         while(!stack.isEmpty()) {
             Optional<SearchState> state = stack.peek().next();
             if(!state.isPresent()) {

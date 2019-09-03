@@ -38,7 +38,7 @@ public class SelectRandomPredicate extends SearchNode<SearchState, Tuple2<Search
         }
     }
 
-    @Override protected Optional<Tuple2<SearchState, CUser>> doNext() throws MetaborgException {
+    @Override protected Optional<Tuple2<SearchState, CUser>> doNext() throws MetaborgException, InterruptedException {
         if(freePredicates.isEmpty()) {
             return Optional.empty();
         }

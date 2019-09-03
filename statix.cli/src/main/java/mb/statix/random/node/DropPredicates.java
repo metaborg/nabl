@@ -36,7 +36,7 @@ public class DropPredicates extends SearchNode<SearchState, SearchState> {
         fired.set(false);
     }
 
-    @Override protected Optional<SearchState> doNext() throws MetaborgException {
+    @Override protected Optional<SearchState> doNext() throws MetaborgException, InterruptedException {
         if(fired.getAndSet(true)) {
             return Optional.empty();
         }

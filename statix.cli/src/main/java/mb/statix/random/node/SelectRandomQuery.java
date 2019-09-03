@@ -56,7 +56,7 @@ public class SelectRandomQuery
     }
 
     @Override protected Optional<Tuple2<SearchState, Tuple3<CResolveQuery, Scope, Boolean>>> doNext()
-            throws MetaborgException {
+            throws MetaborgException, InterruptedException {
         if(freeQueries.isEmpty()) {
             return Optional.empty();
         }

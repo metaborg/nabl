@@ -31,7 +31,7 @@ public class StatixGenerate {
         this.STX = stx;
     }
 
-    public void run(String file) throws MetaborgException {
+    public void run(String file) throws MetaborgException, InterruptedException {
         final TransformActionContrib evalAction = STX.getAction("Evaluation Pair", STX.lang);
         final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = STX.loadFile(file);
         if(!maybeAnalysisUnit.isPresent()) {

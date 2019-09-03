@@ -44,14 +44,14 @@ public abstract class SearchNode<I, O> {
 
     protected abstract void doInit();
 
-    public Optional<O> next() throws MetaborgException {
+    public Optional<O> next() throws MetaborgException, InterruptedException {
         if(!init.get()) {
             throw new IllegalStateException();
         }
         return doNext();
     }
 
-    protected abstract Optional<O> doNext() throws MetaborgException;
+    protected abstract Optional<O> doNext() throws MetaborgException, InterruptedException;
 
     protected <E> E pick(Set<E> set) {
         final int index = rnd.nextInt(set.size());

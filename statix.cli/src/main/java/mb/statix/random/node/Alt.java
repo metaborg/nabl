@@ -27,7 +27,7 @@ public class Alt<I, O> extends SearchNode<I, O> {
         _ns.forEach(n -> n.init(input));
     }
 
-    @Override protected Optional<O> doNext() throws MetaborgException {
+    @Override protected Optional<O> doNext() throws MetaborgException, InterruptedException {
         if(_ns.isEmpty()) {
             return Optional.empty();
         }

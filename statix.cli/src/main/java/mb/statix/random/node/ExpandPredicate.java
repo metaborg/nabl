@@ -29,7 +29,7 @@ public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, Sear
         this.rules = new HashSet<>(input._1().state().spec().rules().get(predicate.name()));
     }
 
-    @Override protected Optional<SearchState> doNext() throws MetaborgException {
+    @Override protected Optional<SearchState> doNext() throws MetaborgException, InterruptedException {
         if(rules.isEmpty()) {
             return Optional.empty();
         }

@@ -26,7 +26,7 @@ public class Limit<I, O> extends SearchNode<I, O> {
         remaining.set(limit);
     }
 
-    @Override protected Optional<O> doNext() throws MetaborgException {
+    @Override protected Optional<O> doNext() throws MetaborgException, InterruptedException {
         if(remaining.getAndDecrement() <= 0) {
             return Optional.empty();
         }

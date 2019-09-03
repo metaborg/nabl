@@ -75,7 +75,7 @@ public class Statix {
 
     @Command(name = "generate") public void
             generate(@Parameters(paramLabel = "FILE", description = "Statix test file to generate from") String file)
-                    throws MetaborgException {
+                    throws MetaborgException, InterruptedException {
         new StatixGenerate(this).run(file);
     }
 

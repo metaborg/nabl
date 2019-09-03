@@ -3,6 +3,7 @@ package mb.statix.random.scopegraph;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.functions.Predicate0;
 import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableSet;
@@ -30,9 +31,11 @@ public class NameResolution<S extends D, L, D, X> {
     private final boolean dataEquiv; // default: false
     private final Predicate2<S, L> isDataComplete; // default: true
 
+    private Predicate0 select;
+
     public NameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            Predicate2<S, L> isEdgeComplete, DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, L> isDataComplete) {
-        super();
+            Predicate2<S, L> isEdgeComplete, DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, L> isDataComplete,
+            Predicate0 select) {
         this.scopeGraph = scopeGraph;
         this.relation = relation;
         this.labels =
@@ -43,10 +46,13 @@ public class NameResolution<S extends D, L, D, X> {
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
         this.isDataComplete = isDataComplete;
+        this.select = select;
     }
 
     public Env<S, L, D, X> resolve(S scope) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope));
+        final Env<S, L, D, X> env = env(labelWF, Paths.empty(scope));
+        // choice
+        return env;
     }
 
     private Env<S, L, D, X> env(LabelWF<L> re, IScopePath<S, L> path) throws ResolutionException, InterruptedException {
@@ -62,8 +68,19 @@ public class NameResolution<S extends D, L, D, X> {
         final Set<L> max_L = max(L);
         for(L l : max_L) {
             final Env<S, L, D, X> env1 = env_L(smaller(L, l), re, path);
-            envBuilder.addAll(env1.matches);
-            if(env1.matches.isEmpty() || !dataEquiv) {
+            final boolean addEnv2;
+            if(env1.matches.isEmpty()) {
+                addEnv2 = true;
+            } else if(!dataEquiv) {
+                envBuilder.addAll(env1.matches);
+                addEnv2 = true;
+            } else if(select.test()) {
+                envBuilder.addAll(env1.matches);
+                addEnv2 = false;
+            } else {
+                addEnv2 = true;
+            }
+            if(addEnv2) {
                 final Env<S, L, D, X> env2 = env_l(l, re, path);
                 envBuilder.addAll(env2.matches);
             }
@@ -163,60 +180,6 @@ public class NameResolution<S extends D, L, D, X> {
 
     protected java.util.Set<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
         return scopeGraph.getEdges(path.getTarget(), l);
-    }
-
-    public static <S extends D, L, D, X> Builder<S, L, D, X> builder() {
-        return new Builder<>();
-    }
-
-    public static class Builder<S extends D, L, D, X> {
-
-        private LabelWF<L> labelWF = null;
-        private LabelOrder<L> labelOrder = null;
-        private Predicate2<S, L> isEdgeComplete = (s, l) -> true;
-
-        private DataWF<D, X> dataWF = null;
-        private boolean dataEquiv = false;
-        private Predicate2<S, L> isDataComplete = (s, r) -> true;
-
-        public Builder<S, L, D, X> withLabelWF(LabelWF<L> labelWF) {
-            this.labelWF = labelWF;
-            return this;
-        }
-
-        public Builder<S, L, D, X> withLabelOrder(LabelOrder<L> labelOrder) {
-            this.labelOrder = labelOrder;
-            return this;
-        }
-
-        public Builder<S, L, D, X> withEdgeComplete(Predicate2<S, L> isEdgeComplete) {
-            this.isEdgeComplete = isEdgeComplete;
-            return this;
-        }
-
-        public Builder<S, L, D, X> withDataWF(DataWF<D, X> dataWF) {
-            this.dataWF = dataWF;
-            return this;
-        }
-
-        public Builder<S, L, D, X> withDataEquiv(boolean dataEquiv) {
-            this.dataEquiv = dataEquiv;
-            return this;
-        }
-
-        public Builder<S, L, D, X> withDataComplete(Predicate2<S, L> isDataComplete) {
-            this.isDataComplete = isDataComplete;
-            return this;
-        }
-
-        public NameResolution<S, L, D, X> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
-            if(labelWF == null || labelOrder == null || dataWF == null) {
-                throw new IllegalArgumentException("Missing query parameter");
-            }
-            return new NameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF, dataEquiv,
-                    isDataComplete);
-        }
-
     }
 
 }

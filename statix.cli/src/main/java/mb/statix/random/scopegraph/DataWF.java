@@ -8,6 +8,4 @@ public interface DataWF<D, X> {
 
     Optional<X> wf(D d) throws ResolutionException, InterruptedException;
 
-    boolean sureThing(X x);
-
 }

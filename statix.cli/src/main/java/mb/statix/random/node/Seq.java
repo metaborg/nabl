@@ -26,7 +26,7 @@ public class Seq<I, X, O> extends SearchNode<I, O> {
         mustStep.set(true);
     }
 
-    @Override protected Optional<O> doNext() throws MetaborgException {
+    @Override protected Optional<O> doNext() throws MetaborgException, InterruptedException {
         if(mustStep.getAndSet(false)) {
             final Optional<X> result1 = n1.next();
             if(!result1.isPresent()) {
