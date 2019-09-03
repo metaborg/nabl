@@ -1,19 +1,13 @@
 package mb.statix.random.scopegraph;
 
+import java.util.Optional;
+
 import mb.statix.scopegraph.reference.ResolutionException;
 
-public interface DataWF<D> {
+public interface DataWF<D, X> {
 
-    boolean wf(D d) throws ResolutionException, InterruptedException;
+    Optional<X> wf(D d) throws ResolutionException, InterruptedException;
 
-    static <V> DataWF<V> ANY() {
-        return new DataWF<V>() {
-
-            @Override public boolean wf(V d) {
-                return true;
-            }
-
-        };
-    }
+    boolean sureThing(X x);
 
 }
