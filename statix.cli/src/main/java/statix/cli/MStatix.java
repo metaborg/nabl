@@ -32,6 +32,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.terms.io.TAFTermReader;
 
 import mb.statix.modular.dot.DotPrinter;
+import mb.statix.modular.library.Library;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.util.TDebug;
@@ -103,12 +104,21 @@ public class MStatix implements Callable<Void> {
     @Option(names = { "-c", "--count" }, description = "amount of runs", defaultValue = "1") private int count;
     @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
     @Option(names = { "--observerself" }, description = "observer mechanism for own module", defaultValue = "true") private boolean observer;
-//    @Option(names = { "--scopehash" }, description = "use scope hashes", defaultValue = "true") private boolean scopehash;
+    @Option(names = { "--continuefailure" }, description = "continue with a module if there is a failure") private boolean continueFailure;
     @Option(
             names = { "--syncscopegraphs" },
             description = "use synchronized (1), locks (2) or combined locking (3) for locking scope graphs",
             defaultValue = "1")
     private int syncSgs;
+    
+    @Option(names = { "--library" }, arity = "1..*", description = "libraries to include")
+    private List<String> libraries;
+    
+    @Option(
+            names = { "--converttolibrary" },
+            description = "when set, the context in parameter is converted to a library at contextout",
+            defaultValue = "false")
+    private boolean convertToLibrary;
     
     @Parameters(
             paramLabel = "FOLDER",
@@ -132,6 +142,10 @@ public class MStatix implements Callable<Void> {
     
     @Override public Void call() throws MetaborgException, IOException {
         init();
+        if (convertToLibrary) {
+            contextToLibrary();
+            return null;
+        }
         
         //Identify the files in the project
         List<File> files;
@@ -162,6 +176,26 @@ public class MStatix implements Callable<Void> {
         }
         return null;
     }
+    
+    public void contextToLibrary() throws MetaborgException, IOException {
+        if (contextIn == null || contextOut == null) throw new IllegalArgumentException("When the converttolibrary flag is passed, both a contextin and contextout need to be specified.");
+        TTimings.startNewRun();
+        TTimings.fixRun();
+        loadContext("");
+        
+        analyze.analyzeAll(Collections.emptyList(), true);
+        
+        List<IModule> modules = new ArrayList<>();
+        for (IModule module : Context.context().getModuleManager()._getModules()) {
+            if (module.isLibraryModule()) continue;
+            modules.add(module);
+        }
+        
+        Library lib = new Library(modules, Context.context());
+        lib.saveAsLibrary(new File(contextOut));
+        
+        unloadContext();
+    }
 
     /**
      * Performs the same analysis multiple times. The analysis performed is a clean run if no
@@ -182,6 +216,7 @@ public class MStatix implements Callable<Void> {
 
             //Load the context from scratch each time
             loadContext("" + run);
+            loadLibraries();
             if (clean) {
                 cleanAnalysis(files, run + "c");
             } else {
@@ -214,6 +249,7 @@ public class MStatix implements Callable<Void> {
         if (ichanges.isEmpty()) throw new IllegalArgumentException("You need to specify changes!");
 
         for (int run = 0; run < count; run++) {
+            loadLibraries();
             startTimedRun(true);
             cleanAnalysis(files, run + "c");
             endTimedRun(true);
@@ -221,6 +257,7 @@ public class MStatix implements Callable<Void> {
             //Only save the output once
             contextOut = null;
             
+            loadLibraries();
             startTimedRun(false);
             incrementalAnalysis(files, run + "i");
             endTimedRun(false);
@@ -249,6 +286,7 @@ public class MStatix implements Callable<Void> {
         
         for (int run = 0; run < count; run++) {
             loadContext(run + "i");
+            loadLibraries();
             startTimedRun(false);
             ISpoofaxParseUnit modified = incrementalAnalysis(files, run + "i");
             endTimedRun(false);
@@ -258,6 +296,7 @@ public class MStatix implements Callable<Void> {
             unloadContext();
             random = createRandom();
             loadContext(run + "c");
+            loadLibraries();
             
             startTimedRun(true);
             modifiedCleanAnalysis(files, modified, run + "c");
@@ -412,12 +451,13 @@ public class MStatix implements Callable<Void> {
     //Initialization and finalization
     //---------------------------------------------------------------------------------------------
     
-    public void init() throws MetaborgException {
-        data = new StatixData(S, System.out);
+    public void init() throws MetaborgException, IOException {
+        data = new StatixData(S, folder, System.out);
         parse = new StatixParse(S, data.getLanguage(language), data.getMessagePrinter());
         analyze = new StatixAnalyze(S, data.createContext(language), data.getMessagePrinter());
         random = createRandom();
         ichanges = IncrementalChange.parse(changes == null ? (changes = new ArrayList<>()) : changes);
+        loadLibraries();
         
         //Set the concurrency
         TOverrides.CONCURRENT = threads > 1;
@@ -433,11 +473,12 @@ public class MStatix implements Callable<Void> {
         //Set sync scopegraphs mechanism
         TOverrides.SYNC_SCOPEGRAPHS = syncSgs;
         
+        //Solver settings
         TOverrides.SPLIT_MODULES = splitModules;
+        TOverrides.STOP_IMMEDIATELY_ON_FAILURE = !continueFailure;
         
-        //Set optimizations
+        //Optimizations
         TOptimizations.USE_OBSERVER_MECHANISM_FOR_SELF = observer;
-//        TOptimizations.SCOPE_HASHES = scopehash;
         
         //Clean the other debug settings. These will be set elsewhere if necessary for output
         TOverrides.OUTPUT_DIFF = false;
@@ -508,6 +549,21 @@ public class MStatix implements Callable<Void> {
         TTimings.unfixRun();
     }
     
+    public void loadLibraries() throws MetaborgException {
+        if (libraries == null) return;
+        
+        Context.clearLibraries();
+        for (String s : libraries) {
+            Library lib;
+            try {
+                lib = Library.readLibrary(new File(s));
+            } catch (IOException e) {
+                throw new MetaborgException(e);
+            }
+            Context.addLibrary(lib);
+        }
+    }
+    
     //---------------------------------------------------------------------------------------------
     //Auxilary output (Scope graph, diff, changes, timings)
     //---------------------------------------------------------------------------------------------
@@ -540,7 +596,7 @@ public class MStatix implements Callable<Void> {
         
         TTimings.startPhase("printing individual scope graphs");
         
-        for (IModule module : Context.context().getModulesOnLevel(1, false).values()) {
+        for (IModule module : Context.context().getModulesOnLevel(1, false, false).values()) {
             DotPrinter printer = new DotPrinter(module.getScopeGraph(), true);
             
             File outputFile = new File(outputGraph + "_" + run + "_" + module.getId().replaceAll("\\W", "_") + ".dot");

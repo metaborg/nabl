@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.OutputStream;
 
 import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.NameScope;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.core.context.IContext;
@@ -31,7 +33,7 @@ public class StatixData {
     public IMessagePrinter messagePrinter;
     private int nameCounter = 0;
     
-    public StatixData(Spoofax S, OutputStream messageOutput) throws MetaborgException {
+    public StatixData(Spoofax S, String folder, OutputStream messageOutput) throws MetaborgException {
         //TODO
         this.S = S;
         this.cli = new CLIUtils(S);
@@ -39,7 +41,11 @@ public class StatixData {
         
         loadLanguagesFromPath();
         loadStatix();
-        this.project = cli.getOrCreateCWDProject();
+        try {
+            this.project = cli.getOrCreateProject(cli.getCWD().resolveFile(folder, NameScope.FILE_SYSTEM));
+        } catch (FileSystemException e) {
+            throw new MetaborgException(e);
+        }
     }
     
     /**

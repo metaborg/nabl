@@ -28,7 +28,7 @@ public class Calculator {
             String content = entry.getValue();
             String pack;
             try {
-                pack = getPackage(content);
+                pack = getPackageFromFileContents(content);
             } catch (Exception ex) {
                 throw new IllegalStateException("Cannot find package in " + file + ": ", ex);
             }
@@ -54,7 +54,7 @@ public class Calculator {
             String content = entry.getValue();
             String pack;
             try {
-                pack = getPackage(content);
+                pack = getPackageFromFileContents(content);
             } catch (Exception ex) {
                 throw new IllegalStateException("Cannot find package in " + file + ": ", ex);
             }
