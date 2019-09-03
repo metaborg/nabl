@@ -386,7 +386,8 @@ public class StatixTerms {
         // @formatter:off
         return M.cases(
             M.appl0("NoId", t -> P.newWld()),
-            varPattern()
+            varPattern(),
+            M.appl1("AstIdOp", varPattern(), (t, v) -> v)
         );
         // @formatter:on
     }
