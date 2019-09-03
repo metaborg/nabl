@@ -1,4 +1,4 @@
-package statix.cli;
+package mb.statix.cli;
 
 import java.io.IOException;
 import java.util.Optional;

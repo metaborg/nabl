@@ -1,4 +1,4 @@
-package statix.cli;
+package mb.statix.cli;
 
 import org.metaborg.core.editor.IEditorRegistry;
 import org.metaborg.core.editor.NullEditorRegistry;

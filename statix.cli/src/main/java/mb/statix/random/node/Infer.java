@@ -1,4 +1,4 @@
-package statix.random.node;
+package mb.statix.random.node;
 
 import java.util.Optional;
 import java.util.Random;
@@ -7,11 +7,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.metaborg.core.MetaborgException;
 
 import mb.statix.constraints.Constraints;
+import mb.statix.random.SearchNode;
+import mb.statix.random.SearchState;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import statix.random.SearchNode;
-import statix.random.SearchState;
 
 public class Infer extends SearchNode<SearchState, SearchState> {
 

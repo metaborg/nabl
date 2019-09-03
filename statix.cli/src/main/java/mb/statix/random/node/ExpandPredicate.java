@@ -1,4 +1,4 @@
-package statix.random.node;
+package mb.statix.random.node;
 
 import java.util.HashSet;
 import java.util.List;
@@ -21,10 +21,10 @@ import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
+import mb.statix.random.SearchNode;
+import mb.statix.random.SearchState;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
-import statix.random.SearchNode;
-import statix.random.SearchState;
 
 public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, SearchState> {
 
@@ -51,7 +51,7 @@ public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, Sear
         //       we must rename pattern variables that might clash.
         final Rule rule = pick(rules);
         final HashMultimap<ITerm, ITerm> eqMap = HashMultimap.create();
-        for(Object dummy : Iterables2.zip(rule.params(), predicate.args(), (p, a) -> {
+        for(@SuppressWarnings("unused") Object dummy : Iterables2.zip(rule.params(), predicate.args(), (p, a) -> {
             // FIXME Pattern::asTerm does not work if wildcards appear in the pattern
             Tuple2<ITerm, Multimap<ITermVar, ITerm>> termAndEqs = p.asTerm();
             eqMap.putAll(termAndEqs._2());

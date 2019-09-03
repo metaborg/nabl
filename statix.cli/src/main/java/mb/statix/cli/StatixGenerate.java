@@ -1,4 +1,4 @@
-package statix.cli;
+package mb.statix.cli;
 
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -17,11 +17,11 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.random.RandomTermGenerator;
+import mb.statix.random.SearchState;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
-import statix.random.RandomTermGenerator;
-import statix.random.SearchState;
 
 public class StatixGenerate {
 

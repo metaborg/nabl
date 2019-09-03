@@ -1,4 +1,4 @@
-package statix.random;
+package mb.statix.random;
 
 import java.util.Collection;
 

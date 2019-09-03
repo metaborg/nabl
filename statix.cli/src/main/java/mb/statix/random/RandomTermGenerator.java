@@ -1,4 +1,4 @@
-package statix.random;
+package mb.statix.random;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -9,14 +9,12 @@ import org.metaborg.core.MetaborgException;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.statix.constraints.CAstId;
+import mb.statix.constraints.CAstProperty;
+import mb.statix.random.node.SearchNodes;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.persistent.State;
 import mb.statix.spec.Spec;
-import statix.random.node.DropAstPredicates;
-import statix.random.node.ExpandPredicate;
-import statix.random.node.Infer;
-import statix.random.node.SelectRandomPredicate;
-import statix.random.node.Seq;
 
 public class RandomTermGenerator {
 
@@ -24,7 +22,7 @@ public class RandomTermGenerator {
 
     private final int maxDepth;
 
-    private final Random rnd = new Random(System.currentTimeMillis());
+    private final SearchNodes N = new SearchNodes(new Random(System.currentTimeMillis()));
     private final Deque<SearchNode<SearchState, SearchState>> stack = new LinkedList<>();
 
     public RandomTermGenerator(Spec spec, IConstraint constraint) {
@@ -38,7 +36,7 @@ public class RandomTermGenerator {
 
     private void initStack(Spec spec, IConstraint constraint) {
         final SearchState state = SearchState.of(State.of(spec), ImmutableList.of(constraint));
-        final SearchNode<SearchState, SearchState> startNode = infer(rnd);
+        final SearchNode<SearchState, SearchState> startNode = infer();
         startNode.init(state);
         stack.push(startNode);
     }
@@ -57,9 +55,9 @@ public class RandomTermGenerator {
             if(depth >= maxDepth) {
                 continue;
             }
-            final SearchNode<SearchState, SearchState> expandNode = expand(rnd);
-            expandNode.init(state.get());
-            stack.push(expandNode);
+            final SearchNode<SearchState, SearchState> searchNode = search();
+            searchNode.init(state.get());
+            stack.push(searchNode);
         }
         return Optional.empty();
     }
@@ -68,12 +66,24 @@ public class RandomTermGenerator {
         return state.constraints().isEmpty();
     }
 
-    private static SearchNode<SearchState, SearchState> infer(Random rnd) {
-        return new Seq<>(rnd, new Infer(rnd), new DropAstPredicates(rnd));
+    private SearchNode<SearchState, SearchState> infer() {
+        return N.seq(N.infer(), dropAst());
     }
 
-    private static SearchNode<SearchState, SearchState> expand(Random rnd) {
-        return new Seq<>(rnd, new Seq<>(rnd, new SelectRandomPredicate(rnd), new ExpandPredicate(rnd)), infer(rnd));
+    private SearchNode<SearchState, SearchState> dropAst() {
+        return N.drop(CAstId.class, CAstProperty.class);
+    }
+
+    private SearchNode<SearchState, SearchState> search() {
+        // @formatter:off
+        return N.seq(
+            N.alt(
+                N.seq(N.selectPredicate(), N.expandPredicate()), 
+                N.seq(N.selectQuery(), N.resolveQuery())
+            ),
+            infer()
+        );
+        // @formatter:on
     }
 
 }

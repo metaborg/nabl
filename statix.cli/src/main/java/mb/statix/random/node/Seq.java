@@ -1,4 +1,4 @@
-package statix.random.node;
+package mb.statix.random.node;
 
 import java.util.Optional;
 import java.util.Random;
@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.core.MetaborgException;
 
-import statix.random.SearchNode;
+import mb.statix.random.SearchNode;
 
 public class Seq<I, X, O> extends SearchNode<I, O> {
 

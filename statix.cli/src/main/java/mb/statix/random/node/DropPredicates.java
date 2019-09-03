@@ -1,32 +1,38 @@
-package statix.random.node;
+package mb.statix.random.node;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.core.MetaborgException;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
-import mb.statix.constraints.CAstId;
-import mb.statix.constraints.CAstProperty;
+import mb.statix.random.SearchNode;
+import mb.statix.random.SearchState;
 import mb.statix.solver.IConstraint;
-import statix.random.SearchNode;
-import statix.random.SearchState;
 
-public class DropAstPredicates extends SearchNode<SearchState, SearchState> {
+public class DropPredicates extends SearchNode<SearchState, SearchState> {
 
-    public DropAstPredicates(Random rnd) {
+    private final Set<Class<? extends IConstraint>> classes;
+
+    @SafeVarargs public DropPredicates(Random rnd, Class<? extends IConstraint>... classes) {
         super(rnd);
+        this.classes = ImmutableSet.copyOf(classes);
     }
 
     private List<IConstraint> constraints;
     private final AtomicBoolean fired = new AtomicBoolean();
 
     @Override protected void doInit() {
-        constraints = input.constraints().stream().filter(c -> !(c instanceof CAstId || c instanceof CAstProperty))
+        // @formatter:off
+        constraints = input.constraints().stream()
+                .filter(c -> !classes.contains(c.getClass()))
                 .collect(ImmutableList.toImmutableList());
+        // @formatter:on
         fired.set(false);
     }
 
@@ -39,7 +45,7 @@ public class DropAstPredicates extends SearchNode<SearchState, SearchState> {
     }
 
     @Override public String toString() {
-        return "drop-ast-constraints";
+        return "drop-constraints";
     }
 
 }
