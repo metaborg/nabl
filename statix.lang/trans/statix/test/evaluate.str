@@ -9,6 +9,8 @@ imports
   statix/lang/statics/-
   statix/lang/normalize
 
+  statix/runtime/-
+
   signatures/statix/test/-
   pp/statix/test/-
   statix/test/-

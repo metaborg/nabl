@@ -27,7 +27,8 @@ rules
   raw-eq = where((strip-annos, strip-annos); eq)
   raw-union = union(raw-eq)
   raw-elem = elem(raw-eq)
-  raw-lookup = lookup((id,Fst);raw-eq)
+  raw-lookup = raw-lookup-entry;Snd
+  raw-lookup-entry = lookup((id,Fst);raw-eq)
   raw-diff = diff(raw-eq) 
   raw-make-set = foldr(![], union(raw-eq), ![<id>]) 
 
