@@ -1,19 +1,17 @@
 package mb.statix.random.scopegraph;
 
+import java.util.Optional;
+
 import mb.statix.scopegraph.path.IResolutionPath;
 
 public class Match<S, L, D, X> {
 
     public final IResolutionPath<S, L, D> path;
-    public final X x;
+    public final Optional<X> condition;
 
-    private Match(IResolutionPath<S, L, D> path, X x) {
+    public Match(IResolutionPath<S, L, D> path, Optional<X> condition) {
         this.path = path;
-        this.x = x;
-    }
-
-    public static <S, L, D, X> Match<S, L, D, X> of(IResolutionPath<S, L, D> path, X x) {
-        return new Match<>(path, x);
+        this.condition = condition;
     }
 
 }

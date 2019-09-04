@@ -1,18 +1,22 @@
 package mb.statix.random.node;
 
-import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.iterators.Iterables2;
+
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CUser;
 import mb.statix.random.SearchNode;
 import mb.statix.random.SearchState;
+import mb.statix.random.util.ElementSelectorSet;
+import mb.statix.random.util.ElementSelectorSet.Entry;
 import mb.statix.solver.IConstraint;
 
 public class SelectRandomPredicate extends SearchNode<SearchState, Tuple2<SearchState, CUser>> {
@@ -21,32 +25,24 @@ public class SelectRandomPredicate extends SearchNode<SearchState, Tuple2<Search
         super(rnd);
     }
 
-    private Set<CUser> freePredicates;
-    private Set<CUser> pickedPredicates;
-    private Set<IConstraint> otherConstraints;
+    private Iterator<Entry<CUser>> predicates;
+    private List<IConstraint> otherConstraints;
 
     @Override protected void doInit() {
-        freePredicates = new HashSet<>();
-        pickedPredicates = new HashSet<>();
-        otherConstraints = new HashSet<>();
-        for(IConstraint c : input.constraints()) {
-            if(c instanceof CUser) {
-                freePredicates.add((CUser) c);
-            } else {
-                otherConstraints.add(c);
-            }
-        }
+        this.predicates = new ElementSelectorSet<>(
+                input.constraints().stream().filter(c -> c instanceof CUser).map(c -> (CUser) c)::iterator).iterator();
+        otherConstraints = input.constraints().stream().filter(c -> !(c instanceof CUser))
+                .collect(ImmutableList.toImmutableList());
     }
 
     @Override protected Optional<Tuple2<SearchState, CUser>> doNext() throws MetaborgException, InterruptedException {
-        if(freePredicates.isEmpty()) {
+        if(!predicates.hasNext()) {
             return Optional.empty();
         }
-        final CUser predicate = pick(freePredicates);
+        final Entry<CUser> entry = predicates.next();
         final SearchState newState =
-                input.update(input.state(), Iterables2.fromConcat(freePredicates, pickedPredicates, otherConstraints));
-        pickedPredicates.add(predicate);
-        return Optional.of(ImmutableTuple2.of(newState, predicate));
+                input.update(input.state(), Iterables2.fromConcat(entry.getOthers(), otherConstraints));
+        return Optional.of(ImmutableTuple2.of(newState, entry.getFocus()));
     }
 
     @Override public String toString() {

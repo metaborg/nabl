@@ -1,20 +1,28 @@
 package mb.statix.random.node;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
+import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CEqual;
@@ -48,9 +56,12 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
 
     private CResolveQuery query;
     private Scope scope;
-    private NameResolution<Scope, ITerm, ITerm, Collection<CEqual>> nameResolution;
+    private NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution;
+    private List<Integer> lengths;
 
-    private final AtomicBoolean done = new AtomicBoolean(false);
+    private final AtomicBoolean done = new AtomicBoolean();
+    private final AtomicInteger step = new AtomicInteger();
+    private final Deque<Env<Scope, ITerm, ITerm, CEqual>> envs = new LinkedList<>();
 
     @Override protected void doInit() {
         this.query = input._2()._1();
@@ -65,48 +76,69 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
-        final DataWF<ITerm, Collection<CEqual>> dataWF = new ConstraintDataWF(isComplete3, state);
+        final DataWF<ITerm, CEqual> dataWF = new ConstraintDataWF(isComplete3, state);
+        lengths = length((IListTerm) query.resultTerm(), state.unifier()).map(ImmutableList::of)
+                .orElse(ImmutableList.of(0, 1, 2, -1));
 
-        // build name resolution
         // @formatter:off
         nameResolution = new NameResolution<>(
                 state.scopeGraph(), query.relation(),
                 labelWF, labelOrd, isComplete2,
-                dataWF, dataEq, isComplete2,
-                () -> true);
+                dataWF, dataEq, isComplete2);
         // @formatter:on
+
+        done.set(false);
+        step.set(0);
+        envs.clear();
     }
 
     @Override protected Optional<SearchState> doNext() throws MetaborgException, InterruptedException {
-        if(done.getAndSet(true)) { // FIXME Manipulate select
-            return Optional.empty();
-        }
-
-        // resolve
-        final Env<Scope, ITerm, ITerm, Collection<CEqual>> env;
-        try {
-            env = nameResolution.resolve(scope);
-        } catch(ResolutionException e) {
-            return Optional.empty();
+        if(envs.isEmpty()) {
+            if(done.get()) {
+                return Optional.empty();
+            }
+            // resolve
+            final AtomicInteger select = new AtomicInteger(step.incrementAndGet());
+            final Env<Scope, ITerm, ITerm, CEqual> env;
+            try {
+                env = nameResolution.resolve(scope, () -> select.decrementAndGet() == 0);
+            } catch(ResolutionException e) {
+                return Optional.empty();
+            }
+            if(select.get() > 0) {
+                done.set(true);
+            }
+            envs.addAll(select(1, env));
+            return doNext();
         }
 
         // create output
+        final Env<Scope, ITerm, ITerm, CEqual> env = envs.pop();
         final List<ITerm> pathTerms =
                 env.matches.stream().map(m -> StatixTerms.explicate(m.path)).collect(ImmutableList.toImmutableList());
         final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-        env.matches.forEach(m -> constraints.addAll(m.x));
+        env.matches.stream().flatMap(m -> Optionals.stream(m.condition))
+                .forEach(condition -> constraints.add(condition));
         constraints.addAll(input._1().constraints());
         final SearchState newState = input._1().update(input._1().state(), constraints.build());
         return Optional.of(newState);
+    }
 
+    private Collection<Env<Scope, ITerm, ITerm, CEqual>> selectAll(Env<Scope, ITerm, ITerm, CEqual> env) {
+        return ImmutableList.of();
+    }
+
+    private Collection<Env<Scope, ITerm, ITerm, CEqual>> select(int size, Env<Scope, ITerm, ITerm, CEqual> env) {
+        // extend selector set to take selection size, and return all selections?
+        return (env.matches.size() == size) ? ImmutableList.of(env) : ImmutableList.of();
     }
 
     @Override public String toString() {
         return "resolve-query";
     }
 
-    private class ConstraintDataWF implements DataWF<ITerm, Collection<CEqual>> {
+    private class ConstraintDataWF implements DataWF<ITerm, CEqual> {
         private final IsComplete isComplete3;
         private final State state;
 
@@ -115,7 +147,7 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
             this.state = state;
         }
 
-        @Override public Optional<Collection<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
+        @Override public Optional<Optional<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
             final IConstraint constraint = apply(query.filter().getDataWF(), ImmutableList.of(datum), query);
 
             // remove all previously created variables/scopes to make them rigid/closed
@@ -128,11 +160,27 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
             if(!result.delays().keySet().stream().allMatch(c -> c instanceof CEqual)) {
                 return Optional.empty();
             }
+            if(result.delays().isEmpty()) {
+                return Optional.of(Optional.empty());
+            }
 
-            final Collection<CEqual> eqs =
-                    result.delays().keySet().stream().map(c -> (CEqual) c).collect(Collectors.toList());
-            return Optional.of(eqs);
+            final List<ITerm> leftTerms = Lists.newArrayList();
+            final List<ITerm> rightTerms = Lists.newArrayList();
+            result.delays().keySet().stream().map(c -> (CEqual) c).forEach(eq -> {
+                leftTerms.add(eq.term1());
+                rightTerms.add(eq.term2());
+            });
+            return Optional.of(Optional.of(new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), query)));
         }
+    }
+
+    private static Optional<Integer> length(IListTerm list, IUnifier unifier) {
+        // @formatter:off
+        return M.<Integer>casesFix(m -> Arrays.asList(
+            M.cons(cons -> cons).flatMap(cons -> m.match(cons.getTail(), unifier).map(l -> 1 + l)),
+            M.nil(nil -> 0)
+        )).match(list, unifier);
+        // @formatter:on
     }
 
 }

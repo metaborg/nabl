@@ -6,6 +6,6 @@ import mb.statix.scopegraph.reference.ResolutionException;
 
 public interface DataWF<D, X> {
 
-    Optional<X> wf(D d) throws ResolutionException, InterruptedException;
+    Optional<Optional<X>> wf(D d) throws ResolutionException, InterruptedException;
 
 }

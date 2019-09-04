@@ -34,8 +34,7 @@ public class NameResolution<S extends D, L, D, X> {
     private Predicate0 select;
 
     public NameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            Predicate2<S, L> isEdgeComplete, DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, L> isDataComplete,
-            Predicate0 select) {
+            Predicate2<S, L> isEdgeComplete, DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, L> isDataComplete) {
         this.scopeGraph = scopeGraph;
         this.relation = relation;
         this.labels =
@@ -46,12 +45,11 @@ public class NameResolution<S extends D, L, D, X> {
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
         this.isDataComplete = isDataComplete;
-        this.select = select;
     }
 
-    public Env<S, L, D, X> resolve(S scope) throws ResolutionException, InterruptedException {
+    public Env<S, L, D, X> resolve(S scope, Predicate0 select) throws ResolutionException, InterruptedException {
+        this.select = select;
         final Env<S, L, D, X> env = env(labelWF, Paths.empty(scope));
-        // choice
         return env;
     }
 
@@ -64,28 +62,29 @@ public class NameResolution<S extends D, L, D, X> {
         if(Thread.interrupted()) {
             throw new InterruptedException();
         }
-        final ImmutableSet.Builder<Match<S, L, D, X>> envBuilder = ImmutableSet.builder();
+        final Env.Builder<S, L, D, X> env = Env.builder();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
             final Env<S, L, D, X> env1 = env_L(smaller(L, l), re, path);
-            final boolean addEnv2;
-            if(env1.matches.isEmpty()) {
-                addEnv2 = true;
+            final boolean matchEnv2;
+            if(env1.isEmpty()) {
+                env.reject(env1);
+                matchEnv2 = true;
             } else if(!dataEquiv) {
-                envBuilder.addAll(env1.matches);
-                addEnv2 = true;
-            } else if(select.test()) {
-                envBuilder.addAll(env1.matches);
-                addEnv2 = false;
+                env.match(env1);
+                matchEnv2 = true;
+            } else if(env1.isNullable() && !select.test()) {
+                env.reject(env1);
+                matchEnv2 = true;
             } else {
-                addEnv2 = true;
+                env.match(env1);
+                matchEnv2 = false;
             }
-            if(addEnv2) {
-                final Env<S, L, D, X> env2 = env_l(l, re, path);
-                envBuilder.addAll(env2.matches);
+            if(matchEnv2) {
+                env.match(env_l(l, re, path));
             }
         }
-        return Env.of(envBuilder.build());
+        return env.build();
     }
 
     private Set<L> max(Set<L> L) throws ResolutionException, InterruptedException {
@@ -131,22 +130,22 @@ public class NameResolution<S extends D, L, D, X> {
         if(!isDataComplete.test(scope, relation)) {
             throw new IncompleteDataException(scope, relation);
         }
-        final ImmutableSet.Builder<Match<S, L, D, X>> env = ImmutableSet.builder();
+        final Env.Builder<S, L, D, X> env = Env.builder();
         if(relation.equals(scopeGraph.getNoDataLabel())) {
             final D datum = scope;
-            final Optional<X> x = dataWF.wf(datum);
+            final Optional<Optional<X>> x = dataWF.wf(datum);
             if(x.isPresent()) {
-                env.add(Match.of(Paths.resolve(path, relation, datum), x.get()));
+                env.match(Paths.resolve(path, relation, datum), x.get());
             }
         } else {
             for(D datum : getData(re, path, relation)) {
-                final Optional<X> x = dataWF.wf(datum);
+                final Optional<Optional<X>> x = dataWF.wf(datum);
                 if(x.isPresent()) {
-                    env.add(Match.of(Paths.resolve(path, relation, datum), x.get()));
+                    env.match(Paths.resolve(path, relation, datum), x.get());
                 }
             }
         }
-        return Env.of(env.build());
+        return env.build();
     }
 
     private Env<S, L, D, X> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path)
@@ -160,14 +159,14 @@ public class NameResolution<S extends D, L, D, X> {
         if(!isEdgeComplete.test(path.getTarget(), l)) {
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
-        final ImmutableSet.Builder<Match<S, L, D, X>> env = ImmutableSet.builder();
+        final Env.Builder<S, L, D, X> env = Env.builder();
         for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re, p.get()).matches);
+                env.match(env(re, p.get()));
             }
         }
-        return Env.of(env.build());
+        return env.build();
     }
 
     ///////////////////////////////////////////////////////////////////////////
