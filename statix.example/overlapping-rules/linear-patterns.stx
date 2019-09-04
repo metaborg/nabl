@@ -84,3 +84,19 @@ rules
   p20([_]).
   p20(xs). // p20(xs@[]).
            // p20(xs@[_,_|_]).
+
+rules
+
+  p21 : string
+  p21("x").
+  p21("y").
+  p21("z").
+//p21(_). // not supported
+
+rules
+
+  p22 : int
+  p22(1).
+  p22(2).
+  p22(4).
+//p22(_). // not supported

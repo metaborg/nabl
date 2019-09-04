@@ -103,6 +103,12 @@ rules
   expand-pattern(|sops,p*): p@List([]) -> e*
     with ty := <norm-get-ast-type> p
        ; e* := [p]
+  expand-pattern(|sops,p*): p@Int(_) -> e*
+    with ty := <norm-get-ast-type> p
+       ; e* := [p]
+  expand-pattern(|sops,p*): p@Str(_) -> e*
+    with ty := <norm-get-ast-type> p
+       ; e* := [p]
 
   expand-patterns(|sops,ps*): ps -> e*
     with e* := < add-indices
