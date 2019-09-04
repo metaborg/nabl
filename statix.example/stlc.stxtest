@@ -1,6 +1,6 @@
-resolve {s e T}
+resolve {s T b e}
 
-  new s, typeOfExp(s, e) == T
+  new s, typeOfExp(s, Let([b], Var("x"))) == T
 
 signature
   sorts ID = string                         // $x$
@@ -10,6 +10,10 @@ signature
     Fun     : ID * Type * Exp -> Exp        //      | fun ($x$ : $T$) { $e$ }
     Var     : ID -> Exp                     //      | $x$
     App     : Exp * Exp -> Exp              //      | $e$ $e$
+    Let     : list(Bind) * Exp -> Exp       //      | let $b*$ in $e$
+
+  sorts Bind constructors                   // $b$ :=
+    Bind : ID * Type * Exp -> Bind          //      | $x$ : $T$ = $e$
 
   sorts Type constructors
     UNIT : Type
@@ -36,10 +40,23 @@ rules
     s_fun -> Var{x@x} with typeOfDecl S,
     typeOfExp(s_fun, e) == T.
 
-  typeOfExp(s, Var(x)) = T :-
-    typeOfDecl of Var{x@x} in s |-> [(_, (_, T))].
+  typeOfExp(s, Var(x)) = T :- {p d}
+    typeOfDecl of Var{x@x} in s |-> [(p, (d, T))].
 
   typeOfExp(s, App(e1, e2)) = T :- {S U}
     typeOfExp(s, e1) == FUN(S, T),
     typeOfExp(s, e2) == U,
     U == S.
+
+  typeOfExp(s, Let(binds, e)) = T :- {s_let}
+    new s_let, s_let -P-> s,
+    bindsOk(s, binds, s_let),
+    typeOfExp(s_let, e) == T.
+
+  bindOk : scope * Bind * scope
+
+  bindOk(s, Bind(x, T, e), s_bnd) :-
+    s_bnd -> Var{x@x} with typeOfDecl T,
+    typeOfExp(s, e) == T.
+
+  bindsOk maps bindOk(*, list(*), *)
