@@ -6,11 +6,14 @@ import java.util.Optional;
 import java.util.Random;
 
 import org.metaborg.core.MetaborgException;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple2;
@@ -25,6 +28,8 @@ import mb.statix.solver.IConstraint;
 
 public class SelectRandomQuery
         extends SearchNode<SearchState, Tuple2<SearchState, Tuple3<CResolveQuery, Scope, Boolean>>> {
+
+    private static final ILogger log = LoggerUtils.logger(SelectRandomQuery.class);
 
     public SelectRandomQuery(Random rnd) {
         super(rnd);
@@ -65,6 +70,7 @@ public class SelectRandomQuery
             return Optional.empty();
         }
         final Entry<Tuple3<CResolveQuery, Scope, Boolean>> entry = queries.next();
+        log.info("selected {}", entry.getFocus()._1().toString(new UnifierFormatter(input.state().unifier(), 3)));
         final Iterable<CResolveQuery> otherQueries = entry.getOthers().stream().map(Tuple3::_1)::iterator;
         final SearchState newState = input.update(input.state(), Iterables.concat(otherQueries, otherConstraints));
         return Optional.of(ImmutableTuple2.of(newState, entry.getFocus()));

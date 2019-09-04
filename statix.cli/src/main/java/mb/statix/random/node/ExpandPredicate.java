@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CUser;
@@ -16,6 +18,8 @@ import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
 
 public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, SearchState> {
+
+    private static final ILogger log = LoggerUtils.logger(ExpandPredicate.class);
 
     public ExpandPredicate(Random rnd) {
         super(rnd);
@@ -34,6 +38,7 @@ public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, Sear
             return Optional.empty();
         }
         final Rule rule = pick(rules);
+        log.info("selected {}", rule.toString());
         final IConstraint constraint = apply(rule, predicate.args(), predicate);
         final SearchState state = input._1();
         final SearchState newState = state.update(state.state(), Iterables2.cons(constraint, state.constraints()));

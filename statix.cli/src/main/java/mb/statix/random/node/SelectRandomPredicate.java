@@ -7,9 +7,12 @@ import java.util.Random;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CUser;
@@ -20,6 +23,8 @@ import mb.statix.random.util.ElementSelectorSet.Entry;
 import mb.statix.solver.IConstraint;
 
 public class SelectRandomPredicate extends SearchNode<SearchState, Tuple2<SearchState, CUser>> {
+
+    private static final ILogger log = LoggerUtils.logger(SelectRandomPredicate.class);
 
     public SelectRandomPredicate(Random rnd) {
         super(rnd);
@@ -40,6 +45,7 @@ public class SelectRandomPredicate extends SearchNode<SearchState, Tuple2<Search
             return Optional.empty();
         }
         final Entry<CUser> entry = predicates.next();
+        log.info("selected {}", entry.getFocus().toString(new UnifierFormatter(input.state().unifier(), 3)));
         final SearchState newState =
                 input.update(input.state(), Iterables2.fromConcat(entry.getOthers(), otherConstraints));
         return Optional.of(ImmutableTuple2.of(newState, entry.getFocus()));

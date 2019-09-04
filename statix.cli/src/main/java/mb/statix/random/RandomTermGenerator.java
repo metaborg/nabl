@@ -18,7 +18,7 @@ import mb.statix.spec.Spec;
 
 public class RandomTermGenerator {
 
-    private static final int MAX_DEPTH = 4;
+    private static final int MAX_DEPTH = 50;
 
     private final int maxDepth;
 
@@ -43,7 +43,8 @@ public class RandomTermGenerator {
 
     public Optional<SearchState> next() throws MetaborgException, InterruptedException {
         while(!stack.isEmpty()) {
-            Optional<SearchState> state = stack.peek().next();
+            final SearchNode<SearchState, SearchState> node = stack.peek();
+            final Optional<SearchState> state = node.next();
             if(!state.isPresent()) {
                 stack.pop();
                 continue;
