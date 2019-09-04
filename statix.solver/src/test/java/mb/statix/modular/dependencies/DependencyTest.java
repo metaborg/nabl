@@ -4,6 +4,7 @@ import static mb.statix.modular.util.test.TestUtil.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.Module;
 import mb.statix.modular.module.ModulePaths;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.scopegraph.terms.Scope;
@@ -89,6 +91,7 @@ public class DependencyTest {
         Dependencies doB = oldContext.getDependencies(B);
         doB.addDependency(A);
         assertTrue(doA.getModuleDependantIds().contains(B.getId()));
+        createResults(A, B);
         
         //After transfer with no changes, this should still hold
         context = incremental(empty());
@@ -129,11 +132,21 @@ public class DependencyTest {
         doB.addDependency(A);
         assertTrue(doA.getModuleDependantIds().contains(B.getId()));
         
+        createResults(A, A1, B, B1);
         //After transfer with no changes, this should still hold
         context = incremental(empty());
         Dependencies dnA = context.getDependencies(A);
         assertTrue(dnA.getModuleDependantIds().contains(B.getId()));
         assertTrue(context.getModules().contains(A1));
         assertTrue(context.getModules().contains(B1));
+    }
+    
+    private void createResults(IModule... modules) {
+        Map<IModule, MSolverResult> results = new HashMap<>();
+        for (IModule module : modules) {
+            MSolverResult result = MSolverResult.of(module.getCurrentState(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
+            results.put(module, result);
+        }
+        oldContext.setResults(results);
     }
 }
