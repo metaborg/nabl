@@ -32,7 +32,7 @@ rules // base facts, constraints directly adding to the scope graph
          new-ext*   := <filter(\ (v, lbl) -> (v, lbl) where <raw-elem> (v, new-var*) \)> all-ext*;
        //<map(\ (v, lbl) -> <iset-add(|(v, $[Extends locally fresh scope [<pp-partial-Statix-string> v] in [<pp-partial-Statix-string> lbl]]))> note-iset \)> new-ext*;
 
-         head-ext*  := <filter({v' : \ (v, lbl) -> (v', lbl) where (v', _) := <raw-lookup> (v, head-proj*) \})> all-ext*;
+         head-ext*  := <filter({v' : \ (v, lbl) -> (v', lbl) where (v', _) := <raw-lookup-entry> (v, head-proj*) \})> all-ext*;
        //<map(\ (v, lbl) -> <iset-add(|(v, $[Extends parameter scope [<pp-partial-Statix-string> v] in [<pp-partial-Statix-string> lbl]]))> note-iset \)> head-ext*;
 
          local-ext* := <filter(not(base-extends(|<conc> (head-var*, new-var*))))> all-ext*;
@@ -60,7 +60,7 @@ rules // derived facts, constraints indirectly adding to the scope graph
          new-ext*   := <filter(\ v -> v where <raw-elem> (v, new-var*) \)> all-ext*;
        //<map(\ v -> <iset-add(|(v, $[Extends locally fresh scope [<pp-partial-Statix-string> v] in [<pp-partial-Statix-string> lbl]]))> note-iset \)> new-ext*;
 
-         head-ext*  := <filter({v' : \ v -> v' where (v', _) := <raw-lookup> (v, head-proj*) \})> all-ext*;
+         head-ext*  := <filter({v' : \ v -> v' where (v', _) := <raw-lookup-entry> (v, head-proj*) \})> all-ext*;
        //<map(\ v -> <iset-add(|(v, $[Extends parameter scope [<pp-partial-Statix-string> v] in [<pp-partial-Statix-string> lbl]]))> note-iset \)> head-ext*;
 
          local-ext* := <filter(not(derive-extends(|<conc> (head-var*, new-var*))))> all-ext*;
