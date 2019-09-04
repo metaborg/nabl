@@ -14,7 +14,6 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CUser;
 import mb.statix.random.SearchNode;
 import mb.statix.random.SearchState;
-import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
 
 public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, SearchState> {
@@ -38,11 +37,11 @@ public class ExpandPredicate extends SearchNode<Tuple2<SearchState, CUser>, Sear
             return Optional.empty();
         }
         final Rule rule = pick(rules);
-        log.info("selected {}", rule.toString());
-        final IConstraint constraint = apply(rule, predicate.args(), predicate);
-        final SearchState state = input._1();
-        final SearchState newState = state.update(state.state(), Iterables2.cons(constraint, state.constraints()));
-        return Optional.of(newState);
+        final SearchState searchState = input._1();
+        return apply(searchState.state(), rule, predicate.args(), predicate).map(stateAndConstraint -> {
+            return searchState.update(stateAndConstraint._1(),
+                    Iterables2.cons(stateAndConstraint._2(), searchState.constraints()));
+        });
     }
 
     @Override public String toString() {

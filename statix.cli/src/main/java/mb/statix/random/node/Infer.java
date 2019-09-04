@@ -5,6 +5,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.core.MetaborgException;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import mb.statix.constraints.Constraints;
 import mb.statix.random.SearchNode;
@@ -14,6 +16,8 @@ import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 
 public class Infer extends SearchNode<SearchState, SearchState> {
+
+    private static final ILogger log = LoggerUtils.logger(Infer.class);
 
     public Infer(Random rnd) {
         super(rnd);

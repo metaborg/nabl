@@ -1,6 +1,6 @@
-resolve {s T b e}
+resolve {s T e}
 
-  new s, typeOfExp(s, Let([b], Var("x"))) == T
+  new s, typeOfExp(s, e) == T
 
 signature
   sorts ID = string                         // $x$
@@ -51,7 +51,8 @@ rules
   typeOfExp(s, Let(binds, e)) = T :- {s_let}
     new s_let, s_let -P-> s,
     bindsOk(s, binds, s_let),
-    typeOfExp(s_let, e) == T.
+    typeOfExp(s_let, e) == T,
+    binds != []. // additive
 
   bindOk : scope * Bind * scope
 

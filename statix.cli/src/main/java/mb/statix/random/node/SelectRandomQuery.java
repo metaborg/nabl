@@ -70,7 +70,6 @@ public class SelectRandomQuery
             return Optional.empty();
         }
         final Entry<Tuple3<CResolveQuery, Scope, Boolean>> entry = queries.next();
-        log.info("selected {}", entry.getFocus()._1().toString(new UnifierFormatter(input.state().unifier(), 3)));
         final Iterable<CResolveQuery> otherQueries = entry.getOthers().stream().map(Tuple3::_1)::iterator;
         final SearchState newState = input.update(input.state(), Iterables.concat(otherQueries, otherConstraints));
         return Optional.of(ImmutableTuple2.of(newState, entry.getFocus()));

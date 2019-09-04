@@ -44,7 +44,18 @@ public class Env<S, L, D, X> {
         }
 
         public void match(IResolutionPath<S, L, D> path, Optional<X> x) {
-            matches.add(new Match<>(path, x));
+            match(new Match<>(path, x));
+        }
+
+        public void match(Match<S, L, D, X> match) {
+            matches.add(match);
+        }
+
+        public void reject(Match<S, L, D, X> match) {
+            if(!match.condition.isPresent()) {
+                throw new IllegalArgumentException("Cannot reject unconditional match");
+            }
+            rejects.add(match);
         }
 
         public void match(Env<S, L, D, X> env) {

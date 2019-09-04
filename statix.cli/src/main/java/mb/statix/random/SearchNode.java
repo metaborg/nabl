@@ -6,22 +6,29 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
 import mb.statix.spec.Rule;
 
 public abstract class SearchNode<I, O> {
@@ -64,27 +71,39 @@ public abstract class SearchNode<I, O> {
         return element;
     }
 
-    protected IConstraint apply(Rule rule, List<ITerm> args, IConstraint cause) {
+    protected Optional<Tuple2<State, IConstraint>> apply(State state, Rule rule, List<ITerm> args, IConstraint cause)
+            throws InterruptedException {
         // FIXME The current method can cause capture if a solver-generated variable
         //       has the same name as a pattern variable in the rule. The arguments
         //       contain solver variables, but they are substituted under an exists
         //       with the literal rule pattern variables. To do this correctly,
-        //       we must rename pattern variables that might clash.
-        final HashMultimap<ITerm, ITerm> eqMap = HashMultimap.create();
-        for(@SuppressWarnings("unused") Object dummy : Iterables2.zip(rule.params(), args, (p, a) -> {
-            // FIXME Pattern::asTerm does not work if wildcards appear in the pattern
-            Tuple2<ITerm, Multimap<ITermVar, ITerm>> termAndEqs = p.asTerm();
-            eqMap.putAll(termAndEqs._2());
-            eqMap.put(termAndEqs._1(), a);
-            return null;
-        })) {
-        }
-        ;
-        final List<CEqual> eqs = eqMap.entries().stream().map(eq -> new CEqual(eq.getKey(), eq.getValue(), cause))
-                .collect(Collectors.toList());
+        //       we must rename pattern variables that might clash. It probably works because
+        //       the variable naming convention in the solver generates names that are
+        //       disallowed in specs.
+
+        // create equality constraints
+        final List<CEqual> patternEqs = Lists.newArrayList();
+        final List<CEqual> paramEqs = ImmutableList.copyOf(Iterables2.zip(rule.params(), args, (param, arg) -> {
+            Tuple2<ITerm, Multimap<ITermVar, ITerm>> termAndEqs = param.asTerm();
+            termAndEqs._2().forEach((t1, t2) -> {
+                patternEqs.add(new CEqual(t1, t2, cause));
+            });
+            return new CEqual(termAndEqs._1(), arg, cause);
+        }));
+
+        // solve the resulting existential, but without (!) the rule body
         final IConstraint constraint =
-                new CExists(rule.paramVars(), new CConj(Constraints.conjoin(eqs), rule.body()), cause);
-        return constraint;
+                new CExists(rule.paramVars(), Constraints.conjoin(Iterables.concat(patternEqs, paramEqs)), cause);
+        final SolverResult result = Solver.solve(state, constraint, new NullDebugContext());
+        if(result.hasErrors() || !result.delays().isEmpty()) {
+            return Optional.empty();
+        }
+
+        // apply the existential to the body constraint
+        final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(result.existentials());
+        final IConstraint newConstraint = rule.body().apply(subst);
+
+        return Optional.of(ImmutableTuple2.of(result.state(), newConstraint));
     }
 
 }

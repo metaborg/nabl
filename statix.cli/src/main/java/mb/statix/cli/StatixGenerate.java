@@ -17,6 +17,8 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.statix.constraints.Constraints;
 import mb.statix.random.RandomTermGenerator;
 import mb.statix.random.SearchState;
 import mb.statix.solver.IConstraint;
@@ -70,12 +72,19 @@ public class StatixGenerate {
     private void printResult(SearchState state, FileObject source) {
         STX.messagePrinter.print(
                 new Message("+-- Result --+.", MessageSeverity.NOTE, MessageType.INTERNAL, source, null, null), false);
+
         final IUnifier unifier = state.state().unifier();
         for(Entry<ITermVar, ITermVar> existential : state.existentials().entrySet()) {
-            final String entry = existential.getKey() + ": " + unifier.toString(existential.getValue());
-            STX.messagePrinter.print(new Message(entry, MessageSeverity.NOTE, MessageType.INTERNAL, source, null, null),
-                    false);
+            final String entryLine = existential.getKey() + ": " + unifier.toString(existential.getValue());
+            STX.messagePrinter.print(
+                    new Message(entryLine, MessageSeverity.NOTE, MessageType.INTERNAL, source, null, null), false);
         }
+
+        final String constraintLine =
+                "constraints: " + Constraints.toString(state.constraints(), new UnifierFormatter(unifier, 3));
+        STX.messagePrinter.print(
+                new Message(constraintLine, MessageSeverity.NOTE, MessageType.INTERNAL, source, null, null), false);
+
         STX.messagePrinter.print(
                 new Message("+------------+", MessageSeverity.NOTE, MessageType.INTERNAL, source, null, null), false);
     }

@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CInequal;
 import mb.statix.random.node.SearchNodes;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.persistent.State;
@@ -18,7 +19,7 @@ import mb.statix.spec.Spec;
 
 public class RandomTermGenerator {
 
-    private static final int MAX_DEPTH = 50;
+    private static final int MAX_DEPTH = 7;
 
     private final int maxDepth;
 
@@ -64,7 +65,7 @@ public class RandomTermGenerator {
     }
 
     private static boolean done(SearchState state) {
-        return state.constraints().isEmpty();
+        return state.constraints().stream().allMatch(c -> c instanceof CInequal);
     }
 
     private SearchNode<SearchState, SearchState> infer() {
@@ -76,6 +77,18 @@ public class RandomTermGenerator {
     }
 
     private SearchNode<SearchState, SearchState> search() {
+        // @formatter:off
+        return N.seq(
+            N.limit(10, N.alt(
+                N.seq(N.limit(3, N.selectPredicate()), N.limit(5, N.expandPredicate())), 
+                N.seq(N.limit(3, N.selectQuery()), N.limit(5, N.resolveQuery()))
+            )),
+            infer()
+        );
+        // @formatter:on
+    }
+
+    private SearchNode<SearchState, SearchState> enumerate() {
         // @formatter:off
         return N.seq(
             N.alt(

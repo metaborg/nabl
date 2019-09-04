@@ -45,7 +45,6 @@ public class SelectRandomPredicate extends SearchNode<SearchState, Tuple2<Search
             return Optional.empty();
         }
         final Entry<CUser> entry = predicates.next();
-        log.info("selected {}", entry.getFocus().toString(new UnifierFormatter(input.state().unifier(), 3)));
         final SearchState newState =
                 input.update(input.state(), Iterables2.fromConcat(entry.getOthers(), otherConstraints));
         return Optional.of(ImmutableTuple2.of(newState, entry.getFocus()));

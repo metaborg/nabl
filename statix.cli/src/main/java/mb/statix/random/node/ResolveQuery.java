@@ -26,12 +26,16 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CEqual;
+import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.random.SearchNode;
 import mb.statix.random.SearchState;
 import mb.statix.random.scopegraph.DataWF;
 import mb.statix.random.scopegraph.Env;
+import mb.statix.random.scopegraph.Match;
 import mb.statix.random.scopegraph.NameResolution;
+import mb.statix.random.util.ElementSelectorSet;
+import mb.statix.random.util.ElementSelectorSet.Entry;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -108,7 +112,7 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
             if(select.get() > 0) {
                 done.set(true);
             }
-            envs.addAll(select(1, env));
+            envs.addAll(selectAll(env));
             return doNext();
         }
 
@@ -120,18 +124,23 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
         env.matches.stream().flatMap(m -> Optionals.stream(m.condition))
                 .forEach(condition -> constraints.add(condition));
+        env.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
+                .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
         constraints.addAll(input._1().constraints());
         final SearchState newState = input._1().update(input._1().state(), constraints.build());
         return Optional.of(newState);
     }
 
     private Collection<Env<Scope, ITerm, ITerm, CEqual>> selectAll(Env<Scope, ITerm, ITerm, CEqual> env) {
-        return ImmutableList.of();
-    }
-
-    private Collection<Env<Scope, ITerm, ITerm, CEqual>> select(int size, Env<Scope, ITerm, ITerm, CEqual> env) {
-        // extend selector set to take selection size, and return all selections?
-        return (env.matches.size() == size) ? ImmutableList.of(env) : ImmutableList.of();
+        final ImmutableList.Builder<Env<Scope, ITerm, ITerm, CEqual>> envs = ImmutableList.builder();
+        for(Entry<Match<Scope, ITerm, ITerm, CEqual>> entry : new ElementSelectorSet<>(env.matches)) {
+            final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnv = Env.builder();
+            subEnv.match(entry.getFocus());
+            entry.getOthers().forEach(subEnv::reject);
+            env.rejects.forEach(subEnv::reject);
+            envs.add(subEnv.build());
+        }
+        return envs.build();
     }
 
     @Override public String toString() {
@@ -148,12 +157,20 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
         }
 
         @Override public Optional<Optional<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
-            final IConstraint constraint = apply(query.filter().getDataWF(), ImmutableList.of(datum), query);
-
             // remove all previously created variables/scopes to make them rigid/closed
-            final SolverResult result =
-                    Solver.solve(state.clearVarsAndScopes(), constraint, isComplete3, new NullDebugContext());
+            State state = this.state.clearVarsAndScopes();
 
+            // apply rule
+            final Optional<Tuple2<State, IConstraint>> stateAndConstraint =
+                    apply(state, query.filter().getDataWF(), ImmutableList.of(datum), query);
+            if(!stateAndConstraint.isPresent()) {
+                return Optional.empty();
+            }
+            state = stateAndConstraint.get()._1();
+            final IConstraint constraint = stateAndConstraint.get()._2();
+
+            // solve rule constraint
+            final SolverResult result = Solver.solve(state, constraint, isComplete3, new NullDebugContext());
             if(result.hasErrors()) {
                 return Optional.empty();
             }
@@ -170,8 +187,10 @@ public class ResolveQuery extends SearchNode<Tuple2<SearchState, Tuple3<CResolve
                 leftTerms.add(eq.term1());
                 rightTerms.add(eq.term2());
             });
-            return Optional.of(Optional.of(new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), query)));
+            final CEqual eq = new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), query);
+            return Optional.of(Optional.of(eq));
         }
+
     }
 
     private static Optional<Integer> length(IListTerm list, IUnifier unifier) {
