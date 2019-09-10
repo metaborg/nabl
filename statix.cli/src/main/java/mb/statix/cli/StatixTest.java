@@ -2,6 +2,7 @@ package mb.statix.cli;
 
 import java.util.Optional;
 
+import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.action.TransformActionContrib;
 import org.metaborg.core.messages.Message;
@@ -21,8 +22,9 @@ public class StatixTest {
     }
 
     public void run(String file) throws MetaborgException {
-        final TransformActionContrib evalAction = STX.getAction("Evaluate Test", STX.lang);
-        final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = STX.loadFile(file);
+        final FileObject resource = STX.S.resolve(file);
+        final TransformActionContrib evalAction = STX.getAction("Evaluate Test", STX.stxLang);
+        final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = STX.loadStxFile(resource);
         if(!maybeAnalysisUnit.isPresent()) {
             return;
         }

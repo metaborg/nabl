@@ -9,11 +9,11 @@ import com.google.common.collect.Lists;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
 
-public class ElementSelectorSet<E> implements Iterable<ElementSelectorSet.Entry<E>> {
+public class SetElementEnum<E> implements Iterable<SetElementEnum.Entry<E>> {
 
     private final Set.Immutable<E> elements;
 
-    public ElementSelectorSet(Iterable<? extends E> elements) {
+    public SetElementEnum(Iterable<? extends E> elements) {
         this.elements = CapsuleUtil.toSet(elements);
     }
 

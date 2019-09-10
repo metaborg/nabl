@@ -6,6 +6,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.metaborg.core.MetaborgConstants;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.core.action.EndNamedGoal;
@@ -49,20 +51,20 @@ public class Statix {
     @Spec private CommandSpec spec;
     @Option(names = { "-h", "--help" }, description = "show usage help", usageHelp = true) private boolean usageHelp;
 
-    Spoofax S;
-    private CLIUtils cli;
-    ILanguageImpl lang;
-    IProject project;
-    IContext context;
-    PrintStream msgStream = System.out;
-    IMessagePrinter messagePrinter;
+    final Spoofax S;
+    final CLIUtils cli;
+    final ILanguageImpl stxLang;
+    final IProject project;
+    final IContext context;
+    final PrintStream msgStream;
+    final IMessagePrinter messagePrinter;
 
     public Statix() throws MetaborgException {
         S = new Spoofax(new StatixCLIModule());
         cli = new CLIUtils(S);
-        lang = loadLanguage();
+        stxLang = loadStxLang();
         project = cli.getOrCreateCWDProject();
-        context = S.contextService.get(project.location(), project, lang);
+        context = S.contextService.get(project.location(), project, stxLang);
         msgStream = System.out;
         messagePrinter = new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, msgStream);
     }
@@ -85,7 +87,16 @@ public class Statix {
         new StatixRepl(this).run(file);
     }
 
-    private ILanguageImpl loadLanguage() throws MetaborgException {
+    Optional<ILanguageImpl> loadProjectLang(FileObject resource) {
+        try {
+            final ILanguageImpl l = S.languageDiscoveryService.languageFromDirectory(resource);
+            return Optional.of(l);
+        } catch(MetaborgException e) {
+            return Optional.empty();
+        }
+    }
+
+    private ILanguageImpl loadStxLang() throws MetaborgException {
         ILanguageImpl lang;
         // try loading from path
         cli.loadLanguagesFromPath();
@@ -108,15 +119,14 @@ public class Statix {
         throw new MetaborgException("Failed to load language from path or resources.");
     }
 
-    Optional<ISpoofaxAnalyzeUnit> loadFile(String file) throws MetaborgException {
-        final FileObject resource = S.resourceService.resolve(file);
+    Optional<ISpoofaxAnalyzeUnit> loadStxFile(FileObject resource) throws MetaborgException {
         final String text;
         try {
             text = S.sourceTextService.text(resource);
         } catch(IOException e) {
-            throw new MetaborgException("Cannot find " + file, e);
+            throw new MetaborgException("Cannot read " + resource, e);
         }
-        final ISpoofaxInputUnit inputUnit = S.unitService.inputUnit(resource, text, lang, null);
+        final ISpoofaxInputUnit inputUnit = S.unitService.inputUnit(resource, text, stxLang, null);
         final Optional<ISpoofaxParseUnit> parseUnit = parse(inputUnit);
         if(!parseUnit.isPresent()) {
             return Optional.empty();
@@ -145,7 +155,7 @@ public class Statix {
     }
 
     Optional<ISpoofaxAnalyzeUnit> analyze(ISpoofaxParseUnit parseUnit) throws MetaborgException {
-        if(!S.analysisService.available(lang)) {
+        if(!S.analysisService.available(stxLang)) {
             throw new MetaborgException("Analysis not available.");
         }
         final ISpoofaxAnalyzeUnit analysisUnit;
@@ -189,6 +199,23 @@ public class Statix {
             throw new MetaborgException("Failed to transform " + transformUnit.source());
         }
         return transformUnit.ast();
+    }
+
+    Optional<FileObject> findProject(FileObject resource) {
+        try {
+            FileObject dir = (resource.isFolder() ? resource : resource.getParent());
+            while(dir != null) {
+                FileObject config = dir.resolveFile(MetaborgConstants.FILE_CONFIG);
+                if(config != null && config.exists()) {
+                    return Optional.of(dir);
+                }
+                dir = dir.getParent();
+            }
+        } catch(FileSystemException e) {
+            logger.error("Error while searching for project configuration.", e);
+        }
+        logger.warn("No project configuration file was found for {}.", resource);
+        return Optional.empty();
     }
 
     String format(IStrategoTerm term) throws MetaborgException {
