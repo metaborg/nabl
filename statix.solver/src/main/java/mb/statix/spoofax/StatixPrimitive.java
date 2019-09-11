@@ -122,6 +122,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
         // @formatter:off
         final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
+            onArith -> Stream.empty(),
             onConj -> Stream.empty(),
             onEqual -> Stream.empty(),
             onExists -> Stream.empty(),

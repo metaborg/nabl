@@ -37,7 +37,7 @@ rules
   replace-term: t@Wld() -> v
     with ty := <norm-get-ast-type> t
        ; v := <mk-fresh-Var(|ty)>("wld")
-  
+
   term-to-c: (Wld(), _) -> <fail>
 
 
@@ -60,3 +60,10 @@ rules
        ; v := <mk-fresh-Var(|ty)>("astId")
 
   term-to-c: (AstIdOp(t), v) -> CAstId(t, v)
+
+
+  replace-term: t@ArithOp(ae) -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("n")
+
+  term-to-c: (ArithOp(ae), v) -> CArith(v, Equal(), ae)

@@ -74,8 +74,8 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
-        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
-                cause);
+        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+                subst.apply(resultTerm), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

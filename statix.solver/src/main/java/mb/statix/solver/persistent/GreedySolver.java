@@ -30,6 +30,7 @@ import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CConj;
@@ -222,6 +223,33 @@ public class GreedySolver {
 
         // solve
         return constraint.matchOrThrow(new IConstraint.CheckedCases<State, InterruptedException>() {
+
+            @Override public State caseArith(CArith c) throws InterruptedException {
+                final IUnifier unifier = state.unifier();
+                final Optional<ITerm> term1 = c.expr1().isTerm();
+                final Optional<ITerm> term2 = c.expr2().isTerm();
+                try {
+                    if(c.op().isEquals() && term1.isPresent()) {
+                        int i2 = c.expr2().eval(unifier);
+                        final IConstraint eq = new CEqual(term1.get(), B.newInt(i2), c);
+                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                    } else if(c.op().isEquals() && term2.isPresent()) {
+                        int i1 = c.expr1().eval(unifier);
+                        final IConstraint eq = new CEqual(B.newInt(i1), term2.get(), c);
+                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                    } else {
+                        int i1 = c.expr1().eval(unifier);
+                        int i2 = c.expr2().eval(unifier);
+                        if(c.op().test(i1, i2)) {
+                            return success(c, state, fuel);
+                        } else {
+                            return fail(c, state);
+                        }
+                    }
+                } catch(Delay d) {
+                    return successDelay(c, state, d, fuel);
+                }
+            }
 
             @Override public State caseConj(CConj c) throws InterruptedException {
                 // @formatter:off
@@ -507,6 +535,7 @@ public class GreedySolver {
             }
 
         });
+
     }
 
 }

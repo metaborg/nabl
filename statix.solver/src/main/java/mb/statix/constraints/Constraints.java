@@ -19,6 +19,7 @@ public final class Constraints {
 
     // @formatter:off
     public static <R> IConstraint.Cases<R> cases(
+                Function1<CArith, R> onArith,
                 Function1<CConj,R> onConj,
                 Function1<CEqual,R> onEqual,
                 Function1<CExists,R> onExists,
@@ -34,6 +35,10 @@ public final class Constraints {
                 Function1<CUser,R> onUser
             ) {
         return new IConstraint.Cases<R>() {
+
+            @Override public R caseArith(CArith c) {
+                return onArith.apply(c);
+            }
 
             @Override public R caseConj(CConj c) {
                 return onConj.apply(c);
@@ -93,6 +98,7 @@ public final class Constraints {
 
     // @formatter:off
     public static <R, E extends Throwable> IConstraint.CheckedCases<R, E> checkedCases(
+                CheckedFunction1<CArith, R, E> onArith,
                 CheckedFunction1<CConj, R, E> onConj,
                 CheckedFunction1<CEqual, R, E> onEqual,
                 CheckedFunction1<CExists, R, E> onExists,
@@ -108,6 +114,10 @@ public final class Constraints {
                 CheckedFunction1<CUser, R, E> onUser
             ) {
         return new IConstraint.CheckedCases<R, E>() {
+
+            @Override public R caseArith(CArith c) throws E {
+                return onArith.apply(c);
+            }
 
             @Override public R caseConj(CConj c) throws E {
                 return onConj.apply(c);

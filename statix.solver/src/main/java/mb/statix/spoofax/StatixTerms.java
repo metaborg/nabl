@@ -30,6 +30,7 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
+import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -40,6 +41,8 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.arithmetic.ArithTerms;
+import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CConj;
@@ -119,6 +122,9 @@ public class StatixTerms {
         return (t, u) -> {
             // @formatter:off
             return M.<IConstraint>casesFix(m -> Iterables2.from(
+                M.appl3("CArith", ArithTerms.matchExpr(), ArithTerms.matchTest(), ArithTerms.matchExpr(), (c, ae1, op, ae2) -> {
+                    return new CArith(ae1, op, ae2);
+                }),
                 M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
                     return new CAstId(t1, t2);
                 }),
@@ -255,9 +261,7 @@ public class StatixTerms {
             M.appl1("Str", M.stringValue(), (t, string) -> {
                 return B.newString(string, t.getAttachments());
             }),
-            M.appl1("Int", M.stringValue(), (t, integer) -> {
-                return B.newInt(Integer.parseInt(integer), t.getAttachments());
-            }),
+            intTerm(),
             listTerm(),
             // SCOPE_OP -- has no syntax
             // TERMINDEX_OP -- has no syntax
@@ -276,6 +280,12 @@ public class StatixTerms {
             })
         ));
         // @formatter:on
+    }
+
+    public static IMatcher<IIntTerm> intTerm() {
+        return M.appl1("Int", M.stringValue(), (t, integer) -> {
+            return B.newInt(Integer.parseInt(integer), t.getAttachments());
+        });
     }
 
     private static IMatcher<ITerm> positionTerm() {

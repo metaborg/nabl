@@ -20,6 +20,7 @@ public class Completeness {
     static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
+            onArith -> null,
             onConj -> {
                 criticalEdges(onConj.left(), spec, criticalEdge);
                 criticalEdges(onConj.right(), spec, criticalEdge);

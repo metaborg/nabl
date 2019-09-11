@@ -31,6 +31,7 @@ import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CConj;
@@ -232,6 +233,33 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
         }
     }
 
+    @Override public Optional<StepResult> caseArith(CArith c) throws SolverException {
+        final IUnifier unifier = state.unifier();
+        final Optional<ITerm> term1 = c.expr1().isTerm();
+        final Optional<ITerm> term2 = c.expr2().isTerm();
+        try {
+            if(term1.isPresent()) {
+                int i2 = c.expr2().eval(unifier);
+                final IConstraint eq = new CEqual(term1.get(), B.newInt(i2), c);
+                return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
+            } else if(term2.isPresent()) {
+                int i1 = c.expr1().eval(unifier);
+                final IConstraint eq = new CEqual(B.newInt(i1), term2.get(), c);
+                return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
+            } else {
+                int i1 = c.expr1().eval(unifier);
+                int i2 = c.expr2().eval(unifier);
+                if(c.op().test(i1, i2)) {
+                    return Optional.of(StepResult.of(state));
+                } else {
+                    return Optional.empty();
+                }
+            }
+        } catch(Delay d) {
+            return Optional.of(StepResult.ofDelay(state, d, c));
+        }
+    }
+
     @Override public Optional<StepResult> caseConj(CConj c) throws SolverException {
         // @formatter:off
         final List<IConstraint> newConstraints = ImmutableList.of(
@@ -365,12 +393,12 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
             return Optional.of(StepResult.ofNew(state, ImmutableList.of(C)));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            return Optional.of(
-                    StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
+            return Optional
+                    .of(StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
         } catch(IncompleteEdgeException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            return Optional.of(
-                    StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
+            return Optional
+                    .of(StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
         } catch(ResolutionDelayException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             return Optional.of(StepResult.ofDelay(state, e.getCause(), c));

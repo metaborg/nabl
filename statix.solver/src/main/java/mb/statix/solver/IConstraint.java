@@ -7,6 +7,7 @@ import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CConj;
@@ -36,6 +37,8 @@ public interface IConstraint {
     String toString(TermFormatter termToString);
 
     interface Cases<R> extends Function1<IConstraint, R> {
+
+        R caseArith(CArith c);
 
         R caseConj(CConj c);
 
@@ -70,6 +73,8 @@ public interface IConstraint {
     }
 
     interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
+
+        R caseArith(CArith c) throws E;
 
         R caseConj(CConj c) throws E;
 

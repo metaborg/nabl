@@ -308,8 +308,10 @@ context-free syntax
   Var.Var = VARID
   Var.Wld = <_>
 
+  Int.Int = INT
+
   Term            = Var
-  Term.Int        = INT
+  Term            = Int
   Term.List       = <[<{Term ", "}*>]>
   Term.ListTail   = <[<{Term ", "}*>|<Term>]>
   Term.Tuple0     = <( )>
@@ -340,3 +342,30 @@ lexical syntax
 lexical restrictions
 
   StrChars -/- ~[\"]
+
+/******************************************************************
+ * Arithmetic                                                          *
+ ******************************************************************/
+
+syntax
+
+  Constraint-CF.CArith = ArithExp-CF LAYOUT?-CF "#" ArithOp-CF LAYOUT?-CF ArithExp-CF
+
+  ArithOp-CF.Equal            = "="
+  ArithOp-CF.NotEqual         = "\\="
+  ArithOp-CF.GreaterThanEqual = ">="
+  ArithOp-CF.LessThanEqual    = "=<"
+  ArithOp-CF.GreaterThan      = ">"
+  ArithOp-CF.LessThan         = "<"
+
+context-free syntax
+
+  ArithExp = Int
+  ArithExp = Var
+  ArithExp.Add = <<ArithExp> + <ArithExp>>
+  ArithExp.Mul = <<ArithExp> * <ArithExp>>
+  ArithExp.Sub = <<ArithExp> - <ArithExp>>
+  ArithExp.Min = <min(<ArithExp>, <ArithExp>)>
+  ArithExp.Max = <max(<ArithExp>, <ArithExp>)>
+  ArithExp.Mod = <<ArithExp> mod <ArithExp>>
+  ArithExp.Div = <<ArithExp> div <ArithExp>>
