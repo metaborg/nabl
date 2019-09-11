@@ -39,7 +39,7 @@ public class RandomTermGenerator {
     private final long seed = System.currentTimeMillis();
     private final Random rnd = new Random(seed);
     private final Deque<Iterator<SearchNode<SearchState>>> stack = new LinkedList<>();
-    private final SearchStrategy<SearchState, SearchState> strategy = N.seq(enumerate(), infer());
+    private final SearchStrategy<SearchState, SearchState> strategy = N.seq(enumerateComb(), infer());
     private final Function1<ITerm, String> pp;
 
     public RandomTermGenerator(Spec spec, IConstraint constraint, Function1<ITerm, String> pp) {
@@ -67,7 +67,7 @@ public class RandomTermGenerator {
             }
 
             @Override public void addFailed(SearchNode<SearchState> node) {
-//                printResult("FAILURE", node);
+                //                printResult("FAILURE", node);
             }
         };
         while(!stack.isEmpty()) {
@@ -148,21 +148,54 @@ public class RandomTermGenerator {
         // @formatter:on
     }
 
+
+    // enumerate all possible permutations of solving constraints
+    private static SearchStrategy<SearchState, SearchState> enumeratePerm() {
+        // @formatter:off
+        return N.alt(
+            N.seq(
+                N.select(CUser.class, new Not<>(new IsGen())),
+                N.expand(ImmutableMap.of(
+                    "E-Unit", 0,
+                    "E-Fun",  1,
+                    "E-Var",  1,
+                    "E-App",  1,
+                    "E-Let",  0
+                ))),
+            N.seq(
+                N.select(CResolveQuery.class, new Any<>()),
+                N.resolve()
+            )
+        );
+        // @formatter:on
+    }
+
+    // enumerate all possible combinations of solving constraints
+    private static SearchStrategy<SearchState, SearchState> enumerateComb() {
+        // @formatter:off
+        return N.alt(
+            N.seq(
+                N.limit(1, N.select(CUser.class, new Not<>(new IsGen()))),
+                N.expand(ImmutableMap.of(
+                    "E-Unit", 0,
+                    "E-Fun",  1,
+                    "E-Var",  1,
+                    "E-App",  1,
+                    "E-Let",  0
+                ))),
+            N.seq(
+                N.limit(1, N.select(CResolveQuery.class, new Any<>())),
+                N.resolve()
+            )
+        );
+        // @formatter:on
+    }
+
     private static SearchStrategy<SearchState, SearchState> fillTypes() {
         // @formatter:off
         return N.seq(
             N.select(CUser.class, new IsType()),
             N.limit(5, N.expand(ImmutableMap.of("T-Unit", 2, "T-Fun", 1)))
-        );
-        // @formatter:on
-    }
-
-    private static SearchStrategy<SearchState, SearchState> enumerate() {
-        // @formatter:off
-        return N.alt(
-            N.seq(N.select(CUser.class, new Not<>(new IsGen())),
-                     N.expand(ImmutableMap.of("E-Let", 0, "E-Unit", 0))), 
-            N.seq(N.select(CResolveQuery.class, new Any<>()), N.resolve())
         );
         // @formatter:on
     }

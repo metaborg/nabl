@@ -290,7 +290,7 @@ public final class SearchStrategies {
                         dataWF, isAlways, isComplete2);
                 // @formatter:on
 
-                final AtomicInteger count = new AtomicInteger(1); // 
+                final AtomicInteger count = new AtomicInteger(1);
                 try {
                     nameResolution.resolve(scope, () -> {
                         count.incrementAndGet();
@@ -307,7 +307,7 @@ public final class SearchStrategies {
                         IntStream.range(0, count.get()).boxed().collect(Collectors.toCollection(ArrayList::new));
                 Collections.shuffle(indices, ctx.rnd());
 
-                return indices.stream().map(idx -> {
+                return indices.stream().flatMap(idx -> {
                     final AtomicInteger select = new AtomicInteger(idx);
                     final Env<Scope, ITerm, ITerm, CEqual> env;
                     try {
@@ -315,31 +315,30 @@ public final class SearchStrategies {
                     } catch(ResolutionException e) {
                         ctx.addFailed(
                                 new SearchNode<>(input, parent, "resolve[resolution error:" + e.getMessage() + "]"));
-                        return Stream.<Env<Scope, ITerm, ITerm, CEqual>>empty();
+                        return Stream.empty();
                     } catch(InterruptedException e) {
                         throw new MetaborgRuntimeException(e);
                     }
-                    return Stream.of(env);
-                }).flatMap(s -> s).flatMap(env -> {
+
                     return Streams.stream(new SetElementEnum<>(env.matches)).map(entry -> {
                         final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnv = Env.builder();
                         subEnv.match(entry.getFocus());
                         entry.getOthers().forEach(subEnv::reject);
                         env.rejects.forEach(subEnv::reject);
                         return subEnv.build();
+                    }).map(subEnv -> {
+                        final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
+                                .collect(ImmutableList.toImmutableList());
+                        final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+                        constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
+                        subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition))
+                                .forEach(condition -> constraints.add(condition));
+                        subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
+                                .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
+                        constraints.addAll(input.constraints());
+                        final SearchState newState = input.update(input.state(), constraints.build());
+                        return new SearchNode<>(newState, parent, "resolve[" + idx + "/" + count.get() + "]");
                     });
-                }).map(env -> {
-                    final List<ITerm> pathTerms = env.matches.stream().map(m -> StatixTerms.explicate(m.path))
-                            .collect(ImmutableList.toImmutableList());
-                    final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-                    constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                    env.matches.stream().flatMap(m -> Optionals.stream(m.condition))
-                            .forEach(condition -> constraints.add(condition));
-                    env.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
-                            .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
-                    constraints.addAll(input.constraints());
-                    final SearchState newState = input.update(input.state(), constraints.build());
-                    return new SearchNode<>(newState, parent, "resolve");
                 });
             }
 
