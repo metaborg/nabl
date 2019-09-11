@@ -1,0 +1,10 @@
+module Colorer
+
+imports 
+
+  libspoofax/color/default
+  completion/colorer/StatixLang-cc-esv
+
+colorer
+
+  RuleLabel._ : 0 0 139

@@ -6,6 +6,7 @@ imports
   Analysis
   Generate
   Evaluate
+  Colorer
 
 language
 

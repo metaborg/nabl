@@ -1,4 +1,4 @@
-package mb.statix.random.strategy;
+package mb.statix.random.predicate;
 
 import org.metaborg.util.functions.Predicate1;
 

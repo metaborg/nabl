@@ -32,7 +32,7 @@ rules
     with
       r'* := <flatmap(expand-rule(|a,cps,sops) <+ MkSingleton)> r*
 
-  expand-rule(|a,cps,sops): Rule(C(x, ps), vs, C) -> r*
+  expand-rule(|a,cps,sops): Rule(lbl, C(x, ps), vs, C) -> r*
     with
       d := <norm-get-ast-decl(|a)> x
     ; ps' := <nonoverlapping-patterns-desugar> ps
@@ -40,7 +40,7 @@ rules
              ; filter(where(<patterns-lt> (<id>, ps')))
              > (d, cps)
     ; r* := < expand-patterns(|sops,ps*)
-            ; map(!Rule(C(x, <nonoverlapping-patterns-resugar>), vs, C))
+            ; map(!Rule(lbl, C(x, <nonoverlapping-patterns-resugar>), vs, C))
             > ps'
 
   /* Expand pattern relative to a list of other patterns
@@ -129,7 +129,7 @@ rules
 
   // @type _ -> [(occurrence * [[Pattern]]]
   get-constraint-patterns(|a) =
-    collect-all(\ Rule(C(x, ps), _, _) -> (<norm-get-ast-decl(|a)> x, <nonoverlapping-patterns-desugar> ps) \)
+    collect-all(\ Rule(_, C(x, ps), _, _) -> (<norm-get-ast-decl(|a)> x, <nonoverlapping-patterns-desugar> ps) \)
   ; group-by(Fst, Snd)
 
 

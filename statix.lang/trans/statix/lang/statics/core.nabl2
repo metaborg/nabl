@@ -96,7 +96,7 @@ rules
   [[ InductiveC() ]].
   [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
-  [[ r@Rule(h, bvs, body) ^ (s) ]] :=
+  [[ r@Rule(_, h, bvs, body) ^ (s) ]] :=
     Rule{x} <- s,
     new s_rule, s_rule -P-> s,
     distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,

@@ -32,7 +32,7 @@ rules
          t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
   normalize-functional-head:
-      Rule(h, bvs, body){a*} -> Rule(h', bvs', body'){a*}
+      Rule(lbl, h, bvs, body){a*} -> Rule(lbl, h', bvs', body'){a*}
     where F(x, in_ts, out_t) := h
     with ty@FUN(_, out_ty) := <norm-get-ast-type> h;
          out_v := <mk-fresh-Var(|out_ty)>("out");

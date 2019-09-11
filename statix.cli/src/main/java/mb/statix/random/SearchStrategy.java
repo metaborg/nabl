@@ -1,23 +1,21 @@
 package mb.statix.random;
 
-import java.util.Random;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
+import mb.nabl2.util.Tuple2;
 
 public abstract class SearchStrategy<I, O> {
 
-    private static final ILogger log = LoggerUtils.logger(SearchStrategy.class);
-
-    public final Stream<SearchNode<O>> apply(Random rnd, int size, I input, SearchNode<?> parent) {
-        if(size <= 0) {
-            log.info("Fail: size is empty");
-            return Stream.empty();
-        }
-        return doApply(rnd, size, input, parent);
+    public final Stream<SearchNode<O>> apply(SearchContext ctx, int size, I input, SearchNode<?> parent) {
+        return doApply(ctx, size, input, parent);
     }
 
-    protected abstract Stream<SearchNode<O>> doApply(Random rnd, int size, I input, SearchNode<?> parent);
+    protected abstract Stream<SearchNode<O>> doApply(SearchContext ctx, int size, I input, SearchNode<?> parent);
+
+    public Tuple2<Stream<SearchNode<O>>, Optional<SearchStrategy<O, ?>>> applyRec(SearchContext ctx, int size,
+            I input, SearchNode<?> parent) {
+        return null;
+    }
 
 }

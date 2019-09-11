@@ -85,8 +85,8 @@ public class StatixTerms {
 
     public static IMatcher<ListMultimap<String, Rule>> rules() {
         return M.listElems(M.req(rule())).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder =
-                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
+            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.<String, Rule>builder()
+                    .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
             rules.stream().forEach(rule -> {
                 builder.put(rule.name(), rule);
             });
@@ -95,9 +95,18 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule() {
-        return M.appl3("Rule", head(), M.listElems(varTerm()), constraint(), (r, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), new CExists(bvs, bc));
+        return M.appl4("Rule", ruleLabel(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
+            return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
         });
+    }
+
+    public static IMatcher<String> ruleLabel() {
+        // @formatter:off
+        return M.<String>cases(
+            M.appl0("NoLabel", (t) -> ""),
+            M.appl1("Label", M.stringValue(), (t, n) -> n)
+        );
+        // @formatter:on
     }
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {

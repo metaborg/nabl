@@ -52,7 +52,7 @@ rules
   // to-c : (old:Term, new:Term) -> Constraint
 
   normalize-in-rules(replace,add-vars,to-c):
-      Rule(head, bvs, body){a*} -> Rule(head, bvs', body''){a*}
+      Rule(lbl, head, bvs, body){a*} -> Rule(lbl, head, bvs', body''){a*}
     with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
          body'' := <filter(to-c);list-to-conj(|body')> bmaps;
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;

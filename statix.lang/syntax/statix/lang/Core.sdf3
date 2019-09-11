@@ -43,10 +43,14 @@ context-free syntax
   CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> :- <LocalVars>
+    <RuleLabel><RuleHead> :- <LocalVars>
       <Constraint>.
   >
 
+  RuleLabel.NoLabel = <>
+  RuleLabel.Label = <
+    [<STRID>]
+  >
   RuleHead   = UserConstraint
 
   LocalVars = <{<{Var " "}*>}>

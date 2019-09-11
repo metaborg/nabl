@@ -33,6 +33,10 @@ import mb.statix.solver.persistent.State;
 @Serial.Version(42L)
 public abstract class ARule {
 
+    @Value.Default public String label() {
+        return "";
+    }
+
     @Value.Parameter public abstract String name();
 
     @Value.Parameter public abstract List<Pattern> params();
@@ -96,6 +100,9 @@ public abstract class ARule {
 
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
+        if(!label().isEmpty()) {
+            sb.append("[").append(label()).append("] ");
+        }
         if(name().isEmpty()) {
             sb.append("{ ").append(params());
         } else {
