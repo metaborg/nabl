@@ -22,6 +22,7 @@ import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
 import mb.statix.random.predicate.Any;
+import mb.statix.random.predicate.IsGen;
 import mb.statix.random.predicate.IsType;
 import mb.statix.random.predicate.Not;
 import mb.statix.random.strategy.SearchStrategies;
@@ -33,7 +34,7 @@ public class RandomTermGenerator {
 
     private static final ILogger log = LoggerUtils.logger(RandomTermGenerator.class);
 
-    private static final int SIZE = 10;
+    private static final int MAX_DEPTH = 1024;
 
     private final long seed = System.currentTimeMillis();
     private final Random rnd = new Random(seed);
@@ -50,8 +51,7 @@ public class RandomTermGenerator {
         final SearchState initState = SearchState.of(State.of(spec), ImmutableList.of(constraint));
         // It is necessary to start with inference, otherwise we get stuck directly,
         // on, e.g., top-level existentials
-        final Stream<SearchNode<SearchState>> initNodes =
-                infer().apply(new NullSearchContext(rnd), SIZE, initState, null);
+        final Stream<SearchNode<SearchState>> initNodes = infer().apply(new NullSearchContext(rnd), initState, null);
         stack.push(initNodes.iterator());
     }
 
@@ -59,7 +59,6 @@ public class RandomTermGenerator {
     private int backtracks = 0;
     private int deadEnds = 0;
     private int hits = 0;
-    private int maxDepth = 0;
 
     public Optional<SearchState> next() throws MetaborgException, InterruptedException {
         final SearchContext ctx = new SearchContext() {
@@ -73,25 +72,22 @@ public class RandomTermGenerator {
         };
         while(!stack.isEmpty()) {
             final Iterator<SearchNode<SearchState>> nodes = stack.peek();
-            maxDepth = Math.max(maxDepth, stack.size());
             if(!nodes.hasNext()) {
                 backtracks++;
                 stack.pop();
                 continue;
             }
             final SearchNode<SearchState> node = nodes.next();
-            if(node.size() <= 0) {
-                ctx.addFailed(node);
-                deadEnds++;
-                continue;
-            }
             if(done(node.output())) {
                 printResult("SUCCESS", node);
                 hits++;
                 return Optional.of(node.output());
+            } else if(stack.size() >= MAX_DEPTH) {
+                ctx.addFailed(node);
+                deadEnds++;
+                continue;
             }
-            final Iterator<SearchNode<SearchState>> nextNodes =
-                    strategy.apply(ctx, node.size(), node.output(), node).iterator();
+            final Iterator<SearchNode<SearchState>> nextNodes = strategy.apply(ctx, node.output(), node).iterator();
             work++;
             if(!nextNodes.hasNext()) {
                 deadEnds++;
@@ -100,15 +96,15 @@ public class RandomTermGenerator {
             stack.push(nextNodes);
         }
         log.info("hits       {}", hits);
-        log.info("dead ends  {}", deadEnds);
         log.info("work       {}", work);
+        log.info("dead ends  {}", deadEnds);
         log.info("backtracks {}", backtracks);
-        log.info("max depth  {}", maxDepth);
         return Optional.empty();
     }
 
     private static boolean done(SearchState state) {
-        return state.constraints().stream().allMatch(c -> c instanceof CInequal);
+        return state.constraints().stream()
+                .allMatch(c -> c instanceof CInequal || (c instanceof CUser && ((CUser) c).name().startsWith("gen_")));
     }
 
 
@@ -137,15 +133,6 @@ public class RandomTermGenerator {
         // @formatter:on
     }
 
-    private static SearchStrategy<SearchState, SearchState> search1c(int size) {
-        // @formatter:off
-        return N.atSize(
-            10   , fillTypes(),
-            size , search1a()
-        );
-        // @formatter:on
-    }
-
     private static SearchStrategy<SearchState, SearchState> search1b() {
         // @formatter:off
         return N.limit(15, N.alt(
@@ -161,36 +148,6 @@ public class RandomTermGenerator {
         // @formatter:on
     }
 
-    private static SearchStrategy<SearchState, SearchState> search2(int size) {
-        // @formatter:off
-        return N.atSize(
-            size, N.seq(
-                N.select(CUser.class, new Not<>(new IsType())),
-                N.limit(4, N.expand())
-            ),
-            size/2, N.seq(N.select(CResolveQuery.class, new Any<>()), N.resolve()),
-            size/4, N.limit(2,
-                N.seq(
-                    N.select(CUser.class, new IsType()),
-                    N.expand()
-                )
-            )
-        );
-        // @formatter:on
-    }
-
-    private static SearchStrategy<SearchState, SearchState> search3(int size) {
-        // @formatter:off
-        return N.atSize(
-            size, N.limit(15, N.alt(
-                N.seq(N.limit(10, N.select(CUser.class, new Not<>(new IsType()))), N.limit(10, N.expand())), 
-                N.seq(N.limit(10, N.select(CResolveQuery.class, new Any<>())), N.limit(10, N.resolve()))
-            )),
-            size/2, fillTypes()
-        );
-        // @formatter:on
-    }
-
     private static SearchStrategy<SearchState, SearchState> fillTypes() {
         // @formatter:off
         return N.seq(
@@ -203,7 +160,8 @@ public class RandomTermGenerator {
     private static SearchStrategy<SearchState, SearchState> enumerate() {
         // @formatter:off
         return N.alt(
-            N.seq(N.select(CUser.class, new Any<>()), N.expand()), 
+            N.seq(N.select(CUser.class, new Not<>(new IsGen())),
+                     N.expand(ImmutableMap.of("E-Let", 0, "E-Unit", 0))), 
             N.seq(N.select(CResolveQuery.class, new Any<>()), N.resolve())
         );
         // @formatter:on
@@ -217,10 +175,9 @@ public class RandomTermGenerator {
         log.info("+~~~ Trace ~~~+.");
 
         SearchNode<?> traceNode = node;
-        while(traceNode != null) {
+        do {
             log.info("+ * {}", traceNode);
-            traceNode = traceNode.parent();
-        }
+        } while(false && (traceNode = traceNode.parent()) != null);
 
         log.info("+------------+");
     }

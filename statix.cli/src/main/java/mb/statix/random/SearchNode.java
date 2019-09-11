@@ -5,23 +5,17 @@ import java.util.Objects;
 public class SearchNode<O> {
 
     private final O output;
-    private final int size;
     private final SearchNode<?> parent;
     private final String desc;
 
-    public SearchNode(O output, int size, SearchNode<?> parent, String desc) {
+    public SearchNode(O output, SearchNode<?> parent, String desc) {
         this.output = output;
-        this.size = size;
         this.parent = parent;
         this.desc = desc;
     }
 
     public O output() {
         return output;
-    }
-
-    public int size() {
-        return size;
     }
 
     public SearchNode<?> parent() {

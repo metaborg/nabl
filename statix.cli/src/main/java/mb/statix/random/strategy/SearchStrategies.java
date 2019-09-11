@@ -9,25 +9,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.metaborg.core.MetaborgRuntimeException;
-import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableRangeMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
 import com.google.common.collect.Streams;
 import com.oracle.truffle.api.object.dsl.Nullable;
 
@@ -35,6 +30,7 @@ import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CInequal;
@@ -74,8 +70,8 @@ public final class SearchStrategies {
     public final <I, O> SearchStrategy<I, O> limit(int n, SearchStrategy<I, O> s) {
         return new SearchStrategy<I, O>() {
 
-            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, int size, I input, SearchNode<?> parent) {
-                return s.apply(ctx, size, input, parent).limit(n);
+            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
+                return s.apply(ctx, input, parent).limit(n);
             }
 
             @Override public String toString() {
@@ -88,15 +84,10 @@ public final class SearchStrategies {
     public final <I1, I2, O> SearchStrategy<I1, O> seq(SearchStrategy<I1, I2> s1, SearchStrategy<I2, O> s2) {
         return new SearchStrategy<I1, O>() {
 
-            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, int size, I1 i1, SearchNode<?> parent) {
-                // FIXME Other size distributions are possible
-                //       What if this is pick + expand sequence, should the pick
-                //       consume anything?
-                return s1.apply(ctx, size, i1, parent).flatMap(sn1 -> {
-                    return s2.apply(ctx, sn1.size(), sn1.output(), sn1).map(sn2 -> {
-                        // FIXME Bad!!! Size can drop below zero this way
-                        return new SearchNode<>(sn2.output(), sn2.size(), sn2,
-                                "(" + sn1.toString() + " . " + sn2.toString() + ")");
+            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, I1 i1, SearchNode<?> parent) {
+                return s1.apply(ctx, i1, parent).flatMap(sn1 -> {
+                    return s2.apply(ctx, sn1.output(), sn1).map(sn2 -> {
+                        return new SearchNode<>(sn2.output(), sn2, "(" + sn1.toString() + " . " + sn2.toString() + ")");
                     });
                 });
             }
@@ -112,10 +103,9 @@ public final class SearchStrategies {
         final List<SearchStrategy<I, O>> _ss = ImmutableList.copyOf(ss);
         return new SearchStrategy<I, O>() {
 
-            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, int size, I input, SearchNode<?> parent) {
-                final List<Iterator<SearchNode<O>>> _ns =
-                        _ss.stream().map(s -> s.apply(ctx, size, input, parent).iterator())
-                                .collect(Collectors.toCollection(ArrayList::new));
+            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
+                final List<Iterator<SearchNode<O>>> _ns = _ss.stream().map(s -> s.apply(ctx, input, parent).iterator())
+                        .collect(Collectors.toCollection(ArrayList::new));
                 return Streams.stream(new Iterator<SearchNode<O>>() {
 
                     private void removeEmpty() {
@@ -150,7 +140,7 @@ public final class SearchStrategies {
     public final SearchStrategy<SearchState, SearchState> infer() {
         return new SearchStrategy<SearchState, SearchState>() {
 
-            @Override public Stream<SearchNode<SearchState>> doApply(SearchContext ctx, int size, SearchState state,
+            @Override public Stream<SearchNode<SearchState>> doApply(SearchContext ctx, SearchState state,
                     SearchNode<?> parent) {
                 final SolverResult resultConfig;
                 try {
@@ -160,11 +150,13 @@ public final class SearchStrategies {
                     throw new MetaborgRuntimeException(e);
                 }
                 if(resultConfig.hasErrors()) {
-                    ctx.addFailed(new SearchNode<>(state, size, parent, "infer"));
+                    final String msg = Constraints.toString(resultConfig.errors(),
+                            new UnifierFormatter(resultConfig.state().unifier(), 3));
+                    ctx.addFailed(new SearchNode<>(state, parent, "infer[" + msg + "]"));
                     return Stream.empty();
                 }
                 final SearchState newState = state.update(resultConfig);
-                return Stream.of(new SearchNode<>(newState, size, parent, "infer"));
+                return Stream.of(new SearchNode<>(newState, parent, "infer"));
             }
 
             @Override public String toString() {
@@ -178,18 +170,18 @@ public final class SearchStrategies {
             Predicate1<C> include) {
         return new SearchStrategy<SearchState, FocusedSearchState<C>>() {
 
-            @Override protected Stream<SearchNode<FocusedSearchState<C>>> doApply(SearchContext ctx, int size,
-                    SearchState input, SearchNode<?> parent) {
+            @Override protected Stream<SearchNode<FocusedSearchState<C>>> doApply(SearchContext ctx, SearchState input,
+                    SearchNode<?> parent) {
                 @SuppressWarnings("unchecked") final Set.Immutable<C> candidates =
                         input.constraints().stream().filter(c -> cls.isInstance(c)).map(c -> (C) c)
                                 .filter(include::test).collect(CapsuleCollectors.toSet());
                 if(candidates.isEmpty()) {
-                    ctx.addFailed(new SearchNode<>(input, size, parent, this.toString() + "[no candidates]"));
+                    ctx.addFailed(new SearchNode<>(input, parent, this.toString() + "[no candidates]"));
                     return Stream.empty();
                 }
                 return WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
                     final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());
-                    return new SearchNode<>(output, size - 1, parent, "select(" + c.getKey() + ")");
+                    return new SearchNode<>(output, parent, "select(" + c.getKey() + ")");
                 });
             }
 
@@ -204,14 +196,14 @@ public final class SearchStrategies {
         final ImmutableSet<Class<? extends IConstraint>> _classes = ImmutableSet.copyOf(classes);
         return new SearchStrategy<SearchState, SearchState>() {
 
-            @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx, int size, SearchState input,
+            @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx, SearchState input,
                     SearchNode<?> parent) {
                 final Set.Immutable<IConstraint> constraints = input.constraints().stream()
                         .filter(c -> !_classes.contains(c.getClass())).collect(CapsuleCollectors.toSet());
                 final SearchState output = input.update(input.state(), constraints);
                 final String desc =
                         "drop" + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(",", "(", ")"));
-                return Stream.of(new SearchNode<>(output, size, parent, desc));
+                return Stream.of(new SearchNode<>(output, parent, desc));
             }
 
             @Override public String toString() {
@@ -228,7 +220,7 @@ public final class SearchStrategies {
     public final SearchStrategy<FocusedSearchState<CUser>, SearchState> expand(Map<String, Integer> weights) {
         return new SearchStrategy<FocusedSearchState<CUser>, SearchState>() {
 
-            @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx, int size,
+            @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx,
                     FocusedSearchState<CUser> input, SearchNode<?> parent) {
                 final CUser predicate = input.focus();
                 final Map<Rule, Integer> rules = new HashMap<>();
@@ -242,7 +234,7 @@ public final class SearchStrategies {
                                         input.update(result._1(), input.constraints().__insert(result._2()));
                                 final String head = rule.name() + rule.params().stream().map(Object::toString)
                                         .collect(Collectors.joining(", ", "(", ")"));
-                                return new SearchNode<>(output, size - 1, parent, "expand(" + head + ")");
+                                return new SearchNode<>(output, parent, "expand(" + head + ")");
                             });
                 });
             }
@@ -257,7 +249,7 @@ public final class SearchStrategies {
     public final SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> resolve() {
         return new SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState>() {
 
-            @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx, int size,
+            @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx,
                     FocusedSearchState<CResolveQuery> input, SearchNode<?> parent) {
                 final State state = input.state();
                 final IUnifier unifier = state.unifier();
@@ -265,7 +257,7 @@ public final class SearchStrategies {
 
                 final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
                 if(scope == null) {
-                    ctx.addFailed(new SearchNode<>(input, size, parent, "resolve[no scope]"));
+                    ctx.addFailed(new SearchNode<>(input, parent, "resolve[no scope]"));
                     return Stream.empty();
                 }
 
@@ -276,7 +268,7 @@ public final class SearchStrategies {
                     throw new MetaborgRuntimeException(e);
                 }
                 if(isAlways == null) {
-                    ctx.addFailed(new SearchNode<>(input, size, parent, "resolve[cannot decide data equiv]"));
+                    ctx.addFailed(new SearchNode<>(input, parent, "resolve[cannot decide data equiv]"));
                     return Stream.empty();
                 }
 
@@ -305,8 +297,7 @@ public final class SearchStrategies {
                         return false;
                     });
                 } catch(ResolutionException e) {
-                    ctx.addFailed(
-                            new SearchNode<>(input, size, parent, "resolve[counting error:" + e.getMessage() + "]"));
+                    ctx.addFailed(new SearchNode<>(input, parent, "resolve[counting error:" + e.getMessage() + "]"));
                     return Stream.empty();
                 } catch(InterruptedException e) {
                     throw new MetaborgRuntimeException(e);
@@ -322,8 +313,8 @@ public final class SearchStrategies {
                     try {
                         env = nameResolution.resolve(scope, () -> select.getAndDecrement() == 0);
                     } catch(ResolutionException e) {
-                        ctx.addFailed(new SearchNode<>(input, size, parent,
-                                "resolve[resolution error:" + e.getMessage() + "]"));
+                        ctx.addFailed(
+                                new SearchNode<>(input, parent, "resolve[resolution error:" + e.getMessage() + "]"));
                         return Stream.<Env<Scope, ITerm, ITerm, CEqual>>empty();
                     } catch(InterruptedException e) {
                         throw new MetaborgRuntimeException(e);
@@ -348,7 +339,7 @@ public final class SearchStrategies {
                             .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
                     constraints.addAll(input.constraints());
                     final SearchState newState = input.update(input.state(), constraints.build());
-                    return new SearchNode<>(newState, size - 1, parent, "resolve");
+                    return new SearchNode<>(newState, parent, "resolve");
                 });
             }
 
@@ -406,59 +397,6 @@ public final class SearchStrategies {
                     return Optional.of(Optional.of(eq));
                 }
 
-            }
-
-        };
-    }
-
-    public final <I, O> SearchStrategy<I, O> atSize(int until1, SearchStrategy<I, O> s1, int until2,
-            SearchStrategy<I, O> s2) {
-        final ImmutableRangeMap.Builder<Integer, SearchStrategy<I, O>> sm = ImmutableRangeMap.builder();
-        sm.put(Range.openClosed(0, until1), s1);
-        sm.put(Range.openClosed(until1, until2), s2);
-        return atSize(sm.build());
-    }
-
-    public final <I, O> SearchStrategy<I, O> atSize(int until1, SearchStrategy<I, O> s1, int until2,
-            SearchStrategy<I, O> s2, int until3, SearchStrategy<I, O> s3) {
-        final ImmutableRangeMap.Builder<Integer, SearchStrategy<I, O>> sm = ImmutableRangeMap.builder();
-        sm.put(Range.openClosed(0, until1), s1);
-        sm.put(Range.openClosed(until1, until2), s2);
-        sm.put(Range.openClosed(until2, until3), s3);
-        return atSize(sm.build());
-    }
-
-    public final <I, O> SearchStrategy<I, O> atSize(int until1, SearchStrategy<I, O> s1, int until2,
-            SearchStrategy<I, O> s2, int until3, SearchStrategy<I, O> s3, int until4, SearchStrategy<I, O> s4) {
-        final ImmutableRangeMap.Builder<Integer, SearchStrategy<I, O>> sm = ImmutableRangeMap.builder();
-        sm.put(Range.openClosed(0, until1), s1);
-        sm.put(Range.openClosed(until1, until2), s2);
-        sm.put(Range.openClosed(until2, until3), s3);
-        sm.put(Range.openClosed(until3, until4), s4);
-        return atSize(sm.build());
-    }
-
-    public final <I, O> SearchStrategy<I, O> atSize(ImmutableRangeMap<Integer, SearchStrategy<I, O>> ss) {
-        return new SearchStrategy<I, O>() {
-
-            @Override protected Stream<SearchNode<O>> doApply(SearchContext ctx, int size, I input,
-                    SearchNode<?> parent) {
-                final ImmutableMap<Range<Integer>, SearchStrategy<I, O>> _ss =
-                        ss.subRangeMap(Range.openClosed(0, size)).asDescendingMapOfRanges();
-                if(_ss.isEmpty()) {
-                    throw new IllegalStateException("No entry for size " + size);
-                }
-                for(Map.Entry<Range<Integer>, SearchStrategy<I, O>> entry : _ss.entrySet()) {
-                    final Spliterator<SearchNode<O>> nodes =
-                            entry.getValue().apply(ctx, size, input, parent).spliterator();
-                    final Ref<SearchNode<O>> node = new Ref<>();
-                    if(nodes.tryAdvance(node::set)) {
-                        int nextSize = Math.min(size, entry.getKey().upperEndpoint());
-                        return Stream.concat(Stream.of(node.get()), StreamSupport.stream(nodes, false))
-                                .map(n -> new SearchNode<>(n.output(), nextSize, n.parent(), n.toString()));
-                    }
-                }
-                return Stream.empty();
             }
 
         };
