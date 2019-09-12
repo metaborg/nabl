@@ -432,46 +432,46 @@ rules
 rules
 
   [[ CArith(ae1, op, ae2) ^ (s) ]] :=
-    ArithExp[[ ae1 ^ (s) : INT() ]],
-    ArithExp[[ ae1 ^ (s) : INT() ]].
+    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
+    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]].
 
 
-  ArithExp[[ e@Int(_) ^ (s) : INT() ]] :=
-    Build[[ e ^ (s) : INT() ]].
+  ArithExp(V)[[ e@Int(_) ^ (s) : INT() ]] :=
+    Term(V)[[ e ^ (s) : INT() ]].
 
-  ArithExp[[ e@Wld() ^ (s) : INT() ]] :=
-    Build[[ e ^ (s) : INT() ]].
+  ArithExp(V)[[ e@Wld() ^ (s) : INT() ]] :=
+    V[[ e ^ (s) : INT() ]].
 
-  ArithExp[[ e@Var(_) ^ (s) : INT() ]] :=
-    Build[[ e ^ (s) : INT() ]].
+  ArithExp(V)[[ e@Var(_) ^ (s) : INT() ]] :=
+    V[[ e ^ (s) : INT() ]].
 
-  ArithExp[[ Add(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Add(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp[[ Mul(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Mul(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp[[ Sub(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Sub(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp[[ Min(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Min(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp[[ Max(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Max(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp[[ Mod(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Mod(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp[[ Div(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp[[ e1 ^ (s) : INT() ]],
-    ArithExp[[ e2 ^ (s) : INT() ]].
+  ArithExp(V)[[ Div(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
 
 
 /******************************************************************

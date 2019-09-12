@@ -170,4 +170,4 @@ rules
 rules
 
   Term(V)[[ ArithOp(ae) ^ (s) : INT() ]] :=
-    ArithExp[[ ae ^ (s) : INT() ]].
+    ArithExp(V)[[ ae ^ (s) : INT() ]].
