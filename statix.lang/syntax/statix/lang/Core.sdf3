@@ -360,12 +360,17 @@ syntax
 
 context-free syntax
 
-  ArithExp = Int
-  ArithExp = Var
-  ArithExp.Add = <<ArithExp> + <ArithExp>>
-  ArithExp.Mul = <<ArithExp> * <ArithExp>>
-  ArithExp.Sub = <<ArithExp> - <ArithExp>>
+  ArithExp     = Int
+  ArithExp     = Var
+  ArithExp.Add = <<ArithExp> + <ArithExp>> {left}
+  ArithExp.Mul = <<ArithExp> * <ArithExp>> {left}
+  ArithExp.Sub = <<ArithExp> - <ArithExp>> {left}
   ArithExp.Min = <min(<ArithExp>, <ArithExp>)>
   ArithExp.Max = <max(<ArithExp>, <ArithExp>)>
-  ArithExp.Mod = <<ArithExp> mod <ArithExp>>
-  ArithExp.Div = <<ArithExp> div <ArithExp>>
+  ArithExp.Mod = <<ArithExp> mod <ArithExp>> {left}
+  ArithExp.Div = <<ArithExp> div <ArithExp>> {left}
+  ArithExp     = <(<ArithExp>)> {bracket}
+
+context-free priorities
+    {left: ArithExp.Mul ArithExp.Div ArithExp.Mod}
+  > {left: ArithExp.Add ArithExp.Sub}
