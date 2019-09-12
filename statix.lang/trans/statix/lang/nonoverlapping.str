@@ -40,8 +40,13 @@ rules
              ; filter(where(<patterns-lt> (<id>, ps')))
              > (d, cps)
     ; r* := < expand-patterns(|sops,ps*)
+            ; filter(use-expansion(|ps*))
             ; map(!Rule(lbl, C(x, <nonoverlapping-patterns-resugar>), vs, C))
             > ps'
+
+  use-expansion(|ps*): ps -> ps
+    where <map(not(<zip(patterns-geq)> (<id>, ps)))> ps*
+
 
   /* Expand pattern relative to a list of other patterns
    *
@@ -110,19 +115,14 @@ rules
     with ty := <norm-get-ast-type> p
        ; e* := [p]
 
-  expand-patterns(|sops,ps*): ps -> e*
+
+  expand-patterns(|sops,ps*): ps@[] -> [[]]
+
+  expand-patterns(|sops,ps*): ps@[_|_] -> e*
     with e* := < add-indices
                ; map(\ (i, p) -> <expand-pattern(|sops,<map(index(|i))> ps*)> p \)
                ; list-cart
-               ; filter(use-expansion(|ps*))
                > ps
-
-  // NOTE Relies in the fact that this is already done for subterms for correctness,
-  //      otherwise the left-to-right behaviour of pattern comparison gets in the way.
-  //      E.g., `(x, [])` is ordered after `([], [_|_])`, but the second is not
-  //      an instance of the first.
-  use-expansion(|ps*): ps -> ps
-    where <map(not(<zip(patterns-geq)> (<id>, ps)))> ps*
 
 
 rules
