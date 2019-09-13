@@ -130,6 +130,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         preventSolverStart();
         addSolver(root);
         Map<IModule, IConstraint> modules = strategy.createInitialModules(context, changeSet, constraints);
+        constraints.clear(); constraints = null; //Memory
         
         if (context.isInitPhase()) context.finishInitPhase();
         scheduleModules(modules);
@@ -362,7 +363,10 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
     public void wipe() {
         this.context = null;
         this.debug = null;
-        this.progressPrinter = null;
+        if (this.progressPrinter != null) {
+            this.progressPrinter.stop();
+            this.progressPrinter = null;
+        }
         this.root = null;
         this.rootState = null;
         this.strategy = null;

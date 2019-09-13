@@ -25,6 +25,7 @@ import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.incremental.MChange;
 import mb.statix.modular.incremental.changeset.IChangeSet;
+import mb.statix.modular.incremental.manager.IncrementalManager;
 import mb.statix.modular.incremental.strategy.IncrementalStrategy;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
@@ -41,7 +42,9 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public class MSTX_solve_multi_file extends StatixPrimitive {
-
+    public static long diffTime, depTime, solveTime, totalTime;
+    public static int phaseCount, remoduleCount, moduleCount, stateCount;
+    
     @Inject public MSTX_solve_multi_file() {
         super(MSTX_solve_multi_file.class.getSimpleName(), 3);
     }
@@ -59,25 +62,24 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
     
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
+        long mStart = System.currentTimeMillis();
         TTimings.startPhase("init");
-        final IncrementalStrategy strategy = IncrementalStrategy.matcher().match(terms.get(0))
-                .orElseThrow(() -> new InterpreterException("Invalid incremental strategy: " + terms.get(0)));
         
-        final MSolverResult initial = M.blobValue(MSolverResult.class).match(terms.get(1))
-                .orElseThrow(() -> new InterpreterException("Expected solver result, but was " + terms.get(1)))
-                .reset();
+        final IncrementalStrategy strategy = getStrategy(terms);
+        final MSolverResult initial = getPreviousResult(terms);
         
         final Spec spec = initial.context().getSpec();
         Objects.requireNonNull(spec, "The spec should never be null");
 
         final IDebugContext debug = getDebugContext(terms.get(2));
+        terms = null; //Memory
 
         final IMatcher<Tuple2<MChange, IConstraint>> constraintMatcher = M.tuple2(
                 MChange.matcher(),
                 StatixTerms.constraint(),
                 (t, mc, c) -> ImmutableTuple2.of(mc, c));
         
-        final List<Tuple2<MChange, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
+        List<Tuple2<MChange, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints, but was " + term));
         
         TTimings.startPhase("changeset");
@@ -112,6 +114,8 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             order.put(change.getModule(), i++);
             modules.put(change.getModule(), tuple._2());
         }
+        //Memory consideration
+        constraints = null;
         
         Context oldContext = initial.context();
         IChangeSet changeSet = strategy.createChangeSet(oldContext, added, changed, removed);
@@ -125,22 +129,35 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         newContext.setCoordinator(coordinator); //Sets the coordinator on the context and the context on the coordinator
         
         TTimings.endPhase("init");
-        TTimings.startPhase("solving");
+        long solveStart = System.currentTimeMillis();
+        TTimings.startPhase("solving", solveStart);
         
         //Do the actual analysis
         Map<String, ISolverResult> results;
         try {
             IMState rootState = initial.state().owner().getCurrentState();
             results = coordinator.solve(strategy, changeSet, rootState, modules, debug);
+            modules = null; //Clear memory
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        TTimings.endPhase("solving");
+        long solveEnd = System.currentTimeMillis();
+        TTimings.endPhase("solving", solveEnd);
+        solveTime = (solveEnd - solveStart);
         
         if (OUTPUT_DIFF) TDebug.outputDiff(oldContext, newContext, "");
         
         //Explicitly assign null to allow for garbage collection
         oldContext = null;
+        
+        //For the CLI
+        IncrementalManager im = newContext.getIncrementalManager();
+        diffTime = im.getTotalDiffTime();
+        depTime = im.getTotalDependencyTime();
+        phaseCount = im.getPhaseCount();
+        remoduleCount = im.getReanalyzedModuleCount();
+        moduleCount = newContext.getModules().size();
+        stateCount = newContext.getStates().size();
         newContext.commitChanges();
 
         //Return a tuple of 2 lists, one for added + changed (dirty) results, one for cached (unsure) results.
@@ -161,6 +178,20 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
         // ([(resource, SolverResult)], [(resource, SolverResult)])
         Optional<ITerm> tbr = Optional.of(B.newTuple(B.newList(fullResults), B.newList(updateResults)));
         TTimings.endPhase("collect results");
+        totalTime = System.currentTimeMillis() - mStart;
         return tbr;
+    }
+
+    private MSolverResult getPreviousResult(List<ITerm> terms) throws InterpreterException {
+        final ITerm solverResult = terms.get(1);
+        return M.blobValue(MSolverResult.class).match(solverResult)
+                .orElseThrow(() -> new InterpreterException("Expected solver result, but was " + solverResult))
+                .reset();
+    }
+
+    private IncrementalStrategy getStrategy(List<ITerm> terms) throws InterpreterException {
+        final ITerm strategyTerm = terms.get(0);
+        return IncrementalStrategy.matcher().match(strategyTerm)
+                .orElseThrow(() -> new InterpreterException("Invalid incremental strategy: " + strategyTerm));
     }
 }

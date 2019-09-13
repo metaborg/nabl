@@ -213,14 +213,11 @@ public class ModuleManager implements Serializable {
         }
     }
     
-    /**out
+    /**
      * Removes all modules.
      */
     public synchronized void clearModules() {
         if (moduleNamesUnique == Boolean.FALSE) moduleNamesUnique = null;
-        for (IModule module : topLevelModules()) {
-            purgeModules(module);
-        }
         modules.clear();
         moduleNames.clear();
     }

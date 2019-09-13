@@ -165,7 +165,8 @@ public interface ISolverCoordinator {
         
         for (Entry<IModule, MSolverResult> entry : getResults().entrySet()) {
             String id = entry.getKey().getId();
-            if (entry.getValue().hasErrors()) {
+            boolean a, b;
+            if (a = entry.getValue().hasErrors()) {
                 nrFailed++;
                 fail.info(printModule(id));
                 if (COORDINATOR_EXTENDED_SUMMARY) {
@@ -175,7 +176,8 @@ public interface ISolverCoordinator {
                         sub.info(c.toString());
                     }
                 }
-            } else if (entry.getValue().hasDelays()) {
+            }
+            if (b = entry.getValue().hasDelays()) {
                 nrStuck++;
                 stuck.info(printModule(id));
                 if (COORDINATOR_EXTENDED_SUMMARY) {
@@ -186,13 +188,15 @@ public interface ISolverCoordinator {
                         if (!delay.vars().isEmpty()) {
                             sub.info("on vars {}: {}", delay.vars(), e.getKey());
                         } else if (!delay.criticalEdges().isEmpty()) {
-                            sub.info("on edges {}: {}", delay.criticalEdges(), e.getKey());
+                            sub.info("on edges {}: {}", TPrettyPrinter.prettyPrint(delay.criticalEdges(), entry.getValue().unifier()), e.getKey());
                         } else {
                             sub.info("on unknown: {}", e.getKey());
                         }
                     }
                 }
-            } else {
+            }
+            
+            if (!a && !b) {
                 nrSuccess++;
                success.info(printModule(id)); 
             }

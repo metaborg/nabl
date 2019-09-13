@@ -48,7 +48,7 @@ public class Context implements IContext, Serializable {
     private final IncrementalStrategy strategy;
     private final Spec spec;
     private final ModuleManager manager = new ModuleManager();
-    private final DependencyManager<?> dependencies;
+    private DependencyManager<?> dependencies;
     private final IncrementalManager incrementalManager;
     private transient ISolverCoordinator coordinator;
     private transient Context oldContext;
@@ -360,6 +360,10 @@ public class Context implements IContext, Serializable {
         if (old != null) System.err.println("Overridden state of " + module);
     }
     
+    public Map<String, IMState> getStates() {
+        return states;
+    }
+    
     /**
      * Reuses the state of an old module (module from the old context). The reused state is copied
      * and the copy is set as current state of the given module. The given module is also added to
@@ -587,9 +591,14 @@ public class Context implements IContext, Serializable {
         }
         
         //Clear now unnecessary fields
-        oldContext = null;
+        if (oldContext != null) {
+            //Be sure not to wipe the dependencies
+            oldContext.dependencies = null;
+            oldContext.wipe();
+            oldContext = null;
+        }
         changeSet = null;
-        coordinator.wipe();
+        if (coordinator != null) coordinator.wipe();
         coordinator = null;
         incrementalManager.wipe();
         //TODO probably need more here
@@ -599,7 +608,7 @@ public class Context implements IContext, Serializable {
         this.changeSet = null;
         if (this.coordinator != null) this.coordinator.wipe();
         this.coordinator = null;
-        this.dependencies.wipe();
+        if (this.dependencies != null) this.dependencies.wipe();
         this.incrementalManager.wipe();
         this.manager.clearModules();
         this.oldContext = null;

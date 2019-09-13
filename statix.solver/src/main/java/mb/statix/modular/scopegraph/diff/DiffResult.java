@@ -1,5 +1,6 @@
 package mb.statix.modular.scopegraph.diff;
 
+import static mb.statix.modular.util.TDebug.DEPENDENCY_FOUND;
 import static mb.statix.modular.util.TPrettyPrinter.printModule;
 
 import java.io.PrintStream;
@@ -12,6 +13,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.google.common.collect.ListMultimap;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
@@ -19,7 +22,6 @@ import mb.statix.modular.dependencies.DependencyManager;
 import mb.statix.modular.name.Name;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.unifier.DistributedUnifier;
-import static mb.statix.modular.util.TDebug.DEPENDENCY_FOUND;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.terms.Scope;
 
@@ -153,7 +155,7 @@ public class DiffResult implements Serializable {
      * @return
      *      a set with all the converted dependencies
      */
-    public <R> Set<R> getDependencies(Context context, Function<Dependency, R> function) {
+    public <R> Set<R> getDependencies(Context context, Function<Dependency, R> function, ListMultimap<Tuple2<Scope, ITerm>, R> stuck) {
         Set<R> tbr = new HashSet<>();
         DependencyManager<?> manager = context.getDependencyManager();
         
@@ -170,6 +172,8 @@ public class DiffResult implements Serializable {
                         if (DEPENDENCY_FOUND) System.out.println("Found dependency for edge addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
                         tbr.add(function.apply(dependency));
                     }
+                    
+                    tbr.addAll(stuck.get(edge));
                 }
             }
             
@@ -188,6 +192,8 @@ public class DiffResult implements Serializable {
                         if (DEPENDENCY_FOUND) System.out.println("Found dependency for data addition: " + TPrettyPrinter.printEdge(edge._1(), edge._2()));
                         tbr.add(function.apply(dependency));
                     }
+                    
+                    tbr.addAll(stuck.get(edge));
                 }
             }
             

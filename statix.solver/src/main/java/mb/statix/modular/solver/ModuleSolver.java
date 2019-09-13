@@ -53,6 +53,7 @@ public class ModuleSolver implements IOwnable {
     private boolean init;
     private boolean splitCheck;
     private boolean noopSolver;
+    private boolean topLevel;
     
     private IsComplete isComplete;
     
@@ -83,7 +84,9 @@ public class ModuleSolver implements IOwnable {
      */
     public static ModuleSolver topLevelSolver(IMState state, IConstraint constraint, IDebugContext debug) {
         PrefixedDebugContext topDebug = new PrefixedDebugContext(state.owner().getId(), debug);
-        return new ModuleSolver(state, constraint, (s, l, st) -> true, topDebug, false);
+        ModuleSolver solver = new ModuleSolver(state, constraint, (s, l, st) -> true, topDebug, false);
+        solver.topLevel = true;
+        return solver;
     }
     
     /**
@@ -249,6 +252,7 @@ public class ModuleSolver implements IOwnable {
         solver.fillFailedFromResult(result);
         //TODO Can it be avoided that the noopsolver has to be added to the coordinator?
         this.state.coordinator().addSolver(solver);
+
         return solver;
     }
     
@@ -340,6 +344,14 @@ public class ModuleSolver implements IOwnable {
      */
     public boolean isNoopSolver() {
         return noopSolver;
+    }
+    
+    /**
+     * @return
+     *      true if this solver is a top level solver
+     */
+    public boolean isTopLevelSolver() {
+        return topLevel;
     }
     
     /**

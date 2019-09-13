@@ -169,6 +169,7 @@ public class Diff {
             boolean external,
             boolean onlyContextFree) {
         if (!processed.add(id)) return;
+        
         //Determine the graphs and their unifiers from the context
         IMInternalScopeGraph<Scope, ITerm, ITerm> sgNew = scopeGraph(cNew, cOld, id, external);
         IUnifier uNew = unifier(cNew, id);

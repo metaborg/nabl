@@ -6,9 +6,11 @@ import java.util.List;
 import java.util.ListIterator;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
+import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.solver.Delay;
 
 /**
@@ -94,10 +96,12 @@ public class Name implements Serializable {
             boolean changed = false;
             List<ITerm> nterms = new ArrayList<>(terms.size());
             for (ITerm term : terms) {
-                if (!unifier.isGround(term)) throw Delay.ofVars(unifier.getVars(term));
+                if (!unifier.isGround(term)) {
+                    throw Delay.ofVars(unifier.getVars(term));
+                }
                 
                 ITerm nterm = unifier.findRecursive(term);
-                if (!changed && nterm.equals(term)) changed = true;
+                if (!changed && !nterm.equals(term)) changed = true;
                 nterms.add(nterm);
             }
             

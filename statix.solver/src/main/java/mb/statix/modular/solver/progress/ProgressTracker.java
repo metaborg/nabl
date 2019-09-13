@@ -58,9 +58,15 @@ public class ProgressTracker {
         }
         
         ISolverCoordinator coordinator = Context.context().getCoordinator();
-        solversRunning = coordinator.getSolvers().size();
-        solversComplete = coordinator.getResults().size();
-        solversTotal = solversRunning + solversComplete;
+        if (coordinator == null) {
+            solversRunning = 0;
+            solversComplete = 0;
+            solversTotal = 0;
+        } else {
+            solversRunning = coordinator.getSolvers().size();
+            solversComplete = coordinator.getResults().size();
+            solversTotal = solversRunning + solversComplete;
+        }
     }
     
     @Override

@@ -87,7 +87,7 @@ public class MState implements IMState {
      */
     private MState(MState original, IModule module) {
         this.owner = module;
-        this.scopeGraph = original.scopeGraph();
+        this.scopeGraph = (IMInternalScopeGraph<Scope, ITerm, ITerm>) original.scopeGraph().externalGraph();
         this.vars = original.vars();
         this.varCounter = original.varCounter;
         this.unifier = original.unifier();

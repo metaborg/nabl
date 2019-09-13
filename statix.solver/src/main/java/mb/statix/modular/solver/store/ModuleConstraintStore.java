@@ -616,6 +616,16 @@ public class ModuleConstraintStore implements IConstraintStore {
     }
     
     /**
+     * <b>NOTE</b>: not thread safe! Do not modify the returned set.
+     * 
+     * @return
+     *      all the edges that were delayed
+     */
+    public Set<CriticalEdge> delayedEdges() {
+        return stuckOnEdge.keySet();
+    }
+    
+    /**
      * Clears all the delayed constraints from this store.
      * 
      * @return

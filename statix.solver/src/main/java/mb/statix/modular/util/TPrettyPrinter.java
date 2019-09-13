@@ -20,6 +20,7 @@ import mb.nabl2.util.collections.IRelation3;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.ModulePaths;
 import mb.statix.modular.solver.Context;
+import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spoofax.StatixTerms;
 
@@ -276,6 +277,10 @@ public class TPrettyPrinter {
         if (object instanceof Entry) {
             Entry<?, ?> entry = (Entry<?, ?>) object;
             return prettyPrint(entry.getKey(), unifier) + "=" + prettyPrint(entry.getValue(), unifier);
+        }
+        if (object instanceof CriticalEdge) {
+            CriticalEdge ce = (CriticalEdge) object;
+            return printTerm(ce.scope(), unifier) + " -" + printLabel(ce.label());
         }
         if (object instanceof Iterable) {
             StringBuilder sb = new StringBuilder("[");

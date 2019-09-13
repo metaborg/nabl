@@ -290,6 +290,18 @@ public class IncrementalManager implements Serializable {
         if (results != null) results.clear();
         results = null;
         if (allowedTemporarily != null) allowedTemporarily.clear();
-        allowedTemporarily = null;
+    }
+    
+    public int getPhaseCount() {
+        return (Integer) phase;
+    }
+    public int getReanalyzedModuleCount() {
+        return 0;
+    }
+    public long getTotalDiffTime() {
+        return 0;
+    }
+    public long getTotalDependencyTime() {
+        return 0;
     }
 }

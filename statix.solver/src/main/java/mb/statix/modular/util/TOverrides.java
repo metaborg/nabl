@@ -44,7 +44,10 @@ public class TOverrides {
     public static boolean CROSS_MODULE_UNIFICATION = false;
     
     /** If enabled (default), solving of a module stops immediately on failure. */
-    public static boolean STOP_IMMEDIATELY_ON_FAILURE = true;
+    public static boolean STOP_IMMEDIATELY_ON_FAILURE = false;
+    
+    /** Maximum number of phases that we will attempt before analysis is cut off. */
+    public static int MAX_PHASES = 50;
     
     /**
      * The value of this integer determines what locking approach scope graphs use.

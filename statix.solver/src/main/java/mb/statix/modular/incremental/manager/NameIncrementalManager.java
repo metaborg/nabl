@@ -10,10 +10,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.statix.modular.dependencies.Dependency;
 import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.Modules;
@@ -24,8 +28,11 @@ import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.modular.util.TTimings;
+import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 
 public class NameIncrementalManager extends IncrementalManager {
@@ -49,6 +56,7 @@ public class NameIncrementalManager extends IncrementalManager {
      * must have a mutual dependency.
      */
     private Set<IModule> processedModules = new HashSet<>();
+    private long diffTime, dependencyTime;
 
     // --------------------------------------------------------------------------------------------
     // Phase
@@ -210,19 +218,58 @@ public class NameIncrementalManager extends IncrementalManager {
         Context oldContext = context().getOldContext();
         if (oldContext == null) throw new IllegalStateException("The old context should not be null!");
         
+        Set<IModule> redone = actualPhases.get(getPhase());
+        
+        long st = System.currentTimeMillis();
         DiffResult eDiff = new DiffResult();
         for (IModule module : results.keySet()) {
+            if (!redone.contains(module)) continue;
             Diff.effectiveDiff(eDiff, new HashSet<>(), module.getId(), context(), oldContext, true, false); // Last boolean might need to change to true depending on split modules
         }
+        
+        //In the first phase, also do a diff for each removed module
+        if (phaseCounter == 0) {
+            Set<String> removedIds = context().getChangeSet().removedIds();
+            for (IModule module : context().getChangeSet().removed()) {
+                //If the parent is also removed, skip the module. We will diff from the top down
+                if (removedIds.contains(module.getParentId())) continue;
+                Diff.effectiveDiff(eDiff, new HashSet<>(), module.getId(), context(), oldContext, true, false); // Last boolean might need to change to true depending on split modules
+            }
+        }
+        
+        long en = System.currentTimeMillis();
+        diffTime += (en - st);
         
         if (INCREMENTAL_MANAGER_DIFFS) {
             System.out.println("[NIM] Effective diff result of phase " + phaseCounter + ":");
             eDiff.print(System.out);
         }
         
+        st = System.currentTimeMillis();
+        //Determine modules that are stuck on edges
+        ListMultimap<Tuple2<Scope, ITerm>, String> stuckMap = MultimapBuilder.hashKeys().arrayListValues().build();
+        for (IMState state : context().getStates().values()) {
+            //If the solver was in the redo set of last phase, then ignore it
+            if (redone.contains(state.owner())) continue;
+
+            for (CriticalEdge ce : state.solver().getStore().delayedEdges()) {
+                Scope scope;
+                if (ce.scope() instanceof Scope) {
+                    scope = (Scope) ce.scope();
+                } else {
+                    scope = Scope.matcher().match(ce.scope(), state.unifier()).orElse(null);
+                }
+                
+                if (scope == null) continue;
+                
+                //Is this one of the added e dges?
+                stuckMap.put(ImmutableTuple2.of(scope, ce.label()), state.owner().getId());
+            }
+        }
+        
         //TODO IMPORTANT Assert that there are no more dependencies on modules that have been removed, since those modules will be redone.
         //Determine the dependencies
-        Set<String> toRedo = eDiff.getDependencies(context(), Dependency::getOwner);
+        Set<String> toRedo = eDiff.getDependencies(context(), Dependency::getOwner, stuckMap);
         
         //Do not redo any removed modules
         for (String module : eDiff.getRemovedModules()) {
@@ -232,6 +279,8 @@ public class NameIncrementalManager extends IncrementalManager {
         for (String id : toRedo) {
             redoReasons.put(id, RedoReason.DIFF);
         }
+        en = System.currentTimeMillis();
+        dependencyTime += (en - st);
         
         //TODO IMPORTANT check for cyclic
         //System.err.println("[NIM] TODO: Checking for cyclic dependencies SHOULD happen here");
@@ -266,6 +315,8 @@ public class NameIncrementalManager extends IncrementalManager {
                 continue;
             }
             
+            //If the parent is set to be redone, remove the child.
+            //If the parent will be removed from the set later, the child should have been removed as well (it was also redone).
             for (IModule parent : module.getParents()) {
                 if (modules.contains(parent)) {
                     it.remove();
@@ -301,8 +352,14 @@ public class NameIncrementalManager extends IncrementalManager {
         Set<String> toRedoIds = diff(finished, failed, stuck, results);
         Set<IModule> toRedo = normalizeToRedo(toRedoIds);
         TTimings.endPhase("diff " + phase);
+        
         if (toRedo.isEmpty()) {
             System.out.println("[NIM] No modules left to redo, solving done :)");
+            return false;
+        }
+        
+        if (phaseCounter >= TOverrides.MAX_PHASES) {
+            System.err.println("[NIM] !!!! Giving up after " + phaseCounter + " phases !!!!");
             return false;
         }
         
@@ -313,15 +370,15 @@ public class NameIncrementalManager extends IncrementalManager {
     private Set<IModule> determineActualModules(Set<ModuleSolver> finished, Set<ModuleSolver> failed, Set<ModuleSolver> stuck) {
         Set<IModule> actualModules = new HashSet<>();
         for (ModuleSolver solver : finished) {
-            if (solver.isNoopSolver()) continue;
+            if (solver.isNoopSolver() || solver.isTopLevelSolver()) continue;
             actualModules.add(solver.getOwner());
         }
         for (ModuleSolver solver : failed) {
-            if (solver.isNoopSolver()) continue;
+            if (solver.isNoopSolver() || solver.isTopLevelSolver()) continue;
             actualModules.add(solver.getOwner());
         }
         for (ModuleSolver solver : stuck) {
-            if (solver.isNoopSolver()) continue;
+            if (solver.isNoopSolver() || solver.isTopLevelSolver()) continue;
             actualModules.add(solver.getOwner());
         }
         return actualModules;
@@ -419,6 +476,23 @@ public class NameIncrementalManager extends IncrementalManager {
         this.processedModules = null;
         if (this.redoReasons != null) this.redoReasons.clear();
         this.redoReasons = null;
+    }
+    
+    @Override
+    public int getPhaseCount() {
+        return this.phaseCounter;
+    }
+    @Override
+    public int getReanalyzedModuleCount() {
+        return this.processedModules.size();
+    }
+    @Override
+    public long getTotalDiffTime() {
+        return this.diffTime;
+    }
+    @Override
+    public long getTotalDependencyTime() {
+        return this.dependencyTime;
     }
 }
 
