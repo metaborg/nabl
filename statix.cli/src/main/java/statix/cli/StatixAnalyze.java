@@ -9,17 +9,24 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
+import org.metaborg.core.language.FacetContribution;
+import org.metaborg.core.language.ILanguageImpl;
 import org.metaborg.core.messages.IMessage;
 import org.metaborg.core.messages.IMessagePrinter;
 import org.metaborg.spoofax.core.Spoofax;
+import org.metaborg.spoofax.core.analysis.AnalysisFacet;
 import org.metaborg.spoofax.core.analysis.ISpoofaxAnalyzeResults;
 import org.metaborg.spoofax.core.context.constraint.IConstraintContext;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
+import org.metaborg.spoofax.core.unit.ParseContrib;
 import org.metaborg.util.concurrent.IClosableLock;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.interpreter.terms.ITermFactory;
+import org.strategoxt.HybridInterpreter;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
@@ -121,6 +128,127 @@ public class StatixAnalyze {
         System.out.println("STerm: " + sterm);
         return M.blobValue(ISolverResult.class).match(sterm).orElse(null);
         //TODO
+    }
+    
+    /**
+     * Desugars the given parse unit into a new parse unit.
+     * If it failed or is empty, this method returns the input unchanged.
+     */
+    public ISpoofaxParseUnit desugarAst(ISpoofaxParseUnit unit) throws MetaborgException {
+        //Return unit unchanged in case of failure or empty
+        if (!unit.valid() || !unit.success() || isEmptyAST(unit.ast())) return unit;
+        
+        IConstraintContext context = getContext();
+
+        final ILanguageImpl langImpl = context.language();
+
+        final FacetContribution<AnalysisFacet> facetContribution = langImpl.facetContribution(AnalysisFacet.class);
+        if(facetContribution == null) {
+            System.err.println("No analysis required for " + langImpl);
+            return unit;
+        }
+
+        final HybridInterpreter runtime;
+        try {
+            runtime = S.strategoRuntimeService.runtime(facetContribution.contributor, context, false);
+        } catch(MetaborgException e) {
+            throw new MetaborgException("Failed to get Stratego runtime", e);
+        }
+        
+        final IStrategoTerm injected;
+        try {
+            injected = S.strategoCommon.invoke(runtime, unit.ast(), "java-explicate-injections");
+        } catch (MetaborgException ex) {
+            throw new MetaborgException("Unable to explicate injections for " + unit.source() + "!", ex);
+        }
+        
+        if (injected == null) System.out.println("INJECTED IS NULL!");
+        
+        final IStrategoTerm desugared;
+        try {
+            desugared = S.strategoCommon.invoke(runtime, injected, "desugar-all");
+        } catch (MetaborgException ex) {
+            throw new MetaborgException("Unable to desugar " + unit.source() + "!", ex);
+        }
+        if (desugared == null) System.out.println("DESUGARED IS NULL!");
+        
+        return S.unitService.parseUnit(unit.input(), new ParseContrib(true, true, desugared, unit.messages(), unit.duration()));
+    }
+    
+    /**
+     * Applies the given stratego strategy to the parse unit, returns the transformed parse unit.
+     * Does nothing if the input is invalid, unsucessful or empty.
+     */
+    public ISpoofaxParseUnit applyStrategoTransformation(ISpoofaxParseUnit unit, String strategy) throws MetaborgException {
+        //Return unit unchanged in case of failure or empty
+        if (!unit.valid() || !unit.success() || isEmptyAST(unit.ast())) return unit;
+        
+        IConstraintContext context = getContext();
+
+        final ILanguageImpl langImpl = context.language();
+
+        final FacetContribution<AnalysisFacet> facetContribution = langImpl.facetContribution(AnalysisFacet.class);
+        if(facetContribution == null) {
+            System.err.println("No analysis required for " + langImpl);
+            return unit;
+        }
+
+        final HybridInterpreter runtime;
+        try {
+            runtime = S.strategoRuntimeService.runtime(facetContribution.contributor, context, false);
+        } catch(MetaborgException e) {
+            throw new MetaborgException("Failed to get Stratego runtime", e);
+        }
+        
+        final IStrategoTerm result;
+        try {
+            result = S.strategoCommon.invoke(runtime, unit.ast(), strategy);
+        } catch (MetaborgException ex) {
+            throw new MetaborgException("Unable to execute " + strategy + " on " + unit.source() + "!", ex);
+        }
+        
+        return S.unitService.parseUnit(unit.input(), new ParseContrib(true, true, result, unit.messages(), unit.duration()));
+    }
+    
+    /**
+     * Applies the given stratego strategy to the parse unit, returns the transformed parse unit.
+     * Does nothing if the input is invalid, unsucessful or empty.
+     */
+    public ISpoofaxParseUnit applyStrategoTransformation(ISpoofaxParseUnit unit, String strategy, int nr1, int nr2) throws MetaborgException {
+        //Return unit unchanged in case of failure or empty
+        if (!unit.valid() || !unit.success() || isEmptyAST(unit.ast())) return unit;
+        
+        IConstraintContext context = getContext();
+
+        final ILanguageImpl langImpl = context.language();
+
+        final FacetContribution<AnalysisFacet> facetContribution = langImpl.facetContribution(AnalysisFacet.class);
+        if(facetContribution == null) {
+            System.err.println("No analysis required for " + langImpl);
+            return unit;
+        }
+
+        final HybridInterpreter runtime;
+        try {
+            runtime = S.strategoRuntimeService.runtime(facetContribution.contributor, context, false);
+        } catch(MetaborgException e) {
+            throw new MetaborgException("Failed to get Stratego runtime", e);
+        }
+        
+        ITermFactory factory = S.termFactoryService.getGeneric();
+        
+        final IStrategoTerm result;
+        try {
+            result = S.strategoCommon.invoke(runtime, factory.makeTuple(factory.makeInt(nr1), factory.makeInt(nr2), unit.ast()), strategy);
+        } catch (MetaborgException ex) {
+            throw new MetaborgException("Unable to execute " + strategy + " on " + unit.source() + "!", ex);
+        }
+        
+        return S.unitService.parseUnit(unit.input(), new ParseContrib(true, true, result, unit.messages(), unit.duration()));
+    }
+    
+    private boolean isEmptyAST(IStrategoTerm ast) {
+        return Tools.isTermTuple(ast) && ast.getSubtermCount() == 0;
     }
     
     /**

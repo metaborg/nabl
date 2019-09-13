@@ -15,9 +15,11 @@ import org.metaborg.util.log.LoggerUtils;
 
 import statix.cli.Calculator;
 import statix.cli.MStatix;
+import statix.cli.StatixAnalyze;
 import statix.cli.StatixData;
 import statix.cli.StatixParse;
 import statix.cli.TestRandomness;
+import statix.cli.incremental.changes.IDesugaredOutput;
 import statix.cli.incremental.changes.IncrementalChange;
 import statix.cli.incremental.changes.NotApplicableException;
 
@@ -29,15 +31,20 @@ public class IncrementalChangeGenerator {
     
     private final StatixData data;
     private final StatixParse parse;
+    private final boolean desugar;
+    private final StatixAnalyze analyze;
     private final TestRandomness randomness;
     private final List<File> allFiles;
     private final List<File> files;
     private final List<File> removedFiles = new ArrayList<>();
     private final List<IncrementalChange> changes;
     
-    public IncrementalChangeGenerator(StatixData data, StatixParse parse, TestRandomness randomness, List<File> files, List<IncrementalChange> changes) {
+    
+    public IncrementalChangeGenerator(StatixData data, StatixParse parse, boolean desugar, StatixAnalyze analyze, TestRandomness randomness, List<File> files, List<IncrementalChange> changes) {
         this.data = data;
         this.parse = parse;
+        this.desugar = desugar;
+        this.analyze = analyze;
         this.randomness = randomness;
         this.allFiles = files;
         this.files = new ArrayList<>(files);
@@ -61,7 +68,8 @@ public class IncrementalChangeGenerator {
         
         if (change.supportsCreate()) {
             logger.info("Applying " + change + " in creation mode");
-            return change.create(data, parse, randomness);
+            ISpoofaxParseUnit punit = change.create(data, parse, analyze, randomness);
+            return desugar && !(change instanceof IDesugaredOutput) ? analyze.desugarAst(punit) : punit;
         }
         
         if (change.hasUsageCount()) {
@@ -81,10 +89,10 @@ public class IncrementalChangeGenerator {
                     logger.info("Applying " + change + " in parse mode to " + file);
                     logger.info("Usages of " + file + " are " + expectedUsages);
                     
-                    ISpoofaxParseUnit unit = change.parse(data, parse, randomness, file.toString());
+                    ISpoofaxParseUnit unit = change.parse(data, parse, analyze, randomness, file.toString());
                     files.remove(file);
                     statix.writeExpectedUsages(expectedUsages, run);
-                    return unit;
+                    return desugar && !(change instanceof IDesugaredOutput) ? analyze.desugarAst(unit) : unit;
                 } catch (NotApplicableException ex) {
                     continue;
                 }
@@ -96,10 +104,10 @@ public class IncrementalChangeGenerator {
             List<File> expectedUsages = Calculator.getUsages(file, allFiles);
             logger.info("Applying " + change + " in parse mode to " + file);
             logger.info("Usages of " + file + " are " + expectedUsages);
-            ISpoofaxParseUnit unit = change.parse(data, parse, randomness, file.toString());
+            ISpoofaxParseUnit unit = change.parse(data, parse, analyze, randomness, file.toString());
             files.remove(file);
             removedFiles.add(file);
-            return unit;
+            return desugar && !(change instanceof IDesugaredOutput) ? analyze.desugarAst(unit) : unit;
         }
         
         if (change.supportsParse()) {
@@ -112,10 +120,10 @@ public class IncrementalChangeGenerator {
                 try {
                     logger.info("Applying " + change + " in parse mode to " + file);
                     logger.info("Usages of " + file + " are " + expectedUsages);
-                    ISpoofaxParseUnit unit = change.parse(data, parse, randomness, file.toString());
+                    ISpoofaxParseUnit unit = change.parse(data, parse, analyze, randomness, file.toString());
                     files.remove(file);
                     removedFiles.add(file);
-                    return unit;
+                    return desugar && !(change instanceof IDesugaredOutput) ? analyze.desugarAst(unit) : unit;
                 } catch (NotApplicableException ex) {
                     continue;
                 }

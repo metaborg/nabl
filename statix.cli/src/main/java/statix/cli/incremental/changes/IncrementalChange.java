@@ -12,6 +12,7 @@ import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import statix.cli.StatixData;
 import statix.cli.StatixParse;
+import statix.cli.StatixAnalyze;
 import statix.cli.TestRandomness;
 
 public abstract class IncrementalChange {
@@ -65,6 +66,8 @@ public abstract class IncrementalChange {
      *      the statix data
      * @param parse
      *      the statix parse
+     * @param analyze
+     *      the statix analyze
      * @param random
      *      the randomness for parsing
      * @param file
@@ -80,7 +83,7 @@ public abstract class IncrementalChange {
      * @throws UnsupportedOperationException
      *      If {@link #supportsParse()} returns false.
      */
-    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, TestRandomness random, String file) throws NotApplicableException, MetaborgException {
+    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, StatixAnalyze analyze, TestRandomness random, String file) throws NotApplicableException, MetaborgException {
         if (!supportsParse()) throw new UnsupportedOperationException("Changing existing files is not supported by " + getClass().getSimpleName());
         return parse.parse(file);
     }
@@ -101,7 +104,7 @@ public abstract class IncrementalChange {
      * @throws UnsupportedOperationException
      *      If {@link #supportsCreate()} returns false.
      */
-    public ISpoofaxParseUnit create(StatixData data, StatixParse parse, TestRandomness random) throws MetaborgException {
+    public ISpoofaxParseUnit create(StatixData data, StatixParse parse, StatixAnalyze analyze, TestRandomness random) throws MetaborgException {
         if (!supportsCreate()) throw new UnsupportedOperationException("Changing existing files is not supported by " + getClass().getSimpleName());
         
         throw new MetaborgException("Change " + getClass().getSimpleName() + " reports that it supports creation, but doesnt override the method!");

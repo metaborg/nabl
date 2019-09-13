@@ -5,6 +5,7 @@ import java.io.File;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 
+import statix.cli.StatixAnalyze;
 import statix.cli.StatixData;
 import statix.cli.StatixParse;
 import statix.cli.StatixUtil;
@@ -35,7 +36,7 @@ public abstract class IIncrementalSourceChange extends IncrementalChange {
     public abstract String apply(StatixData data, String original) throws NotApplicableException;
     
     @Override
-    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, TestRandomness random, String file) throws MetaborgException {
+    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, StatixAnalyze analyze, TestRandomness random, String file) throws MetaborgException {
         String original = StatixUtil.readFile(new File(file));
         String newContents = apply(data, original);
         return parse.parse(file, newContents);

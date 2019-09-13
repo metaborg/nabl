@@ -3,6 +3,7 @@ package statix.cli.incremental.changes;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 
+import statix.cli.StatixAnalyze;
 import statix.cli.StatixData;
 import statix.cli.StatixParse;
 import statix.cli.TestRandomness;
@@ -17,7 +18,7 @@ public abstract class IIncrementalNewFileChange extends IncrementalChange {
     }
     
     @Override
-    public abstract ISpoofaxParseUnit create(StatixData data, StatixParse parse, TestRandomness random)
+    public abstract ISpoofaxParseUnit create(StatixData data, StatixParse parse, StatixAnalyze analyze, TestRandomness random)
             throws NotApplicableException, MetaborgException;
     
     @Override

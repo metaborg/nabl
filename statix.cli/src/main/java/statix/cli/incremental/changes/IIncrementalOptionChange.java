@@ -6,6 +6,7 @@ import java.util.Random;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 
+import statix.cli.StatixAnalyze;
 import statix.cli.StatixData;
 import statix.cli.StatixParse;
 import statix.cli.TestRandomness;
@@ -76,15 +77,15 @@ public abstract class IIncrementalOptionChange extends IncrementalChange {
     }
     
     @Override
-    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, TestRandomness random, String file) throws MetaborgException {
+    public ISpoofaxParseUnit parse(StatixData data, StatixParse parse, StatixAnalyze analyze, TestRandomness random, String file) throws MetaborgException {
         File contents = selectRandomly(random);
         return parse.parse(file, contents);
     }
     
     @Override
-    public ISpoofaxParseUnit create(StatixData data, StatixParse parse, TestRandomness random) throws NotApplicableException, MetaborgException {
+    public ISpoofaxParseUnit create(StatixData data, StatixParse parse, StatixAnalyze analyze, TestRandomness random) throws NotApplicableException, MetaborgException {
         String name = data.freshName();
-        return parse(data, parse, random, name);
+        return parse(data, parse, analyze, random, name);
     }
     
     @Override

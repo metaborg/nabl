@@ -19,6 +19,8 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.messages.IMessage;
 import org.metaborg.core.messages.MessageSeverity;
@@ -41,6 +43,7 @@ import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.modular.util.TTimings;
 import mb.statix.modular.util.TTimings.PhaseDetails;
+import mb.statix.spoofax.MSTX_solve_multi_file;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -57,6 +60,7 @@ import statix.cli.incremental.changes.ast.RenameClass;
 import statix.cli.incremental.changes.ast.RenameMethod;
 import statix.cli.incremental.changes.other.AddClass;
 import statix.cli.incremental.changes.source.AddMethod;
+import statix.cli.incremental.changes.stratego.RemoveStatement;
 
 @Command(name = "java -jar statix.jar", description = "Type check and evaluate Statix files.", separator = "=")
 public class MStatix implements Callable<Void> {
@@ -76,6 +80,7 @@ public class MStatix implements Callable<Void> {
         forceInit(AddMethod.class, RenameMethod.class, RemoveMethod.class);
         forceInit(RemoveFile.class);
         forceInit(AddClass.class, RenameClass.class, RemoveClass.class);
+        forceInit(RemoveStatement.class);
     }
     
     @Spec private CommandSpec spec;
@@ -105,6 +110,7 @@ public class MStatix implements Callable<Void> {
     @Option(names = { "-t", "--threads" }, description = "amount of threads to use", defaultValue = "1") private int threads;
     @Option(names = { "--observerself" }, description = "observer mechanism for own module", defaultValue = "true") private boolean observer;
     @Option(names = { "--continuefailure" }, description = "continue with a module if there is a failure") private boolean continueFailure;
+    @Option(names = { "--desugar" }, description = "desugar in CLI", defaultValue = "true") private boolean desugar;
     @Option(
             names = { "--syncscopegraphs" },
             description = "use synchronized (1), locks (2) or combined locking (3) for locking scope graphs",
@@ -364,11 +370,22 @@ public class MStatix implements Callable<Void> {
         List<ISpoofaxParseUnit> parsed = parse.parseFiles(files);
         TTimings.endPhase("parsing");
         
-        TTimings.startPhase("analysis full");
-        ISpoofaxAnalyzeResults results = analyze.cleanAnalysis(parsed, true);
-        TTimings.endPhase("analysis full");
+        if (desugar) {
+            ListIterator<ISpoofaxParseUnit> lit = parsed.listIterator();
+            while (lit.hasNext()) {
+                ISpoofaxParseUnit unit = lit.next();
+                lit.set(analyze.desugarAst(unit));
+            }
+        }
         
-        writeFailedResults(results, run);
+        long st = System.currentTimeMillis();
+        TTimings.startPhase("analysis full", st);
+        ISpoofaxAnalyzeResults results = analyze.cleanAnalysis(parsed, true);
+        long en = System.currentTimeMillis();
+        TTimings.endPhase("analysis full", en);
+        
+        int failed = writeFailedResults(results, run).size();
+        writeRunResult("clean", run, en - st, failed, null);
         
         saveContext();
         writeScopeGraph(run);
@@ -392,6 +409,14 @@ public class MStatix implements Callable<Void> {
         List<ISpoofaxParseUnit> parsed = parse.parseFiles(files);
         TTimings.endPhase("parsing");
         
+        if (desugar) {
+            ListIterator<ISpoofaxParseUnit> lit = parsed.listIterator();
+            while (lit.hasNext()) {
+                ISpoofaxParseUnit unit = lit.next();
+                lit.set(analyze.desugarAst(unit));
+            }
+        }
+        
         ListIterator<ISpoofaxParseUnit> lit = parsed.listIterator();
         while (lit.hasNext()) {
             ISpoofaxParseUnit original = lit.next();
@@ -401,12 +426,14 @@ public class MStatix implements Callable<Void> {
             break;
         }
 
-        TTimings.startPhase("analysis full");
+        long st = System.currentTimeMillis();
+        TTimings.startPhase("analysis full", st);
         ISpoofaxAnalyzeResults results = analyze.cleanAnalysis(parsed, true);
-        TTimings.endPhase("analysis full");
+        long en = System.currentTimeMillis();
+        TTimings.endPhase("analysis full", en);
         
-        writeFailedResults(results, run);
-        
+        int failed = writeFailedResults(results, run).size();
+        writeRunResult("clean", run, en - st, failed, changed.source());
         saveContext();
         writeScopeGraph(run);
     }
@@ -428,7 +455,7 @@ public class MStatix implements Callable<Void> {
         TTimings.endPhase("identifying files");
         
         TTimings.startPhase("incremental change + parse");
-        IncrementalChangeGenerator generator = new IncrementalChangeGenerator(data, parse, random, files, ichanges);
+        IncrementalChangeGenerator generator = new IncrementalChangeGenerator(data, parse, desugar, analyze, random, files, ichanges);
         ISpoofaxParseUnit modifiedUnit = generator.tryApply(this, run);
         TTimings.endPhase("incremental change + parse");
         
@@ -436,14 +463,18 @@ public class MStatix implements Callable<Void> {
         
         logger.info("Modified file: " + modifiedUnit.source());
         
-        TTimings.startPhase("analysis full");
+        long st = System.currentTimeMillis();
+        TTimings.startPhase("analysis full", st);
         ISpoofaxAnalyzeResults results = analyze.analyzeAll(Iterables2.singleton(modifiedUnit), true);
-        TTimings.endPhase("analysis full");
+        long en = System.currentTimeMillis();
+        TTimings.endPhase("analysis full", en);
 
-        writeFailedResults(results, run);
+        int failed = writeFailedResults(results, run).size();
+        writeRunResult("incremental", run, en - st, failed, modifiedUnit.source());
         
         saveContext();
         writeScopeGraph(run);
+        
         return modifiedUnit;
     }
     
@@ -836,4 +867,51 @@ public class MStatix implements Callable<Void> {
         }
         return klass;
     } 
+    
+    public static class EvalResult {
+        public long diffTime, depTime, solveTime, totalTimeSolveMulti, totalTime;
+        public int phaseCount, remoduleCount, moduleCount, stateCount;
+        public String file;
+        public String change;
+        public long seed;
+        public String type;
+        public String run;
+        public int failed;
+    }
+    
+    public List<MStatix.EvalResult> results = new ArrayList<>();
+    public void writeRunResult(String type, String run, long analysisTime, int failed, Object file) {
+        EvalResult result = new EvalResult();
+
+        result.change = this.changes.toString();
+        result.depTime = MSTX_solve_multi_file.depTime;
+        result.diffTime = MSTX_solve_multi_file.diffTime;
+        result.failed = failed;
+        result.file = file == null ? "" : file.toString();
+        result.moduleCount = MSTX_solve_multi_file.moduleCount;
+        result.phaseCount = MSTX_solve_multi_file.phaseCount;
+        result.remoduleCount = MSTX_solve_multi_file.remoduleCount;
+        result.run = run;
+        result.seed = seed;
+        result.solveTime = MSTX_solve_multi_file.solveTime;
+        result.stateCount = MSTX_solve_multi_file.stateCount;
+        result.totalTime = analysisTime;
+        result.totalTimeSolveMulti = MSTX_solve_multi_file.totalTime;
+        result.type = type;
+        results.add(result);
+        
+        writeRunResults();
+    }
+    
+    public void writeRunResults() {
+        File outputFile = new File(outputFolder, "cli_results.csv");
+        try (CSVPrinter printer = new CSVPrinter(new FileWriter(outputFile), CSVFormat.EXCEL)) {
+            printer.printRecord("type", "project", "threads", "seed", "run", "modified file", "change", "failed", "phases", "modules", "states", "reanalyzed module count", "total analysis time", "totalSolveMultiFileTime", "total solver time", "total diff time", "total dep time");
+            for (EvalResult r : results) {
+                printer.printRecord(r.type, this.folder, this.threads, r.seed, r.run, r.file, r.change, r.failed, r.phaseCount, r.moduleCount, r.stateCount, r.remoduleCount, r.totalTime, r.totalTimeSolveMulti, r.solveTime, r.diffTime, r.depTime);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
