@@ -125,6 +125,11 @@ public class TDebug {
     public static void outputScopeGraph() {
         IModule root = Context.context().getRootModule();
         outputScopeGraph(root.getScopeGraph(), "");
+        
+        //Output individual scope graphs
+//        for (IModule module : Context.context().getModulesOnLevel(1, false, false).values()) {
+//            outputScopeGraph(module.getScopeGraph(), "module_" + sanitizeName(module.getName()));
+//        }
     }
     
     /**
