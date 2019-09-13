@@ -46,7 +46,6 @@ import mb.statix.random.scopegraph.DataWF;
 import mb.statix.random.scopegraph.Env;
 import mb.statix.random.scopegraph.NameResolution;
 import mb.statix.random.util.RuleUtil;
-import mb.statix.random.util.SetElementEnum;
 import mb.statix.random.util.WeightedDrawSet;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
@@ -75,7 +74,7 @@ public final class SearchStrategies {
             }
 
             @Override public String toString() {
-                return "limit(" + n + "," + s.toString() + ")";
+                return "limit(" + n + ", " + s.toString() + ")";
             }
 
         };
@@ -176,7 +175,7 @@ public final class SearchStrategies {
                         input.constraints().stream().filter(c -> cls.isInstance(c)).map(c -> (C) c)
                                 .filter(include::test).collect(CapsuleCollectors.toSet());
                 if(candidates.isEmpty()) {
-                    ctx.addFailed(new SearchNode<>(input, parent, this.toString() + "[no candidates]"));
+//                    ctx.addFailed(new SearchNode<>(input, parent, this.toString() + "[no candidates]"));
                     return Stream.empty();
                 }
                 return WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
@@ -202,12 +201,12 @@ public final class SearchStrategies {
                         .filter(c -> !_classes.contains(c.getClass())).collect(CapsuleCollectors.toSet());
                 final SearchState output = input.update(input.state(), constraints);
                 final String desc =
-                        "drop" + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(",", "(", ")"));
+                        "drop" + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(", ", "(", ")"));
                 return Stream.of(new SearchNode<>(output, parent, desc));
             }
 
             @Override public String toString() {
-                return "drop" + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(",", "(", ")"));
+                return "drop" + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(", ", "(", ")"));
             }
 
         };
@@ -240,7 +239,8 @@ public final class SearchStrategies {
             }
 
             @Override public String toString() {
-                return "expand";
+                return "expand" + weights.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+                        .collect(Collectors.joining(", ", "(", ")"));
             }
 
         };
@@ -320,10 +320,10 @@ public final class SearchStrategies {
                         throw new MetaborgRuntimeException(e);
                     }
 
-                    return Streams.stream(new SetElementEnum<>(env.matches)).map(entry -> {
+                    return WeightedDrawSet.of(env.matches).enumerate(ctx.rnd()).map(entry -> {
                         final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnv = Env.builder();
-                        subEnv.match(entry.getFocus());
-                        entry.getOthers().forEach(subEnv::reject);
+                        subEnv.match(entry.getKey());
+                        entry.getValue().forEach(subEnv::reject);
                         env.rejects.forEach(subEnv::reject);
                         return subEnv.build();
                     }).map(subEnv -> {
@@ -333,8 +333,9 @@ public final class SearchStrategies {
                         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
                         subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition))
                                 .forEach(condition -> constraints.add(condition));
-                        subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
-                                .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
+                        subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition))
+                                .forEach(condition -> constraints.add(new CInequal(condition.term1(), condition.term2(),
+                                        condition.cause().orElse(null))));
                         constraints.addAll(input.constraints());
                         final SearchState newState = input.update(input.state(), constraints.build());
                         return new SearchNode<>(newState, parent, "resolve[" + idx + "/" + count.get() + "]");

@@ -45,6 +45,10 @@ public class RandomTermGenerator {
     public RandomTermGenerator(Spec spec, IConstraint constraint, Function1<ITerm, String> pp) {
         initStack(spec, constraint);
         this.pp = pp;
+        log.info("random seed: {}", seed);
+        log.info("strategy: {}", strategy);
+        log.info("constraint: {}", constraint);
+        log.info("max depth: {}", MAX_DEPTH);
     }
 
     private void initStack(Spec spec, IConstraint constraint) {
@@ -67,7 +71,7 @@ public class RandomTermGenerator {
             }
 
             @Override public void addFailed(SearchNode<SearchState> node) {
-                //                printResult("FAILURE", node);
+//                printResult("FAILURE", node);
             }
         };
         while(!stack.isEmpty()) {
@@ -149,44 +153,50 @@ public class RandomTermGenerator {
     }
 
 
-    // enumerate all possible permutations of solving constraints
-    private static SearchStrategy<SearchState, SearchState> enumeratePerm() {
+    // enumerate all possible combinations of solving constraints
+    private static SearchStrategy<SearchState, SearchState> enumerateComb() {
+        return N.alt(expandExpComb(), resolveAnyQuery());
+    }
+
+    private static SearchStrategy<SearchState, SearchState> expandExpComb() {
         // @formatter:off
-        return N.alt(
-            N.seq(
-                N.select(CUser.class, new Not<>(new IsGen())),
-                N.expand(ImmutableMap.of(
-                    "E-Unit", 0,
-                    "E-Fun",  1,
-                    "E-Var",  1,
-                    "E-App",  1,
-                    "E-Let",  0
-                ))),
-            N.seq(
-                N.select(CResolveQuery.class, new Any<>()),
-                N.resolve()
-            )
+        return N.seq(
+            N.limit(1, N.select(CUser.class, new Not<>(new IsGen()))),
+            N.expand(ImmutableMap.of(
+                "T-Unit", 1,
+                "T-Fun",  1,
+                "T-Var",  1,
+                "T-App",  1,
+                "T-Let",  0
+            ))
         );
         // @formatter:on
     }
 
-    // enumerate all possible combinations of solving constraints
-    private static SearchStrategy<SearchState, SearchState> enumerateComb() {
+    private static SearchStrategy<SearchState, SearchState> search(int ruleLimit) {
+        return N.alt(expandExpSearch(ruleLimit), resolveAnyQuery());
+    }
+
+    private static SearchStrategy<SearchState, SearchState> expandExpSearch(int ruleLimit) {
         // @formatter:off
-        return N.alt(
-            N.seq(
-                N.limit(1, N.select(CUser.class, new Not<>(new IsGen()))),
-                N.expand(ImmutableMap.of(
-                    "E-Unit", 0,
-                    "E-Fun",  1,
-                    "E-Var",  1,
-                    "E-App",  1,
-                    "E-Let",  0
-                ))),
-            N.seq(
-                N.limit(1, N.select(CResolveQuery.class, new Any<>())),
-                N.resolve()
-            )
+        return N.seq(
+            N.limit(1, N.select(CUser.class, new Not<>(new IsGen()))),
+            N.limit(ruleLimit, N.expand(ImmutableMap.of(
+                "T-Unit", 1,
+                "T-Fun",  1,
+                "T-Var",  1,
+                "T-App",  1,
+                "T-Let",  0
+            )))
+        );
+        // @formatter:on
+    }
+
+    private static SearchStrategy<SearchState, SearchState> resolveAnyQuery() {
+        // @formatter:off
+        return N.seq(
+            N.limit(1, N.select(CResolveQuery.class, new Any<>())),
+            N.resolve()
         );
         // @formatter:on
     }
@@ -206,11 +216,12 @@ public class RandomTermGenerator {
         node.output().print(log::info, (t, u) -> pp.apply(u.findRecursive(t)));
 
         log.info("+~~~ Trace ~~~+.");
+        log.info("+ * {}", node);
 
         SearchNode<?> traceNode = node;
-        do {
-            log.info("+ * {}", traceNode);
-        } while(false && (traceNode = traceNode.parent()) != null);
+        while((traceNode = traceNode.parent()) != null) {
+            log.debug("+ * {}", traceNode);
+        }
 
         log.info("+------------+");
     }
