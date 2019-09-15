@@ -21,16 +21,16 @@ import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
 import mb.statix.spec.Rule;
 
 public class RuleUtil {
 
-    public static final Optional<Tuple2<State, IConstraint>> apply(State state, Rule rule, List<ITerm> args,
-            IConstraint cause) {
+    public static final Optional<Tuple2<IState.Immutable, IConstraint>> apply(IState.Immutable state, Rule rule,
+            List<ITerm> args, IConstraint cause) {
         // FIXME The current method can cause capture if a solver-generated variable
         //       has the same name as a pattern variable in the rule. The arguments
         //       contain solver variables, but they are substituted under an exists

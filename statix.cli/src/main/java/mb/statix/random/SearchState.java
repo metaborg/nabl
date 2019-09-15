@@ -16,23 +16,23 @@ import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
 
 public class SearchState {
 
-    private final State state;
+    private final IState.Immutable state;
     private final Set.Immutable<IConstraint> constraints;
     private final ImmutableMap<ITermVar, ITermVar> existentials;
 
-    protected SearchState(State state, Set.Immutable<IConstraint> constraints,
+    protected SearchState(IState.Immutable state, Set.Immutable<IConstraint> constraints,
             ImmutableMap<ITermVar, ITermVar> existentials) {
         this.state = state;
         this.constraints = constraints;
         this.existentials = existentials;
     }
 
-    public State state() {
+    public IState.Immutable state() {
         return state;
     }
 
@@ -44,7 +44,7 @@ public class SearchState {
         return existentials != null ? existentials : ImmutableMap.of();
     }
 
-    public SearchState update(State state, Iterable<? extends IConstraint> constraints) {
+    public SearchState update(IState.Immutable state, Iterable<? extends IConstraint> constraints) {
         return new SearchState(state, CapsuleUtil.toSet(constraints), this.existentials());
     }
 
@@ -53,7 +53,7 @@ public class SearchState {
                 this.existentials == null ? result.existentials() : this.existentials);
     }
 
-    public static SearchState of(State state, Iterable<? extends IConstraint> constraints) {
+    public static SearchState of(IState.Immutable state, Iterable<? extends IConstraint> constraints) {
         return new SearchState(state, CapsuleUtil.toSet(constraints), null);
     }
 

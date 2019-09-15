@@ -71,7 +71,7 @@ public class RandomTermGenerator {
             }
 
             @Override public void addFailed(SearchNode<SearchState> node) {
-//                printResult("FAILURE", node);
+                printResult("FAILURE", node);
             }
         };
         while(!stack.isEmpty()) {

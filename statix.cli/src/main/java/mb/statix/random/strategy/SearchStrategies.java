@@ -29,6 +29,7 @@ import com.oracle.truffle.api.object.dsl.Nullable;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.Tuple2;
@@ -52,13 +53,13 @@ import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spec.Rule;
@@ -175,7 +176,7 @@ public final class SearchStrategies {
                         input.constraints().stream().filter(c -> cls.isInstance(c)).map(c -> (C) c)
                                 .filter(include::test).collect(CapsuleCollectors.toSet());
                 if(candidates.isEmpty()) {
-//                    ctx.addFailed(new SearchNode<>(input, parent, this.toString() + "[no candidates]"));
+                    //                    ctx.addFailed(new SearchNode<>(input, parent, this.toString() + "[no candidates]"));
                     return Stream.empty();
                 }
                 return WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
@@ -200,8 +201,8 @@ public final class SearchStrategies {
                 final Set.Immutable<IConstraint> constraints = input.constraints().stream()
                         .filter(c -> !_classes.contains(c.getClass())).collect(CapsuleCollectors.toSet());
                 final SearchState output = input.update(input.state(), constraints);
-                final String desc =
-                        "drop" + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(", ", "(", ")"));
+                final String desc = "drop"
+                        + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(", ", "(", ")"));
                 return Stream.of(new SearchNode<>(output, parent, desc));
             }
 
@@ -251,7 +252,7 @@ public final class SearchStrategies {
 
             @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx,
                     FocusedSearchState<CResolveQuery> input, SearchNode<?> parent) {
-                final State state = input.state();
+                final IState.Immutable state = input.state();
                 final IUnifier unifier = state.unifier();
                 final CResolveQuery query = input.focus();
 
@@ -349,11 +350,11 @@ public final class SearchStrategies {
 
             class ConstraintDataWF implements DataWF<ITerm, CEqual> {
                 private final IsComplete isComplete3;
-                private final State state;
+                private final IState.Immutable state;
                 private final Rule dataWf;
                 private final IConstraint cause;
 
-                private ConstraintDataWF(IsComplete isComplete3, State state, Rule dataWf,
+                private ConstraintDataWF(IsComplete isComplete3, IState.Immutable state, Rule dataWf,
                         @Nullable IConstraint cause) {
                     this.isComplete3 = isComplete3;
                     this.state = state;
@@ -363,38 +364,43 @@ public final class SearchStrategies {
 
                 @Override public Optional<Optional<CEqual>> wf(ITerm datum)
                         throws ResolutionException, InterruptedException {
-                    // remove all previously created variables/scopes to make them rigid/closed
-                    State state = this.state.clearVarsAndScopes();
 
                     // apply rule
-                    final Optional<Tuple2<State, IConstraint>> stateAndConstraint =
+                    final Optional<Tuple2<IState.Immutable, IConstraint>> stateAndConstraint =
                             RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null);
                     if(!stateAndConstraint.isPresent()) {
                         return Optional.empty();
                     }
-                    state = stateAndConstraint.get()._1();
+                    final IState.Immutable newState = stateAndConstraint.get()._1();
                     final IConstraint constraint = stateAndConstraint.get()._2();
 
                     // solve rule constraint
-                    final SolverResult result = Solver.solve(state, constraint, isComplete3, new NullDebugContext());
+                    final SolverResult result = Solver.solve(newState, constraint, isComplete3, new NullDebugContext());
                     if(result.hasErrors()) {
                         return Optional.empty();
                     }
-                    if(!result.delays().keySet().stream().allMatch(c -> c instanceof CEqual)) {
+                    if(!result.delays().isEmpty()) {
                         return Optional.empty();
-                    }
-                    if(result.delays().isEmpty()) {
-                        return Optional.of(Optional.empty());
                     }
 
                     final List<ITerm> leftTerms = Lists.newArrayList();
                     final List<ITerm> rightTerms = Lists.newArrayList();
-                    result.delays().keySet().stream().map(c -> (CEqual) c).forEach(eq -> {
-                        leftTerms.add(eq.term1());
-                        rightTerms.add(eq.term2());
-                    });
-                    final CEqual eq = new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), cause);
-                    return Optional.of(Optional.of(eq));
+                    // NOTE The retain operation is important because it may change
+                    //      representatives, which can be local to newUnifier.
+                    final IUnifier.Immutable newUnifier = result.state().unifier().retainAll(state.vars()).unifier();
+                    for(ITermVar var : state.vars()) {
+                        final ITerm term = newUnifier.findTerm(var);
+                        if(!state.unifier().areEqual(var, term).orElse(false)) {
+                            leftTerms.add(var);
+                            rightTerms.add(term);
+                        }
+                    }
+                    if(!leftTerms.isEmpty()) {
+                        final CEqual eq = new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), cause);
+                        return Optional.of(Optional.of(eq));
+                    }
+
+                    return Optional.of(Optional.empty());
                 }
 
             }
