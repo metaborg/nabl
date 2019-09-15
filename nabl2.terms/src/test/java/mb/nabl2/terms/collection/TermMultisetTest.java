@@ -19,7 +19,7 @@ public class TermMultisetTest {
     private TermMultiset terms;
 
     @Before public void setUp() {
-        this.unifier = PersistentUnifier.Transient.of();
+        this.unifier = PersistentUnifier.Immutable.of().melt();
         this.terms = new TermMultiset();
 
     }

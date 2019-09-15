@@ -20,11 +20,11 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
 
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
@@ -56,7 +56,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private ITerm solveConstraint(State state, IConstraint constraint, IDebugContext debug) {
+    private ITerm solveConstraint(IState.Immutable state, IConstraint constraint, IDebugContext debug) {
         final IsComplete isComplete = (s, l, st) -> {
             return !state.scopes().contains(s);
         };

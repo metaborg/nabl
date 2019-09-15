@@ -1,25 +1,24 @@
 package mb.statix.solver.persistent;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.constraints.CEqual;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 
@@ -28,37 +27,63 @@ public class Solver {
     private Solver() {
     }
 
-    public static SolverResult solve(final State state, final IConstraint constraint, final IDebugContext debug)
-            throws InterruptedException {
+    public static SolverResult solve(final IState.Immutable state, final IConstraint constraint,
+            final IDebugContext debug) throws InterruptedException {
         return solve(state, constraint, (s, l, st) -> true, debug);
     }
 
-    public static SolverResult solve(final State state, final IConstraint constraint, final IsComplete isComplete,
-            final IDebugContext debug) throws InterruptedException {
+    public static SolverResult solve(final IState.Immutable state, final IConstraint constraint,
+            final IsComplete isComplete, final IDebugContext debug) throws InterruptedException {
         return new GreedySolver(state, isComplete, debug).solve(constraint);
         //return new StepSolver(state, isComplete, debug).solve(constraint);
     }
 
-    public static boolean entails(State state, final IConstraint constraint, final IsComplete isComplete,
+    public static boolean entails(IState.Immutable state, final IConstraint constraint, final IsComplete isComplete,
             final IDebugContext debug) throws Delay, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraint, state.unifier()));
         }
-        // remove all previously created variables/scopes to make them rigid/closed
-        state = state.clearVarsAndScopes();
+
         final SolverResult result = Solver.solve(state, constraint, isComplete, debug.subContext());
+
         if(result.hasErrors()) {
-            debug.info("Constraints not entailed");
+            // no entailment if errors
+            debug.info("Constraints not entailed: errors");
             return false;
-        } else if(result.delays().isEmpty()) {
-            debug.info("Constraints entailed");
-            return true;
-        } else {
-            debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            // FIXME this doesn't remove rigid vars, as they are not part of State.vars()
-            throw result.delay().removeAll(result.state().vars(), result.state().scopes());
         }
 
+        final IState.Immutable newState = result.state();
+        final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
+        Set<ITermVar> touchedVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
+        // FIXME This test assumes the newUnifier is an extension of the old one.
+        //       Without this assumption, we should to the more expensive test
+        //       `newUnifier.equals(state.unifier())`
+        if(!touchedVars.isEmpty()) {
+            throw Delay.ofVars(touchedVars);
+        }
+
+        // FIXME Any disequalities on rigid vars introduced during solving are
+        //       currently ignored. We could test as follows. Remove all disequalities
+        //       in state from newState. Any remaining disequalities are
+        //       (a) reductions of diseq in state, or
+        //       (b) new diseq.
+        //       In case (a), this can only happen if a rigid var was unified, so
+        //       this is caught by the previous check. In case (b), this is a new
+        //       inequality, and entailment should not hold. It is a little more
+        //       complicated than that, because, if the new diseq in newState is
+        //       implied by all diseq in state, entailment does hold. But it might
+        //       okay to ignore this situation?
+
+        if(!result.delays().isEmpty()) {
+            debug.info("Cannot decide constraint entailment (unsolved constraints)");
+            // FIXME Can this result in empty delay? If so, it means there's no recovering,
+            //       because the delays are internal to the constraint, and unaffected by
+            //       outside variables -> return false.
+            throw result.delay().retainAll(state.vars(), state.scopes());
+        }
+
+        debug.info("Constraints entailed");
+        return true;
     }
 
     static void printTrace(IConstraint failed, IUnifier.Immutable unifier, IDebugContext debug) {
@@ -90,15 +115,6 @@ public class Solver {
     public static INameResolution.Builder<Scope, ITerm, ITerm> nameResolutionBuilder() {
         return FastNameResolution.builder();
 
-    }
-
-    public static Map<Delay, IConstraint> rigidsToDelays(Iterable<? extends Map.Entry<ITermVar, ITerm>> rigids,
-            Optional<IConstraint> cause) {
-        final ImmutableMap.Builder<Delay, IConstraint> delays = ImmutableMap.builder();
-        rigids.forEach(p -> {
-            delays.put(Delay.ofVar(p.getKey()), new CEqual(p.getKey(), p.getValue(), cause.orElse(null)));
-        });
-        return delays.build();
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier unifier) {

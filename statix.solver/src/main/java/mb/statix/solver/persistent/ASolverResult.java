@@ -13,12 +13,13 @@ import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 
 @Value.Immutable
 @Serial.Version(42L)
 public abstract class ASolverResult {
 
-    @Value.Parameter public abstract State state();
+    @Value.Parameter public abstract IState.Immutable state();
 
     @Value.Parameter public abstract List<IConstraint> errors();
 

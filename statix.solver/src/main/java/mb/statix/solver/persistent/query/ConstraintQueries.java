@@ -8,7 +8,7 @@ import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.ConstraintContext;
-import mb.statix.solver.persistent.State;
+import mb.statix.solver.IState;
 import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
@@ -16,10 +16,10 @@ import mb.statix.spec.Rule;
 
 public class ConstraintQueries implements IConstraintQueries {
 
-    final State state;
+    final IState.Immutable state;
     final ConstraintContext params;
 
-    public ConstraintQueries(State state, ConstraintContext params) {
+    public ConstraintQueries(IState.Immutable state, ConstraintContext params) {
         this.state = state;
         this.params = params;
     }
