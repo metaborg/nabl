@@ -30,7 +30,7 @@ public abstract class Tuple2<T1, T2> implements Map.Entry<T1, T2> {
         return f.apply(_1(), _2());
     }
 
-    public static <T1, T2> Tuple2<T1, T2> of(Map.Entry<T1, T2> entry) {
+    public static <T1, T2> Tuple2<T1, T2> of(Map.Entry<? extends T1, ? extends T2> entry) {
         return ImmutableTuple2.of(entry.getKey(), entry.getValue());
     }
 

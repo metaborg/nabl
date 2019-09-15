@@ -1,7 +1,6 @@
 package mb.statix.solver;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
@@ -22,10 +21,6 @@ public class ConstraintContext {
 
     public boolean isComplete(Scope scope, ITerm label, IState state) {
         return isComplete.test(scope, label, state);
-    }
-
-    public boolean isRigid(ITermVar var, IState state) {
-        return !state.vars().contains(var);
     }
 
     public boolean isClosed(Scope scope, IState state) {

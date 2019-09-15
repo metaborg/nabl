@@ -75,16 +75,19 @@ public class PersistentUnifierStressTest {
         final List<Entry<ITerm, ITerm>> equalities = Lists.newArrayList(init.entries());
         final Random rnd = new Random(System.currentTimeMillis());
         try {
-            final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
+            IUnifier.Transient unifier = PersistentUnifier.Immutable.of().melt();
             Collections.shuffle(equalities);
             for(Entry<ITerm, ITerm> equality : equalities) {
+                final ITerm left;
+                final ITerm right;
                 if(rnd.nextBoolean()) {
-                    unifier.unify(equality.getKey(), equality.getValue())
-                            .orElseThrow(() -> new IllegalArgumentException());
+                    left = equality.getKey();
+                    right = equality.getValue();
                 } else {
-                    unifier.unify(equality.getValue(), equality.getKey())
-                            .orElseThrow(() -> new IllegalArgumentException());
+                    left = equality.getValue();
+                    right = equality.getKey();
                 }
+                unifier.unify(equality.getKey(), equality.getValue()).orElseThrow(() -> new IllegalArgumentException());
             }
             return unifier.freeze();
         } catch(OccursException e) {

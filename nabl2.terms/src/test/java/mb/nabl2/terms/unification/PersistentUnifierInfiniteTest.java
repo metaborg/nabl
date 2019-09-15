@@ -26,29 +26,37 @@ public class PersistentUnifierInfiniteTest {
     private final ITerm z = B.newString("z");
 
     @Test public void testCyclicVarFree() throws OccursException {
-        IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         assertFalse(phi.freeVarSet().contains(a));
     }
 
     @Test public void testCyclicSize() throws OccursException {
-        IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         assertEquals(TermSize.INF, phi.size(a));
     }
 
     @Test public void testCyclicGround() throws OccursException {
-        IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         assertTrue(phi.isGround(a));
     }
 
     @Test public void testCyclicEquals() throws OccursException {
-        IUnifier.Transient phi = PersistentUnifier.Transient.of(false);
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
-        IUnifier.Transient theta = PersistentUnifier.Transient.of(false);
+        IUnifier.Transient theta = PersistentUnifier.Immutable.of(false).melt();
         theta.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
-        assertEquals(phi, theta);
+        assertEquals(phi.freeze(), theta.freeze()); // equality on transients is broken
+    }
+
+    @Test public void testCyclicToString() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
+        phi.unify(a, B.newAppl(f, a, b)).orElseThrow(() -> new IllegalArgumentException());
+        phi.unify(b, B.newAppl(g, a)).orElseThrow(() -> new IllegalArgumentException());
+        assertEquals("μX0.f(X0,g(X0))", phi.toString(a));
+        assertEquals("μX1.g(μX0.f(X0,X1))", phi.toString(b));
     }
 
 }

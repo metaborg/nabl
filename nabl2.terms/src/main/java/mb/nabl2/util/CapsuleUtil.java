@@ -47,4 +47,8 @@ public final class CapsuleUtil {
         return set.freeze();
     }
 
+    @SuppressWarnings("unchecked") public static <K, V> Map.Immutable<K, V> toMap(java.util.Map<K, V> map) {
+        return (Map.Immutable<K, V>) Map.Immutable.of().__putAll(map);
+    }
+
 }

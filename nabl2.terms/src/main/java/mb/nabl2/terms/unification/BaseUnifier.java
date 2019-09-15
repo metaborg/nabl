@@ -8,7 +8,9 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -23,12 +25,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.util.Set2;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
@@ -38,6 +43,16 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     protected abstract java.util.Map<ITermVar, ITermVar> reps();
 
     protected abstract java.util.Map<ITermVar, ITerm> terms();
+
+    @Override public java.util.Map<ITermVar, ITerm> asEqualityMap() {
+        final Map.Transient<ITermVar, ITerm> map = Map.Transient.of();
+        map.__putAll(reps());
+        map.__putAll(terms());
+        return map.freeze();
+    }
+
+    protected abstract java.util.Collection<? extends java.util.Map<ITermVar, ITerm>> disequalities();
+
 
     ///////////////////////////////////////////
     // unifier functions
@@ -258,18 +273,41 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             sb.append(first ? " " : ", ");
             first = false;
             sb.append(var);
-            sb.append(" |-> ");
+            sb.append(" == ");
             sb.append(terms().get(var));
         }
         for(ITermVar var : reps().keySet()) {
             sb.append(first ? " " : ", ");
             first = false;
             sb.append(var);
-            sb.append(" |-> ");
+            sb.append(" == ");
             sb.append(reps().get(var));
+        }
+        for(java.util.Map<ITermVar, ITerm> disequality : disequalities()) {
+            sb.append(first ? " " : ", ");
+            first = false;
+            sb.append(disequalityToString(disequality));
         }
         sb.append(first ? "}" : " }");
         return sb.toString();
+    }
+
+    private String disequalityToString(java.util.Map<ITermVar, ITerm> disequality) {
+        final StringBuilder sb1 = new StringBuilder();
+        final StringBuilder sb2 = new StringBuilder();
+        sb1.append("(");
+        sb2.append("(");
+        boolean first = true;
+        for(Entry<ITermVar, ITerm> entry : disequality.entrySet()) {
+            sb1.append(first ? "" : ",");
+            sb2.append(first ? "" : ",");
+            first = false;
+            sb1.append(entry.getKey());
+            sb2.append(entry.getValue());
+        }
+        sb1.append(")");
+        sb2.append(")");
+        return sb1.toString() + " != " + sb2.toString();
     }
 
     ///////////////////////////////////////////
@@ -821,6 +859,154 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         }
 
         @Override public IUnifier.Immutable unifier() {
+            return unifier;
+        }
+
+    }
+
+    ///////////////////////////////////////////
+    // class Transient
+    ///////////////////////////////////////////
+
+    protected static class Transient implements IUnifier.Transient, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private IUnifier.Immutable unifier;
+
+        public Transient(IUnifier.Immutable unifier) {
+            this.unifier = unifier;
+        }
+
+        @Override public boolean isFinite() {
+            return unifier.isFinite();
+        }
+
+        @Override public boolean isEmpty() {
+            return unifier.isEmpty();
+        }
+
+        @Override public boolean contains(ITermVar var) {
+            return unifier.contains(var);
+        }
+
+        @Override public int size() {
+            return unifier.size();
+        }
+
+        @Override public Set<ITermVar> varSet() {
+            return unifier.varSet();
+        }
+
+        @Override public Set<ITermVar> repSet() {
+            return unifier.repSet();
+        }
+
+        @Override public Set<ITermVar> freeVarSet() {
+            return unifier.freeVarSet();
+        }
+
+        @Override public boolean isCyclic() {
+            return unifier.isCyclic();
+        }
+
+        @Override public ITermVar findRep(ITermVar var) {
+            return unifier.findRep(var);
+        }
+
+        @Override public boolean hasTerm(ITermVar var) {
+            return unifier.hasTerm(var);
+        }
+
+        @Override public ITerm findTerm(ITerm term) {
+            return unifier.findTerm(term);
+        }
+
+        @Override public ITerm findRecursive(ITerm term) {
+            return unifier.findRecursive(term);
+        }
+
+        @Override public boolean isGround(ITerm term) {
+            return unifier.isGround(term);
+        }
+
+        @Override public boolean isCyclic(ITerm term) {
+            return unifier.isCyclic(term);
+        }
+
+        @Override public Set<ITermVar> getVars(ITerm term) {
+            return unifier.getVars(term);
+        }
+
+        @Override public TermSize size(ITerm term) {
+            return unifier.size(term);
+        }
+
+        @Override public String toString(ITerm term) {
+            return unifier.toString(term);
+        }
+
+        @Override public String toString(ITerm term, int n) {
+            return unifier.toString(term, n);
+        }
+
+        @Override public MaybeNotInstantiatedBool areEqual(ITerm term1, ITerm term2) {
+            return unifier.areEqual(term1, term2);
+        }
+
+        @Override public java.util.Map<ITermVar, ITerm> asEqualityMap() {
+            return unifier.asEqualityMap();
+        }
+
+        @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {
+            final Optional<Result<Immutable>> result = unifier.unify(term1, term2);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<IUnifier.Immutable> unify(IUnifier other) throws OccursException {
+            final Optional<Result<Immutable>> result = unifier.unify(other);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public boolean disunify(ITerm term1, ITerm term2) {
+            final Optional<Immutable> result = unifier.disunify(term1, term2);
+            return result.map(r -> {
+                unifier = r;
+                return true;
+            }).orElse(false);
+        }
+
+        @Override public ISubstitution.Immutable retain(ITermVar var) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.retain(var);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public ISubstitution.Immutable retainAll(Iterable<ITermVar> vars) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.retainAll(vars);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public ISubstitution.Immutable remove(ITermVar var) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.remove(var);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.removeAll(vars);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public IUnifier.Immutable freeze() {
             return unifier;
         }
 

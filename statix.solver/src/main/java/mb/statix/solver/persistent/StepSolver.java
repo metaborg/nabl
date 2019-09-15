@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
@@ -57,6 +55,7 @@ import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
+import mb.statix.solver.IState;
 import mb.statix.solver.SolverException;
 import mb.statix.solver.SolverException.SolverInterrupted;
 import mb.statix.solver.completeness.ICompleteness;
@@ -76,7 +75,7 @@ import mb.statix.spoofax.StatixTerms;
 
 public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
 
-    private State state;
+    private IState.Immutable state;
     private Map<ITermVar, ITermVar> existentials;
     private final IsComplete isComplete;
     private final ICompleteness completeness;
@@ -86,7 +85,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
     private final LazyDebugContext proxyDebug;
     private final IDebugContext subDebug;
 
-    public StepSolver(State state, IsComplete _isComplete, IDebugContext debug) {
+    public StepSolver(IState.Immutable state, IsComplete _isComplete, IDebugContext debug) {
         this.state = state;
         this.existentials = null;
         this.completeness = new IncrementalCompleteness(state.spec());
@@ -247,17 +246,15 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
         IDebugContext debug = params.debug();
         IUnifier.Immutable unifier = state.unifier();
         try {
-            final Result<Tuple2<IUnifier.Immutable, Collection<Tuple2<ITermVar, ITerm>>>> result;
-            if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
+            final Result<IUnifier.Immutable> result;
+            if((result = unifier.unify(term1, term2).orElse(null)) != null) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification succeeded: {}", result.result());
                 }
-                final State newState = state.withUnifier(result.unifier());
-                final Set<ITermVar> updatedVars = result.result()._1().varSet();
-                final Map<Delay, IConstraint> delayedConstraints =
-                        Solver.rigidsToDelays(result.result()._2(), c.cause());
-                return Optional.of(StepResult.of(newState, updatedVars, ImmutableList.of(), delayedConstraints,
-                        ImmutableMap.of()));
+                final IState.Immutable newState = state.withUnifier(result.unifier());
+                final Set<ITermVar> updatedVars = result.result().varSet();
+                return Optional.of(
+                        StepResult.of(newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of()));
             } else {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
@@ -274,9 +271,9 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
 
     @Override public Optional<StepResult> caseExists(CExists c) throws SolverException {
         final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
-        State newState = state;
+        IState.Immutable newState = state;
         for(ITermVar var : c.vars()) {
-            final Tuple2<ITermVar, State> varAndState = newState.freshVar(var.getName());
+            final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var.getName());
             final ITermVar freshVar = varAndState._1();
             newState = varAndState._2();
             existentialsBuilder.put(var, freshVar);
@@ -295,27 +292,31 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
     @Override public Optional<StepResult> caseInequal(CInequal c) throws SolverException {
         final ITerm term1 = c.term1();
         final ITerm term2 = c.term2();
-
-        final IUnifier unifier = state.unifier();
-        return unifier.areEqual(term1, term2).matchOrThrow(result -> {
-            if(result) {
-                return Optional.empty();
-            } else {
-                return Optional.of(StepResult.of(state));
+        IDebugContext debug = params.debug();
+        final IUnifier.Immutable unifier = state.unifier();
+        final IUnifier.Immutable result;
+        if((result = unifier.disunify(term1, term2).orElse(null)) != null) {
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Disunification succeeded: {}", result);
             }
-        }, vars -> {
-            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(vars), c));
-        });
+            final IState.Immutable newState = state.withUnifier(result);
+            return Optional.of(StepResult.of(newState));
+        } else {
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Disunification failed");
+            }
+            return Optional.empty();
+        }
     }
 
     @Override public Optional<StepResult> caseNew(CNew c) throws SolverException {
         final List<ITerm> terms = c.terms();
 
         final List<IConstraint> newConstraints = Lists.newArrayList();
-        State newState = state;
+        IState.Immutable newState = state;
         for(ITerm t : terms) {
             final String base = M.var(ITermVar::getName).match(t).orElse("s");
-            Tuple2<Scope, State> ss = newState.freshScope(base);
+            Tuple2<Scope, IState.Immutable> ss = newState.freshScope(base);
             newConstraints.add(new CEqual(t, ss._1(), c));
             newState = ss._2();
         }
@@ -365,12 +366,12 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
             return Optional.of(StepResult.ofNew(state, ImmutableList.of(C)));
         } catch(IncompleteDataException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            return Optional.of(
-                    StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
+            return Optional
+                    .of(StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), c));
         } catch(IncompleteEdgeException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
-            return Optional.of(
-                    StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
+            return Optional
+                    .of(StepResult.ofDelay(state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), c));
         } catch(ResolutionDelayException e) {
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             return Optional.of(StepResult.ofDelay(state, e.getCause(), c));
@@ -463,12 +464,9 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
         final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
-            final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);
-            if(!state.termProperties().containsKey(key)) {
-                final ImmutableMap.Builder<Tuple2<TermIndex, ITerm>, ITerm> props = ImmutableMap.builder();
-                props.putAll(state.termProperties());
-                props.put(key, value);
-                final State newState = state.withTermProperties(props.build());
+            if(!state.termProperties().contains(index, prop)) {
+                final IState.Immutable newState =
+                        state.withTermProperties(state.termProperties().put(index, prop, value));
                 return Optional.of(StepResult.of(newState));
             } else {
                 return Optional.empty();
