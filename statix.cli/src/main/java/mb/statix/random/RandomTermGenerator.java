@@ -18,11 +18,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.Constraints;
 import mb.statix.random.predicate.Any;
 import mb.statix.random.predicate.IsGen;
 import mb.statix.random.predicate.IsType;
@@ -156,7 +158,7 @@ public class RandomTermGenerator {
                 "T-Fun",  1,
                 "T-Var",  1,
                 "T-App",  1,
-                "T-Let",  0
+                "T-Let",  1
         ));
         // @formatter:on
     }
@@ -194,15 +196,22 @@ public class RandomTermGenerator {
     public void printResult(String header, SearchNode<SearchState> node, Level level1, Level level2) {
         log.log(level1, "+--- {} ---+.", header);
 
-        node.output().print(s -> log.log(level1, s), (t, u) -> "{" + u.size(t) + "} " + pp.apply(u.findRecursive(t)));
+        node.output().print(s -> log.log(level1, s), (t, u) -> pp.apply(u.findRecursive(t)));
 
         log.log(level1, "+~~~ Trace ~~~+.");
-        log.log(level1, "+ * {}", node);
 
+        boolean first = true;
         SearchNode<?> traceNode = node;
-        while((traceNode = traceNode.parent()) != null) {
-            log.log(level2, "+ * {}", traceNode);
-        }
+        do {
+            log.log(first ? level1 : level2, "+ * {}", traceNode);
+            first = false;
+            if(traceNode.output() instanceof SearchState) {
+                SearchState state = (SearchState) traceNode.output();
+                IUnifier u = state.state().unifier();
+                log.log(level2, "+   constraints: {}",
+                        Constraints.toString(state.constraints(), t -> pp.apply(u.findRecursive(t))));
+            }
+        } while((traceNode = traceNode.parent()) != null);
 
         log.log(level1, "+------------+");
     }

@@ -177,6 +177,10 @@ public final class SearchStrategies {
             @Override public Stream<SearchNode<SearchState>> doApply(SearchContext ctx, SearchState state,
                     SearchNode<?> parent) {
                 final SolverResult resultConfig;
+                if(state.state().unifier().varSet().stream()
+                        .anyMatch(v -> state.state().unifier().size(v).match(n -> n.intValue() > 40, () -> true))) {
+                    @SuppressWarnings("unused") String s = "biggy";
+                }
                 try {
                     resultConfig = Solver.solve(state.state(), Constraints.conjoin(state.constraints()),
                             new NullDebugContext());
