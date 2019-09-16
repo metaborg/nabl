@@ -4,11 +4,13 @@ import java.util.Objects;
 
 public class SearchNode<O> {
 
+    private final int id;
     private final O output;
     private final SearchNode<?> parent;
     private final String desc;
 
-    public SearchNode(O output, SearchNode<?> parent, String desc) {
+    public SearchNode(int id, O output, SearchNode<?> parent, String desc) {
+        this.id = id;
         this.output = output;
         this.parent = parent;
         this.desc = desc;
@@ -22,8 +24,12 @@ public class SearchNode<O> {
         return parent;
     }
 
+    public String desc() {
+        return desc;
+    }
+
     @Override public String toString() {
-        return desc != null ? desc : Objects.toString(this);
+        return String.format("[%03d] %s", id, (desc != null ? desc : Objects.toString(this)));
     }
 
 }

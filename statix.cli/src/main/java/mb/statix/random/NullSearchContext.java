@@ -10,6 +10,10 @@ public class NullSearchContext implements SearchContext {
         this.rnd = rnd;
     }
 
+    @Override public int nextNodeId() {
+        return 0;
+    }
+
     @Override public Random rnd() {
         return rnd;
     }

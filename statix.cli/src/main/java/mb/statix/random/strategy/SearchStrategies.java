@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -87,7 +88,8 @@ public final class SearchStrategies {
             @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, I1 i1, SearchNode<?> parent) {
                 return s1.apply(ctx, i1, parent).flatMap(sn1 -> {
                     return s2.apply(ctx, sn1.output(), sn1).map(sn2 -> {
-                        return new SearchNode<>(sn2.output(), sn2, "(" + sn1.toString() + " . " + sn2.toString() + ")");
+                        return new SearchNode<>(ctx.nextNodeId(), sn2.output(), sn2,
+                                "(" + sn1.toString() + " . " + sn2.toString() + ")");
                     });
                 });
             }
@@ -99,39 +101,71 @@ public final class SearchStrategies {
         };
     }
 
-    @SafeVarargs public final <I, O> SearchStrategy<I, O> alt(SearchStrategy<I, O>... ss) {
-        final List<SearchStrategy<I, O>> _ss = ImmutableList.copyOf(ss);
-        return new SearchStrategy<I, O>() {
+    public final <I, O1, O2> SearchStrategy<I, Either2<O1, O2>> alt(SearchStrategy<I, O1> s1,
+            SearchStrategy<I, O2> s2) {
+        return new SearchStrategy<I, Either2<O1, O2>>() {
 
-            @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
-                final List<Iterator<SearchNode<O>>> _ns = _ss.stream().map(s -> s.apply(ctx, input, parent).iterator())
-                        .collect(Collectors.toCollection(ArrayList::new));
-                return Streams.stream(new Iterator<SearchNode<O>>() {
+            @Override protected Stream<SearchNode<Either2<O1, O2>>> doApply(SearchContext ctx, I input,
+                    SearchNode<?> parent) {
+                final Iterator<SearchNode<O1>> ns1 = s1.apply(ctx, input, parent).iterator();
+                final Iterator<SearchNode<O2>> ns2 = s2.apply(ctx, input, parent).iterator();
+                return Streams.stream(new Iterator<SearchNode<Either2<O1, O2>>>() {
 
-                    private void removeEmpty() {
-                        final Iterator<Iterator<SearchNode<O>>> it = _ns.iterator();
-                        while(it.hasNext()) {
-                            if(!it.next().hasNext()) {
-                                it.remove();
-                            }
+                    @Override public boolean hasNext() {
+                        return ns1.hasNext() || ns2.hasNext();
+                    }
+
+                    @Override public SearchNode<Either2<O1, O2>> next() {
+                        final boolean left;
+                        if(ns1.hasNext() && ns2.hasNext()) {
+                            left = ctx.rnd().nextBoolean();
+                        } else if(ns1.hasNext()) {
+                            left = true;
+                        } else if(ns2.hasNext()) {
+                            left = false;
+                        } else {
+                            throw new NoSuchElementException();
+                        }
+                        if(left) {
+                            final SearchNode<O1> n = ns1.next();
+                            final Either2<O1, O2> output = Either2.ofLeft(n.output());
+                            return new SearchNode<>(ctx.nextNodeId(), output, n.parent(), n.desc());
+                        } else {
+                            final SearchNode<O2> n = ns2.next();
+                            final Either2<O1, O2> output = Either2.ofRight(n.output());
+                            return new SearchNode<>(ctx.nextNodeId(), output, n.parent(), n.desc());
                         }
                     }
 
-                    @Override public boolean hasNext() {
-                        removeEmpty();
-                        return !_ns.isEmpty();
-                    }
+                });
 
-                    @Override public SearchNode<O> next() {
-                        removeEmpty();
-                        return _ns.get(ctx.rnd().nextInt(_ns.size())).next();
-                    }
+            }
 
+            @Override public String toString() {
+                return "(" + s1 + " | " + s2 + ")<";
+
+            }
+
+        };
+
+    }
+
+    public final <I1, I2, O> SearchStrategy<Either2<I1, I2>, O> match(SearchStrategy<I1, O> s1,
+            SearchStrategy<I2, O> s2) {
+        // this doesn't interleave!
+        return new SearchStrategy<Either2<I1, I2>, O>() {
+
+            @Override protected Stream<SearchNode<O>> doApply(SearchContext ctx, Either2<I1, I2> input,
+                    SearchNode<?> parent) {
+                return input.map(n1 -> {
+                    return s1.apply(ctx, n1, parent);
+                }, n2 -> {
+                    return s2.apply(ctx, n2, parent);
                 });
             }
 
             @Override public String toString() {
-                return _ss.stream().map(Object::toString).collect(Collectors.joining(" | ", "(", ")"));
+                return ">(" + s1 + " | " + s2 + ")";
             }
 
         };
@@ -152,11 +186,11 @@ public final class SearchStrategies {
                 if(resultConfig.hasErrors()) {
                     final String msg = Constraints.toString(resultConfig.errors(),
                             new UnifierFormatter(resultConfig.state().unifier(), 3));
-                    ctx.addFailed(new SearchNode<>(state, parent, "infer[" + msg + "]"));
+                    ctx.addFailed(new SearchNode<>(ctx.nextNodeId(), state, parent, "infer[" + msg + "]"));
                     return Stream.empty();
                 }
                 final SearchState newState = state.update(resultConfig);
-                return Stream.of(new SearchNode<>(newState, parent, "infer"));
+                return Stream.of(new SearchNode<>(ctx.nextNodeId(), newState, parent, "infer"));
             }
 
             @Override public String toString() {
@@ -181,7 +215,7 @@ public final class SearchStrategies {
                 }
                 return WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
                     final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());
-                    return new SearchNode<>(output, parent, "select(" + c.getKey() + ")");
+                    return new SearchNode<>(ctx.nextNodeId(), output, parent, "select(" + c.getKey() + ")");
                 });
             }
 
@@ -203,7 +237,7 @@ public final class SearchStrategies {
                 final SearchState output = input.update(input.state(), constraints);
                 final String desc = "drop"
                         + _classes.stream().map(Class::getSimpleName).collect(Collectors.joining(", ", "(", ")"));
-                return Stream.of(new SearchNode<>(output, parent, desc));
+                return Stream.of(new SearchNode<>(ctx.nextNodeId(), output, parent, desc));
             }
 
             @Override public String toString() {
@@ -234,7 +268,7 @@ public final class SearchStrategies {
                                         input.update(result._1(), input.constraints().__insert(result._2()));
                                 final String head = rule.name() + rule.params().stream().map(Object::toString)
                                         .collect(Collectors.joining(", ", "(", ")"));
-                                return new SearchNode<>(output, parent, "expand(" + head + ")");
+                                return new SearchNode<>(ctx.nextNodeId(), output, parent, "expand(" + head + ")");
                             });
                 });
             }
@@ -258,7 +292,7 @@ public final class SearchStrategies {
 
                 final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
                 if(scope == null) {
-                    ctx.addFailed(new SearchNode<>(input, parent, "resolve[no scope]"));
+                    ctx.addFailed(new SearchNode<>(ctx.nextNodeId(), input, parent, "resolve[no scope]"));
                     return Stream.empty();
                 }
 
@@ -269,7 +303,8 @@ public final class SearchStrategies {
                     throw new MetaborgRuntimeException(e);
                 }
                 if(isAlways == null) {
-                    ctx.addFailed(new SearchNode<>(input, parent, "resolve[cannot decide data equiv]"));
+                    ctx.addFailed(
+                            new SearchNode<>(ctx.nextNodeId(), input, parent, "resolve[cannot decide data equiv]"));
                     return Stream.empty();
                 }
 
@@ -298,7 +333,8 @@ public final class SearchStrategies {
                         return false;
                     });
                 } catch(ResolutionException e) {
-                    ctx.addFailed(new SearchNode<>(input, parent, "resolve[counting error:" + e.getMessage() + "]"));
+                    ctx.addFailed(new SearchNode<>(ctx.nextNodeId(), input, parent,
+                            "resolve[counting error:" + e.getMessage() + "]"));
                     return Stream.empty();
                 } catch(InterruptedException e) {
                     throw new MetaborgRuntimeException(e);
@@ -314,8 +350,8 @@ public final class SearchStrategies {
                     try {
                         env = nameResolution.resolve(scope, () -> select.getAndDecrement() == 0);
                     } catch(ResolutionException e) {
-                        ctx.addFailed(
-                                new SearchNode<>(input, parent, "resolve[resolution error:" + e.getMessage() + "]"));
+                        ctx.addFailed(new SearchNode<>(ctx.nextNodeId(), input, parent,
+                                "resolve[resolution error:" + e.getMessage() + "]"));
                         return Stream.empty();
                     } catch(InterruptedException e) {
                         throw new MetaborgRuntimeException(e);
@@ -339,7 +375,8 @@ public final class SearchStrategies {
                                         condition.cause().orElse(null))));
                         constraints.addAll(input.constraints());
                         final SearchState newState = input.update(input.state(), constraints.build());
-                        return new SearchNode<>(newState, parent, "resolve[" + idx + "/" + count.get() + "]");
+                        return new SearchNode<>(ctx.nextNodeId(), newState, parent,
+                                "resolve[" + idx + "/" + count.get() + "]");
                     });
                 });
             }

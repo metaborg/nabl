@@ -5,11 +5,13 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
@@ -25,6 +27,7 @@ import mb.statix.random.predicate.Any;
 import mb.statix.random.predicate.IsGen;
 import mb.statix.random.predicate.IsType;
 import mb.statix.random.predicate.Not;
+import mb.statix.random.strategy.Either2;
 import mb.statix.random.strategy.SearchStrategies;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.persistent.State;
@@ -59,6 +62,7 @@ public class RandomTermGenerator {
         stack.push(initNodes.iterator());
     }
 
+    final AtomicInteger nodeId = new AtomicInteger();
     private int work = 0;
     private int backtracks = 0;
     private int deadEnds = 0;
@@ -66,13 +70,19 @@ public class RandomTermGenerator {
 
     public Optional<SearchState> next() throws MetaborgException, InterruptedException {
         final SearchContext ctx = new SearchContext() {
+
             @Override public Random rnd() {
                 return rnd;
             }
 
-            @Override public void addFailed(SearchNode<SearchState> node) {
-                printResult("FAILURE", node);
+            @Override public int nextNodeId() {
+                return nodeId.incrementAndGet();
             }
+
+            @Override public void addFailed(SearchNode<SearchState> node) {
+                printResult("FAILURE", node, Level.Debug, Level.Debug);
+            }
+
         };
         while(!stack.isEmpty()) {
             final Iterator<SearchNode<SearchState>> nodes = stack.peek();
@@ -82,8 +92,9 @@ public class RandomTermGenerator {
                 continue;
             }
             final SearchNode<SearchState> node = nodes.next();
+            work++;
             if(done(node.output())) {
-                printResult("SUCCESS", node);
+                printResult("SUCCESS", node, Level.Info, Level.Debug);
                 hits++;
                 return Optional.of(node.output());
             } else if(stack.size() >= MAX_DEPTH) {
@@ -92,8 +103,8 @@ public class RandomTermGenerator {
                 continue;
             }
             final Iterator<SearchNode<SearchState>> nextNodes = strategy.apply(ctx, node.output(), node).iterator();
-            work++;
             if(!nextNodes.hasNext()) {
+                ctx.addFailed(node);
                 deadEnds++;
                 continue;
             }
@@ -122,82 +133,52 @@ public class RandomTermGenerator {
         return N.drop(CAstId.class, CAstProperty.class);
     }
 
-    private static SearchStrategy<SearchState, SearchState> search1a() {
-        // @formatter:off
-        return N.limit(15, N.alt(
-            N.seq(
-                N.limit(10, N.select(CUser.class, new Not<>(new IsType()))),
-                N.limit(10, N.expand())
-            ), 
-            N.seq(
-                N.limit(10, N.select(CResolveQuery.class, new Any<>())),
-                N.limit(10, N.resolve())
-            )
-        ));
-        // @formatter:on
-    }
-
-    private static SearchStrategy<SearchState, SearchState> search1b() {
-        // @formatter:off
-        return N.limit(15, N.alt(
-            N.limit(50, N.seq(
-                N.select(CUser.class, new Not<>(new IsType())),
-                N.expand()
-            )), 
-            N.limit(50, N.seq(
-                N.select(CResolveQuery.class, new Any<>()),
-                N.resolve()
-            ))
-        ));
-        // @formatter:on
-    }
-
-
     // enumerate all possible combinations of solving constraints
     private static SearchStrategy<SearchState, SearchState> enumerateComb() {
-        return N.alt(expandExpComb(), resolveAnyQuery());
+        // @formatter:off
+        return N.seq(selectConstraint(1), N.match(
+            expandExpComb(),
+            N.resolve()
+        ));
+        // @formatter:on
     }
 
-    private static SearchStrategy<SearchState, SearchState> expandExpComb() {
+    private static SearchStrategy<SearchState, Either2<FocusedSearchState<CUser>, FocusedSearchState<CResolveQuery>>>
+            selectConstraint(int limit) {
+        return N.limit(limit,
+                N.alt(N.select(CUser.class, new Not<>(new IsGen())), N.select(CResolveQuery.class, new Any<>())));
+    }
+
+    private static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpComb() {
         // @formatter:off
-        return N.seq(
-            N.limit(1, N.select(CUser.class, new Not<>(new IsGen()))),
-            N.expand(ImmutableMap.of(
+        return N.expand(ImmutableMap.of(
                 "T-Unit", 1,
                 "T-Fun",  1,
                 "T-Var",  1,
                 "T-App",  1,
                 "T-Let",  0
-            ))
-        );
+        ));
         // @formatter:on
     }
 
     private static SearchStrategy<SearchState, SearchState> search(int ruleLimit) {
-        return N.alt(expandExpSearch(ruleLimit), resolveAnyQuery());
+        // @formatter:off
+        return N.seq(selectConstraint(1), N.match(
+            expandExpSearch(ruleLimit),
+            N.resolve()
+        ));
+        // @formatter:on
     }
 
-    private static SearchStrategy<SearchState, SearchState> expandExpSearch(int ruleLimit) {
+    private static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpSearch(int ruleLimit) {
         // @formatter:off
-        return N.seq(
-            N.limit(1, N.select(CUser.class, new Not<>(new IsGen()))),
-            N.limit(ruleLimit, N.expand(ImmutableMap.of(
+        return N.limit(ruleLimit, N.expand(ImmutableMap.of(
                 "T-Unit", 1,
                 "T-Fun",  1,
                 "T-Var",  1,
                 "T-App",  1,
                 "T-Let",  0
-            )))
-        );
-        // @formatter:on
-    }
-
-    private static SearchStrategy<SearchState, SearchState> resolveAnyQuery() {
-        // @formatter:off
-        return N.seq(
-            N.limit(1, N.select(CResolveQuery.class, new Any<>())),
-            N.resolve()
-        );
+        )));
         // @formatter:on
     }
 
@@ -210,20 +191,20 @@ public class RandomTermGenerator {
         // @formatter:on
     }
 
-    public void printResult(String header, SearchNode<SearchState> node) {
-        log.info("+--- {} ---+.", header);
+    public void printResult(String header, SearchNode<SearchState> node, Level level1, Level level2) {
+        log.log(level1, "+--- {} ---+.", header);
 
-        node.output().print(log::info, (t, u) -> pp.apply(u.findRecursive(t)));
+        node.output().print(s -> log.log(level1, s), (t, u) -> "{" + u.size(t) + "} " + pp.apply(u.findRecursive(t)));
 
-        log.info("+~~~ Trace ~~~+.");
-        log.info("+ * {}", node);
+        log.log(level1, "+~~~ Trace ~~~+.");
+        log.log(level1, "+ * {}", node);
 
         SearchNode<?> traceNode = node;
         while((traceNode = traceNode.parent()) != null) {
-            log.debug("+ * {}", traceNode);
+            log.log(level2, "+ * {}", traceNode);
         }
 
-        log.info("+------------+");
+        log.log(level1, "+------------+");
     }
 
 }
