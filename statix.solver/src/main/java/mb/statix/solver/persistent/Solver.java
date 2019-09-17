@@ -54,16 +54,31 @@ public class Solver {
             return false;
         }
 
-        final IState.Immutable newState = result.state();
-        final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
-        final Set<ITermVar> unifierVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
-        // FIXME This test assumes the newUnifier is an extension of the old one.
-        //       Without this assumption, we should to the more expensive test
-        //       `newUnifier.equals(state.unifier())`
-        if(!unifierVars.isEmpty()) {
-            throw Delay.ofVars(unifierVars);
+        if(!result.delays().isEmpty()) {
+            debug.info("Cannot decide constraint entailment: unsolved constraints");
+            // FIXME Can this result in an empty delay? If so, it means there's no
+            //       recovering, because the delays are internal to the constraint,
+            //       and unaffected by outside variables -> return false.
+            throw result.delay().retainAll(state.vars(), state.scopes());
         }
 
+        final IState.Immutable newState = result.state();
+        // NOTE The retain operation is important because it may change
+        //      representatives, which can be local to newUnifier.
+        final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
+
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
+        // FIXME This test assumes the newUnifier is an extension of the old one.
+        //       Without this assumption, we should use the more expensive test
+        //       `newUnifier.equals(state.unifier())`
+        if(!unifiedVars.isEmpty()) {
+            debug.info("Cannot decide constraint entailment: unified rigid vars)");
+            throw Delay.ofVars(unifiedVars);
+        }
+
+        final List<ITermVar> disunifiedVars =
+                Sets.difference(newUnifier.disequalityMaps(), state.unifier().disequalityMaps()).stream()
+                        .flatMap(diseq -> diseq.keySet().stream()).collect(Collectors.toList());
         // FIXME Any disequalities on rigid vars introduced during solving are
         //       currently ignored. We could test as follows. Remove all disequalities
         //       in state from newState. Any remaining disequalities are
@@ -75,19 +90,9 @@ public class Solver {
         //       complicated than that, because, if the new diseq in newState is
         //       implied by all diseq in state, entailment does hold. But it might
         //       okay to ignore this situation?
-        final List<ITermVar> disunifiedVars =
-                Sets.difference(newUnifier.disequalityMaps(), state.unifier().disequalityMaps()).stream()
-                        .flatMap(diseq -> diseq.keySet().stream()).collect(Collectors.toList());
         if(!disunifiedVars.isEmpty()) {
-            throw Delay.ofVars(unifierVars);
-        }
-
-        if(!result.delays().isEmpty()) {
-            debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            // FIXME Can this result in empty delay? If so, it means there's no recovering,
-            //       because the delays are internal to the constraint, and unaffected by
-            //       outside variables -> return false.
-            throw result.delay().retainAll(state.vars(), state.scopes());
+            debug.info("Cannot decide constraint entailment: disunified rigid vars)");
+            throw Delay.ofVars(disunifiedVars);
         }
 
         debug.info("Constraints entailed");
