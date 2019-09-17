@@ -44,15 +44,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     protected abstract java.util.Map<ITermVar, ITerm> terms();
 
-    @Override public java.util.Map<ITermVar, ITerm> asEqualityMap() {
+    @Override public java.util.Map<ITermVar, ITerm> equalityMap() {
         final Map.Transient<ITermVar, ITerm> map = Map.Transient.of();
         map.__putAll(reps());
         map.__putAll(terms());
         return map.freeze();
     }
-
-    protected abstract java.util.Collection<? extends java.util.Map<ITermVar, ITerm>> disequalities();
-
 
     ///////////////////////////////////////////
     // unifier functions
@@ -283,7 +280,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             sb.append(" == ");
             sb.append(reps().get(var));
         }
-        for(java.util.Map<ITermVar, ITerm> disequality : disequalities()) {
+        for(java.util.Map<ITermVar, ITerm> disequality : disequalityMaps()) {
             sb.append(first ? " " : ", ");
             first = false;
             sb.append(disequalityToString(disequality));
@@ -954,8 +951,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.areEqual(term1, term2);
         }
 
-        @Override public java.util.Map<ITermVar, ITerm> asEqualityMap() {
-            return unifier.asEqualityMap();
+        @Override public java.util.Map<ITermVar, ITerm> equalityMap() {
+            return unifier.equalityMap();
+        }
+
+        @Override public Set<? extends java.util.Map<ITermVar, ITerm>> disequalityMaps() {
+            return unifier.disequalityMaps();
         }
 
         @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {

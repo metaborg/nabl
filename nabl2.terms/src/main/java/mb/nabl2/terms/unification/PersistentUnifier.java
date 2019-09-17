@@ -81,7 +81,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             return terms;
         }
 
-        @Override protected Set.Immutable<Map.Immutable<ITermVar, ITerm>> disequalities() {
+        @Override public java.util.Set<? extends java.util.Map<ITermVar, ITerm>> disequalityMaps() {
             return disequalities;
         }
 
@@ -103,7 +103,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
         @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(IUnifier other)
                 throws OccursException {
-            return new Unify(other.asEqualityMap()).apply(true);
+            return new Unify(other.equalityMap()).apply(true);
         }
 
         private class Unify extends Transient {
@@ -351,7 +351,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 // already unified, terms are equal, error
                 return Optional.empty();
             }
-            final Map.Immutable<ITermVar, ITerm> disequality = CapsuleUtil.toMap(diff.asEqualityMap());
+            final Map.Immutable<ITermVar, ITerm> disequality = CapsuleUtil.toMap(diff.equalityMap());
             final IUnifier.Immutable result = new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms,
                     disequalities.__insert(disequality));
             return Optional.of(result);
@@ -372,8 +372,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return Optional.empty();
                         } else {
                             // not unified yet, keep
-                            final Map.Immutable<ITermVar, ITerm> newDisequality =
-                                    CapsuleUtil.toMap(diff.asEqualityMap());
+                            final Map.Immutable<ITermVar, ITerm> newDisequality = CapsuleUtil.toMap(diff.equalityMap());
                             newDisequalities.__insert(newDisequality);
                         }
                     }
@@ -425,7 +424,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                     subst.compose(remove(var));
                 }
                 final IUnifier.Immutable unifier = new PersistentUnifier.Immutable(finite, reps.freeze(),
-                        ranks.freeze(), terms.freeze(), disequalities);
+                        ranks.freeze(), terms.freeze(), removeDiseq());
                 return new BaseUnifier.ImmutableResult<>(subst.freeze(), unifier);
             }
 
@@ -458,6 +457,18 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 }
                 CapsuleUtil.replace(terms, (v, t) -> subst.apply(t));
                 return subst;
+            }
+
+            private Set.Immutable<Map.Immutable<ITermVar, ITerm>> removeDiseq() {
+                Set.Transient<Map.Immutable<ITermVar, ITerm>> newDiseqs = Set.Transient.of();
+                for(Map.Immutable<ITermVar, ITerm> diseq : disequalities) {
+                    Map.Transient<ITermVar, ITerm> newDiseq = diseq.asTransient();
+                    vars.stream().forEach(newDiseq::__remove);
+                    if(!newDiseq.isEmpty()) {
+                        newDiseqs.__insert(newDiseq.freeze());
+                    }
+                }
+                return newDiseqs.freeze();
             }
 
         }
@@ -530,7 +541,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 return terms;
             }
 
-            @Override protected Collection<? extends java.util.Map<ITermVar, ITerm>> disequalities() {
+            @Override public java.util.Set<? extends java.util.Map<ITermVar, ITerm>> disequalityMaps() {
                 return disequalities;
             }
 

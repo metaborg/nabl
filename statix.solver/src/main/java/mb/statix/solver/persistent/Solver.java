@@ -1,6 +1,8 @@
 package mb.statix.solver.persistent;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -54,12 +56,12 @@ public class Solver {
 
         final IState.Immutable newState = result.state();
         final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
-        Set<ITermVar> touchedVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
+        final Set<ITermVar> unifierVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should to the more expensive test
         //       `newUnifier.equals(state.unifier())`
-        if(!touchedVars.isEmpty()) {
-            throw Delay.ofVars(touchedVars);
+        if(!unifierVars.isEmpty()) {
+            throw Delay.ofVars(unifierVars);
         }
 
         // FIXME Any disequalities on rigid vars introduced during solving are
@@ -73,6 +75,12 @@ public class Solver {
         //       complicated than that, because, if the new diseq in newState is
         //       implied by all diseq in state, entailment does hold. But it might
         //       okay to ignore this situation?
+        final List<ITermVar> disunifiedVars =
+                Sets.difference(newUnifier.disequalityMaps(), state.unifier().disequalityMaps()).stream()
+                        .flatMap(diseq -> diseq.keySet().stream()).collect(Collectors.toList());
+        if(!disunifiedVars.isEmpty()) {
+            throw Delay.ofVars(unifierVars);
+        }
 
         if(!result.delays().isEmpty()) {
             debug.info("Cannot decide constraint entailment (unsolved constraints)");

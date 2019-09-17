@@ -154,7 +154,9 @@ public interface IUnifier {
     // asMap()
     ///////////////////////////////////////////
 
-    Map<ITermVar, ITerm> asEqualityMap();
+    Map<ITermVar, ITerm> equalityMap();
+
+    Set<? extends Map<ITermVar, ITerm>> disequalityMaps();
 
 
     public interface Immutable extends IUnifier {
