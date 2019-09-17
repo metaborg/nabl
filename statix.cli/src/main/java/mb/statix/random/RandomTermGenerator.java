@@ -147,8 +147,12 @@ public class RandomTermGenerator {
 
     private static SearchStrategy<SearchState, Either2<FocusedSearchState<CUser>, FocusedSearchState<CResolveQuery>>>
             selectConstraint(int limit) {
-        return N.limit(limit,
-                N.alt(N.select(CUser.class, new Not<>(new IsGen())), N.select(CResolveQuery.class, new Any<>())));
+        // @formatter:off
+        return N.limit(limit, N.alt(
+            N.select(CUser.class, new Not<>(new IsGen())),
+            N.seq(N.select(CResolveQuery.class, new Any<>()), N.canResolve())
+        ));
+        // @formatter:on
     }
 
     private static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpComb() {
