@@ -4,10 +4,10 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.util.Capsules;
 
 public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L, D> {
 
@@ -126,7 +126,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
 
         public static <S extends D, L, D> ScopeGraph.Immutable<S, L, D> of(Iterable<L> edgeLabels,
                 Iterable<L> dataLabels, L noDataLabel) {
-            return new ScopeGraph.Immutable<>(Capsules.newSet(edgeLabels), Capsules.newSet(dataLabels), noDataLabel,
+            return new ScopeGraph.Immutable<>(CapsuleUtil.toSet(edgeLabels), CapsuleUtil.toSet(dataLabels), noDataLabel,
                     HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of());
         }
 
@@ -225,7 +225,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
 
         public static <S extends D, L, D> ScopeGraph.Transient<S, L, D> of(Iterable<L> edgeLabels,
                 Iterable<L> dataLabels, L noDataLabel) {
-            return new ScopeGraph.Transient<>(Capsules.newSet(edgeLabels), Capsules.newSet(dataLabels), noDataLabel,
+            return new ScopeGraph.Transient<>(CapsuleUtil.toSet(edgeLabels), CapsuleUtil.toSet(dataLabels), noDataLabel,
                     HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of());
         }
 
