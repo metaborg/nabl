@@ -59,8 +59,8 @@ import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.IState;
 import mb.statix.solver.SolverException;
 import mb.statix.solver.SolverException.SolverInterrupted;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
@@ -79,7 +79,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
     private IState.Immutable state;
     private Map<ITermVar, ITermVar> existentials;
     private final IsComplete isComplete;
-    private final ICompleteness completeness;
+    private final ICompleteness.Transient completeness;
     private final ConstraintContext params;
 
     private final IDebugContext debug;
@@ -89,7 +89,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
     public StepSolver(IState.Immutable state, IsComplete _isComplete, IDebugContext debug) {
         this.state = state;
         this.existentials = null;
-        this.completeness = new IncrementalCompleteness(state.spec());
+        this.completeness = Completeness.Transient.of(state.spec());
         this.isComplete = (s, l, st) -> completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);

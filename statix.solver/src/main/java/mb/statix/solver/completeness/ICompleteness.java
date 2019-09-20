@@ -15,22 +15,34 @@ public interface ICompleteness {
 
     boolean isComplete(Scope scope, ITerm label, IUnifier unifier);
 
-    void add(IConstraint constraint, IUnifier unifier);
+    interface Immutable extends ICompleteness {
 
-    default void addAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
-        Iterables2.stream(constraints).forEach(c -> add(c, unifier));
+        ICompleteness.Transient melt();
+
     }
 
-    Set<CriticalEdge> remove(IConstraint constraint, IUnifier unifier);
+    interface Transient extends ICompleteness {
 
-    default void removeAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
-        Iterables2.stream(constraints).forEach(c -> remove(c, unifier));
-    }
+        void add(IConstraint constraint, IUnifier unifier);
 
-    void update(ITermVar var, IUnifier unifier);
+        default void addAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
+            Iterables2.stream(constraints).forEach(c -> add(c, unifier));
+        }
 
-    default void updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
-        Iterables2.stream(vars).forEach(c -> update(c, unifier));
+        Set<CriticalEdge> remove(IConstraint constraint, IUnifier unifier);
+
+        default void removeAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
+            Iterables2.stream(constraints).forEach(c -> remove(c, unifier));
+        }
+
+        void update(ITermVar var, IUnifier unifier);
+
+        default void updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
+            Iterables2.stream(vars).forEach(c -> update(c, unifier));
+        }
+
+        ICompleteness.Immutable freeze();
+
     }
 
 }

@@ -57,8 +57,8 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
@@ -78,7 +78,7 @@ public class GreedySolver {
     // set-up
     private final IDebugContext debug;
     private final IConstraintStore constraints;
-    private final ICompleteness completeness;
+    private final ICompleteness.Transient completeness;
     private final IState.Immutable initialState;
     private final ConstraintContext params;
 
@@ -89,7 +89,7 @@ public class GreedySolver {
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
-        this.completeness = new IncrementalCompleteness(state.spec());
+        this.completeness = Completeness.Transient.of(state.spec());
         final IsComplete isComplete = (s, l, st) -> {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
