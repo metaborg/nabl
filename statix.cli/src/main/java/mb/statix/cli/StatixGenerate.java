@@ -7,7 +7,9 @@ import java.util.Optional;
 
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
+import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.core.action.TransformActionContrib;
+import org.metaborg.core.language.ILanguageComponent;
 import org.metaborg.core.messages.Message;
 import org.metaborg.core.messages.MessageSeverity;
 import org.metaborg.core.messages.MessageType;
@@ -18,6 +20,9 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.strategoxt.HybridInterpreter;
+
+import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Transform.T;
@@ -64,10 +69,17 @@ public class StatixGenerate {
             pp = STX.findProject(resource).flatMap(localProject -> {
                 return STX.loadProjectLang(localProject);
             }).<Function1<ITerm, String>>map(pl -> {
+                final ILanguageComponent lc = Iterables.getOnlyElement(pl.components());
+                HybridInterpreter runtime;
+                try {
+                    runtime = STX.S.strategoRuntimeService.runtime(lc, STX.context, false);
+                } catch(MetaborgException e) {
+                    throw new MetaborgRuntimeException(e);
+                }
                 return (t) -> {
                     final IStrategoTerm st = strategoTerms.toStratego(explicate(t));
                     try {
-                        final IStrategoTerm r = STX.S.strategoCommon.invoke(pl, STX.context, st, "pp-generated");
+                        final IStrategoTerm r = STX.S.strategoCommon.invoke(runtime, st, "pp-generated");
                         return r != null ? Tools.asJavaString(r) : t.toString();
                     } catch(MetaborgException e) {
                         return t.toString();

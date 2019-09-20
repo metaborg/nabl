@@ -36,8 +36,8 @@ import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.completeness.IncrementalCompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
@@ -66,7 +66,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
             throw new IllegalArgumentException("cannot resolve query: cannot decide data equivalence");
         }
 
-        final ICompleteness completeness = new IncrementalCompleteness(state.spec());
+        final ICompleteness.Transient completeness = Completeness.Transient.of(state.spec());
         completeness.addAll(input.constraints(), unifier);
         final IsComplete isComplete3 = (s, l, st) -> completeness.isComplete(s, l, st.unifier());
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());

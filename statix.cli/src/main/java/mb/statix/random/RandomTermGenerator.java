@@ -39,6 +39,8 @@ public class RandomTermGenerator {
 
     private static final ILogger log = LoggerUtils.logger(RandomTermGenerator.class);
 
+    private static final boolean DEBUG = false;
+    private static final int LINE_WIDTH = 100;
     private static final int MAX_DEPTH = 1024;
 
     private final long seed = System.currentTimeMillis();
@@ -82,7 +84,7 @@ public class RandomTermGenerator {
             }
 
             @Override public void addFailed(SearchNode<SearchState> node) {
-                printResult("FAILURE", node, Level.Debug, Level.Debug);
+                printResult('.', "FAILURE", node, Level.Debug, Level.Debug);
             }
 
         };
@@ -96,7 +98,7 @@ public class RandomTermGenerator {
             final SearchNode<SearchState> node = nodes.next();
             work++;
             if(done(node.output())) {
-                printResult("SUCCESS", node, Level.Info, Level.Debug);
+                printResult('+', "SUCCESS", node, Level.Info, Level.Debug);
                 hits++;
                 return Optional.of(node.output());
             } else if(stack.size() >= MAX_DEPTH) {
@@ -111,6 +113,9 @@ public class RandomTermGenerator {
                 continue;
             }
             stack.push(nextNodes);
+        }
+        if(!DEBUG) {
+            System.out.println();
         }
         log.info("hits       {}", hits);
         log.info("work       {}", work);
@@ -197,27 +202,36 @@ public class RandomTermGenerator {
         // @formatter:on
     }
 
-    public void printResult(String header, SearchNode<SearchState> node, Level level1, Level level2) {
-        log.log(level1, "+--- {} ---+.", header);
+    private int summaries = 0;
 
-        node.output().print(s -> log.log(level1, s), (t, u) -> pp.apply(u.findRecursive(t)));
-
-        log.log(level1, "+~~~ Trace ~~~+.");
-
-        boolean first = true;
-        SearchNode<?> traceNode = node;
-        do {
-            log.log(first ? level1 : level2, "+ * {}", traceNode);
-            first = false;
-            if(traceNode.output() instanceof SearchState) {
-                SearchState state = (SearchState) traceNode.output();
-                IUnifier u = state.state().unifier();
-                log.log(level2, "+   constraints: {}",
-                        Constraints.toString(state.constraints(), t -> pp.apply(u.findRecursive(t))));
+    private void printResult(char summary, String header, SearchNode<SearchState> node, Level level1, Level level2) {
+        if(!DEBUG) {
+            if((++summaries % LINE_WIDTH) == 0) {
+                System.out.println();
             }
-        } while((traceNode = traceNode.parent()) != null);
+            System.out.print(summary);
+        } else {
+            log.log(level1, "+--- {} ---+.", header);
 
-        log.log(level1, "+------------+");
+            node.output().print(s -> log.log(level1, s), (t, u) -> pp.apply(u.findRecursive(t)));
+
+            log.log(level1, "+~~~ Trace ~~~+.");
+
+            boolean first = true;
+            SearchNode<?> traceNode = node;
+            do {
+                log.log(first ? level1 : level2, "+ * {}", traceNode);
+                first = false;
+                if(traceNode.output() instanceof SearchState) {
+                    SearchState state = (SearchState) traceNode.output();
+                    IUnifier u = state.state().unifier();
+                    log.log(level2, "+   constraints: {}",
+                            Constraints.toString(state.constraints(), t -> pp.apply(u.findRecursive(t))));
+                }
+            } while((traceNode = traceNode.parent()) != null);
+
+            log.log(level1, "+------------+");
+        }
     }
 
 }
