@@ -206,7 +206,7 @@ public class RandomTermGenerator {
 
     private void printResult(char summary, String header, SearchNode<SearchState> node, Level level1, Level level2) {
         if(!DEBUG) {
-            if((++summaries % LINE_WIDTH) == 0) {
+            if((summaries++ % LINE_WIDTH) == 0) {
                 System.out.println();
             }
             System.out.print(summary);
