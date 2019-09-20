@@ -147,10 +147,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 });
             }
 
-            private boolean unifyTerms(final ITerm _left, final ITerm _right) {
-                final ITerm left = findTerm(_left);
-                final ITerm right = findTerm(_right);
-            // @formatter:off
+            private boolean unifyTerms(final ITerm left, final ITerm right) {
+                // @formatter:off
                 return left.match(Terms.<Boolean>cases(
                     applLeft -> right.match(Terms.<Boolean>cases()
                         .appl(applRight -> {
@@ -221,10 +219,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 // @formatter:on
             }
 
-            private boolean unifyLists(final IListTerm _left, final IListTerm _right) {
-                final IListTerm left = (IListTerm) findTerm(_left);
-                final IListTerm right = (IListTerm) findTerm(_right);
-            // @formatter:off
+            private boolean unifyLists(final IListTerm left, final IListTerm right) {
+                // @formatter:off
                 return left.match(ListTerms.<Boolean>cases(
                     consLeft -> right.match(ListTerms.<Boolean>cases()
                         .cons(consRight -> {
@@ -264,7 +260,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
             private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
                 final ITermVar rep = findRep(var);
-                assert !(term instanceof ITermVar);
+                if(term instanceof ITermVar) {
+                    throw new IllegalStateException();
+                }
                 if(terms.containsKey(rep)) {
                     worklist.push(ImmutableTuple2.of(terms.get(rep), term));
                 } else {

@@ -181,8 +181,8 @@ public class PersistentUnifierFiniteTest {
     }
 
     @Test public void testEquivalenceClasses() throws OccursException {
-        final IUnifier.Immutable phi = new PersistentUnifier.Immutable(true, Map.Immutable.of(a, b),
-                Map.Immutable.of(), Map.Immutable.of(), Set.Immutable.of());
+        final IUnifier.Immutable phi = new PersistentUnifier.Immutable(true, Map.Immutable.of(a, b), Map.Immutable.of(),
+                Map.Immutable.of(), Set.Immutable.of());
         final IUnifier.Immutable theta = new PersistentUnifier.Immutable(true, Map.Immutable.of(b, a),
                 Map.Immutable.of(), Map.Immutable.of(), Set.Immutable.of());
         assertEquals(phi, theta);
@@ -235,6 +235,12 @@ public class PersistentUnifierFiniteTest {
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
         assertTrue(phi.disunify(a, b));
         assertFalse(phi.unify(c, b).isPresent());
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(B.newTuple(a, a), B.newTuple(a, B.newAppl(f, a)));
+        phi.unify(B.newTuple(a, a), B.newTuple(B.newAppl(f, a), a));
     }
 
 }
