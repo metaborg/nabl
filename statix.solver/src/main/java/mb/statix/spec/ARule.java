@@ -87,9 +87,7 @@ public abstract class ARule {
             throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
-                P.match(params(), args, unifier).matchOrThrow(r -> r, vars -> {
-                    throw Delay.ofVars(vars);
-                });
+                P.match(params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars));
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
             return Optional.empty();
         }
