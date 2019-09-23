@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.util.functions.Predicate2;
@@ -24,6 +23,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchNode;
+import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.scopegraph.DataWF;
@@ -45,8 +45,8 @@ import mb.statix.spoofax.StatixTerms;
 
 final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
 
-    @Override protected Stream<SearchNode<SearchState>> doApply(SearchContext ctx,
-            FocusedSearchState<CResolveQuery> input, SearchNode<?> parent) {
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, FocusedSearchState<CResolveQuery> input,
+            SearchNode<?> parent) {
         final IState.Immutable state = input.state();
         final IUnifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
@@ -99,7 +99,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 IntStream.range(0, count.get()).boxed().collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(indices, ctx.rnd());
 
-        return indices.stream().flatMap(idx -> {
+        return SearchNodes.of(indices.stream().flatMap(idx -> {
             final AtomicInteger select = new AtomicInteger(idx);
             final Env<Scope, ITerm, ITerm, CEqual> env;
             try {
@@ -129,7 +129,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 final SearchState newState = input.update(input.state(), constraints.build());
                 return new SearchNode<>(ctx.nextNodeId(), newState, parent, "resolve[" + idx + "/" + count.get() + "]");
             });
-        });
+        }));
     }
 
     @Override public String toString() {

@@ -3,6 +3,7 @@ package mb.statix.cli;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.vfs2.FileObject;
@@ -10,12 +11,10 @@ import org.metaborg.core.MetaborgException;
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.core.action.TransformActionContrib;
 import org.metaborg.core.language.ILanguageComponent;
-import org.metaborg.core.messages.Message;
-import org.metaborg.core.messages.MessageSeverity;
-import org.metaborg.core.messages.MessageType;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoAppl;
@@ -25,17 +24,24 @@ import org.strategoxt.HybridInterpreter;
 import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.stratego.StrategoTerms;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.statix.constraints.Constraints;
 import mb.statix.random.RandomTermGenerator;
+import mb.statix.random.SearchNode;
 import mb.statix.random.SearchState;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 public class StatixGenerate {
 
     private static final ILogger log = LoggerUtils.logger(StatixGenerate.class);
+
+    private static final boolean DEBUG = false;
 
     private final Statix STX;
 
@@ -87,17 +93,18 @@ public class StatixGenerate {
                 };
             }).orElseGet(() -> ITerm::toString);
 
-            STX.messagePrinter.print(new Message("Generating random terms.", MessageSeverity.NOTE, MessageType.INTERNAL,
-                    analysisUnit.source(), null, null), false);
-            final RandomTermGenerator rtg = new RandomTermGenerator(spec, constraint, pp);
+            log.info("Generating random terms.");
+            final RandomTermGenerator rtg = new RandomTermGenerator(spec, constraint, STLC.allIn());
+            int hits = 0;
             while(true) {
-                Optional<SearchState> state = rtg.next();
-                if(!state.isPresent()) {
+                final SearchNode<SearchState> state;
+                if((state = rtg.next().orElse(null)) == null) {
                     break;
                 }
+                hits++;
+                printResult("SUCCESS", state, Level.Info, Level.Debug, pp);
             }
-            STX.messagePrinter.print(new Message("Generated random terms.", MessageSeverity.NOTE, MessageType.INTERNAL,
-                    analysisUnit.source(), null, null), false);
+            log.info("Generated {} random terms.", hits);
         }
 
     }
@@ -111,6 +118,38 @@ public class StatixGenerate {
             )::match
         ).apply(t);
         // @formatter:on
+    }
+
+    private void printResult(String header, SearchNode<SearchState> node, Level level1, Level level2,
+            Function1<ITerm, String> pp) {
+        if(DEBUG) {
+            log.log(level1, "+--- {} ---+.", header);
+
+            node.output().print(s -> log.log(level1, s), (t, u) -> pp.apply(u.findRecursive(t)));
+
+            log.log(level1, "+~~~ Trace ~~~+.");
+
+            boolean first = true;
+            SearchNode<?> traceNode = node;
+            do {
+                log.log(first ? level1 : level2, "+ * {}", traceNode);
+                first = false;
+                if(traceNode.output() instanceof SearchState) {
+                    SearchState state = (SearchState) traceNode.output();
+                    IUnifier u = state.state().unifier();
+                    log.log(level2, "+   constraints: {}",
+                            Constraints.toString(state.constraints(), t -> pp.apply(u.findRecursive(t))));
+                }
+            } while((traceNode = traceNode.parent()) != null);
+
+            log.log(level1, "+------------+");
+        } else {
+            final Map<ITermVar, ITermVar> ex = node.output().existentials();
+            final IState.Immutable state = node.output().state();
+            final ITerm t = ex.get(B.newVar("", "e"));
+            final String p = pp.apply(state.unifier().findRecursive(t));
+            System.out.println(p);
+        }
     }
 
 }

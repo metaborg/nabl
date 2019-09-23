@@ -45,7 +45,7 @@ public class SearchState {
     }
 
     public SearchState update(IState.Immutable state, Iterable<? extends IConstraint> constraints) {
-        return new SearchState(state, CapsuleUtil.toSet(constraints), this.existentials());
+        return new SearchState(state, CapsuleUtil.toSet(constraints), this.existentials);
     }
 
     public SearchState update(SolverResult result) {

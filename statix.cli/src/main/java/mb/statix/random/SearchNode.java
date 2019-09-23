@@ -20,6 +20,10 @@ public class SearchNode<O> {
         return output;
     }
 
+    public <X> SearchNode<X> withOutput(X output) {
+        return new SearchNode<>(id, output, parent, desc);
+    }
+
     public SearchNode<?> parent() {
         return parent;
     }

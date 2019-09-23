@@ -1,7 +1,5 @@
 package mb.statix.random.strategy;
 
-import java.util.stream.Stream;
-
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.util.functions.Predicate2;
 
@@ -12,6 +10,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchNode;
+import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.scopegraph.DataWF;
 import mb.statix.random.scopegraph.NameResolution;
@@ -28,7 +27,7 @@ import mb.statix.solver.query.RelationLabelOrder;
 
 final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
 
-    @Override protected Stream<SearchNode<FocusedSearchState<CResolveQuery>>> doApply(SearchContext ctx,
+    @Override protected SearchNodes<FocusedSearchState<CResolveQuery>> doApply(SearchContext ctx,
             FocusedSearchState<CResolveQuery> input, SearchNode<?> parent) {
         final IState.Immutable state = input.state();
         final IUnifier unifier = state.unifier();
@@ -36,7 +35,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
 
         final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
         if(scope == null) {
-            return Stream.empty();
+            return SearchNodes.of();
         }
 
         final Boolean isAlways;
@@ -46,7 +45,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
             throw new MetaborgRuntimeException(e);
         }
         if(isAlways == null) {
-            return Stream.empty();
+            return SearchNodes.of();
         }
 
         final ICompleteness.Transient completeness = Completeness.Transient.of(state.spec());
@@ -69,12 +68,12 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
         try {
             nameResolution.resolve(scope, () -> false);
         } catch(ResolutionException e) {
-            return Stream.empty();
+            return SearchNodes.of();
         } catch(InterruptedException e) {
             throw new MetaborgRuntimeException(e);
         }
 
-        return Stream.of(new SearchNode<>(ctx.nextNodeId(), input, parent, parent.desc()));
+        return SearchNodes.of(new SearchNode<>(ctx.nextNodeId(), input, parent, parent.desc()));
     }
 
     @Override public String toString() {

@@ -1,9 +1,8 @@
 package mb.statix.random.strategy;
 
-import java.util.stream.Stream;
-
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchNode;
+import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchStrategy;
 
 final class Seq<I1, O, I2> extends SearchStrategy<I1, O> {
@@ -15,7 +14,7 @@ final class Seq<I1, O, I2> extends SearchStrategy<I1, O> {
         this.s2 = s2;
     }
 
-    @Override public Stream<SearchNode<O>> doApply(SearchContext ctx, I1 i1, SearchNode<?> parent) {
+    @Override public SearchNodes<O> doApply(SearchContext ctx, I1 i1, SearchNode<?> parent) {
         return s1.apply(ctx, i1, parent).flatMap(sn1 -> {
             return s2.apply(ctx, sn1.output(), sn1).map(sn2 -> {
                 return new SearchNode<>(ctx.nextNodeId(), sn2.output(), sn2,
@@ -27,4 +26,5 @@ final class Seq<I1, O, I2> extends SearchStrategy<I1, O> {
     @Override public String toString() {
         return "(" + s1.toString() + " . " + s2.toString() + ")";
     }
+
 }
