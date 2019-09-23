@@ -96,6 +96,162 @@ public final class Constraints {
     }
     // @formatter:on
 
+    public static <R> CaseBuilder<R> cases() {
+        return new CaseBuilder<>();
+    }
+
+    public static class CaseBuilder<R> {
+
+        private Function1<CArith, R> onArith;
+        private Function1<CConj, R> onConj;
+        private Function1<CEqual, R> onEqual;
+        private Function1<CExists, R> onExists;
+        private Function1<CFalse, R> onFalse;
+        private Function1<CInequal, R> onInequal;
+        private Function1<CNew, R> onNew;
+        private Function1<CResolveQuery, R> onResolveQuery;
+        private Function1<CTellEdge, R> onTellEdge;
+        private Function1<CTellRel, R> onTellRel;
+        private Function1<CAstId, R> onTermId;
+        private Function1<CAstProperty, R> onTermProperty;
+        private Function1<CTrue, R> onTrue;
+        private Function1<CUser, R> onUser;
+
+        public CaseBuilder<R> arith(Function1<CArith, R> onArith) {
+            this.onArith = onArith;
+            return this;
+        }
+
+        public CaseBuilder<R> conj(Function1<CConj, R> onConj) {
+            this.onConj = onConj;
+            return this;
+        }
+
+        public CaseBuilder<R> equal(Function1<CEqual, R> onEqual) {
+            this.onEqual = onEqual;
+            return this;
+        }
+
+        public CaseBuilder<R> exists(Function1<CExists, R> onExists) {
+            this.onExists = onExists;
+            return this;
+        }
+
+        public CaseBuilder<R> _false(Function1<CFalse, R> onFalse) {
+            this.onFalse = onFalse;
+            return this;
+        }
+
+        public CaseBuilder<R> inequal(Function1<CInequal, R> onInequal) {
+            this.onInequal = onInequal;
+            return this;
+        }
+
+        public CaseBuilder<R> _new(Function1<CNew, R> onNew) {
+            this.onNew = onNew;
+            return this;
+        }
+
+        public CaseBuilder<R> resolveQuery(Function1<CResolveQuery, R> onResolveQuery) {
+            this.onResolveQuery = onResolveQuery;
+            return this;
+        }
+
+        public CaseBuilder<R> tellEdge(Function1<CTellEdge, R> onTellEdge) {
+            this.onTellEdge = onTellEdge;
+            return this;
+        }
+
+        public CaseBuilder<R> tellRel(Function1<CTellRel, R> onTellRel) {
+            this.onTellRel = onTellRel;
+            return this;
+        }
+
+        public CaseBuilder<R> termId(Function1<CAstId, R> onTermId) {
+            this.onTermId = onTermId;
+            return this;
+        }
+
+        public CaseBuilder<R> termProperty(Function1<CAstProperty, R> onTermProperty) {
+            this.onTermProperty = onTermProperty;
+            return this;
+        }
+
+        public CaseBuilder<R> _true(Function1<CTrue, R> onTrue) {
+            this.onTrue = onTrue;
+            return this;
+        }
+
+        public CaseBuilder<R> user(Function1<CUser, R> onUser) {
+            this.onUser = onUser;
+            return this;
+        }
+
+        public IConstraint.Cases<R> otherwise(Function1<IConstraint, R> otherwise) {
+            return new IConstraint.Cases<R>() {
+
+                @Override public R caseArith(CArith c) {
+                    return onArith != null ? onArith.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseConj(CConj c) {
+                    return onConj != null ? onConj.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseEqual(CEqual c) {
+                    return onEqual != null ? onEqual.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseExists(CExists c) {
+                    return onExists != null ? onExists.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseFalse(CFalse c) {
+                    return onFalse != null ? onFalse.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseInequal(CInequal c) {
+                    return onInequal != null ? onInequal.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseNew(CNew c) {
+                    return onNew != null ? onNew.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseResolveQuery(CResolveQuery c) {
+                    return onResolveQuery != null ? onResolveQuery.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseTellEdge(CTellEdge c) {
+                    return onTellEdge != null ? onTellEdge.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseTellRel(CTellRel c) {
+                    return onTellRel != null ? onTellRel.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseTermId(CAstId c) {
+                    return onTermId != null ? onTermId.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseTermProperty(CAstProperty c) {
+                    return onTermProperty != null ? onTermProperty.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseTrue(CTrue c) {
+                    return onTrue != null ? onTrue.apply(c) : otherwise.apply(c);
+                }
+
+                @Override public R caseUser(CUser c) {
+                    return onUser != null ? onUser.apply(c) : otherwise.apply(c);
+                }
+
+            };
+        }
+
+    }
+
+
     // @formatter:off
     public static <R, E extends Throwable> IConstraint.CheckedCases<R, E> checkedCases(
                 CheckedFunction1<CArith, R, E> onArith,
@@ -174,6 +330,27 @@ public final class Constraints {
         };
     }
     // @formatter:on
+
+    public static Function1<IConstraint, IConstraint> bottomup(Function1<IConstraint, IConstraint> f) {
+        // @formatter:off
+        return cases(
+            c -> f.apply(c),
+            c -> f.apply(new CConj(bottomup(f).apply(c.left()), bottomup(f).apply(c.right()), c.cause().orElse(null))),
+            c -> f.apply(c),
+            c -> f.apply(new CExists(c.vars(), bottomup(f).apply(c.constraint()), c.cause().orElse(null))),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c)
+        );
+        // @formatter:on
+    }
 
     public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst) {
         return Constraints.apply(constraints, subst, null);
