@@ -3,16 +3,13 @@ package mb.statix.cli;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.statix.random.strategy.SearchStrategies.*;
 
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import mb.statix.constraints.CConj;
 import mb.statix.constraints.CResolveQuery;
-import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.random.FocusedSearchState;
@@ -23,7 +20,6 @@ import mb.statix.random.predicate.Match;
 import mb.statix.random.predicate.Not;
 import mb.statix.random.strategy.Either2;
 import mb.statix.random.strategy.SearchStrategies;
-import mb.statix.solver.IConstraint;
 
 public class STLC {
 
@@ -42,11 +38,6 @@ public class STLC {
 
     public static SearchStrategy<SearchState, SearchState> inferAndDrop() {
         return seq(infer(), dropAst());
-    }
-
-    public static SearchStrategy<SearchState, SearchState> dropAst() {
-        return transform(Constraints.bottomup(Constraints.<IConstraint>cases().termId(c -> new CTrue(c))
-                .termProperty(c -> new CTrue(c)).otherwise(c -> c)));
     }
 
     // generation of expressions
@@ -155,32 +146,6 @@ public class STLC {
     }
 
     // util
-
-    public static SearchStrategy<SearchState, SearchState> transformPred(String pattern,
-            Function1<CUser, IConstraint> f) {
-        final Match match = new Match(pattern);
-        return transform(Constraints.bottomup(Constraints.<IConstraint>cases().user(c -> {
-            if(match.test(c)) {
-                return f.apply(c);
-            } else {
-                return c;
-            }
-        }).otherwise(c -> {
-            return c;
-        })));
-    }
-
-    public static SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
-        return transformPred(pattern, c -> {
-            return new CConj(c, f.apply(c), c);
-        });
-    }
-
-    public static SearchStrategy<SearchState, SearchState> dropPred(String pattern) {
-        return transformPred(pattern, c -> {
-            return new CTrue(c);
-        });
-    }
 
     public static <I, O> SearchStrategy<I, O> debug(String name, SearchStrategy<I, O> s) {
         return SearchStrategies.debug(s, n -> {

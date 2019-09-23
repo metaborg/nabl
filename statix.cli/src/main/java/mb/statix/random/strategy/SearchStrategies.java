@@ -8,8 +8,11 @@ import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableMap;
 
+import mb.statix.constraints.CConj;
 import mb.statix.constraints.CResolveQuery;
+import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.Constraints;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchNode;
@@ -104,6 +107,39 @@ public final class SearchStrategies {
             }
 
         };
+    }
+
+    // util
+
+    public static SearchStrategy<SearchState, SearchState> transformPred(String pattern,
+            Function1<CUser, IConstraint> f) {
+        final mb.statix.random.predicate.Match match = new mb.statix.random.predicate.Match(pattern);
+        return transform(Constraints.bottomup(Constraints.<IConstraint>cases().user(c -> {
+            if(match.test(c)) {
+                return f.apply(c);
+            } else {
+                return c;
+            }
+        }).otherwise(c -> {
+            return c;
+        })));
+    }
+
+    public static SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
+        return transformPred(pattern, c -> {
+            return new CConj(c, f.apply(c), c);
+        });
+    }
+
+    public static SearchStrategy<SearchState, SearchState> dropPred(String pattern) {
+        return transformPred(pattern, c -> {
+            return new CTrue(c);
+        });
+    }
+
+    public static SearchStrategy<SearchState, SearchState> dropAst() {
+        return transform(Constraints.bottomup(Constraints.<IConstraint>cases().termId(c -> new CTrue(c))
+                .termProperty(c -> new CTrue(c)).otherwise(c -> c)));
     }
 
 
