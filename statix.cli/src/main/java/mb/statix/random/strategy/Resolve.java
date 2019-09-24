@@ -83,12 +83,15 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 dataWF, isAlways, isComplete2);
         // @formatter:on
 
-        final AtomicInteger count = new AtomicInteger(1);
+        final AtomicInteger count = new AtomicInteger(0);
         try {
-            nameResolution.resolve(scope, () -> {
+            final Env<Scope, ITerm, ITerm, CEqual> env = nameResolution.resolve(scope, () -> {
                 count.incrementAndGet();
                 return false;
             });
+            if(env.isNullable()) {
+                count.incrementAndGet();
+            }
         } catch(ResolutionException e) {
             throw new IllegalArgumentException("cannot resolve query: delayed on " + e.getMessage());
         } catch(InterruptedException e) {
