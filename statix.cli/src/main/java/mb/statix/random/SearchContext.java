@@ -8,6 +8,6 @@ public interface SearchContext {
 
     public int nextNodeId();
 
-    public void addFailed(SearchNode<SearchState> node);
+    public void progress(char c);
 
 }

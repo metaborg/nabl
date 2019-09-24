@@ -18,8 +18,7 @@ public class NullSearchContext implements SearchContext {
         return rnd;
     }
 
-    @Override public void addFailed(SearchNode<SearchState> node) {
-        // ignore
+    @Override public void progress(char c) {
     }
 
 }

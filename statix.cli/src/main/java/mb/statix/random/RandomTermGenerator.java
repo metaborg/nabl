@@ -18,6 +18,9 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
 
     private static final ILogger log = LoggerUtils.logger(RandomTermGenerator.class);
 
+    private static final boolean PROGRESS = true;
+    private static final int LINE_WIDTH = 100;
+
     private final SearchNodes<SearchState> nodes;
 
     public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy) {
@@ -28,6 +31,7 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
         log.info("constraint: {}", constraint);
 
         final AtomicInteger nodeId = new AtomicInteger();
+        final AtomicInteger progress = new AtomicInteger();
         final Random rnd = new Random(seed);
         final SearchContext ctx = new SearchContext() {
 
@@ -39,8 +43,16 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
                 return nodeId.incrementAndGet();
             }
 
-            @Override public void addFailed(SearchNode<SearchState> node) {
+            @Override public void progress(char c) {
+                if(!PROGRESS) {
+                    return;
+                }
+                if(c != '\n' && (progress.getAndIncrement() % LINE_WIDTH) == 0 && progress.get() != 1) {
+                    System.err.println();
+                }
+                System.err.print(c);
             }
+
         };
 
         final SearchState initState = SearchState.of(State.of(spec), ImmutableList.of(constraint));

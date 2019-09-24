@@ -3,7 +3,6 @@ package mb.statix.random.strategy;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.functions.Predicate1;
@@ -17,9 +16,6 @@ import mb.statix.random.SearchStrategy;
 
 public class Fix extends SearchStrategy<SearchState, SearchState> {
 
-    private static final boolean PROGRESS = true;
-    private static final int LINE_WIDTH = 100;
-
     private final SearchStrategy<SearchState, SearchState> search;
     private final SearchStrategy<SearchState, SearchState> infer;
     private final Predicate1<CUser> done;
@@ -30,8 +26,6 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
         this.infer = infer;
         this.done = done;
     }
-
-    private AtomicInteger count = new AtomicInteger(0);
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
         final Deque<SearchNodes<SearchState>> stack = new LinkedList<>();
@@ -49,7 +43,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                         if((node = nodes.next().orElse(null)) == null) {
                             stack.pop();
                             if(fresh) {
-                                progress('.');
+                                ctx.progress('.');
                             }
                             continue;
                         }
@@ -58,7 +52,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                     }
                     if(node.output().constraints().stream()
                             .allMatch(c -> (c instanceof CUser && done.test((CUser) c)))) {
-                        progress('+');
+                        ctx.progress('+');
                         return Optional.of(node);
                     }
                     final SearchNodes<SearchState> nextNodes =
@@ -66,18 +60,8 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                     stack.push(nextNodes);
                     fresh = true;
                 }
-                progress('\n');
+                ctx.progress('\n');
                 return Optional.empty();
-            }
-
-            void progress(char c) {
-                if(!PROGRESS) {
-                    return;
-                }
-                if(c != '\n' && (count.getAndIncrement() % LINE_WIDTH) == 0 && count.get() != 1) {
-                    System.err.println();
-                }
-                System.err.print(c);
             }
 
         };
