@@ -94,7 +94,7 @@ public class StatixGenerate {
             }).orElseGet(() -> ITerm::toString);
 
             log.info("Generating random terms.");
-            final RandomTermGenerator rtg = new RandomTermGenerator(spec, constraint, Paret.allIn());
+            final RandomTermGenerator rtg = new RandomTermGenerator(spec, constraint, STLC.allIn());
             int hits = 0;
             while(true) {
                 final SearchNode<SearchState> state;

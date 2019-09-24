@@ -9,6 +9,7 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
@@ -27,10 +28,9 @@ public class STLC {
 
     public static SearchStrategy<SearchState, SearchState> allIn() {
         // @formatter:off
-        return seq(generateExp(8),
-               seq(generateTypes(3),
+        return seq(generateExp(5),
                seq(generateIDs(),
-                   identity())));
+                   identity()));
         // @formatter:on
     }
 
@@ -47,11 +47,11 @@ public class STLC {
     }
 
     public static SearchStrategy<SearchState, SearchState> addExpSizeAndSorts(int size) {
-        return addAuxPred("typeOfExp", c -> {
-            CUser Csize = new CUser("gen_sizeExp", ImmutableList.of(B.newInt(size), c.args().get(1)), c);
-            CUser Csort1 = new CUser("gen_isExp", ImmutableList.of(c.args().get(1)), c);
-            CUser Csort2 = new CUser("gen_isType", ImmutableList.of(c.args().get(2)), c);
-            return Constraints.conjoin(ImmutableList.of(Csize, Csort1, Csort2));
+        return addAuxPred("programOK", c -> {
+            ITerm e = c.args().get(0);
+            CUser Csize = new CUser("gen_sizeExp", ImmutableList.of(B.newInt(size), e), c);
+            CUser Csort = new CUser("gen_isExp", ImmutableList.of(e), c);
+            return Constraints.conjoin(ImmutableList.of(Csize, Csort));
         });
     }
 
@@ -69,7 +69,7 @@ public class STLC {
             selectConstraint(int limit) {
         // @formatter:off
         return limit(limit, alt(
-            select(CUser.class, new Not<>(new Match("gen_.*"))),
+            select(CUser.class, new Not<>(new Match("allFields|dst|subField|subFields|subType|unique|gen_.*"))),
             seq(select(CResolveQuery.class, new Any<>()), canResolve())
         ));
         // @formatter:on
@@ -78,11 +78,7 @@ public class STLC {
     public static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpComb() {
         // @formatter:off
         return expand(ImmutableMap.of(
-                "T-Unit", 1,
-                "T-Fun",  1,
-                "T-Var",  1,
-                "T-App",  1,
-                "T-Let",  1
+                "T-Unit", 0
         ));
         // @formatter:on
     }
@@ -115,8 +111,8 @@ public class STLC {
     }
 
     public static SearchStrategy<SearchState, SearchState> addTypeSize(int size) {
-        return addAuxPred("gen_isType", c -> {
-            CUser Csize = new CUser("gen_sizeType", ImmutableList.of(B.newInt(size), c.args().get(0)), c);
+        return addAuxPred("gen_isTypeExp", c -> {
+            CUser Csize = new CUser("gen_sizeTypeExp", ImmutableList.of(B.newInt(size), c.args().get(0)), c);
             return Csize;
         });
     }
@@ -124,7 +120,7 @@ public class STLC {
     public static SearchStrategy<SearchState, SearchState> expandType() {
         // @formatter:off
         return seq(
-            select(CUser.class, new Match("gen_isType")),
+            select(CUser.class, new Match("gen_isTypeExp")),
             expand()
         );
         // @formatter:on
