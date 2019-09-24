@@ -74,7 +74,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                 if(!PROGRESS) {
                     return;
                 }
-                if(c != '\n' && count.getAndIncrement() != 0 && (count.get() % LINE_WIDTH) == 0) {
+                if(c != '\n' && (count.getAndIncrement() % LINE_WIDTH) == 0 && count.get() != 1) {
                     System.err.println();
                 }
                 System.err.print(c);
