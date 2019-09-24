@@ -84,16 +84,7 @@ public interface SearchNodes<O> {
     }
 
     @SafeVarargs static <X> SearchNodes<X> of(SearchNode<X>... nodes) {
-        final Iterator<SearchNode<X>> it = ImmutableList.copyOf(nodes).iterator();
-        return new SearchNodes<X>() {
-            @Override public Optional<SearchNode<X>> next() {
-                if(it.hasNext()) {
-                    return Optional.of(it.next());
-                } else {
-                    return Optional.empty();
-                }
-            }
-        };
+        return of(ImmutableList.copyOf(nodes).iterator());
     }
 
     static <X> SearchNodes<X> of(Iterator<SearchNode<X>> nodes) {
