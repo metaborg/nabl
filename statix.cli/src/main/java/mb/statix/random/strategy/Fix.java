@@ -17,7 +17,7 @@ import mb.statix.random.SearchStrategy;
 
 public class Fix extends SearchStrategy<SearchState, SearchState> {
 
-    private static final boolean PROGRESS = false;
+    private static final boolean PROGRESS = true;
     private static final int LINE_WIDTH = 100;
 
     private final SearchStrategy<SearchState, SearchState> search;
@@ -66,6 +66,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                     stack.push(nextNodes);
                     fresh = true;
                 }
+                progress('\n');
                 return Optional.empty();
             }
 
@@ -73,7 +74,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                 if(!PROGRESS) {
                     return;
                 }
-                if((count.getAndIncrement() % LINE_WIDTH) == 0) {
+                if(c != '\n' && count.getAndIncrement() != 0 && (count.get() % LINE_WIDTH) == 0) {
                     System.err.println();
                 }
                 System.err.print(c);

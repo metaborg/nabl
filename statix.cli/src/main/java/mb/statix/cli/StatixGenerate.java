@@ -3,6 +3,7 @@ package mb.statix.cli;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,6 +23,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.strategoxt.HybridInterpreter;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -95,16 +97,18 @@ public class StatixGenerate {
 
             log.info("Generating random terms.");
             final RandomTermGenerator rtg = new RandomTermGenerator(spec, constraint, STLC.allIn());
-            int hits = 0;
+            final List<SearchNode<SearchState>> results = Lists.newArrayList();
             while(true) {
                 final SearchNode<SearchState> state;
                 if((state = rtg.next().orElse(null)) == null) {
                     break;
                 }
-                hits++;
-                printResult("SUCCESS", state, Level.Info, Level.Debug, pp);
+                results.add(state);
             }
-            log.info("Generated {} random terms.", hits);
+            results.forEach(state -> {
+                printResult("SUCCESS", state, Level.Info, Level.Debug, pp);
+            });
+            log.info("Generated {} random terms.", results.size());
         }
 
     }
