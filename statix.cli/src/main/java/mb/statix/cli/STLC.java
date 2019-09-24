@@ -28,7 +28,7 @@ public class STLC {
 
     public static SearchStrategy<SearchState, SearchState> allIn() {
         // @formatter:off
-        return seq(generateExp(5),
+        return seq(generateExp(4),
                seq(generateIDs(),
                    identity()));
         // @formatter:on
@@ -77,9 +77,7 @@ public class STLC {
 
     public static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpComb() {
         // @formatter:off
-        return expand(ImmutableMap.of(
-                "T-Unit", 0
-        ));
+        return expand();
         // @formatter:on
     }
 

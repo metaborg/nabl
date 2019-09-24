@@ -36,10 +36,7 @@ public class WeightedDrawSet<E> {
     }
 
     public Stream<Map.Entry<E, Set.Immutable<E>>> draw(Random rnd) {
-        if(elementList.isEmpty()) {
-            return Stream.empty();
-        }
-        return rnd.ints(0, elementList.size()).mapToObj(idx -> {
+        return RandomUtil.ints(0, elementList.size(), rnd).mapToObj(idx -> {
             final E e = elementList.get(idx);
             final Set.Immutable<E> es = elementSet.__remove(e);
             return ImmutableTuple2.of(e, es);

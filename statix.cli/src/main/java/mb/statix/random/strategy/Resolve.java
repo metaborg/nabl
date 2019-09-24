@@ -1,10 +1,12 @@
 package mb.statix.random.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,8 +16,13 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
+import com.google.common.collect.Streams;
 
+import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CInequal;
@@ -28,8 +35,10 @@ import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.scopegraph.DataWF;
 import mb.statix.random.scopegraph.Env;
+import mb.statix.random.scopegraph.Match;
 import mb.statix.random.scopegraph.NameResolution;
-import mb.statix.random.util.WeightedDrawSet;
+import mb.statix.random.util.RandomUtil;
+import mb.statix.random.util.Subsets;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -44,6 +53,9 @@ import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spoofax.StatixTerms;
 
 final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
+
+    private final int sizes = 2;
+    private final int subsetsPerSize = 3;
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, FocusedSearchState<CResolveQuery> input,
             SearchNode<?> parent) {
@@ -83,15 +95,12 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 dataWF, isAlways, isComplete2);
         // @formatter:on
 
-        final AtomicInteger count = new AtomicInteger(0);
+        final AtomicInteger count = new AtomicInteger(1);
         try {
-            final Env<Scope, ITerm, ITerm, CEqual> env = nameResolution.resolve(scope, () -> {
+            nameResolution.resolve(scope, () -> {
                 count.incrementAndGet();
                 return false;
             });
-            if(env.isNullable()) {
-                count.incrementAndGet();
-            }
         } catch(ResolutionException e) {
             throw new IllegalArgumentException("cannot resolve query: delayed on " + e.getMessage());
         } catch(InterruptedException e) {
@@ -113,9 +122,20 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 throw new MetaborgRuntimeException(e);
             }
 
-            return WeightedDrawSet.of(env.matches).enumerate(ctx.rnd()).map(entry -> {
+            final List<Match<Scope, ITerm, ITerm, CEqual>> reqMatches =
+                    env.matches.stream().filter(m -> !m.condition.isPresent()).collect(Collectors.toList());
+            final List<Match<Scope, ITerm, ITerm, CEqual>> optMatches =
+                    env.matches.stream().filter(m -> m.condition.isPresent()).collect(Collectors.toList());
+
+            final Range<Integer> resultSize = resultSize(query.resultTerm(), unifier, env.matches.size());
+            final List<Integer> sizes = sizes(resultSize, ctx.rnd());
+
+            return sizes.stream().map(size -> size - reqMatches.size()).flatMap(size -> {
+                return Subsets.of(optMatches).enumerate(size, ctx.rnd());
+            }).map(entry -> {
                 final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnv = Env.builder();
-                subEnv.match(entry.getKey());
+                reqMatches.forEach(subEnv::match);
+                entry.getKey().forEach(subEnv::match);
                 entry.getValue().forEach(subEnv::reject);
                 env.rejects.forEach(subEnv::reject);
                 return subEnv.build();
@@ -133,6 +153,35 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 return new SearchNode<>(ctx.nextNodeId(), newState, parent, "resolve[" + idx + "/" + count.get() + "]");
             });
         }));
+    }
+
+    private List<Integer> sizes(Range<Integer> resultSize, Random rnd) {
+        final IntStream fixedSizes = IntStream.of(0, 1, resultSize.upperEndpoint());
+        final IntStream randomSizes = RandomUtil.ints(2, resultSize.upperEndpoint(), rnd).limit(sizes);
+        final IntStream allSizes =
+                Streams.concat(fixedSizes, randomSizes).filter(size -> resultSize.contains(size)).limit(subsetsPerSize);
+        // mkae sure there are no duplciates, of resultSize.upperEndpoint equals one of the fixed values
+        final List<Integer> subsetSizes = Lists.newArrayList(allSizes.boxed().collect(Collectors.toSet()));
+        Collections.shuffle(subsetSizes, rnd);
+        return subsetSizes;
+    }
+
+    private Range<Integer> resultSize(ITerm result, IUnifier unifier, int max) {
+        // @formatter:off
+        final AtomicInteger min = new AtomicInteger(0);
+        return M.<Range<Integer>>list(ListTerms.<Range<Integer>>casesFix(
+            (m, cons) -> {
+                min.incrementAndGet();
+                return m.apply((IListTerm) unifier.findTerm(cons.getTail()));
+            },
+            (m, nil) -> {
+                return Range.singleton(min.get());
+            },
+            (m, var) -> {
+                return Range.closed(min.get(), max);
+            }
+        )).match(result, unifier).orElse(Range.closed(0, max));
+        // @formatter:on
     }
 
     @Override public String toString() {
