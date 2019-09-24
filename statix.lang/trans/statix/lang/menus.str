@@ -8,7 +8,7 @@ imports
   statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
-  statix/lang/nonoverlapping
+  statix/lang/transform/-
 
   pp
 
@@ -67,7 +67,7 @@ rules // Non-overlapping rules
 
   show-nonoverlapping-aterm: (_, _, _, path, project-path) -> (filename, result)
     where ast := <get-nonoverlapping-ast>
-    with filename := <guarantee-extension(|"normalized.aterm")> path;
+    with filename := <guarantee-extension(|"nonoverlapping.aterm")> path;
          result   := <nabl2-simplify-ast-indices> ast
 
   format-nonoverlapping: (_, _, _, path, project-path) -> (filename, result)
@@ -80,3 +80,21 @@ rules // Non-overlapping rules
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with ast' := <normalize(|a);make-nonoverlapping(|a)> ast
+
+rules // Explicit signature rules
+
+  show-signature-rules-aterm: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-signature-rules-ast>
+    with filename := <guarantee-extension(|"signature.aterm")> path;
+         result   := <nabl2-simplify-ast-indices> ast
+
+  format-signature-rules: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-signature-rules-ast>
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[signature.[ext]])> path;
+         result   := <pp-Statix-string> ast
+
+  get-signature-rules-ast: (_, _, ast, path, project-path) -> ast'
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
+          <not(nabl2-analysis-has-errors)> a
+    with ast' := <add-signature-rules(|a)> ast

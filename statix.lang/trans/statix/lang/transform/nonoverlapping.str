@@ -1,4 +1,4 @@
-module statix/lang/nonoverlapping
+module statix/lang/transform/nonoverlapping
 
 imports
 
@@ -112,6 +112,12 @@ rules
     with ty := <norm-get-ast-type> p
        ; e* := [p]
   expand-pattern(|sops,p*): p@Str(_) -> e*
+    with ty := <norm-get-ast-type> p
+       ; e* := [p]
+  expand-pattern(|sops,p*): p@PathEmpty(_) -> e*
+    with ty := <norm-get-ast-type> p
+       ; e* := [p]
+  expand-pattern(|sops,p*): p@PathStep(_, _, _) -> e*
     with ty := <norm-get-ast-type> p
        ; e* := [p]
 

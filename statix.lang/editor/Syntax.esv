@@ -43,4 +43,9 @@ menus
 
     separator
 
+    action: "Show signature-rule AST"   = show-signature-rules-aterm
+    action: "Format signature-rule AST" = format-signature-rules
+
+    separator
+
     action: "Show explicated AST"   = show-explicated-aterm
