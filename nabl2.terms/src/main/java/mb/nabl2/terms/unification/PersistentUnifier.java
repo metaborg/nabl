@@ -148,9 +148,14 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             }
 
             private boolean unifyTerms(final ITerm left, final ITerm right) {
+                final ITerm leftRepOrTerm = findTerm(left);
+                final ITerm rightRepOrTerm = findTerm(right);
+                if(leftRepOrTerm.equals(rightRepOrTerm)) {
+                    return true;
+                }
                 // @formatter:off
-                return left.match(Terms.<Boolean>cases(
-                    applLeft -> right.match(Terms.<Boolean>cases()
+                return leftRepOrTerm.match(Terms.<Boolean>cases(
+                    applLeft -> rightRepOrTerm.match(Terms.<Boolean>cases()
                         .appl(applRight -> {
                             return applLeft.getArity() == applRight.getArity() &&
                                     applLeft.getOp().equals(applRight.getOp()) &&
@@ -163,7 +168,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    listLeft -> right.match(Terms.<Boolean>cases()
+                    listLeft -> rightRepOrTerm.match(Terms.<Boolean>cases()
                         .list(listRight -> {
                             return unifyLists(listLeft, listRight);
                         })
@@ -174,7 +179,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    stringLeft -> right.match(Terms.<Boolean>cases()
+                    stringLeft -> rightRepOrTerm.match(Terms.<Boolean>cases()
                         .string(stringRight -> {
                             return stringLeft.getValue().equals(stringRight.getValue());
                         })
@@ -185,7 +190,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    integerLeft -> right.match(Terms.<Boolean>cases()
+                    integerLeft -> rightRepOrTerm.match(Terms.<Boolean>cases()
                         .integer(integerRight -> {
                             return integerLeft.getValue() == integerRight.getValue();
                         })
@@ -196,7 +201,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    blobLeft -> right.match(Terms.<Boolean>cases()
+                    blobLeft -> rightRepOrTerm.match(Terms.<Boolean>cases()
                         .blob(blobRight -> {
                             return blobLeft.getValue().equals(blobRight.getValue());
                         })
@@ -207,12 +212,12 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    varLeft -> right.match(Terms.<Boolean>cases()
+                    varLeft -> rightRepOrTerm.match(Terms.<Boolean>cases()
                         .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
+                            return unifyReps(varLeft, varRight);
                         })
                         .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
+                            return unifyRepTerm(varLeft, termRight);
                         })
                     )
                 ));
@@ -220,6 +225,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             }
 
             private boolean unifyLists(final IListTerm left, final IListTerm right) {
+                // we assume left & right are representative variables or terms
                 // @formatter:off
                 return left.match(ListTerms.<Boolean>cases(
                     consLeft -> right.match(ListTerms.<Boolean>cases()
@@ -229,7 +235,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return true;
                         })
                         .var(varRight -> {
-                            return unifyLists(varRight, consLeft);
+                            return unifyRepTerm(varRight, consLeft);
                         })
                         .otherwise(l -> {
                             return false;
@@ -240,7 +246,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return true;
                         })
                         .var(varRight -> {
-                            return unifyVarTerm(varRight, nilLeft)  ;
+                            return unifyRepTerm(varRight, nilLeft)  ;
                         })
                         .otherwise(l -> {
                             return false;
@@ -248,18 +254,17 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                     ),
                     varLeft -> right.match(ListTerms.<Boolean>cases()
                         .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
+                            return unifyReps(varLeft, varRight);
                         })
                         .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
+                            return unifyRepTerm(varLeft, termRight);
                         })
                     )
                 ));
                 // @formatter:on
             }
 
-            private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
-                final ITermVar rep = findRep(var);
+            private boolean unifyRepTerm(final ITermVar rep, final ITerm term) {
                 if(term instanceof ITermVar) {
                     throw new IllegalStateException();
                 }
@@ -272,12 +277,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 return true;
             }
 
-            private boolean unifyVars(final ITermVar left, final ITermVar right) {
-                final ITermVar leftRep = findRep(left);
-                final ITermVar rightRep = findRep(right);
-                if(leftRep.equals(rightRep)) {
-                    return true;
-                }
+            private boolean unifyReps(final ITermVar leftRep, final ITermVar rightRep) {
                 final int leftRank = ranks.getOrDefault(leftRep, 1);
                 final int rightRank = ranks.getOrDefault(rightRep, 1);
                 final boolean swap = leftRank > rightRank;

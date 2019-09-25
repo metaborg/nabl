@@ -237,10 +237,47 @@ public class PersistentUnifierFiniteTest {
         assertFalse(phi.unify(c, b).isPresent());
     }
 
-    @Test(expected = OccursException.class) public void testRecursive() throws OccursException {
+    @Test(expected = OccursException.class) public void testRecursive1() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         phi.unify(B.newTuple(a, a), B.newTuple(a, B.newAppl(f, a)));
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive2() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         phi.unify(B.newTuple(a, a), B.newTuple(B.newAppl(f, a), a));
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive3() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(B.newTuple(a, B.newAppl(f, a)), B.newTuple(a, a));
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive4() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(B.newTuple(B.newAppl(f, a), a), B.newTuple(a, a));
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive5() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(a, B.newAppl(f, b));
+        phi.unify(b, B.newAppl(f, a));
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive6() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(B.newTuple(a, B.newAppl(f, a)), B.newTuple(B.newAppl(f, b), a));
+    }
+
+    @Test(expected = OccursException.class) public void testRecursive7() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(B.newTuple(B.newAppl(f, a), a), B.newTuple(b, B.newAppl(f, b)));
+    }
+
+    @Test public void testDisunifyVariablesWithSameTerms() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(a, x).orElseThrow(() -> new RuntimeException());
+        phi.unify(b, x).orElseThrow(() -> new RuntimeException());
+        assertFalse(phi.disunify(a, b));
     }
 
 }
