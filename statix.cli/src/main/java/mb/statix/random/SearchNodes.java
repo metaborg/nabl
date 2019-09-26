@@ -1,17 +1,19 @@
 package mb.statix.random;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.metaborg.core.MetaborgException;
+import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableList;
 
-public interface SearchNodes<O> {
+public interface SearchNodes<O> extends Iterable<O> {
 
     Optional<SearchNode<O>> next() throws MetaborgException, InterruptedException;
 
@@ -80,6 +82,36 @@ public interface SearchNodes<O> {
                     return outer.next();
                 }
             }
+        };
+    }
+
+    @Override default Iterator<O> iterator() {
+        return new Iterator<O>() {
+
+            private Optional<O> next = null;
+
+            @Override public boolean hasNext() {
+                ensureNext();
+                return next.isPresent();
+            }
+
+            @Override public O next() {
+                ensureNext();
+                final O o = next.orElseThrow(() -> new NoSuchElementException());
+                next = null;
+                return o;
+            }
+
+            private void ensureNext() {
+                if(next == null) {
+                    try {
+                        next = SearchNodes.this.next().map(SearchNode::output);
+                    } catch(MetaborgException | InterruptedException e) {
+                        throw new MetaborgRuntimeException(e);
+                    }
+                }
+            }
+
         };
     }
 

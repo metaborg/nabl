@@ -1,7 +1,6 @@
 package mb.statix.cli;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
@@ -40,14 +39,25 @@ public class StatixRepl {
                 return;
             }
             final ISpoofaxInputUnit inputUnit = STX.S.unitService.inputUnit(line, lang, null, config);
-            final Optional<ISpoofaxParseUnit> maybeParseUnit = STX.parse(inputUnit);
-            if(!maybeParseUnit.isPresent()) {
+            final ISpoofaxParseUnit parseUnit;
+            try {
+                parseUnit = STX.cli.parse(inputUnit, lang);
+            } catch(MetaborgException e) {
                 continue;
             }
-            final ISpoofaxParseUnit parseUnit = maybeParseUnit.get();
+            if(!parseUnit.success()) {
+                STX.cli.printMessages(STX.msgStream, parseUnit.messages());
+                continue;
+            }
             terminal.writer().println(STX.S.strategoCommon.toString(parseUnit.ast()));
-            final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = STX.analyze(parseUnit);
-            if(!maybeAnalysisUnit.isPresent()) {
+            final ISpoofaxAnalyzeUnit analyzeUnit;
+            try {
+                analyzeUnit = STX.cli.analyze(parseUnit, STX.context);
+            } catch(MetaborgException e) {
+                continue;
+            }
+            if(!analyzeUnit.success()) {
+                STX.cli.printMessages(STX.msgStream, analyzeUnit.messages());
                 continue;
             }
         }

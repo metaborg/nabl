@@ -27,6 +27,14 @@ public final class SearchStrategies {
         return new Limit<>(n, s);
     }
 
+    public static final <I, O> SearchStrategy<I, O> _for(int n, SearchStrategy<I, O> s) {
+        return new For<>(n, s);
+    }
+
+    public static final <I, O> SearchStrategy<I, O> repeat(SearchStrategy<I, O> s) {
+        return new Repeat<>(s);
+    }
+
     public static final <I1, I2, O> SearchStrategy<I1, O> seq(SearchStrategy<I1, I2> s1, SearchStrategy<I2, O> s2) {
         return new Seq<>(s1, s2);
     }

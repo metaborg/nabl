@@ -1,14 +1,9 @@
 package mb.statix.cli;
 
-import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.statix.random.strategy.SearchStrategies.*;
 
-import com.google.common.collect.ImmutableList;
-
-import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
-import mb.statix.constraints.Constraints;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
@@ -19,9 +14,17 @@ import mb.statix.random.strategy.Either2;
 
 public class Paret {
 
-    public static SearchStrategy<SearchState, SearchState> allIn() {
+    public static SearchStrategy<SearchState, SearchState> enumerate() {
         // @formatter:off
-        return seq(generateExp(4),
+        return seq(enumerateExp(),
+               seq(generateLex(),
+                   identity()));
+        // @formatter:on
+    }
+
+    public static SearchStrategy<SearchState, SearchState> search() {
+        // @formatter:off
+        return seq(searchExp(),
                seq(generateLex(),
                    identity()));
         // @formatter:on
@@ -35,23 +38,35 @@ public class Paret {
 
     // generation of expressions
 
-    private static SearchStrategy<SearchState, SearchState> generateExp(int size) {
-        return seq(addExpSizeAndSorts(size), fix(enumerateComb(), inferAndDrop(), new Match("gen_.*")));
-    }
-
-    private static SearchStrategy<SearchState, SearchState> addExpSizeAndSorts(int size) {
-        return addAuxPred("programOK", c -> {
-            final ITerm e = c.args().get(0);
-            final CUser Csize = new CUser("gen_sizeExpr", ImmutableList.of(B.newInt(size), e), c);
-            final CUser Csort = new CUser("gen_isExpr", ImmutableList.of(e), c);
-            return Constraints.conjoin(ImmutableList.of(Csize, Csort));
-        });
-    }
-
-    // enumerate all possible combinations of solving constraints
-    private static SearchStrategy<SearchState, SearchState> enumerateComb() {
+    private static SearchStrategy<SearchState, SearchState> enumerateExp() {
         // @formatter:off
-        return seq(selectConstraint(1), match(expand(), resolve()));
+        return fix(
+            seq(
+                selectConstraint(1),
+                match(
+                    seq(expand(), infer()),
+                    seq(resolve(), infer())
+                )
+            ),
+            inferAndDrop(),
+            new Match("gen_.*")
+        );
+        // @formatter:on
+    }
+
+    private static SearchStrategy<SearchState, SearchState> searchExp() {
+        // @formatter:off
+        return repeat(fix(
+            seq(
+                selectConstraint(1),
+                match(
+                    limit(3, seq(expand(), infer())),
+                    limit(3, seq(resolve(), infer()))
+                )
+            ),
+            inferAndDrop(),
+            new Match("gen_.*")
+        ));
         // @formatter:on
     }
 
@@ -68,7 +83,7 @@ public class Paret {
     // generation of id's
 
     private static SearchStrategy<SearchState, SearchState> generateLex() {
-        return limit(1, fix(expandLex(), inferAndDrop(), new Not<>(new Match("gen_is.*"))));
+        return limit(1, fix(expandLex(), infer(), new Not<>(new Match("gen_is.*"))));
     }
 
     private static SearchStrategy<SearchState, SearchState> expandLex() {

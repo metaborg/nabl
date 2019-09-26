@@ -5,15 +5,16 @@ import java.util.Optional;
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.action.TransformActionContrib;
-import org.metaborg.core.messages.Message;
-import org.metaborg.core.messages.MessageSeverity;
-import org.metaborg.core.messages.MessageType;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
 public class StatixTest {
+
+    private static final ILogger log = LoggerUtils.logger(StatixTest.class);
 
     private final Statix STX;
 
@@ -23,7 +24,7 @@ public class StatixTest {
 
     public void run(String file) throws MetaborgException {
         final FileObject resource = STX.S.resolve(file);
-        final TransformActionContrib evalAction = STX.getAction("Evaluate Test", STX.stxLang);
+        final TransformActionContrib evalAction = STX.cli.getNamedTransformAction("Evaluate Test", STX.stxLang);
         final Optional<ISpoofaxAnalyzeUnit> maybeAnalysisUnit = STX.loadStxFile(resource);
         if(!maybeAnalysisUnit.isPresent()) {
             return;
@@ -31,9 +32,8 @@ public class StatixTest {
         final ISpoofaxAnalyzeUnit analysisUnit = maybeAnalysisUnit.get();
         final IStrategoTerm ast = analysisUnit.ast();
         if(ast != null && Tools.isTermAppl(ast) && Tools.hasConstructor((IStrategoAppl) analysisUnit.ast(), "Test")) {
-            STX.messagePrinter.print(new Message("Evaluating test.", MessageSeverity.NOTE, MessageType.INTERNAL,
-                    analysisUnit.source(), null, null), false);
-            final String typing = STX.format(STX.transform(analysisUnit, evalAction));
+            log.info("Evaluating test.");
+            final String typing = STX.format(STX.cli.transform(analysisUnit, evalAction, STX.context));
             STX.msgStream.println(typing);
         }
 

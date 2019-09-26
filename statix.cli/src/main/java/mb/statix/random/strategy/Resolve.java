@@ -85,8 +85,6 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(isComplete3, state, query.filter().getDataWF(), query);
-        //                lengths = length((IListTerm) query.resultTerm(), state.unifier()).map(ImmutableList::of)
-        //                        .orElse(ImmutableList.of(0, 1, 2, -1));
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(

@@ -28,9 +28,10 @@ public class STLC {
 
     public static SearchStrategy<SearchState, SearchState> allIn() {
         // @formatter:off
-        return seq(generateExp(4),
-               seq(generateIDs(),
-                   identity()));
+        return generateExp(30);
+//        return seq(generateExp(30),
+//               seq(generateIDs(),
+//                   identity()));
         // @formatter:on
     }
 
@@ -43,7 +44,8 @@ public class STLC {
     // generation of expressions
 
     public static SearchStrategy<SearchState, SearchState> generateExp(int size) {
-        return seq(addExpSizeAndSorts(size), fix(enumerateComb(), inferAndDrop(), new Match("gen_.*")));
+        //        return seq(addExpSizeAndSorts(size), fix(enumerateComb(), inferAndDrop(), new Match("gen_.*")));
+        return fix(enumerateComb(), inferAndDrop(), new Match("gen_.*"));
     }
 
     public static SearchStrategy<SearchState, SearchState> addExpSizeAndSorts(int size) {
@@ -93,11 +95,6 @@ public class STLC {
     public static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpSearch(int ruleLimit) {
         // @formatter:off
         return limit(ruleLimit, expand(ImmutableMap.of(
-                "T-Unit", 1,
-                "T-Fun",  1,
-                "T-Var",  1,
-                "T-App",  1,
-                "T-Let",  0
         )));
         // @formatter:on
     }
