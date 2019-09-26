@@ -6,6 +6,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Optional;
+
 import org.junit.Test;
 
 import io.usethesource.capsule.Map;
@@ -279,6 +281,22 @@ public class PersistentUnifierFiniteTest {
         phi.unify(a, x).orElseThrow(() -> new RuntimeException());
         phi.unify(b, x).orElseThrow(() -> new RuntimeException());
         assertFalse(phi.disunify(a, b));
+    }
+
+    @Test public void testRemoveDisunifiedVar() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertTrue(phi.disunify(a, b));
+        assertPresent(phi.unify(a, c));
+        phi.remove(c);
+        assertAbsent(phi.unify(a, b));
+    }
+
+    private static <X> void assertPresent(Optional<X> opt) {
+        assertTrue(opt.isPresent());
+    }
+
+    private static <X> void assertAbsent(Optional<X> opt) {
+        assertFalse(opt.isPresent());
     }
 
 }
