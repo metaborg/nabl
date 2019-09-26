@@ -108,7 +108,11 @@ public abstract class ARule {
         }
         sb.append(" :- ");
         sb.append(body().toString(termToString));
-        sb.append(".");
+        if(name().isEmpty()) {
+            sb.append(" }");
+        } else {
+            sb.append(".");
+        }
         return sb.toString();
     }
 
