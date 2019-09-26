@@ -95,27 +95,27 @@ public class PersistentUnifierStressTest {
         }
     }
 
-    @Test public void testEquals1() {
+    @Test(timeout = 1000) public void testEquals1() {
         testEquals(this::makeRandomUnifier1);
     }
 
-    @Test public void testRemove1() {
+    @Test(timeout = 1000) public void testRemove1() {
         testRemove(this::makeRandomUnifier1);
     }
 
-    @Test public void testEquals2() {
+    @Test(timeout = 1000) public void testEquals2() {
         testEquals(this::makeRandomUnifier2);
     }
 
-    @Test public void testRemove2() {
+    @Test(timeout = 1000) public void testRemove2() {
         testRemove(this::makeRandomUnifier2);
     }
 
-    @Test public void testEquals3() {
+    @Test(timeout = 1000) public void testEquals3() {
         testEquals(this::makeRandomUnifier3);
     }
 
-    @Test public void testRemove3() {
+    @Test(timeout = 1000) public void testRemove3() {
         testRemove(this::makeRandomUnifier3);
     }
 

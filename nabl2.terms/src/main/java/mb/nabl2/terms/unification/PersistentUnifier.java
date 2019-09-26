@@ -263,8 +263,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 if(term instanceof ITermVar) {
                     throw new IllegalStateException();
                 }
-                if(terms.containsKey(rep)) {
-                    worklist.push(ImmutableTuple2.of(terms.get(rep), term));
+                final ITerm repTerm = terms.get(rep); // term for the represenative
+                if(repTerm != null) {
+                    worklist.push(ImmutableTuple2.of(repTerm, term));
                 } else {
                     terms.__put(rep, term);
                     result.add(rep);
@@ -278,17 +279,25 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 if(leftRep.equals(rightRep)) {
                     return true;
                 }
-                final int leftRank = ranks.getOrDefault(leftRep, 1);
-                final int rightRank = ranks.getOrDefault(rightRep, 1);
+                final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
+                final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
                 final boolean swap = leftRank > rightRank;
                 final ITermVar var = swap ? rightRep : leftRep; // the eliminated variable
-                final ITermVar with = swap ? leftRep : rightRep; // the new representative
-                ranks.__put(with, leftRank + rightRank);
-                reps.__put(var, with);
-                result.add(var);
-                final ITerm term = terms.__remove(var); // term for the eliminated var
-                if(term != null) {
-                    worklist.push(ImmutableTuple2.of(term, terms.getOrDefault(with, with)));
+                final ITermVar rep = swap ? leftRep : rightRep; // the new representative
+                ranks.__put(rep, leftRank + rightRank);
+                reps.__put(var, rep);
+                final ITerm varTerm = terms.__remove(var); // term for the eliminated var
+                if(varTerm != null) {
+                    final ITerm repTerm = terms.get(rep); // term for the represenative
+                    if(repTerm != null) {
+                        worklist.push(ImmutableTuple2.of(varTerm, repTerm));
+                        // don't add to result
+                    } else {
+                        terms.__put(rep, varTerm);
+                        result.add(rep);
+                    }
+                } else {
+                    result.add(var);
                 }
                 return true;
             }
@@ -335,6 +344,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         @Override public Optional<IUnifier.Immutable> disunify(ITerm left, ITerm right) {
             final Optional<Result<IUnifier.Immutable>> unifyResult;
             try {
+                // NOTE We prevent Unify from doing disunification, as this
+                //      results in infinite recursion
                 unifyResult = new Unify(left, right).apply(false);
             } catch(OccursException e) {
                 // unify failed, terms are unequal
@@ -344,11 +355,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 // unify failed, terms are unequal
                 return Optional.of(this);
             }
+            // unify succeeded, terms are not unequal
             final IUnifier.Immutable diff = unifyResult.get().result();
-            if(diff.isEmpty()) {
+            if(diff.isEmpty()) { // FIXME See disunifyAll
                 // already unified, terms are equal, error
                 return Optional.empty();
             }
+            // not unified yet, keep
             final Map.Immutable<ITermVar, ITerm> disequality = CapsuleUtil.toMap(diff.equalityMap());
             final IUnifier.Immutable result = new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms,
                     disequalities.__insert(disequality));
@@ -356,30 +369,38 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         }
 
         private Optional<IUnifier.Immutable> disunifyAll() {
-            final Set.Transient<Map.Immutable<ITermVar, ITerm>> newDisequalities = Set.Transient.of();
-            for(Map.Immutable<ITermVar, ITerm> disequality : disequalities) {
+            final Set.Transient<Map.Immutable<ITermVar, ITerm>> disequalities = Set.Transient.of();
+            for(Map.Immutable<ITermVar, ITerm> disequality : this.disequalities) {
+                // NOTE We prevent Unify from doing disunification, as this
+                //      results in infinite recursion
+                final Optional<Result<IUnifier.Immutable>> unifyResult;
                 try {
                     // NOTE We prevent Unify from doing disunification, as this
                     //      results in infinite recursion
-                    final Optional<Result<IUnifier.Immutable>> unifyResult = new Unify(disequality).apply(false);
-                    if(unifyResult.isPresent()) {
-                        // unify succeeded, terms are not unequal
-                        final IUnifier.Immutable diff = unifyResult.get().result();
-                        if(diff.isEmpty()) {
-                            // already unified, terms are equal, error
-                            return Optional.empty();
-                        } else {
-                            // not unified yet, keep
-                            final Map.Immutable<ITermVar, ITerm> newDisequality = CapsuleUtil.toMap(diff.equalityMap());
-                            newDisequalities.__insert(newDisequality);
-                        }
-                    }
+                    unifyResult = new Unify(disequality).apply(false);
                 } catch(OccursException e) {
                     // unify failed, terms are unequal
+                    continue;
                 }
+                if(!unifyResult.isPresent()) {
+                    // unify failed, terms are unequal
+                    continue;
+                }
+                // unify succeeded, terms are not unequal
+                final IUnifier.Immutable diff = unifyResult.get().result();
+                // FIXME Given x == "a", y == "a", then x != y gives x == y, but the terms were
+                //       already the same. However, the unifier does not do maximal sharing,
+                //       so entries might be added without actually adding information
+                if(diff.isEmpty()) {
+                    // already unified, terms are equal, error
+                    return Optional.empty();
+                }
+                // not unified yet, keep
+                disequalities.__insert(CapsuleUtil.toMap(diff.equalityMap()));
             }
-            return Optional
-                    .of(new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms, newDisequalities.freeze()));
+            final IUnifier.Immutable result =
+                    new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms, disequalities.freeze());
+            return Optional.of(result);
         }
 
         ///////////////////////////////////////////
@@ -487,7 +508,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 return MaybeNotInstantiatedBool.ofResult(false);
             }
             final IUnifier.Immutable diff = result.get().result();
-            if(diff.isEmpty()) {
+            if(diff.isEmpty()) { // FIXME See disunify
                 // nothing was unifier, equal
                 return MaybeNotInstantiatedBool.ofResult(true);
             }

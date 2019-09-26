@@ -20,7 +20,7 @@ public class UnificationPerformanceTest {
 
     public static void main(String[] args) {
         testCycle();
-        for(int n = Integer.MAX_VALUE; n <= 1000; n += 100) {
+        for(int n = 0; n <= 1000; n += 100) {
             System.out.println("Testing n = " + n);
             final long t0 = System.currentTimeMillis();
             System.out.println(testUnify(n));
@@ -72,7 +72,7 @@ public class UnificationPerformanceTest {
         System.out.println("size = " + unifier.size(left));
         System.out.println("vars = " + unifier.getVars(left));
         System.out.println("equal = " + unifier.areEqual(left, right));
-        return unifier;
+        return unifier.freeze();
     }
 
     private static List<ITerm> createVars(String name, int n) {
