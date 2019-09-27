@@ -10,7 +10,7 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
 
-import mb.statix.random.util.ProgressPrinter;
+import mb.statix.random.util.IProgressPrinter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.persistent.State;
 import mb.statix.spec.Spec;
@@ -19,12 +19,12 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
 
     private static final ILogger log = LoggerUtils.logger(RandomTermGenerator.class);
 
-    private static final boolean PROGRESS = false;
-    private static final int LINE_WIDTH = 100;
-
+    private final IProgressPrinter progress;
     private final SearchNodes<SearchState> nodes;
 
-    public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy) {
+    public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy,
+            IProgressPrinter progress) {
+        this.progress = progress;
 
         final long seed = System.currentTimeMillis();
         log.info("random seed: {}", seed);
@@ -32,7 +32,6 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
         log.info("constraint: {}", constraint);
 
         final AtomicInteger nodeId = new AtomicInteger();
-        final ProgressPrinter progress = new ProgressPrinter(System.out, LINE_WIDTH);
         final Random rnd = new Random(seed);
         final SearchContext ctx = new SearchContext() {
 
@@ -45,9 +44,6 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
             }
 
             @Override public void progress(char c) {
-                if(!PROGRESS) {
-                    return;
-                }
                 progress.step(c);
             }
 
@@ -58,7 +54,11 @@ public class RandomTermGenerator implements SearchNodes<SearchState> {
     }
 
     @Override public Optional<SearchNode<SearchState>> next() throws MetaborgException, InterruptedException {
-        return nodes.next();
+        final Optional<SearchNode<SearchState>> next = nodes.next();
+        if(!next.isPresent()) {
+            progress.done();
+        }
+        return next;
     }
 
 }

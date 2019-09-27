@@ -34,8 +34,10 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.random.RandomTermGenerator;
+import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.util.IProgressPrinter;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
@@ -51,10 +53,11 @@ public class StatixGenerator implements Iterable<SearchState> {
     private final IProject project;
     private final Spec spec;
     private final IConstraint constraint;
-    private SearchStrategy<SearchState, SearchState> strategy;
+    private final SearchStrategy<SearchState, SearchState> strategy;
+    private final IProgressPrinter progress;
 
     public StatixGenerator(Spoofax spoofax, IProject project, FileObject spec,
-            SearchStrategy<SearchState, SearchState> strategy) throws MetaborgException {
+            SearchStrategy<SearchState, SearchState> strategy, IProgressPrinter progress) throws MetaborgException {
         this.S = spoofax;
         this.CLI = new CLIUtils(S);
         this.statixLang = CLI.getLanguage(LANG_STX_NAME);
@@ -63,6 +66,7 @@ public class StatixGenerator implements Iterable<SearchState> {
         this.spec = specAndConstraint._1();
         this.constraint = specAndConstraint._2();
         this.strategy = strategy;
+        this.progress = progress;
     }
 
     private Tuple2<Spec, IConstraint> loadSpec(FileObject resource) throws MetaborgException {
@@ -101,8 +105,12 @@ public class StatixGenerator implements Iterable<SearchState> {
         return ImmutableTuple2.of(spec, constraint);
     }
 
+    public SearchNodes<SearchState> apply() {
+        return new RandomTermGenerator(spec, constraint, strategy, progress);
+    }
+
     @Override public Iterator<SearchState> iterator() {
-        return new RandomTermGenerator(spec, constraint, strategy).iterator();
+        return apply().iterator();
     }
 
     public <R> Function1<SearchState, R> project(String var, Function1<ITerm, R> f) {

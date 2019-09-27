@@ -17,6 +17,7 @@ import com.google.common.collect.Lists;
 import mb.nabl2.terms.ITerm;
 import mb.statix.random.SearchState;
 import mb.statix.random.spoofax.StatixGenerator;
+import mb.statix.random.util.StreamProgressPrinter;
 
 public class StatixGenerate {
 
@@ -32,7 +33,8 @@ public class StatixGenerate {
 
     public void run(String file) throws MetaborgException, InterruptedException {
         final FileObject resource = STX.S.resolve(file);
-        final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.project, resource, Paret.search());
+        final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.project, resource, Paret.search(),
+                new StreamProgressPrinter(System.err, 100));
 
         final Function1<SearchState, String> pretty;
         final Optional<FileObject> maybeProject = STX.findProject(resource);
@@ -46,7 +48,7 @@ public class StatixGenerate {
         }
 
         log.info("Generating random terms.");
-        final List<SearchState> results = Lists.newArrayList(statixGen);
+        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(1).iterator());
         results.forEach(s -> {
             System.out.println(pretty.apply(s));
         });
