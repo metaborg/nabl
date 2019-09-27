@@ -156,7 +156,7 @@ public interface IUnifier {
 
     Map<ITermVar, ITerm> equalityMap();
 
-    Set<? extends Map<ITermVar, ITerm>> disequalityMaps();
+    Set<Diseq> disequalities();
 
 
     public interface Immutable extends IUnifier {

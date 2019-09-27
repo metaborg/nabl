@@ -8,7 +8,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -280,31 +279,13 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             sb.append(" == ");
             sb.append(reps().get(var));
         }
-        for(java.util.Map<ITermVar, ITerm> disequality : disequalityMaps()) {
+        for(Diseq disequality : disequalities()) {
             sb.append(first ? " " : ", ");
             first = false;
-            sb.append(disequalityToString(disequality));
+            sb.append(disequality);
         }
         sb.append(first ? "}" : " }");
         return sb.toString();
-    }
-
-    private String disequalityToString(java.util.Map<ITermVar, ITerm> disequality) {
-        final StringBuilder sb1 = new StringBuilder();
-        final StringBuilder sb2 = new StringBuilder();
-        sb1.append("(");
-        sb2.append("(");
-        boolean first = true;
-        for(Entry<ITermVar, ITerm> entry : disequality.entrySet()) {
-            sb1.append(first ? "" : ",");
-            sb2.append(first ? "" : ",");
-            first = false;
-            sb1.append(entry.getKey());
-            sb2.append(entry.getValue());
-        }
-        sb1.append(")");
-        sb2.append(")");
-        return sb1.toString() + " != " + sb2.toString();
     }
 
     ///////////////////////////////////////////
@@ -955,8 +936,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.equalityMap();
         }
 
-        @Override public Set<? extends java.util.Map<ITermVar, ITerm>> disequalityMaps() {
-            return unifier.disequalityMaps();
+        @Override public Set<Diseq> disequalities() {
+            return unifier.disequalities();
         }
 
         @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {

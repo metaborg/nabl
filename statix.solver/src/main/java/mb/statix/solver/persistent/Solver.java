@@ -1,8 +1,9 @@
 package mb.statix.solver.persistent;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -12,6 +13,7 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
@@ -76,20 +78,10 @@ public class Solver {
             throw Delay.ofVars(unifiedVars);
         }
 
-        final List<ITermVar> disunifiedVars =
-                Sets.difference(newUnifier.disequalityMaps(), state.unifier().disequalityMaps()).stream()
-                        .flatMap(diseq -> diseq.keySet().stream()).collect(Collectors.toList());
-        // FIXME Any disequalities on rigid vars introduced during solving are
-        //       currently ignored. We could test as follows. Remove all disequalities
-        //       in state from newState. Any remaining disequalities are
-        //       (a) reductions of diseq in state, or
-        //       (b) new diseq.
-        //       In case (a), this can only happen if a rigid var was unified, so
-        //       this is caught by the previous check. In case (b), this is a new
-        //       inequality, and entailment should not hold. It is a little more
-        //       complicated than that, because, if the new diseq in newState is
-        //       implied by all diseq in state, entailment does hold. But it might
-        //       okay to ignore this situation?
+        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
+                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().areEqual(t1, t2).orElse(true)))
+                .flatMap(diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+                .collect(Collectors.toList());
         if(!disunifiedVars.isEmpty()) {
             debug.info("Cannot decide constraint entailment: disunified rigid vars)");
             throw Delay.ofVars(disunifiedVars);
