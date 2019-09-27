@@ -129,26 +129,26 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
             final List<Integer> sizes = sizes(resultSize, ctx.rnd());
 
             return sizes.stream().map(size -> size - reqMatches.size()).flatMap(size -> {
-                return Subsets.of(optMatches).enumerate(size, ctx.rnd());
-            }).map(entry -> {
-                final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnv = Env.builder();
-                reqMatches.forEach(subEnv::match);
-                entry.getKey().forEach(subEnv::match);
-                entry.getValue().forEach(subEnv::reject);
-                env.rejects.forEach(subEnv::reject);
-                return subEnv.build();
-            }).map(subEnv -> {
-                final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
-                        .collect(ImmutableList.toImmutableList());
-                final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-                constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition))
-                        .forEach(condition -> constraints.add(condition));
-                subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
-                        .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
-                constraints.addAll(input.constraints());
-                final SearchState newState = input.update(input.state(), constraints.build());
-                return new SearchNode<>(ctx.nextNodeId(), newState, parent, "resolve[" + idx + "/" + count.get() + "]");
+                return Subsets.of(optMatches).enumerate(size, ctx.rnd()).map(entry -> {
+                    final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
+                    reqMatches.forEach(subEnvBuilder::match);
+                    entry.getKey().forEach(subEnvBuilder::match);
+                    entry.getValue().forEach(subEnvBuilder::reject);
+                    env.rejects.forEach(subEnvBuilder::reject);
+                    final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
+                    final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
+                            .collect(ImmutableList.toImmutableList());
+                    final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+                    constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
+                    subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition))
+                            .forEach(condition -> constraints.add(condition));
+                    subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
+                            .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
+                    constraints.addAll(input.constraints());
+                    final SearchState newState = input.update(input.state(), constraints.build());
+                    return new SearchNode<>(ctx.nextNodeId(), newState, parent,
+                            "resolve[" + idx + "/" + count.get() + "]");
+                });
             });
         }));
     }
@@ -158,7 +158,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         final IntStream randomSizes = RandomUtil.ints(2, resultSize.upperEndpoint(), rnd).limit(sizes);
         final IntStream allSizes =
                 Streams.concat(fixedSizes, randomSizes).filter(size -> resultSize.contains(size)).limit(subsetsPerSize);
-        // mkae sure there are no duplciates, of resultSize.upperEndpoint equals one of the fixed values
+        // make sure there are no duplicates, of resultSize.upperEndpoint equals one of the fixed values
         final List<Integer> subsetSizes = Lists.newArrayList(allSizes.boxed().collect(Collectors.toSet()));
         Collections.shuffle(subsetSizes, rnd);
         return subsetSizes;

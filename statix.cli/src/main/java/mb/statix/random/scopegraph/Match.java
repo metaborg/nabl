@@ -14,4 +14,8 @@ public class Match<S, L, D, X> {
         this.condition = condition;
     }
 
+    @Override public String toString() {
+        return condition.map(Object::toString).orElse("true") + " => " + path;
+    }
+
 }
