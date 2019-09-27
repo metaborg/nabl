@@ -48,7 +48,7 @@ public class StatixGenerate {
         }
 
         log.info("Generating random terms.");
-        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(1).iterator());
+        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(100).iterator());
         results.forEach(s -> {
             System.out.println(pretty.apply(s));
         });
