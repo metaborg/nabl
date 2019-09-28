@@ -1,5 +1,6 @@
 package mb.statix.constraints;
 
+import java.util.Deque;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -7,6 +8,7 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -374,6 +376,9 @@ public final class Constraints {
         return sb.toString();
     }
 
+    /**
+     * Convert constraints into a conjunction constraint.
+     */
     public static IConstraint conjoin(Iterable<? extends IConstraint> constraints) {
         // FIXME What about causes? Unfolding this conjunction might overwrite
         //       causes in the constraints by null.
@@ -382,6 +387,26 @@ public final class Constraints {
             conj = (conj != null) ? new CConj(constraint, conj) : constraint;
         }
         return (conj != null) ? conj : new CTrue();
+    }
+
+    /**
+     * Split a conjunction constraint into constraints.
+     */
+    public static List<IConstraint> disjoin(IConstraint constraint) {
+        ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+        Deque<IConstraint> worklist = Lists.newLinkedList();
+        worklist.push(constraint);
+        while(!worklist.isEmpty()) {
+            worklist.pop().match(Constraints.cases().conj(conj -> {
+                worklist.push(conj.left().withCause(conj.cause().orElse(null)));
+                worklist.push(conj.right().withCause(conj.cause().orElse(null)));
+                return null;
+            }).otherwise(c -> {
+                constraints.add(c);
+                return null;
+            }));
+        }
+        return constraints.build();
     }
 
 }

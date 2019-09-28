@@ -43,6 +43,7 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -267,11 +268,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
     }
 
     @Override public Optional<StepResult> caseConj(CConj c) throws SolverException {
-        // @formatter:off
-        final List<IConstraint> newConstraints = ImmutableList.of(
-                c.left().withCause(c.cause().orElse(null)),
-                c.right().withCause(c.cause().orElse(null)));
-        // @formatter:on
+        final List<IConstraint> newConstraints = Constraints.disjoin(c);
         return Optional.of(StepResult.ofNew(state, newConstraints));
     }
 
