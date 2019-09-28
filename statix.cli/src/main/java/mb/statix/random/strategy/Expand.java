@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Streams;
 
+import io.usethesource.capsule.Set;
 import mb.statix.constraints.CUser;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
@@ -15,6 +16,10 @@ import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.util.RuleUtil;
 import mb.statix.random.util.WeightedDrawSet;
+import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
+import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
 
 final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
@@ -32,12 +37,29 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
             rules.put(rule, weights.getOrDefault(rule.label(), 1));
         }
         return SearchNodes.of(WeightedDrawSet.of(rules).enumerate(ctx.rnd()).map(Map.Entry::getKey).flatMap(rule -> {
-            return Streams.stream(RuleUtil.apply(input.state(), rule, predicate.args(), predicate)).map(result -> {
-                final SearchState output = input.update(result._1(), input.constraints().__insert(result._2()));
-                final String head = rule.name()
-                        + rule.params().stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
-                return new SearchNode<>(ctx.nextNodeId(), output, parent, "expand(" + head + ")");
-            });
+            return Streams.stream(RuleUtil.apply(input.state(), rule, predicate.args(), predicate))
+                    .map(resultAndConstraint -> {
+                        final SolverResult applyResult = resultAndConstraint._1();
+                        final IState.Immutable applyState = applyResult.state();
+                        final IConstraint applyConstraint = resultAndConstraint._2();
+
+                        // update constraints
+                        final Set.Transient<IConstraint> constraints = input.constraints().asTransient();
+                        constraints.__insert(applyConstraint);
+                        constraints.__remove(predicate);
+
+                        // update completeness
+                        final ICompleteness.Transient completeness = input.completeness().melt();
+                        completeness.add(applyConstraint, applyState.unifier());
+                        completeness.remove(predicate, applyState.unifier());
+
+                        // return new state
+                        final SearchState output =
+                                input.replace(applyState, constraints.freeze(), input.delays(), completeness.freeze());
+                        final String head = rule.name() + rule.params().stream().map(Object::toString)
+                                .collect(Collectors.joining(", ", "(", ")"));
+                        return new SearchNode<>(ctx.nextNodeId(), output, parent, "expand(" + head + ")");
+                    });
         }));
     }
 

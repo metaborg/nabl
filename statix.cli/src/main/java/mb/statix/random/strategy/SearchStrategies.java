@@ -86,6 +86,10 @@ public final class SearchStrategies {
         return new CanResolve();
     }
 
+    public static final SearchStrategy<SearchState, SearchState> delayStuckQueries() {
+        return new DelayStuckQueries();
+    }
+
     public static final <I, O> SearchStrategy<I, O> debug(SearchStrategy<I, O> s, Action1<SearchNode<O>> debug) {
         return new SearchStrategy<I, O>() {
 

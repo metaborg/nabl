@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.util.functions.Predicate1;
 
+import com.google.common.collect.Streams;
+
 import mb.statix.constraints.CUser;
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchNode;
@@ -50,7 +52,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                     } finally {
                         fresh = false;
                     }
-                    if(node.output().constraints().stream()
+                    if(Streams.stream(node.output().constraintsAndDelays())
                             .allMatch(c -> (c instanceof CUser && done.test((CUser) c)))) {
                         ctx.progress('+');
                         return Optional.of(node);
@@ -60,7 +62,6 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                     stack.push(nextNodes);
                     fresh = true;
                 }
-                ctx.progress('\n');
                 return Optional.empty();
             }
 

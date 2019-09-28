@@ -13,7 +13,6 @@ import org.metaborg.core.action.TransformActionContrib;
 import org.metaborg.core.context.IContext;
 import org.metaborg.core.language.ILanguageComponent;
 import org.metaborg.core.language.ILanguageImpl;
-import org.metaborg.core.project.IProject;
 import org.metaborg.spoofax.core.Spoofax;
 import org.metaborg.spoofax.core.shell.CLIUtils;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
@@ -50,18 +49,18 @@ public class StatixGenerator implements Iterable<SearchState> {
     private final Spoofax S;
     private final CLIUtils CLI;
     private final ILanguageImpl statixLang;
-    private final IProject project;
+    private final IContext context;
     private final Spec spec;
     private final IConstraint constraint;
     private final SearchStrategy<SearchState, SearchState> strategy;
     private final IProgressPrinter progress;
 
-    public StatixGenerator(Spoofax spoofax, IProject project, FileObject spec,
+    public StatixGenerator(Spoofax spoofax, IContext context, FileObject spec,
             SearchStrategy<SearchState, SearchState> strategy, IProgressPrinter progress) throws MetaborgException {
         this.S = spoofax;
         this.CLI = new CLIUtils(S);
         this.statixLang = CLI.getLanguage(LANG_STX_NAME);
-        this.project = project;
+        this.context = context;
         final Tuple2<Spec, IConstraint> specAndConstraint = loadSpec(spec);
         this.spec = specAndConstraint._1();
         this.constraint = specAndConstraint._2();
@@ -78,7 +77,7 @@ public class StatixGenerator implements Iterable<SearchState> {
             throw new MetaborgException(resource + " has parse errors.");
         }
 
-        final IContext context = S.contextService.get(resource, project, statixLang);
+        final IContext context = S.contextService.get(resource, this.context.project(), statixLang);
 
         final ISpoofaxAnalyzeUnit analyzeUnit = CLI.analyze(parseUnit, context);
         if(!analyzeUnit.success()) {
@@ -96,7 +95,8 @@ public class StatixGenerator implements Iterable<SearchState> {
             throw new MetaborgException("Expected tuple of constraint and spec, but got " + evalPair);
         }
 
-        final StrategoTerms strategoTerms = new StrategoTerms(S.termFactoryService.get(statixLang, project, false));
+        final StrategoTerms strategoTerms =
+                new StrategoTerms(S.termFactoryService.get(statixLang, context.project(), false));
         final IConstraint constraint =
                 StatixTerms.constraint().match(strategoTerms.fromStratego(evalPair.getSubterm(0)))
                         .orElseThrow(() -> new MetaborgException("Expected constraint"));

@@ -1,6 +1,7 @@
 package mb.statix.random.strategy;
 
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -21,9 +22,9 @@ final class DropMatch<C extends IConstraint> extends SearchStrategy<SearchState,
     }
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
-        @SuppressWarnings("unchecked") final Set.Immutable<IConstraint> constraints = input.constraints().stream()
-                .filter(c -> !(clazz.isInstance(c) && match.test((C) c))).collect(CapsuleCollectors.toSet());
-        final SearchState output = input.update(input.state(), constraints);
+        @SuppressWarnings("unchecked") final Set.Immutable<IConstraint> remove = input.constraints().stream()
+                .filter(c -> clazz.isInstance(c) && match.test((C) c)).collect(CapsuleCollectors.toSet());
+        final SearchState output = input.update(Iterables2.empty(), remove);
         final String desc = "drop(" + clazz.getSimpleName() + ", " + match + ")";
         return SearchNodes.of(new SearchNode<>(ctx.nextNodeId(), output, parent, desc));
     }

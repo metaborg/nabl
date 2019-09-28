@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 
 import org.metaborg.core.MetaborgRuntimeException;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
@@ -45,9 +46,7 @@ import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
-import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spoofax.StatixTerms;
@@ -78,13 +77,11 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
             throw new IllegalArgumentException("cannot resolve query: cannot decide data equivalence");
         }
 
-        final ICompleteness.Transient completeness = Completeness.Transient.of(state.spec());
-        completeness.addAll(input.constraints(), unifier);
-        final IsComplete isComplete3 = (s, l, st) -> completeness.isComplete(s, l, st.unifier());
+        final ICompleteness.Immutable completeness = input.completeness();
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
-        final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(isComplete3, state, query.filter().getDataWF(), query);
+        final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
@@ -140,12 +137,14 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                             .collect(ImmutableList.toImmutableList());
                     final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
                     constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                    subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition))
-                            .forEach(condition -> constraints.add(condition));
-                    subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> constraints
-                            .add(new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null))));
-                    constraints.addAll(input.constraints());
-                    final SearchState newState = input.update(input.state(), constraints.build());
+                    subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> {
+                        constraints.add(condition);
+                    });
+                    subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> {
+                        constraints.add(
+                                new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null)));
+                    });
+                    final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
                     return new SearchNode<>(ctx.nextNodeId(), newState, parent,
                             "resolve[" + idx + "/" + count.get() + "]");
                 });

@@ -32,8 +32,8 @@ public class Paret {
 
     // generation of expressions
 
-    private static SearchStrategy<SearchState, SearchState> inferAndDrop() {
-        return seq(infer(), dropAst());
+    private static SearchStrategy<SearchState, SearchState> inferDelayAndDrop() {
+        return seq(infer(), seq(delayStuckQueries(), dropAst()));
     }
 
     // generation of expressions
@@ -48,7 +48,7 @@ public class Paret {
                     seq(resolve(), infer())
                 )
             ),
-            inferAndDrop(),
+            inferDelayAndDrop(),
             new Match("gen_.*")
         );
         // @formatter:on
@@ -56,17 +56,15 @@ public class Paret {
 
     private static SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
-        return repeat(fix(
-            seq(
-                selectConstraint(1),
-                match(
-                    limit(3, seq(expand(), infer())),
-                    limit(3, seq(resolve(), infer()))
-                )
+        return repeat(limit(10, fix(
+            seq( selectConstraint(1)
+               , match( limit(3, seq(expand(), infer()))
+                      , limit(3, seq(resolve(), infer()))
+                      )
             ),
-            inferAndDrop(),
+            inferDelayAndDrop(),
             new Match("gen_.*")
-        ));
+        )));
         // @formatter:on
     }
 
@@ -75,7 +73,7 @@ public class Paret {
         // @formatter:off
         return limit(limit, alt(
             select(CUser.class, new Not<>(new Match("gen_.*"))),
-            seq(select(CResolveQuery.class, new Any<>()), canResolve())
+            select(CResolveQuery.class, new Any<>())
         ));
         // @formatter:on
     }

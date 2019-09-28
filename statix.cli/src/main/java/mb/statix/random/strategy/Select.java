@@ -33,7 +33,8 @@ final class Select<C extends IConstraint> extends SearchStrategy<SearchState, Fo
         }
         return SearchNodes.of(WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
             final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());
-            return new SearchNode<>(ctx.nextNodeId(), output, parent, "select(" + c.getKey() + ")");
+            return new SearchNode<>(ctx.nextNodeId(), output, parent,
+                    "select(" + c.getKey().toString(t -> input.state().unifier().toString(t)) + ")");
         }));
     }
 

@@ -29,7 +29,7 @@ import mb.statix.spec.Rule;
 
 public class RuleUtil {
 
-    public static final Optional<Tuple2<IState.Immutable, IConstraint>> apply(IState.Immutable state, Rule rule,
+    public static final Optional<Tuple2<SolverResult, IConstraint>> apply(IState.Immutable state, Rule rule,
             List<ITerm> args, IConstraint cause) {
         // FIXME The current method can cause capture if a solver-generated variable
         //       has the same name as a pattern variable in the rule. The arguments
@@ -66,7 +66,7 @@ public class RuleUtil {
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(result.existentials());
         final IConstraint newConstraint = rule.body().apply(subst);
 
-        return Optional.of(ImmutableTuple2.of(result.state(), newConstraint));
+        return Optional.of(ImmutableTuple2.of(result, newConstraint));
     }
 
 }

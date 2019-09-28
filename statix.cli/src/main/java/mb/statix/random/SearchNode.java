@@ -16,6 +16,10 @@ public class SearchNode<O> {
         this.desc = desc;
     }
 
+    public int id() {
+        return id;
+    }
+
     public O output() {
         return output;
     }
@@ -33,7 +37,7 @@ public class SearchNode<O> {
     }
 
     @Override public String toString() {
-        return String.format("[%03d] %s", id, (desc != null ? desc : Objects.toString(this)));
+        return desc != null ? desc : Objects.toString(this);
     }
 
 }
