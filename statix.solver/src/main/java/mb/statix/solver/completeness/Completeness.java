@@ -3,6 +3,7 @@ package mb.statix.solver.completeness;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -122,6 +123,11 @@ public abstract class Completeness implements ICompleteness {
             return new Completeness.Transient(spec, Map.Transient.of());
         }
 
+    }
+
+    @Override public String toString() {
+        return incomplete().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
+                .collect(Collectors.joining(", ", "{", "}"));
     }
 
 }
