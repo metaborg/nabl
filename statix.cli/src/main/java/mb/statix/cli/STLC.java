@@ -19,8 +19,8 @@ import mb.statix.random.SearchStrategy;
 import mb.statix.random.predicate.Any;
 import mb.statix.random.predicate.Match;
 import mb.statix.random.predicate.Not;
-import mb.statix.random.strategy.Either2;
 import mb.statix.random.strategy.SearchStrategies;
+import mb.statix.random.util.Either2;
 
 public class STLC {
 

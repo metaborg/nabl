@@ -12,10 +12,10 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.random.SearchContext;
-import mb.statix.random.SearchNode;
-import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
 import mb.statix.random.scopegraph.DataWF;
 import mb.statix.random.scopegraph.NameResolution;
 import mb.statix.scopegraph.reference.CriticalEdge;
@@ -46,7 +46,8 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
         });
 
         final SearchState newState = input.delay(delays.entrySet());
-        return SearchNodes.of(new SearchNode<>(ctx.nextNodeId(), newState, parent, parent.desc()));
+        final String desc = this.toString() + "[" + delays.size() + "]";
+        return SearchNodes.of(parent, desc, new SearchNode<>(ctx.nextNodeId(), newState, parent, desc));
     }
 
     private Optional<Delay> checkDelay(CResolveQuery query, IState.Immutable state,
@@ -99,7 +100,7 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
     }
 
     @Override public String toString() {
-        return "can-resolve";
+        return "delay-stuck-queries";
     }
 
 }

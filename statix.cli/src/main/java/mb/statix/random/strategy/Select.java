@@ -6,10 +6,10 @@ import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
-import mb.statix.random.SearchNode;
-import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
 import mb.statix.random.util.WeightedDrawSet;
 import mb.statix.solver.IConstraint;
 
@@ -28,10 +28,10 @@ final class Select<C extends IConstraint> extends SearchStrategy<SearchState, Fo
                 input.constraints().stream().filter(c -> cls.isInstance(c)).map(c -> (C) c).filter(include::test)
                         .collect(CapsuleCollectors.toSet());
         if(candidates.isEmpty()) {
-            //ctx.addFailed(new SearchNode<>(input, parent, this.toString() + "[no candidates]"));
-            return SearchNodes.of();
+            return SearchNodes.empty(parent, this.toString() + "[no candidates]");
         }
-        return SearchNodes.of(WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
+        final String desc = this.toString() + "[" + candidates.size() + "]";
+        return SearchNodes.of(parent, desc, WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
             final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());
             return new SearchNode<>(ctx.nextNodeId(), output, parent,
                     "select(" + c.getKey().toString(t -> input.state().unifier().toString(t)) + ")");

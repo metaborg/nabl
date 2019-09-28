@@ -74,6 +74,8 @@ public class SearchState {
 
     /**
      * Update the constraints in this set, keeping completeness and delayed constraints in sync.
+     * 
+     * This method assumes that no constraints appear in both add and remove, or it will be incorrect!
      */
     public SearchState update(Iterable<IConstraint> add, Iterable<IConstraint> remove) {
         final ICompleteness.Transient completeness = this.completeness.melt();

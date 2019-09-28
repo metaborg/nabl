@@ -1,9 +1,10 @@
 package mb.statix.random.strategy;
 
 import mb.statix.random.SearchContext;
-import mb.statix.random.SearchNode;
-import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
+import mb.statix.random.util.Either2;
 
 final class Match<I1, I2, O> extends SearchStrategy<Either2<I1, I2>, O> {
     private final SearchStrategy<I2, O> s2;

@@ -16,10 +16,14 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.random.SearchNode;
+import mb.statix.random.SearchLogger;
 import mb.statix.random.SearchState;
+import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchElement;
+import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.spoofax.StatixGenerator;
 import mb.statix.random.util.StreamProgressPrinter;
+import mb.statix.solver.IConstraint;
 
 public class StatixGenerate {
 
@@ -35,8 +39,6 @@ public class StatixGenerate {
 
     public void run(String file) throws MetaborgException, InterruptedException {
         final FileObject resource = STX.S.resolve(file);
-        final StreamProgressPrinter progress = new StreamProgressPrinter(System.err, 100);
-        final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource, Paret.search(), progress);
 
         final Function1<SearchState, String> pretty;
         final Optional<FileObject> maybeProject = STX.findProject(resource);
@@ -44,16 +46,35 @@ public class StatixGenerate {
             final IProject project = STX.cli.getOrCreateProject(maybeProject.get());
             final ILanguageImpl lang = STX.cli.loadLanguage(project.location());
             final IContext context = STX.S.contextService.get(resource, project, lang);
-            pretty = statixGen.pretty(context, VAR, "pp-generated");
+            pretty = StatixGenerator.pretty(STX.S, context, VAR, "pp-generated");
         } else {
-            pretty = statixGen.project(VAR, ITerm::toString);
+            pretty = StatixGenerator.project(VAR, ITerm::toString);
         }
 
+        final StreamProgressPrinter progress = new StreamProgressPrinter(System.err, 100);
+        final SearchLogger searchLog = new SearchLogger() {
+
+            @Override public void init(long seed, SearchStrategy<?, ?> strategy, Iterable<IConstraint> constraints) {
+                log.info("seed {}", seed);
+                log.info("strategy {}", strategy);
+                log.info("constraints {}", constraints);
+            }
+
+            @Override public void success(SearchNode<SearchState> n) {
+                progress.step('+');
+                logSuccess(log, Level.Debug, n, pretty::apply);
+            }
+
+            @Override public void failure(SearchElement e) {
+                progress.step('.');
+                logFailure(log, Level.Debug, e, pretty::apply);
+            }
+
+        };
+        final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource, Paret.search(), searchLog);
+
         log.info("Generating random terms.");
-        final List<SearchState> results = Lists.newArrayList(statixGen.apply().map(sn -> {
-//            logTrace(sn, Level.Debug, pretty);
-            return sn;
-        }).limit(100).iterator());
+        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(42).iterator());
         progress.done();
         results.forEach(s -> {
             System.out.println(pretty.apply(s));
@@ -62,20 +83,30 @@ public class StatixGenerate {
 
     }
 
-    private static void logTrace(SearchNode<SearchState> node, Level level, Function1<SearchState, String> pp) {
-        log.log(level, "=== Program ===");
-        log.log(level, " * {}", pp.apply(node.output()));
-        log.log(level, "---- Trace ----");
-        SearchNode<?> traceNode = node;
+    public static void logSuccess(ILogger log, Level lvl, SearchNode<SearchState> node,
+            Function1<SearchState, String> pp) {
+        log.log(lvl, "=== SUCCESS ===");
+        log.log(lvl, " * {}", pp.apply(node.output()));
+        log.log(lvl, "---- Trace ----");
+        logTrace(log, lvl, node, pp);
+        log.log(lvl, "===============");
+    }
+
+    public static void logFailure(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
+        log.log(lvl, "=== FAILURE ===");
+        logTrace(log, lvl, node, pp);
+        log.log(lvl, "===============");
+    }
+
+    public static void logTrace(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
+        SearchElement traceNode = node;
         do {
-            log.log(level, " * [{}] {}", traceNode.id(), traceNode.desc());
-            if(traceNode.output() instanceof SearchState) {
-                SearchState state = (SearchState) traceNode.output();
-                state.print(ln -> log.log(level, "   {}", ln), (t, u) -> u.toString(t));
+            log.log(lvl, " * [{}] {}", traceNode.id(), traceNode.desc());
+            if(traceNode instanceof SearchNode && ((SearchNode<?>) traceNode).output() instanceof SearchState) {
+                SearchState state = (SearchState) ((SearchNode<?>) traceNode).output();
+                state.print(ln -> log.log(lvl, "   {}", ln), (t, u) -> u.toString(t));
             }
         } while((traceNode = traceNode.parent()) != null);
-        log.log(level, "===============");
-
     }
 
 }

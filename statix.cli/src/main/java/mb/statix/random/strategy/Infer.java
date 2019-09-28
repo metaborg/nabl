@@ -2,11 +2,13 @@ package mb.statix.random.strategy;
 
 import org.metaborg.core.MetaborgRuntimeException;
 
+import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.statix.constraints.Constraints;
 import mb.statix.random.SearchContext;
-import mb.statix.random.SearchNode;
-import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
@@ -22,12 +24,12 @@ final class Infer extends SearchStrategy<SearchState, SearchState> {
             throw new MetaborgRuntimeException(e);
         }
         if(resultConfig.hasErrors()) {
-            //            final String msg = Constraints.toString(resultConfig.errors(),
-            //                    new UnifierFormatter(resultConfig.state().unifier(), 3));
-            return SearchNodes.of();
+            final String msg = Constraints.toString(resultConfig.errors(),
+                    new UnifierFormatter(resultConfig.state().unifier(), 3));
+            return SearchNodes.empty(parent, msg);
         }
         final SearchState newState = state.replace(resultConfig);
-        return SearchNodes.of(new SearchNode<>(ctx.nextNodeId(), newState, parent, "infer"));
+        return SearchNodes.of(parent, this.toString(), new SearchNode<>(ctx.nextNodeId(), newState, parent, this.toString()));
     }
 
     @Override public String toString() {

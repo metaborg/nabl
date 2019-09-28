@@ -14,11 +14,10 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.random.FocusedSearchState;
-import mb.statix.random.SearchContext;
-import mb.statix.random.SearchNode;
-import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.util.Either2;
 import mb.statix.solver.IConstraint;
 
 public final class SearchStrategies {
@@ -91,34 +90,15 @@ public final class SearchStrategies {
     }
 
     public static final <I, O> SearchStrategy<I, O> debug(SearchStrategy<I, O> s, Action1<SearchNode<O>> debug) {
-        return new SearchStrategy<I, O>() {
-
-            @Override protected SearchNodes<O> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
-                return s.apply(ctx, input, parent).map(n -> {
-                    debug.apply(n);
-                    return n;
-                });
-            }
-
-            @Override public String toString() {
-                return s.toString();
-            }
-
-        };
+        return new Debug<>(debug, s);
     }
 
     public static final <I> SearchStrategy<I, I> identity() {
-        return new SearchStrategy<I, I>() {
+        return new Identity<>();
+    }
 
-            @Override protected SearchNodes<I> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
-                return SearchNodes.of(new SearchNode<>(ctx.nextNodeId(), input, parent, "id"));
-            }
-
-            @Override public String toString() {
-                return "id";
-            }
-
-        };
+    public static final <I, O> SearchStrategy<I, O> require(SearchStrategy<I, O> s) {
+        return new Require<>(s);
     }
 
     // util

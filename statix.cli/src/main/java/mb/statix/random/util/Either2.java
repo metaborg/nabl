@@ -1,4 +1,4 @@
-package mb.statix.random.strategy;
+package mb.statix.random.util;
 
 import org.metaborg.util.functions.Function1;
 

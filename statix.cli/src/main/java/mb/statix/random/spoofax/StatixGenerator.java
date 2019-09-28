@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
@@ -33,10 +34,9 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.random.RandomTermGenerator;
-import mb.statix.random.SearchNodes;
+import mb.statix.random.SearchLogger;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
-import mb.statix.random.util.IProgressPrinter;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
@@ -50,22 +50,23 @@ public class StatixGenerator implements Iterable<SearchState> {
     private final CLIUtils CLI;
     private final ILanguageImpl statixLang;
     private final IContext context;
-    private final Spec spec;
-    private final IConstraint constraint;
-    private final SearchStrategy<SearchState, SearchState> strategy;
-    private final IProgressPrinter progress;
+    private final SearchLogger log;
+    private final RandomTermGenerator rtg;
 
     public StatixGenerator(Spoofax spoofax, IContext context, FileObject spec,
-            SearchStrategy<SearchState, SearchState> strategy, IProgressPrinter progress) throws MetaborgException {
+            SearchStrategy<SearchState, SearchState> strategy) throws MetaborgException {
+        this(spoofax, context, spec, strategy, SearchLogger.NOOP);
+    }
+
+    public StatixGenerator(Spoofax spoofax, IContext context, FileObject spec,
+            SearchStrategy<SearchState, SearchState> strategy, SearchLogger log) throws MetaborgException {
         this.S = spoofax;
         this.CLI = new CLIUtils(S);
         this.statixLang = CLI.getLanguage(LANG_STX_NAME);
         this.context = context;
         final Tuple2<Spec, IConstraint> specAndConstraint = loadSpec(spec);
-        this.spec = specAndConstraint._1();
-        this.constraint = specAndConstraint._2();
-        this.strategy = strategy;
-        this.progress = progress;
+        this.log = log;
+        this.rtg = new RandomTermGenerator(specAndConstraint._1(), specAndConstraint._2(), strategy, log);
     }
 
     private Tuple2<Spec, IConstraint> loadSpec(FileObject resource) throws MetaborgException {
@@ -105,15 +106,18 @@ public class StatixGenerator implements Iterable<SearchState> {
         return ImmutableTuple2.of(spec, constraint);
     }
 
-    public SearchNodes<SearchState> apply() {
-        return new RandomTermGenerator(spec, constraint, strategy, progress);
+    public Stream<SearchState> apply() {
+        return rtg.apply().nodes().map(sn -> {
+            log.success(sn);
+            return sn.output();
+        });
     }
 
     @Override public Iterator<SearchState> iterator() {
         return apply().iterator();
     }
 
-    public <R> Function1<SearchState, R> project(String var, Function1<ITerm, R> f) {
+    public static <R> Function1<SearchState, R> project(String var, Function1<ITerm, R> f) {
         return s -> {
             final ITerm v = s.existentials().get(B.newVar("", var));
             if(v == null) {
@@ -124,7 +128,7 @@ public class StatixGenerator implements Iterable<SearchState> {
         };
     }
 
-    public Function1<SearchState, String> pretty(IContext context, String var, String strategy) {
+    public static Function1<SearchState, String> pretty(Spoofax S, IContext context, String var, String strategy) {
         final ILanguageImpl lang = context.language();
         final Function1<ITerm, String> pp;
         if(!Iterables.isEmpty(lang.components())) {

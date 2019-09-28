@@ -1,20 +1,23 @@
 package mb.statix.random.strategy;
 
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.stream.Stream;
 
-import org.metaborg.core.MetaborgException;
+import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.Streams;
 
 import mb.statix.constraints.CUser;
 import mb.statix.random.SearchContext;
-import mb.statix.random.SearchNode;
-import mb.statix.random.SearchNodes;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
+import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
+import mb.statix.random.util.StreamUtil;
 
 public class Fix extends SearchStrategy<SearchState, SearchState> {
 
@@ -30,42 +33,36 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
     }
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
-        final Deque<SearchNodes<SearchState>> stack = new LinkedList<>();
-        final SearchNodes<SearchState> initNodes = infer.apply(ctx, input, parent);
-        stack.push(initNodes);
-        return new SearchNodes<SearchState>() {
-
-            boolean fresh = false;
-
-            @Override public Optional<SearchNode<SearchState>> next() throws MetaborgException, InterruptedException {
-                while(!stack.isEmpty()) {
-                    final SearchNodes<SearchState> nodes = stack.peek();
-                    final SearchNode<SearchState> node;
-                    try {
-                        if((node = nodes.next().orElse(null)) == null) {
-                            stack.pop();
-                            if(fresh) {
-                                ctx.progress('.');
-                            }
-                            continue;
-                        }
-                    } finally {
-                        fresh = false;
-                    }
-                    if(Streams.stream(node.output().constraintsAndDelays())
-                            .allMatch(c -> (c instanceof CUser && done.test((CUser) c)))) {
-                        ctx.progress('+');
-                        return Optional.of(node);
-                    }
-                    final SearchNodes<SearchState> nextNodes =
-                            SearchStrategies.seq(search, infer).apply(ctx, node.output(), node);
-                    stack.push(nextNodes);
-                    fresh = true;
-                }
-                return Optional.empty();
+        final Deque<Iterator<SearchNode<SearchState>>> stack = new LinkedList<>();
+        final Action1<SearchNodes<SearchState>> push = ns -> {
+            final Iterator<SearchNode<SearchState>> it = ns.nodes().iterator();
+            if(it.hasNext()) {
+                stack.push(it);
+            } else {
+                ctx.failure(ns);
             }
-
         };
+        final SearchNodes<SearchState> initNodes = infer.apply(ctx, input, parent);
+        push.apply(initNodes);
+        final Stream<SearchNode<SearchState>> fixNodes = StreamUtil.generate(() -> {
+            while(!stack.isEmpty()) {
+                final Iterator<SearchNode<SearchState>> nodes = stack.peek();
+                if(!nodes.hasNext()) {
+                    stack.pop();
+                    continue;
+                }
+                final SearchNode<SearchState> node = nodes.next();
+                if(Streams.stream(node.output().constraintsAndDelays())
+                        .allMatch(c -> (c instanceof CUser && done.test((CUser) c)))) {
+                    return Optional.of(node);
+                }
+                final SearchNodes<SearchState> nextNodes =
+                        SearchStrategies.seq(search, infer).apply(ctx, node.output(), node);
+                push.apply(nextNodes);
+            }
+            return Optional.empty();
+        });
+        return SearchNodes.of(parent, this.toString(), fixNodes);
     }
 
     @Override public String toString() {

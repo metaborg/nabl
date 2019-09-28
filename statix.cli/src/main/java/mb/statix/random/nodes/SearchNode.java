@@ -1,8 +1,8 @@
-package mb.statix.random;
+package mb.statix.random.nodes;
 
 import java.util.Objects;
 
-public class SearchNode<O> {
+public class SearchNode<O> implements SearchElement {
 
     private final int id;
     private final O output;
@@ -16,7 +16,7 @@ public class SearchNode<O> {
         this.desc = desc;
     }
 
-    public int id() {
+    @Override public int id() {
         return id;
     }
 
@@ -28,11 +28,11 @@ public class SearchNode<O> {
         return new SearchNode<>(id, output, parent, desc);
     }
 
-    public SearchNode<?> parent() {
+    @Override public SearchNode<?> parent() {
         return parent;
     }
 
-    public String desc() {
+    @Override public String desc() {
         return desc;
     }
 

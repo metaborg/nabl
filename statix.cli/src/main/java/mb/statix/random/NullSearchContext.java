@@ -2,6 +2,8 @@ package mb.statix.random;
 
 import java.util.Random;
 
+import mb.statix.random.nodes.SearchElement;
+
 public class NullSearchContext implements SearchContext {
 
     private final Random rnd;
@@ -18,7 +20,7 @@ public class NullSearchContext implements SearchContext {
         return rnd;
     }
 
-    @Override public void progress(char c) {
+    @Override public void failure(SearchElement node) {
     }
 
 }
