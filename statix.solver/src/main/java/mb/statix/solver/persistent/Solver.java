@@ -1,6 +1,7 @@
 package mb.statix.solver.persistent;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,6 +24,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 
@@ -38,8 +40,14 @@ public class Solver {
 
     public static SolverResult solve(final IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug) throws InterruptedException {
-        return new GreedySolver(state, isComplete, debug).solve(constraint);
-        //return new StepSolver(state, isComplete, debug).solve(constraint);
+        return new GreedySolver(state, constraint, isComplete, debug).solve();
+        //return new StepSolver(state, constraint, isComplete, debug).solve();
+    }
+
+    public static SolverResult solve(final IState.Immutable state, final Iterable<IConstraint> constraints,
+            final Map<IConstraint, Delay> delays, final ICompleteness.Immutable completeness, final IDebugContext debug)
+            throws InterruptedException {
+        return new GreedySolver(state, constraints, delays, completeness, debug).solve();
     }
 
     public static boolean entails(IState.Immutable state, final IConstraint constraint, final IsComplete isComplete,

@@ -74,11 +74,14 @@ import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.Rule;
 import mb.statix.spoofax.StatixTerms;
 
-public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
+class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
 
     private IState.Immutable state;
     private Map<ITermVar, ITermVar> existentials;
+    private final List<ITermVar> updatedVars;
+    private final List<CriticalEdge> removedEdges;
     private final IsComplete isComplete;
+    private final IConstraintStore constraints;
     private final ICompleteness.Transient completeness;
     private final ConstraintContext params;
 
@@ -86,24 +89,26 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
     private final LazyDebugContext proxyDebug;
     private final IDebugContext subDebug;
 
-    public StepSolver(IState.Immutable state, IsComplete _isComplete, IDebugContext debug) {
+    public StepSolver(IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
+            IDebugContext debug) {
         this.state = state;
         this.existentials = null;
+        this.updatedVars = Lists.newArrayList();
+        this.removedEdges = Lists.newArrayList();
+        this.constraints = new BaseConstraintStore(debug);
         this.completeness = Completeness.Transient.of(state.spec());
         this.isComplete = (s, l, st) -> completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
         this.subDebug = proxyDebug.subContext();
         this.params = new ConstraintContext(this.isComplete, subDebug);
+
+        constraints.add(initialConstraint);
+        completeness.add(initialConstraint, state.unifier());
     }
 
-    public SolverResult solve(final IConstraint initialConstraint) throws InterruptedException {
+    public SolverResult solve() throws InterruptedException {
         debug.info("Solving constraints");
-
-        // set-up
-        completeness.add(initialConstraint, state.unifier());
-        final IConstraintStore constraints = new BaseConstraintStore(debug);
-        constraints.add(initialConstraint);
 
         // time log
         final Map<Class<? extends IConstraint>, Long> successCount = Maps.newHashMap();
@@ -143,6 +148,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
                         // updates from unified variables
                         completeness.updateAll(result.updatedVars(), state.unifier());
                         constraints.activateFromVars(result.updatedVars(), subDebug);
+                        this.updatedVars.addAll(result.updatedVars());
 
                         // add new constraints
                         constraints.addAll(result.newConstraints());
@@ -178,6 +184,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
                     // remove current constraint
                     final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
                     constraints.activateFromEdges(removedEdges, subDebug);
+                    this.removedEdges.addAll(removedEdges);
                     proxyDebug.commit();
                 } catch(Delay d) {
                     addTime(constraint, 1, delayCount, debug);
@@ -202,7 +209,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>
         logTimes("delay", delayCount, debug);
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
-        return SolverResult.of(state, failed, delayed, existentials);
+        return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze());
     }
 
     private static void addTime(IConstraint c, long dt, Map<Class<? extends IConstraint>, Long> times,

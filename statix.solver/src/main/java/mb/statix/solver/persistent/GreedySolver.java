@@ -71,7 +71,7 @@ import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.Rule;
 import mb.statix.spoofax.StatixTerms;
 
-public class GreedySolver {
+class GreedySolver {
 
     private static final int MAX_DEPTH = 32;
 
@@ -83,26 +83,44 @@ public class GreedySolver {
     private final ConstraintContext params;
 
     private Map<ITermVar, ITermVar> existentials = null;
+    private final List<ITermVar> updatedVars = Lists.newArrayList();
+    private final List<CriticalEdge> removedEdges = Lists.newArrayList();
     private final List<IConstraint> failed = new ArrayList<>();
 
-    public GreedySolver(IState.Immutable state, IsComplete _isComplete, IDebugContext debug) {
+    public GreedySolver(IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
+            IDebugContext debug) {
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
+        constraints.add(initialConstraint);
         this.completeness = Completeness.Transient.of(state.spec());
+        completeness.add(initialConstraint, initialState.unifier());
         final IsComplete isComplete = (s, l, st) -> {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
         this.params = new ConstraintContext(isComplete, debug);
+
     }
 
-    public SolverResult solve(IConstraint initialConstraint) throws InterruptedException {
+    public GreedySolver(IState.Immutable state, Iterable<IConstraint> constraints, Map<IConstraint, Delay> delays,
+            ICompleteness.Immutable completeness, IDebugContext debug) {
+        this.initialState = state;
+        this.debug = debug;
+        this.constraints = new BaseConstraintStore(debug);
+        this.constraints.addAll(constraints);
+        this.constraints.delayAll(delays.entrySet());
+        this.completeness = completeness.melt();
+        // the constraints should already be reflected in completeness
+        final IsComplete isComplete = (s, l, st) -> {
+            return completeness.isComplete(s, l, st.unifier());
+        };
+        this.params = new ConstraintContext(isComplete, debug);
+    }
+
+    public SolverResult solve() throws InterruptedException {
         debug.info("Solving constraints");
 
         IState.Immutable state = this.initialState;
-
-        completeness.add(initialConstraint, state.unifier());
-        state = step(state, initialConstraint);
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
@@ -119,7 +137,7 @@ public class GreedySolver {
                 constraints.delayedSize());
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
-        return SolverResult.of(state, failed, delayed, existentials);
+        return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze());
     }
 
     private IState.Immutable step(IState.Immutable state, IConstraint constraint) throws InterruptedException {
@@ -142,6 +160,7 @@ public class GreedySolver {
         // updates from unified variables
         completeness.updateAll(updatedVars, unifier);
         constraints.activateFromVars(updatedVars, debug);
+        this.updatedVars.addAll(updatedVars);
 
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
@@ -170,6 +189,7 @@ public class GreedySolver {
         // remove current constraint (duplicated in ::fail)
         final Set<CriticalEdge> removedEdges = completeness.remove(constraint, unifier);
         constraints.activateFromEdges(removedEdges, debug);
+        this.removedEdges.addAll(removedEdges);
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
