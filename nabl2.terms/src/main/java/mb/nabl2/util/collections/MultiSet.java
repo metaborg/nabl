@@ -1,5 +1,7 @@
 package mb.nabl2.util.collections;
 
+import java.util.stream.Collectors;
+
 import org.metaborg.util.functions.Action2;
 
 import io.usethesource.capsule.Map;
@@ -152,6 +154,11 @@ public abstract class MultiSet<E> {
         }
 
 
+    }
+
+    @Override public String toString() {
+        return elements().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
+                .collect(Collectors.joining(", ", "{", "}"));
     }
 
 }
