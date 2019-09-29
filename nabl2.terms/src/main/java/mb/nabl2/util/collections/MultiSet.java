@@ -14,6 +14,10 @@ public abstract class MultiSet<E> {
         return elements().isEmpty();
     }
 
+    public int size() {
+        return elements().values().stream().mapToInt(i -> i).sum();
+    }
+
     public int count(E e) {
         return elements().getOrDefault(e, 0);
     }
@@ -47,8 +51,11 @@ public abstract class MultiSet<E> {
                 throw new IllegalArgumentException("count must be positive");
             }
             final int c = elements.getOrDefault(e, 0) + n;
-            return new MultiSet.Immutable<>(elements.__put(e, c));
-
+            if(c > 0) {
+                return new MultiSet.Immutable<>(elements.__put(e, c));
+            } else {
+                return new MultiSet.Immutable<>(elements.__remove(e));
+            }
         }
 
         public Immutable<E> remove(E e) {
@@ -60,10 +67,10 @@ public abstract class MultiSet<E> {
                 throw new IllegalArgumentException("count must be positive");
             }
             final int c = Math.max(0, elements.getOrDefault(e, 0) - n);
-            if(c == 0) {
-                return new MultiSet.Immutable<>(elements.__remove(e));
-            } else {
+            if(c > 0) {
                 return new MultiSet.Immutable<>(elements.__put(e, c));
+            } else {
+                return new MultiSet.Immutable<>(elements.__remove(e));
             }
 
         }
@@ -109,7 +116,11 @@ public abstract class MultiSet<E> {
                 throw new IllegalArgumentException("count must be positive");
             }
             final int c = elements.getOrDefault(e, 0) + n;
-            elements.__put(e, c);
+            if(c > 0) {
+                elements.__put(e, c);
+            } else {
+                elements.__remove(e);
+            }
             return c;
         }
 
@@ -128,10 +139,10 @@ public abstract class MultiSet<E> {
                 throw new IllegalArgumentException("count must be positive");
             }
             final int c = Math.max(0, elements.getOrDefault(e, 0) - n);
-            if(c == 0) {
-                elements.__remove(e);
-            } else {
+            if(c > 0) {
                 elements.__put(e, c);
+            } else {
+                elements.__remove(e);
             }
             return c;
         }
