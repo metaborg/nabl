@@ -9,7 +9,7 @@ import org.immutables.value.Value;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.regexp.IAlphabet;
 import mb.nabl2.terms.ITerm;
@@ -43,6 +43,6 @@ public abstract class ASpec {
 
     @Value.Parameter public abstract IAlphabet<ITerm> labels();
 
-    @Value.Parameter public abstract Multimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
+    @Value.Parameter public abstract SetMultimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
 
 }
