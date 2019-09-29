@@ -113,7 +113,7 @@ class GreedySolver {
         this.completeness = completeness.melt();
         // the constraints should already be reflected in completeness
         final IsComplete isComplete = (s, l, st) -> {
-            return completeness.isComplete(s, l, st.unifier());
+            return this.completeness.isComplete(s, l, st.unifier());
         };
         this.params = new ConstraintContext(isComplete, debug);
     }
