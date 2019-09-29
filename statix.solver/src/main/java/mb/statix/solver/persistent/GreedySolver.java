@@ -393,7 +393,7 @@ class GreedySolver {
                     final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
                     final List<ITerm> pathTerms =
                             paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
-                    final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);
+                    final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                     return successNew(c, state, ImmutableList.of(C), fuel);
                 } catch(IncompleteDataException e) {
                     params.debug().info("Query resolution delayed: {}", e.getMessage());
