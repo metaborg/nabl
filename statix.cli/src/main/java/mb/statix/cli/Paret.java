@@ -2,6 +2,10 @@ package mb.statix.cli;
 
 import static mb.statix.random.strategy.SearchStrategies.*;
 
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
+
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
 import mb.statix.random.FocusedSearchState;
@@ -58,7 +62,7 @@ public class Paret {
         // @formatter:off
         return repeat(limit(10, fix(
             seq( selectConstraint(1)
-               , match( limit(3, seq(expand(), infer()))
+               , match( limit(3, seq(expand(1, ruleWeights), infer()))
                       , limit(3, seq(resolve(), infer()))
                       )
             ),
@@ -67,6 +71,11 @@ public class Paret {
         )));
         // @formatter:on
     }
+
+    // @formatter:off
+    private static Map<String,Integer> ruleWeights = ImmutableMap.<String, Integer>builder()
+        .build();
+    // @formatter:on
 
     public static SearchStrategy<SearchState, Either2<FocusedSearchState<CUser>, FocusedSearchState<CResolveQuery>>>
             selectConstraint(int limit) {

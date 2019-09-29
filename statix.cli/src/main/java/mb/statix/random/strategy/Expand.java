@@ -27,9 +27,11 @@ import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
 
 final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
+    private final int defaultWeight;
     private final java.util.Map<String, Integer> weights;
 
-    Expand(java.util.Map<String, Integer> weights) {
+    Expand(int defaultWeight, java.util.Map<String, Integer> weights) {
+        this.defaultWeight = defaultWeight;
         this.weights = weights;
     }
 
@@ -38,7 +40,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         final CUser predicate = input.focus();
         final java.util.Map<Rule, Integer> rules = new HashMap<>();
         for(Rule rule : input.state().spec().rules().get(predicate.name())) {
-            rules.put(rule, weights.getOrDefault(rule.label(), 1));
+            rules.put(rule, weights.getOrDefault(rule.label(), defaultWeight));
         }
         return SearchNodes.of(parent, this.toString() + "[" + rules.size() + "]",
                 WeightedDrawSet.of(rules).enumerate(ctx.rnd()).map(Entry::getKey).flatMap(rule -> {

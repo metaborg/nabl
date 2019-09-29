@@ -19,7 +19,6 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.CapsuleUtil;
-import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -155,9 +154,15 @@ public class SearchState {
             printLn.apply("|   " + var + " : " + term);
         }
         printLn.apply("| unifier: " + state.unifier().toString());
-        printLn.apply("| constraints: " + Constraints.toString(constraints, t -> pp.apply(t, unifier)));
-        printLn.apply("| delays: " + Constraints.toString(delays.entrySet().stream().map(Entry::getKey)::iterator,
-                t -> pp.apply(t, unifier)));
+        printLn.apply("| completeness: " + completeness.toString());
+        printLn.apply("| constraints:");
+        for(IConstraint c : constraints) {
+            printLn.apply("|   " + c.toString(t -> pp.apply(t, unifier)));
+        }
+        printLn.apply("| delays:");
+        for(Entry<IConstraint, Delay> e : delays.entrySet()) {
+            printLn.apply("|   " + e.getValue() + " : " + e.getKey().toString(t -> pp.apply(t, unifier)));
+        }
     }
 
     @Override public String toString() {

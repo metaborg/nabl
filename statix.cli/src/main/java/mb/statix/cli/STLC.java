@@ -7,7 +7,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
@@ -94,8 +93,7 @@ public class STLC {
 
     public static SearchStrategy<FocusedSearchState<CUser>, SearchState> expandExpSearch(int ruleLimit) {
         // @formatter:off
-        return limit(ruleLimit, expand(ImmutableMap.of(
-        )));
+        return limit(ruleLimit, expand());
         // @formatter:on
     }
 

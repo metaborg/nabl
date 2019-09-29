@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CResolveQuery;
-import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.random.FocusedSearchState;
@@ -64,16 +63,21 @@ public final class SearchStrategies {
         return new Select<>(cls, include);
     }
 
-    public static final SearchStrategy<SearchState, SearchState> transform(Function1<IConstraint, IConstraint> f) {
-        return new Transform(f);
+    public static final SearchStrategy<SearchState, SearchState> filter(Predicate1<IConstraint> p) {
+        return new FilterConstraints(p);
+    }
+
+    public static final SearchStrategy<SearchState, SearchState> map(Function1<IConstraint, IConstraint> f) {
+        return new MapConstraints(f);
     }
 
     public static final SearchStrategy<FocusedSearchState<CUser>, SearchState> expand() {
-        return expand(ImmutableMap.of());
+        return expand(1, ImmutableMap.of());
     }
 
-    public static final SearchStrategy<FocusedSearchState<CUser>, SearchState> expand(Map<String, Integer> weights) {
-        return new Expand(weights);
+    public static final SearchStrategy<FocusedSearchState<CUser>, SearchState> expand(int defaultWeight,
+            Map<String, Integer> weights) {
+        return new Expand(defaultWeight, weights);
     }
 
     public static final SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> resolve() {
@@ -103,10 +107,9 @@ public final class SearchStrategies {
 
     // util
 
-    public static SearchStrategy<SearchState, SearchState> transformPred(String pattern,
-            Function1<CUser, IConstraint> f) {
+    public static SearchStrategy<SearchState, SearchState> mapPred(String pattern, Function1<CUser, IConstraint> f) {
         final mb.statix.random.predicate.Match match = new mb.statix.random.predicate.Match(pattern);
-        return transform(Constraints.bottomup(Constraints.<IConstraint>cases().user(c -> {
+        return map(Constraints.bottomup(Constraints.<IConstraint>cases().user(c -> {
             if(match.test(c)) {
                 return f.apply(c);
             } else {
@@ -118,20 +121,19 @@ public final class SearchStrategies {
     }
 
     public static SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
-        return transformPred(pattern, c -> {
+        return mapPred(pattern, c -> {
             return new CConj(c, f.apply(c), c);
         });
     }
 
     public static SearchStrategy<SearchState, SearchState> dropPred(String pattern) {
-        return transformPred(pattern, c -> {
-            return new CTrue(c);
-        });
+        final mb.statix.random.predicate.Match match = new mb.statix.random.predicate.Match(pattern);
+        return filter(Constraints.<Boolean>cases().user(c -> !match.test(c)).otherwise(c -> true)::apply);
     }
 
     public static SearchStrategy<SearchState, SearchState> dropAst() {
-        return transform(Constraints.bottomup(Constraints.<IConstraint>cases().termId(c -> new CTrue(c))
-                .termProperty(c -> new CTrue(c)).otherwise(c -> c)));
+        return filter(
+                Constraints.<Boolean>cases().termId(c -> false).termProperty(c -> false).otherwise(c -> true)::apply);
     }
 
 
