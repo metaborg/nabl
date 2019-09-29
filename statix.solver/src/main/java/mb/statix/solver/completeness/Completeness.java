@@ -98,12 +98,13 @@ public abstract class Completeness implements ICompleteness {
                 getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                     final MultiSet.Transient<ITerm> labels =
                             incomplete.getOrDefault(scopeOrVar, MultiSet.Immutable.of()).melt();
-                    labels.remove(label);
-                    if(!labels.isEmpty()) {
-                        incomplete.__put(scopeOrVar, labels.freeze());
-                    } else {
-                        incomplete.__remove(scopeOrVar);
+                    if(labels.remove(label) == 0) {
                         removedEdges.__insert(CriticalEdge.of(scopeOrVar, label));
+                    }
+                    if(labels.isEmpty()) {
+                        incomplete.__remove(scopeOrVar);
+                    } else {
+                        incomplete.__put(scopeOrVar, labels.freeze());
                     }
                 });
             });
