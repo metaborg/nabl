@@ -45,6 +45,16 @@ public class Delay extends Throwable {
         return new Delay(retainedVars, retainedCriticalEdges.freeze());
     }
 
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Delay(");
+        sb.append("vars=").append(vars);
+        sb.append(", ");
+        sb.append("criticalEdges=").append(criticalEdges);
+        sb.append(")");
+        return sb.toString();
+    }
+
     public static Delay of() {
         return new Delay(Set.Immutable.of(), Set.Immutable.of());
     }
