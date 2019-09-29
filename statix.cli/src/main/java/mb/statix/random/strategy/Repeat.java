@@ -16,7 +16,7 @@ final class Repeat<I, O> extends SearchStrategy<I, O> {
 
     @Override public SearchNodes<O> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
         final Stream<SearchNode<O>> nodes = Stream.generate(() -> s.apply(ctx, input, parent).nodes()).flatMap(n -> n);
-        return SearchNodes.of(parent, this.toString(), nodes);
+        return SearchNodes.of(parent, nodes);
     }
 
     @Override public String toString() {

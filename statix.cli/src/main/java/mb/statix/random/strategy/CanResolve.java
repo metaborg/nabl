@@ -67,7 +67,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
             throw new MetaborgRuntimeException(e);
         }
 
-        return SearchNodes.of(parent, this.toString() + "[resolves]", new SearchNode<>(ctx.nextNodeId(), input, parent, parent.desc()));
+        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), input, parent, parent.desc()));
     }
 
     @Override public String toString() {

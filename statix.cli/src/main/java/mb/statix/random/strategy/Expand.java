@@ -42,44 +42,43 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         for(Rule rule : input.state().spec().rules().get(predicate.name())) {
             rules.put(rule, weights.getOrDefault(rule.label(), defaultWeight));
         }
-        return SearchNodes.of(parent, this.toString() + "[" + rules.size() + "]",
-                WeightedDrawSet.of(rules).enumerate(ctx.rnd()).map(Entry::getKey).flatMap(rule -> {
-                    return Streams.stream(RuleUtil.apply(input.state(), rule, predicate.args(), predicate))
-                            .map(resultAndConstraint -> {
-                                final SolverResult applyResult = resultAndConstraint._1();
-                                final IState.Immutable applyState = applyResult.state();
-                                final IConstraint applyConstraint = resultAndConstraint._2();
+        return SearchNodes.of(parent, WeightedDrawSet.of(rules).enumerate(ctx.rnd()).map(Entry::getKey).flatMap(rule -> {
+            return Streams.stream(RuleUtil.apply(input.state(), rule, predicate.args(), predicate))
+                    .map(resultAndConstraint -> {
+                        final SolverResult applyResult = resultAndConstraint._1();
+                        final IState.Immutable applyState = applyResult.state();
+                        final IConstraint applyConstraint = resultAndConstraint._2();
 
-                                // update constraints
-                                final Set.Transient<IConstraint> constraints = input.constraints().asTransient();
-                                constraints.__insert(applyConstraint);
-                                constraints.__remove(predicate);
+                        // update constraints
+                        final Set.Transient<IConstraint> constraints = input.constraints().asTransient();
+                        constraints.__insert(applyConstraint);
+                        constraints.__remove(predicate);
 
-                                // update completeness
-                                final ICompleteness.Transient completeness = input.completeness().melt();
-                                completeness.updateAll(applyResult.updatedVars(), applyState.unifier());
-                                completeness.add(applyConstraint, applyState.unifier());
-                                java.util.Set<CriticalEdge> removedEdges =
-                                        completeness.remove(predicate, applyState.unifier());
+                        // update completeness
+                        final ICompleteness.Transient completeness = input.completeness().melt();
+                        completeness.updateAll(applyResult.updatedVars(), applyState.unifier());
+                        completeness.add(applyConstraint, applyState.unifier());
+                        java.util.Set<CriticalEdge> removedEdges =
+                                completeness.remove(predicate, applyState.unifier());
 
-                                // update delays
-                                final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
-                                input.delays().forEach((c, d) -> {
-                                    if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
-                                        constraints.__insert(c);
-                                    } else {
-                                        delays.__put(c, d);
-                                    }
-                                });
+                        // update delays
+                        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+                        input.delays().forEach((c, d) -> {
+                            if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
+                                constraints.__insert(c);
+                            } else {
+                                delays.__put(c, d);
+                            }
+                        });
 
-                                // return new state
-                                final SearchState output = input.replace(applyState, constraints.freeze(),
-                                        delays.freeze(), completeness.freeze());
-                                final String head = rule.name() + rule.params().stream().map(Object::toString)
-                                        .collect(Collectors.joining(", ", "(", ")"));
-                                return new SearchNode<>(ctx.nextNodeId(), output, parent, "expand(" + head + ")");
-                            });
-                }));
+                        // return new state
+                        final SearchState output = input.replace(applyState, constraints.freeze(),
+                                delays.freeze(), completeness.freeze());
+                        final String head = rule.name() + rule.params().stream().map(Object::toString)
+                                .collect(Collectors.joining(", ", "(", ")"));
+                        return new SearchNode<>(ctx.nextNodeId(), output, parent, "expand(" + head + ")");
+                    });
+        }));
     }
 
     @Override public String toString() {

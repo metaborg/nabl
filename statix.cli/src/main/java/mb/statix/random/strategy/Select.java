@@ -30,8 +30,7 @@ final class Select<C extends IConstraint> extends SearchStrategy<SearchState, Fo
         if(candidates.isEmpty()) {
             return SearchNodes.empty(parent, this.toString() + "[no candidates]");
         }
-        final String desc = this.toString() + "[" + candidates.size() + "]";
-        return SearchNodes.of(parent, desc, WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
+        return SearchNodes.of(parent, WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
             final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());
             return new SearchNode<>(ctx.nextNodeId(), output, parent,
                     "select(" + c.getKey().toString(t -> input.state().unifier().toString(t)) + ")");

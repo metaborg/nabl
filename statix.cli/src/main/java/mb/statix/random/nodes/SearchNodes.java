@@ -66,12 +66,12 @@ public class SearchNodes<O> implements SearchElement {
         return new SearchNodes<>(Stream.empty(), parent, desc);
     }
 
-    @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, String desc, SearchNode<O>... nodes) {
-        return new SearchNodes<>(ImmutableList.copyOf(nodes).stream(), parent, desc);
+    @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, SearchNode<O>... nodes) {
+        return new SearchNodes<>(ImmutableList.copyOf(nodes).stream(), parent, "");
     }
 
-    public static <O> SearchNodes<O> of(SearchNode<?> parent, String desc, Stream<SearchNode<O>> nodes) {
-        return new SearchNodes<>(nodes, parent, desc);
+    public static <O> SearchNodes<O> of(SearchNode<?> parent, Stream<SearchNode<O>> nodes) {
+        return new SearchNodes<>(nodes, parent, "");
     }
 
 }

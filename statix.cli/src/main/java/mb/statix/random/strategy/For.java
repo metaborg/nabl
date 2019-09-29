@@ -22,7 +22,7 @@ final class For<I, O> extends SearchStrategy<I, O> {
         final Stream<SearchNode<O>> nodes = IntStream.range(0, n).boxed().flatMap(i -> {
             return s.apply(ctx, input, parent).nodes();
         });
-        return SearchNodes.of(parent, this.toString(), nodes);
+        return SearchNodes.of(parent, nodes);
     }
 
     @Override public String toString() {

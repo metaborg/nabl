@@ -47,7 +47,7 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
 
         final SearchState newState = input.delay(delays.entrySet());
         final String desc = this.toString() + "[" + delays.size() + "]";
-        return SearchNodes.of(parent, desc, new SearchNode<>(ctx.nextNodeId(), newState, parent, desc));
+        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), newState, parent, desc));
     }
 
     private Optional<Delay> checkDelay(CResolveQuery query, IState.Immutable state,

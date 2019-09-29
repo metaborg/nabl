@@ -62,7 +62,7 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
             }
             return Optional.empty();
         });
-        return SearchNodes.of(parent, this.toString(), fixNodes);
+        return SearchNodes.of(parent, fixNodes);
     }
 
     @Override public String toString() {

@@ -26,10 +26,10 @@ final class Infer extends SearchStrategy<SearchState, SearchState> {
         if(resultConfig.hasErrors()) {
             final String msg = Constraints.toString(resultConfig.errors(),
                     new UnifierFormatter(resultConfig.state().unifier(), 3));
-            return SearchNodes.empty(parent, msg);
+            return SearchNodes.empty(parent, "infer[" + msg + "]");
         }
         final SearchState newState = state.replace(resultConfig);
-        return SearchNodes.of(parent, this.toString(), new SearchNode<>(ctx.nextNodeId(), newState, parent, this.toString()));
+        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), newState, parent, this.toString()));
     }
 
     @Override public String toString() {

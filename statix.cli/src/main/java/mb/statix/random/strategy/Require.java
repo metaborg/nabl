@@ -22,7 +22,7 @@ final class Require<I, O> extends SearchStrategy<I, O> {
         if(!it.hasNext()) {
             return SearchNodes.empty(parent, this.toString() + "[no results]");
         }
-        return SearchNodes.of(parent, nodes.desc(), Streams.stream(it));
+        return SearchNodes.of(parent, Streams.stream(it));
     }
 
     @Override public String toString() {

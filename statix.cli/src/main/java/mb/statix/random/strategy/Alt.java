@@ -58,8 +58,7 @@ final class Alt<I, O1, O2> extends SearchStrategy<I, Either2<O1, O2>> {
             return next;
         });
 
-        String desc = "(" + ns1.desc() + " | " + ns2.desc() + ")<";
-        return SearchNodes.of(parent, desc, nodes);
+        return SearchNodes.of(parent, nodes);
     }
 
     @Override public String toString() {
