@@ -154,7 +154,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                         // add new constraints
                         constraints.addAll(result.newConstraints());
                         completeness.addAll(result.newConstraints(), unifier); // must come before ICompleteness::remove
-                        if(!result.newConstraints().isEmpty()) {
+                        if(subDebug.isEnabled(Level.Info) && !result.newConstraints().isEmpty()) {
                             subDebug.info("Simplified to:");
                             for(IConstraint newConstraint : result.newConstraints()) {
                                 subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
@@ -164,12 +164,10 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                         // add delayed constraints
                         result.delayedConstraints().forEach((d, c) -> constraints.delay(c, d));
                         completeness.addAll(result.delayedConstraints().values(), unifier); // must come before ICompleteness::remove
-                        if(!result.delayedConstraints().isEmpty()) {
+                        if(subDebug.isEnabled(Level.Info) && !result.delayedConstraints().isEmpty()) {
                             subDebug.info("Delayed:");
                             for(IConstraint delayedConstraint : result.delayedConstraints().values()) {
-                                if(subDebug.isEnabled(Level.Info)) {
-                                    subDebug.info(" * {}", Solver.toString(delayedConstraint, state.unifier()));
-                                }
+                                subDebug.info(" * {}", Solver.toString(delayedConstraint, state.unifier()));
                             }
                         }
                     } else {
@@ -313,7 +311,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
         final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-        return Optional.of(StepResult.of(newState, ImmutableSet.of(), ImmutableList.of(newConstraint),
+        return Optional.of(StepResult.of(newState, ImmutableSet.of(), Constraints.disjoin(newConstraint),
                 ImmutableMap.of(), existentials));
     }
 

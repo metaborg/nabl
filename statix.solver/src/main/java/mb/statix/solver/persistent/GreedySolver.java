@@ -166,24 +166,20 @@ class GreedySolver {
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
         completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
-        if(!newConstraints.isEmpty()) {
+        if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
             subDebug.info("Simplified to:");
             for(IConstraint newConstraint : newConstraints) {
-                if(subDebug.isEnabled(Level.Info)) {
-                    subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
-                }
+                subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
             }
         }
 
         // add delayed constraints
         delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
         completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
-        if(!delayedConstraints.isEmpty()) {
+        if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
             subDebug.info("Delayed:");
             for(IConstraint delayedConstraint : delayedConstraints.values()) {
-                if(subDebug.isEnabled(Level.Info)) {
-                    subDebug.info(" * {}", Solver.toString(delayedConstraint, state.unifier()));
-                }
+                subDebug.info(" * {}", Solver.toString(delayedConstraint, unifier));
             }
         }
 
@@ -220,6 +216,7 @@ class GreedySolver {
         // remove current constraint (duplicated in ::success)
         final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
         constraints.activateFromEdges(removedEdges, debug);
+        this.removedEdges.addAll(removedEdges);
         return state;
     }
 
@@ -320,7 +317,7 @@ class GreedySolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                return success(c, newState, ImmutableSet.of(), ImmutableList.of(newConstraint), ImmutableMap.of(),
+                return success(c, newState, ImmutableSet.of(), Constraints.disjoin(newConstraint), ImmutableMap.of(),
                         existentials, fuel);
             }
 
