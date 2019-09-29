@@ -21,6 +21,7 @@ import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchElement;
 import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
 import mb.statix.random.spoofax.StatixGenerator;
 import mb.statix.random.util.StreamProgressPrinter;
 import mb.statix.solver.IConstraint;
@@ -29,6 +30,8 @@ public class StatixGenerate {
 
     private static final ILogger log = LoggerUtils.logger(StatixGenerate.class);
 
+    private static final boolean DEBUG = true;
+    private static final boolean TRACE = false;
     private static final String VAR = "e";
 
     private final Statix STX;
@@ -83,8 +86,11 @@ public class StatixGenerate {
 
     }
 
-    public static void logSuccess(ILogger log, Level lvl, SearchNode<SearchState> node,
+    private static void logSuccess(ILogger log, Level lvl, SearchNode<SearchState> node,
             Function1<SearchState, String> pp) {
+        if(!DEBUG) {
+            return;
+        }
         log.log(lvl, "=== SUCCESS ===");
         log.log(lvl, " * {}", pp.apply(node.output()));
         log.log(lvl, "---- Trace ----");
@@ -92,21 +98,34 @@ public class StatixGenerate {
         log.log(lvl, "===============");
     }
 
-    public static void logFailure(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
+    private static void logFailure(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
+        if(!DEBUG) {
+            return;
+        }
         log.log(lvl, "=== FAILURE ===");
         logTrace(log, lvl, node, pp);
         log.log(lvl, "===============");
     }
 
-    public static void logTrace(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
-        SearchElement traceNode = node;
-        do {
-            log.log(lvl, " * [{}] {}", traceNode.id(), traceNode.desc());
-            if(traceNode instanceof SearchNode && ((SearchNode<?>) traceNode).output() instanceof SearchState) {
-                SearchState state = (SearchState) ((SearchNode<?>) traceNode).output();
-                state.print(ln -> log.log(lvl, "   {}", ln), (t, u) -> u.toString(t));
+    private static void logTrace(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
+        if(node instanceof SearchNodes) {
+            SearchNodes<?> nodes = (SearchNodes<?>) node;
+            if(!nodes.success()) {
+                log.log(lvl, " * {}", nodes.error());
             }
-        } while((traceNode = traceNode.parent()) != null);
+            logTrace(log, lvl, nodes.parent(), pp);
+        } else {
+            int depth = 0;
+            SearchNode<?> traceNode = (SearchNode<?>) node;
+            do {
+                log.log(lvl, " * [{}] {}", traceNode.id(), traceNode.desc());
+                if((++depth == 1 || TRACE) && traceNode.output() instanceof SearchState) {
+                    SearchState state = (SearchState) ((SearchNode<?>) traceNode).output();
+                    state.print(ln -> log.log(lvl, "   {}", ln), (t, u) -> u.toString(t));
+                }
+            } while((traceNode = traceNode.parent()) != null);
+            log.log(lvl, " # depth {}", depth);
+        }
     }
 
 }

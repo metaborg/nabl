@@ -16,7 +16,7 @@ public class SearchNode<O> implements SearchElement {
         this.desc = desc;
     }
 
-    @Override public int id() {
+    public int id() {
         return id;
     }
 
@@ -32,7 +32,7 @@ public class SearchNode<O> implements SearchElement {
         return parent;
     }
 
-    @Override public String desc() {
+    public String desc() {
         return desc;
     }
 

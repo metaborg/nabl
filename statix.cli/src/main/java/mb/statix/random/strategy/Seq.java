@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
@@ -24,27 +25,25 @@ final class Seq<I1, O, I2> extends SearchStrategy<I1, O> {
 
     @Override public SearchNodes<O> doApply(SearchContext ctx, I1 i1, SearchNode<?> parent) {
         final SearchNodes<I2> sn1 = s1.apply(ctx, i1, parent);
-        final Iterator<SearchNode<I2>> ns1 = sn1.nodes().iterator();
-        if(!ns1.hasNext()) {
-            return SearchNodes.empty(sn1.parent(), sn1.desc());
+        if(!sn1.success()) {
+            return SearchNodes.failure(sn1.parent(), sn1.error());
         }
 
-        final AtomicBoolean collectDesc = new AtomicBoolean(true);
-        final List<String> descs = Lists.newArrayList();
-        final Iterator<SearchNode<O>> nodes = Streams.stream(ns1).flatMap(n1 -> {
+        final AtomicBoolean collectErrors = new AtomicBoolean(true);
+        final List<String> errors = Lists.newArrayList();
+        final Iterator<SearchNode<O>> nodes = sn1.nodes().flatMap(n1 -> {
             final SearchNodes<O> sn2 = s2.apply(ctx, n1.output(), n1);
-            final Iterator<SearchNode<O>> ns2 = sn2.nodes().iterator();
-            if(collectDesc.get() && !ns2.hasNext()) {
-                final String desc = n1.desc() + " . " + sn2.desc();
-                descs.add(desc);
+            if(collectErrors.get() && !sn2.success()) {
+                final String desc = "( " + sn2.error() + " . " + n1.desc() + " )";
+                errors.add(desc);
             }
-            return Streams.stream(ns2);
+            return sn2.success() ? sn2.nodes() : Stream.empty();
         }).iterator();
         if(!nodes.hasNext()) {
-            final String desc = descs.stream().collect(Collectors.joining(" & ", "(", ")"));
-            return SearchNodes.empty(sn1.parent(), desc);
+            final String error = errors.stream().collect(Collectors.joining(" & ", "( ", " )"));
+            return SearchNodes.failure(sn1.parent(), error);
         }
-        collectDesc.set(false);
+        collectErrors.set(false);
 
         return SearchNodes.of(parent, Streams.stream(nodes));
     }

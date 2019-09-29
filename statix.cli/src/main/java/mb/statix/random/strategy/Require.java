@@ -20,7 +20,7 @@ final class Require<I, O> extends SearchStrategy<I, O> {
         SearchNodes<O> nodes = s.apply(ctx, input, parent);
         Iterator<SearchNode<O>> it = nodes.nodes().iterator();
         if(!it.hasNext()) {
-            return SearchNodes.empty(parent, this.toString() + "[no results]");
+            return SearchNodes.failure(parent, this.toString() + "[no results]");
         }
         return SearchNodes.of(parent, Streams.stream(it));
     }

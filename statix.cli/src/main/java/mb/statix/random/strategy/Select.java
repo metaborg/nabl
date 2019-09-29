@@ -28,7 +28,7 @@ final class Select<C extends IConstraint> extends SearchStrategy<SearchState, Fo
                 input.constraints().stream().filter(c -> cls.isInstance(c)).map(c -> (C) c).filter(include::test)
                         .collect(CapsuleCollectors.toSet());
         if(candidates.isEmpty()) {
-            return SearchNodes.empty(parent, this.toString() + "[no candidates]");
+            return SearchNodes.failure(parent, this.toString() + "[no candidates]");
         }
         return SearchNodes.of(parent, WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
             final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());

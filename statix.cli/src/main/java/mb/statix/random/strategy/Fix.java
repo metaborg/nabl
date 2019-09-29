@@ -35,11 +35,10 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
         final Deque<Iterator<SearchNode<SearchState>>> stack = new LinkedList<>();
         final Action1<SearchNodes<SearchState>> push = ns -> {
-            final Iterator<SearchNode<SearchState>> it = ns.nodes().iterator();
-            if(it.hasNext()) {
-                stack.push(it);
-            } else {
+            if(!ns.success()) {
                 ctx.failure(ns);
+            } else {
+                stack.push(ns.nodes().iterator());
             }
         };
         final SearchNodes<SearchState> initNodes = infer.apply(ctx, input, parent);
