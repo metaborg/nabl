@@ -37,10 +37,14 @@ public final class SearchStrategies {
         return new Seq<>(s1, s2);
     }
 
-    public static final <I, O1, O2> SearchStrategy<I, Either2<O1, O2>> alt(SearchStrategy<I, O1> s1,
+    public static final <I, O1, O2> SearchStrategy<I, Either2<O1, O2>> interleavingAlt(SearchStrategy<I, O1> s1,
             SearchStrategy<I, O2> s2) {
-        return new Alt<>(s1, s2);
+        return new InterleavingAlt<>(s1, s2);
+    }
 
+    public static final <I, O1, O2> SearchStrategy<I, Either2<O1, O2>> concatAlt(SearchStrategy<I, O1> s1,
+            SearchStrategy<I, O2> s2) {
+        return new ConcatAlt<>(s1, s2);
     }
 
     public static final <I1, I2, O> SearchStrategy<Either2<I1, I2>, O> match(SearchStrategy<I1, O> s1,

@@ -42,6 +42,9 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         for(Rule rule : input.state().spec().rules().get(predicate.name())) {
             rules.put(rule, weights.getOrDefault(rule.label(), defaultWeight));
         }
+        if(rules.isEmpty()) {
+            return SearchNodes.failure(parent, "expand[no rules for " + predicate.name() + "]");
+        }
         return SearchNodes.of(parent, WeightedDrawSet.of(rules).enumerate(ctx.rnd()).map(Entry::getKey).flatMap(rule -> {
             return Streams.stream(RuleUtil.apply(input.state(), rule, predicate.args(), predicate))
                     .map(resultAndConstraint -> {

@@ -11,11 +11,11 @@ import mb.statix.random.nodes.SearchNodes;
 import mb.statix.random.util.Either2;
 import mb.statix.random.util.StreamUtil;
 
-final class Alt<I, O1, O2> extends SearchStrategy<I, Either2<O1, O2>> {
+final class InterleavingAlt<I, O1, O2> extends SearchStrategy<I, Either2<O1, O2>> {
     private final SearchStrategy<I, O2> s2;
     private final SearchStrategy<I, O1> s1;
 
-    Alt(SearchStrategy<I, O1> s1, SearchStrategy<I, O2> s2) {
+    InterleavingAlt(SearchStrategy<I, O1> s1, SearchStrategy<I, O2> s2) {
         this.s2 = s2;
         this.s1 = s1;
     }

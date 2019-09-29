@@ -2,7 +2,6 @@ package mb.statix.random.strategy;
 
 import org.metaborg.core.MetaborgRuntimeException;
 
-import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.statix.constraints.Constraints;
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchState;
@@ -24,8 +23,7 @@ final class Infer extends SearchStrategy<SearchState, SearchState> {
             throw new MetaborgRuntimeException(e);
         }
         if(resultConfig.hasErrors()) {
-            final String msg = Constraints.toString(resultConfig.errors(),
-                    new UnifierFormatter(resultConfig.state().unifier(), 3));
+            final String msg = Constraints.toString(resultConfig.errors(), resultConfig.state().unifier()::toString);
             return SearchNodes.failure(parent, "infer[" + msg + "]");
         }
         final SearchState newState = state.replace(resultConfig);

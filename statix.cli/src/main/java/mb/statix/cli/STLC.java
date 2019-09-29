@@ -69,7 +69,7 @@ public class STLC {
     public static SearchStrategy<SearchState, Either2<FocusedSearchState<CUser>, FocusedSearchState<CResolveQuery>>>
             selectConstraint(int limit) {
         // @formatter:off
-        return limit(limit, alt(
+        return limit(limit, interleavingAlt(
             select(CUser.class, new Not<>(new Match("allFields|dst|subField|subFields|subType|unique|gen_.*"))),
             seq(select(CResolveQuery.class, new Any<>()), canResolve())
         ));

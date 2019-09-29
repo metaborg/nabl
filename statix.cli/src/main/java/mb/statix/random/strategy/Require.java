@@ -18,9 +18,12 @@ final class Require<I, O> extends SearchStrategy<I, O> {
 
     @Override protected SearchNodes<O> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
         SearchNodes<O> nodes = s.apply(ctx, input, parent);
+        if(!nodes.success()) {
+            return nodes;
+        }
         Iterator<SearchNode<O>> it = nodes.nodes().iterator();
         if(!it.hasNext()) {
-            return SearchNodes.failure(parent, this.toString() + "[no results]");
+            return SearchNodes.failure(parent, "require[no results]");
         }
         return SearchNodes.of(parent, Streams.stream(it));
     }
@@ -28,4 +31,5 @@ final class Require<I, O> extends SearchStrategy<I, O> {
     @Override public String toString() {
         return "require(" + s + ")";
     }
+
 }
