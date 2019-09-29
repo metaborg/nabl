@@ -101,15 +101,25 @@ public abstract class MultiSet<E> {
             return elements;
         }
 
-        /*
-         * @return New count
+        /**
+         * Add an element once.
+         * 
+         * @param e
+         *            Element to be added
+         * @return New count for the element.
          */
         public int add(E e) {
             return add(e, 1);
         }
 
-        /*
-         * @return New count
+        /**
+         * Add an element n times.
+         * 
+         * @param e
+         *            Element to be added
+         * @param n
+         *            Additions, greater or equal to zero
+         * @return New count for the element
          */
         public int add(E e, int n) {
             if(n < 0) {
@@ -124,15 +134,25 @@ public abstract class MultiSet<E> {
             return c;
         }
 
-        /*
-         * @return New count
+        /**
+         * Remove an element once.
+         * 
+         * @param e
+         *            Element to be removed
+         * @return New count for the element
          */
         public int remove(E e) {
             return remove(e, 1);
         }
 
-        /*
-         * @return New count
+        /**
+         * Remove an element up to n times.
+         * 
+         * @param e
+         *            Element to be removed
+         * @param n
+         *            Removals, greater or equal to zero
+         * @return New count for the element
          */
         public int remove(E e, int n) {
             if(n < 0) {
@@ -147,8 +167,10 @@ public abstract class MultiSet<E> {
             return c;
         }
 
-        /*
-         * @return Old count
+        /**
+         * Remove an element completely.
+         * 
+         * @return Old count for the element
          */
         public int removeAll(E e) {
             final int c = elements.getOrDefault(e, 0);
