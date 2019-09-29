@@ -20,6 +20,11 @@ public abstract class Completeness implements ICompleteness {
 
     protected abstract Map<ITerm, ? extends MultiSet<ITerm>> incomplete();
 
+    @Override public boolean isEmpty() {
+        // we assume there are no entries with empty values
+        return incomplete().isEmpty();
+    }
+
     @Override public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
         if(!label.isGround()) {
             throw new IllegalArgumentException("Label must be ground");
@@ -84,7 +89,6 @@ public abstract class Completeness implements ICompleteness {
                     labels.add(label);
                     incomplete.__put(scopeOrVar, labels.freeze());
                 });
-
             });
         }
 
@@ -94,10 +98,13 @@ public abstract class Completeness implements ICompleteness {
                 getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                     final MultiSet.Transient<ITerm> labels =
                             incomplete.getOrDefault(scopeOrVar, MultiSet.Immutable.of()).melt();
-                    if(labels.remove(label) == 0) {
+                    labels.remove(label);
+                    if(!labels.isEmpty()) {
+                        incomplete.__put(scopeOrVar, labels.freeze());
+                    } else {
+                        incomplete.__remove(scopeOrVar);
                         removedEdges.__insert(CriticalEdge.of(scopeOrVar, label));
                     }
-                    incomplete.__put(scopeOrVar, labels.freeze());
                 });
             });
             return removedEdges.freeze();
