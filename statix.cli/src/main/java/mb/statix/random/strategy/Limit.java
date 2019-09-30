@@ -18,7 +18,7 @@ final class Limit<I, O> extends SearchStrategy<I, O> {
 
     @Override public SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
         final SearchNodes<O> ns = s.apply(ctx, node);
-        Function0<String> desc = () -> "limit(" + ns + ", " + s.toString() + ")";
+        Function0<String> desc = () -> "limit(" + n + ", [" + ns.desc() + "])";
         return SearchNodes.of(node, desc, ns.nodes().limit(n));
     }
 
