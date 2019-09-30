@@ -81,13 +81,12 @@ public class StatixGenerate {
 
         log.info("Generating random terms.");
         final SummaryStatistics stats = new SummaryStatistics();
-        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(100).iterator());
+        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(42).iterator());
         progress.done();
         results.forEach(s -> {
             s.state().unifier().size(proj.apply(s)).ifFinite(size -> {
                 stats.addValue(size.doubleValue());
             });
-            ;
             System.out.println(pretty.apply(s));
         });
         log.info("Generated {} random terms.", results.size());
@@ -119,9 +118,7 @@ public class StatixGenerate {
     private static void logTrace(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
         if(node instanceof SearchNodes) {
             SearchNodes<?> nodes = (SearchNodes<?>) node;
-            if(!nodes.success()) {
-                log.log(lvl, " * {}", nodes.error());
-            }
+            log.log(lvl, " * {}", nodes.desc());
             logTrace(log, lvl, nodes.parent(), pp);
         } else {
             int depth = 0;

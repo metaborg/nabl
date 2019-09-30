@@ -20,24 +20,26 @@ public class Paret {
 
     public static SearchStrategy<SearchState, SearchState> enumerate() {
         // @formatter:off
-        return seq(enumerateExp(),
-               seq(generateLex(),
-                   identity()));
+        return seq(enumerateExp())
+               .$(generateLex())
+               .$();
         // @formatter:on
     }
 
     public static SearchStrategy<SearchState, SearchState> search() {
         // @formatter:off
-        return seq(searchExp(),
-               seq(generateLex(),
-                   identity()));
+        return seq(searchExp())
+               .$(marker("generateLex"))
+               .$(generateLex())
+               .$(marker("done"))
+               .$();
         // @formatter:on
     }
 
     // generation of expressions
 
     private static SearchStrategy<SearchState, SearchState> inferDelayAndDrop() {
-        return seq(infer(), seq(delayStuckQueries(), dropAst()));
+        return seq(infer()).$(delayStuckQueries()).$(dropAst()).$();
     }
 
     // generation of expressions
@@ -45,13 +47,11 @@ public class Paret {
     private static SearchStrategy<SearchState, SearchState> enumerateExp() {
         // @formatter:off
         return fix(
-            seq(
-                selectConstraint(1),
-                match(
-                    seq(resolve(), infer()),
-                    seq(expand(), infer())
-                )
-            ),
+            seq(selectConstraint(1))
+            .$(match(
+                seq(resolve()).$(infer()).$(),
+                seq(expand()).$(infer()).$()))
+            .$(),
             inferDelayAndDrop(),
             new Match("gen_.*")
         );
@@ -61,18 +61,11 @@ public class Paret {
     private static SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
         return repeat(limit(10, fix(
-            seq( selectConstraint(1)
-               , match(
-                   limit(3, seq(            // find max 3 successful resolutions
-                       limit(5, resolve()), // try at most 5 resolutions
-                       infer()              // filter out choices that fail immediately
-                   )),
-                   limit(1, seq(                         // find max 1 successful rule expansion
-                       limit(3, expand(1, ruleWeights)), // try at most 3 rules
-                       infer()                           // filter out choices that fail immediately
-                   ))
-                 )
-            ),
+            seq(selectConstraint(1))
+            .$(match(
+               limit(3, seq(limit(5, resolve())).$(infer()).$()),
+               limit(1, seq(limit(5, expand(defaultRuleWeight, ruleWeights))).$(infer()).$())))
+            .$(),
             inferDelayAndDrop(),
             new Match("gen_.*")
         )));
@@ -80,10 +73,12 @@ public class Paret {
     }
 
     // @formatter:off
+    private static int defaultRuleWeight = 1;
     private static Map<String,Integer> ruleWeights = ImmutableMap.<String, Integer>builder()
         // TWEAK UnOp and BinOp get stuck often if they generate arguments before the operation
-        .put("T-UnOp", 0)
-        .put("T-BinOp", 0)
+        // TWEAK Inlined rules, so no need to disable them anymore
+        .put("T-UnOp", 1)
+        .put("T-BinOp", 1)
         // TWEAK Prefer rules that force types
         .put("T-Num", 2)
         .put("T-True", 2)
@@ -91,6 +86,10 @@ public class Paret {
         .put("T-Nil", 2)
         .put("T-List", 2)
         .put("T-Fun", 2)
+        // TWEAK Discourage rules that are 'free'
+        .put("T-If", 0)
+        .put("T-App", 0)
+        .put("T-Let", 0)
         .build();
     // @formatter:on
 
@@ -113,10 +112,9 @@ public class Paret {
 
     private static SearchStrategy<SearchState, SearchState> expandLex() {
         // @formatter:off
-        return seq(
-            select(CUser.class, new Match("gen_is.*")),
-            limit(1, seq(expand(0, idWeights), infer())) // TWEAK try one successful identifier only
-        );
+        return seq(select(CUser.class, new Match("gen_is.*")))
+               .$(limit(1, seq(expand(1, idWeights)).$(infer()).$()))
+               .$();
         // @formatter:on
     }
 

@@ -23,25 +23,28 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
 
     private final SearchStrategy<SearchState, SearchState> search;
     private final SearchStrategy<SearchState, SearchState> infer;
+    private final SearchStrategy<SearchState, SearchState> searchAndInfer;
     private final Predicate1<CUser> done;
 
     public Fix(SearchStrategy<SearchState, SearchState> search, SearchStrategy<SearchState, SearchState> infer,
             Predicate1<CUser> done) {
         this.search = search;
         this.infer = infer;
+        this.searchAndInfer = SearchStrategies.seq(search).$(infer).$();
         this.done = done;
     }
 
-    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
         final Deque<Iterator<SearchNode<SearchState>>> stack = new LinkedList<>();
         final Action1<SearchNodes<SearchState>> push = ns -> {
-            if(!ns.success()) {
-                ctx.failure(ns);
+            Iterator<SearchNode<SearchState>> it = ns.nodes().iterator();
+            if(it.hasNext()) {
+                stack.push(it);
             } else {
-                stack.push(ns.nodes().iterator());
+                ctx.failure(ns);
             }
         };
-        final SearchNodes<SearchState> initNodes = infer.apply(ctx, input, parent);
+        final SearchNodes<SearchState> initNodes = infer.apply(ctx, node);
         push.apply(initNodes);
         final Stream<SearchNode<SearchState>> fixNodes = StreamUtil.generate(() -> {
             while(!stack.isEmpty()) {
@@ -50,18 +53,17 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                     stack.pop();
                     continue;
                 }
-                final SearchNode<SearchState> node = nodes.next();
-                if(Streams.stream(node.output().constraintsAndDelays())
+                final SearchNode<SearchState> next = nodes.next();
+                if(Streams.stream(next.output().constraintsAndDelays())
                         .allMatch(c -> (c instanceof CUser && done.test((CUser) c)))) {
-                    return Optional.of(node);
+                    return Optional.of(next);
                 }
-                final SearchNodes<SearchState> nextNodes =
-                        SearchStrategies.seq(search, infer).apply(ctx, node.output(), node);
+                final SearchNodes<SearchState> nextNodes = searchAndInfer.apply(ctx, next);
                 push.apply(nextNodes);
             }
             return Optional.empty();
         });
-        return SearchNodes.of(parent, fixNodes);
+        return SearchNodes.of(node, () -> "fix(???)", fixNodes);
     }
 
     @Override public String toString() {

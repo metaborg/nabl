@@ -18,11 +18,11 @@ final class For<I, O> extends SearchStrategy<I, O> {
         this.n = n;
     }
 
-    @Override public SearchNodes<O> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
+    @Override public SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
         final Stream<SearchNode<O>> nodes = IntStream.range(0, n).boxed().flatMap(i -> {
-            return s.apply(ctx, input, parent).nodes();
+            return s.apply(ctx, node).nodes();
         });
-        return SearchNodes.of(parent, nodes);
+        return SearchNodes.of(node, this::toString, nodes);
     }
 
     @Override public String toString() {

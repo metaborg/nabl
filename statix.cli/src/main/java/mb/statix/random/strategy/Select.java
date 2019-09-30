@@ -1,5 +1,7 @@
 package mb.statix.random.strategy;
 
+import java.util.stream.Stream;
+
 import org.metaborg.util.functions.Predicate1;
 
 import io.usethesource.capsule.Set;
@@ -22,19 +24,20 @@ final class Select<C extends IConstraint> extends SearchStrategy<SearchState, Fo
         this.include = include;
     }
 
-    @Override protected SearchNodes<FocusedSearchState<C>> doApply(SearchContext ctx, SearchState input,
-            SearchNode<?> parent) {
+    @Override protected SearchNodes<FocusedSearchState<C>> doApply(SearchContext ctx, SearchNode<SearchState> node) {
+        final SearchState input = node.output();
         @SuppressWarnings("unchecked") final Set.Immutable<C> candidates =
                 input.constraints().stream().filter(c -> cls.isInstance(c)).map(c -> (C) c).filter(include::test)
                         .collect(CapsuleCollectors.toSet());
         if(candidates.isEmpty()) {
-            return SearchNodes.failure(parent, this.toString() + "[no candidates]");
+            return SearchNodes.failure(node, this.toString() + "[no candidates]");
         }
-        return SearchNodes.of(parent, WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
+        Stream<SearchNode<FocusedSearchState<C>>> nodes = WeightedDrawSet.of(candidates).enumerate(ctx.rnd()).map(c -> {
             final FocusedSearchState<C> output = FocusedSearchState.of(input, c.getKey());
-            return new SearchNode<>(ctx.nextNodeId(), output, parent,
+            return new SearchNode<>(ctx.nextNodeId(), output, node,
                     "select(" + c.getKey().toString(t -> input.state().unifier().toString(t)) + ")");
-        }));
+        });
+        return SearchNodes.of(node, this::toString, nodes);
     }
 
     @Override public String toString() {

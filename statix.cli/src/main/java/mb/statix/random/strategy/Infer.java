@@ -14,7 +14,8 @@ import mb.statix.solver.persistent.SolverResult;
 
 final class Infer extends SearchStrategy<SearchState, SearchState> {
 
-    @Override public SearchNodes<SearchState> doApply(SearchContext ctx, SearchState state, SearchNode<?> parent) {
+    @Override public SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
+        final SearchState state = node.output();
         final SolverResult resultConfig;
         try {
             resultConfig = Solver.solve(state.state(), state.constraints(), state.delays(), state.completeness(),
@@ -24,10 +25,11 @@ final class Infer extends SearchStrategy<SearchState, SearchState> {
         }
         if(resultConfig.hasErrors()) {
             final String msg = Constraints.toString(resultConfig.errors(), resultConfig.state().unifier()::toString);
-            return SearchNodes.failure(parent, "infer[" + msg + "]");
+            return SearchNodes.failure(node, "infer[" + msg + "]");
         }
         final SearchState newState = state.replace(resultConfig);
-        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), newState, parent, this.toString()));
+        return SearchNodes.of(node, this::toString,
+                new SearchNode<>(ctx.nextNodeId(), newState, node, this.toString()));
     }
 
     @Override public String toString() {

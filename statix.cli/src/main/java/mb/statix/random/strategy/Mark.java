@@ -5,14 +5,20 @@ import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 
-final class Identity<I> extends SearchStrategy<I, I> {
+final class Mark<I> extends SearchStrategy<I, I> {
+
+    private final String marker;
+
+    public Mark(String marker) {
+        this.marker = "<" + marker + ">";
+    }
 
     @Override protected SearchNodes<I> doApply(SearchContext ctx, SearchNode<I> node) {
-        return SearchNodes.of(node, this::toString, node);
+        return SearchNodes.of(node, this::toString, new SearchNode<>(ctx.nextNodeId(), node.output(), node, marker));
     }
 
     @Override public String toString() {
-        return "id";
+        return marker;
     }
 
 }

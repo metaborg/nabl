@@ -10,7 +10,7 @@ import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IState.Immutable;
+import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
@@ -22,15 +22,16 @@ final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
         this.f = f;
     }
 
-    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
-        final Immutable state = input.state();
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
+        final SearchState input = node.output();
+        final IState.Immutable state = input.state();
         final Set.Immutable<IConstraint> constraints =
                 input.constraints().stream().map(f::apply).collect(CapsuleCollectors.toSet());
         final ICompleteness.Transient completeness = Completeness.Transient.of(state.spec());
         completeness.addAll(constraints, state.unifier());
         completeness.addAll(input.delays().keySet(), state.unifier());
         final SearchState output = input.replace(state, constraints, input.delays(), completeness.freeze());
-        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), output, parent, this.toString()));
+        return SearchNodes.of(node, this::toString, new SearchNode<>(ctx.nextNodeId(), output, node, this.toString()));
     }
 
     @Override public String toString() {

@@ -34,7 +34,8 @@ import mb.statix.solver.query.RelationLabelOrder;
 
 final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
 
-    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
+        final SearchState input = node.output();
         final IState.Immutable state = input.state();
         final ICompleteness.Immutable completeness = input.completeness();
 
@@ -47,7 +48,7 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
 
         final SearchState newState = input.delay(delays.entrySet());
         final String desc = this.toString() + "[" + delays.size() + "]";
-        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), newState, parent, desc));
+        return SearchNodes.of(node, this::toString, new SearchNode<>(ctx.nextNodeId(), newState, node, desc));
     }
 
     private Optional<Delay> checkDelay(CResolveQuery query, IState.Immutable state,

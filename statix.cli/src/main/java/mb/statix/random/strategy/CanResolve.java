@@ -26,14 +26,15 @@ import mb.statix.solver.query.RelationLabelOrder;
 final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
 
     @Override protected SearchNodes<FocusedSearchState<CResolveQuery>> doApply(SearchContext ctx,
-            FocusedSearchState<CResolveQuery> input, SearchNode<?> parent) {
+            SearchNode<FocusedSearchState<CResolveQuery>> node) {
+        FocusedSearchState<CResolveQuery> input = node.output();
         final IState.Immutable state = input.state();
         final IUnifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
 
         final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
         if(scope == null) {
-            return SearchNodes.failure(parent, this.toString() + "[no scope]");
+            return SearchNodes.failure(node, this.toString() + "[no scope]");
         }
 
         final Boolean isAlways;
@@ -43,7 +44,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
             throw new MetaborgRuntimeException(e);
         }
         if(isAlways == null) {
-            return SearchNodes.failure(parent, this.toString() + "[cannot decide data equivalence]");
+            return SearchNodes.failure(node, this.toString() + "[cannot decide data equivalence]");
         }
 
         final ICompleteness.Immutable completeness = input.completeness();
@@ -62,12 +63,12 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
         try {
             nameResolution.resolve(scope, () -> false);
         } catch(ResolutionException e) {
-            return SearchNodes.failure(parent, this.toString() + "[cannot resolve]");
+            return SearchNodes.failure(node, this.toString() + "[cannot resolve]");
         } catch(InterruptedException e) {
             throw new MetaborgRuntimeException(e);
         }
 
-        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), input, parent, parent.desc()));
+        return SearchNodes.of(node, this::toString, node);
     }
 
     @Override public String toString() {

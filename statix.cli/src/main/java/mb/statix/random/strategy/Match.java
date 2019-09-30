@@ -15,12 +15,12 @@ final class Match<I1, I2, O> extends SearchStrategy<Either2<I1, I2>, O> {
         this.s1 = s1;
     }
 
-    @Override protected SearchNodes<O> doApply(SearchContext ctx, Either2<I1, I2> input,
-            SearchNode<?> parent) {
-        return input.map(n1 -> {
-            return s1.apply(ctx, n1, parent);
-        }, n2 -> {
-            return s2.apply(ctx, n2, parent);
+    @Override protected SearchNodes<O> doApply(SearchContext ctx, SearchNode<Either2<I1, I2>> node) {
+        final Either2<I1, I2> input = node.output();
+        return input.map(i1 -> {
+            return s1.apply(ctx, new SearchNode<>(node.id(), i1, node.parent(), node.desc()));
+        }, i2 -> {
+            return s2.apply(ctx, new SearchNode<>(node.id(), i2, node.parent(), node.desc()));
         });
     }
 

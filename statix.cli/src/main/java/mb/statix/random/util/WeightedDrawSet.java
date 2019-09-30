@@ -3,6 +3,7 @@ package mb.statix.random.util;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,13 +23,15 @@ public class WeightedDrawSet<E> {
     private final List<E> elementList;
     private final Set.Immutable<E> elementSet;
 
-    private WeightedDrawSet(Map<? extends E, Integer> elements) {
+    public WeightedDrawSet(Iterable<? extends Entry<? extends E, Integer>> elements) {
         final ImmutableList.Builder<E> elementList = ImmutableList.builder();
         final Set.Transient<E> elementSet = Set.Transient.of();
-        elements.forEach((e, w) -> {
-            elementSet.__insert(e);
-            IntStream.range(0, w).forEach(i -> {
-                elementList.add(e);
+        elements.forEach(entry -> {
+            final E element = entry.getKey();
+            final Integer weight = entry.getValue();
+            elementSet.__insert(element);
+            IntStream.range(0, weight).forEach(i -> {
+                elementList.add(entry.getKey());
             });
         });
         this.elementList = elementList.build();
@@ -62,12 +65,8 @@ public class WeightedDrawSet<E> {
         });
     }
 
-    public static <E> WeightedDrawSet<E> of(Map<? extends E, Integer> elements) {
-        return new WeightedDrawSet<>(elements);
-    }
-
     public static <E> WeightedDrawSet<E> of(Iterable<? extends E> elements) {
-        return new WeightedDrawSet<>(Iterables2.stream(elements).collect(Collectors.toMap(e -> e, e -> 1)));
+        return new WeightedDrawSet<>(Iterables2.stream(elements).collect(Collectors.toMap(e -> e, e -> 1)).entrySet());
     }
 
 }

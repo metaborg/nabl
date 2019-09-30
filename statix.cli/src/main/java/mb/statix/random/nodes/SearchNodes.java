@@ -1,8 +1,8 @@
 package mb.statix.random.nodes;
 
-import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
@@ -10,29 +10,16 @@ import com.google.common.collect.ImmutableList;
 public class SearchNodes<O> implements SearchElement {
 
     private final Stream<SearchNode<O>> nodes;
-    private final String error;
+    private final Function0<String> desc;
     private final SearchNode<?> parent;
 
-    private SearchNodes(Stream<SearchNode<O>> nodes, SearchNode<?> parent) {
+    private SearchNodes(Stream<SearchNode<O>> nodes, Function0<String> desc, SearchNode<?> parent) {
         this.nodes = nodes;
-        this.error = null;
+        this.desc = desc;
         this.parent = parent;
-    }
-
-    private SearchNodes(String desc, SearchNode<?> parent) {
-        this.nodes = null;
-        this.error = desc;
-        this.parent = parent;
-    }
-
-    public boolean success() {
-        return nodes != null;
     }
 
     public Stream<SearchNode<O>> nodes() {
-        if(!success()) {
-            throw new IllegalArgumentException("Cannot call nodes() on failure nodes.");
-        }
         return nodes;
     }
 
@@ -40,45 +27,37 @@ public class SearchNodes<O> implements SearchElement {
         return parent;
     }
 
-    public String error() {
-        if(success()) {
-            throw new IllegalArgumentException("Cannot call error() on success nodes.");
-        }
-        return error;
+    @Override public String desc() {
+        return desc.apply();
     }
 
     @Override public String toString() {
-        return error != null ? error : Objects.toString(this);
+        return desc();
     }
 
     // stream delegates
 
     public SearchNodes<O> limit(int n) {
-        if(!success()) {
-            return new SearchNodes<>(error, parent);
-        }
-        return new SearchNodes<>(nodes.limit(n), parent);
+        return new SearchNodes<>(nodes.limit(n), desc, parent);
     }
 
     public <R> SearchNodes<R> map(Function1<SearchNode<O>, SearchNode<R>> map) {
-        if(!success()) {
-            return new SearchNodes<>(error, parent);
-        }
-        return new SearchNodes<>(nodes.map(map::apply), parent);
+        return new SearchNodes<>(nodes.map(map::apply), desc, parent);
     }
 
     // construction methods
 
     public static <O> SearchNodes<O> failure(SearchNode<?> parent, String error) {
-        return new SearchNodes<>(error, parent);
+        return new SearchNodes<>(Stream.empty(), () -> error, parent);
     }
 
-    @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, SearchNode<O>... nodes) {
-        return new SearchNodes<>(ImmutableList.copyOf(nodes).stream(), parent);
+    @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
+            SearchNode<O>... nodes) {
+        return new SearchNodes<>(ImmutableList.copyOf(nodes).stream(), error, parent);
     }
 
-    public static <O> SearchNodes<O> of(SearchNode<?> parent, Stream<SearchNode<O>> nodes) {
-        return new SearchNodes<>(nodes, parent);
+    public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error, Stream<SearchNode<O>> nodes) {
+        return new SearchNodes<>(nodes, error, parent);
     }
 
 }

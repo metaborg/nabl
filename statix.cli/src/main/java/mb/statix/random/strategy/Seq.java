@@ -1,55 +1,65 @@
 package mb.statix.random.strategy;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.functions.Function0;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Streams;
 
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 
-final class Seq<I1, O, I2> extends SearchStrategy<I1, O> {
-    private final SearchStrategy<I1, I2> s1;
-    private final SearchStrategy<I2, O> s2;
+final class Seq<I, O> extends SearchStrategy<I, O> {
 
-    Seq(SearchStrategy<I1, I2> s1, SearchStrategy<I2, O> s2) {
-        this.s1 = s1;
-        this.s2 = s2;
+    private final List<SearchStrategy<?, ?>> ss;
+
+    private Seq(List<SearchStrategy<?, ?>> ss) {
+        this.ss = ss;
     }
 
-    @Override public SearchNodes<O> doApply(SearchContext ctx, I1 i1, SearchNode<?> parent) {
-        final SearchNodes<I2> sn1 = s1.apply(ctx, i1, parent);
-        if(!sn1.success()) {
-            return SearchNodes.failure(sn1.parent(), sn1.error());
+    @SuppressWarnings({ "rawtypes", "unchecked" }) @Override public SearchNodes<O> doApply(SearchContext ctx,
+            SearchNode<I> node) {
+        Stream<SearchNode> nodes = Stream.of(node);
+        List<Function0<String>> descs = Lists.newArrayList();
+        for(SearchStrategy s : ss) {
+            nodes = nodes.flatMap(n -> {
+                final SearchNodes<?> sn = s.apply(ctx, n);
+                descs.add(sn::desc);
+                return sn.nodes();
+            });
         }
-
-        final AtomicBoolean collectErrors = new AtomicBoolean(true);
-        final List<String> errors = Lists.newArrayList();
-        final Iterator<SearchNode<O>> nodes = sn1.nodes().flatMap(n1 -> {
-            final SearchNodes<O> sn2 = s2.apply(ctx, n1.output(), n1);
-            if(collectErrors.get() && !sn2.success()) {
-                final String desc = "( " + sn2.error() + " . " + n1.desc() + " )";
-                errors.add(desc);
-            }
-            return sn2.success() ? sn2.nodes() : Stream.empty();
-        }).iterator();
-        if(!nodes.hasNext()) {
-            final String error = errors.stream().collect(Collectors.joining(" & ", "( ", " )"));
-            return SearchNodes.failure(sn1.parent(), error);
-        }
-        collectErrors.set(false);
-
-        return SearchNodes.of(parent, Streams.stream(nodes));
+        final Function0<String> desc =
+                () -> descs.stream().map(Function0::apply).collect(Collectors.joining(" . ", "(", ")"));
+        return SearchNodes.of(node, desc, (Stream) nodes);
     }
 
     @Override public String toString() {
-        return "(" + s1.toString() + " . " + s2.toString() + ")";
+        return ss.stream().map(Object::toString).collect(Collectors.joining(" . ", "(", ")"));
     }
+
+    public static class Builder<I, O> {
+
+        private final ImmutableList.Builder<SearchStrategy<?, ?>> ss = ImmutableList.builder();
+
+        public Builder(SearchStrategy<I, O> s) {
+            ss.add(s);
+        }
+
+        @SuppressWarnings("unchecked") public <X> Builder<I, X> $(SearchStrategy<O, X> s) {
+            ss.add(s);
+            return (Builder<I, X>) this;
+        }
+
+        public Seq<I, O> $() {
+            return new Seq<>(ss.build());
+        }
+
+    }
+
 
 }

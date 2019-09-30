@@ -2,6 +2,8 @@ package mb.statix.random.strategy;
 
 import java.util.stream.Stream;
 
+import org.metaborg.util.functions.Function0;
+
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
@@ -17,21 +19,13 @@ final class ConcatAlt<I, O1, O2> extends SearchStrategy<I, Either2<O1, O2>> {
         this.s1 = s1;
     }
 
-    @Override protected SearchNodes<Either2<O1, O2>> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
-        final SearchNodes<O1> sn1 = s1.apply(ctx, input, parent);
-        final SearchNodes<O2> sn2 = s2.apply(ctx, input, parent);
-        if(!sn1.success() && !sn2.success()) {
-            final String desc = "( " + sn1.error() + " | " + sn2.error() + " )<";
-            return SearchNodes.failure(parent, desc);
-        } else if(!sn1.success()) {
-            return sn2.map(n2 -> output2(ctx, n2));
-        } else if(!sn2.success()) {
-            return sn1.map(n1 -> output1(ctx, n1));
-        } else {
-            Stream<SearchNode<Either2<O1, O2>>> ns1 = sn1.nodes().map(n1 -> output1(ctx, n1));
-            Stream<SearchNode<Either2<O1, O2>>> ns2 = sn2.nodes().map(n2 -> output2(ctx, n2));
-            return SearchNodes.of(parent, Stream.concat(ns1, ns2));
-        }
+    @Override protected SearchNodes<Either2<O1, O2>> doApply(SearchContext ctx, SearchNode<I> node) {
+        final SearchNodes<O1> sn1 = s1.apply(ctx, node);
+        final SearchNodes<O2> sn2 = s2.apply(ctx, node);
+        final Stream<SearchNode<Either2<O1, O2>>> nodes =
+                Stream.concat(sn1.nodes().map(n1 -> output1(ctx, n1)), sn2.nodes().map(n2 -> output2(ctx, n2)));
+        final Function0<String> desc = () -> "( " + sn1.desc() + " | " + sn2.desc() + " )<";
+        return SearchNodes.of(node, desc, nodes);
     }
 
     private SearchNode<Either2<O1, O2>> output1(SearchContext ctx, final SearchNode<O1> n1) {

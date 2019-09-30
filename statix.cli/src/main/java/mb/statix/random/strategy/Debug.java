@@ -16,8 +16,8 @@ final class Debug<I, O> extends SearchStrategy<I, O> {
         this.s = s;
     }
 
-    @Override protected SearchNodes<O> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
-        return s.apply(ctx, input, parent).map(n -> {
+    @Override protected SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
+        return s.apply(ctx, node).map(n -> {
             debug.apply(n);
             return n;
         });

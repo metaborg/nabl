@@ -1,11 +1,14 @@
 package mb.statix.random.strategy;
 
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
+import mb.statix.random.util.StreamUtil;
 
 final class Repeat<I, O> extends SearchStrategy<I, O> {
     private final SearchStrategy<I, O> s;
@@ -14,9 +17,16 @@ final class Repeat<I, O> extends SearchStrategy<I, O> {
         this.s = s;
     }
 
-    @Override public SearchNodes<O> doApply(SearchContext ctx, I input, SearchNode<?> parent) {
-        final Stream<SearchNode<O>> nodes = Stream.generate(() -> s.apply(ctx, input, parent).nodes()).flatMap(n -> n);
-        return SearchNodes.of(parent, nodes);
+    @Override public SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
+        AtomicReference<Iterator<SearchNode<O>>> ns = new AtomicReference<>();
+        final Stream<SearchNode<O>> nodes = StreamUtil.generate(() -> true, () -> {
+            Iterator<SearchNode<O>> it;
+            while((it = ns.get()) == null || !it.hasNext()) {
+                ns.set((it = s.apply(ctx, node).nodes().iterator()));
+            }
+            return it.next();
+        });
+        return SearchNodes.of(node, this::toString, nodes);
     }
 
     @Override public String toString() {

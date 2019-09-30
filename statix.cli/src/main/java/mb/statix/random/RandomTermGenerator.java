@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableList;
 
 import mb.statix.random.nodes.SearchElement;
+import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.persistent.State;
@@ -46,7 +47,7 @@ public class RandomTermGenerator {
             }
 
         };
-        return strategy.apply(ctx, initState, null);
+        return strategy.apply(ctx, new SearchNode<>(ctx.nextNodeId(), initState, null, "init"));
     }
 
 }

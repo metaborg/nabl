@@ -22,7 +22,8 @@ final class FilterConstraints extends SearchStrategy<SearchState, SearchState> {
         this.p = p;
     }
 
-    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchState input, SearchNode<?> parent) {
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
+        final SearchState input = node.output();
         final Immutable state = input.state();
         final Set.Immutable<IConstraint> constraints =
                 input.constraints().stream().filter(p::test).collect(CapsuleCollectors.toSet());
@@ -30,7 +31,7 @@ final class FilterConstraints extends SearchStrategy<SearchState, SearchState> {
         completeness.addAll(constraints, state.unifier());
         completeness.addAll(input.delays().keySet(), state.unifier());
         final SearchState output = input.replace(state, constraints, input.delays(), completeness.freeze());
-        return SearchNodes.of(parent, new SearchNode<>(ctx.nextNodeId(), output, parent, this.toString()));
+        return SearchNodes.of(node, this::toString, new SearchNode<>(ctx.nextNodeId(), output, node, this.toString()));
     }
 
     @Override public String toString() {

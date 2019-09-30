@@ -32,7 +32,7 @@ public class SearchNode<O> implements SearchElement {
         return parent;
     }
 
-    public String desc() {
+    @Override public String desc() {
         return desc;
     }
 

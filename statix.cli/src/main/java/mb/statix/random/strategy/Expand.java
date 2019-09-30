@@ -1,14 +1,18 @@
 package mb.statix.random.strategy;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CUser;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
@@ -35,17 +39,19 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         this.weights = weights;
     }
 
-    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, FocusedSearchState<CUser> input,
-            SearchNode<?> parent) {
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
+            SearchNode<FocusedSearchState<CUser>> node) {
+        final FocusedSearchState<CUser> input = node.output();
         final CUser predicate = input.focus();
-        final java.util.Map<Rule, Integer> rules = new HashMap<>();
+        final List<Tuple2<Rule, Integer>> rules = Lists.newArrayList();
         for(Rule rule : input.state().spec().rules().get(predicate.name())) {
-            rules.put(rule, weights.getOrDefault(rule.label(), defaultWeight));
+            rules.add(ImmutableTuple2.of(rule, weights.getOrDefault(rule.label(), defaultWeight)));
         }
         if(rules.isEmpty()) {
-            return SearchNodes.failure(parent, "expand[no rules for " + predicate.name() + "]");
+            return SearchNodes.failure(node, "expand[no rules for " + predicate.name() + "]");
         }
-        return SearchNodes.of(parent, WeightedDrawSet.of(rules).enumerate(ctx.rnd()).map(Entry::getKey).flatMap(rule -> {
+        final WeightedDrawSet<Rule> ruleSet = new WeightedDrawSet<>(rules);
+        final Stream<SearchNode<SearchState>> nodes = ruleSet.enumerate(ctx.rnd()).map(Entry::getKey).flatMap(rule -> {
             return Streams.stream(RuleUtil.apply(input.state(), rule, predicate.args(), predicate))
                     .map(resultAndConstraint -> {
                         final SolverResult applyResult = resultAndConstraint._1();
@@ -61,8 +67,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
                         final ICompleteness.Transient completeness = input.completeness().melt();
                         completeness.updateAll(applyResult.updatedVars(), applyState.unifier());
                         completeness.add(applyConstraint, applyState.unifier());
-                        java.util.Set<CriticalEdge> removedEdges =
-                                completeness.remove(predicate, applyState.unifier());
+                        java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyState.unifier());
 
                         // update delays
                         final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
@@ -75,13 +80,14 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
                         });
 
                         // return new state
-                        final SearchState output = input.replace(applyState, constraints.freeze(),
-                                delays.freeze(), completeness.freeze());
+                        final SearchState output =
+                                input.replace(applyState, constraints.freeze(), delays.freeze(), completeness.freeze());
                         final String head = rule.name() + rule.params().stream().map(Object::toString)
                                 .collect(Collectors.joining(", ", "(", ")"));
-                        return new SearchNode<>(ctx.nextNodeId(), output, parent, "expand(" + head + ")");
+                        return new SearchNode<>(ctx.nextNodeId(), output, node, "expand(" + head + ")");
                     });
-        }));
+        });
+        return SearchNodes.of(node, this::toString, nodes);
     }
 
     @Override public String toString() {

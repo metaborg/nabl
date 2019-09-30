@@ -56,8 +56,9 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
     private final int sizes = 2;
     private final int subsetsPerSize = 3;
 
-    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, FocusedSearchState<CResolveQuery> input,
-            SearchNode<?> parent) {
+    @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
+            SearchNode<FocusedSearchState<CResolveQuery>> node) {
+        final FocusedSearchState<CResolveQuery> input = node.output();
         final IState.Immutable state = input.state();
         final IUnifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
@@ -106,7 +107,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 IntStream.range(0, count.get()).boxed().collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(indices, ctx.rnd());
 
-        return SearchNodes.of(parent, indices.stream().flatMap(idx -> {
+        return SearchNodes.of(node, this::toString, indices.stream().flatMap(idx -> {
             final AtomicInteger select = new AtomicInteger(idx);
             final Env<Scope, ITerm, ITerm, CEqual> env;
             try {
@@ -133,19 +134,19 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                     entry.getValue().forEach(subEnvBuilder::reject);
                     env.rejects.forEach(subEnvBuilder::reject);
                     final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
-                    final List<ITerm> pathTerms = subEnv.matches.stream()
-                            .map(m -> StatixTerms.explicate(m.path)).collect(ImmutableList.toImmutableList());
+                    final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
+                            .collect(ImmutableList.toImmutableList());
                     final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
                     constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
                     subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> {
                         constraints.add(condition);
                     });
                     subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> {
-                        constraints.add(new CInequal(condition.term1(), condition.term2(),
-                                condition.cause().orElse(null)));
+                        constraints.add(
+                                new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null)));
                     });
                     final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
-                    return new SearchNode<>(ctx.nextNodeId(), newState, parent,
+                    return new SearchNode<>(ctx.nextNodeId(), newState, node,
                             "resolve[" + idx + "/" + count.get() + "]");
                 });
             });

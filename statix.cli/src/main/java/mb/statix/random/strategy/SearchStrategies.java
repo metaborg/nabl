@@ -33,13 +33,8 @@ public final class SearchStrategies {
         return new Repeat<>(s);
     }
 
-    public static final <I1, I2, O> SearchStrategy<I1, O> seq(SearchStrategy<I1, I2> s1, SearchStrategy<I2, O> s2) {
-        return new Seq<>(s1, s2);
-    }
-
-    public static final <I, O1, O2> SearchStrategy<I, Either2<O1, O2>> interleavingAlt(SearchStrategy<I, O1> s1,
-            SearchStrategy<I, O2> s2) {
-        return new InterleavingAlt<>(s1, s2);
+    public static final <I, O> Seq.Builder<I, O> seq(SearchStrategy<I, O> s) {
+        return new Seq.Builder<>(s);
     }
 
     public static final <I, O1, O2> SearchStrategy<I, Either2<O1, O2>> concatAlt(SearchStrategy<I, O1> s1,
@@ -103,6 +98,10 @@ public final class SearchStrategies {
 
     public static final <I> SearchStrategy<I, I> identity() {
         return new Identity<>();
+    }
+
+    public static final <I> SearchStrategy<I, I> marker(String marker) {
+        return new Mark<>(marker);
     }
 
     public static final <I, O> SearchStrategy<I, O> require(SearchStrategy<I, O> s) {
