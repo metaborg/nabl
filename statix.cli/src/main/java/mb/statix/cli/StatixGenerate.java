@@ -3,6 +3,7 @@ package mb.statix.cli;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.context.IContext;
@@ -44,6 +45,8 @@ public class StatixGenerate {
         final FileObject resource = STX.S.resolve(file);
 
         final Function1<SearchState, String> pretty;
+        final Function1<SearchState, ITerm> proj;
+        proj = StatixGenerator.project(VAR, t -> t);
         final Optional<FileObject> maybeProject = STX.findProject(resource);
         if(maybeProject.isPresent()) {
             final IProject project = STX.cli.getOrCreateProject(maybeProject.get());
@@ -77,12 +80,18 @@ public class StatixGenerate {
         final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource, Paret.search(), searchLog);
 
         log.info("Generating random terms.");
-        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(42 * 42).iterator());
+        final SummaryStatistics stats = new SummaryStatistics();
+        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(100).iterator());
         progress.done();
         results.forEach(s -> {
+            s.state().unifier().size(proj.apply(s)).ifFinite(size -> {
+                stats.addValue(size.doubleValue());
+            });
+            ;
             System.out.println(pretty.apply(s));
         });
         log.info("Generated {} random terms.", results.size());
+        log.info(stats.toString());
 
     }
 
