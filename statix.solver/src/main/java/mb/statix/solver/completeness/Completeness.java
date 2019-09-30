@@ -2,6 +2,7 @@ package mb.statix.solver.completeness;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.io.Serializable;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,9 @@ public abstract class Completeness implements ICompleteness {
         // @formatter:on
     }
 
-    public static class Immutable extends Completeness implements ICompleteness.Immutable {
+    public static class Immutable extends Completeness implements ICompleteness.Immutable, Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final Spec spec;
         private final Map.Immutable<ITerm, MultiSet.Immutable<ITerm>> incomplete;
