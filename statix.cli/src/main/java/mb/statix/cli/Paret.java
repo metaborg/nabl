@@ -77,8 +77,8 @@ public class Paret {
     private static Map<String,Integer> ruleWeights = ImmutableMap.<String, Integer>builder()
         // TWEAK UnOp and BinOp get stuck often if they generate arguments before the operation
         // TWEAK Inlined rules, so no need to disable them anymore
-        .put("T-UnOp", 1)
-        .put("T-BinOp", 1)
+        .put("T-UnOp", 2)
+        .put("T-BinOp", 2)
         // TWEAK Prefer rules that force types
         .put("T-Num", 2)
         .put("T-True", 2)
@@ -87,9 +87,9 @@ public class Paret {
         .put("T-List", 2)
         .put("T-Fun", 2)
         // TWEAK Discourage rules that are 'free'
-        .put("T-If", 0)
-        .put("T-App", 0)
-        .put("T-Let", 0)
+        .put("T-If", 1)
+        .put("T-App", 1)
+        .put("T-Let", 1)
         .build();
     // @formatter:on
 
