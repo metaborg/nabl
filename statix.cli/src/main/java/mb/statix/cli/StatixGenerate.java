@@ -34,6 +34,7 @@ public class StatixGenerate {
     private static final boolean DEBUG = true;
     private static final boolean TRACE = false;
     private static final String VAR = "e";
+    private static final int COUNT = 42 * 42;
 
     private final Statix STX;
 
@@ -81,7 +82,7 @@ public class StatixGenerate {
 
         log.info("Generating random terms.");
         final SummaryStatistics stats = new SummaryStatistics();
-        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(42).iterator());
+        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(COUNT).iterator());
         progress.done();
         results.forEach(s -> {
             s.state().unifier().size(proj.apply(s)).ifFinite(size -> {
