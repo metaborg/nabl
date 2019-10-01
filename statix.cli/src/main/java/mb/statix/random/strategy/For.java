@@ -4,11 +4,12 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import mb.statix.random.SearchContext;
+import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 
-final class For<I, O> extends SearchStrategy<I, O> {
+final class For<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final SearchStrategy<I, O> s;
     private final int n;

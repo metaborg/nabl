@@ -7,7 +7,9 @@ import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
 
-public class SearchNodes<O> implements SearchElement {
+import mb.statix.random.SearchState;
+
+public class SearchNodes<O extends SearchState> implements SearchElement {
 
     private final Stream<SearchNode<O>> nodes;
     private final Function0<String> desc;
@@ -41,22 +43,23 @@ public class SearchNodes<O> implements SearchElement {
         return new SearchNodes<>(nodes.limit(n), desc, parent);
     }
 
-    public <R> SearchNodes<R> map(Function1<SearchNode<O>, SearchNode<R>> map) {
+    public <R extends SearchState> SearchNodes<R> map(Function1<SearchNode<O>, SearchNode<R>> map) {
         return new SearchNodes<>(nodes.map(map::apply), desc, parent);
     }
 
     // construction methods
 
-    public static <O> SearchNodes<O> failure(SearchNode<?> parent, String error) {
+    public static <O extends SearchState> SearchNodes<O> failure(SearchNode<?> parent, String error) {
         return new SearchNodes<>(Stream.empty(), () -> error, parent);
     }
 
-    @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
+    @SafeVarargs public static <O extends SearchState> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
             SearchNode<O>... nodes) {
         return new SearchNodes<>(ImmutableList.copyOf(nodes).stream(), error, parent);
     }
 
-    public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error, Stream<SearchNode<O>> nodes) {
+    public static <O extends SearchState> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
+            Stream<SearchNode<O>> nodes) {
         return new SearchNodes<>(nodes, error, parent);
     }
 

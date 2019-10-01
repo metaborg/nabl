@@ -3,11 +3,12 @@ package mb.statix.random.strategy;
 import org.metaborg.util.functions.Action1;
 
 import mb.statix.random.SearchContext;
+import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 
-final class Debug<I, O> extends SearchStrategy<I, O> {
+final class Debug<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
     private final Action1<SearchNode<O>> debug;
     private final SearchStrategy<I, O> s;
 

@@ -8,11 +8,12 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.Streams;
 
 import mb.statix.random.SearchContext;
+import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 
-final class Require<I, O> extends SearchStrategy<I, O> {
+final class Require<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final static ILogger logger = LoggerUtils.logger(Require.class);
 

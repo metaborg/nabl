@@ -31,11 +31,11 @@ public class SearchState {
 
     private final static ILogger log = LoggerUtils.logger(SearchState.class);
 
-    private final IState.Immutable state;
-    private final Set.Immutable<IConstraint> constraints;
-    private final Map.Immutable<IConstraint, Delay> delays;
-    private final ImmutableMap<ITermVar, ITermVar> existentials;
-    private final ICompleteness.Immutable completeness;
+    protected final IState.Immutable state;
+    protected final Set.Immutable<IConstraint> constraints;
+    protected final Map.Immutable<IConstraint, Delay> delays;
+    protected final ImmutableMap<ITermVar, ITermVar> existentials;
+    protected final ICompleteness.Immutable completeness;
 
     protected SearchState(IState.Immutable state, Set.Immutable<IConstraint> constraints,
             Map.Immutable<IConstraint, Delay> delays, ImmutableMap<ITermVar, ITermVar> existentials,

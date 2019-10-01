@@ -2,7 +2,9 @@ package mb.statix.random.nodes;
 
 import java.util.Objects;
 
-public class SearchNode<O> implements SearchElement {
+import mb.statix.random.SearchState;
+
+public class SearchNode<O extends SearchState> implements SearchElement {
 
     private final int id;
     private final O output;
@@ -24,7 +26,7 @@ public class SearchNode<O> implements SearchElement {
         return output;
     }
 
-    public <X> SearchNode<X> withOutput(X output) {
+    public <X extends SearchState> SearchNode<X> withOutput(X output) {
         return new SearchNode<>(id, output, parent, desc);
     }
 

@@ -2,7 +2,7 @@ package mb.statix.random;
 
 import java.util.Random;
 
-import mb.statix.random.nodes.SearchElement;
+import mb.statix.random.nodes.SearchNodes;
 
 public class NullSearchContext implements SearchContext {
 
@@ -20,7 +20,7 @@ public class NullSearchContext implements SearchContext {
         return rnd;
     }
 
-    @Override public void failure(SearchElement node) {
+    @Override public void failure(SearchNodes<?> nodes) {
     }
 
 }

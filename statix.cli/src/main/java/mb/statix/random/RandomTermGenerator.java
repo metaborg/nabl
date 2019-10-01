@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableList;
 
-import mb.statix.random.nodes.SearchElement;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 import mb.statix.solver.IConstraint;
@@ -42,8 +41,8 @@ public class RandomTermGenerator {
                 return nodeId.incrementAndGet();
             }
 
-            @Override public void failure(SearchElement node) {
-                log.failure(node);
+            @Override public void failure(SearchNodes<?> nodes) {
+                log.failure(nodes);
             }
 
         };

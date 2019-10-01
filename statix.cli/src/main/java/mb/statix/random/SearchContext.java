@@ -2,7 +2,7 @@ package mb.statix.random;
 
 import java.util.Random;
 
-import mb.statix.random.nodes.SearchElement;
+import mb.statix.random.nodes.SearchNodes;
 
 public interface SearchContext {
 
@@ -10,6 +10,6 @@ public interface SearchContext {
 
     public int nextNodeId();
 
-    public void failure(SearchElement node);
+    public void failure(SearchNodes<?> nodes);
 
 }

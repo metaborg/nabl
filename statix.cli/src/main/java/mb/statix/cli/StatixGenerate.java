@@ -3,7 +3,7 @@ package mb.statix.cli;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.context.IContext;
@@ -59,6 +59,8 @@ public class StatixGenerate {
         }
 
         final StreamProgressPrinter progress = new StreamProgressPrinter(System.err, 100);
+        final DescriptiveStatistics hitStats = new DescriptiveStatistics();
+        final DescriptiveStatistics missStats = new DescriptiveStatistics();
         final SearchLogger searchLog = new SearchLogger() {
 
             @Override public void init(long seed, SearchStrategy<?, ?> strategy, Iterable<IConstraint> constraints) {
@@ -69,30 +71,44 @@ public class StatixGenerate {
 
             @Override public void success(SearchNode<SearchState> n) {
                 progress.step('+');
+                addSize(n, hitStats);
                 logSuccess(log, Level.Debug, n, pretty::apply);
             }
 
-            @Override public void failure(SearchElement e) {
+            @Override public void failure(SearchNodes<?> nodes) {
                 progress.step('.');
-                logFailure(log, Level.Debug, e, pretty::apply);
+                addSize(nodes.parent(), missStats);
+                logFailure(log, Level.Debug, nodes, pretty::apply);
+            }
+
+            private void addSize(SearchNode<?> node, DescriptiveStatistics stats) {
+                if(node == null) {
+                    return;
+                }
+                SearchState s = node.output();
+                s.state().unifier().size(proj.apply(s)).ifFinite(size -> {
+                    stats.addValue(size.doubleValue());
+                });
             }
 
         };
         final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource, Paret.search(), searchLog);
 
         log.info("Generating random terms.");
-        final SummaryStatistics stats = new SummaryStatistics();
         final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(COUNT).iterator());
         progress.done();
         results.forEach(s -> {
-            s.state().unifier().size(proj.apply(s)).ifFinite(size -> {
-                stats.addValue(size.doubleValue());
-            });
             System.out.println(pretty.apply(s));
         });
         log.info("Generated {} random terms.", results.size());
-        log.info(stats.toString());
+        logStatsInfo("hits", hitStats);
+        logStatsInfo("misses", missStats);
 
+    }
+
+    private static void logStatsInfo(String name, DescriptiveStatistics stats) {
+        log.info("{} {} of sizes {}/{}/{}/{}/{} (max/P75/P50/P25/min)", name, stats.getN(), stats.getMax(),
+                stats.getPercentile(75), stats.getPercentile(50), stats.getPercentile(25), stats.getMin());
     }
 
     private static void logSuccess(ILogger log, Level lvl, SearchNode<SearchState> node,

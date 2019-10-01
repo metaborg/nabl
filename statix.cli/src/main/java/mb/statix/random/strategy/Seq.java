@@ -10,11 +10,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import mb.statix.random.SearchContext;
+import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 
-final class Seq<I, O> extends SearchStrategy<I, O> {
+final class Seq<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final List<SearchStrategy<?, ?>> ss;
 
@@ -42,7 +43,7 @@ final class Seq<I, O> extends SearchStrategy<I, O> {
         return ss.stream().map(Object::toString).collect(Collectors.joining(" . ", "(", ")"));
     }
 
-    public static class Builder<I, O> {
+    public static class Builder<I extends SearchState, O extends SearchState> {
 
         private final ImmutableList.Builder<SearchStrategy<?, ?>> ss = ImmutableList.builder();
 
@@ -50,7 +51,7 @@ final class Seq<I, O> extends SearchStrategy<I, O> {
             ss.add(s);
         }
 
-        @SuppressWarnings("unchecked") public <X> Builder<I, X> $(SearchStrategy<O, X> s) {
+        @SuppressWarnings("unchecked") public <X extends SearchState> Builder<I, X> $(SearchStrategy<O, X> s) {
             ss.add(s);
             return (Builder<I, X>) this;
         }

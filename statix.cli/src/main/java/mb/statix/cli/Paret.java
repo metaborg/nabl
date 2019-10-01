@@ -8,13 +8,13 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
+import mb.statix.random.EitherSearchState;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.predicate.Any;
 import mb.statix.random.predicate.Match;
 import mb.statix.random.predicate.Not;
-import mb.statix.random.util.Either2;
 
 public class Paret {
 
@@ -93,7 +93,8 @@ public class Paret {
         .build();
     // @formatter:on
 
-    public static SearchStrategy<SearchState, Either2<FocusedSearchState<CResolveQuery>, FocusedSearchState<CUser>>>
+    public static
+            SearchStrategy<SearchState, EitherSearchState<FocusedSearchState<CResolveQuery>, FocusedSearchState<CUser>>>
             selectConstraint(int limit) {
         // @formatter:off
         return limit(limit, concatAlt(

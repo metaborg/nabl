@@ -1,7 +1,7 @@
 package mb.statix.random;
 
-import mb.statix.random.nodes.SearchElement;
 import mb.statix.random.nodes.SearchNode;
+import mb.statix.random.nodes.SearchNodes;
 import mb.statix.solver.IConstraint;
 
 public interface SearchLogger {
@@ -10,7 +10,7 @@ public interface SearchLogger {
 
     void success(SearchNode<SearchState> n);
 
-    void failure(SearchElement e);
+    void failure(SearchNodes<?> nodes);
 
     final SearchLogger NOOP = new SearchLogger() {
 
@@ -20,7 +20,7 @@ public interface SearchLogger {
         @Override public void success(SearchNode<SearchState> n) {
         }
 
-        @Override public void failure(SearchElement e) {
+        @Override public void failure(SearchNodes<?> nodes) {
         }
 
     };
