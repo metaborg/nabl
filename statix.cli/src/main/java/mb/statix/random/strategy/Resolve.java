@@ -2,6 +2,7 @@ package mb.statix.random.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.random.util.StreamUtil.flatMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -108,7 +109,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         Collections.shuffle(indices, ctx.rnd());
 
         final String desc = this.toString() + "[" + count.get() + "]";
-        return SearchNodes.of(node, () -> desc, indices.stream().flatMap(idx -> {
+        return SearchNodes.of(node, () -> desc, flatMap(indices.stream(), idx -> {
             final AtomicInteger select = new AtomicInteger(idx);
             final Env<Scope, ITerm, ITerm, CEqual> env;
             try {
@@ -127,7 +128,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
             final Range<Integer> resultSize = resultSize(query.resultTerm(), unifier, env.matches.size());
             final List<Integer> sizes = sizes(resultSize, ctx.rnd());
 
-            return sizes.stream().map(size -> size - reqMatches.size()).flatMap(size -> {
+            return flatMap(sizes.stream().map(size -> size - reqMatches.size()), size -> {
                 return Subsets.of(optMatches).enumerate(size, ctx.rnd()).map(entry -> {
                     final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
                     reqMatches.forEach(subEnvBuilder::match);
@@ -139,10 +140,10 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                             .collect(ImmutableList.toImmutableList());
                     final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
                     constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                    subEnv.matches.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> {
+                    flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(condition -> {
                         constraints.add(condition);
                     });
-                    subEnv.rejects.stream().flatMap(m -> Optionals.stream(m.condition)).forEach(condition -> {
+                    flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition)).forEach(condition -> {
                         constraints.add(
                                 new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null)));
                     });

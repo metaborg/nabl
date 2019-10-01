@@ -54,19 +54,19 @@ public final class SearchStrategies {
     }
 
     public static final Fix fix(SearchStrategy<SearchState, SearchState> search,
-            SearchStrategy<SearchState, SearchState> infer, Predicate1<CUser> done) {
-        return new Fix(search, infer, done);
+            SearchStrategy<SearchState, SearchState> infer, Predicate1<CUser> done, int maxConsecutiveFailures) {
+        return new Fix(search, infer, done, maxConsecutiveFailures);
     }
 
     public static final <C extends IConstraint> Select<C> select(Class<C> cls, Predicate1<C> include) {
         // full classes instead of lambda's to add forwarding toString
-        return new Select<>(cls, new Function1<SearchState, Function1<C, Integer>>() {
+        return new Select<>(cls, new Function1<SearchState, Function1<C, Double>>() {
 
-            @Override public Function1<C, Integer> apply(SearchState t) {
-                return new Function1<C, Integer>() {
+            @Override public Function1<C, Double> apply(SearchState t) {
+                return new Function1<C, Double>() {
 
-                    @Override public Integer apply(C c) {
-                        return include.test(c) ? 1 : 0;
+                    @Override public Double apply(C c) {
+                        return include.test(c) ? 1d : 0d;
                     }
 
                     @Override public String toString() {
@@ -85,7 +85,7 @@ public final class SearchStrategies {
     }
 
     public static final <C extends IConstraint> Select<C> select(Class<C> cls,
-            Function1<SearchState, Function1<C, Integer>> weight) {
+            Function1<SearchState, Function1<C, Double>> weight) {
         return new Select<>(cls, weight);
     }
 
@@ -98,10 +98,10 @@ public final class SearchStrategies {
     }
 
     public static final Expand expand() {
-        return expand(1, ImmutableMap.of());
+        return expand(1d, ImmutableMap.of());
     }
 
-    public static final Expand expand(int defaultWeight, Map<String, Integer> weights) {
+    public static final Expand expand(double defaultWeight, Map<String, Double> weights) {
         return new Expand(defaultWeight, weights);
     }
 

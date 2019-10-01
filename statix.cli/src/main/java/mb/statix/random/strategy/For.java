@@ -1,5 +1,7 @@
 package mb.statix.random.strategy;
 
+import static mb.statix.random.util.StreamUtil.flatMap;
+
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -20,7 +22,7 @@ final class For<I extends SearchState, O extends SearchState> extends SearchStra
     }
 
     @Override public SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
-        final Stream<SearchNode<O>> nodes = IntStream.range(0, n).boxed().flatMap(i -> {
+        final Stream<SearchNode<O>> nodes = flatMap(IntStream.range(0, n).boxed(), i -> {
             return s.apply(ctx, node).nodes();
         });
         return SearchNodes.of(node, this::toString, nodes);

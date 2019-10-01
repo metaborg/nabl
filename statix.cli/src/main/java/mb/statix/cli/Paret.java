@@ -1,10 +1,12 @@
 package mb.statix.cli;
 
 import static mb.statix.random.strategy.SearchStrategies.*;
+import static mb.statix.random.util.StreamUtil.flatMap;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Function1;
 
@@ -27,16 +29,6 @@ import mb.statix.solver.completeness.CompletenessUtil;
 
 public class Paret {
 
-    public static SearchStrategy<SearchState, SearchState> enumerate() {
-        // @formatter:off
-        return seq(enumerateExp())
-               .$(marker("generateLex"))
-               .$(generateLex())
-               .$(marker("done"))
-               .$();
-        // @formatter:on
-    }
-
     public static SearchStrategy<SearchState, SearchState> search() {
         // @formatter:off
         return seq(searchExp())
@@ -47,27 +39,13 @@ public class Paret {
         // @formatter:on
     }
 
-    // generation of expressions
+    // inference step
 
     private static SearchStrategy<SearchState, SearchState> inferDelayAndDrop() {
         return seq(infer()).$(delayStuckQueries()).$(dropAst()).$();
     }
 
     // generation of expressions
-
-    private static SearchStrategy<SearchState, SearchState> enumerateExp() {
-        // @formatter:off
-        return fix(
-            seq(selectConstraint(1))
-            .$(match(
-                seq(resolve()).$(infer()).$(),
-                seq(expand()).$(infer()).$()))
-            .$(),
-            inferDelayAndDrop(),
-            new Match("is_.*") // everything except is_* constraints should be resolved
-        );
-        // @formatter:on
-    }
 
     private static SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
@@ -78,7 +56,8 @@ public class Paret {
                limit(1, seq(limit(5, expand(defaultRuleWeight, ruleWeights))).$(infer()).$())))
             .$(),
             inferDelayAndDrop(),
-            new Match("is_.*") // everything except is_* constraints should be resolved
+            new Match("is_.*"), // everything except is_* constraints should be resolved
+            50 // what is a good number here? size / 4?
         )));
         // @formatter:on
     }
@@ -86,15 +65,15 @@ public class Paret {
     private static Function1<CUser, Integer> predWeights(SearchState state) {
         final IUnifier unifier = state.state().unifier();
         final Set<CriticalEdge> criticalEdges =
-                state.delays().values().stream().flatMap(d -> d.criticalEdges().stream()).collect(Collectors.toSet());
+                flatMap(state.delays().values().stream(), d -> d.criticalEdges().stream()).collect(Collectors.toSet());
         // @formatter:off
-        Set<ITermVar> criticalVars = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
-            .filter(c -> CompletenessUtil.criticalEdges(c, state.state().spec(), unifier).stream().anyMatch(criticalEdges::contains))
-            .flatMap(c -> c.args().stream().flatMap(arg -> unifier.getVars(arg).stream()))
+        final Stream<CUser> criticalPreds = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
+            .filter(c -> CompletenessUtil.criticalEdges(c, state.state().spec(), unifier).stream().anyMatch(criticalEdges::contains));
+        final Set<ITermVar> criticalVars = flatMap(criticalPreds, c -> flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()))
             .collect(Collectors.toSet());
         // @formatter:on
         return (c) -> {
-            if(c.args().stream().flatMap(arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
+            if(flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
                 return 2;
             } else {
                 return 1;
@@ -104,21 +83,21 @@ public class Paret {
 
     // @formatter:off
     private static int defaultRuleWeight = 1;
-    private static Map<String,Integer> ruleWeights = ImmutableMap.<String, Integer>builder()
+    private static Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
         // TWEAK Disable operations until better inference in the solver
-        .put("G-UnOp", 0)
-        .put("G-BinOp", 0)
+        .put("G-UnOp", 2.0)
+        .put("G-BinOp", 2.0)
         // TWEAK Prefer rules that force types
-        .put("G-Num", 2)
-        .put("G-True", 2)
-        .put("G-False", 2)
-        .put("G-Nil", 2)
-        .put("G-List", 2)
-        .put("G-Fun", 2)
+        .put("G-Num", 2.0)
+        .put("G-True", 2.0)
+        .put("G-False", 2.0)
+        .put("G-Nil", 2.0)
+        .put("G-List", 2.0)
+        .put("G-Fun", 2.0)
         // TWEAK Discourage rules that are 'free'
-        .put("G-If", 1)
-        .put("G-App", 1)
-        .put("G-Let", 1)
+        .put("G-If", 1.0)
+        .put("G-App", 1.0)
+        .put("G-Let", 1.0)
         .build();
     // @formatter:on
 
@@ -137,7 +116,7 @@ public class Paret {
     // generation of id's
 
     private static SearchStrategy<SearchState, SearchState> generateLex() {
-        return require(limit(1, fix(expandLex(), infer(), new Not<>(new Match("is_.*")))));
+        return require(limit(1, fix(expandLex(), infer(), new Not<>(new Match("is_.*")), -1)));
     }
 
     private static SearchStrategy<SearchState, SearchState> expandLex() {
@@ -149,34 +128,34 @@ public class Paret {
     }
 
     // @formatter:off
-    private static Map<String,Integer> idWeights = ImmutableMap.<String, Integer>builder()
+    private static Map<String, Double> idWeights = ImmutableMap.<String, Double>builder()
         // TWEAK Increase likelihood of duplicate choices, while still providing many identifiers
-        .put("[ID-A]", 16)
-        .put("[ID-B]", 8)
-        .put("[ID-C]", 8)
-        .put("[ID-D]", 4)
-        .put("[ID-E]", 4)
-        .put("[ID-F]", 4)
-        .put("[ID-G]", 4)
-        .put("[ID-H]", 2)
-        .put("[ID-I]", 2)
-        .put("[ID-J]", 2)
-        .put("[ID-K]", 2)
-        .put("[ID-L]", 2)
-        .put("[ID-M]", 2)
-        .put("[ID-N]", 2)
-        .put("[ID-O]", 2)
-        .put("[ID-P]", 1)
-        .put("[ID-Q]", 1)
-        .put("[ID-R]", 1)
-        .put("[ID-S]", 1)
-        .put("[ID-T]", 1)
-        .put("[ID-U]", 1)
-        .put("[ID-V]", 1)
-        .put("[ID-W]", 1)
-        .put("[ID-X]", 1)
-        .put("[ID-Y]", 1)
-        .put("[ID-Z]", 1)
+        .put("[ID-A]", 16.0)
+        .put("[ID-B]", 8.0)
+        .put("[ID-C]", 8.0)
+        .put("[ID-D]", 4.0)
+        .put("[ID-E]", 4.0)
+        .put("[ID-F]", 4.0)
+        .put("[ID-G]", 4.0)
+        .put("[ID-H]", 2.0)
+        .put("[ID-I]", 2.0)
+        .put("[ID-J]", 2.0)
+        .put("[ID-K]", 2.0)
+        .put("[ID-L]", 2.0)
+        .put("[ID-M]", 2.0)
+        .put("[ID-N]", 2.0)
+        .put("[ID-O]", 2.0)
+        .put("[ID-P]", 1.0)
+        .put("[ID-Q]", 1.0)
+        .put("[ID-R]", 1.0)
+        .put("[ID-S]", 1.0)
+        .put("[ID-T]", 1.0)
+        .put("[ID-U]", 1.0)
+        .put("[ID-V]", 1.0)
+        .put("[ID-W]", 1.0)
+        .put("[ID-X]", 1.0)
+        .put("[ID-Y]", 1.0)
+        .put("[ID-Z]", 1.0)
         .build();
     // @formatter:on
 

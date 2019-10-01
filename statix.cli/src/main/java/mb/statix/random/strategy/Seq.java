@@ -15,6 +15,7 @@ import mb.statix.random.SearchState;
 import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
+import static mb.statix.random.util.StreamUtil.flatMap;
 
 final class Seq<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
@@ -29,7 +30,7 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
         Stream<SearchNode> nodes = Stream.of(node);
         Deque<Function0<String>> descs = Queues.newArrayDeque();
         for(SearchStrategy s : ss) {
-            nodes = nodes.flatMap(n -> {
+            nodes = flatMap(nodes, n -> {
                 final SearchNodes<?> sn = s.apply(ctx, n);
                 descs.push(sn::desc);
                 return sn.nodes();

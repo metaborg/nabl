@@ -32,6 +32,7 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
+import static mb.statix.random.util.StreamUtil.flatMap;
 
 class ResolveDataWF implements DataWF<ITerm, CEqual> {
     private final IState.Immutable state;
@@ -81,9 +82,10 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      representatives, which can be local to newUnifier.
         final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
 
-        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().areEqual(t1, t2).orElse(true)))
-                .flatMap(diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+        final Collection<ITermVar> disunifiedVars = flatMap(newUnifier.disequalities().stream().map(Diseq::toTuple)
+                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().areEqual(t1, t2).orElse(true))), 
+
+                diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
                 .collect(Collectors.toList());
         if(!disunifiedVars.isEmpty()) {
             return Optional.empty();

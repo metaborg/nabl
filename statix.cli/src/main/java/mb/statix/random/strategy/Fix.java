@@ -4,6 +4,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Action1;
@@ -25,23 +26,28 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
     private final SearchStrategy<SearchState, SearchState> infer;
     private final SearchStrategy<SearchState, SearchState> searchAndInfer;
     private final Predicate1<CUser> done;
+    private final int maxConsecutiveFailures;
 
     public Fix(SearchStrategy<SearchState, SearchState> search, SearchStrategy<SearchState, SearchState> infer,
-            Predicate1<CUser> done) {
+            Predicate1<CUser> done, int maxConsecutiveFailures) {
         this.search = search;
         this.infer = infer;
         this.searchAndInfer = SearchStrategies.seq(search).$(infer).$();
         this.done = done;
+        this.maxConsecutiveFailures = maxConsecutiveFailures;
     }
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
+        final AtomicInteger failureCount = new AtomicInteger();
         final Deque<Iterator<SearchNode<SearchState>>> stack = new LinkedList<>();
         final Action1<SearchNodes<SearchState>> push = ns -> {
             Iterator<SearchNode<SearchState>> it = ns.nodes().iterator();
             if(it.hasNext()) {
                 stack.push(it);
+                failureCount.set(0);
             } else {
                 ctx.failure(ns);
+                failureCount.incrementAndGet();
             }
         };
         final SearchNodes<SearchState> initNodes = infer.apply(ctx, node);
@@ -60,6 +66,10 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
                 }
                 final SearchNodes<SearchState> nextNodes = searchAndInfer.apply(ctx, next);
                 push.apply(nextNodes);
+                if(maxConsecutiveFailures >= 0 && failureCount.get() >= maxConsecutiveFailures) {
+                    // we're done here
+                    stack.clear();
+                }
             }
             return Optional.empty();
         });

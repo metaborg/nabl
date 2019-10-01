@@ -1,5 +1,7 @@
 package mb.statix.random.util;
 
+import static mb.statix.random.util.StreamUtil.flatMap;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +42,7 @@ public class Subsets<E> {
         final List<Integer> indices =
                 IntStream.range(start, end + 1).boxed().collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(indices, rnd);
-        return indices.stream().flatMap(index -> {
+        return flatMap(indices.stream(), index -> {
             return enumerate(n - 1, index, end + 1, rnd).map(subset -> subset.__insert(elementList.get(index)));
         });
     }
