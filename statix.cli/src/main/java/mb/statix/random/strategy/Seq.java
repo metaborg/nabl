@@ -1,5 +1,6 @@
 package mb.statix.random.strategy;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -7,7 +8,7 @@ import java.util.stream.Stream;
 import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 
 import mb.statix.random.SearchContext;
 import mb.statix.random.SearchState;
@@ -26,11 +27,11 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Override public SearchNodes<O> doApply(SearchContext ctx,
             SearchNode<I> node) {
         Stream<SearchNode> nodes = Stream.of(node);
-        List<Function0<String>> descs = Lists.newArrayList();
+        Deque<Function0<String>> descs = Queues.newArrayDeque();
         for(SearchStrategy s : ss) {
             nodes = nodes.flatMap(n -> {
                 final SearchNodes<?> sn = s.apply(ctx, n);
-                descs.add(sn::desc);
+                descs.push(sn::desc);
                 return sn.nodes();
             });
         }
@@ -61,6 +62,5 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
         }
 
     }
-
 
 }

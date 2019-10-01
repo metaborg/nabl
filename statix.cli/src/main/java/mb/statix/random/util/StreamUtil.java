@@ -13,6 +13,10 @@ import com.google.common.collect.Streams;
 
 public class StreamUtil {
 
+    @SuppressWarnings("unchecked") public static <T> Stream<T> filterInstances(Class<T> cls, Stream<? super T> stream) {
+        return stream.filter(cls::isInstance).map(t -> (T) t);
+    }
+
     public static <T> Stream<T> generate(PartialFunction0<T> generator) {
         final AtomicReference<Optional<T>> next = new AtomicReference<>();
         return generate(() -> {

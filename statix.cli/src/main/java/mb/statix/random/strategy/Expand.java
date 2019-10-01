@@ -87,7 +87,8 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
                         return new SearchNode<>(ctx.nextNodeId(), output, node, "expand(" + head + ")");
                     });
         });
-        return SearchNodes.of(node, this::toString, nodes);
+        final String desc = this.toString() + "[" + rules.size() + "]";
+        return SearchNodes.of(node, () -> desc, nodes);
     }
 
     @Override public String toString() {

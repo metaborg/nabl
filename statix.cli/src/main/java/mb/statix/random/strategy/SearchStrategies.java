@@ -20,7 +20,7 @@ import mb.statix.solver.IConstraint;
 public final class SearchStrategies {
 
     // Methods return concrete types for easier IDE navigation. Use `Open Return Type` to go to implementation directly.
-    
+
     public static final <I extends SearchState, O extends SearchState> Limit<I, O> limit(int n,
             SearchStrategy<I, O> s) {
         return new Limit<>(n, s);
@@ -59,7 +59,34 @@ public final class SearchStrategies {
     }
 
     public static final <C extends IConstraint> Select<C> select(Class<C> cls, Predicate1<C> include) {
-        return new Select<>(cls, include);
+        // full classes instead of lambda's to add forwarding toString
+        return new Select<>(cls, new Function1<SearchState, Function1<C, Integer>>() {
+
+            @Override public Function1<C, Integer> apply(SearchState t) {
+                return new Function1<C, Integer>() {
+
+                    @Override public Integer apply(C c) {
+                        return include.test(c) ? 1 : 0;
+                    }
+
+                    @Override public String toString() {
+                        return include.toString();
+                    }
+
+                };
+
+            }
+
+            @Override public String toString() {
+                return include.toString();
+            }
+
+        });
+    }
+
+    public static final <C extends IConstraint> Select<C> select(Class<C> cls,
+            Function1<SearchState, Function1<C, Integer>> weight) {
+        return new Select<>(cls, weight);
     }
 
     public static final FilterConstraints filter(Predicate1<IConstraint> p) {

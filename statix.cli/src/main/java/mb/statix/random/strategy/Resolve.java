@@ -107,7 +107,8 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                 IntStream.range(0, count.get()).boxed().collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(indices, ctx.rnd());
 
-        return SearchNodes.of(node, this::toString, indices.stream().flatMap(idx -> {
+        final String desc = this.toString() + "[" + count.get() + "]";
+        return SearchNodes.of(node, () -> desc, indices.stream().flatMap(idx -> {
             final AtomicInteger select = new AtomicInteger(idx);
             final Env<Scope, ITerm, ITerm, CEqual> env;
             try {
