@@ -1,7 +1,5 @@
 package mb.statix.solver.completeness;
 
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,12 +34,7 @@ public abstract class Completeness implements ICompleteness {
     }
 
     protected static Optional<ITerm> getVarOrScope(ITerm scope, IUnifier unifier) {
-        // @formatter:off
-        return M.cases(
-            Scope.matcher(),
-            M.var()
-        ).match(scope, unifier);
-        // @formatter:on
+        return CompletenessUtil.scopeOrVar().match(scope, unifier);
     }
 
     public static class Immutable extends Completeness implements ICompleteness.Immutable, Serializable {
