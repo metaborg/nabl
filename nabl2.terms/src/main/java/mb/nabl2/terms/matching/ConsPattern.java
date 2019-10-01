@@ -5,9 +5,9 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Set;
 
+import org.metaborg.util.functions.Action2;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.IListTerm;
@@ -15,7 +15,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 
 class ConsPattern extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -43,23 +43,25 @@ class ConsPattern extends Pattern {
         return vars.build();
     }
 
-    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, Immutable unifier, Eqs eqs) {
         // @formatter:off
         return M.list(listTerm -> {
-            return listTerm.match(ListTerms.<MaybeNotInstantiatedBool>cases()
+            return listTerm.match(ListTerms.<Boolean>cases()
                 .cons(consTerm -> {
                     return matchTerms(Iterables2.from(head, tail),
-                            Iterables2.from(consTerm.getHead(), consTerm.getTail()), subst, unifier);
+                            Iterables2.from(consTerm.getHead(), consTerm.getTail()), subst, unifier, eqs);
                 }).var(v -> {
-                    return MaybeNotInstantiatedBool.ofNotInstantiated(v);
+                    eqs.add(v, this);
+                    return true;
                 }).otherwise(t -> {
-                    return MaybeNotInstantiatedBool.ofResult(false);
+                    return false;
                 })
             );
-        }).match(unifier.findTerm(term)).orElse(MaybeNotInstantiatedBool.ofResult(false));
+        }).match(unifier.findTerm(term)).orElse(false);
     }
 
-    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+    @Override
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
         return B.newCons(head.asTerm(equalities), (IListTerm)tail.asTerm(equalities));
     }
 

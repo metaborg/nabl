@@ -34,7 +34,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
-        final IUnifier unifier = state.unifier();
+        final IUnifier.Immutable unifier = state.unifier();
         try {
             final IConstraint result;
             if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {

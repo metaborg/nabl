@@ -21,7 +21,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.CapsuleUtil;
@@ -340,6 +339,19 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         }
 
         ///////////////////////////////////////////
+        // diff(ITerm, ITerm)
+        ///////////////////////////////////////////
+
+        @Override public Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2) {
+            try {
+                return unify(term1, term2).map(Result::result);
+            } catch(OccursException e) {
+                return Optional.empty();
+            }
+        }
+
+
+        ///////////////////////////////////////////
         // disunify(ITerm, ITerm)
         ///////////////////////////////////////////
 
@@ -500,29 +512,6 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         }
 
         ///////////////////////////////////////////
-        // areEqual(ITerm, ITerm)
-        ///////////////////////////////////////////
-
-        @Override public MaybeNotInstantiatedBool areEqual(ITerm left, ITerm right) {
-            final Optional<Result<IUnifier.Immutable>> result;
-            try {
-                result = unify(left, right);
-            } catch(OccursException e) {
-                return MaybeNotInstantiatedBool.ofResult(false);
-            }
-            if(!result.isPresent()) {
-                // unification failed, not equal
-                return MaybeNotInstantiatedBool.ofResult(false);
-            }
-            final IUnifier.Immutable diff = result.get().result();
-            if(diff.isEmpty()) { // FIXME See disunify
-                // nothing was unifier, equal
-                return MaybeNotInstantiatedBool.ofResult(true);
-            }
-            return MaybeNotInstantiatedBool.ofNotInstantiated(diff.varSet());
-        }
-
-        ///////////////////////////////////////////
         // construction
         ///////////////////////////////////////////
 
@@ -573,6 +562,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
             @Override public ITermVar findRep(ITermVar var) {
                 return findRep(var, reps);
+            }
+
+            /**
+             * @deprecated This method is not supported on mutable unifiers
+             */
+            @Override public Optional<mb.nabl2.terms.unification.IUnifier.Immutable> diff(ITerm term1, ITerm term2) {
+                throw new UnsupportedOperationException();
             }
 
         }

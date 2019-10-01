@@ -86,24 +86,17 @@ public class EqualityComponent extends ASolver {
     private Optional<SolveResult> solve(CInequal constraint) {
         final ITerm left = constraint.getLeft();
         final ITerm right = constraint.getRight();
-        // @formatter:off
-        return unifier().areEqual(left, right).match(
-            result -> {
-                if(result) {
-                    MessageContent content = MessageContent.builder().append(constraint.getLeft().toString())
-                            .append(" and ").append(constraint.getRight().toString())
-                            .append(" must be inequal, but are not.").build();
-                    IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
-                    return Optional.of(SolveResult.messages(message));
-                } else {
-                    return Optional.of(SolveResult.empty());
-                }
-            },
-            var -> {
-                return Optional.empty();
-            }
-        );
-        // @formatter:on
+        Optional<IUnifier.Immutable> result = unifier().diff(left, right);
+        if(!result.isPresent()) {
+            return Optional.empty();
+        } else if(result.get().isEmpty()) {
+            MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
+                    .append(constraint.getRight().toString()).append(" must be inequal, but are not.").build();
+            IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
+            return Optional.of(SolveResult.messages(message));
+        } else {
+            return Optional.of(SolveResult.empty());
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------//

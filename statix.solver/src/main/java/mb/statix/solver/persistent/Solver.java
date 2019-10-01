@@ -86,10 +86,12 @@ public class Solver {
             throw Delay.ofVars(unifiedVars);
         }
 
+        // @formatter:off
         final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().areEqual(t1, t2).orElse(true)))
+                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().diff(t1, t2).map(IUnifier::isEmpty).orElse(true)))
                 .flatMap(diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
                 .collect(Collectors.toList());
+        // @formatter:on
         if(!disunifiedVars.isEmpty()) {
             debug.info("Cannot decide constraint entailment: disunified rigid vars)");
             throw Delay.ofVars(disunifiedVars);

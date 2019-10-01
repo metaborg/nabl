@@ -6,7 +6,6 @@ import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
 import mb.nabl2.terms.substitution.ISubstitution;
 
 /**
@@ -141,14 +140,13 @@ public interface IUnifier {
     String toString(ITerm term, int n);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Methods on two terms
+    // Methods on a single term
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Test if the two terms are equal relative to this unifier. If terms are incomparable under this unifier an
-     * exception is thrown.
+     * Return a unifier that makes these terms equal, relative to the current unifier.
      */
-    MaybeNotInstantiatedBool areEqual(ITerm term1, ITerm term2);
+    Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2);
 
     ///////////////////////////////////////////
     // asMap()

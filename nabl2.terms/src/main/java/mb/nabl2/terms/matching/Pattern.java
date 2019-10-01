@@ -10,15 +10,18 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
@@ -34,51 +37,112 @@ public abstract class Pattern implements Serializable {
         return match(term, PersistentUnifier.Immutable.of()).match(t -> t, v -> Optional.empty());
     }
 
-    public MaybeNotInstantiated<Optional<Immutable>> match(ITerm term, IUnifier unifier) {
+    public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(ITerm term, IUnifier.Immutable unifier) {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        return matchTerm(term, subst, unifier).match(u -> {
-            return MaybeNotInstantiated.ofResult(u ? Optional.of(subst.freeze()) : Optional.empty());
-        }, e -> MaybeNotInstantiated.ofNotInstantiated(e));
+        final List<ITermVar> stuckVars = Lists.newArrayList();
+        final Eqs eqs = new Eqs() {
+
+            @Override public void add(ITermVar var, ITerm pattern) {
+                stuckVars.add(var);
+            }
+
+            @Override public void add(ITermVar var, Pattern pattern) {
+                stuckVars.add(var);
+            }
+
+        };
+        if(!matchTerm(term, subst, unifier, eqs)) {
+            return MaybeNotInstantiated.ofResult(Optional.empty());
+        } else if(!stuckVars.isEmpty()) {
+            return MaybeNotInstantiated.ofNotInstantiated(stuckVars);
+        } else {
+            return MaybeNotInstantiated.ofResult(Optional.of(subst.freeze()));
+        }
     }
 
-    protected abstract MaybeNotInstantiatedBool matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier unifier);
+    /**
+     * Match terms against a pattern and generate additional equalities that result from the match.
+     * 
+     * Fresh variables are generated for unmatched variables in the patterns. As a result, the resulting substitution
+     * has entries for all the variables in the patterns, and no pattern variables escape in the equalities.
+     */
+    public Optional<Result> matchWithEqs(ITerm term, IUnifier.Immutable unifier, Function1<ITermVar, ITermVar> fresh) {
+        // substitution from pattern variables to unifier variables
+        final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
+        // equalities between unifier terms
+        final ImmutableList.Builder<Tuple2<ITerm, ITerm>> termEqs = ImmutableList.builder();
+        // equalities between unifier variables and patterns
+        final List<Tuple2<ITermVar, Pattern>> patternEqs = Lists.newArrayList();
 
-    protected static MaybeNotInstantiatedBool matchTerms(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
-            ISubstitution.Transient subst, IUnifier unifier) {
+        // match
+        final Eqs eqs = new Eqs() {
+
+            @Override public void add(ITermVar var, ITerm term) {
+                termEqs.add(ImmutableTuple2.of(var, term));
+            }
+
+            @Override public void add(ITermVar var, Pattern pattern) {
+                patternEqs.add(ImmutableTuple2.of(var, pattern));
+            }
+
+        };
+        if(!matchTerm(term, _subst, unifier, eqs)) {
+            return Optional.empty();
+        }
+
+        // generate fresh unifier variables for unmatched pattern variables
+        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.varSet()).immutableCopy();
+        freeVars.forEach(v -> _subst.put(v, fresh.apply(v)));
+        final ISubstitution.Immutable subst = _subst.freeze();
+
+        // create equalities between unifier terms from pattern equalities
+        for(Tuple2<ITermVar, Pattern> patternEq : patternEqs) {
+            final ITermVar var = patternEq._1();
+            final ITerm patternTerm = patternEq._2().asTerm((v, t) -> {
+                termEqs.add(ImmutableTuple2.of(subst.apply(v), subst.apply(t)));
+            });
+            termEqs.add(ImmutableTuple2.of(var, subst.apply(patternTerm)));
+        }
+
+        return Optional.of(new Result(subst, termEqs.build()));
+    }
+
+    protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst,
+            mb.nabl2.terms.unification.IUnifier.Immutable unifier, Eqs eqs);
+
+    protected static boolean matchTerms(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
+            ISubstitution.Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         final Iterator<Pattern> itPattern = patterns.iterator();
         final Iterator<ITerm> itTerm = terms.iterator();
-        final List<ITermVar> stuckVars = Lists.newArrayList();
         while(itPattern.hasNext()) {
             if(!itTerm.hasNext()) {
-                return MaybeNotInstantiatedBool.ofResult(false);
+                return false;
             }
-            final MaybeNotInstantiatedBool result = itPattern.next().matchTerm(itTerm.next(), subst, unifier);
-            final boolean canStillMatch = result.match(m -> m, vars -> {
-                // continue the match, it might still fail, but collect stuck vars
-                stuckVars.addAll(vars);
-                return true;
-            });
-            if(!canStillMatch) {
-                return MaybeNotInstantiatedBool.ofResult(false);
+            if(!itPattern.next().matchTerm(itTerm.next(), subst, unifier, eqs)) {
+                return false;
             }
         }
         if(itTerm.hasNext()) {
-            return MaybeNotInstantiatedBool.ofResult(false);
+            return false;
         }
-        if(stuckVars.isEmpty()) {
-            return MaybeNotInstantiatedBool.ofResult(true);
-        } else {
-            return MaybeNotInstantiatedBool.ofNotInstantiated(stuckVars);
-        }
+        return true;
     }
 
     public final Tuple2<ITerm, Multimap<ITermVar, ITerm>> asTerm() {
         final ImmutableMultimap.Builder<ITermVar, ITerm> builder = ImmutableMultimap.builder();
-        final ITerm term = asTerm(builder);
+        final ITerm term = asTerm((v, t) -> builder.put(v, t));
         return ImmutableTuple2.of(term, builder.build());
     }
 
-    public abstract ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities);
+    protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities);
+
+    protected interface Eqs {
+
+        void add(ITermVar var, Pattern pattern);
+
+        void add(ITermVar var, ITerm pattern);
+
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // Pattern ordering                                                      //

@@ -4,14 +4,15 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMultimap;
+import org.metaborg.util.functions.Action2;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 
 class IntPattern extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -30,21 +31,23 @@ class IntPattern extends Pattern {
         return ImmutableSet.of();
     }
 
-    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, Immutable unifier, Eqs eqs) {
         // @formatter:off
-        return unifier.findTerm(term).match(Terms.<MaybeNotInstantiatedBool>cases()
+        return unifier.findTerm(term).match(Terms.<Boolean>cases()
             .integer(intTerm -> {
-                return MaybeNotInstantiatedBool.ofResult(intTerm.getValue() == value);
+                return intTerm.getValue() == value;
             }).var(v -> {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(v);
+                eqs.add(v, this);
+                return true;
             }).otherwise(t -> {
-                return MaybeNotInstantiatedBool.ofResult(false);
+                return false;
             })
         );
         // @formatter:on
     }
 
-    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+    @Override
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
         return B.newInt(value);
     }
 

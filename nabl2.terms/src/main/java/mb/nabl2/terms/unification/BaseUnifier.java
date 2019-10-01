@@ -30,10 +30,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
-import mb.nabl2.util.Set2;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
@@ -386,145 +384,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             instances.add(findTermRecursive(term, stack, visited));
         }
         return instances;
-    }
-
-    ///////////////////////////////////////////
-    // areEqual(ITerm, ITerm)
-    ///////////////////////////////////////////
-
-    @Override public MaybeNotInstantiatedBool areEqual(final ITerm left, final ITerm right) {
-        return equalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
-    }
-
-    private MaybeNotInstantiatedBool equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        // @formatter:off
-        return left.match(Terms.<MaybeNotInstantiatedBool>cases(
-            applLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .appl(applRight -> {
-                    if(applLeft.getArity() == applRight.getArity() &&
-                            applLeft.getOp().equals(applRight.getOp())) {
-                        return equals(applLeft.getArgs(), applRight.getArgs(), stack, visited);
-                    } else {
-                        return MaybeNotInstantiatedBool.ofResult(false);
-                    }
-                 })
-                .var(varRight -> equalVarTerm(varRight, applLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            listLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .list(listRight -> listLeft.match(ListTerms.<MaybeNotInstantiatedBool>cases(
-                    consLeft -> listRight.match(ListTerms.<MaybeNotInstantiatedBool>cases()
-                        .cons(consRight -> {
-                            return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited).flatMap(m -> {
-                                if(m) {
-                                    return equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
-                                } else {
-                                    return MaybeNotInstantiatedBool.ofResult(false);
-                                }
-                            });
-                        })
-                        .var(varRight -> equalVarTerm(varRight, consLeft, stack, visited))
-                        .otherwise(l -> MaybeNotInstantiatedBool.ofResult(false))
-                    ),
-                    nilLeft -> listRight.match(ListTerms.<MaybeNotInstantiatedBool>cases()
-                        .nil(nilRight -> MaybeNotInstantiatedBool.ofResult(true))
-                        .var(varRight -> equalVarTerm(varRight, nilLeft, stack, visited))
-                        .otherwise(l -> MaybeNotInstantiatedBool.ofResult(false))
-                    ),
-                    varLeft -> listRight.match(ListTerms.<MaybeNotInstantiatedBool>cases()
-                        .var(varRight -> equalVars(varLeft, varRight, stack, visited))
-                        .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
-                    )
-                )))
-                .var(varRight -> equalVarTerm(varRight, listLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            stringLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .string(stringRight -> MaybeNotInstantiatedBool.ofResult(stringLeft.getValue().equals(stringRight.getValue())))
-                .var(varRight -> equalVarTerm(varRight, stringLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            integerLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .integer(integerRight -> MaybeNotInstantiatedBool.ofResult(integerLeft.getValue() == integerRight.getValue()))
-                .var(varRight -> equalVarTerm(varRight, integerLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            blobLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .blob(blobRight -> MaybeNotInstantiatedBool.ofResult(blobLeft.getValue().equals(blobRight.getValue())))
-                .var(varRight -> equalVarTerm(varRight, blobLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            varLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                // match var before term, or term will always match
-                .var(varRight -> equalVars(varLeft, varRight, stack, visited))
-                .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
-            )
-        ));
-        // @formatter:on
-    }
-
-    private MaybeNotInstantiatedBool equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        final ITermVar rep = findRep(var);
-        if(terms().containsKey(rep)) {
-            return equalTerms(terms().get(rep), term, stack, visited);
-        } else {
-            return MaybeNotInstantiatedBool.ofNotInstantiated(rep);
-        }
-    }
-
-    private MaybeNotInstantiatedBool equalVars(final ITermVar left, final ITermVar right,
-            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        final ITermVar leftRep = findRep(left);
-        final ITermVar rightRep = findRep(right);
-        if(leftRep.equals(rightRep)) {
-            return MaybeNotInstantiatedBool.ofResult(true);
-        }
-        final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
-        final MaybeNotInstantiatedBool equal;
-        if(!visited.containsKey(pair)) {
-            stack.add(pair);
-            visited.put(pair, null);
-            final ITerm leftTerm = terms().get(leftRep);
-            final ITerm rightTerm = terms().get(rightRep);
-            if(leftTerm == null && rightTerm == null) {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep, rightRep);
-            } else if(leftTerm == null) {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep);
-            } else if(rightTerm == null) {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(rightRep);
-            }
-            equal = equalTerms(leftTerm, rightTerm, stack, visited);
-            equal.onResult(eq -> {
-                visited.put(pair, eq);
-            });
-            stack.remove(pair);
-        } else if(stack.contains(pair)) {
-            equal = MaybeNotInstantiatedBool.ofResult(false);
-        } else {
-            equal = MaybeNotInstantiatedBool.ofResult(visited.get(pair));
-        }
-        return equal;
-    }
-
-    private MaybeNotInstantiatedBool equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights,
-            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        Iterator<ITerm> itLeft = lefts.iterator();
-        Iterator<ITerm> itRight = rights.iterator();
-        while(itLeft.hasNext()) {
-            if(!itRight.hasNext()) {
-                return MaybeNotInstantiatedBool.ofResult(false);
-            }
-            final MaybeNotInstantiatedBool result = equalTerms(itLeft.next(), itRight.next(), stack, visited);
-            if(!result.orElse(false)) {
-                return result;
-            }
-        }
-        if(itRight.hasNext()) {
-            return MaybeNotInstantiatedBool.ofResult(false);
-        }
-        return MaybeNotInstantiatedBool.ofResult(true);
     }
 
     ///////////////////////////////////////////
@@ -928,10 +787,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.toString(term, n);
         }
 
-        @Override public MaybeNotInstantiatedBool areEqual(ITerm term1, ITerm term2) {
-            return unifier.areEqual(term1, term2);
-        }
-
         @Override public java.util.Map<ITermVar, ITerm> equalityMap() {
             return unifier.equalityMap();
         }
@@ -962,6 +817,10 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
                 unifier = r;
                 return true;
             }).orElse(false);
+        }
+
+        @Override public Optional<Immutable> diff(ITerm term1, ITerm term2) {
+            return unifier.diff(term1, term2);
         }
 
         @Override public ISubstitution.Immutable retain(ITermVar var) {

@@ -79,12 +79,12 @@ public abstract class ARule {
         return Rule.of(name(), params(), newBody);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier) throws Delay {
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier) throws Delay {
         return apply(args, unifier, null);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier, @Nullable IConstraint cause)
-            throws Delay {
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier,
+            @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
                 P.match(params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars));

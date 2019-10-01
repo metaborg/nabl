@@ -33,7 +33,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
     }
 
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
-        final IUnifier unifier = state.unifier();
+        final IUnifier.Immutable unifier = state.unifier();
         try {
             final IConstraint result;
             if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {

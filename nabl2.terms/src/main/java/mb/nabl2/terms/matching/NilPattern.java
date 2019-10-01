@@ -5,14 +5,15 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Set;
 
-import com.google.common.collect.ImmutableMultimap;
+import org.metaborg.util.functions.Action2;
+
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 
 class NilPattern extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -24,23 +25,25 @@ class NilPattern extends Pattern {
         return ImmutableSet.of();
     }
 
-    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, Immutable unifier, Eqs eqs) {
         // @formatter:off
         return M.list(listTerm -> {
-            return listTerm.match(ListTerms.<MaybeNotInstantiatedBool>cases()
+            return listTerm.match(ListTerms.<Boolean>cases()
                 .nil(nilTerm -> {
-                    return MaybeNotInstantiatedBool.ofResult(true);
+                    return true;
                 }).var(v -> {
-                    return MaybeNotInstantiatedBool.ofNotInstantiated(v);
+                    eqs.add(v, this);
+                    return true;
                 }).otherwise(t -> {
-                    return MaybeNotInstantiatedBool.ofResult(false);
+                    return false;
                 })
             );
-        }).match(unifier.findTerm(term)).orElse(MaybeNotInstantiatedBool.ofResult(false));
+        }).match(unifier.findTerm(term)).orElse(false);
         // @formatter:on
     }
 
-    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+    @Override
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
         return B.newNil();
     }
 

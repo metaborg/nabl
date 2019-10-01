@@ -53,6 +53,82 @@ public interface IState {
 
         IState.Immutable withTermProperties(IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties);
 
+        default Transient melt() {
+            return new Transient(this);
+        }
+
+    }
+
+    class Transient implements IState {
+
+        private IState.Immutable state;
+        private boolean frozen = false;
+
+        private Transient(IState.Immutable state) {
+            this.state = state;
+        }
+
+        @Override public Spec spec() {
+            freezeTwiceShameOnYou();
+            return state.spec();
+        }
+
+        @Override public String resource() {
+            freezeTwiceShameOnYou();
+            return state.resource();
+        }
+
+        @Override public Set<ITermVar> vars() {
+            freezeTwiceShameOnYou();
+            return state.vars();
+        }
+
+        @Override public Set<Scope> scopes() {
+            freezeTwiceShameOnYou();
+            return state.scopes();
+        }
+
+        @Override public IUnifier unifier() {
+            freezeTwiceShameOnYou();
+            return state.unifier();
+        }
+
+        @Override public IScopeGraph<Scope, ITerm, ITerm> scopeGraph() {
+            freezeTwiceShameOnYou();
+            return state.scopeGraph();
+        }
+
+        @Override public IRelation3<TermIndex, ITerm, ITerm> termProperties() {
+            freezeTwiceShameOnYou();
+            return state.termProperties();
+        }
+
+        public ITermVar freshVar(String base) {
+            freezeTwiceShameOnYou();
+            final Tuple2<ITermVar, Immutable> result = state.freshVar(base);
+            state = result._2();
+            return result._1();
+        }
+
+        public Scope freshScope(String base) {
+            freezeTwiceShameOnYou();
+            final Tuple2<Scope, Immutable> result = state.freshScope(base);
+            state = result._2();
+            return result._1();
+        }
+
+        public Immutable freeze() {
+            freezeTwiceShameOnYou();
+            frozen = true;
+            return state;
+        }
+
+        void freezeTwiceShameOnYou() {
+            if(frozen) {
+                throw new IllegalStateException("Already frozen, cannot modify further.");
+            }
+        }
+
     }
 
 }

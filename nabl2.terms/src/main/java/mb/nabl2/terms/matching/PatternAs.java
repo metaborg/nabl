@@ -3,16 +3,16 @@ package mb.nabl2.terms.matching;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.metaborg.util.functions.Action2;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 
 class PatternAs extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -54,14 +54,14 @@ class PatternAs extends Pattern {
         return vars.build();
     }
 
-    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
-        return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier);
+    @Override protected boolean matchTerm(ITerm term, Transient subst, Immutable unifier, Eqs eqs) {
+        return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
     }
 
-    @Override public ITerm asTerm(ImmutableMultimap.Builder<ITermVar, ITerm> equalities) {
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
         final ITerm term = pattern.asTerm(equalities);
         if(!var.isWildcard()) {
-            equalities.put(var.getVar(), term);
+            equalities.apply(var.getVar(), term);
         }
         return term;
     }
