@@ -107,14 +107,3 @@ test adding functional relation tuple with free input succeeds [[
       r : int -> int
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
-
-test adding functional relation tuple twice does not unify outputs [[
-  resolve {s i j} new s, !r[1, i] in s, !r[1, j] in s, eq(i, j)
-  signature
-    relations
-      r : int -> int
-  rules
-    eq : int * int
-    eq(i, i).
-]] analysis succeeds
-   run evaluate-test to FAILS()

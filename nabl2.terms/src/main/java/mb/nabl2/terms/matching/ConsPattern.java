@@ -6,6 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -61,8 +62,8 @@ class ConsPattern extends Pattern {
     }
 
     @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
-        return B.newCons(head.asTerm(equalities), (IListTerm)tail.asTerm(equalities));
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+        return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh));
     }
 
     @Override public String toString() {

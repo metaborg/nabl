@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -69,10 +70,9 @@ class PatternVar extends Pattern {
         }
     }
 
-    @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
         if(isWildcard()) {
-            throw new IllegalArgumentException("Cannot convert wildcard");
+            return fresh.apply();
         }
         return var;
     }

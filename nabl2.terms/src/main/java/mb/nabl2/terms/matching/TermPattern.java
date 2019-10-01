@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.functions.Function1;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -129,6 +131,12 @@ public class TermPattern {
         public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(final Iterable<Pattern> patterns,
                 final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier) {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
+        }
+
+        public Optional<MatchResult> matchWithEqs(final Iterable<Pattern> patterns,
+                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier,
+                Function1<Optional<ITermVar>, ITermVar> fresh) {
+            return TermPattern.P.newTuple(patterns).matchWithEqs(B.newTuple(terms), unifier, fresh);
         }
 
     }

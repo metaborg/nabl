@@ -11,12 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
@@ -66,11 +66,12 @@ public abstract class Pattern implements Serializable {
      * Fresh variables are generated for unmatched variables in the patterns. As a result, the resulting substitution
      * has entries for all the variables in the patterns, and no pattern variables escape in the equalities.
      */
-    public Optional<Result> matchWithEqs(ITerm term, IUnifier.Immutable unifier, Function1<ITermVar, ITermVar> fresh) {
+    public Optional<MatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
         // substitution from pattern variables to unifier variables
         final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
         // equalities between unifier terms
-        final ImmutableList.Builder<Tuple2<ITerm, ITerm>> termEqs = ImmutableList.builder();
+        final List<Tuple2<ITermVar, ITerm>> termEqs = Lists.newArrayList();
         // equalities between unifier variables and patterns
         final List<Tuple2<ITermVar, Pattern>> patternEqs = Lists.newArrayList();
 
@@ -92,19 +93,28 @@ public abstract class Pattern implements Serializable {
 
         // generate fresh unifier variables for unmatched pattern variables
         final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.varSet()).immutableCopy();
-        freeVars.forEach(v -> _subst.put(v, fresh.apply(v)));
+        freeVars.forEach(v -> _subst.put(v, fresh.apply(Optional.of(v))));
         final ISubstitution.Immutable subst = _subst.freeze();
 
         // create equalities between unifier terms from pattern equalities
+        final ImmutableSet.Builder<ITermVar> stuckVars = ImmutableSet.builder();
+        final ImmutableList.Builder<Tuple2<ITerm, ITerm>> allEqs = ImmutableList.builder();
+        for(Tuple2<ITermVar, ITerm> termEq : termEqs) {
+            final ITermVar leftVar = termEq._1();
+            final ITerm rightTerm = termEq._2();
+            stuckVars.add(leftVar);
+            allEqs.add(ImmutableTuple2.of(leftVar, rightTerm));
+        }
         for(Tuple2<ITermVar, Pattern> patternEq : patternEqs) {
-            final ITermVar var = patternEq._1();
-            final ITerm patternTerm = patternEq._2().asTerm((v, t) -> {
-                termEqs.add(ImmutableTuple2.of(subst.apply(v), subst.apply(t)));
-            });
-            termEqs.add(ImmutableTuple2.of(var, subst.apply(patternTerm)));
+            final ITermVar leftVar = patternEq._1();
+            final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
+                allEqs.add(ImmutableTuple2.of(subst.apply(v), subst.apply(t)));
+            }, () -> fresh.apply(Optional.empty()));
+            stuckVars.add(leftVar);
+            allEqs.add(ImmutableTuple2.of(leftVar, subst.apply(rightTerm)));
         }
 
-        return Optional.of(new Result(subst, termEqs.build()));
+        return Optional.of(ImmutableMatchResult.of(subst, stuckVars.build(), allEqs.build()));
     }
 
     protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst,
@@ -128,13 +138,7 @@ public abstract class Pattern implements Serializable {
         return true;
     }
 
-    public final Tuple2<ITerm, Multimap<ITermVar, ITerm>> asTerm() {
-        final ImmutableMultimap.Builder<ITermVar, ITerm> builder = ImmutableMultimap.builder();
-        final ITerm term = asTerm((v, t) -> builder.put(v, t));
-        return ImmutableTuple2.of(term, builder.build());
-    }
-
-    protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities);
+    protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh);
 
     protected interface Eqs {
 

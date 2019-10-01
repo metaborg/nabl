@@ -2,6 +2,7 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
@@ -43,7 +45,6 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
-import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -72,7 +73,9 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
+import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 import mb.statix.spoofax.StatixTerms;
 
 class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
@@ -266,8 +269,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
     }
 
     @Override public Optional<StepResult> caseConj(CConj c) throws SolverException {
-        final List<IConstraint> newConstraints = Constraints.disjoin(c);
-        return Optional.of(StepResult.ofNew(state, newConstraints));
+        return Optional.of(StepResult.ofNew(state, disjoin(c)));
     }
 
     @Override public Optional<StepResult> caseEqual(CEqual c) throws SolverException {
@@ -311,8 +313,8 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
         final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-        return Optional.of(StepResult.of(newState, ImmutableSet.of(), Constraints.disjoin(newConstraint),
-                ImmutableMap.of(), existentials));
+        return Optional.of(
+                StepResult.of(newState, ImmutableSet.of(), disjoin(newConstraint), ImmutableMap.of(), existentials));
     }
 
     @Override public Optional<StepResult> caseFalse(CFalse c) throws SolverException {
@@ -518,35 +520,46 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
         final Iterator<Rule> it = rules.iterator();
+        final List<ApplyResult> results = Lists.newArrayList();
         while(it.hasNext()) {
-            if(Thread.interrupted()) {
-                throw new SolverInterrupted(new InterruptedException());
-            }
-            final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-            final Rule rawRule = it.next();
+            final Rule rule = it.next();
             if(proxyDebug.isEnabled(Level.Info)) {
-                proxyDebug.info("Try rule {}", rawRule.toString());
+                proxyDebug.info("Try rule {}", rule.toString());
             }
-            final IConstraint instantiatedBody;
-            try {
-                if((instantiatedBody = rawRule.apply(args, state.unifier(), c).orElse(null)) == null) {
-                    proxyDebug.info("Rule rejected (mismatching arguments)");
-                    unsuccessfulLog.absorb(proxyDebug.clear());
-                    continue;
-                }
-            } catch(Delay d) {
-                proxyDebug.info("Rule delayed (unsolved guard constraint)");
+            final ApplyResult applyResult;
+            if((applyResult = RuleUtil.apply(state, rule, args, c).orElse(null)) == null) {
+                proxyDebug.info("Rule rejected (mismatching arguments)");
                 unsuccessfulLog.absorb(proxyDebug.clear());
-                unsuccessfulLog.flush(debug);
-                return Optional.of(StepResult.ofDelay(state, d, c));
+            } else if(applyResult.constrainedVars().isEmpty()) {
+                if(!results.isEmpty()) {
+                    throw new IllegalStateException("Rule order must be wrong");
+                }
+                proxyDebug.info("Rule accepted");
+                results.add(applyResult);
+                break;
+            } else {
+                proxyDebug.info("Rule conditionally accepted (conditional equalities)");
+                results.add(applyResult);
             }
+        }
+        if(results.isEmpty()) {
+            debug.info("No rule applies");
+            unsuccessfulLog.flush(debug);
+            return Optional.empty();
+        } else if(results.size() == 1) {
+            final ApplyResult applyResult = results.get(0);
             proxyDebug.info("Rule accepted");
             proxyDebug.commit();
-            return Optional.of(StepResult.ofNew(state, ImmutableList.of(instantiatedBody)));
+            return Optional.of(StepResult.of(applyResult.state(), applyResult.updatedVars(),
+                    disjoin(applyResult.constraint()), ImmutableMap.of(), ImmutableMap.of()));
+        } else {
+            final Set<ITermVar> stuckVars =
+                    results.stream().flatMap(r -> r.constrainedVars().stream()).collect(Collectors.toSet());
+            proxyDebug.info("Rule delayed (multiple conditional matches)");
+            unsuccessfulLog.absorb(proxyDebug.clear());
+            unsuccessfulLog.flush(debug);
+            return Optional.of(StepResult.ofDelay(state, Delay.ofVars(stuckVars), c));
         }
-        debug.info("No rule applies");
-        unsuccessfulLog.flush(debug);
-        return Optional.empty();
     }
 
 }

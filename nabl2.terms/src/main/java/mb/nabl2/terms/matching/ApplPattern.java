@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -63,8 +64,8 @@ class ApplPattern extends Pattern {
     }
 
     @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
-        return B.newAppl(op, args.stream().map(a -> a.asTerm(equalities)).collect(ImmutableList.toImmutableList()));
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+        return B.newAppl(op, args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()));
     }
 
     @Override public String toString() {

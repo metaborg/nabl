@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -58,8 +59,8 @@ class PatternAs extends Pattern {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
     }
 
-    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities) {
-        final ITerm term = pattern.asTerm(equalities);
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+        final ITerm term = pattern.asTerm(equalities, fresh);
         if(!var.isWildcard()) {
             equalities.apply(var.getVar(), term);
         }

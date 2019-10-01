@@ -2,6 +2,7 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
@@ -43,7 +45,6 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
-import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -69,7 +70,9 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
+import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 import mb.statix.spoofax.StatixTerms;
 
 class GreedySolver {
@@ -271,7 +274,7 @@ class GreedySolver {
             }
 
             @Override public IState.Immutable caseConj(CConj c) throws InterruptedException {
-                final List<IConstraint> newConstraints = Constraints.disjoin(c);
+                final List<IConstraint> newConstraints = disjoin(c);
                 return successNew(c, state, newConstraints, fuel);
             }
 
@@ -317,8 +320,8 @@ class GreedySolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                return success(c, newState, ImmutableSet.of(), Constraints.disjoin(newConstraint), ImmutableMap.of(),
-                        existentials, fuel);
+                return success(c, newState, ImmutableSet.of(), disjoin(newConstraint), ImmutableMap.of(), existentials,
+                        fuel);
             }
 
             @Override public IState.Immutable caseFalse(CFalse c) {
@@ -514,39 +517,54 @@ class GreedySolver {
                 final String name = c.name();
                 final List<ITerm> args = c.args();
 
+                final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
                 final IDebugContext debug = params.debug();
                 final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
                 final Log unsuccessfulLog = new Log();
                 final Iterator<Rule> it = rules.iterator();
+                final List<ApplyResult> results = Lists.newArrayList();
                 while(it.hasNext()) {
                     if(Thread.interrupted()) {
                         throw new InterruptedException();
                     }
-                    final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-                    final Rule rawRule = it.next();
+                    final Rule rule = it.next();
                     if(proxyDebug.isEnabled(Level.Info)) {
-                        proxyDebug.info("Try rule {}", rawRule.toString());
+                        proxyDebug.info("Try rule {}", rule.toString());
                     }
-                    final IConstraint instantiatedBody;
-                    try {
-                        if((instantiatedBody = rawRule.apply(args, state.unifier(), c).orElse(null)) == null) {
-                            proxyDebug.info("Rule rejected (mismatching arguments)");
-                            unsuccessfulLog.absorb(proxyDebug.clear());
-                            continue;
-                        }
-                    } catch(Delay d) {
-                        proxyDebug.info("Rule delayed (unsolved guard constraint)");
+                    final ApplyResult applyResult;
+                    if((applyResult = RuleUtil.apply(state, rule, args, c).orElse(null)) == null) {
+                        proxyDebug.info("Rule rejected (mismatching arguments)");
                         unsuccessfulLog.absorb(proxyDebug.clear());
-                        unsuccessfulLog.flush(debug);
-                        return successDelay(c, state, d, fuel);
+                    } else if(applyResult.constrainedVars().isEmpty()) {
+                        if(!results.isEmpty()) {
+                            throw new IllegalStateException("Rule order must be wrong");
+                        }
+                        proxyDebug.info("Rule accepted");
+                        results.add(applyResult);
+                        break;
+                    } else {
+                        proxyDebug.info("Rule conditionally accepted (conditional equalities)");
+                        results.add(applyResult);
                     }
+                }
+                if(results.isEmpty()) {
+                    debug.info("No rule applies");
+                    unsuccessfulLog.flush(debug);
+                    return fail(c, state);
+                } else if(results.size() == 1) {
+                    final ApplyResult applyResult = results.get(0);
                     proxyDebug.info("Rule accepted");
                     proxyDebug.commit();
-                    return successNew(c, state, ImmutableList.of(instantiatedBody), fuel);
+                    return success(c, applyResult.state(), applyResult.updatedVars(), disjoin(applyResult.constraint()),
+                            ImmutableMap.of(), ImmutableMap.of(), fuel);
+                } else {
+                    final Set<ITermVar> stuckVars =
+                            results.stream().flatMap(r -> r.constrainedVars().stream()).collect(Collectors.toSet());
+                    proxyDebug.info("Rule delayed (multiple conditional matches)");
+                    unsuccessfulLog.absorb(proxyDebug.clear());
+                    unsuccessfulLog.flush(debug);
+                    return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
                 }
-                debug.info("No rule applies");
-                unsuccessfulLog.flush(debug);
-                return fail(c, state);
             }
 
         });
