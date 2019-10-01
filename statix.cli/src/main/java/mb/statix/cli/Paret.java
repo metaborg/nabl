@@ -3,9 +3,15 @@ package mb.statix.cli;
 import static mb.statix.random.strategy.SearchStrategies.*;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableMap;
 
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
 import mb.statix.random.EitherSearchState;
@@ -15,13 +21,18 @@ import mb.statix.random.SearchStrategy;
 import mb.statix.random.predicate.Any;
 import mb.statix.random.predicate.Match;
 import mb.statix.random.predicate.Not;
+import mb.statix.random.util.StreamUtil;
+import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.completeness.CompletenessUtil;
 
 public class Paret {
 
     public static SearchStrategy<SearchState, SearchState> enumerate() {
         // @formatter:off
         return seq(enumerateExp())
+               .$(marker("generateLex"))
                .$(generateLex())
+               .$(marker("done"))
                .$();
         // @formatter:on
     }
@@ -53,7 +64,7 @@ public class Paret {
                 seq(expand()).$(infer()).$()))
             .$(),
             inferDelayAndDrop(),
-            new Match("gen_.*")
+            new Match("is_.*") // everything except is_* constraints should be resolved
         );
         // @formatter:on
     }
@@ -67,29 +78,47 @@ public class Paret {
                limit(1, seq(limit(5, expand(defaultRuleWeight, ruleWeights))).$(infer()).$())))
             .$(),
             inferDelayAndDrop(),
-            new Match("gen_.*")
+            new Match("is_.*") // everything except is_* constraints should be resolved
         )));
         // @formatter:on
+    }
+
+    private static Function1<CUser, Integer> predWeights(SearchState state) {
+        final IUnifier unifier = state.state().unifier();
+        final Set<CriticalEdge> criticalEdges =
+                state.delays().values().stream().flatMap(d -> d.criticalEdges().stream()).collect(Collectors.toSet());
+        // @formatter:off
+        Set<ITermVar> criticalVars = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
+            .filter(c -> CompletenessUtil.criticalEdges(c, state.state().spec(), unifier).stream().anyMatch(criticalEdges::contains))
+            .flatMap(c -> c.args().stream().flatMap(arg -> unifier.getVars(arg).stream()))
+            .collect(Collectors.toSet());
+        // @formatter:on
+        return (c) -> {
+            if(c.args().stream().flatMap(arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
+                return 2;
+            } else {
+                return 1;
+            }
+        };
     }
 
     // @formatter:off
     private static int defaultRuleWeight = 1;
     private static Map<String,Integer> ruleWeights = ImmutableMap.<String, Integer>builder()
-        // TWEAK UnOp and BinOp get stuck often if they generate arguments before the operation
-        // TWEAK Inlined rules, so no need to disable them anymore
-        .put("T-UnOp", 2)
-        .put("T-BinOp", 2)
+        // TWEAK Disable operations until better inference in the solver
+        .put("G-UnOp", 0)
+        .put("G-BinOp", 0)
         // TWEAK Prefer rules that force types
-        .put("T-Num", 2)
-        .put("T-True", 2)
-        .put("T-False", 2)
-        .put("T-Nil", 2)
-        .put("T-List", 2)
-        .put("T-Fun", 2)
+        .put("G-Num", 2)
+        .put("G-True", 2)
+        .put("G-False", 2)
+        .put("G-Nil", 2)
+        .put("G-List", 2)
+        .put("G-Fun", 2)
         // TWEAK Discourage rules that are 'free'
-        .put("T-If", 1)
-        .put("T-App", 1)
-        .put("T-Let", 1)
+        .put("G-If", 1)
+        .put("G-App", 1)
+        .put("G-Let", 1)
         .build();
     // @formatter:on
 
@@ -100,7 +129,7 @@ public class Paret {
         return limit(limit, concatAlt(
             // TWEAK Resolve queries first, to improve inference
             select(CResolveQuery.class, new Any<>()),
-            select(CUser.class, new Not<>(new Match("gen_.*")))
+            select(CUser.class, new Match("gen_.*"))
         ));
         // @formatter:on
     }
@@ -108,12 +137,12 @@ public class Paret {
     // generation of id's
 
     private static SearchStrategy<SearchState, SearchState> generateLex() {
-        return require(limit(1, fix(expandLex(), infer(), new Not<>(new Match("gen_is.*")))));
+        return require(limit(1, fix(expandLex(), infer(), new Not<>(new Match("is_.*")))));
     }
 
     private static SearchStrategy<SearchState, SearchState> expandLex() {
         // @formatter:off
-        return seq(select(CUser.class, new Match("gen_is.*")))
+        return seq(select(CUser.class, new Match("is_.*")))
                .$(limit(1, seq(expand(1, idWeights)).$(infer()).$()))
                .$();
         // @formatter:on
