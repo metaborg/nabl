@@ -13,6 +13,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CUser;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
@@ -21,15 +22,14 @@ import mb.statix.random.SearchStrategy;
 import mb.statix.random.nodes.SearchNode;
 import mb.statix.random.nodes.SearchNodes;
 import mb.statix.random.util.RandomGenerator;
-import mb.statix.random.util.RuleUtil;
 import mb.statix.random.util.StreamUtil;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 
 final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
     private final double defaultWeight;
@@ -80,10 +80,10 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
     }
 
     private Optional<SearchState> apply(Rule rule, CUser predicate, SearchState input) {
-        return RuleUtil.apply(input.state(), rule, predicate.args(), predicate).map(resultAndConstraint -> {
-            final SolverResult applyResult = resultAndConstraint._1();
-            final IState.Immutable applyState = applyResult.state();
-            final IConstraint applyConstraint = resultAndConstraint._2();
+        return RuleUtil.apply(input.state(), rule, predicate.args(), predicate).map(result -> {
+            final IState.Immutable applyState = result.state();
+            final IUnifier.Immutable applyUnifier = applyState.unifier();
+            final IConstraint applyConstraint = result.constraint();
 
             // update constraints
             final Set.Transient<IConstraint> constraints = input.constraints().asTransient();
@@ -92,9 +92,9 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
 
             // update completeness
             final ICompleteness.Transient completeness = input.completeness().melt();
-            completeness.updateAll(applyResult.updatedVars(), applyState.unifier());
-            completeness.add(applyConstraint, applyState.unifier());
-            java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyState.unifier());
+            completeness.updateAll(result.updatedVars(), applyUnifier);
+            completeness.add(applyConstraint, applyUnifier);
+            java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyUnifier);
 
             // update delays
             final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();

@@ -21,10 +21,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CEqual;
 import mb.statix.random.scopegraph.DataWF;
-import mb.statix.random.util.RuleUtil;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -32,7 +30,9 @@ import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 
 class ResolveDataWF implements DataWF<ITerm, CEqual> {
     private final IState.Immutable state;
@@ -50,14 +50,12 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
     @Override public Optional<Optional<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
 
         // apply rule
-        final Optional<Tuple2<SolverResult, IConstraint>> resultAndConstraint =
-                RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null);
-        if(!resultAndConstraint.isPresent()) {
+        final ApplyResult applyResult;
+        if((applyResult = RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null).orElse(null)) == null) {
             return Optional.empty();
         }
-        final SolverResult applyResult = resultAndConstraint.get()._1();
         final IState.Immutable applyState = applyResult.state();
-        final IConstraint applyConstraint = resultAndConstraint.get()._2();
+        final IConstraint applyConstraint = applyResult.constraint();
 
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
