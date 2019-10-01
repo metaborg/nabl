@@ -107,8 +107,9 @@ public class StatixGenerate {
     }
 
     private static void logStatsInfo(String name, DescriptiveStatistics stats) {
-        log.info("{} {} of sizes {}/{}/{}/{}/{} (max/P75/P50/P25/min)", name, stats.getN(), stats.getMax(),
-                stats.getPercentile(75), stats.getPercentile(50), stats.getPercentile(25), stats.getMin());
+        log.info("{} {} of sizes {}/{}/{}/{}/{}/{} (max/P80/P60/P40/P20/min)", name, stats.getN(), stats.getMax(),
+                stats.getPercentile(80), stats.getPercentile(60), stats.getPercentile(40), stats.getPercentile(20),
+                stats.getMin());
     }
 
     private static void logSuccess(ILogger log, Level lvl, SearchNode<SearchState> node,
