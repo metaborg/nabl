@@ -8,6 +8,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -805,6 +806,15 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
         @Override public Optional<IUnifier.Immutable> unify(IUnifier other) throws OccursException {
             final Optional<Result<Immutable>> result = unifier.unify(other);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<IUnifier.Immutable>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
+            final Optional<Result<Immutable>> result = unifier.unify(equalities);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();

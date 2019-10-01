@@ -13,9 +13,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
-import mb.nabl2.terms.unification.OccursException;
 
 class PatternVar extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -49,20 +48,15 @@ class PatternVar extends Pattern {
         return isWildcard() ? ImmutableSet.of() : ImmutableSet.of(var);
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, Immutable unifier, Eqs eqs) {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         if(isWildcard()) {
             return true;
         } else if(subst.contains(var)) {
-            Optional<Result<Immutable>> result;
-            try {
-                result = unifier.unify(subst.apply(var), term);
-            } catch(OccursException e) {
+            final Optional<Immutable> diff = unifier.diff(subst.apply(var), term);
+            if(!diff.isPresent()) {
                 return false;
             }
-            if(!result.isPresent()) {
-                return false;
-            }
-            result.get().result().equalityMap().forEach(eqs::add);
+            diff.get().equalityMap().forEach(eqs::add);
             return true;
         } else {
             subst.put(var, term);

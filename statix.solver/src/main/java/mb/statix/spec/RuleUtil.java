@@ -3,23 +3,22 @@ package mb.statix.spec;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.statix.constraints.CEqual;
-import mb.statix.constraints.Constraints;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
+import mb.nabl2.terms.unification.OccursException;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
-import mb.statix.solver.log.NullDebugContext;
-import mb.statix.solver.persistent.Solver;
-import mb.statix.solver.persistent.SolverResult;
 
 public class RuleUtil {
 
@@ -32,31 +31,27 @@ public class RuleUtil {
             final IConstraint newConstraint = rule.body().apply(matchResult.substitution()).withCause(cause);
             final ApplyResult applyResult;
             if(matchResult.constrainedVars().isEmpty()) {
-                applyResult = ApplyResult.of(newState.freeze(), ImmutableSet.of(), matchResult.constrainedVars(),
-                        newConstraint);
+                applyResult = ApplyResult.of(newState.freeze(), ImmutableSet.of(), ImmutableMap.of(), newConstraint);
             } else {
-                // build equality constraint
-                final List<CEqual> eqs = matchResult.equalities().stream()
-                        .map(eq -> new CEqual(eq._1(), eq._2(), cause)).collect(Collectors.toList());
-                final IConstraint constraint = Constraints.conjoin(eqs);
-
-                // solve the resulting constraint, but without (!) the rule body, in the updated state
-                // NOTE Simply adding the equalities to the rule body breaks the important invariant
-                //      that scope variables are either ground scopes, or will be instantiated to fresh scopes
-                //      that do not yet exist. However, the equality ?s == #s1 breaks this, since ?s is still
-                //      free until this constraint is solved, but it will be instantiated to a scope that already
-                //      exists.
-                SolverResult solveResult;
+                // simplify guard constraints
+                final Result<IUnifier.Immutable> unifyResult;
                 try {
-                    solveResult = Solver.solve(newState.freeze(), constraint, new NullDebugContext());
-                } catch(InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                if(solveResult.hasErrors() || !solveResult.delays().isEmpty()) {
+                    if((unifyResult = state.unifier().unify(matchResult.equalities()).orElse(null)) == null) {
+                        return Optional.empty();
+                    }
+                } catch(OccursException e) {
                     return Optional.empty();
                 }
-                applyResult = ApplyResult.of(solveResult.state(), solveResult.updatedVars(),
-                        matchResult.constrainedVars(), newConstraint);
+                final IUnifier.Immutable newUnifier = unifyResult.unifier();
+                final IUnifier.Immutable diff = unifyResult.result();
+
+                // construct guard
+                final Map<ITermVar, ITerm> guard =
+                        diff.retainAll(matchResult.constrainedVars()).unifier().equalityMap();
+
+                // construct result
+                final IState.Immutable resultState = newState.freeze().withUnifier(newUnifier);
+                applyResult = ApplyResult.of(resultState, diff.varSet(), guard, newConstraint);
             }
             return Optional.of(applyResult);
         });

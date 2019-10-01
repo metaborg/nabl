@@ -535,7 +535,7 @@ class GreedySolver {
                     if((applyResult = RuleUtil.apply(state, rule, args, c).orElse(null)) == null) {
                         proxyDebug.info("Rule rejected (mismatching arguments)");
                         unsuccessfulLog.absorb(proxyDebug.clear());
-                    } else if(applyResult.constrainedVars().isEmpty()) {
+                    } else if(applyResult.guard().isEmpty()) {
                         if(!results.isEmpty()) {
                             throw new IllegalStateException("Rule order must be wrong");
                         }
@@ -555,11 +555,11 @@ class GreedySolver {
                     final ApplyResult applyResult = results.get(0);
                     proxyDebug.info("Rule accepted");
                     proxyDebug.commit();
-                    return success(c, applyResult.state(), applyResult.updatedVars(), disjoin(applyResult.constraint()),
+                    return success(c, applyResult.state(), applyResult.updatedVars(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars =
-                            results.stream().flatMap(r -> r.constrainedVars().stream()).collect(Collectors.toSet());
+                            results.stream().flatMap(r -> r.guard().keySet().stream()).collect(Collectors.toSet());
                     proxyDebug.info("Rule delayed (multiple conditional matches)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
                     unsuccessfulLog.flush(debug);

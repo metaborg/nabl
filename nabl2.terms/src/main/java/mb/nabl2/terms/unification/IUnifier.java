@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -174,6 +175,12 @@ public interface IUnifier {
         Optional<Result<Immutable>> unify(IUnifier other) throws OccursException;
 
         /**
+         * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
+         */
+        Optional<Result<Immutable>> unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities)
+                throws OccursException;
+
+        /**
          * Disunify the two input terms.
          */
         Optional<Immutable> disunify(ITerm term1, ITerm term2);
@@ -235,6 +242,12 @@ public interface IUnifier {
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
         Optional<Immutable> unify(IUnifier other) throws OccursException;
+
+        /**
+         * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
+         */
+        Optional<Immutable> unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities)
+                throws OccursException;
 
         /**
          * Disunify with the given unifier. Return whether it succeeded.

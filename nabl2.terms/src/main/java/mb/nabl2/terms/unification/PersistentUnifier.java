@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
@@ -25,6 +26,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 
 public abstract class PersistentUnifier extends BaseUnifier implements Serializable {
 
@@ -98,6 +100,11 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             return new Unify(left, right).apply(true);
         }
 
+        @Override public Optional<Result<mb.nabl2.terms.unification.IUnifier.Immutable>>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
+            return new Unify(equalities).apply(true);
+        }
+
         @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(IUnifier other)
                 throws OccursException {
             return new Unify(other).apply(true);
@@ -112,6 +119,12 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
             public Unify(ITerm left, ITerm right) {
                 worklist.push(ImmutableTuple2.of(left, right));
+            }
+
+            public Unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) {
+                equalities.forEach(e -> {
+                    worklist.push(Tuple2.of(e));
+                });
             }
 
             public Unify(IUnifier other) {
