@@ -26,7 +26,7 @@ public class StreamProgressPrinter implements IProgressPrinter {
 
     @Override public void step(char c) {
         if(c == '\n' || (++count % lineWidth) == 0) {
-            out.print(Strings.repeat(" ", lineWidth - count - 1));
+            out.print(Strings.repeat(" ", lineWidth - count));
             eol.apply(out);
             count = 0;
         } else {

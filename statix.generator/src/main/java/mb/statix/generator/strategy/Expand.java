@@ -1,7 +1,8 @@
 package mb.statix.generator.strategy;
 
-import static mb.statix.constraints.Constraints.conjoin;
+import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
+import org.metaborg.util.functions.Function2;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -43,12 +45,13 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 
 final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
-    private final double defaultWeight;
-    private final java.util.Map<String, Double> weights;
 
-    Expand(double defaultWeight, java.util.Map<String, Double> weights) {
-        this.defaultWeight = defaultWeight;
-        this.weights = weights;
+    private final Mode mode;
+    private final Function2<Rule, Long, Double> ruleWeight;
+
+    Expand(Mode mode, Function2<Rule, Long, Double> ruleWeight) {
+        this.mode = mode;
+        this.ruleWeight = ruleWeight;
     }
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
@@ -75,8 +78,13 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
                 if(guard.isEmpty()) {
                     break;
                 } else {
-                    final IConstraint _unguard = conjoin(guard.entrySet().stream()
-                            .map(e -> new CInequal(e.getKey(), e.getValue(), predicate)).collect(Collectors.toList()));
+                    List<ITermVar> lefts = Lists.newArrayList();
+                    List<ITerm> rights = Lists.newArrayList();
+                    guard.forEach((v, t) -> {
+                        lefts.add(v);
+                        rights.add(t);
+                    });
+                    final IConstraint _unguard = new CInequal(B.newTuple(lefts), B.newTuple(rights), predicate);
                     unguard = new CConj(unguard, _unguard, predicate);
                 }
             }
@@ -91,13 +99,8 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
                     + rule.params().stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
             final SearchNode<SearchState> newNode =
                     new SearchNode<>(ctx.nextNodeId(), output, node, "expand(" + head + ")");
-            final double weight;
-            if(weights.containsKey(rule.label())) {
-                double count = ruleCounts.getOrDefault(rule.label(), 1l);
-                weight = weights.get(rule.label()) / count;
-            } else {
-                weight = defaultWeight;
-            }
+            long count = ruleCounts.getOrDefault(rule.label(), 1l);
+            final double weight = ruleWeight.apply(rule, count);
             if(weight > 0) {
                 newNodes.add(new Pair<>(newNode, weight));
             }
@@ -106,9 +109,20 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
             return SearchNodes.failure(node, "expand[no rules for " + predicate.name() + "]");
         }
 
-        final EnumeratedDistribution<SearchNode<SearchState>> ruleDist =
-                new EnumeratedDistribution<>(new RandomGenerator(ctx.rnd()), newNodes);
-        final Stream<SearchNode<SearchState>> nodes = StreamUtil.generate(ruleDist);
+        final Stream<SearchNode<SearchState>> nodes;
+        switch(mode) {
+            case ENUM:
+                Collections.shuffle(newNodes, ctx.rnd()); // Important!
+                nodes = newNodes.stream().map(p -> p.getKey());
+                break;
+            case RND:
+                final EnumeratedDistribution<SearchNode<SearchState>> ruleDist =
+                        new EnumeratedDistribution<>(new RandomGenerator(ctx.rnd()), newNodes);
+                nodes = StreamUtil.generate(ruleDist);
+                break;
+            default:
+                throw new IllegalStateException();
+        }
 
         final String desc = this.toString() + "[" + newNodes.size() + "]";
         return SearchNodes.of(node, () -> desc, nodes);
@@ -146,8 +160,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
     }
 
     @Override public String toString() {
-        return "expand" + weights.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
-                .collect(Collectors.joining(", ", "(", ")"));
+        return "expand";
     }
 
 }

@@ -4,8 +4,10 @@ import java.util.Map;
 
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Predicate1;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import mb.statix.constraints.CConj;
@@ -14,8 +16,10 @@ import mb.statix.constraints.Constraints;
 import mb.statix.generator.EitherSearchState;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
+import mb.statix.generator.SearchStrategy.Mode;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.Rule;
 
 public final class SearchStrategies {
 
@@ -41,6 +45,17 @@ public final class SearchStrategies {
     public static final <I extends SearchState, O1 extends SearchState, O2 extends SearchState> ConcatAlt<I, O1, O2>
             concatAlt(SearchStrategy<I, O1> s1, SearchStrategy<I, O2> s2) {
         return new ConcatAlt<>(s1, s2);
+    }
+
+
+    @SafeVarargs public static final <I extends SearchState, O extends SearchState> Concat<I, O>
+            concat(SearchStrategy<I, O>... ss) {
+        return concat(ImmutableList.copyOf(ss));
+    }
+
+    public static final <I extends SearchState, O extends SearchState> Concat<I, O>
+            concat(Iterable<SearchStrategy<I, O>> ss) {
+        return new Concat<>(ss);
     }
 
     public static final <I1 extends SearchState, I2 extends SearchState, O extends SearchState>
@@ -97,12 +112,22 @@ public final class SearchStrategies {
         return new MapConstraints(f);
     }
 
-    public static final Expand expand() {
-        return expand(1d, ImmutableMap.of());
+    public static final Expand expand(Mode mode) {
+        return expand(mode, 1d, ImmutableMap.of());
     }
 
-    public static final Expand expand(double defaultWeight, Map<String, Double> weights) {
-        return new Expand(defaultWeight, weights);
+    public static final Expand expand(Mode mode, double defaultWeight, Map<String, Double> weights) {
+        return expand(mode, (r, n) -> {
+            if(weights.containsKey(r.label())) {
+                return weights.get(r.label()) / (double) n;
+            } else {
+                return defaultWeight;
+            }
+        });
+    }
+
+    public static final Expand expand(Mode mode, Function2<Rule, Long, Double> ruleWeight) {
+        return new Expand(mode, ruleWeight);
     }
 
     public static final Resolve resolve() {

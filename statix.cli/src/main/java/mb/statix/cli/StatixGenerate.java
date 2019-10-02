@@ -33,7 +33,7 @@ public class StatixGenerate {
     private static final boolean DEBUG = true;
     private static final boolean TRACE = false;
     private static final String VAR = "e";
-    private static final int COUNT = 42 * 42;
+    private static final int COUNT = 5 * 42;
 
     private final Statix STX;
 
