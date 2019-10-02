@@ -181,9 +181,10 @@ public interface IUnifier {
                 throws OccursException;
 
         /**
-         * Disunify the two input terms.
+         * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
+         * reduced inequality.
          */
-        Optional<Result<Map<ITermVar, ITerm>>> disunify(ITerm term1, ITerm term2);
+        Optional<Result<Immutable>> disunify(ITerm term1, ITerm term2);
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -252,7 +253,7 @@ public interface IUnifier {
         /**
          * Disunify with the given unifier. Return whether it succeeded.
          */
-        Optional<Map<ITermVar, ITerm>> disunify(ITerm term1, ITerm term2);
+        Optional<Immutable> disunify(ITerm term1, ITerm term2);
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed

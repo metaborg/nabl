@@ -367,37 +367,37 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         // disunify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<Result<java.util.Map<ITermVar, ITerm>>> disunify(ITerm left, ITerm right) {
-            final Optional<Map.Immutable<ITermVar, ITerm>> result = disunify(new Unify(left, right));
+        @Override public Optional<Result<IUnifier.Immutable>> disunify(ITerm left, ITerm right) {
+            final Optional<IUnifier.Immutable> result = disunify(new Unify(left, right));
             if(!result.isPresent()) {
                 // disequality discharged, terms are unequal
-                return Optional.of(new BaseUnifier.ImmutableResult<>(Map.Immutable.of(), this));
+                return Optional.of(new BaseUnifier.ImmutableResult<>(PersistentUnifier.Immutable.of(finite), this));
             }
-            final Map.Immutable<ITermVar, ITerm> disequality = result.get();
+            final IUnifier.Immutable disequality = result.get();
             if(disequality.isEmpty()) {
                 // no disequalities left, terms are equal
                 return Optional.empty();
             }
             final IUnifier.Immutable newUnifier = new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms,
-                    disequalities.__insert(new Diseq(disequality)));
+                    disequalities.__insert(new Diseq(disequality.equalityMap())));
             return Optional.of(new BaseUnifier.ImmutableResult<>(disequality, newUnifier));
         }
 
         private Optional<IUnifier.Immutable> disunifyAll() {
             final Set.Transient<Diseq> disequalities = Set.Transient.of();
             for(Diseq disequality : this.disequalities) {
-                final Optional<Map.Immutable<ITermVar, ITerm>> result = disunify(new Unify(disequality));
+                final Optional<IUnifier.Immutable> result = disunify(new Unify(disequality));
                 if(!result.isPresent()) {
                     // disequality discharged, terms are unequal
                     continue;
                 }
-                final Map.Immutable<ITermVar, ITerm> newDisequality = result.get();
+                final IUnifier.Immutable newDisequality = result.get();
                 if(newDisequality.isEmpty()) {
                     // no disequalities left, terms are equal
                     return Optional.empty();
                 }
                 // not unified yet, keep
-                disequalities.__insert(new Diseq(newDisequality));
+                disequalities.__insert(new Diseq(newDisequality.equalityMap()));
             }
             final IUnifier.Immutable result =
                     new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms, disequalities.freeze());
@@ -410,7 +410,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced map of disequalities, or
          * none if the disequality is satisfied.
          */
-        private Optional<Map.Immutable<ITermVar, ITerm>> disunify(Unify unify) {
+        private Optional<IUnifier.Immutable> disunify(Unify unify) {
             final Optional<Result<IUnifier.Immutable>> unifyResult;
             try {
                 // NOTE We prevent Unify from doing disunification, as this
@@ -426,7 +426,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             }
             // unify succeeded, terms are not unequal
             final IUnifier.Immutable diff = unifyResult.get().result();
-            return Optional.of(CapsuleUtil.toMap(diff.equalityMap()));
+            return Optional.of(diff);
         }
 
         ///////////////////////////////////////////

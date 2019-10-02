@@ -821,8 +821,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             });
         }
 
-        @Override public Optional<java.util.Map<ITermVar, ITerm>> disunify(ITerm term1, ITerm term2) {
-            final Optional<Result<java.util.Map<ITermVar, ITerm>>> result = unifier.disunify(term1, term2);
+        @Override public Optional<IUnifier.Immutable> disunify(ITerm term1, ITerm term2) {
+            final Optional<Result<IUnifier.Immutable>> result = unifier.disunify(term1, term2);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
