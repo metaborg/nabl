@@ -82,7 +82,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // @formatter:off
         final Collection<ITermVar> disunifiedVars = flatMap(newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().diff(t1, t2).map(IUnifier::isEmpty).orElse(true))),
+                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().diff(t1, t2).isPresent())),
                         diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
                 .collect(Collectors.toList());
         // @formatter:off
