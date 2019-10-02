@@ -215,13 +215,13 @@ public class PersistentUnifierFiniteTest {
 
     @Test(timeout = 1000) public void testVariableDisunify() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
-        assertTrue(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, b));
         assertFalse(phi.diff(a, b).isPresent());
     }
 
     @Test(timeout = 1000) public void testVariableDisunifyAndTransitiveUnify() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
-        assertTrue(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, b));
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
         assertFalse(phi.unify(c, b).isPresent());
     }
@@ -230,13 +230,13 @@ public class PersistentUnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
         phi.unify(c, b).orElseThrow(() -> new RuntimeException());
-        assertFalse(phi.disunify(a, b));
+        assertAbsent(phi.disunify(a, b));
     }
 
     @Test(timeout = 1000) public void testVariableUnifyDisunifyUnify() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
-        assertTrue(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, b));
         assertFalse(phi.unify(c, b).isPresent());
     }
 
@@ -280,12 +280,12 @@ public class PersistentUnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         phi.unify(a, x).orElseThrow(() -> new RuntimeException());
         phi.unify(b, x).orElseThrow(() -> new RuntimeException());
-        assertFalse(phi.disunify(a, b));
+        assertAbsent(phi.disunify(a, b));
     }
 
     @Test public void testRemoveDisunifiedVar() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
-        assertTrue(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, b));
         assertPresent(phi.unify(a, c));
         phi.remove(c);
         assertAbsent(phi.unify(a, b));

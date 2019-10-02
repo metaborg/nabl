@@ -363,16 +363,15 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             }
         }
 
-
         ///////////////////////////////////////////
         // disunify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<IUnifier.Immutable> disunify(ITerm left, ITerm right) {
+        @Override public Optional<Result<java.util.Map<ITermVar, ITerm>>> disunify(ITerm left, ITerm right) {
             final Optional<Map.Immutable<ITermVar, ITerm>> result = disunify(new Unify(left, right));
             if(!result.isPresent()) {
                 // disequality discharged, terms are unequal
-                return Optional.of(this);
+                return Optional.of(new BaseUnifier.ImmutableResult<>(Map.Immutable.of(), this));
             }
             final Map.Immutable<ITermVar, ITerm> disequality = result.get();
             if(disequality.isEmpty()) {
@@ -381,7 +380,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             }
             final IUnifier.Immutable newUnifier = new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms,
                     disequalities.__insert(new Diseq(disequality)));
-            return Optional.of(newUnifier);
+            return Optional.of(new BaseUnifier.ImmutableResult<>(disequality, newUnifier));
         }
 
         private Optional<IUnifier.Immutable> disunifyAll() {

@@ -333,14 +333,15 @@ class GreedySolver {
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
                 final IUnifier.Immutable unifier = state.unifier();
-                final IUnifier.Immutable result;
+                final Result<Map<ITermVar, ITerm>> result;
                 if((result = unifier.disunify(term1, term2).orElse(null)) != null) {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification succeeded: {}", result);
                     }
-                    final IState.Immutable newState = state.withUnifier(result);
-                    return success(c, newState, ImmutableList.of(), ImmutableList.of(), ImmutableMap.of(),
-                            ImmutableMap.of(), fuel);
+                    final IState.Immutable newState = state.withUnifier(result.unifier());
+                    final Set<ITermVar> updatedVars = result.result().keySet();
+                    return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(),
+                            fuel);
                 } else {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification failed");
