@@ -1,7 +1,9 @@
 package mb.statix.random.strategy;
 
+import static mb.statix.constraints.Constraints.conjoin;
+
+import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -14,6 +16,11 @@ import com.google.common.collect.Sets;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.util.Tuple3;
+import mb.statix.constraints.CConj;
+import mb.statix.constraints.CInequal;
+import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
 import mb.statix.random.FocusedSearchState;
 import mb.statix.random.SearchContext;
@@ -28,6 +35,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 
@@ -44,29 +52,54 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
             SearchNode<FocusedSearchState<CUser>> node) {
         final FocusedSearchState<CUser> input = node.output();
         final CUser predicate = input.focus();
-        final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
 
-        final List<Rule> allRules = input.state().spec().rules().get(predicate.name());
+        final List<Rule> rules = input.state().spec().rules().get(predicate.name());
         final java.util.Map<String, Long> ruleCounts =
-                allRules.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
-        for(Rule rule : allRules) {
-            apply(rule, predicate, input).ifPresent(output -> {
-                final String head = rule.name()
-                        + rule.params().stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
-                final SearchNode<SearchState> newNode =
-                        new SearchNode<>(ctx.nextNodeId(), output, node, "expand(" + head + ")");
-                final double weight;
-                if(weights.containsKey(rule.label())) {
-                    double count = ruleCounts.getOrDefault(rule.label(), 1l);
-                    weight = weights.get(rule.label()) / count;
-                } else {
-                    weight = defaultWeight;
+                rules.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
+
+        // next block is a almost a copy of the CUser case in the solver and must be kept in sync
+        final Iterator<Rule> it = rules.iterator();
+        final Set.Transient<Tuple3<Rule, ApplyResult, IConstraint>> _results = Set.Transient.of();
+        IConstraint unguard = new CTrue(predicate); // we build this iteratively for all previous rules we ignored
+        while(it.hasNext()) {
+            final Rule rule = it.next();
+            final ApplyResult applyResult;
+            if((applyResult = RuleUtil.apply(input.state(), rule, predicate.args(), predicate).orElse(null)) == null) {
+                // ignore
+            } else if(applyResult.guard().isEmpty()) {
+                if(!_results.isEmpty()) {
+                    throw new IllegalStateException("Rule order must be wrong");
                 }
-                if(weight > 0) {
-                    newNodes.add(new Pair<>(newNode, weight));
-                }
-            });
+                _results.__insert(ImmutableTuple3.of(rule, applyResult, new CTrue(predicate)));
+                break;
+            } else {
+                final IConstraint _unguard = conjoin(applyResult.guard().entrySet().stream()
+                        .map(e -> new CInequal(e.getKey(), e.getValue(), predicate)).collect(Collectors.toList()));
+                _results.__insert(ImmutableTuple3.of(rule, applyResult, unguard));
+                unguard = new CConj(unguard, _unguard, predicate);
+            }
         }
+        final Set.Immutable<Tuple3<Rule, ApplyResult, IConstraint>> results = _results.freeze();
+
+        final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
+        results.forEach(result -> {
+            final Rule rule = result._1();
+            final SearchState output = updateSearchState(predicate, result._2(), result._3(), input);
+            final String head = rule.name()
+                    + rule.params().stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
+            final SearchNode<SearchState> newNode =
+                    new SearchNode<>(ctx.nextNodeId(), output, node, "expand(" + head + ")");
+            final double weight;
+            if(weights.containsKey(rule.label())) {
+                double count = ruleCounts.getOrDefault(rule.label(), 1l);
+                weight = weights.get(rule.label()) / count;
+            } else {
+                weight = defaultWeight;
+            }
+            if(weight > 0) {
+                newNodes.add(new Pair<>(newNode, weight));
+            }
+        });
         if(newNodes.isEmpty()) {
             return SearchNodes.failure(node, "expand[no rules for " + predicate.name() + "]");
         }
@@ -79,37 +112,35 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         return SearchNodes.of(node, () -> desc, nodes);
     }
 
-    private Optional<SearchState> apply(Rule rule, CUser predicate, SearchState input) {
-        return RuleUtil.apply(input.state(), rule, predicate.args(), predicate).map(result -> {
-            final IState.Immutable applyState = result.state();
-            final IUnifier.Immutable applyUnifier = applyState.unifier();
-            final IConstraint applyConstraint = result.constraint();
+    private SearchState updateSearchState(IConstraint predicate, ApplyResult result, IConstraint unguard,
+            SearchState input) {
+        final IState.Immutable applyState = result.state();
+        final IUnifier.Immutable applyUnifier = applyState.unifier();
+        final IConstraint applyConstraint = new CConj(unguard, result.body(), predicate);
 
-            // update constraints
-            final Set.Transient<IConstraint> constraints = input.constraints().asTransient();
-            constraints.__insert(applyConstraint);
-            constraints.__remove(predicate);
+        // update constraints
+        final Set.Transient<IConstraint> constraints = input.constraints().asTransient();
+        constraints.__insert(applyConstraint);
+        constraints.__remove(predicate);
 
-            // update completeness
-            final ICompleteness.Transient completeness = input.completeness().melt();
-            completeness.updateAll(result.updatedVars(), applyUnifier);
-            completeness.add(applyConstraint, applyUnifier);
-            java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyUnifier);
+        // update completeness
+        final ICompleteness.Transient completeness = input.completeness().melt();
+        completeness.updateAll(result.updatedVars(), applyUnifier);
+        completeness.add(applyConstraint, applyUnifier);
+        java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyUnifier);
 
-            // update delays
-            final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
-            input.delays().forEach((c, d) -> {
-                if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
-                    constraints.__insert(c);
-                } else {
-                    delays.__put(c, d);
-                }
-            });
-
-            // return new state
-            return input.replace(applyState, constraints.freeze(), delays.freeze(), completeness.freeze());
+        // update delays
+        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        input.delays().forEach((c, d) -> {
+            if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
+                constraints.__insert(c);
+            } else {
+                delays.__put(c, d);
+            }
         });
 
+        // return new state
+        return input.replace(applyState, constraints.freeze(), delays.freeze(), completeness.freeze());
     }
 
     @Override public String toString() {

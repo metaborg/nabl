@@ -55,7 +55,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
             return Optional.empty();
         }
         final IState.Immutable applyState = applyResult.state();
-        final IConstraint applyConstraint = applyResult.constraint();
+        final IConstraint applyConstraint = applyResult.body();
 
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
