@@ -1,7 +1,7 @@
 package mb.statix.cli;
 
-import static mb.statix.random.strategy.SearchStrategies.*;
-import static mb.statix.random.util.StreamUtil.flatMap;
+import static mb.statix.generator.strategy.SearchStrategies.*;
+import static mb.statix.generator.util.StreamUtil.flatMap;
 
 import java.util.Map;
 import java.util.Set;
@@ -16,14 +16,14 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
-import mb.statix.random.EitherSearchState;
-import mb.statix.random.FocusedSearchState;
-import mb.statix.random.SearchState;
-import mb.statix.random.SearchStrategy;
-import mb.statix.random.predicate.Any;
-import mb.statix.random.predicate.Match;
-import mb.statix.random.predicate.Not;
-import mb.statix.random.util.StreamUtil;
+import mb.statix.generator.EitherSearchState;
+import mb.statix.generator.FocusedSearchState;
+import mb.statix.generator.SearchState;
+import mb.statix.generator.SearchStrategy;
+import mb.statix.generator.predicate.Any;
+import mb.statix.generator.predicate.Match;
+import mb.statix.generator.predicate.Not;
+import mb.statix.generator.util.StreamUtil;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.completeness.CompletenessUtil;
 

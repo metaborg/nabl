@@ -17,14 +17,13 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.random.SearchLogger;
-import mb.statix.random.SearchState;
-import mb.statix.random.SearchStrategy;
-import mb.statix.random.nodes.SearchElement;
-import mb.statix.random.nodes.SearchNode;
-import mb.statix.random.nodes.SearchNodes;
-import mb.statix.random.spoofax.StatixGenerator;
-import mb.statix.random.util.StreamProgressPrinter;
+import mb.statix.generator.SearchLogger;
+import mb.statix.generator.SearchState;
+import mb.statix.generator.SearchStrategy;
+import mb.statix.generator.nodes.SearchElement;
+import mb.statix.generator.nodes.SearchNode;
+import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.generator.util.StreamProgressPrinter;
 import mb.statix.solver.IConstraint;
 
 public class StatixGenerate {
