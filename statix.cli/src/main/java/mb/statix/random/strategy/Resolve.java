@@ -149,7 +149,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                     });
                     final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
                     return new SearchNode<>(ctx.nextNodeId(), newState, node,
-                            "resolve[" + idx + "/" + count.get() + "]");
+                            "resolve[" + (idx + 1) + "/" + count.get() + "]");
                 });
             });
         }));
