@@ -6,6 +6,7 @@ import java.util.List;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -351,6 +352,36 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(c)
         );
+        // @formatter:on
+    }
+
+    public static <T> Function1<IConstraint, List<T>> collectBase(PartialFunction1<IConstraint, T> f) {
+        return c -> {
+            final ImmutableList.Builder<T> ts = ImmutableList.builder();
+            collectBase(c, f, ts);
+            return ts.build();
+        };
+    }
+
+    private static <T> List<T> collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
+            ImmutableList.Builder<T> ts) {
+        // @formatter:off
+        return constraint.match(cases(
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { disjoin(c).forEach(cc -> collectBase(cc, f, ts)); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts)); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; }
+        ));
         // @formatter:on
     }
 
