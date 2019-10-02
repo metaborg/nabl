@@ -55,7 +55,7 @@ rules
 
 
   normalize-query-ops =
-    normalize-in-rules(replace-functional-relop,id,functional-relop-to-c)
+    normalize-in-rules(replace-functional-relop,id,id,functional-relop-to-c)
 
   replace-functional-relop: t@AskRelOp(rel, in_ts, st){a*} -> out_v{a*}
     with ty := <norm-get-ast-type> t

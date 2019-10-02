@@ -38,11 +38,6 @@ menus
 
     separator
 
-    action: "Show non-overlapping AST"   = show-nonoverlapping-aterm
-    action: "Format non-overlapping AST" = format-nonoverlapping
-
-    separator
-
     action: "Show signature-rule AST"   = show-signature-rules-aterm
     action: "Format signature-rule AST" = format-signature-rules
 

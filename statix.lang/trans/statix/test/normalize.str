@@ -22,7 +22,7 @@ rules // maps
 
 rules // util
 
-  normalize-in-rules(replace,add-vars,to-c):
+  normalize-in-rules(replace,in-head,add-vars,to-c):
       Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
     with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
          body'' := <filter(to-c);list-to-conj(|body')> bmaps;

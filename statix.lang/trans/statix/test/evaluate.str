@@ -45,9 +45,7 @@ rules
   build-evaluation-pair: ast@Test(_, _, _) -> (CExists(bvs, body'), spec)
     with a      := <nabl2-get-ast-analysis> ast;
          ext    := <nabl2-get-custom-analysis> a;
-         ast'   := < normalize(|a)
-                   ; make-nonoverlapping(|a)
-                   > ast;
+         ast'   := <normalize(|a)> ast;
          Test(bvs, body, _) := ast';
          spec   := <spec-ast-to-aterm(|a)> (ast', ext);
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body

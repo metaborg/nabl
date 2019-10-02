@@ -51,17 +51,19 @@ rules
   // replace : old:Term -> new:Term
   // to-c : (old:Term, new:Term) -> Constraint
 
-  normalize-in-rules(replace,add-vars,to-c):
-      Rule(lbl, head, bvs, body){a*} -> Rule(lbl, head, bvs', body''){a*}
-    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+  normalize-in-rules(replace,in-head,add-vars,to-c):
+      Rule(lbl, head, bvs, body){a*} -> Rule(lbl, head', bvs', body''){a*}
+    with (head', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> head;
+         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
-  normalize-in-rules(replace,add-vars,to-c):
-      LLam(ts, bvs, body){a*} -> LLam(ts, bvs', body''){a*}
-    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+  normalize-in-rules(replace,in-head,add-vars,to-c):
+      LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
+    with (ts', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> ts;
+         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 

@@ -63,24 +63,6 @@ rules // Normalization
           <not(nabl2-analysis-has-errors)> a
     with ast' := <normalize(|a)> ast
 
-rules // Non-overlapping rules
-
-  show-nonoverlapping-aterm: (_, _, _, path, project-path) -> (filename, result)
-    where ast := <get-nonoverlapping-ast>
-    with filename := <guarantee-extension(|"nonoverlapping.aterm")> path;
-         result   := <nabl2-simplify-ast-indices> ast
-
-  format-nonoverlapping: (_, _, _, path, project-path) -> (filename, result)
-    where ast := <get-nonoverlapping-ast>
-    with ext      := <get-extension> path;
-         filename := <guarantee-extension(|$[nonoverlapping.[ext]])> path;
-         result   := <pp-Statix-string> ast
-
-  get-nonoverlapping-ast: (_, _, ast, path, project-path) -> ast'
-    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          <not(nabl2-analysis-has-errors)> a
-    with ast' := <normalize(|a);make-nonoverlapping(|a)> ast
-
 rules // Explicit signature rules
 
   show-signature-rules-aterm: (_, _, _, path, project-path) -> (filename, result)
