@@ -16,6 +16,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.INameResolution;
@@ -52,8 +53,9 @@ public class Solver {
 
     public static boolean entails(IState.Immutable state, final IConstraint constraint, final IsComplete isComplete,
             final IDebugContext debug) throws Delay, InterruptedException {
+        final Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Info)) {
-            debug.info("Checking entailment of {}", toString(constraint, state.unifier()));
+            debug.info("Checking entailment of {}", toString(constraint, unifier));
         }
 
         final SolverResult result = Solver.solve(state, constraint, isComplete, debug.subContext());
@@ -64,20 +66,29 @@ public class Solver {
             return false;
         }
 
+        final IState.Immutable newState = result.state();
+        final Set<ITermVar> newVars = Sets.difference(newState.vars(), state.vars());
+        final Set<Scope> newScopes = Sets.difference(newState.scopes(), state.scopes());
+
         if(!result.delays().isEmpty()) {
-            debug.info("Cannot decide constraint entailment: unsolved constraints");
-            // FIXME Can this result in an empty delay? If so, it means there's no
-            //       recovering, because the delays are internal to the constraint,
-            //       and unaffected by outside variables -> return false.
-            throw result.delay().retainAll(state.vars(), state.scopes());
+            final Delay delay = result.delay().removeAll(newVars, newScopes);
+            if(delay.criticalEdges().isEmpty() && delay.vars().isEmpty()) {
+                debug.info("Constraints not entailed: internal stuckness"); // of the point-free mind
+                return false;
+            } else {
+                debug.info("Cannot decide constraint entailment: unsolved constraints");
+                throw delay;
+            }
         }
 
-        final IState.Immutable newState = result.state();
         // NOTE The retain operation is important because it may change
         //      representatives, which can be local to newUnifier.
-        final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
+        final IUnifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
+        if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
+            throw new IllegalStateException("Entailment internal variables leak");
+        }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`
@@ -86,9 +97,10 @@ public class Solver {
             throw Delay.ofVars(unifiedVars);
         }
 
+        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
         // @formatter:off
         final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().diff(t1, t2).isPresent()))
+                .filter(diseq -> diseq.apply((t1, t2) -> unifier.diff(t1, t2).isPresent()))
                 .flatMap(diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
                 .collect(Collectors.toList());
         // @formatter:on
