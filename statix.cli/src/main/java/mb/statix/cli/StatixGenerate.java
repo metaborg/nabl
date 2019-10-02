@@ -58,9 +58,13 @@ public class StatixGenerate {
             pretty = StatixGenerator.project(VAR, ITerm::toString);
         }
 
-        final StreamProgressPrinter progress = new StreamProgressPrinter(System.err, 100);
         final DescriptiveStatistics hitStats = new DescriptiveStatistics();
         final DescriptiveStatistics missStats = new DescriptiveStatistics();
+        final StreamProgressPrinter progress = new StreamProgressPrinter(System.err, 80, out -> {
+            long hits = hitStats.getN();
+            long all = hits + missStats.getN();
+            out.println(" " + hits + "/" + all + " " + summary(hitStats));
+        });
         final SearchLogger searchLog = new SearchLogger() {
 
             @Override public void init(long seed, SearchStrategy<?, ?> strategy, Iterable<IConstraint> constraints) {
@@ -107,9 +111,12 @@ public class StatixGenerate {
     }
 
     private static void logStatsInfo(String name, DescriptiveStatistics stats) {
-        log.info("{} {} of sizes {}/{}/{}/{}/{}/{} (max/P80/P60/P40/P20/min)", name, stats.getN(), stats.getMax(),
-                stats.getPercentile(80), stats.getPercentile(60), stats.getPercentile(40), stats.getPercentile(20),
-                stats.getMin());
+        log.info("{} {} of sizes {} (max/P80/P60/P40/P20/min)", name, stats.getN(), summary(stats));
+    }
+
+    private static String summary(DescriptiveStatistics stats) {
+        return String.format("%.1f/%.1f/%.1f/%.1f/%.1f/%.1f", stats.getMax(), stats.getPercentile(80),
+                stats.getPercentile(60), stats.getPercentile(40), stats.getPercentile(20), stats.getMin());
     }
 
     private static void logSuccess(ILogger log, Level lvl, SearchNode<SearchState> node,
