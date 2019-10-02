@@ -26,7 +26,7 @@ public class RuleUtil {
             @Nullable IConstraint cause) {
         // create equality constraints
         final IState.Transient newState = state.melt();
-        Function1<Optional<ITermVar>, ITermVar> fresh = v -> newState.freshVar(v.map(ITermVar::getName).orElse("wld)"));
+        Function1<Optional<ITermVar>, ITermVar> fresh = v -> newState.freshVar(v.map(ITermVar::getName).orElse("wld"));
         return P.matchWithEqs(rule.params(), args, state.unifier(), fresh).flatMap(matchResult -> {
             final IConstraint newConstraint = rule.body().apply(matchResult.substitution()).withCause(cause);
             final ApplyResult applyResult;
