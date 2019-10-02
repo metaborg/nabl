@@ -519,9 +519,8 @@ class GreedySolver {
 
                 final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
                 final IDebugContext debug = params.debug();
-                final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
                 final Log unsuccessfulLog = new Log();
-                final Iterator<Rule> it = rules.iterator();
+                final Iterator<Rule> it = state.spec().rules().get(name).iterator();
                 final List<ApplyResult> results = Lists.newArrayList();
                 while(it.hasNext()) {
                     if(Thread.interrupted()) {
@@ -535,16 +534,14 @@ class GreedySolver {
                     if((applyResult = RuleUtil.apply(state, rule, args, c).orElse(null)) == null) {
                         proxyDebug.info("Rule rejected (mismatching arguments)");
                         unsuccessfulLog.absorb(proxyDebug.clear());
-                    } else if(applyResult.guard().isEmpty()) {
-                        if(!results.isEmpty()) {
-                            throw new IllegalStateException("Rule order must be wrong");
-                        }
-                        proxyDebug.info("Rule accepted");
-                        results.add(applyResult);
-                        break;
                     } else {
-                        proxyDebug.info("Rule conditionally accepted (conditional equalities)");
                         results.add(applyResult);
+                        if(applyResult.guard().isEmpty()) {
+                            proxyDebug.info("Rule accepted");
+                            break;
+                        } else {
+                            proxyDebug.info("Rule conditionally accepted (conditional equalities)");
+                        }
                     }
                 }
                 if(results.isEmpty()) {
