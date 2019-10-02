@@ -62,38 +62,19 @@ public class Paret {
         // @formatter:on
     }
 
-    private static Function1<CUser, Integer> predWeights(SearchState state) {
-        final IUnifier unifier = state.state().unifier();
-        final Set<CriticalEdge> criticalEdges =
-                flatMap(state.delays().values().stream(), d -> d.criticalEdges().stream()).collect(Collectors.toSet());
-        // @formatter:off
-        final Stream<CUser> criticalPreds = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
-            .filter(c -> CompletenessUtil.criticalEdges(c, state.state().spec(), unifier).stream().anyMatch(criticalEdges::contains));
-        final Set<ITermVar> criticalVars = flatMap(criticalPreds, c -> flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()))
-            .collect(Collectors.toSet());
-        // @formatter:on
-        return (c) -> {
-            if(flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
-                return 2;
-            } else {
-                return 1;
-            }
-        };
-    }
-
     // @formatter:off
     private static int defaultRuleWeight = 1;
     private static Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
         // TWEAK Disable operations until better inference in the solver
-        .put("G-UnOp", 2.0)
-        .put("G-BinOp", 2.0)
+        .put("G-UnOp", 1.0)
+        .put("G-BinOp", 1.0)
         // TWEAK Prefer rules that force types
-        .put("G-Num", 2.0)
-        .put("G-True", 2.0)
-        .put("G-False", 2.0)
-        .put("G-Nil", 2.0)
-        .put("G-List", 2.0)
-        .put("G-Fun", 2.0)
+        .put("G-Num", 1.0)
+        .put("G-True", 1.0)
+        .put("G-False", 1.0)
+        .put("G-Nil", 1.0)
+        .put("G-List", 1.0)
+        .put("G-Fun", 1.0)
         // TWEAK Discourage rules that are 'free'
         .put("G-If", 1.0)
         .put("G-App", 1.0)
@@ -108,9 +89,31 @@ public class Paret {
         return limit(limit, concatAlt(
             // TWEAK Resolve queries first, to improve inference
             select(CResolveQuery.class, new Any<>()),
-            select(CUser.class, new Match("gen_.*"))
+            select(CUser.class, /*Paret::predWeights*/ new Match("gen_.*"))
         ));
         // @formatter:on
+    }
+
+    private static Function1<CUser, Double> predWeights(SearchState state) {
+        final IUnifier unifier = state.state().unifier();
+        final Set<CriticalEdge> criticalEdges =
+                flatMap(state.delays().values().stream(), d -> d.criticalEdges().stream()).collect(Collectors.toSet());
+        // @formatter:off
+        final Stream<CUser> criticalPreds = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
+            .filter(c -> CompletenessUtil.criticalEdges(c, state.state().spec(), unifier).stream().anyMatch(criticalEdges::contains));
+        final Set<ITermVar> criticalVars = flatMap(criticalPreds, c -> flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()))
+            .collect(Collectors.toSet());
+        // @formatter:on
+        return (c) -> {
+            if(!c.name().matches("gen_.*")) {
+                return 0.0;
+            }
+            if(flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
+                return 2.0;
+            } else {
+                return 1.0;
+            }
+        };
     }
 
     // generation of id's
