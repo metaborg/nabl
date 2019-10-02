@@ -10,11 +10,14 @@ import java.util.stream.Stream;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
@@ -66,17 +69,16 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
             final ApplyResult applyResult;
             if((applyResult = RuleUtil.apply(input.state(), rule, predicate.args(), predicate).orElse(null)) == null) {
                 // ignore
-            } else if(applyResult.guard().isEmpty()) {
-                if(!_results.isEmpty()) {
-                    throw new IllegalStateException("Rule order must be wrong");
-                }
-                _results.__insert(ImmutableTuple3.of(rule, applyResult, new CTrue(predicate)));
-                break;
             } else {
-                final IConstraint _unguard = conjoin(applyResult.guard().entrySet().stream()
-                        .map(e -> new CInequal(e.getKey(), e.getValue(), predicate)).collect(Collectors.toList()));
                 _results.__insert(ImmutableTuple3.of(rule, applyResult, unguard));
-                unguard = new CConj(unguard, _unguard, predicate);
+                final ImmutableMap<ITermVar, ITerm> guard = applyResult.guard();
+                if(guard.isEmpty()) {
+                    break;
+                } else {
+                    final IConstraint _unguard = conjoin(guard.entrySet().stream()
+                            .map(e -> new CInequal(e.getKey(), e.getValue(), predicate)).collect(Collectors.toList()));
+                    unguard = new CConj(unguard, _unguard, predicate);
+                }
             }
         }
         final Set.Immutable<Tuple3<Rule, ApplyResult, IConstraint>> results = _results.freeze();
