@@ -148,7 +148,7 @@ public class SearchState {
         final IUnifier unifier = state.unifier();
         printLn.apply("SearchState");
         printLn.apply("| vars:");
-        for(Map.Entry<ITermVar, ITermVar> existential : existentials.entrySet()) {
+        for(Map.Entry<ITermVar, ITermVar> existential : existentials().entrySet()) {
             String var = pp.apply(existential.getKey(), PersistentUnifier.Immutable.of());
             String term = pp.apply(existential.getValue(), unifier);
             printLn.apply("|   " + var + " : " + term);
