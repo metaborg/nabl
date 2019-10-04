@@ -300,6 +300,13 @@ public class PersistentUnifierFiniteTest {
         assertAbsent(phi.unify(b, B.newAppl(f, a)));
     }
 
+    @Test public void testUniversalDisequalityViaVarVarUnify() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertPresent(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
+        assertPresent(phi.unify(b, c));
+        assertAbsent(phi.unify(c, B.newAppl(f, x)));
+    }
+
     private static <X> void assertPresent(Optional<X> opt) {
         assertTrue(opt.isPresent());
     }
