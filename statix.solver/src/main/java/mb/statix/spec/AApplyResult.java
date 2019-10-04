@@ -1,13 +1,13 @@
 package mb.statix.spec;
 
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.Diseq;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 
@@ -29,7 +29,7 @@ public abstract class AApplyResult {
      * Guard constraints necessary for this rule application. The domain of the guard are variables that pre-existed the
      * rule application. The guard is already applied in the state.
      */
-    @Value.Parameter public abstract Map<ITermVar, ITerm> guard();
+    @Value.Parameter public abstract Optional<Diseq> guard();
 
     /**
      * The applied rule body.

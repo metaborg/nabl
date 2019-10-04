@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -538,7 +539,7 @@ class GreedySolver {
                         unsuccessfulLog.absorb(proxyDebug.clear());
                     } else {
                         results.add(applyResult);
-                        if(applyResult.guard().isEmpty()) {
+                        if(!applyResult.guard().isPresent()) {
                             proxyDebug.info("Rule accepted");
                             break;
                         } else {
@@ -557,8 +558,8 @@ class GreedySolver {
                     return success(c, applyResult.state(), applyResult.updatedVars(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
-                    final Set<ITermVar> stuckVars =
-                            results.stream().flatMap(r -> r.guard().keySet().stream()).collect(Collectors.toSet());
+                    final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r.guard()))
+                            .flatMap(g -> g.freeVars().stream()).collect(Collectors.toSet());
                     proxyDebug.info("Rule delayed (multiple conditional matches)");
                     unsuccessfulLog.absorb(proxyDebug.clear());
                     unsuccessfulLog.flush(debug);

@@ -98,10 +98,11 @@ public class Solver {
         }
 
         // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
+        // FIXME This test completely ignores unversal quantifiers, that cannot be right
         // @formatter:off
         final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((t1, t2) -> unifier.diff(t1, t2).isPresent()))
-                .flatMap(diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+                .filter(diseq -> diseq.apply((us, t1, t2) -> unifier.diff(t1, t2).isPresent()))
+                .flatMap(diseq -> diseq.apply((us, t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {

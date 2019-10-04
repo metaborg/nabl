@@ -133,10 +133,6 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 });
             }
 
-            public Unify(Diseq diseq) {
-                worklist.push(diseq.toTuple());
-            }
-
             public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> apply(boolean disunify)
                     throws OccursException {
                 while(!worklist.isEmpty()) {
@@ -364,40 +360,51 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         }
 
         ///////////////////////////////////////////
-        // disunify(ITerm, ITerm)
+        // disunify(Set<ITermVar>, ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<Result<IUnifier.Immutable>> disunify(ITerm left, ITerm right) {
+        @Override public Optional<Result<IUnifier.Immutable>> disunify(Iterable<ITermVar> universals, ITerm left,
+                ITerm right) {
             final Optional<IUnifier.Immutable> result = disunify(new Unify(left, right));
             if(!result.isPresent()) {
                 // disequality discharged, terms are unequal
                 return Optional.of(new BaseUnifier.ImmutableResult<>(PersistentUnifier.Immutable.of(finite), this));
             }
-            final IUnifier.Immutable disequality = result.get();
+
+            final IUnifier.Immutable disequality = result.get().removeAll(universals).unifier();
             if(disequality.isEmpty()) {
                 // no disequalities left, terms are equal
                 return Optional.empty();
             }
+
+            final java.util.Set<ITermVar> universalVars =
+                    Sets.intersection(ImmutableSet.copyOf(universals), disequality.freeVarSet());
+
             final IUnifier.Immutable newUnifier = new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms,
-                    disequalities.__insert(new Diseq(disequality.equalityMap())));
+                    disequalities.__insert(new Diseq(universalVars, disequality.equalityMap())));
             return Optional.of(new BaseUnifier.ImmutableResult<>(disequality, newUnifier));
         }
 
         private Optional<IUnifier.Immutable> disunifyAll() {
             final Set.Transient<Diseq> disequalities = Set.Transient.of();
             for(Diseq disequality : this.disequalities) {
-                final Optional<IUnifier.Immutable> result = disunify(new Unify(disequality));
+                final Optional<IUnifier.Immutable> result = disunify(new Unify(disequality.disequalities().entrySet()));
                 if(!result.isPresent()) {
                     // disequality discharged, terms are unequal
                     continue;
                 }
-                final IUnifier.Immutable newDisequality = result.get();
+
+                final IUnifier.Immutable newDisequality = result.get().removeAll(disequality.universals()).unifier();
                 if(newDisequality.isEmpty()) {
                     // no disequalities left, terms are equal
                     return Optional.empty();
                 }
+
+                final java.util.Set<ITermVar> universalVars =
+                        Sets.intersection(disequality.universals(), newDisequality.freeVarSet());
+
                 // not unified yet, keep
-                disequalities.__insert(new Diseq(newDisequality.equalityMap()));
+                disequalities.__insert(new Diseq(universalVars, newDisequality.equalityMap()));
             }
             final IUnifier.Immutable result =
                     new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms, disequalities.freeze());
@@ -457,10 +464,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
             private static final long serialVersionUID = 1L;
 
-            private final java.util.Set<ITermVar> vars;
+            private final Set.Immutable<ITermVar> vars;
 
             public RemoveAll(Iterable<ITermVar> vars) {
-                this.vars = ImmutableSet.copyOf(vars);
+                this.vars = CapsuleUtil.toSet(vars);
             }
 
             public IUnifier.Immutable.Result<ISubstitution.Immutable> apply() {
@@ -473,15 +480,16 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 final Set.Transient<Diseq> newDiseqs = Set.Transient.of();
                 for(Diseq diseq : disequalities) {
                     final Map.Transient<ITermVar, ITerm> newDiseq = Map.Transient.of();
-                    for(Map.Entry<ITermVar, ITerm> entry : diseq.diseqs.entrySet()) {
+                    for(Map.Entry<ITermVar, ITerm> entry : diseq.disequalities().entrySet()) {
                         ITermVar var = (ITermVar) subst.apply(entry.getKey());
                         ITerm term = subst.apply(entry.getValue());
                         if(!(vars.contains(var) || vars.contains(term))) {
                             newDiseq.__put(var, term);
                         }
                     }
+                    final Set.Immutable<ITermVar> universalVars = diseq.universals().subtract(vars);
                     if(!newDiseq.isEmpty()) {
-                        newDiseqs.__insert(new Diseq(newDiseq.freeze()));
+                        newDiseqs.__insert(new Diseq(universalVars, newDiseq.freeze()));
                     }
                 }
                 // TODO Check if variables escaped?

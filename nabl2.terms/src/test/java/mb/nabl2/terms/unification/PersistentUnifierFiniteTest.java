@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Optional;
 
 import org.junit.Test;
+import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -289,6 +290,14 @@ public class PersistentUnifierFiniteTest {
         assertPresent(phi.unify(a, c));
         phi.remove(c);
         assertAbsent(phi.unify(a, b));
+    }
+
+    @Test public void testUniversalDisequality() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertPresent(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
+        assertAbsent(phi.unify(b, B.newAppl(f, B.newInt(7))));
+        assertAbsent(phi.unify(b, B.newAppl(f, c)));
+        assertAbsent(phi.unify(b, B.newAppl(f, a)));
     }
 
     private static <X> void assertPresent(Optional<X> opt) {

@@ -5,6 +5,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -184,7 +186,11 @@ public interface IUnifier {
          * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
          * reduced inequality.
          */
-        Optional<Result<Immutable>> disunify(ITerm term1, ITerm term2);
+        Optional<Result<Immutable>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
+
+        default Optional<Result<Immutable>> disunify(ITerm term1, ITerm term2) {
+            return disunify(ImmutableSet.of(), term1, term2);
+        }
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -253,7 +259,11 @@ public interface IUnifier {
         /**
          * Disunify with the given unifier. Return whether it succeeded.
          */
-        Optional<Immutable> disunify(ITerm term1, ITerm term2);
+        Optional<Immutable> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
+
+        default Optional<Immutable> disunify(ITerm term1, ITerm term2) {
+            return disunify(ImmutableSet.of(), term1, term2);
+        }
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed
