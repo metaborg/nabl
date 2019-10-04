@@ -1,7 +1,6 @@
 package mb.statix.generator.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.statix.generator.util.StreamUtil.flatMap;
 
 import java.util.Collection;
 import java.util.List;
@@ -81,9 +80,9 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
 
         // @formatter:off
-        final Collection<ITermVar> disunifiedVars = flatMap(newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((t1, t2) -> state.unifier().diff(t1, t2).isPresent())),
-                        diseq -> diseq.apply((t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
+                .filter(diseq -> diseq.apply((us, t1, t2) -> state.unifier().diff(t1, t2).isPresent()))
+                .flatMap(diseq -> diseq.apply((us, t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
                 .collect(Collectors.toList());
         // @formatter:off
         if(!disunifiedVars.isEmpty()) {
