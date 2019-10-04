@@ -33,7 +33,7 @@ public class StatixGenerate {
     private static final boolean DEBUG = true;
     private static final boolean TRACE = false;
     private static final String VAR = "e";
-    private static final int COUNT = 5 * 42;
+    private static final int COUNT = 42 * 42;
 
     private final Statix STX;
 
@@ -126,7 +126,7 @@ public class StatixGenerate {
         log.log(lvl, "=== SUCCESS ===");
         log.log(lvl, " * {}", pp.apply(node.output()));
         log.log(lvl, "---- Trace ----");
-        logTrace(log, lvl, node, pp);
+        logTrace(log, lvl, node, 1, pp);
         log.log(lvl, "===============");
     }
 
@@ -135,21 +135,22 @@ public class StatixGenerate {
             return;
         }
         log.log(lvl, "=== FAILURE ===");
-        logTrace(log, lvl, node, pp);
+        logTrace(log, lvl, node, Integer.MAX_VALUE, pp);
         log.log(lvl, "===============");
     }
 
-    private static void logTrace(ILogger log, Level lvl, SearchElement node, Function1<SearchState, String> pp) {
+    private static void logTrace(ILogger log, Level lvl, SearchElement node, int maxDepth,
+            Function1<SearchState, String> pp) {
         if(node instanceof SearchNodes) {
             SearchNodes<?> nodes = (SearchNodes<?>) node;
             log.log(lvl, " * {}", nodes.desc());
-            logTrace(log, lvl, nodes.parent(), pp);
+            logTrace(log, lvl, nodes.parent(), maxDepth, pp);
         } else {
-            int depth = 0;
             SearchNode<?> traceNode = (SearchNode<?>) node;
+            int depth = 0;
             do {
                 log.log(lvl, " * [{}] {}", traceNode.id(), traceNode.desc());
-                if((++depth == 1 || TRACE) && traceNode.output() instanceof SearchState) {
+                if((depth++ == 0 || (TRACE && depth <= maxDepth)) && traceNode.output() instanceof SearchState) {
                     SearchState state = (SearchState) ((SearchNode<?>) traceNode).output();
                     state.print(ln -> log.log(lvl, "   {}", ln), (t, u) -> u.toString(t));
                 }
