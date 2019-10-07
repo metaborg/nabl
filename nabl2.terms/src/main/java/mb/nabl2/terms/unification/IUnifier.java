@@ -1,12 +1,10 @@
 package mb.nabl2.terms.unification;
 
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -66,17 +64,17 @@ public interface IUnifier {
     /**
      * Return the domain of this unifier.
      */
-    Set<ITermVar> varSet();
+    Set.Immutable<ITermVar> varSet();
 
     /**
      * Return the representative variables of this unifier.
      */
-    Set<ITermVar> repSet();
+    Set.Immutable<ITermVar> repSet();
 
     /**
      * Return the set of free variables appearing in this unifier.
      */
-    Set<ITermVar> freeVarSet();
+    Set.Immutable<ITermVar> freeVarSet();
 
     /**
      * Test if the unifier contains any cycles.
@@ -125,7 +123,7 @@ public interface IUnifier {
     /**
      * Return the set of variables that appear in the given term relative to this unifier.
      */
-    Set<ITermVar> getVars(ITerm term);
+    Set.Immutable<ITermVar> getVars(ITerm term);
 
     /**
      * Return the size of the given term relative to this unifier.
@@ -155,9 +153,9 @@ public interface IUnifier {
     // asMap()
     ///////////////////////////////////////////
 
-    Map<ITermVar, ITerm> equalityMap();
+    Map.Immutable<ITermVar, ITerm> equalityMap();
 
-    Set<Diseq> disequalities();
+    Set.Immutable<Diseq> disequalities();
 
 
     public interface Immutable extends IUnifier {
@@ -189,7 +187,7 @@ public interface IUnifier {
         Optional<Result<Immutable>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
 
         default Optional<Result<Immutable>> disunify(ITerm term1, ITerm term2) {
-            return disunify(ImmutableSet.of(), term1, term2);
+            return disunify(Set.Immutable.of(), term1, term2);
         }
 
         /**
@@ -262,7 +260,7 @@ public interface IUnifier {
         Optional<Immutable> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
 
         default Optional<Immutable> disunify(ITerm term1, ITerm term2) {
-            return disunify(ImmutableSet.of(), term1, term2);
+            return disunify(Set.Immutable.of(), term1, term2);
         }
 
         /**

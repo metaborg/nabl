@@ -400,7 +400,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
             final ISubstitution.Immutable subst;
             if(reps.containsKey(var)) { // var |-> rep
                 final ITermVar rep = reps.__remove(var);
-                CapsuleUtil.replace(reps, (v, r) -> r.equals(var) ? rep : r);
+                CapsuleUtil.updateValuesOrRemove(reps, (v, r) -> r.equals(var) ? rep : r);
                 subst = PersistentSubstitution.Immutable.of(var, rep);
             } else {
                 final Optional<ITermVar> maybeNewRep =
@@ -408,7 +408,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                 if(maybeNewRep.isPresent()) { // newRep |-> var
                     final ITermVar newRep = maybeNewRep.get();
                     reps.__remove(newRep);
-                    CapsuleUtil.replace(reps, (v, r) -> r.equals(var) ? newRep : r);
+                    CapsuleUtil.updateValuesOrRemove(reps, (v, r) -> r.equals(var) ? newRep : r);
                     if(terms.containsKey(var)) { // var -> term
                         final ITerm term = terms.__remove(var);
                         terms.__put(newRep, term);
@@ -423,7 +423,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                     }
                 }
             }
-            CapsuleUtil.replace(terms, (v, t) -> subst.apply(t));
+            CapsuleUtil.updateValuesOrRemove(terms, (v, t) -> subst.apply(t));
             return subst;
         }
 
