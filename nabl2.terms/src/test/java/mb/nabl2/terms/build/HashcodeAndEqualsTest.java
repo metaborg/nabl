@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.build.ImmutableSpecializedAppl;
 
 public class HashcodeAndEqualsTest {
 
