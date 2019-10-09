@@ -9,7 +9,7 @@ import org.immutables.value.Value;
 import com.google.common.collect.Iterators;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.PSequence;
+import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 
@@ -31,16 +31,16 @@ abstract class AEmptyScopePath<S, L> implements IScopePath<S, L> {
         return 0;
     }
 
-    @Value.Lazy @Override public PSequence<S> scopes() {
-        return PSequence.of(getScope());
+    @Value.Lazy @Override public ConsList<S> scopes() {
+        return ConsList.of(getScope());
     }
 
     @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
         return Set.Immutable.of(getScope());
     }
 
-    @Value.Lazy @Override public PSequence<L> labels() {
-        return PSequence.of();
+    @Value.Lazy @Override public ConsList<L> labels() {
+        return ConsList.of();
     }
 
     @Override public Iterator<IStep<S, L>> iterator() {

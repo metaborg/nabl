@@ -11,7 +11,7 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
-import mb.nabl2.util.collections.PSequence;
+import mb.nabl2.util.collections.ConsList;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -42,7 +42,7 @@ abstract class ResolutionPath<S extends IScope, L extends ILabel, O extends IOcc
         return getPath().getScopes();
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
+    @Value.Lazy @Override public ConsList<L> getLabels() {
         return getPath().getLabels();
     }
 

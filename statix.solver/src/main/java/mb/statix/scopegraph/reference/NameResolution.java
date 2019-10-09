@@ -1,10 +1,12 @@
 package mb.statix.scopegraph.reference;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate2;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import mb.statix.scopegraph.INameResolution;
@@ -42,29 +44,29 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         this.isDataComplete = isDataComplete;
     }
 
-    @Override public Set<IResolutionPath<S, L, D>> resolve(S scope) throws ResolutionException, InterruptedException {
+    @Override public List<IResolutionPath<S, L, D>> resolve(S scope) throws ResolutionException, InterruptedException {
         return env(labelWF, Paths.empty(scope));
     }
 
-    private Set<IResolutionPath<S, L, D>> env(LabelWF<L> re, IScopePath<S, L> path)
+    private List<IResolutionPath<S, L, D>> env(LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
         return env_L(labels, re, path);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Set<IResolutionPath<S, L, D>> env_L(Set<L> L, LabelWF<L> re, IScopePath<S, L> path)
+    private List<IResolutionPath<S, L, D>> env_L(Set<L> L, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
         if(Thread.interrupted()) {
             throw new InterruptedException();
         }
-        final ImmutableSet.Builder<IResolutionPath<S, L, D>> envBuilder = ImmutableSet.builder();
+        final ImmutableList.Builder<IResolutionPath<S, L, D>> envBuilder = ImmutableList.builder();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
-            final Set<IResolutionPath<S, L, D>> env1 = env_L(smaller(L, l), re, path);
+            final List<IResolutionPath<S, L, D>> env1 = env_L(smaller(L, l), re, path);
             envBuilder.addAll(env1);
             if(!dataEquiv.alwaysTrue() || env1.isEmpty()) {
-                final Set<IResolutionPath<S, L, D>> env2 = env_l(l, re, path);
+                final List<IResolutionPath<S, L, D>> env2 = env_l(l, re, path);
                 envBuilder.addAll(minus(env2, env1));
             }
         }
@@ -94,9 +96,9 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return smaller.build();
     }
 
-    private Set<IResolutionPath<S, L, D>> minus(Set<IResolutionPath<S, L, D>> env1, Set<IResolutionPath<S, L, D>> env2)
-            throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<IResolutionPath<S, L, D>> env = ImmutableSet.builder();
+    private List<IResolutionPath<S, L, D>> minus(List<IResolutionPath<S, L, D>> env1,
+            List<IResolutionPath<S, L, D>> env2) throws ResolutionException, InterruptedException {
+        final ImmutableList.Builder<IResolutionPath<S, L, D>> env = ImmutableList.builder();
         outer: for(IResolutionPath<S, L, D> p1 : env1) {
             for(IResolutionPath<S, L, D> p2 : env2) {
                 if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
@@ -108,7 +110,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return env.build();
     }
 
-    private Set<IResolutionPath<S, L, D>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path)
+    private List<IResolutionPath<S, L, D>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
         if(scopeGraph.getEdgeLabels().contains(l)) {
             return env_nonEOP(l, re, path);
@@ -119,16 +121,16 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         }
     }
 
-    private Set<IResolutionPath<S, L, D>> env_EOP(LabelWF<L> re, IScopePath<S, L> path)
+    private List<IResolutionPath<S, L, D>> env_EOP(LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
-            return ImmutableSet.of();
+            return ImmutableList.of();
         }
         final S scope = path.getTarget();
         if(!isDataComplete.test(scope, relation)) {
             throw new IncompleteDataException(scope, relation);
         }
-        final ImmutableSet.Builder<IResolutionPath<S, L, D>> env = ImmutableSet.builder();
+        final ImmutableList.Builder<IResolutionPath<S, L, D>> env = ImmutableList.builder();
         if(relation.equals(scopeGraph.getNoDataLabel())) {
             final D datum = scope;
             if(dataWF.wf(datum)) {
@@ -144,18 +146,18 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return env.build();
     }
 
-    private Set<IResolutionPath<S, L, D>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path)
+    private List<IResolutionPath<S, L, D>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
-            return ImmutableSet.of();
+            return ImmutableList.of();
         } else {
             re = newRe.get();
         }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
-        final ImmutableSet.Builder<IResolutionPath<S, L, D>> env = ImmutableSet.builder();
+        final ImmutableList.Builder<IResolutionPath<S, L, D>> env = ImmutableList.builder();
         for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
@@ -169,11 +171,11 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
     // edges and data                                                        //
     ///////////////////////////////////////////////////////////////////////////
 
-    protected java.util.Set<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
+    protected Iterable<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
         return scopeGraph.getData(path.getTarget(), l);
     }
 
-    protected java.util.Set<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
+    protected Iterable<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
         return scopeGraph.getEdges(path.getTarget(), l);
     }
 

@@ -199,35 +199,18 @@ test resolve occurrence relations with resolution policy succeeds [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test relations have set behavior for literal terms (FIXME) [[
-  resolve {s}
-    new s,
-    !r[Var{"x"@-}] in s,
-    !r[Var{"x"@-}] in s,
-    r of Var{"x"@-} in s |-> [_]
-  signature
-    relations
-      r : occurrence
-    namespaces
-      Var : string
-    name-resolution
-      resolve Var filter e min /**/
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
-test relations does not have set behavior for literal terms (FIXME) [[
+test relations have multiset behavior [[
   resolve {s x y}
     new s,
-    x == y,
-    !r[Var{x@-}] in s,
-    !r[Var{y@-}] in s,
-    r of Var{"x"@-} in s |-> [_]
+    !r[Var{"x"@-}] in s,
+    !r[Var{"x"@-}] in s,
+    r of Var{"x"@-} in s |-> [_, _]
   signature
     relations
       r : occurrence
     namespaces
       Var : string
     name-resolution
-      resolve Var filter e min /**/
+      resolve Var
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to SUCCEEDS()

@@ -209,7 +209,7 @@ syntax
 
   OccurrencePosition-CF.NoId   = "@-"
   OccurrencePosition-CF.WithId = "@" TermOrId-CF {prefer}
-//  OccurrencePosition-CF.NoId   =
+  OccurrencePosition-CF.NoId   =
 
   OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 

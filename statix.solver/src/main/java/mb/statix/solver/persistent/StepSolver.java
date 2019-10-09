@@ -4,6 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -397,7 +398,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
             // @formatter:on
-            final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            final Collection<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms =
                     paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(B.newList(pathTerms), resultTerm, c);

@@ -11,7 +11,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.math.IntMath;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.PSequence;
+import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 
@@ -47,16 +47,16 @@ abstract class AComposedScopePath<S, L> implements IScopePath<S, L> {
         return getLeft().size() + getRight().size();
     }
 
-    @Value.Lazy @Override public PSequence<S> scopes() {
-        return getLeft().scopes().appendAll(getRight().scopes().tail());
+    @Value.Lazy @Override public ConsList<S> scopes() {
+        return getLeft().scopes().append(getRight().scopes().tail());
     }
 
     @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
         return getLeft().scopeSet().__insertAll(getRight().scopeSet());
     }
 
-    @Value.Lazy @Override public PSequence<L> labels() {
-        return getLeft().labels().appendAll(getRight().labels());
+    @Value.Lazy @Override public ConsList<L> labels() {
+        return getLeft().labels().append(getRight().labels());
     }
 
     @Override public Iterator<IStep<S, L>> iterator() {
