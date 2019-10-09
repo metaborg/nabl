@@ -36,8 +36,8 @@ public class RuleUtil {
                 f = newState.freshVar(v.get().getName());
             } else {
                 f = newState.freshVar("_");
-                _universalVars.__insert(f);
             }
+            _universalVars.__insert(f); // FIXME Is this correct?
             return f;
         };
         return P.matchWithEqs(rule.params(), args, state.unifier(), fresh).flatMap(matchResult -> {

@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -32,7 +33,6 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
-import mb.nabl2.util.CapsuleUtil;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
@@ -66,7 +66,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     }
 
     @Override public Set.Immutable<ITermVar> repSet() {
-        return CapsuleUtil.toSet(reps().values());
+        return reps().values().stream().map(this::findRep).collect(CapsuleCollectors.toSet());
     }
 
     @Override public Set.Immutable<ITermVar> varSet() {
@@ -736,15 +736,15 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.size();
         }
 
-        @Override public Set.Immutable<ITermVar> varSet() {
+        @Override public java.util.Set<ITermVar> varSet() {
             return unifier.varSet();
         }
 
-        @Override public Set.Immutable<ITermVar> repSet() {
+        @Override public java.util.Set<ITermVar> repSet() {
             return unifier.repSet();
         }
 
-        @Override public Set.Immutable<ITermVar> freeVarSet() {
+        @Override public java.util.Set<ITermVar> freeVarSet() {
             return unifier.freeVarSet();
         }
 

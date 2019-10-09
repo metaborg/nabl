@@ -22,6 +22,10 @@ public abstract class MultiSet<E> {
         return elements().getOrDefault(e, 0);
     }
 
+    public boolean contains(E e) {
+        return elements().containsKey(e);
+    }
+
     public java.util.Set<E> elementSet() {
         return elements().keySet();
     }
@@ -56,6 +60,14 @@ public abstract class MultiSet<E> {
             } else {
                 return new MultiSet.Immutable<>(elements.__remove(e));
             }
+        }
+
+        public Immutable<E> addAll(Iterable<E> es) {
+            Immutable<E> result = this;
+            for(E e : es) {
+                result = result.add(e);
+            }
+            return result;
         }
 
         public Immutable<E> remove(E e) {
@@ -132,6 +144,12 @@ public abstract class MultiSet<E> {
                 elements.__remove(e);
             }
             return c;
+        }
+
+        public void addAll(Iterable<E> es) {
+            for(E e : es) {
+                this.add(e);
+            }
         }
 
         /**
