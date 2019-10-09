@@ -199,13 +199,19 @@ context-free syntax
   Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
   Path       = PathLit
 
-  OccurrencePosition.NoId = "-"
-  OccurrencePosition      = TermOrId
-
+  // little duplication to fix ambiguity between
+  // As(Var(_),Var(_)), NoId() and Var(_), WithId(Var(_))
+  OccurrenceTerms = <<{OccurrenceTerm " "}*>>
+  OccurrenceTerm  = Term
+  OccurrenceTerm  = <<Var>@<Term>> {reject}
 
 syntax
 
-  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" OccurrencePosition-CF LAYOUT?-CF "}"
+  OccurrencePosition-CF.NoId   = "@-"
+  OccurrencePosition-CF.WithId = "@" TermOrId-CF {prefer}
+//  OccurrencePosition-CF.NoId   =
+
+  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 
   PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"

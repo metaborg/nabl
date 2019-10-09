@@ -277,7 +277,7 @@ rules
 
   // only call this with a wildcard for ty
   OccurrencePos(T)[[ NoId() ^ (s) : AST_ID() ]].
-  OccurrencePos(T)[[ t ^ (s) : ty ]] :=
+  OccurrencePos(T)[[ WithId(t) ^ (s) : AST_ID() ]] :=
     TermOrId(T)[[ t ^ (s) : ty ]].
 
   Term(V)[[ PathEmpty(st) ^ (s) : PATH() ]] :=

@@ -74,6 +74,7 @@ public class StatixTerms {
     public static final String OCCURRENCE_OP = "Occurrence";
     public static final String PATH_EMPTY_OP = "PathEmpty";
     public static final String PATH_STEP_OP = "PathStep";
+    public static final String WITHID_OP = "WithId";
     public static final String NOID_OP = "NoId";
 
     public static IMatcher<Spec> spec() {
@@ -261,6 +262,7 @@ public class StatixTerms {
             // SCOPE_OP -- has no syntax
             // TERMINDEX_OP -- has no syntax
             // NOID_OP -- has no syntax
+            // WITHID_OP -- has no syntax
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
@@ -280,8 +282,8 @@ public class StatixTerms {
     private static IMatcher<ITerm> positionTerm() {
         // @formatter:off
         return M.cases(
-            M.appl0("NoId"),
-            varTerm()
+            M.appl0(NOID_OP),
+            M.appl1(WITHID_OP, varTerm(), (t, v) -> v)
         );
         // @formatter:on
     }
@@ -372,8 +374,8 @@ public class StatixTerms {
     private static IMatcher<Pattern> positionPattern() {
         // @formatter:off
         return M.cases(
-            M.appl0("NoId", t -> P.newWld()),
-            varPattern()
+            M.appl0(NOID_OP, t -> P.newWld()),
+            M.appl1(WITHID_OP, varPattern(), (t, p) -> p)
         );
         // @formatter:on
     }
@@ -386,6 +388,7 @@ public class StatixTerms {
                     case SCOPE_OP:
                     case TERMINDEX_OP:
                     case NOID_OP:
+                    case WITHID_OP:
                     case PATH_EMPTY_OP:
                     case PATH_STEP_OP: {
                         return appl;
@@ -394,7 +397,7 @@ public class StatixTerms {
                         final ITerm ns = appl.getArgs().get(0);
                         final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = explicate(appl.getArgs().get(2));
+                        final ITerm pos = B.newAppl(WITHID_OP, explicate(appl.getArgs().get(2)));
                         return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
                     }
                     default: {
