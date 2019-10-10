@@ -94,7 +94,7 @@ context-free syntax
   Constraint.CEqual   = [[Term] == [Term][Message]]
   Constraint.CInequal = [[Term] != [Term][Message]]
 
-  Constraint.CTry = [try [Constraint][Message]]
+  Constraint.CTry = [try { [Constraint] }[Message]]
 
 lexical syntax
 

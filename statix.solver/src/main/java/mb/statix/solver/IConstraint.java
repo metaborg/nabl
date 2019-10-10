@@ -20,6 +20,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 
@@ -73,6 +74,8 @@ public interface IConstraint {
 
         R caseTrue(CTrue c);
 
+        R caseTry(CTry c);
+
         R caseUser(CUser c);
 
         @Override default R apply(IConstraint c) {
@@ -108,6 +111,8 @@ public interface IConstraint {
         R caseTermProperty(CAstProperty c) throws E;
 
         R caseTrue(CTrue c) throws E;
+
+        R caseTry(CTry c) throws E;
 
         R caseUser(CUser c) throws E;
 

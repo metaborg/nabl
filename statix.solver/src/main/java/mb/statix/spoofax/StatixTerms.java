@@ -56,6 +56,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -164,6 +165,9 @@ public class StatixTerms {
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
+                }),
+                M.appl2("CTry", constraint(), message(), (c, body, msg) -> {
+                    return new CTry(body, msg.orElse(null));
                 }),
                 M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
                     return new CUser(name, args, msg.orElse(null));

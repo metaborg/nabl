@@ -46,6 +46,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -514,6 +515,22 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
 
     @Override public Optional<StepResult> caseTrue(CTrue c) throws SolverException {
         return Optional.of(StepResult.of(state));
+    }
+
+    @Override public Optional<StepResult> caseTry(CTry c) throws SolverException {
+        try {
+            if(Solver.entails(state, c.constraint(), isComplete, new NullDebugContext())) {
+                return Optional.of(StepResult.of(state));
+            } else {
+                params.debug().warn("Try failed, but ignored");
+                return Optional.of(StepResult.of(state));
+            }
+        } catch(InterruptedException e) {
+            throw new SolverInterrupted(e);
+        } catch(Delay e) {
+            params.debug().info("Try delayed: {}", e.getMessage());
+            return Optional.of(StepResult.ofDelay(state, e, c));
+        }
     }
 
     @Override public Optional<StepResult> caseUser(CUser c) throws SolverException {

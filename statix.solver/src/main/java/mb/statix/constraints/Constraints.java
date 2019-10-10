@@ -35,6 +35,7 @@ public final class Constraints {
                 Function1<CAstId,R> onTermId,
                 Function1<CAstProperty,R> onTermProperty,
                 Function1<CTrue,R> onTrue,
+                Function1<CTry,R> onTry,
                 Function1<CUser,R> onUser
             ) {
         return new IConstraint.Cases<R>() {
@@ -91,6 +92,10 @@ public final class Constraints {
                 return onTrue.apply(c);
             }
 
+            @Override public R caseTry(CTry c) {
+                return onTry.apply(c);
+            }
+
             @Override public R caseUser(CUser c) {
                 return onUser.apply(c);
             }
@@ -118,6 +123,7 @@ public final class Constraints {
         private Function1<CAstId, R> onTermId;
         private Function1<CAstProperty, R> onTermProperty;
         private Function1<CTrue, R> onTrue;
+        private Function1<CTry, R> onTry;
         private Function1<CUser, R> onUser;
 
         public CaseBuilder<R> arith(Function1<CArith, R> onArith) {
@@ -185,6 +191,11 @@ public final class Constraints {
             return this;
         }
 
+        public CaseBuilder<R> _try(Function1<CTry, R> onTry) {
+            this.onTry = onTry;
+            return this;
+        }
+
         public CaseBuilder<R> user(Function1<CUser, R> onUser) {
             this.onUser = onUser;
             return this;
@@ -245,6 +256,10 @@ public final class Constraints {
                     return onTrue != null ? onTrue.apply(c) : otherwise.apply(c);
                 }
 
+                @Override public R caseTry(CTry c) {
+                    return onTry != null ? onTry.apply(c) : otherwise.apply(c);
+                }
+
                 @Override public R caseUser(CUser c) {
                     return onUser != null ? onUser.apply(c) : otherwise.apply(c);
                 }
@@ -270,6 +285,7 @@ public final class Constraints {
                 CheckedFunction1<CAstId, R, E> onTermId,
                 CheckedFunction1<CAstProperty, R, E> onTermProperty,
                 CheckedFunction1<CTrue, R, E> onTrue,
+                CheckedFunction1<CTry, R, E> onTry,
                 CheckedFunction1<CUser, R, E> onUser
             ) {
         return new IConstraint.CheckedCases<R, E>() {
@@ -326,6 +342,10 @@ public final class Constraints {
                 return onTrue.apply(c);
             }
 
+            @Override public R caseTry(CTry c) throws E {
+                return onTry.apply(c);
+            }
+
             @Override public R caseUser(CUser c) throws E {
                 return onUser.apply(c);
             }
@@ -350,6 +370,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
+            c -> f.apply(new CTry(bottomup(f).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null))),
             c -> f.apply(c)
         );
         // @formatter:on
@@ -380,6 +401,7 @@ public final class Constraints {
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts)); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; }
         ));
         // @formatter:on

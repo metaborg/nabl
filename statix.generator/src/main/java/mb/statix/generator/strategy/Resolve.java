@@ -143,8 +143,8 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                         constraints.add(condition);
                     });
                     flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition)).forEach(condition -> {
-                        constraints.add(
-                                new CInequal(condition.term1(), condition.term2(), condition.cause().orElse(null)));
+                        constraints.add(new CInequal(condition.term1(), condition.term2(),
+                                condition.cause().orElse(null), condition.message().orElse(null)));
                     });
                     final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
                     return new SearchNode<>(ctx.nextNodeId(), newState, node,

@@ -135,6 +135,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onTermId -> Stream.empty(),
             onTermProperty -> Stream.empty(),
             onTrue -> Stream.empty(),
+            onTry -> Stream.empty(),
             onUser -> onUser.args().stream()
         );
         return terms.apply(constraint).map(unifier::findTerm)

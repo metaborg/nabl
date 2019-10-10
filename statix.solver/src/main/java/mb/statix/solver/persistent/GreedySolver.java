@@ -45,6 +45,7 @@ import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -66,6 +67,7 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.Log;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.query.ConstraintQueries;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
@@ -513,6 +515,20 @@ class GreedySolver {
 
             @Override public IState.Immutable caseTrue(CTrue c) throws InterruptedException {
                 return success(c, state, fuel);
+            }
+
+            @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
+                try {
+                    if(Solver.entails(state, c.constraint(), params::isComplete, new NullDebugContext())) {
+                        return success(c, state, fuel);
+                    } else {
+                        params.debug().warn("Try failed, but ignored");
+                        return success(c, state, fuel);
+                    }
+                } catch(Delay e) {
+                    params.debug().info("Try delayed: {}", e.getMessage());
+                    return successDelay(c, state, e, fuel);
+                }
             }
 
             @Override public IState.Immutable caseUser(CUser c) throws InterruptedException {

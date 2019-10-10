@@ -55,6 +55,7 @@ public class CompletenessUtil {
             onTermId -> null,
             onTermProperty -> null,
             onTrue -> null,
+            onTry -> null,
             onUser -> {
                 spec.scopeExtensions().get(onUser.name()).stream()
                         .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), il._2()));
