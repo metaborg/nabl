@@ -1,5 +1,6 @@
 package mb.nabl2.util.collections;
 
+import java.io.Serializable;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Action2;
@@ -34,7 +35,9 @@ public abstract class MultiSet<E> {
         elements().entrySet().forEach(e -> f.apply(e.getKey(), e.getValue()));
     }
 
-    public static class Immutable<E> extends MultiSet<E> {
+    public static class Immutable<E> extends MultiSet<E> implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final Map.Immutable<E, Integer> elements;
 
