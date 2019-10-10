@@ -396,7 +396,7 @@ class GreedySolver {
                                 .withDataComplete(isComplete)
                                 .build(state.scopeGraph(), relation);
                     // @formatter:on
-                    final Set<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+                    final Collection<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
                     final List<ITerm> pathTerms =
                             paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);

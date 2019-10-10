@@ -26,7 +26,7 @@ rules
     )
 
 
-  normalize-ast-ids = Occurrence(id, id, normalize-term-or-id)
+  normalize-ast-ids = WithId(normalize-term-or-id)
   normalize-ast-ids = CAstProperty(normalize-term-or-id, id, id)
 
   normalize-term-or-id: t -> t'

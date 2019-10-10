@@ -198,3 +198,19 @@ test resolve occurrence relations with resolution policy succeeds [[
       resolve Var filter P (P|Q)* min Q < P
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test relations have multiset behavior [[
+  resolve {s x y}
+    new s,
+    !r[Var{"x"@-}] in s,
+    !r[Var{"x"@-}] in s,
+    r of Var{"x"@-} in s |-> [_, _]
+  signature
+    relations
+      r : occurrence
+    namespaces
+      Var : string
+    name-resolution
+      resolve Var
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

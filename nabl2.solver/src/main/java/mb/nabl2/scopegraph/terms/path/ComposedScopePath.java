@@ -18,7 +18,7 @@ import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
 import mb.nabl2.scopegraph.path.IStep;
-import mb.nabl2.util.collections.PSequence;
+import mb.nabl2.util.collections.ConsList;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -65,8 +65,8 @@ abstract class ComposedScopePath<S extends IScope, L extends ILabel, O extends I
         return getLeft().getScopes().__insertAll(getRight().getScopes());
     }
 
-    @Value.Lazy @Override public PSequence<L> getLabels() {
-        return getLeft().getLabels().appendAll(getRight().getLabels());
+    @Value.Lazy @Override public ConsList<L> getLabels() {
+        return getLeft().getLabels().append(getRight().getLabels());
     }
 
     @Override public Iterator<IStep<S, L, O>> iterator() {

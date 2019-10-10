@@ -1,6 +1,6 @@
 package mb.statix.scopegraph;
 
-import java.util.Set;
+import java.util.Collection;
 
 import org.metaborg.util.functions.Predicate2;
 
@@ -13,7 +13,7 @@ import mb.statix.scopegraph.reference.ResolutionException;
 
 public interface INameResolution<S extends D, L, D> {
 
-    Set<IResolutionPath<S, L, D>> resolve(S scope) throws ResolutionException, InterruptedException;
+    Collection<IResolutionPath<S, L, D>> resolve(S scope) throws ResolutionException, InterruptedException;
 
     interface Builder<S extends D, L, D> {
 
