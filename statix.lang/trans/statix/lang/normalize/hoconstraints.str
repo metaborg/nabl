@@ -38,15 +38,6 @@ rules
          ps := <mk-seq-Vars(|"t")> tys;
          lam := <mk-LLam>(ps, [], C(x, ps, NoMessage()))
 
-  replace-ho-constraint: l@LPathMatch(re) -> lam
-    with p := <mk-Var(|LIST(LABEL()))>("ls");
-         lam := <mk-LLam>([p], [], CPathMatch(re, p, NoMessage()))
-
-  replace-ho-constraint: l@LPathLt(ord) -> lam
-    with l1 := <mk-Var(|LABEL())>("l1");
-         l2 := <mk-Var(|LABEL())>("l2");
-         lam := <mk-LLam>([l1, l2], [], CPathLt(ord, l1, l2, NoMessage()))
-
 rules
 
   // Detect most general patterns and replace them with a single wildcard.

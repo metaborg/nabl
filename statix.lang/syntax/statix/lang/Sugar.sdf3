@@ -120,11 +120,6 @@ context-free syntax
 //LabelRE = <<LabelRE>?>
 //LabelRE = <<LabelRE>+>
 
-syntax
-
-  HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
-  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "]"
-
 
 /******************************************************************
  * Resolve & Query

@@ -126,13 +126,6 @@ rules
     Map1(LabelPair)[[ prs ^ (s) ]].
 
 
-  [[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
-    LabelRE[[ re ^ (s) ]].
-
-  [[ LPathLt(ord) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
-    LabelOrd[[ ord ^ (s) ]].
-
-
 /******************************************************************
  * Resolve & Query
  ******************************************************************/

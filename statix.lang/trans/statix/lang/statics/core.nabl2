@@ -231,17 +231,6 @@ rules
   EdgeRef[[ l@EOP() ^ (s) ]].
 
 
-  [[ CPathMatch(re, p, msg) ^ (s) ]] :=
-    LabelRE[[ re ^ (s) ]],
-    Build[[ p ^ (s) : LIST(LABEL()) ]],
-    Message(ErrorKind)[[ msg ^ (s) ]].
-
-  [[ CPathLt(ord, p1, p2, msg) ^ (s) ]] :=
-    Build[[ p1 ^ (s) : LABEL() ]],
-    Build[[ p2 ^ (s) : LABEL() ]],
-    LabelOrd[[ ord ^ (s) ]],
-    Message(ErrorKind)[[ msg ^ (s) ]].
-
   LabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
     EdgeRef[[ lbl1 ^ (s) ]],
     EdgeRef[[ lbl2 ^ (s) ]].
