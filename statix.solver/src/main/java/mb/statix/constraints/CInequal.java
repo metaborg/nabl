@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
 public class CInequal implements IConstraint, Serializable {
@@ -17,15 +18,21 @@ public class CInequal implements IConstraint, Serializable {
     private final ITerm term2;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable IMessage message;
 
     public CInequal(ITerm term1, ITerm term2) {
-        this(term1, term2, null);
+        this(term1, term2, null, null);
     }
 
-    public CInequal(ITerm term1, ITerm term2, @Nullable IConstraint cause) {
+    public CInequal(ITerm term1, ITerm term2, @Nullable IMessage message) {
+        this(term1, term2, null, message);
+    }
+
+    public CInequal(ITerm term1, ITerm term2, @Nullable IConstraint cause, @Nullable IMessage message) {
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;
+        this.message = message;
     }
 
     public ITerm term1() {
@@ -41,7 +48,15 @@ public class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal withCause(@Nullable IConstraint cause) {
-        return new CInequal(term1, term2, cause);
+        return new CInequal(term1, term2, cause, message);
+    }
+
+    @Override public Optional<IMessage> message() {
+        return Optional.ofNullable(message);
+    }
+
+    @Override public CInequal withMessage(@Nullable IMessage message) {
+        return new CInequal(term1, term2, cause, message);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -53,7 +68,8 @@ public class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {
-        return new CInequal(subst.apply(term1), subst.apply(term2), cause);
+        return new CInequal(subst.apply(term1), subst.apply(term2), cause,
+                message == null ? null : message.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

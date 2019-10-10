@@ -21,12 +21,21 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.messages.IMessage;
 
 public interface IConstraint {
 
     Optional<IConstraint> cause();
 
     IConstraint withCause(IConstraint cause);
+
+    default Optional<IMessage> message() {
+        return Optional.empty();
+    }
+
+    default IConstraint withMessage(IMessage msg) {
+        return this;
+    }
 
     <R> R match(Cases<R> cases);
 

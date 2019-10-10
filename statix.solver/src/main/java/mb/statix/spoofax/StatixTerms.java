@@ -38,6 +38,7 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -56,6 +57,7 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.messages.IMessage;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -123,8 +125,8 @@ public class StatixTerms {
         return (t, u) -> {
             // @formatter:off
             return M.<IConstraint>casesFix(m -> Iterables2.from(
-                M.appl3("CArith", ArithTerms.matchExpr(), ArithTerms.matchTest(), ArithTerms.matchExpr(), (c, ae1, op, ae2) -> {
-                    return new CArith(ae1, op, ae2);
+                M.appl4("CArith", ArithTerms.matchExpr(), ArithTerms.matchTest(), ArithTerms.matchExpr(), message(), (c, ae1, op, ae2, msg) -> {
+                    return new CArith(ae1, op, ae2, msg.orElse(null));
                 }),
                 M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
                     return new CAstId(t1, t2);
@@ -135,24 +137,24 @@ public class StatixTerms {
                 M.appl2("CConj", m, m, (c, c1, c2) -> {
                     return new CConj(c1, c2);
                 }),
-                M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    return new CEqual(t1, t2);
+                M.appl3("CEqual", term(), term(), message(), (c, t1, t2, msg) -> {
+                    return new CEqual(t1, t2, msg.orElse(null));
                 }),
                 M.appl2("CExists", M.listElems(varTerm()), constraint(), (c, vs, body) -> {
                     return new CExists(vs, body);
                 }),
-                M.appl0("CFalse", (c) -> {
-                    return new CFalse();
+                M.appl1("CFalse", message(), (c, msg) -> {
+                    return new CFalse(msg.orElse(null));
                 }),
-                M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
-                    return new CInequal(t1, t2);
+                M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
+                    return new CInequal(t1, t2, msg.orElse(null));
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return new CNew(ts);
                 }),
-                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
-                        (c, rel, filter, min, scope, result) -> {
-                    return new CResolveQuery(rel, filter, min, scope, result);
+                M.appl6("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(), message(),
+                        (c, rel, filter, min, scope, result, msg) -> {
+                    return new CResolveQuery(rel, filter, min, scope, result, msg.orElse(null));
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
@@ -163,8 +165,8 @@ public class StatixTerms {
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
                 }),
-                M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
-                    return new CUser(name, args);
+                M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
+                    return new CUser(name, args, msg.orElse(null));
                 }),
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown constraint: " + c);
@@ -389,6 +391,14 @@ public class StatixTerms {
             M.appl1(WITHID_OP, varPattern(), (t, p) -> p)
         );
         // @formatter:on
+    }
+
+    public static IMatcher<Optional<IMessage>> message() {
+        return (t, u) -> Optional.of(Optional.of(new IMessage() {
+            @Override public IMessage apply(ISubstitution.Immutable subst) {
+                return this;
+            }
+        }));
     }
 
     public static ITerm explicate(ITerm term) {
