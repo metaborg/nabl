@@ -68,7 +68,7 @@ rules // derived facts, constraints indirectly adding to the scope graph
 
          rule-ext* := <join(\ ((v1, i), v2) -> (x, i, lbl) where <raw-eq> (v1, v2) \)> (head-proj*, head-ext*)
 
-  derive-extension(|y, i): C(x, arg*) -> arg
+  derive-extension(|y, i): C(x, arg*, _) -> arg
     where <raw-eq> (x, y)
     with arg := <index(|i)> arg*
 

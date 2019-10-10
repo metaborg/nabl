@@ -93,7 +93,7 @@ rules
     Rel{l} -> s, Rel{l} |-> d, @l.decl := d,
     d : ty.
 
-  [[ CAskRel(rel, ts, st) ^ (s) ]] :=
+  [[ CAskRel(rel, ts, st, msg) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
     tys is `in-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],

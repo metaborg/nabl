@@ -9,6 +9,7 @@ template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
+
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
@@ -51,6 +52,7 @@ syntax
 
   Term-CF.COp = ConstraintId-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
+
 /******************************************************************
  * Base Constraints                                               *
  ******************************************************************/
@@ -71,6 +73,7 @@ lexical syntax
 
   AstPropertyId = "ref" {reject}
 
+
 /******************************************************************
  * Relations                                                      *
  ******************************************************************/
@@ -83,7 +86,7 @@ syntax
 
   // short-hand for querying relations
 
-  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF LAYOUT?-CF Message-CF
 
   Term-CF.AskRelOp = "?" RelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
@@ -91,6 +94,7 @@ lexical syntax
 
   RelationId = "decl" {reject}
   RelationId = "ref" {reject}
+
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -121,6 +125,7 @@ syntax
   HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
   HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "]"
 
+
 /******************************************************************
  * Resolve & Query
  ******************************************************************/
@@ -136,8 +141,8 @@ context-free syntax
   QueryMin.NoMin =
   QueryMin.Min   = < min <LabelOrd>>
 
-  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term]]
-  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term]]
+  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term][Message]]
+  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term][Message]]
 
 syntax
 
@@ -151,6 +156,7 @@ lexical syntax
 
   Keyword = "resolveMatch" | "resolveLt"
 
+
 /******************************************************************
  * Sorts & Constructors                                           *
  ******************************************************************/
@@ -159,9 +165,11 @@ context-free syntax
 
   Type.FunType    = [[{SortRef " * "}*] -> [SortRef]]
 
+
 /******************************************************************
  * Terms                                                          *
  ******************************************************************/
+
 
 /******************************************************************
  * Arithmetic                                                          *

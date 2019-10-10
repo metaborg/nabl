@@ -46,5 +46,5 @@ rules
     with ty := <norm-get-ast-type> t
        ; out_v := <mk-fresh-Var(|ty)>(x)
 
-  functional-cop-to-c: (COp(x, in_ts), out_v) -> C(x, ts)
+  functional-cop-to-c: (COp(x, in_ts), out_v) -> C(x, ts, NoMessage())
     with ts := <conc> (in_ts, [out_v])

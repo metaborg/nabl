@@ -114,11 +114,12 @@ rules
     tys is `in-types` of ty,
     Map1T(Match)[[ args ^ (s_rule) : tys ]].
 
-  [[ C(x, args) ^ (s) ]] :=
+  [[ C(x, args, msg) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
     d : ty, ty != FUN(_, _) | error "Use inline notation for functional constraints.",
     tys is `in-types` of ty,
-    Map1T(Build)[[ args ^ (s) : tys ]].
+    Map1T(Build)[[ args ^ (s) : tys ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
   [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
     new s', s' -P-> s,
@@ -133,7 +134,8 @@ rules
 
   [[ CTrue() ^ (_) ]].
 
-  [[ CFalse() ^ (_) ]].
+  [[ CFalse(msg) ^ (s) ]] :=
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
   [[ CConj(c1, c2) ^ (s) ]] :=
     [[ c1 ^ (s) ]],
@@ -142,14 +144,19 @@ rules
   [[ CNew(vs) ^ (s) ]] :=
     Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
 
-  [[ CEqual(t1, t2) ^ (s) ]] :=
+  [[ CEqual(t1, t2, msg) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
-    Build[[ t2 ^ (s) : ty ]].
+    Build[[ t2 ^ (s) : ty ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ CInequal(t1, t2) ^ (s) ]] :=
+  [[ CInequal(t1, t2, msg) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
-    Build[[ t2 ^ (s) : ty ]].
+    Build[[ t2 ^ (s) : ty ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
+  [[ CTry(c, msg) ^ (s) ]] :=
+    [[ c ^ (s) ]],
+    Message(TryKind)[[ msg ^ (s) ]].
 
 /******************************************************************
  * AST Constraints                                                *
@@ -224,14 +231,16 @@ rules
   EdgeRef[[ l@EOP() ^ (s) ]].
 
 
-  [[ CPathMatch(re, p) ^ (s) ]] :=
+  [[ CPathMatch(re, p, msg) ^ (s) ]] :=
     LabelRE[[ re ^ (s) ]],
-    Build[[ p ^ (s) : LIST(LABEL()) ]].
+    Build[[ p ^ (s) : LIST(LABEL()) ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ CPathLt(ord, p1, p2) ^ (s) ]] :=
+  [[ CPathLt(ord, p1, p2, msg) ^ (s) ]] :=
     Build[[ p1 ^ (s) : LABEL() ]],
     Build[[ p2 ^ (s) : LABEL() ]],
-    LabelOrd[[ ord ^ (s) ]].
+    LabelOrd[[ ord ^ (s) ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
   LabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
     EdgeRef[[ lbl1 ^ (s) ]],
@@ -293,14 +302,15 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  [[ CResolveQuery(rel, filter, min, st, pst) ^ (s) ]] :=
+  [[ CResolveQuery(rel, filter, min, st, pst, msg) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]],
     inty is `in-type` of ty,
     [[ filter ^ (s, PRED([inty])) ]],
     [[ min ^ (s, PRED([inty, inty])) ]],
     Build[[ st ^ (s) : SCOPE() ]],
     inoutty is `inout-type` of ty,
-    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]].
+    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
   [[ Filter(re, lt) ^ (s, lty) ]] :=
     LabelRE[[ re ^ (s) ]],
@@ -431,9 +441,10 @@ rules
 
 rules
 
-  [[ CArith(ae1, op, ae2) ^ (s) ]] :=
+  [[ CArith(ae1, op, ae2, msg) ^ (s) ]] :=
     ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
-    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]].
+    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
 
   ArithExp(V)[[ e@Int(_) ^ (s) : INT() ]] :=
@@ -472,6 +483,46 @@ rules
   ArithExp(V)[[ Div(e1, e2) ^ (s) : INT() ]] :=
     ArithExp(V)[[ e1 ^ (s) : INT() ]],
     ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+
+/******************************************************************
+ * Messages                                                       *
+ ******************************************************************/
+
+  Message(K)[[ NoMessage() ^ (s) ]].
+
+  Message(K)[[ Message(kind, content, origin) ^ (s) ]] :=
+    K[[ kind ]],
+    MessageContent[[ content ^ (s) ]],
+    MessageOrigin[[ origin ^ (s) ]].
+
+
+  MessageContent[[ Str(_) ^ (s) ]].
+
+  MessageContent[[ Formatted(parts) ^ (s) ]] :=
+    Map1(MessageContentPart)[[ parts ^ (s) ]].
+
+
+  MessageContentPart[[ Text(_) ^ (s) ]].
+
+  MessageContentPart[[ Term(t) ^ (s) ]] :=
+    Build[[ t ^ (s) : _ ]].
+
+
+  MessageOrigin[[ NoOrigin() ^ (s) ]].
+
+  MessageOrigin[[ Origin(t) ^ (s) ]] :=
+    Build[[ t ^ (s) : _ ]].
+
+
+  ErrorKind[[ Error() ]].
+  ErrorKind[[ Warning() ]] := false | error "Use 'try' for warnings.".
+  ErrorKind[[ Note() ]] := false | error "Use 'try' for notes.".
+
+
+  TryKind[[ Error() ]].
+  TryKind[[ Warning() ]].
+  TryKind[[ Note() ]].
 
 
 /******************************************************************

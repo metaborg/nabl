@@ -46,7 +46,7 @@ rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
 
-  desugar-ref-shorthand: c@CResolveRef(rt, st, pst) -> c'
+  desugar-ref-shorthand: c@CResolveRef(rt, st, pst, msg) -> c'
     with rel        := <with-origin(|c)> Decl();
          match      := <with-origin(|rt)> ResolveMatch(rt);
          lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
@@ -54,16 +54,16 @@ rules
          ord        := <with-origin(|rt)> ResolveLt(rt);
          lord       := <with-origin(|rt)> LTrue();
          min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(rel, filter, min, st, pst)
+         c'         := CResolveQuery(rel, filter, min, st, pst, msg)
 
-  desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst) -> c'
+  desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst, msg) -> c'
     with match      := <with-origin(|rt)> ResolveMatch(rt);
          lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
          filter     := <with-origin(|rt)> Filter(match, lmatch);
          ord        := <with-origin(|rt)> ResolveLt(rt);
          lord       := <with-origin(|rt)> LTrue();
          min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(rel, filter, min, st, pst)
+         c'         := CResolveQuery(rel, filter, min, st, pst, msg)
 
 rules
 

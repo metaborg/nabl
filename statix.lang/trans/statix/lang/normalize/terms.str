@@ -44,7 +44,7 @@ rules
 
   replace-pattern: As(v, t) -> v
 
-  pattern-to-c: (As(v, t), _) -> CEqual(v, t)
+  pattern-to-c: (As(v, t), _) -> CEqual(v, t, NoMessage())
 
   pattern-no-add = ?As(_, _)
 
@@ -67,4 +67,4 @@ rules
     with ty := <norm-get-ast-type> t
        ; v := <mk-fresh-Var(|ty)>("n")
 
-  term-to-c: (ArithOp(ae), v) -> CArith(v, Equal(), ae)
+  term-to-c: (ArithOp(ae), v) -> CArith(v, Equal(), ae, NoMessage())
