@@ -12,7 +12,7 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -101,7 +101,7 @@ public abstract class AState implements IState.Immutable {
     // --- solution ---
 
     @Override @Value.Default public IUnifier.Immutable unifier() {
-        return PersistentUnifier.Immutable.of();
+        return Unifiers.Immutable.of();
     }
 
     @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {

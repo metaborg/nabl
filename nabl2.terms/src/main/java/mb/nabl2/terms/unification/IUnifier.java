@@ -33,7 +33,9 @@ import mb.nabl2.terms.substitution.ISubstitution;
  * Support for recursive terms is easy to add, but makes many operations exceptional. For example: remove(ITermVar),
  * findRecursive(ITerm).
  *
+ *
  */
+
 
 public interface IUnifier {
 
@@ -65,11 +67,6 @@ public interface IUnifier {
      * Return the domain of this unifier.
      */
     java.util.Set<ITermVar> varSet();
-
-    /**
-     * Return the representative variables of this unifier.
-     */
-    java.util.Set<ITermVar> repSet();
 
     /**
      * Return the set of free variables appearing in this unifier.

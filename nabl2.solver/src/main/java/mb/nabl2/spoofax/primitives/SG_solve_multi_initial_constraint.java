@@ -31,7 +31,7 @@ import mb.nabl2.spoofax.analysis.ImmutableMultiInitialResult;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Transform.T;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
@@ -61,7 +61,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final ISolution solution;
         try {
             BaseSolution baseSolution =
-                    ImmutableBaseSolution.of(solverConfig, constraints, PersistentUnifier.Immutable.of());
+                    ImmutableBaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of());
             GraphSolution preSolution = solver.solveGraph(baseSolution, globalFresh::fresh, cancel, progress);
             solution = solver.solveIntra(preSolution, globalVars, null, globalFresh::fresh, cancel, progress);
         } catch(InterruptedException | SolverException ex) {

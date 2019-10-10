@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
@@ -335,7 +334,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                 debug.info("Disunification succeeded: {}", result);
             }
             final IState.Immutable newState = state.withUnifier(result.unifier());
-            final Set<ITermVar> updatedVars = Sets.union(result.result().varSet(), result.result().repSet());
+            final Set<ITermVar> updatedVars = result.result().varSet();
             return Optional
                     .of(StepResult.of(newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of()));
         } else {

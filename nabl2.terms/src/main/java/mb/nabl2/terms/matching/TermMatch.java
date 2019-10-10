@@ -31,7 +31,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 
 public class TermMatch {
 
@@ -456,7 +456,7 @@ public class TermMatch {
         Optional<T> match(ITerm term, IUnifier unifier);
 
         default Optional<T> match(ITerm term) {
-            return match(term, PersistentUnifier.Immutable.of());
+            return match(term, Unifiers.Immutable.of());
         }
 
         default <R> IMatcher<R> map(Function<T, R> fun) {

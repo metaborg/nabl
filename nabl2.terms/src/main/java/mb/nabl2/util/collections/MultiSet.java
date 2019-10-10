@@ -163,6 +163,12 @@ public abstract class MultiSet<E> {
             return remove(e, 1);
         }
 
+        public void removeAll(Iterable<E> es) {
+            for(E e : es) {
+                this.remove(e);
+            }
+        }
+
         /**
          * Remove an element up to n times.
          * 

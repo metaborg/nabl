@@ -16,8 +16,8 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
@@ -149,7 +149,7 @@ public class SearchState {
         printLn.apply("SearchState");
         printLn.apply("| vars:");
         for(Map.Entry<ITermVar, ITermVar> existential : existentials().entrySet()) {
-            String var = pp.apply(existential.getKey(), PersistentUnifier.Immutable.of());
+            String var = pp.apply(existential.getKey(), Unifiers.Immutable.of());
             String term = pp.apply(existential.getValue(), unifier);
             printLn.apply("|   " + var + " : " + term);
         }

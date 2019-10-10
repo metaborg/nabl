@@ -25,7 +25,6 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -65,18 +64,14 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return reps().containsKey(var) || terms().containsKey(var);
     }
 
-    @Override public Set.Immutable<ITermVar> repSet() {
-        return reps().values().stream().map(this::findRep).collect(CapsuleCollectors.toSet());
-    }
-
-    @Override public Set.Immutable<ITermVar> varSet() {
+    @Override public java.util.Set<ITermVar> varSet() {
         final Set.Transient<ITermVar> varSet = Set.Transient.of();
         varSet.__insertAll(reps().keySet());
         varSet.__insertAll(terms().keySet());
         return varSet.freeze();
     }
 
-    @Override public Set.Immutable<ITermVar> freeVarSet() {
+    @Override public java.util.Set<ITermVar> freeVarSet() {
         final Set.Transient<ITermVar> freeVarSet = Set.Transient.of();
         reps().values().stream().filter(var -> !contains(var)).forEach(freeVarSet::__insert);
         terms().values().stream().flatMap(term -> term.getVars().elementSet().stream()).filter(var -> !contains(var))
@@ -738,10 +733,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
         @Override public java.util.Set<ITermVar> varSet() {
             return unifier.varSet();
-        }
-
-        @Override public java.util.Set<ITermVar> repSet() {
-            return unifier.repSet();
         }
 
         @Override public java.util.Set<ITermVar> freeVarSet() {

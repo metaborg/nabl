@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
@@ -341,7 +340,7 @@ class GreedySolver {
                         debug.info("Disunification succeeded: {}", result);
                     }
                     final IState.Immutable newState = state.withUnifier(result.unifier());
-                    final Set<ITermVar> updatedVars = Sets.union(result.result().varSet(), result.result().repSet());
+                    final Set<ITermVar> updatedVars = result.result().varSet();
                     return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(),
                             fuel);
                 } else {

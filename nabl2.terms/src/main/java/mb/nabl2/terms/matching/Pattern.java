@@ -24,7 +24,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
@@ -34,7 +34,7 @@ public abstract class Pattern implements Serializable {
     public abstract Set<ITermVar> getVars();
 
     public Optional<ISubstitution.Immutable> match(ITerm term) {
-        return match(term, PersistentUnifier.Immutable.of()).match(t -> t, v -> Optional.empty());
+        return match(term, Unifiers.Immutable.of()).match(t -> t, v -> Optional.empty());
     }
 
     public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(ITerm term, IUnifier.Immutable unifier) {

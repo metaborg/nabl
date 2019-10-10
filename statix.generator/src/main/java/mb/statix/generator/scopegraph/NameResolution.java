@@ -173,11 +173,11 @@ public class NameResolution<S extends D, L, D, X> {
     // edges and data                                                        //
     ///////////////////////////////////////////////////////////////////////////
 
-    protected java.util.Set<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
+    protected Iterable<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
         return scopeGraph.getData(path.getTarget(), l);
     }
 
-    protected java.util.Set<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
+    protected Iterable<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
         return scopeGraph.getEdges(path.getTarget(), l);
     }
 

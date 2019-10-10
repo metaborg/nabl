@@ -75,7 +75,7 @@ public class PersistentUnifierStressTest {
         final List<Entry<ITerm, ITerm>> equalities = Lists.newArrayList(init.entries());
         final Random rnd = new Random(System.currentTimeMillis());
         try {
-            IUnifier.Transient unifier = PersistentUnifier.Immutable.of().melt();
+            IUnifier.Transient unifier = Unifiers.Immutable.of().melt();
             Collections.shuffle(equalities);
             for(Entry<ITerm, ITerm> equality : equalities) {
                 final ITerm left;

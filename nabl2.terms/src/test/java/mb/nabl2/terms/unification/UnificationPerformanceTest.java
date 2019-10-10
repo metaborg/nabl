@@ -31,7 +31,7 @@ public class UnificationPerformanceTest {
 
     private static void testCycle() {
         System.out.println("Testing cycle");
-        final IUnifier.Transient unifier = PersistentUnifier.Immutable.of(false).melt();
+        final IUnifier.Transient unifier = Unifiers.Immutable.of(false).melt();
         ITermVar varA = B.newVar("", X);
         ITermVar varB = B.newVar("", Y);
         ITermVar varC = B.newVar("", Z);
@@ -56,7 +56,7 @@ public class UnificationPerformanceTest {
     }
 
     private static IUnifier testUnify(int n) {
-        final IUnifier.Transient unifier = PersistentUnifier.Immutable.of().melt();
+        final IUnifier.Transient unifier = Unifiers.Immutable.of().melt();
         final ITerm left = B.newTuple(
                 Iterables.concat(createVars(X, n), createTuples(Y, n), Iterables2.singleton(createVar(X, n))));
         final ITerm right = B.newTuple(

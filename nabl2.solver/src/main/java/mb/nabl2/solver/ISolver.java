@@ -20,7 +20,7 @@ import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 
 @FunctionalInterface
 public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, InterruptedException> {
@@ -82,7 +82,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
         }
 
         @Value.Default public IUnifier.Immutable unifierDiff() {
-            return PersistentUnifier.Immutable.of();
+            return Unifiers.Immutable.of();
         }
 
         public static SolveResult empty() {

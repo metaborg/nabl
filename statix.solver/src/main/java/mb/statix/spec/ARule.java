@@ -20,7 +20,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
 import mb.statix.solver.Delay;
@@ -58,7 +58,7 @@ public abstract class ARule {
         // 2. Instantiate body
         final IConstraint instBody;
         try {
-            if((instBody = apply(args, PersistentUnifier.Immutable.of()).orElse(null)) == null) {
+            if((instBody = apply(args, Unifiers.Immutable.of()).orElse(null)) == null) {
                 return Optional.of(false);
             }
         } catch(Delay e) {
