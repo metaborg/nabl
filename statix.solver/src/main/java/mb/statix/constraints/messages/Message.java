@@ -1,22 +1,34 @@
 package mb.statix.constraints.messages;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import com.google.common.collect.ImmutableList;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.TermFormatter;
 
 public class Message implements IMessage, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private final MessageKind kind;
+    private final List<IMessagePart> content;
     private final @Nullable ITerm origin;
 
-    public Message(MessageKind kind, @Nullable ITerm origin) {
+
+    public Message(MessageKind kind) {
+        this(kind, ImmutableList.of(), null);
+    }
+
+    public Message(MessageKind kind, Iterable<IMessagePart> content, @Nullable ITerm origin) {
         this.kind = kind;
+        this.content = ImmutableList.copyOf(content);
         this.origin = origin;
     }
 
@@ -24,12 +36,19 @@ public class Message implements IMessage, Serializable {
         return kind;
     }
 
+    @Override public String toString(TermFormatter formatter) {
+        return content.stream().map(p -> p.toString(formatter)).collect(Collectors.joining());
+    }
+
     @Override public Optional<ITerm> origin() {
         return Optional.ofNullable(origin);
     }
 
     @Override public IMessage apply(ISubstitution.Immutable subst) {
-        return new Message(kind, origin != null ? subst.apply(origin) : null);
+        final List<IMessagePart> newContent =
+                content.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+        final ITerm newOrigin = origin != null ? subst.apply(origin) : null;
+        return new Message(kind, newContent, newOrigin);
     }
 
 }

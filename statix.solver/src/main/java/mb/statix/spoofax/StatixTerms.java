@@ -58,8 +58,11 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.IMessagePart;
 import mb.statix.constraints.messages.Message;
 import mb.statix.constraints.messages.MessageKind;
+import mb.statix.constraints.messages.TermPart;
+import mb.statix.constraints.messages.TextPart;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -402,9 +405,27 @@ public class StatixTerms {
         // @formatter:off
         return M.cases(
             M.appl0("NoMessage", t -> Optional.empty()),
-            M.appl3("Message", messageKind(), M.term(), messageOrigin(), (t, kind, content, origin) -> {
-                return Optional.of(new Message(kind, origin.orElse(null)));
+            M.appl3("Message", messageKind(), messageContent(), messageOrigin(), (t, kind, content, origin) -> {
+                return Optional.of(new Message(kind, content, origin.orElse(null)));
             })
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<List<IMessagePart>> messageContent() {
+        // @formatter:off
+        return M.cases(
+            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(text))),
+            M.appl1("Formatted", M.listElems(messagePart()), (t, parts) -> parts)
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<IMessagePart> messagePart() {
+        // @formatter:off
+        return M.cases(
+            M.appl1("Text", M.stringValue(), (t, text) -> new TextPart(text)),
+            M.appl1("Term", term(), (t, term) -> new TermPart(term))
         );
         // @formatter:on
     }

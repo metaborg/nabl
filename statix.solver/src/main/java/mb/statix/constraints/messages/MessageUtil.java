@@ -17,7 +17,7 @@ public class MessageUtil {
             c = c.cause().orElse(null);
         }
         if(message == null) {
-            message = new Message(MessageKind.ERROR, null);
+            message = new Message(MessageKind.ERROR);
         }
         return message;
     }

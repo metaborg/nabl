@@ -33,6 +33,7 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -116,13 +117,15 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     protected void addMessage(IMessage message, IConstraint constraint, IUnifier unifier, Collection<ITerm> errors,
             Collection<ITerm> warnings, Collection<ITerm> notes) {
+        final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
+
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();
         while(constraint != null) {
             if(originTerm == null) {
                 originTerm = findOriginArgument(constraint, unifier).orElse(null);
             }
-            trace.addLast(constraint.toString(Solver.shallowTermFormatter(unifier)));
+            trace.addLast(constraint.toString(formatter));
             constraint = constraint.cause().orElse(null);
         }
         if(originTerm == null) {
@@ -130,7 +133,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
 
         final StringBuilder messageText = new StringBuilder();
-        messageText.append(message.kind()).append(": ").append(cleanupString(trace.getFirst()));
+        messageText.append(cleanupString(message.toString(formatter)));
         for(String c : trace) {
             messageText.append("<br>").append("\n");
             messageText.append("&gt;&nbsp;");
