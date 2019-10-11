@@ -221,9 +221,9 @@ context-free syntax
 
 syntax
 
-  OccurrencePosition-CF.NoId   = "@-"
-  OccurrencePosition-CF.WithId = "@" TermOrId-CF {prefer}
   OccurrencePosition-CF.NoId   =
+  OccurrencePosition-CF.WithId = "@" TermOrId-CF
+  OccurrencePosition-CF.NoId   = "@-"
 
   OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 
@@ -403,7 +403,7 @@ context-free priorities
 context-free syntax
 
   Message.NoMessage =
-  Message.Message   = < | <MessageKind> <MessageContent><MessageOrigin>>
+  Message.Message   = < | <MessageKind> <MessageContent> <MessageOrigin>>
 
   MessageKind.Error      = <error>
   MessageKind.Warning    = <warning>
@@ -414,7 +414,7 @@ syntax
   MessageContent-CF.Formatted = "$[" MessageContentPart-CF* "]"
 
   MessageOrigin-CF.NoOrigin =
-  MessageOrigin-CF.Origin   = " " "@" Var-CF
+  MessageOrigin-CF.Origin   = "@" Var-CF
 
 context-free syntax
 
