@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
@@ -47,6 +47,8 @@ import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -92,7 +94,7 @@ class GreedySolver {
     private Map<ITermVar, ITermVar> existentials = null;
     private final List<ITermVar> updatedVars = Lists.newArrayList();
     private final List<CriticalEdge> removedEdges = Lists.newArrayList();
-    private final List<IConstraint> failed = new ArrayList<>();
+    private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
     public GreedySolver(IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug) {
@@ -218,7 +220,7 @@ class GreedySolver {
     }
 
     private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
-        failed.add(constraint);
+        failed.put(constraint, MessageUtil.findClosestMessage(constraint));
         // remove current constraint (duplicated in ::success)
         final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
         constraints.activateFromEdges(removedEdges, debug);
@@ -522,8 +524,7 @@ class GreedySolver {
                     if(Solver.entails(state, c.constraint(), params::isComplete, new NullDebugContext())) {
                         return success(c, state, fuel);
                     } else {
-                        params.debug().warn("Try failed, but ignored");
-                        return success(c, state, fuel);
+                        return fail(c, state);
                     }
                 } catch(Delay e) {
                     params.debug().info("Try delayed: {}", e.getMessage());

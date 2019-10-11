@@ -38,7 +38,6 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -59,6 +58,8 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.Message;
+import mb.statix.constraints.messages.MessageKind;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -398,11 +399,33 @@ public class StatixTerms {
     }
 
     public static IMatcher<Optional<IMessage>> message() {
-        return (t, u) -> Optional.of(Optional.of(new IMessage() {
-            @Override public IMessage apply(ISubstitution.Immutable subst) {
-                return this;
-            }
-        }));
+        // @formatter:off
+        return M.cases(
+            M.appl0("NoMessage", t -> Optional.empty()),
+            M.appl3("Message", messageKind(), M.term(), messageOrigin(), (t, kind, content, origin) -> {
+                return Optional.of(new Message(kind, origin.orElse(null)));
+            })
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<MessageKind> messageKind() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("Error", t -> MessageKind.ERROR),
+            M.appl0("Warning", t -> MessageKind.WARNING),
+            M.appl0("Note", t -> MessageKind.NOTE)
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<Optional<ITerm>> messageOrigin() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("NoOrigin", t -> Optional.empty()),
+            M.appl1("Origin", varTerm(), (t, v) -> Optional.of(v))
+        );
+        // @formatter:on
     }
 
     public static ITerm explicate(ITerm term) {

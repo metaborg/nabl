@@ -27,7 +27,7 @@ test note on false [[
 test error on try false [[
   resolve try { false } | error "message"
 ]] analysis succeeds
-// run evaluate-test to FAILS()
+   run evaluate-test to FAILS()
 
 test warning on try false [[
   resolve try { false } | warning "message"
@@ -36,5 +36,31 @@ test warning on try false [[
 
 test note on try false [[
   resolve try { false } | note "message"
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test error in warning succeeds [[
+  resolve
+    c1()
+  rules
+    c1 :
+    c1() :- try { c2() } | warning "".
+    c2 :
+    c2() :- c3() | error "".
+    c3 :
+    c3() :- false.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test warning in error succeeds [[
+  resolve
+    c1()
+  rules
+    c1 :
+    c1() :- c2() | error "".
+    c2 :
+    c2() :- try { c3() } | warning "".
+    c3 :
+    c3() :- false.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()

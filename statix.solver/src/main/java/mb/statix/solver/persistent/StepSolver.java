@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +47,8 @@ import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -122,7 +123,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final Map<Class<? extends IConstraint>, Long> delayCount = Maps.newHashMap();
 
         // fixed point
-        final List<IConstraint> failed = new ArrayList<>();
+        final Map<IConstraint, IMessage> failed = Maps.newHashMap();
         final Log delayedLog = new Log();
         boolean progress = true;
         int reductions = 0;
@@ -178,7 +179,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                         }
                     } else {
                         subDebug.error("Failed");
-                        failed.add(constraint);
+                        failed.put(constraint, MessageUtil.findClosestMessage(constraint));
                         if(proxyDebug.isRoot()) {
                             Solver.printTrace(constraint, state.unifier(), subDebug);
                         } else {
@@ -522,8 +523,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
             if(Solver.entails(state, c.constraint(), isComplete, new NullDebugContext())) {
                 return Optional.of(StepResult.of(state));
             } else {
-                params.debug().warn("Try failed, but ignored");
-                return Optional.of(StepResult.of(state));
+                return Optional.empty();
             }
         } catch(InterruptedException e) {
             throw new SolverInterrupted(e);

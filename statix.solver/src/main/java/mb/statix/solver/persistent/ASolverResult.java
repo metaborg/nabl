@@ -1,6 +1,5 @@
 package mb.statix.solver.persistent;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +10,8 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITermVar;
 import mb.statix.constraints.Constraints;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageKind;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -23,7 +24,7 @@ public abstract class ASolverResult {
 
     @Value.Parameter public abstract IState.Immutable state();
 
-    @Value.Parameter public abstract List<IConstraint> errors();
+    @Value.Parameter public abstract Map<IConstraint, IMessage> messages();
 
     @Value.Parameter public abstract Map<IConstraint, Delay> delays();
 
@@ -36,7 +37,7 @@ public abstract class ASolverResult {
     @Value.Parameter public abstract ICompleteness.Immutable completeness();
 
     public boolean hasErrors() {
-        return !errors().isEmpty();
+        return messages().values().stream().anyMatch(m -> m.kind().equals(MessageKind.ERROR));
     }
 
     public Delay delay() {

@@ -22,7 +22,8 @@ final class Infer extends SearchStrategy<SearchState, SearchState> {
             throw new RuntimeException(e);
         }
         if(resultConfig.hasErrors()) {
-            final String msg = Constraints.toString(resultConfig.errors(), resultConfig.state().unifier()::toString);
+            final String msg =
+                    Constraints.toString(resultConfig.messages().keySet(), resultConfig.state().unifier()::toString);
             return SearchNodes.failure(node, "infer[" + msg + "]");
         }
         final SearchState newState = state.replace(resultConfig);

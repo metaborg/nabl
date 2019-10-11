@@ -11,7 +11,10 @@ signature
     CNew  : List(Term) -> Constraint
     CTrue : Constraint
     CConj : Constraint * Constraint -> Constraint
-    C     : String * List(Term) -> Constraint
+    C     : String * List(Term) * Message -> Constraint
+
+  constructors
+    NoMessage : Message
 
 rules
 

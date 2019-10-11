@@ -40,7 +40,7 @@ rules // single file analysis
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'])) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ : \
         ((resource, ast'), Solution(_, a)) ->
@@ -62,7 +62,7 @@ rules // single file elaboration
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; V := Var("out")
-    ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V])) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ ast'': \
         ((resource, ast'), Solution(subst, a)) ->
@@ -94,7 +94,7 @@ rules // multi file analysis
           //
           // 2. partially solve project constraint
           //
-        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope])
+        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope], NoMessage())
         ; [initial-project-state] := <stx--solve-multi-file(|global-scope-state, level)> [(project-resource, project-C)]
         case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
           id
@@ -106,7 +106,7 @@ rules // multi file analysis
       //
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-constraint, <map(stx--explode)> [global-scope, ast'])) \)> resource-ast'*
+    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-constraint, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
     ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
     ; file-result* := <zip({ file-state', error*, warning*, note*, file-analysis: \
         ((resource, ast'), file-state) ->
@@ -157,7 +157,7 @@ rules
     with spec  := <stx--find-spec(|spec-name)>
        ; T*    := <map(stx--explode)> in*
        ; V     := Var("out")
-       ; C     := C(constraint, [T*, V])
+       ; C     := C(constraint, [T*, V], NoMessage())
        ; level := <stx--log-level>
        ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level)> ([V], C)
        ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
