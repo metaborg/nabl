@@ -88,14 +88,14 @@ public class EqualityComponent extends ASolver {
         final ITerm right = constraint.getRight();
         Optional<IUnifier.Immutable> result = unifier().diff(left, right);
         if(!result.isPresent()) {
-            return Optional.empty();
+            return Optional.of(SolveResult.empty());
         } else if(result.get().isEmpty()) {
             MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
                     .append(constraint.getRight().toString()).append(" must be inequal, but are not.").build();
             IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
             return Optional.of(SolveResult.messages(message));
         } else {
-            return Optional.of(SolveResult.empty());
+            return Optional.empty();
         }
     }
 
