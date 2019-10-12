@@ -63,10 +63,3 @@ rules // Analysis
            note*    := n*
          end;
          nabl2-custom-analysis-info-msg(|"Analyzed AST.")
-
-
-  nabl2-prettyprint-hook   = prettyprint-Statix-IType
-  prettyprint-Statix-IType = nabl2-prettyprint-term
-
-  nabl2-prettyprint-hook   = prettyprint-Statix-TType
-  prettyprint-Statix-TType = nabl2-prettyprint-term
