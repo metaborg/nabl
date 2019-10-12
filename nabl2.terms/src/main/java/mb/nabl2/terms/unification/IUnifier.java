@@ -143,6 +143,10 @@ public interface IUnifier {
 
     /**
      * Return a unifier that makes these terms equal, relative to the current unifier.
+     * 
+     * If no result is returned, the terms are unequal. Otherwise, if an empty unifier
+     * is returned, the terms are equal. Finally, if a non-empty unifier is returned,
+     * the terms are not equal, but can be made equal by the returned unifier.
      */
     Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2);
 
