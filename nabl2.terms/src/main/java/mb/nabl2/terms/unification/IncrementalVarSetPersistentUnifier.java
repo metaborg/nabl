@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -89,6 +90,37 @@ public abstract class IncrementalVarSetPersistentUnifier extends BaseUnifier imp
             this.__freeVarSet = __freeVarSet;
             this.__unfreeVarSet = __unfreeVarSet;
             this.disequalities = disequalities;
+
+
+            // verify conistentcy until this code is stable
+            {
+                reps.forEach((v, r) -> {
+                    if(!__invReps.containsEntry(r, v)) {
+                        throw new AssertionError("Missing inverse of " + v + " |-> " + r);
+                    }
+                });
+            }
+
+            {
+                final java.util.Set<ITermVar> varSet = super.varSet();
+                SetView<ITermVar> varSetDiff = Sets.symmetricDifference(varSet, __varSet.elementSet());
+                if(!varSetDiff.isEmpty()) {
+                    log.warn("org varSet {}", varSet);
+                    log.warn("new varSet {}", __varSet);
+                    throw new AssertionError("Expected varSet " + varSet + ", got " + __varSet);
+                }
+            }
+
+            {
+                final java.util.Set<ITermVar> freeVarSet = super.freeVarSet();
+                SetView<ITermVar> freeVarSetDiff = Sets.symmetricDifference(freeVarSet, __freeVarSet.elementSet());
+                if(!freeVarSetDiff.isEmpty()) {
+                    log.warn("org freeVarSet {}", freeVarSet);
+                    log.warn("new freeVarSet {}", __freeVarSet);
+                    throw new AssertionError("Expected freeVars " + freeVarSet + ", got " + __freeVarSet);
+                }
+            }
+
         }
 
         @Override public boolean isFinite() {
@@ -763,40 +795,6 @@ public abstract class IncrementalVarSetPersistentUnifier extends BaseUnifier imp
                     new IncrementalVarSetPersistentUnifier.Immutable(finite, reps.freeze(), ranks.freeze(),
                             terms.freeze(), __invReps.freeze(), __varSet.freeze(), __freeVarSet.freeze(),
                             __unfreeVarSet.freeze(), disequalities.freeze());
-
-            /*
-            {
-                unifier.reps.get().forEach((v, r) -> {
-                    final SetMultimap.Immutable<ITermVar, ITermVar> invReps = unifier.__invReps.get();
-                    if(!invReps.containsEntry(r, v)) {
-                        throw new AssertionError("Missing inverse of " + v + " |-> " + r);
-                    }
-                });
-            }
-
-            {
-                MultiSet.Immutable<ITermVar> newVarSet = unifier.__varSet;
-                final java.util.Set<ITermVar> varSet = unifier.varSet();
-                SetView<ITermVar> varSetDiff = Sets.symmetricDifference(varSet, newVarSet.elementSet());
-                if(!varSetDiff.isEmpty()) {
-                    log.warn("org varSet {}", varSet);
-                    log.warn("new varSet {}", newVarSet);
-                    throw new AssertionError("Expected varSet " + varSet + ", got " + newVarSet);
-                }
-            }
-
-            {
-                MultiSet.Immutable<ITermVar> newFreeVarSet = unifier.__freeVarSet;
-                final java.util.Set<ITermVar> freeVarSet = unifier.freeVarSet();
-                SetView<ITermVar> freeVarSetDiff = Sets.symmetricDifference(freeVarSet, newFreeVarSet.elementSet());
-                if(!freeVarSetDiff.isEmpty()) {
-                    log.warn("org freeVarSet {}", freeVarSet);
-                    log.warn("new freeVarSet {}", newFreeVarSet);
-                    throw new AssertionError("Expected freeVars " + freeVarSet + ", got " + newFreeVarSet);
-                }
-            }
-            */
-
             return unifier;
         }
 
