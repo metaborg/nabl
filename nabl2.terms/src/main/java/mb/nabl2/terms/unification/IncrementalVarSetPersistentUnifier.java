@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -428,12 +427,13 @@ public abstract class IncrementalVarSetPersistentUnifier extends BaseUnifier imp
         }
 
         private Optional<IUnifier.Immutable> disunifyAll() {
-            final Set.Transient<Diseq> disequalities = this.disequalities.asTransient();
-            for(Diseq diseq : disequalities) {
+            final Set.Transient<Diseq> disequalities = Set.Transient.of();
+            for(Diseq diseq : this.disequalities) {
                 final Optional<IUnifier.Immutable> result = disunify(new Unify(this, diseq.disequalities().entrySet()));
                 if(!result.isPresent()) {
                     // disequality discharged, terms are unequal
                     disequalities.__remove(diseq);
+                    continue;
                 }
 
                 final IUnifier.Immutable newDiseq = result.get().removeAll(diseq.universals()).unifier();
@@ -552,12 +552,12 @@ public abstract class IncrementalVarSetPersistentUnifier extends BaseUnifier imp
                             rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);
                             subst.compose(var, rep);
-                            final ITerm term;
                             for(ITermVar notRep : newReps) {
                                 if(!notRep.equals(rep)) {
                                     putRep(notRep, rep);
                                 }
                             }
+                            final ITerm term;
                             if((term = removeTerm(var)) != null) { // var |-> term
                                 putTerm(rep, term);
                             }
@@ -567,7 +567,6 @@ public abstract class IncrementalVarSetPersistentUnifier extends BaseUnifier imp
                 for(Entry<ITermVar, ITerm> entry : termEntries()) {
                     final ITermVar rep = entry.getKey();
                     final ITerm term = entry.getValue();
-                    removeTerm(rep);
                     putTerm(rep, subst.apply(term));
                 }
                 return subst.freeze();

@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
@@ -14,7 +15,6 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -388,12 +388,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         }
 
         private Optional<IUnifier.Immutable> disunifyAll() {
-            final Set.Transient<Diseq> disequalities = this.disequalities.asTransient();
-            for(Diseq diseq : disequalities) {
+            final Set.Transient<Diseq> disequalities = Set.Transient.of();
+            for(Diseq diseq : this.disequalities) {
                 final Optional<IUnifier.Immutable> result = disunify(new Unify(this, diseq.disequalities().entrySet()));
                 if(!result.isPresent()) {
                     // disequality discharged, terms are unequal
                     disequalities.__remove(diseq);
+                    continue;
                 }
 
                 final IUnifier.Immutable newDiseq = result.get().removeAll(diseq.universals()).unifier();
@@ -493,16 +494,25 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             }
 
             private ISubstitution.Immutable removeAll() {
-                final ISubstitution.Transient repSubst = PersistentSubstitution.Transient.of();
-                final ISubstitution.Transient termSubst = PersistentSubstitution.Transient.of();
+                final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // var |-> rep
-                        repSubst.compose(var, rep);
+                        subst.compose(var, rep);
+                        for(ITermVar notRep : getInvReps(var)) {
+                            putRep(notRep, rep);
+                        }
                     } else {
-                        if((rep = findRetainedRep(var).orElse(null)) != null) { // rep |-> var
+                        final Collection<ITermVar> newReps = getInvReps(var);
+                        if(!newReps.isEmpty()) { // rep |-> var
+                            rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);
-                            repSubst.compose(var, rep);
+                            subst.compose(var, rep);
+                            for(ITermVar notRep : newReps) {
+                                if(!notRep.equals(rep)) {
+                                    putRep(notRep, rep);
+                                }
+                            }
                             final ITerm term;
                             if((term = removeTerm(var)) != null) { // var |-> term
                                 putTerm(rep, term);
@@ -510,35 +520,17 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                         } else {
                             final ITerm term;
                             if((term = removeTerm(var)) != null) { // var |-> term
-                                termSubst.compose(var, term);
+                                subst.compose(var, term);
                             }
                         }
                     }
                 }
-                // ~exists var. reps.containsKey(var)
-                // ~forall var. ~reps.containsValue(var)
-                // ~exists var. terms.containsKey(var)
-                for(Entry<ITermVar, ITermVar> entry : repEntries()) {
-                    final ITermVar rep = entry.getValue();
-                    if(repSubst.contains(rep)) {
-                        final ITermVar var = entry.getKey();
-                        removeRep(var);
-                        putRep(var, (ITermVar) repSubst.apply(rep));
-                    }
-                }
-                termSubst.compose(repSubst.freeze());
                 for(Entry<ITermVar, ITerm> entry : termEntries()) {
                     final ITermVar rep = entry.getKey();
                     final ITerm term = entry.getValue();
-                    removeTerm(rep);
-                    putTerm(rep, termSubst.apply(term));
+                    putTerm(rep, subst.apply(term));
                 }
-                return termSubst.freeze();
-            }
-
-            private Optional<ITermVar> findRetainedRep(ITermVar var) {
-                return Streams.stream(repEntries()).filter(e -> findRep(e.getValue()).equals(var)).map(Entry::getKey)
-                        .filter(r -> !vars.contains(r)).max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2)));
+                return subst.freeze();
             }
 
         }
@@ -607,6 +599,11 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
         protected ITermVar getRep(ITermVar var) {
             return reps.get(var);
+        }
+
+        protected java.util.Set<ITermVar> getInvReps(ITermVar rep) {
+            return reps.entrySet().stream().filter(e -> e.getValue().equals(rep)).map(Entry::getKey)
+                    .collect(Collectors.toSet());
         }
 
         protected void putRep(ITermVar var, ITermVar rep) {
