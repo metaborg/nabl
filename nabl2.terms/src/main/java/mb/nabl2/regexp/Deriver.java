@@ -1,6 +1,6 @@
 package mb.nabl2.regexp;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 import mb.nabl2.regexp.impl.RegExps;
 

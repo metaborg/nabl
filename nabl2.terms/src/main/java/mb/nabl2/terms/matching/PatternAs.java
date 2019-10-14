@@ -2,7 +2,8 @@ package mb.nabl2.terms.matching;
 
 import java.util.Set;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
+
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.iterators.Iterables2;
