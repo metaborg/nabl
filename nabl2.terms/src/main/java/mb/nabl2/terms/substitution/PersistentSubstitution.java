@@ -105,12 +105,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         @Override public ISubstitution.Immutable compose(ITermVar var, ITerm term) {
-            final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
-            CapsuleUtil.updateValues(subst, (v, t) -> v.equals(var) ? term : v);
-            if(!subst.containsKey(var)) {
-                subst.__put(var, term);
-            }
-            return new PersistentSubstitution.Immutable(subst.freeze());
+            return compose(PersistentSubstitution.Immutable.of(var, term));
         }
 
         @Override public ISubstitution.Transient melt() {
@@ -161,10 +156,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         @Override public void compose(ITermVar var, ITerm term) {
-            CapsuleUtil.updateValues(subst, (v, t) -> v.equals(var) ? term : v);
-            if(!subst.containsKey(var)) {
-                subst.__put(var, term);
-            }
+            compose(PersistentSubstitution.Immutable.of(var, term));
         }
 
         @Override public ISubstitution.Immutable freeze() {
