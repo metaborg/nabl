@@ -2,6 +2,7 @@ package mb.statix.cli;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.vfs2.FileObject;
@@ -15,6 +16,8 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
@@ -26,6 +29,8 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.util.StreamProgressPrinter;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 
 public class StatixGenerate {
 
@@ -34,7 +39,7 @@ public class StatixGenerate {
     private static final boolean DEBUG = true;
     private static final boolean TRACE = false;
     private static final String VAR = "e";
-    private static final int COUNT = 3 * 42;
+    private static final int COUNT = 0 * 42;
 
     private final Statix STX;
 
@@ -97,6 +102,25 @@ public class StatixGenerate {
 
         };
         final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource, Paret.search(), searchLog);
+        log.info("Building fragments.");
+        // @formatter:off
+        final Set<String> predicates = ImmutableSet.<String>builder()
+            .add("typeOfExpr")
+            .add("typeOfExprs")
+            .add("typesOfExprs")
+            .add("letBindOK")
+            .add("letBindsOK")
+            .add("varOK")
+            .add("varsOK")
+            .add("typeOfUnOp")
+            .add("typeOfBinOp")
+            .build();
+        // @formatter:on
+        final ListMultimap<String, Rule> fragments = RuleUtil.makeFragments(statixGen.spec, predicates, 3);
+        fragments.forEach((name, rule) -> {
+            log.info(" * {}", rule);
+        });
+        log.info("Built {} fragments.", fragments.size());
 
         log.info("Generating random terms.");
         final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(COUNT).iterator());
@@ -107,7 +131,6 @@ public class StatixGenerate {
         log.info("Generated {} random terms.", results.size());
         logStatsInfo("hits", hitStats);
         logStatsInfo("misses", missStats);
-
     }
 
     private static void logStatsInfo(String name, DescriptiveStatistics stats) {

@@ -331,7 +331,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         IDebugContext debug = params.debug();
         final IUnifier.Immutable unifier = state.unifier();
         final Result<IUnifier.Immutable> result;
-        if((result = unifier.disunify(term1, term2).orElse(null)) != null) {
+        if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
             if(debug.isEnabled(Level.Info)) {
                 debug.info("Disunification succeeded: {}", result);
             }

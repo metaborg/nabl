@@ -17,6 +17,7 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.Streams;
@@ -143,7 +144,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
                         constraints.add(condition);
                     });
                     flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition)).forEach(condition -> {
-                        constraints.add(new CInequal(condition.term1(), condition.term2(),
+                        constraints.add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
                                 condition.cause().orElse(null), condition.message().orElse(null)));
                     });
                     final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));

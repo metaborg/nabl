@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -152,7 +153,7 @@ public class StatixTerms {
                     return new CFalse(msg.orElse(null));
                 }),
                 M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
-                    return new CInequal(t1, t2, msg.orElse(null));
+                    return new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return new CNew(ts);
@@ -165,7 +166,7 @@ public class StatixTerms {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    return new CTellRel(scope, rel, args);
+                    return new CTellRel(scope, rel, B.newTuple(args));
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
