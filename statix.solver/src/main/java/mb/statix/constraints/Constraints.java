@@ -2,19 +2,24 @@ package mb.statix.constraints;
 
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.RuleUtil;
 
 public final class Constraints {
 
@@ -448,6 +453,11 @@ public final class Constraints {
      */
     public static List<IConstraint> disjoin(IConstraint constraint) {
         ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+        disjoin(constraint, constraints::add);
+        return constraints.build();
+    }
+
+    public static void disjoin(IConstraint constraint, Action1<IConstraint> action) {
         Deque<IConstraint> worklist = Lists.newLinkedList();
         worklist.push(constraint);
         while(!worklist.isEmpty()) {
@@ -456,11 +466,94 @@ public final class Constraints {
                 worklist.push(conj.right().withCause(conj.cause().orElse(null)));
                 return null;
             }).otherwise(c -> {
-                constraints.add(c);
+                action.apply(c);
                 return null;
             }));
         }
-        return constraints.build();
+    }
+
+    public static Set<ITermVar> freeVars(IConstraint constraint) {
+        ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars(constraint, freeVars::add);
+        return freeVars.build();
+    }
+
+    public static void freeVars(IConstraint constraint, Action1<ITermVar> onVar) {
+        // @formatter:off
+        constraint.match(Constraints.cases(
+            onArith -> {
+                onArith.expr1().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
+                onArith.expr2().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
+                return null;
+            },
+            onConj -> {
+                Constraints.disjoin(onConj).forEach(c -> freeVars(c, onVar));
+                return null;
+            },
+            onEqual -> {
+                onEqual.term1().getVars().forEach(onVar::apply);
+                onEqual.term2().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onExists -> {
+                freeVars(onExists.constraint(), v -> {
+                    if(!onExists.vars().contains(v)) {
+                        onVar.apply(v);
+                    }
+                });
+                return null;
+            },
+            onFalse -> {
+                return null;
+            },
+            onInequal -> {
+                onInequal.term1().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
+                onInequal.term2().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
+                return null;
+            },
+            onNew -> {
+                onNew.terms().forEach(t -> t.getVars().forEach(onVar::apply));
+                return null;
+            },
+            onResolveQuery -> {
+                onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
+                RuleUtil.freeVars(onResolveQuery.filter().getDataWF(), onVar);
+                RuleUtil.freeVars(onResolveQuery.min().getDataEquiv(), onVar);
+                onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTellEdge -> {
+                onTellEdge.sourceTerm().getVars().forEach(onVar::apply);
+                onTellEdge.targetTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTellRel -> {
+                onTellRel.scopeTerm().getVars().forEach(onVar::apply);
+                onTellRel.datumTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTermId -> {
+                onTermId.astTerm().getVars().forEach(onVar::apply);
+                onTermId.idTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTermProperty -> {
+                onTermProperty.idTerm().getVars().forEach(onVar::apply);
+                onTermProperty.value().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTrue -> null,
+            onTry -> {
+                freeVars(onTry.constraint(), onVar);
+                return null;
+            },
+            onUser -> {
+                onUser.args().forEach(t -> t.getVars().forEach(onVar::apply));
+                return null;
+            }
+        ));
+        // @formatter:on
+
     }
 
 }

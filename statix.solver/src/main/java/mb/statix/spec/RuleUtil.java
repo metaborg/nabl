@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -29,7 +30,6 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
@@ -43,6 +43,7 @@ import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.StateUtil;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
@@ -178,23 +179,37 @@ public class RuleUtil {
                         }));
                     });
                     expansions.get().forEach(st_uc -> {
-                        // separate params and other constraints
-                        final IUnifier.Immutable.Result<ISubstitution.Immutable> removeResult =
-                                st_uc._1().unifier().removeAll(args);
-                        final IState.Immutable st = st_uc._1().withUnifier(removeResult.unifier());
+                        final IState.Immutable st = st_uc._1();
+
+                        // body without equalities
+                        final List<IConstraint> cs = Lists.newArrayList();
+                        cs.add(st_uc._2());
+                        cs.addAll(StateUtil.asConstraint(st.scopeGraph()));
+                        cs.addAll(StateUtil.asConstraint(st.termProperties()));
+                        final IConstraint body = Constraints.conjoin(cs);
+                        final java.util.Set<ITermVar> bodyVars = Constraints.freeVars(body);
+
                         // build params
-                        final List<Pattern> params = args.stream().map(v -> {
-                            final ITerm t = removeResult.unifier().findRecursive(removeResult.result().apply(v));
-                            return P.fromTerm(t);
+                        final List<Pattern> params = args.stream().map(a -> {
+                            final ITerm t = st.unifier().findRecursive(a); // findRecursive for most instantiated match pattern
+                            return P.fromTerm(t, v -> !bodyVars.contains(v));
                         }).collect(Collectors.toList());
                         final java.util.Set<ITermVar> paramVars =
                                 Stream.concat(args.stream(), params.stream().flatMap(p -> p.getVars().stream()))
                                         .collect(ImmutableSet.toImmutableSet());
+
+                        // unifier without match and unused vars
+                        final IUnifier.Transient _unifier = st.unifier().melt();
+                        _unifier.removeAll(paramVars);
+                        _unifier.retainAll(bodyVars);
+                        final IUnifier.Immutable unifier = _unifier.freeze();
+
                         // build body
-                        final IConstraint uc = st_uc._2();
-                        final IConstraint cs = new CConj(uc, Constraints.conjoin(st.asConstraints()));
-                        // TODO Garbage collect by only retaining free vars in uc in the unifier 
-                        final IConstraint c = new CExists(Sets.difference(st.vars(), paramVars), cs);
+                        final IConstraint eqs = Constraints.conjoin(StateUtil.asConstraint(unifier));
+                        final java.util.Set<ITermVar> vs =
+                                Sets.difference(Sets.union(bodyVars, unifier.freeVarSet()), paramVars);
+                        final IConstraint c = new CExists(vs, new CConj(body, eqs));
+
                         // build rule
                         final Rule r = Rule.of(name, params, c);
                         genRules.put(name, r);
@@ -209,6 +224,15 @@ public class RuleUtil {
             newRules.set(newNewRules.build());
         }
         return newRules.get();
+    }
+
+    public static final void freeVars(Rule rule, Action1<ITermVar> onVar) {
+        final java.util.Set<ITermVar> paramVars = rule.paramVars();
+        Constraints.freeVars(rule.body(), v -> {
+            if(!paramVars.contains(v)) {
+                onVar.apply(v);
+            }
+        });
     }
 
 }

@@ -116,7 +116,7 @@ public class StatixGenerate {
             .add("typeOfBinOp")
             .build();
         // @formatter:on
-        final ListMultimap<String, Rule> fragments = RuleUtil.makeFragments(statixGen.spec, predicates, 3);
+        final ListMultimap<String, Rule> fragments = RuleUtil.makeFragments(statixGen.spec, predicates, 2);
         fragments.forEach((name, rule) -> {
             log.info(" * {}", rule);
         });
