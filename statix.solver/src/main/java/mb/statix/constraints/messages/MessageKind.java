@@ -1,6 +1,8 @@
 package mb.statix.constraints.messages;
 
-public enum MessageKind {
+import java.io.Serializable;
+
+public enum MessageKind implements Serializable {
 
     ERROR {
         @Override public String toString() {
