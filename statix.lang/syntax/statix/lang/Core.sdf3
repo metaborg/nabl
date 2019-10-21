@@ -301,6 +301,7 @@ context-free syntax
   SortRef                = <(<SortRef>)> {bracket}
 
   OpDecl.OpDecl  = <<OpId> : <OpSort>>
+  OpDecl.InjDecl = [: [SortRef] => [Sort]]
 
   OpSort.ConstOp = Sort
   OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]

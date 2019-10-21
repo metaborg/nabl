@@ -1,0 +1,115 @@
+module terms-injections
+
+language StatixLang
+
+// matching
+
+test match on directly injected constructor from simple sort [[
+  resolve true
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+        : A => B
+  rules
+    c : B
+    c(A()).
+]] analysis succeeds
+
+test match on indirectly injected constructor from simple sort [[
+  resolve true
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+        : A => B
+    sorts C constructors
+        : B => C
+  rules
+    c : C
+    c(A()).
+]] analysis succeeds
+
+// passing arguments
+
+test pass directly injected constructor from simple sort [[
+  resolve c(A())
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+        : A => B
+  rules
+    c : B
+]] analysis succeeds
+
+test pass indirectly injected constructor from simple sort [[
+  resolve c(A())
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+        : A => B
+    sorts C constructors
+        : B => C
+  rules
+    c : C
+]] analysis succeeds
+
+// equality
+
+test equality between directly injected constructor from simple sort [[
+  resolve A() == B()
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+      B : B
+        : A => B
+]] analysis succeeds
+
+test pass indirectly injected constructo from simple sort [[
+  resolve A() == C()
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+        : A => B
+    sorts C constructors
+      C : C
+        : B => C
+]] analysis succeeds
+        
+// list injections
+        
+test list injection [[
+  resolve {x} [x] == B()
+  signature
+    sorts A constructors
+    sorts B constructors
+      B : B
+        : list(A) => B
+]] analysis succeeds
+
+test list injection [[
+  resolve {x} [x] == B(), [x] == [C()]
+  signature
+    sorts A constructors
+    sorts B constructors
+      B : B
+        : list(A) => B
+    sorts C constructors
+      C : C
+        : A => C
+]] analysis succeeds
+
+// tuple injections
+
+test list injection [[
+  resolve {x y} (x, y) == B()
+  signature
+    sorts A constructors
+    sorts B constructors
+      B : B
+        : (A * A) => B
+]] analysis succeeds

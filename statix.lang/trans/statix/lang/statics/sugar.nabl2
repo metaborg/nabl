@@ -54,11 +54,11 @@ rules
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
     Match[[ outarg ^ (s_rule) : outty ]].
 
-  Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
+  Term(V)[[ COp(x, args) ^ (s) : ty ]] :=
     C{x} -> s, C{x} |-> d, @x.decl := d,
-    d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
-    intys is `in-types` of ty,
-    outty is `out-type` of ty,
+    d : ty', ty' != PRED(_) | error "Inline notation can only be used for functional constraints.",
+    intys is `in-types` of ty',
+    outty is `out-type` of ty', ?-Subtype(outty, ty),
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
   [[ LC(x) ^ (s) : ty ]] :=
@@ -74,14 +74,14 @@ rules
 
   [[ LFalse() ^ (_) : PRED(_) ]].
 
-  Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
+  Term(V)[[ NewOp() ^ (s) : ty ]] := ?-Subtype(SCOPE(), ty).
 
 
 /******************************************************************
  * AST Constraints                                                *
  ******************************************************************/
 
-  Term(V)[[ AstIdOp(t) ^ (s) : AST_ID() ]] :=
+  Term(V)[[ AstIdOp(t) ^ (s) : ty ]] := ?-Subtype(AST_ID(), ty),
     Term(V)[[ t ^ (s) : _ ]].
 
 
@@ -99,10 +99,10 @@ rules
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
-  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
-    RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Use predicate notation for non-functional relations.",
-    intys is `in-types` of ty,
-    outty is `out-type` of ty,
+  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : ty ]] :=
+    RelRef[[ rel ^ (s) : ty' ]], ty' != PRED(_) | error "Use predicate notation for non-functional relations.",
+    intys is `in-types` of ty',
+    outty is `out-type` of ty', ?-Subtype(outty, ty),
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
     Term(V)[[ st ^ (s) : SCOPE() ]].
 
@@ -162,5 +162,5 @@ rules
 
 rules
 
-  Term(V)[[ ArithOp(ae) ^ (s) : INT() ]] :=
+  Term(V)[[ ArithOp(ae) ^ (s) : ty ]] := ?-Subtype(INT(), ty),
     ArithExp(V)[[ ae ^ (s) : INT() ]].

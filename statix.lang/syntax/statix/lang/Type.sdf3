@@ -29,3 +29,11 @@ context-free syntax
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
 
+context-free syntax
+
+  TypeC.Subtype = [[TType] <: [TType]]
+  TypeC.VarNeg  = [-[TType]]
+
+  TypeCs = <
+    <{TypeC ",\n"}*>
+  >

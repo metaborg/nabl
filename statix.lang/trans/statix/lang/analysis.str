@@ -18,6 +18,7 @@ imports
   statix/lang/scope-extension
 
   pp
+  statix/lang/pp
 
 rules // Analysis
 
@@ -43,6 +44,17 @@ rules // Analysis
          nabl2-custom-analysis-info-msg(|"Analyzing AST...");
          (analyzed-ast, a, e*, w*, n*) :=
             <nabl2-analyze-ast(|resource)> desugared-ast;
+
+         facts := <nabl2-get-symbolic-facts(|a)>;
+         goals := <nabl2-get-symbolic-goals(|a)>;
+         <nabl2-custom-analysis-info-msg(|"Facts: ")> facts;
+         <pp-TypeCs;debug> facts;
+         <nabl2-custom-analysis-info-msg(|"Goals: ")> goals;
+         <pp-TypeCs;debug> goals;
+         // TODO Reject overlapping injections (exactly the same is fine)
+         //      - No two list injections
+         //      - No two tuple injections with the same arity
+         // TODO Solve the constraints
 
          if [] := e* then
            nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");

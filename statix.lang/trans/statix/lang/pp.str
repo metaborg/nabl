@@ -40,4 +40,8 @@ rules
 
 rules
 
+  pp-TypeCs = pp-Statix-string(prettyprint-Statix-TypeCs)
+
+rules
+
   construct-textual-change = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)
