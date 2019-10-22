@@ -1,10 +1,12 @@
 package mb.nabl2.util.collections;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class ConsList<E> implements Iterable<E> {
+public class ConsList<E> implements Iterable<E>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final E head;
     private final ConsList<E> tail;

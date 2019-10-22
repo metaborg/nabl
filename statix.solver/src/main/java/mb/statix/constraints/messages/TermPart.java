@@ -1,10 +1,13 @@
 package mb.statix.constraints.messages;
 
+import java.io.Serializable;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 
-public class TermPart implements IMessagePart {
+public class TermPart implements IMessagePart, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private final ITerm term;
 
