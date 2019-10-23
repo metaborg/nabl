@@ -17,7 +17,6 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 
 import mb.nabl2.terms.ITermVar;
@@ -192,22 +191,11 @@ public class Paret {
 
     public static Spec addFragments(Spec spec) {
         log.info("Building fragments.");
-        // @formatter:off
-        final Set<String> predicates = ImmutableSet.<String>builder()
-            .add("gen_Expr")
-            .add("gen_Expr_dist")
-            .add("gen_ExprsTypes")
-            .add("gen_ExprsTypes_dist")
-            .add("gen_ExprsType")
-            .add("gen_ExprsType_dist")
-            .add("gen_LetBinds")
-            .add("gen_LetBinds_dist")
-            .build();
-        // @formatter:on
         final ImmutableListMultimap.Builder<String, Rule> rules = ImmutableListMultimap.<String, Rule>builder()
                 .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
         rules.putAll(spec.rules());
-        final ListMultimap<String, Rule> fragments = RuleUtil.makeFragments(spec, predicates, 2);
+        final ListMultimap<String, Rule> fragments =
+                RuleUtil.makeFragments(spec, n -> n.matches(GEN_RE), (n, l) -> true, 2);
         rules.putAll(fragments);
         fragments.forEach((name, rule) -> {
             log.info(" * {}", rule);
