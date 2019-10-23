@@ -7,12 +7,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -495,15 +496,20 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
             private ISubstitution.Immutable removeAll() {
                 final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+                final ListMultimap<ITermVar, ITermVar> invReps;
+                if(vars.isEmpty()) {
+                    return subst.freeze();
+                }
+                invReps = getInvReps();
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // var |-> rep
                         subst.compose(var, rep);
-                        for(ITermVar notRep : getInvReps(var)) {
+                        for(ITermVar notRep : invReps.get(var)) {
                             putRep(notRep, rep);
                         }
                     } else {
-                        final Collection<ITermVar> newReps = getInvReps(var);
+                        final Collection<ITermVar> newReps = invReps.get(var);
                         if(!newReps.isEmpty()) { // rep |-> var
                             rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);
@@ -601,9 +607,12 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             return reps.get(var);
         }
 
-        protected java.util.Set<ITermVar> getInvReps(ITermVar rep) {
-            return reps.entrySet().stream().filter(e -> e.getValue().equals(rep)).map(Entry::getKey)
-                    .collect(Collectors.toSet());
+        protected ListMultimap<ITermVar, ITermVar> getInvReps() {
+            final ListMultimap<ITermVar, ITermVar> invReps = LinkedListMultimap.create();
+            reps.forEach((var, rep) -> {
+                invReps.put(rep, var);
+            });
+            return invReps;
         }
 
         protected void putRep(ITermVar var, ITermVar rep) {
