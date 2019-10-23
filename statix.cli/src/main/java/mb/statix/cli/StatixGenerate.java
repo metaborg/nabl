@@ -1,8 +1,10 @@
 package mb.statix.cli;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.vfs2.FileObject;
@@ -16,11 +18,12 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.TermFormatter;
+import mb.statix.generator.RandomTermGenerator;
 import mb.statix.generator.SearchLogger;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
@@ -29,8 +32,7 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.util.StreamProgressPrinter;
 import mb.statix.solver.IConstraint;
-import mb.statix.spec.Rule;
-import mb.statix.spec.RuleUtil;
+import mb.statix.spec.Spec;
 
 public class StatixGenerate {
 
@@ -39,7 +41,7 @@ public class StatixGenerate {
     private static final boolean DEBUG = true;
     private static final boolean TRACE = false;
     private static final String VAR = "e";
-    private static final int COUNT = 0 * 42;
+    private static final int COUNT = 2 * 42;
 
     private final Statix STX;
 
@@ -50,18 +52,17 @@ public class StatixGenerate {
     public void run(String file) throws MetaborgException, InterruptedException {
         final FileObject resource = STX.S.resolve(file);
 
-        final Function1<SearchState, String> pretty;
-        final Function1<SearchState, ITerm> proj;
-        proj = StatixGenerator.project(VAR, t -> t);
+        final TermFormatter tf;
         final Optional<FileObject> maybeProject = STX.findProject(resource);
         if(maybeProject.isPresent()) {
             final IProject project = STX.cli.getOrCreateProject(maybeProject.get());
             final ILanguageImpl lang = STX.cli.loadLanguage(project.location());
             final IContext context = STX.S.contextService.get(resource, project, lang);
-            pretty = StatixGenerator.pretty(STX.S, context, VAR, "pp-generated");
+            tf = StatixGenerator.pretty(STX.S, context, "pp-generated");
         } else {
-            pretty = StatixGenerator.project(VAR, ITerm::toString);
+            tf = ITerm::toString;
         }
+        final Function1<SearchState, String> pretty = (s) -> tf.format(project(VAR, s));
 
         final DescriptiveStatistics hitStats = new DescriptiveStatistics();
         final DescriptiveStatistics missStats = new DescriptiveStatistics();
@@ -95,35 +96,24 @@ public class StatixGenerate {
                     return;
                 }
                 SearchState s = node.output();
-                s.state().unifier().size(proj.apply(s)).ifFinite(size -> {
+                s.state().unifier().size(project(VAR, s)).ifFinite(size -> {
                     stats.addValue(size.doubleValue());
                 });
             }
 
         };
-        final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource, Paret.search(), searchLog);
-        log.info("Building fragments.");
-        // @formatter:off
-        final Set<String> predicates = ImmutableSet.<String>builder()
-            .add("typeOfExpr")
-            .add("typeOfExprs")
-            .add("typesOfExprs")
-            .add("letBindOK")
-            .add("letBindsOK")
-            .add("varOK")
-            .add("varsOK")
-            .add("typeOfUnOp")
-            .add("typeOfBinOp")
-            .build();
-        // @formatter:on
-        final ListMultimap<String, Rule> fragments = RuleUtil.makeFragments(statixGen.spec, predicates, 2);
-        fragments.forEach((name, rule) -> {
-            log.info(" * {}", rule);
+
+        final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource);
+        final Spec spec = Paret.addFragments(statixGen.spec());
+        final RandomTermGenerator rtg =
+                new RandomTermGenerator(spec, statixGen.constraint(), Paret.search(), searchLog);
+        final Stream<SearchState> resultStream = rtg.apply().nodes().map(sn -> {
+            searchLog.success(sn);
+            return sn.output();
         });
-        log.info("Built {} fragments.", fragments.size());
 
         log.info("Generating random terms.");
-        final List<SearchState> results = Lists.newArrayList(statixGen.apply().limit(COUNT).iterator());
+        final List<SearchState> results = Lists.newArrayList(resultStream.limit(COUNT).iterator());
         progress.done();
         results.forEach(s -> {
             System.out.println(pretty.apply(s));
@@ -180,6 +170,15 @@ public class StatixGenerate {
                 }
             } while((traceNode = traceNode.parent()) != null);
             log.log(lvl, " # depth {}", depth);
+        }
+    }
+
+    private static ITerm project(String varName, SearchState s) {
+        final ITermVar v = B.newVar("", varName);
+        if(s.existentials().containsKey(v)) {
+            return s.state().unifier().findRecursive(s.existentials().get(v));
+        } else {
+            return v;
         }
     }
 
