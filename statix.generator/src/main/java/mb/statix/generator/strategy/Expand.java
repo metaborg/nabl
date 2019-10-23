@@ -11,6 +11,8 @@ import java.util.stream.Stream;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -47,6 +49,8 @@ import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
 final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
+
+    private static ILogger log = LoggerUtils.logger(Expand.class);
 
     private final Mode mode;
     private final Function2<Rule, Long, Double> ruleWeight;
@@ -90,11 +94,14 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {
             final Rule rule = result._1()._1();
-            final SearchState output = updateSearchState(predicate, result._2(), result._3(), input);
+            final Optional<SearchState> output = updateSearchState(predicate, result._2(), result._3(), input);
+            if(!output.isPresent()) {
+                return;
+            }
             final String head = rule.name()
                     + rule.params().stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
             final SearchNode<SearchState> newNode =
-                    new SearchNode<>(ctx.nextNodeId(), output, node, "expand(" + head + ")");
+                    new SearchNode<>(ctx.nextNodeId(), output.get(), node, "expand(" + head + ")");
             final double weight = result._1()._2();
             if(weight > 0) {
                 newNodes.add(new Pair<>(newNode, weight));
@@ -140,7 +147,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         }
     }
 
-    private SearchState updateSearchState(IConstraint predicate, ApplyResult result, Set<Diseq> unguard,
+    private Optional<SearchState> updateSearchState(IConstraint predicate, ApplyResult result, Set<Diseq> unguard,
             SearchState input) {
         final IConstraint applyConstraint = result.body();
 
@@ -149,7 +156,8 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         for(Diseq diseq : unguard) {
             Tuple3<Set<ITermVar>, ITerm, ITerm> _diseq = diseq.toTuple();
             if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3()).isPresent()) {
-                throw new IllegalStateException("This shouldn't really happen.");
+                log.warn("Rule seems overlapping with previous rule. This shouldn't really happen.");
+                return Optional.empty();
             }
         }
         final IUnifier.Immutable applyUnifier = _applyUnifier.freeze();
@@ -177,7 +185,9 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         });
 
         // return new state
-        return input.replace(applyState, constraints.freeze(), delays.freeze(), completeness.freeze());
+        final SearchState newState =
+                input.replace(applyState, constraints.freeze(), delays.freeze(), completeness.freeze());
+        return Optional.of(newState);
     }
 
     @Override public String toString() {
