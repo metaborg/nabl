@@ -2,10 +2,10 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.matching.TermPattern.P;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -108,6 +108,52 @@ public class RuleUtil {
         });
     }
 
+    public static final Optional<Tuple2<Rule, ApplyResult>> applyOne(IState.Immutable state, Iterable<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause) {
+        // we assume apply(..., true) only returns empty or singleton lists
+        return apply(state, rules, args, cause, true).stream().findFirst();
+    }
+
+    public static final List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Iterable<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause) {
+        return apply(state, rules, args, cause, false);
+    }
+
+    private static final List<Tuple2<Rule, ApplyResult>> apply(IState.Immutable state, Iterable<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
+        final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
+        final AtomicBoolean foundOne = new AtomicBoolean(false);
+        for(Rule rule : rules) {
+            // apply rule
+            final ApplyResult applyResult;
+            if((applyResult = apply(state, rule, args, cause).orElse(null)) == null) {
+                // this rule does not apply, continue to next rules
+                continue;
+            }
+            if(onlyOne && foundOne.getAndSet(true)) {
+                // we require exactly one, but found multiple
+                return ImmutableList.of();
+            }
+            results.add(ImmutableTuple2.of(rule, applyResult));
+
+            // stop or add guard to state for next rule
+            final Tuple3<Set<ITermVar>, ITerm, ITerm> guard;
+            if((guard = applyResult.guard().map(Diseq::toTuple).orElse(null)) == null) {
+                // next rules are unreachable after this unconditional match
+                break;
+            }
+            final Optional<IUnifier.Immutable> newUnifier =
+                    state.unifier().disunify(guard._1(), guard._2(), guard._3()).map(r -> r.unifier());
+            if(!newUnifier.isPresent()) {
+                // guards are equalities missing in the unifier, disunifying them should never fail
+                throw new IllegalStateException("Unexpected incompatible guard.");
+            }
+            state = state.withUnifier(newUnifier.get());
+        }
+        return results.build();
+
+    }
+
     public static final ListMultimap<String, Rule> makeFragments(Spec spec, Predicate1<String> includePredicate,
             Predicate2<String, String> includeRule, int generations) {
         final Multimap<String, Rule> newRules = ArrayListMultimap.create();
@@ -183,9 +229,7 @@ public class RuleUtil {
                                 final IConstraint uc = st_uc._2();
 
                                 final List<Tuple2<IState.Immutable, IConstraint>> sts = Lists.newArrayList();
-                                final Iterator<Rule> it = newRules.get(c.name()).iterator();
-                                while(it.hasNext()) {
-                                    final Rule r = it.next();
+                                for(Rule r : newRules.get(c.name())) {
                                     ApplyResult ar;
                                     if((ar = apply(st, r, c.args(), null).orElse(null)) == null) {
                                         continue;

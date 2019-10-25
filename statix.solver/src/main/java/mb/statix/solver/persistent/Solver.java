@@ -16,7 +16,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.INameResolution;
@@ -53,7 +52,7 @@ public class Solver {
 
     public static boolean entails(IState.Immutable state, final IConstraint constraint, final IsComplete isComplete,
             final IDebugContext debug) throws Delay, InterruptedException {
-        final Immutable unifier = state.unifier();
+        final IUnifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraint, unifier));
         }
@@ -98,11 +97,9 @@ public class Solver {
         }
 
         // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
-        // FIXME This test completely ignores unversal quantifiers, that cannot be right
         // @formatter:off
         final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((us, t1, t2) -> unifier.diff(t1, t2).isPresent()))
-                .flatMap(diseq -> diseq.apply((us, t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.result().varSet().stream()).orElse(Stream.empty()))
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {

@@ -47,6 +47,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
     }
 
     @Override public Optional<Optional<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
+        final IUnifier.Immutable unifier = state.unifier();
 
         // apply rule
         final ApplyResult applyResult;
@@ -79,23 +80,25 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      representatives, which can be local to newUnifier.
         final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
 
+        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
         // @formatter:off
         final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((us, t1, t2) -> state.unifier().diff(t1, t2).isPresent()))
-                .flatMap(diseq -> diseq.apply((us, t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.result().varSet().stream()).orElse(Stream.empty()))
                 .collect(Collectors.toList());
-        // @formatter:off
+        // @formatter:on
         if(!disunifiedVars.isEmpty()) {
             return Optional.empty();
         }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
+        //       Without this assumption, we should use the more expensive test
+        //       `newUnifier.equals(state.unifier())`
         final List<ITerm> leftTerms = Lists.newArrayList();
         final List<ITerm> rightTerms = Lists.newArrayList();
         for(ITermVar var : unifiedVars) {
             final ITerm term = newUnifier.findTerm(var);
-            if(!state.unifier().diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
+            if(!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
                 leftTerms.add(var);
                 rightTerms.add(term);
             }

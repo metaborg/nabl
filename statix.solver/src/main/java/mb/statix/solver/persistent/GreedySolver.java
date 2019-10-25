@@ -5,7 +5,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,7 +67,6 @@ import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
-import mb.statix.solver.log.Log;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.query.ConstraintQueries;
 import mb.statix.solver.query.IQueryFilter;
@@ -538,47 +536,22 @@ class GreedySolver {
 
                 final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
                 final IDebugContext debug = params.debug();
-                final Log unsuccessfulLog = new Log();
-                final Iterator<Rule> it = state.spec().rules().get(name).iterator();
-                final List<ApplyResult> results = Lists.newArrayList();
-                while(it.hasNext()) {
-                    if(Thread.interrupted()) {
-                        throw new InterruptedException();
-                    }
-                    final Rule rule = it.next();
-                    if(proxyDebug.isEnabled(Level.Info)) {
-                        proxyDebug.info("Try rule {}", rule.toString());
-                    }
-                    final ApplyResult applyResult;
-                    if((applyResult = RuleUtil.apply(state, rule, args, c).orElse(null)) == null) {
-                        proxyDebug.info("Rule rejected (mismatching arguments)");
-                        unsuccessfulLog.absorb(proxyDebug.clear());
-                    } else {
-                        results.add(applyResult);
-                        if(!applyResult.guard().isPresent()) {
-                            proxyDebug.info("Rule accepted");
-                            break;
-                        } else {
-                            proxyDebug.info("Rule conditionally accepted (conditional equalities)");
-                        }
-                    }
-                }
+
+                final List<Rule> rules = state.spec().rules().get(name);
+                final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(state, rules, args, c);
                 if(results.isEmpty()) {
                     debug.info("No rule applies");
-                    unsuccessfulLog.flush(debug);
                     return fail(c, state);
                 } else if(results.size() == 1) {
-                    final ApplyResult applyResult = results.get(0);
+                    final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.info("Rule accepted");
                     proxyDebug.commit();
                     return success(c, applyResult.state(), applyResult.updatedVars(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
-                    final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r.guard()))
+                    final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.freeVars().stream()).collect(Collectors.toSet());
                     proxyDebug.info("Rule delayed (multiple conditional matches)");
-                    unsuccessfulLog.absorb(proxyDebug.clear());
-                    unsuccessfulLog.flush(debug);
                     return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
                 }
             }
