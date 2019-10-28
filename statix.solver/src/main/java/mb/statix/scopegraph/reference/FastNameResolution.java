@@ -1,12 +1,10 @@
 package mb.statix.scopegraph.reference;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
@@ -47,38 +45,38 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         this.isDataComplete = isDataComplete;
     }
 
-    @Override public List<IResolutionPath<S, L, D>> resolve(S scope) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope), ImmutableList.of());
+    @Override public Env<S, L, D> resolve(S scope) throws ResolutionException, InterruptedException {
+        return env(labelWF, Paths.empty(scope), Env.of());
     }
 
-    private List<IResolutionPath<S, L, D>> env(LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
+    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
+            throws ResolutionException, InterruptedException {
         return env_L(labels, re, path, specifics);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private List<IResolutionPath<S, L, D>> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
+    private Env<S, L, D> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
             Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         if(Thread.interrupted()) {
             throw new InterruptedException();
         }
-        final ImmutableList.Builder<IResolutionPath<S, L, D>> env = ImmutableList.builder();
+        final Env.Builder<S, L, D> env = Env.builder();
         final Set.Immutable<L> max_L = max(L);
         for(L l : max_L) {
             final Set.Immutable<L> smaller = smaller(L, l);
-            final List<IResolutionPath<S, L, D>> env1 = env_L(smaller, re, path, specifics);
+            final Env<S, L, D> env1 = env_L(smaller, re, path, specifics);
             env.addAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final List<IResolutionPath<S, L, D>> env2 = env_l(l, re, path, Iterables.concat(specifics, env1));
+                final Env<S, L, D> env2 = env_l(l, re, path, Iterables.concat(specifics, env1));
                 env.addAll(env2);
             }
         }
         return env.build();
     }
 
-    private List<IResolutionPath<S, L, D>> env_l(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
+    private Env<S, L, D> env_l(L l, LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
+            throws ResolutionException, InterruptedException {
         if(scopeGraph.getEdgeLabels().contains(l)) {
             return env_nonEOP(l, re, path, specifics);
         } else if(scopeGraph.getNoDataLabel().equals(l)) {
@@ -88,25 +86,26 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         }
     }
 
-    private List<IResolutionPath<S, L, D>> env_EOP(LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
+    private Env<S, L, D> env_EOP(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
+            throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
-            return ImmutableList.of();
+            return Env.of();
         }
         final S scope = path.getTarget();
         if(!isDataComplete.test(scope, relation)) {
             throw new IncompleteDataException(scope, relation);
         }
-        final ImmutableList.Builder<IResolutionPath<S, L, D>> env = ImmutableList.builder();
+        final Env.Builder<S, L, D> env = Env.builder();
         if(relation.equals(scopeGraph.getNoDataLabel())) {
             final D datum = scope;
             if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                env.add(Paths.resolve(path, relation, datum));
+                env.add(Paths.resolve(path, relation, 0, datum));
             }
         } else {
+            int index = 0;
             for(D datum : getData(re, path, relation)) {
                 if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                    env.add(Paths.resolve(path, relation, datum));
+                    env.add(Paths.resolve(path, relation, index++, datum));
                 }
             }
         }
@@ -123,18 +122,18 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         return true;
     }
 
-    private List<IResolutionPath<S, L, D>> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
+    private Env<S, L, D> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
             Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
-            return ImmutableList.of();
+            return Env.of();
         } else {
             re = newRe.get();
         }
         if(!isEdgeComplete.test(path.getTarget(), l)) {
             throw new IncompleteEdgeException(path.getTarget(), l);
         }
-        final ImmutableList.Builder<IResolutionPath<S, L, D>> env = ImmutableList.builder();
+        final Env.Builder<S, L, D> env = Env.builder();
         for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {

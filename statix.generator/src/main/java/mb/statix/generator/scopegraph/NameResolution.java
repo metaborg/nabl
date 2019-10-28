@@ -135,13 +135,14 @@ public class NameResolution<S extends D, L, D, X> {
             final D datum = scope;
             final Optional<Optional<X>> x = dataWF.wf(datum);
             if(x.isPresent()) {
-                env.match(Paths.resolve(path, relation, datum), x.get());
+                env.match(Paths.resolve(path, relation, 0, datum), x.get());
             }
         } else {
+            int index = 0;
             for(D datum : getData(re, path, relation)) {
                 final Optional<Optional<X>> x = dataWF.wf(datum);
                 if(x.isPresent()) {
-                    env.match(Paths.resolve(path, relation, datum), x.get());
+                    env.match(Paths.resolve(path, relation, index++, datum), x.get());
                 }
             }
         }
