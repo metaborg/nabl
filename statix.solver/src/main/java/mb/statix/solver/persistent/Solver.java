@@ -1,6 +1,6 @@
 package mb.statix.solver.persistent;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -10,14 +10,18 @@ import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
+import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.terms.Scope;
@@ -98,7 +102,15 @@ public class Solver {
 
         // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
         // @formatter:off
-        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
+        final List<ITermVar> disunifiedVars = Lists.newArrayList();
+        for(Diseq diseq : newUnifier.disequalities()) {
+            final Tuple3<io.usethesource.capsule.Set<ITermVar>, ITerm, ITerm> diseqTuple = diseq.toTuple();
+            final Result<Immutable> disunifyResult;
+            if((disunifyResult = unifier.disunify(diseqTuple._1(), diseqTuple._2(), diseqTuple._3()).orElse(null)) == null) {
+                continue;
+            }
+        }
+        newUnifier.disequalities().stream().map(Diseq::toTuple)
                 .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.result().varSet().stream()).orElse(Stream.empty()))
                 .collect(Collectors.toList());
         // @formatter:on
