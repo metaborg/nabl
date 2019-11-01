@@ -55,6 +55,9 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.modular.module.IModuleStringComponent;
+import mb.statix.modular.module.ModuleString;
+import mb.statix.modular.spec.ModuleBoundary;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -64,6 +67,7 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.spec.IRule;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
@@ -85,10 +89,10 @@ public class StatixTerms {
                 });
     }
 
-    public static IMatcher<ListMultimap<String, Rule>> rules() {
+    public static IMatcher<ListMultimap<String, IRule>> rules() {
         return M.listElems(M.req(rule())).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder =
-                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
+            final ImmutableListMultimap.Builder<String, IRule> builder =
+                    ImmutableListMultimap.<String, IRule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
             rules.stream().forEach(rule -> {
                 builder.put(rule.name(), rule);
             });
@@ -96,16 +100,25 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Rule> rule() {
-        return M.appl3("Rule", head(), M.listElems(varTerm()), constraint(), (r, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), new CExists(bvs, bc));
-        });
+    public static IMatcher<IRule> rule() {
+        return M.<IRule>cases(
+                M.appl3("Rule", head(), M.listElems(varTerm()), constraint(), (r, h, bvs, bc) -> {
+                    return Rule.of(h._1(), h._2(), new CExists(bvs, bc));
+                }),
+                M.appl4("ModuleRule", head(), moduleString(), M.listElems(varTerm()), constraint(), (r, h, mstr, bvs, bc) -> {
+                    return ModuleBoundary.of(h._1(), h._2(), mstr, new CExists(bvs, bc));
+                })
+        );
     }
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
         return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
             return ImmutableTuple2.of(name, patterns);
         });
+    }
+    
+    public static IMatcher<ModuleString> moduleString() {
+        return M.listElems(IModuleStringComponent.matcher()).map(cs -> ModuleString.of(cs));
     }
 
     public static IMatcher<IConstraint> constraint() {
@@ -373,7 +386,8 @@ public class StatixTerms {
         // @formatter:off
         return M.cases(
             M.appl0("NoId", t -> P.newWld()),
-            varPattern()
+            varPattern(),
+            M.appl1("AstIdOp", varPattern(), (t, v) -> v)
         );
         // @formatter:on
     }

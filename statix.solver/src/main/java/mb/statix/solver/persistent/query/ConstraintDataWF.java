@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -17,16 +18,16 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.ResolutionDelayException;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 class ConstraintDataWF implements DataWF<ITerm> {
 
-    private final Rule constraint;
+    private final IRule constraint;
     private final State state;
     private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
+    public ConstraintDataWF(IRule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
@@ -37,7 +38,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
         final IUnifier unifier = state.unifier();
         try {
             final IConstraint result;
-            if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
+            if((result = constraint.apply(ImmutableList.of(datum), unifier).map(Tuple2::_2).orElse(null)) == null) {
                 return false;
             }
             if(Solver.entails(state, result, isComplete, debug).isPresent()) {

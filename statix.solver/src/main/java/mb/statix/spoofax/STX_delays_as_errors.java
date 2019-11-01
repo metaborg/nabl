@@ -15,7 +15,7 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.ISolverResult;
 
 public class STX_delays_as_errors extends StatixPrimitive {
 
@@ -26,12 +26,12 @@ public class STX_delays_as_errors extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final SolverResult result = M.blobValue(SolverResult.class).match(term)
+        final ISolverResult result = M.blobValue(ISolverResult.class).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final ImmutableList.Builder<IConstraint> errors = ImmutableList.builder();
         errors.addAll(result.errors());
         errors.addAll(result.delays().keySet());
-        final SolverResult newResult = result.withErrors(errors.build()).withDelays(ImmutableMap.of());
+        final ISolverResult newResult = result.withErrors(errors.build()).withDelays(ImmutableMap.of());
         return Optional.of(B.newBlob(newResult));
     }
 

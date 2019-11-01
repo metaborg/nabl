@@ -49,4 +49,5 @@ rules
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
          s@Solution(_, a') := <stx--solve-constraint(|spec, level)> (bvs, body');
          (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a';
-         result := (s, error*, warning*, note*)
+         result := (s, error*, warning*, note*);
+         mstx--end-run

@@ -1,15 +1,17 @@
 package mb.statix.solver.log;
 
-import java.util.Collections;
-
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 
+/**
+ * Implementation of {@link IDebugContext} with {@link ILogger}.
+ */
 public class LoggerDebugContext implements IDebugContext {
 
     private final ILogger logger;
     private final Level level;
     private final int depth;
+    private final String prefix;
 
     public LoggerDebugContext(ILogger logger) {
         this(logger, Level.Info, 0);
@@ -23,6 +25,7 @@ public class LoggerDebugContext implements IDebugContext {
         this.logger = logger;
         this.level = level;
         this.depth = depth;
+        this.prefix = prefix(depth);
     }
 
     @Override public Level getLevel() {
@@ -43,30 +46,46 @@ public class LoggerDebugContext implements IDebugContext {
 
     @Override public void info(String fmt, Object... args) {
         if(isEnabled(Level.Info)) {
-            logger.info(prefix() + fmt, args);
+            logger.info(prefix + fmt, args);
         }
     }
 
     @Override public void warn(String fmt, Object... args) {
         if(isEnabled(Level.Warn)) {
-            logger.warn(prefix() + fmt, args);
+            logger.warn(prefix + fmt, args);
         }
     }
 
     @Override public void error(String fmt, Object... args) {
         if(isEnabled(Level.Error)) {
-            logger.error(prefix() + fmt, args);
+            logger.error(prefix + fmt, args);
         }
     }
 
     @Override public void log(Level level, String fmt, Object... args) {
         if(isEnabled(level)) {
-            logger.log(level, prefix() + fmt, args);
+            logger.log(level, prefix + fmt, args);
         }
     }
+    
+    @Override public void _log(Level level, String fmt, Object... args) {
+        logger.log(level, prefix + fmt, args);
+    }
 
-    private String prefix() {
-        return String.join("", Collections.nCopies(depth, "| "));
+    /**
+     * Creates a prefix of {@code "| "} times the offset.
+     * 
+     * @param offset
+     *      the offset
+     * @return
+     *      a prefix string 
+     */
+    private static String prefix(int offset) {
+        StringBuilder sb = new StringBuilder(offset * 2);
+        for (int i = 0; i < offset; i++) {
+            sb.append("| ");
+        }
+        return sb.toString();
     }
 
 }

@@ -2,6 +2,9 @@ package mb.statix.solver.log;
 
 import org.metaborg.util.log.Level;
 
+/**
+ * Implementation of {@link IDebugContext} which does not perform any logging.
+ */
 public class NullDebugContext implements IDebugContext {
 
     private final int depth;
@@ -41,5 +44,9 @@ public class NullDebugContext implements IDebugContext {
 
     @Override public void log(Level level, String fmt, Object... args) {
     }
+    
+    @Override public void _log(Level level, String fmt, Object... args) {
+    }
+    
 
 }

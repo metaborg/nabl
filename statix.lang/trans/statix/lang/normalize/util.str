@@ -49,11 +49,18 @@ rules
   // to-c : (old:Term, new:Term) -> Constraint
 
   normalize-in-rules(replace,add-vars,to-c):
-      Rule(head, bvs, body){a*} -> Rule(head, bvs', body''){a*}
+      rule{a*} -> rule'{a*}
+    where <?Rule(head, bvs, body) + ?ModuleRule(head, _, bvs, body)> rule
     with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
          body'' := <filter(to-c);list-to-conj(|body')> bmaps;
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
+         bvs' := <conc> (bvs, new-bvs);
+         switch !rule
+         	case ?Rule(_, _, _):
+				rule' := Rule(head, bvs', body'')
+         	case ?ModuleRule(_, name, _, _):
+				rule' := ModuleRule(head, name, bvs', body'')
+         end
 
   normalize-in-rules(replace,add-vars,to-c):
       LLam(ts, bvs, body){a*} -> LLam(ts, bvs', body''){a*}

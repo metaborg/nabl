@@ -21,6 +21,9 @@ import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.Constraints;
+import mb.statix.modular.util.TDebug;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TTimings;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
@@ -35,10 +38,22 @@ public class STX_solve_multi_project extends StatixPrimitive {
     @Inject public STX_solve_multi_project() {
         super(STX_solve_multi_project.class.getSimpleName(), 2);
     }
+    
+    @Override
+    protected Optional<? extends ITerm> _call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
+        TTimings.startPhase("STX_solve_multi_project", "Settings: " + TOverrides.print(), "Debug: " + TDebug.print());
+        
+        try {
+            return super._call(env, term, terms);
+        } finally {
+            TTimings.endPhase("STX_solve_multi_project");
+        }
+    }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
+        TTimings.startPhase("init");
         final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
@@ -72,6 +87,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
                      .withScopeGraph(scopeGraph.freeze())
                      .withTermProperties(termProperties.build());
         // @formatter:on
+        TTimings.endPhase("init");
+        TTimings.startPhase("solving");
 
         final SolverResult resultConfig;
         try {
@@ -82,6 +99,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
+        TTimings.endPhase("solving");
+        
         errors.addAll(resultConfig.errors());
         final ITerm resultTerm = B.newBlob(resultConfig.withErrors(errors));
         return Optional.of(resultTerm);

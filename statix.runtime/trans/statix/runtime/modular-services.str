@@ -1,0 +1,22 @@
+module statix/runtime/modular-services
+
+imports
+
+  libspoofax/analysis/constraint
+
+  statix/runtime/analysis
+  statix/runtime/ast
+  statix/runtime/services
+  statix/runtime/modular-analysis
+
+rules
+
+  mstx-editor-resolve:
+      (node, position, ast, path, project-path) -> r
+    where
+      <stx--get-ast-index> node
+    ; a := <mstx--get-ast-analysis> node
+    ; r := <stx--get-ast-property(|a,Ref())> node
+
+  mstx-editor-hover:
+      (node, position, ast, path, project-path) -> <fail>

@@ -3,18 +3,29 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
 
+/**
+ * Implementation for the true constraint.
+ * 
+ * <pre>true</pre>
+ */
 public class CTrue implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new true constraint without a cause.
+     */
     public CTrue() {
         this(null);
     }
@@ -41,6 +52,11 @@ public class CTrue implements IConstraint, Serializable {
 
     @Override public CTrue apply(ISubstitution.Immutable subst) {
         return this;
+    }
+
+    @Override
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) {
+        return Optional.of(new MConstraintResult());
     }
 
     @Override public String toString(TermFormatter termToString) {

@@ -22,19 +22,77 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
 
+/**
+ * Interface to represent a constraint.
+ */
 public interface IConstraint {
 
+    /**
+     * @return
+     *      the constraint that caused this constraint to be added
+     */
     Optional<IConstraint> cause();
 
+    /**
+     * Creates a copy of the current constraint with the given cause set as cause.
+     * 
+     * @param cause
+     *      the cause
+     * 
+     * @return
+     *      the copied constraint
+     */
     IConstraint withCause(IConstraint cause);
+
+    /**
+     * Solves this constraint with mutable state.
+     * 
+     * @param state
+     *      mutable state
+     * @param params
+     *      the context containing info about completeness, rigid and closed as well as debug
+     *      
+     * @return
+     *      true is reduced, false if delayed
+     * 
+     * @throws InterruptedException
+     *      Optional exception that is thrown when solving this constraint is interrupted.
+     *      
+     * @throws Delay
+     *      If this constraint cannot be solved in the current state with the given context.
+     *      The exception contains the information about what information is required to solve.
+     */
+    Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws InterruptedException, Delay;
 
     <R> R match(Cases<R> cases);
 
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
+    /**
+     * Applies the given substitution to this constraint.
+     * 
+     * @param subst
+     *      the substitution
+     * 
+     * @return
+     *      a copy of this constraint with the given substitution applied
+     */
     IConstraint apply(ISubstitution.Immutable subst);
 
+    /**
+     * Converts this constraint to a string, where terms are formatted using the given term
+     * formatter.
+     * 
+     * @param termToString
+     *      the term formatter for formatting terms in this constraint
+     * 
+     * @return
+     *      the string
+     */
     String toString(TermFormatter termToString);
 
     interface Cases<R> extends Function1<IConstraint, R> {

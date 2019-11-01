@@ -12,7 +12,7 @@ import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 public class ConstraintQueries implements IConstraintQueries {
 
@@ -28,7 +28,7 @@ public class ConstraintQueries implements IConstraintQueries {
         return RegExpLabelWF.of(pathWf);
     }
 
-    @Override public DataWF<ITerm> getDataWF(Rule dataWf) {
+    @Override public DataWF<ITerm> getDataWF(IRule dataWf) {
         return new ConstraintDataWF(dataWf, state, params::isComplete, params.debug());
     }
 
@@ -36,7 +36,7 @@ public class ConstraintQueries implements IConstraintQueries {
         return new RelationLabelOrder(labelOrd);
     }
 
-    @Override public DataLeq<ITerm> getDataEquiv(Rule dataLeq) {
+    @Override public DataLeq<ITerm> getDataEquiv(IRule dataLeq) {
         return new ConstraintDataLeq(dataLeq, state, params::isComplete, params.debug());
     }
 

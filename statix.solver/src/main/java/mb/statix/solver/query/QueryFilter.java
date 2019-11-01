@@ -8,19 +8,24 @@ import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
+/**
+ * Class to represent query filters.
+ * 
+ * <pre>filter &lt;path&gt; and &lt;data&gt;</pre>
+ */
 public class QueryFilter implements IQueryFilter, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IRegExpMatcher<ITerm> pathWf;
-    private final Rule dataWf;
+    private final IRule dataWf;
 
-    public QueryFilter(IRegExp<ITerm> pathWf, Rule dataConstraint) {
+    public QueryFilter(IRegExp<ITerm> pathWf, IRule dataConstraint) {
         this(RegExpMatcher.create(pathWf), dataConstraint);
     }
 
-    private QueryFilter(IRegExpMatcher<ITerm> pathWf, Rule dataConstraint) {
+    public QueryFilter(IRegExpMatcher<ITerm> pathWf, IRule dataConstraint) {
         this.pathWf = pathWf;
         this.dataWf = dataConstraint;
     }
@@ -33,7 +38,7 @@ public class QueryFilter implements IQueryFilter, Serializable {
         return pathWf;
     }
 
-    @Override public Rule getDataWF() {
+    @Override public IRule getDataWF() {
         return dataWf;
     }
 
@@ -49,5 +54,4 @@ public class QueryFilter implements IQueryFilter, Serializable {
     @Override public String toString() {
         return toString(ITerm::toString);
     }
-
 }

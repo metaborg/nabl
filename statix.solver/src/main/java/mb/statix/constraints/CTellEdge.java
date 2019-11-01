@@ -3,13 +3,24 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 
+/**
+ * Implementation for a tell edge constraint.
+ * 
+ * <pre>sourceScope -label-> targetScope</pre>
+ */
 public class CTellEdge implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -19,6 +30,16 @@ public class CTellEdge implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
 
+    /**
+     * Creates a new tell edge constraint with the given source, label and target.
+     * 
+     * @param sourceTerm
+     *      the term representing the source scope
+     * @param label
+     *      the label of the edge
+     * @param targetTerm
+     *      the term representing the target scope
+     */
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
         this(sourceTerm, label, targetTerm, null);
     }
@@ -60,6 +81,27 @@ public class CTellEdge implements IConstraint, Serializable {
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
+        //Modifies the scope graph
+        final IUnifier.Immutable unifier = state.unifier();
+        if(!unifier.isGround(sourceTerm)) {
+            throw Delay.ofVars(unifier.getVars(sourceTerm));
+        }
+        if(!unifier.isGround(targetTerm)) {
+            throw Delay.ofVars(unifier.getVars(targetTerm));
+        }
+        final Scope source = Scope.matcher().match(sourceTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected source scope, got " + unifier.toString(sourceTerm)));
+        if(params.isClosed(source, state)) {
+            return Optional.empty();
+        }
+        final Scope target = Scope.matcher().match(targetTerm, unifier).orElseThrow(
+                () -> new IllegalArgumentException("Expected target scope, got " + unifier.toString(targetTerm)));
+        state.scopeGraph().addEdge(source, label, target);
+        return Optional.of(new MConstraintResult());
     }
 
     @Override public String toString(TermFormatter termToString) {

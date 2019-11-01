@@ -122,7 +122,7 @@ public abstract class AState implements IState {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
     }
 
-    @Value.Default public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
+    @Override @Value.Default public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
         return ImmutableMap.of();
     }
 

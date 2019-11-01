@@ -11,6 +11,7 @@ imports
   statix/runtime/constraints
   statix/runtime/terms
   statix/runtime/pp
+  statix/runtime/modular-timings
 
 signature
   constructors
@@ -48,6 +49,7 @@ rules // single file analysis
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
              ; file-analysis := FileAnalysis(a)
       \})> (resource-ast'*, solve-result*)
+    ; mstx--end-run
 
   stx-editor-analyze(desugar|spec-name, init-constraint):
       AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
@@ -127,6 +129,7 @@ rules // multi file analysis
           project-result := Update(project-analysis, error*, warning*, note*)
       end
     ; result* := [(project-resource, project-result)|file-result*]
+    ; mstx--end-run
 
   stx-editor-analyze(desugar|spec-name, init-constraint):
       AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>

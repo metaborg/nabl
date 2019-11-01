@@ -49,13 +49,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
         private static final long serialVersionUID = 42L;
 
-        private final boolean finite;
+        protected final boolean finite;
 
-        private final Ref<Map.Immutable<ITermVar, ITermVar>> reps;
-        private final Map.Immutable<ITermVar, Integer> ranks;
-        private final Map.Immutable<ITermVar, ITerm> terms;
+        protected final Ref<Map.Immutable<ITermVar, ITermVar>> reps;
+        protected final Map.Immutable<ITermVar, Integer> ranks;
+        protected final Map.Immutable<ITermVar, ITerm> terms;
 
-        Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
+        protected Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = new Ref<>(reps);
@@ -161,13 +161,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
 
         private static final long serialVersionUID = 42L;
 
-        private final boolean finite;
+        protected final boolean finite;
 
-        private final Map.Transient<ITermVar, ITermVar> reps;
-        private final Map.Transient<ITermVar, Integer> ranks;
-        private final Map.Transient<ITermVar, ITerm> terms;
+        protected final Map.Transient<ITermVar, ITermVar> reps;
+        protected final Map.Transient<ITermVar, Integer> ranks;
+        protected final Map.Transient<ITermVar, ITerm> terms;
 
-        Transient(final boolean finite, final Map.Transient<ITermVar, ITermVar> reps,
+        protected Transient(final boolean finite, final Map.Transient<ITermVar, ITermVar> reps,
                 final Map.Transient<ITermVar, Integer> ranks, final Map.Transient<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = reps;
@@ -411,8 +411,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
             private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
                 final ITermVar rep = findRep(var);
                 assert !(term instanceof ITermVar);
-                if(terms.containsKey(rep)) {
-                    worklist.push(ImmutableTuple2.of(terms.get(rep), term));
+                java.util.Map<ITermVar, ITerm> target = allowCrossModuleUnification() ? targetTerms(rep) : terms;
+                if (target.containsKey(rep)) {
+                    worklist.push(ImmutableTuple2.of(target.get(rep), term));
                 } else if(isRigid.test(rep)) {
                     throw new _RigidVarsException(rep);
                 } else {

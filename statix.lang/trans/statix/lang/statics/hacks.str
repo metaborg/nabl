@@ -45,3 +45,13 @@ rules
   lift-type: (IdLift(), ty) -> ty
   lift-type: (ListLift(), ty) -> LIST(ty)
   lift-type: (TupleLift(lifts), TUPLE(tys)) -> TUPLE(<lift-types> (lifts, tys))
+
+rules
+
+  stringable-type: t@STRING()   -> t
+  stringable-type: t@INT()      -> t
+  stringable-type: t@AST_ID()   -> t
+  stringable-type: t@TUPLE(tys) -> t
+    where <map(stringable-type)> tys
+  stringable-type: t@LIST(ty)   -> t
+    where <stringable-type> ty

@@ -3,7 +3,9 @@ module Analysis
 imports
 
   nabl2/Menus
+  statix/Menus
   nabl2/References
+  statix/References
 
 language
 

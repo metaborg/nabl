@@ -54,7 +54,7 @@ public class Completeness implements ICompleteness {
     @Override public void update(ITermVar var, IUnifier unifier) {
     }
 
-    static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
+    public static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
             onConj -> {
@@ -97,7 +97,7 @@ public class Completeness implements ICompleteness {
         // @formatter:on
     }
 
-    static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
+    public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
         ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
         criticalEdges(constraint, spec, (s, l) -> criticalEdges.add(CriticalEdge.of(s, l)));
         return criticalEdges.build();

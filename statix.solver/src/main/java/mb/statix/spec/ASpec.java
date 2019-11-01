@@ -19,17 +19,17 @@ import mb.nabl2.util.Tuple2;
 @Serial.Version(value = 42L)
 public abstract class ASpec {
 
-    @Value.Parameter public abstract ListMultimap<String, Rule> rules();
+    @Value.Parameter public abstract ListMultimap<String, IRule> rules();
 
-    public ListMultimap<String, Rule> overlappingRules() {
-        final ImmutableListMultimap.Builder<String, Rule> overlappingRules = ImmutableListMultimap.builder();
+    public ListMultimap<String, IRule> overlappingRules() {
+        final ImmutableListMultimap.Builder<String, IRule> overlappingRules = ImmutableListMultimap.builder();
         rules().asMap().forEach((name, rules) -> {
             overlappingRules.putAll(name, overlappingRules(rules));
         });
         return overlappingRules.build();
     }
 
-    private Collection<Rule> overlappingRules(Collection<Rule> rules) {
+    private Collection<IRule> overlappingRules(Collection<IRule> rules) {
         return rules.stream()
                 .filter(r1 -> rules.stream()
                         .anyMatch(r2 -> !r1.equals(r2) && ARule.leftRightPatternOrdering.compare(r1, r2) == 0))

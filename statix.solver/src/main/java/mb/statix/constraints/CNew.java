@@ -1,18 +1,30 @@
 package mb.statix.constraints;
 
+import static mb.nabl2.terms.matching.TermMatch.M;
+
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
 import mb.statix.solver.IConstraint;
 
+/**
+ * Implementation for the new (scope) constraint.
+ * 
+ * <pre>new scopes</pre>
+ */
 public class CNew implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -51,6 +63,21 @@ public class CNew implements IConstraint, Serializable {
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
         return new CNew(subst.apply(terms), cause);
+    }
+    
+    @Override public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) {
+        final List<IConstraint> constraints = new ArrayList<>();
+        for (ITerm t : terms) {
+            String base = M.var(ITermVar::getName).match(t).orElse("s");
+            //Cut off the number of the variable name
+            int varIndex = base.lastIndexOf('-');
+            if (varIndex != -1) {
+                base = base.substring(0, varIndex);
+            }
+            ITerm ss = state.freshScope(base, this);
+            constraints.add(new CEqual(t, ss, this));
+        }
+        return Optional.of(MConstraintResult.ofConstraints(constraints));
     }
 
     @Override public String toString(TermFormatter termToString) {

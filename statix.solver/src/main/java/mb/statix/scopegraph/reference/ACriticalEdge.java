@@ -16,5 +16,4 @@ public abstract class ACriticalEdge {
     @Override public String toString() {
         return scope() + "-" + label();
     }
-
 }

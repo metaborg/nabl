@@ -1,0 +1,8 @@
+module statix/runtime/modular-timings
+
+rules
+  mstx--start-run = prim("MSTX_start_run")
+  mstx--end-run   = prim("MSTX_end_run")
+  
+  mstx--start-phase(|phase) = prim("MSTX_start_phase", phase)
+  mstx--end-phase(|phase)   = prim("MSTX_end_phase", phase)

@@ -6,8 +6,16 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
+import mb.nabl2.util.Tuple2;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 
 public class CAstProperty implements IConstraint, Serializable {
@@ -56,6 +64,32 @@ public class CAstProperty implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseTermProperty(this);
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
+            throws InterruptedException, Delay {
+        final ITerm idTerm = idTerm();
+        final ITerm prop = property();
+        final ITerm value = value();
+
+        final IUnifier unifier = state.unifier();
+        if(!(unifier.isGround(idTerm))) {
+            throw Delay.ofVars(unifier.getVars(idTerm));
+        }
+        final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
+        if(maybeIndex.isPresent()) {
+            final TermIndex index = maybeIndex.get();
+            final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);
+            if(!state.termProperties().containsKey(key)) {
+                state.termProperties().put(key, value);
+                return Optional.of(new MConstraintResult());
+            } else {
+                return Optional.empty();
+            }
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override public CAstProperty apply(ISubstitution.Immutable subst) {

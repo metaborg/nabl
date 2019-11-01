@@ -6,15 +6,15 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 public class QueryMin implements IQueryMin, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IRelation.Immutable<ITerm> labelOrd;
-    private final Rule dataOrd;
+    private final IRule dataOrd;
 
-    public QueryMin(IRelation.Immutable<ITerm> labelOrd, Rule dataConstraint) {
+    public QueryMin(IRelation.Immutable<ITerm> labelOrd, IRule dataConstraint) {
         this.labelOrd = labelOrd;
         this.dataOrd = dataConstraint;
     }
@@ -27,7 +27,7 @@ public class QueryMin implements IQueryMin, Serializable {
         return labelOrd;
     }
 
-    @Override public Rule getDataEquiv() {
+    @Override public IRule getDataEquiv() {
         return dataOrd;
     }
 
@@ -43,5 +43,4 @@ public class QueryMin implements IQueryMin, Serializable {
     @Override public String toString() {
         return toString(ITerm::toString);
     }
-
 }

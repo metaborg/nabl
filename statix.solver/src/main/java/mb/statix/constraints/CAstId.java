@@ -3,11 +3,20 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.scopegraph.terms.AScope;
+import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 
 public class CAstId implements IConstraint, Serializable {
@@ -54,6 +63,33 @@ public class CAstId implements IConstraint, Serializable {
 
     @Override public CAstId apply(ISubstitution.Immutable subst) {
         return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
+        final ITerm term = astTerm();
+        final ITerm idTerm = idTerm();
+
+        final IUnifier unifier = state.unifier();
+        if(!(unifier.isGround(term))) {
+            throw Delay.ofVars(unifier.getVars(term));
+        }
+        final CEqual eq;
+        final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
+        if(maybeScope.isPresent()) {
+            final AScope scope = maybeScope.get();
+            eq = new CEqual(idTerm, scope);
+            return Optional.of(MConstraintResult.ofConstraints(eq));
+        } else {
+            final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
+            if(maybeIndex.isPresent()) {
+                final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
+                eq = new CEqual(idTerm, indexTerm);
+                return Optional.of(MConstraintResult.ofConstraints(eq));
+            } else {
+                return Optional.empty();
+            }
+        }
     }
 
     @Override public String toString(TermFormatter termToString) {

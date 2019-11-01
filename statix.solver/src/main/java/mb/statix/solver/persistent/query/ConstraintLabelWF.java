@@ -15,6 +15,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -28,7 +29,7 @@ import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.ResolutionDelayException;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 class ConstraintLabelWF implements LabelWF<ITerm> {
 
@@ -82,6 +83,10 @@ class ConstraintLabelWF implements LabelWF<ITerm> {
             }
         }
     }
+    
+    @Override public boolean canStep(ITerm l) throws ResolutionException, InterruptedException {
+        return step(l).isPresent();
+    }
 
     @Override public boolean accepting() throws ResolutionException, InterruptedException {
         if(debug.isEnabled(Level.Info)) {
@@ -116,13 +121,13 @@ class ConstraintLabelWF implements LabelWF<ITerm> {
         }
     }
 
-    public static ConstraintLabelWF of(Rule constraint, State state, IsComplete isComplete, IDebugContext debug)
+    public static ConstraintLabelWF of(IRule constraint, State state, IsComplete isComplete, IDebugContext debug)
             throws InterruptedException {
         // duplicate logic from entails, because we call solve directly in step()
         ITermVar var = B.newVar("", "lbls");
         final IConstraint inst;
         try {
-            if((inst = constraint.apply(ImmutableList.of(var), state.unifier()).orElse(null)) == null) {
+            if((inst = constraint.apply(ImmutableList.of(var), state.unifier()).map(Tuple2::_2).orElse(null)) == null) {
                 throw new IllegalArgumentException("Label well-formedness cannot be instantiated.");
             }
         } catch(Delay e) {

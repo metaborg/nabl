@@ -21,8 +21,12 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.TermFormatter;
+import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CExists;
+import mb.statix.constraints.CFalse;
+import mb.statix.constraints.CTrue;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
@@ -30,21 +34,36 @@ import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 
+/**
+ * Class which describes a statix rule.
+ * 
+ * <pre>ruleName(paramVars) :- {bodyVars} constraints.</pre>
+ * or
+ * <pre>{ paramVars :- {bodyVars} constraints }</pre>
+ */
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class ARule {
+public abstract class ARule implements IRule {
 
+    @Override
     @Value.Parameter public abstract String name();
 
+    @Override
     @Value.Parameter public abstract List<Pattern> params();
 
+    @Override
     @Value.Lazy public Set<ITermVar> paramVars() {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(ImmutableSet.toImmutableSet());
     }
 
+    @Override
     @Value.Parameter public abstract IConstraint body();
 
+    @Override
     @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+        if (body() instanceof CTrue) return Optional.of(true);
+        if (body() instanceof CFalse) return Optional.of(false);
+        
         // 1. Create arguments
         final ImmutableList.Builder<ITermVar> argsBuilder = ImmutableList.builder();
         for(int i = 0; i < params().size(); i++) {
@@ -55,7 +74,7 @@ public abstract class ARule {
         // 2. Instantiate body
         final IConstraint instBody;
         try {
-            if((instBody = apply(args, PersistentUnifier.Immutable.of()).orElse(null)) == null) {
+            if((instBody = apply(args, PersistentUnifier.Immutable.of()).map(Tuple2::_2).orElse(null)) == null) {
                 return Optional.of(false);
             }
         } catch(Delay e) {
@@ -77,16 +96,14 @@ public abstract class ARule {
         }
     }
 
-    public Rule apply(ISubstitution.Immutable subst) {
+    @Override
+    public IRule apply(ISubstitution.Immutable subst) {
         final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
         return Rule.of(name(), params(), newBody);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier) throws Delay {
-        return apply(args, unifier, null);
-    }
-
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier, @Nullable IConstraint cause)
+    @Override
+    public Optional<Tuple2<ISubstitution.Immutable,IConstraint>> apply(List<? extends ITerm> args, IUnifier unifier, @Nullable IConstraint cause)
             throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
@@ -98,9 +115,22 @@ public abstract class ARule {
         }
         final ISubstitution.Immutable isubst = subst.freeze();
         final IConstraint newBody = body().apply(isubst);
-        return Optional.of(newBody.withCause(cause));
+        return Optional.of(ImmutableTuple2.of(isubst, newBody.withCause(cause)));
     }
 
+    /**
+     * Formats this rule where constraints are formatted with the given TermFormatter.
+     * 
+     * <pre>&lt;name&gt;(&lt;params&gt;) [:- [{&lt;bodyVars&gt;}] &lt;constraints&gt;].</pre>
+     * <pre>{ &lt;params&gt; [:- [{&lt;bodyVars&gt;}] &lt;constraints&gt;] }</pre>
+     * 
+     * @param termToString
+     *      the term formatter to format constraints with
+     * 
+     * @return
+     *      the string
+     */
+    @Override
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         if(name().isEmpty()) {
@@ -110,25 +140,44 @@ public abstract class ARule {
         }
         sb.append(" :- ");
         sb.append(body().toString(termToString));
-        sb.append(".");
+        if(name().isEmpty()) {
+            sb.append(" }");
+        } else {
+            sb.append(".");
+
+        }
         return sb.toString();
     }
 
     @Override public String toString() {
         return toString(ITerm::toString);
     }
+    
+    @Override public String signature() {
+        StringBuilder sb = new StringBuilder();
+        signature(sb);
+        return sb.toString();
+    }
+    
+    @Override public void signature(StringBuilder sb) {
+        if(name().isEmpty()) {
+            sb.append("{ ").append(params()).append('}');
+        } else {
+            sb.append(name()).append("(").append(params()).append(')');
+        }
+    }
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    public static java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
+    public static java.util.Comparator<IRule> leftRightPatternOrdering = new LeftRightPatternOrder();
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    private static class LeftRightPatternOrder implements Comparator<Rule> {
+    private static class LeftRightPatternOrder implements Comparator<IRule> {
 
-        @Override public int compare(Rule r1, Rule r2) {
+        @Override public int compare(IRule r1, IRule r2) {
             final Pattern p1 = P.newTuple(r1.params());
             final Pattern p2 = P.newTuple(r2.params());
             return Pattern.leftRightOrdering.compare(p1, p2);

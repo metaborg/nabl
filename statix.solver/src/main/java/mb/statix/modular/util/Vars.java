@@ -1,0 +1,91 @@
+package mb.statix.modular.util;
+
+import mb.nabl2.terms.ITermVar;
+import mb.statix.modular.module.IModule;
+import mb.statix.modular.module.ModuleManager;
+import mb.statix.modular.scopegraph.reference.ModuleDelayException;
+import mb.statix.modular.solver.Context;
+
+public class Vars {
+    /**
+     * Gets the owner of the given term variable.
+     * 
+     * @param termVar
+     *      the termVar
+     * @param manager
+     *      the module manager to lookup modules in
+     * 
+     * @return
+     *      the owner of the given term variable
+     * 
+     * @throws IllegalArgumentException
+     *      If the given term is not a scope.
+     */
+    public static IModule getOwner(ITermVar termVar, ModuleManager manager) {
+        return manager.getModule(termVar.getResource());
+    }
+    
+    /**
+     * Gets the owner of the given term variable without checking the access.
+     * 
+     * @param context
+     *      the context
+     * @param termVar
+     *      the variable
+     * 
+     * @return
+     *      the owner of the given term variable
+     */
+    public static IModule getOwnerUnchecked(Context context, ITermVar termVar) {
+        return context.getModuleUnchecked(termVar.getResource());
+    }
+    
+    /**
+     * Gets the owner of the given term variable without checking the access.
+     * 
+     * @param termVar
+     *      the variable
+     * 
+     * @return
+     *      the owner of the given term variable
+     */
+    public static IModule getOwnerUnchecked(ITermVar termVar) {
+        return Context.context().getModuleUnchecked(termVar.getResource());
+    }
+    
+    /**
+     * Gets the owner of the given term variable.
+     * 
+     * @param termVar
+     *      the term variable
+     * @param requester
+     *      the requester of the owner
+     * 
+     * @return
+     *      the owner of the given term variable
+     *      
+     * @throws ModuleDelayException
+     *      If this request is not allowed.
+     */
+    public static IModule getOwner(ITermVar termVar, IModule requester) throws ModuleDelayException {
+        return Context.context().getModule(requester, termVar.getResource());
+    }
+    
+    /**
+     * Gets the owner of the given term variable.
+     * 
+     * @param termVar
+     *      the term variable
+     * @param requester
+     *      the requester of the owner
+     * 
+     * @return
+     *      the owner of the given term variable
+     *      
+     * @throws ModuleDelayException
+     *      If this request is not allowed.
+     */
+    public static IModule getOwner(ITermVar termVar, String requesterId) throws ModuleDelayException {
+        return Context.context().getModule(requesterId, termVar.getResource());
+    }
+}

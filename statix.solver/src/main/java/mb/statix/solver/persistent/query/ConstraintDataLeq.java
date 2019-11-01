@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -15,17 +16,17 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.ResolutionDelayException;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 
 class ConstraintDataLeq implements DataLeq<ITerm> {
 
-    private final Rule constraint;
+    private final IRule constraint;
     private final State state;
     private final IsComplete isComplete;
     private final IDebugContext debug;
     private volatile Boolean alwaysTrue;
 
-    public ConstraintDataLeq(Rule constraint, State state, IsComplete isComplete, IDebugContext debug) {
+    public ConstraintDataLeq(IRule constraint, State state, IsComplete isComplete, IDebugContext debug) {
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
@@ -37,7 +38,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         final IUnifier unifier = state.unifier();
         try {
             final IConstraint result;
-            if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+            if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).map(Tuple2::_2).orElse(null)) == null) {
                 return false;
             }
             if(Solver.entails(state, result, isComplete, debug).isPresent()) {

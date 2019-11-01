@@ -75,7 +75,7 @@ import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
-import mb.statix.spec.Rule;
+import mb.statix.spec.IRule;
 import mb.statix.spoofax.StatixTerms;
 
 public class GreedySolver {
@@ -501,21 +501,21 @@ public class GreedySolver {
                 final List<ITerm> args = c.args();
 
                 final IDebugContext debug = params.debug();
-                final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
+                final List<IRule> rules = Lists.newLinkedList(state.spec().rules().get(name));
                 final Log unsuccessfulLog = new Log();
-                final Iterator<Rule> it = rules.iterator();
+                final Iterator<IRule> it = rules.iterator();
                 while(it.hasNext()) {
                     if(Thread.interrupted()) {
                         throw new InterruptedException();
                     }
                     final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
-                    final Rule rawRule = it.next();
+                    final IRule rawRule = it.next();
                     if(proxyDebug.isEnabled(Level.Info)) {
                         proxyDebug.info("Try rule {}", rawRule.toString());
                     }
                     final IConstraint instantiatedBody;
                     try {
-                        if((instantiatedBody = rawRule.apply(args, state.unifier(), c).orElse(null)) == null) {
+                        if((instantiatedBody = rawRule.apply(args, state.unifier(), c).map(Tuple2::_2).orElse(null)) == null) {
                             proxyDebug.info("Rule rejected (mismatching arguments)");
                             unsuccessfulLog.absorb(proxyDebug.clear());
                             continue;

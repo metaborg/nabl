@@ -3,13 +3,28 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.metaborg.util.log.Level;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidVarsException;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.log.IDebugContext;
 
+/**
+ * Implementation for an equality constraint.
+ * 
+ * <pre>term1 == term2</pre>
+ */
 public class CEqual implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -54,6 +69,35 @@ public class CEqual implements IConstraint, Serializable {
 
     @Override public CEqual apply(ISubstitution.Immutable subst) {
         return new CEqual(subst.apply(term1), subst.apply(term2), cause);
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params) throws Delay {
+        IDebugContext debug = params.debug();
+        IUnifier.Immutable unifier = state.unifier();
+        try {
+            final IUnifier.Immutable.Result<IUnifier.Immutable> result;
+            if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification succeeded: {}", result.result());
+                }
+                //TODO CONSTRAINT-CONCURRENCY Concurrency point for unifier modifications
+                state.setUnifier((DistributedUnifier.Immutable) result.unifier());
+                return Optional.of(MConstraintResult.ofVars(result.result().varSet()));
+            } else {
+                if(debug.isEnabled(Level.Info)) {
+                    debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                }
+                return Optional.empty();
+            }
+        } catch(OccursException e) {
+            if(debug.isEnabled(Level.Info)) {
+                debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+            }
+            return Optional.empty();
+        } catch(RigidVarsException e) {
+            throw Delay.ofVars(e.vars());
+        }
     }
 
     @Override public String toString(TermFormatter termToString) {

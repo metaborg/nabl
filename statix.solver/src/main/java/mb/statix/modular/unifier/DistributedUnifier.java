@@ -1,0 +1,525 @@
+package mb.statix.modular.unifier;
+
+import java.util.LinkedList;
+import java.util.Set;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import io.usethesource.capsule.Map;
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.statix.modular.module.IModule;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TOverrides;
+import mb.statix.modular.util.TPrettyPrinter;
+import mb.statix.modular.util.Vars;
+
+public class DistributedUnifier {
+    public static final DistributedUnifier.Immutable NULL_UNIFIER = Immutable.of("|~|%|~|");
+
+    public static class Immutable extends PersistentUnifier.Immutable {
+
+        private static final long serialVersionUID = 42L;
+        
+        private final String owner;
+        private final boolean unrestricted;
+
+        Immutable(String owner, boolean finite, Map.Immutable<ITermVar, ITermVar> reps,
+                Map.Immutable<ITermVar, Integer> ranks,
+                Map.Immutable<ITermVar, ITerm> terms) {
+            this(owner, finite, reps, ranks, terms, false);
+        }
+        
+        Immutable(String owner, boolean finite, Map.Immutable<ITermVar, ITermVar> reps,
+                Map.Immutable<ITermVar, Integer> ranks,
+                Map.Immutable<ITermVar, ITerm> terms,
+                boolean unrestricted) {
+            super(finite, reps, ranks, terms);
+            this.owner = owner;
+            this.unrestricted = unrestricted;
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Term
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        public ITerm findTerm(ITerm term) {
+            return term.match(Terms.<ITerm>cases().var(var -> {
+                final ITermVar rep;
+                final IModule target;
+                if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                    rep = findRepFinal(var);
+                    return findTermFinal(rep);
+                }
+                
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                if (unifier == null) return var;
+                rep = unifier.findRepFinal(var);
+                return unifier.findTermFinal(rep);
+            }).otherwise(t -> t));
+        }
+        
+        protected ITerm findTermFinal(ITermVar rep) {
+            return terms().getOrDefault(rep, rep);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Rep
+        // ----------------------------------------------------------------------------------------
+
+        @Override
+        public ITermVar findRep(ITermVar var) {
+            //TODO Entails?
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                return findRepFinal(var);
+            }
+
+            DistributedUnifier.Immutable unifier = getUnifier(target);
+            return unifier == null ? var : unifier.findRepFinal(var);
+        }
+        
+        protected ITermVar findRepFinal(ITermVar var) {
+            return super.findRep(var);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Ground
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                return isGroundFinal(var, stack, visited);
+            } else {
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? false : unifier.isGroundFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isGround(var, stack, visited);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Cyclic
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                return isCyclicFinal(var, stack, visited);
+            } else {
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? isCyclicFinal(var, stack, visited) : unifier.isCyclicFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isCyclicFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isCyclic(var, stack, visited);
+        }
+
+        // ----------------------------------------------------------------------------------------
+        // Own Variables
+        // ----------------------------------------------------------------------------------------
+        
+        /**
+         * Collects all the variables in the given term that are owned by the module owning this
+         * unifier. Variables from other modules will not be expanded.
+         * The result only contains variables that are not ground.
+         * <p>
+         * Keep in mind that expanding variables from other modules could yield additional
+         * variables that belong to this unifier. These variables are not reported by this method.
+         * <p>
+         * The variables in this set should be non-ground, otherwise it will have been instantiated
+         * or it is cyclic (which might be considered non-ground).
+         * 
+         * @param term
+         *      the term
+         * 
+         * @return
+         *      all the variables in the given term that belong to this unifier
+         */
+        public Set<ITermVar> getOwnVariables(ITerm term) {
+            final Set<ITermVar> vars = Sets.newHashSet();
+            getOwnVars(term.getVars().elementSet(), Lists.newLinkedList(), Sets.newHashSet(), vars);
+            return vars;
+        }
+
+        private void getOwnVars(final Set<ITermVar> tryVars, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            tryVars.stream().forEach(var -> getOwnVars(var, stack, visited, vars));
+        }
+
+        private void getOwnVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            final ITermVar rep = findRepFinal(var);
+            if (!owner.equals(rep.getResource())) return; //Not our own variable
+            
+            if(!visited.contains(rep)) {
+                visited.add(rep);
+                stack.push(rep);
+                final ITerm term = terms().get(rep);
+                if(term != null) {
+                    getOwnVars(term.getVars().elementSet(), stack, visited, vars);
+                } else {
+                    vars.add(rep);
+                }
+                stack.pop();
+            } else {
+                final int index = stack.indexOf(rep); // linear
+                if(index >= 0) {
+                    vars.addAll(stack.subList(0, index + 1));
+                }
+            }
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Helper methods
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected Map<ITermVar, ITerm> targetTerms(ITermVar var) {
+            final IModule module;
+            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
+                return this.terms();
+            }
+            
+            DistributedUnifier.Immutable unifier = getUnifier(module);
+            return unifier == null ? this.terms() : unifier.terms();
+        }
+        
+        private IModule getOwner(ITermVar var) {
+            return unrestricted ? Vars.getOwnerUnchecked(var) : Vars.getOwner(var, owner);
+        }
+        
+        private DistributedUnifier.Immutable getUnifier(IModule target) {
+            IMState state = target.getCurrentState();
+            if (state == null) return null;
+            return state.unifier();
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Other
+        // ----------------------------------------------------------------------------------------
+        
+        @Override public DistributedUnifier.Transient melt() {
+            return new DistributedUnifier.Transient(owner, finite, reps.get().asTransient(), ranks.asTransient(),
+                    terms.asTransient(), unrestricted);
+        }
+        
+        /**
+         * @return
+         *      an unrestricted version of this unifier
+         */
+        @Override
+        public DistributedUnifier.Immutable unrestricted() {
+            if (unrestricted) return this;
+            return new DistributedUnifier.Immutable(owner, finite, reps.get(), ranks, terms, true);
+        }
+        
+        @Override
+        public DistributedUnifier.Immutable restricted() {
+            if (!unrestricted) return this;
+            return new DistributedUnifier.Immutable(owner, finite, reps.get(), ranks, terms, false);
+        }
+        
+        @Override
+        public boolean isUnrestricted() {
+            return unrestricted;
+        }
+        
+        public static DistributedUnifier.Immutable of(String owner) {
+            return of(owner, true);
+        }
+
+        public static DistributedUnifier.Immutable of(String owner, boolean finite) {
+            return new DistributedUnifier.Immutable(owner, finite, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+        }
+        
+        @Override
+        protected boolean allowCrossModuleUnification() {
+            //TODO Base this on more info, e.g. only cross module unification for split modules
+            return TOverrides.CROSS_MODULE_UNIFICATION;
+        }
+        
+        public String print(boolean pretty, int indent) {
+            StringBuilder base = new StringBuilder();
+            for (int i = 0; i < indent; i++) base.append("| ");
+            final String s = base.toString();
+            
+            final StringBuilder sb = new StringBuilder();
+            sb.append(s + "Unifier {\n");
+            sb.append(s + "| TERMS: {\n");
+            for(ITermVar var : terms().keySet()) {
+                sb.append(s + "| | ");
+                sb.append(var);
+                sb.append(" |-> ");
+                ITerm term = terms().get(var);
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(term) : term);
+                sb.append("\n");
+            }
+            sb.append(s + "| }\n");
+            
+            sb.append(s + "| REPS: {\n");
+            for(ITermVar var : reps().keySet()) {
+                sb.append(s + "| | ");
+                sb.append(var);
+                sb.append(" |-> ");
+                ITermVar rep = reps().get(var);
+                sb.append(pretty ? TPrettyPrinter.prettyPrint(rep) : rep);
+                sb.append("\n");
+            }
+            sb.append(s + "| }\n");
+            sb.append(s + "}");
+            return sb.toString();
+        }
+    }
+
+    public static class Transient extends PersistentUnifier.Transient {
+
+        private static final long serialVersionUID = 42L;
+        
+        private final String owner;
+        private final boolean unrestricted;
+
+        Transient(String owner, boolean finite, Map.Transient<ITermVar, ITermVar> reps,
+                Map.Transient<ITermVar, Integer> ranks,
+                Map.Transient<ITermVar, ITerm> terms) {
+            this(owner, finite, reps, ranks, terms, false);
+        }
+        
+        Transient(String owner, boolean finite, Map.Transient<ITermVar, ITermVar> reps,
+                Map.Transient<ITermVar, Integer> ranks,
+                Map.Transient<ITermVar, ITerm> terms,
+                boolean unrestricted) {
+            super(finite, reps, ranks, terms);
+            this.owner = owner;
+            this.unrestricted = unrestricted;
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Term
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        public ITerm findTerm(ITerm term) {
+            return term.match(Terms.<ITerm>cases().var(var -> {
+                final ITermVar rep;
+                final IModule target;
+                if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                    rep = findRepFinal(var);
+                    return findTermFinal(rep);
+                }
+                
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                if (unifier == null) return var;
+                rep = unifier.findRepFinal(var);
+                return unifier.findTermFinal(rep);
+            }).otherwise(t -> t));
+        }
+        
+        protected ITerm findTermFinal(ITermVar rep) {
+            return terms().getOrDefault(rep, rep);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Rep
+        // ----------------------------------------------------------------------------------------
+
+        @Override
+        public ITermVar findRep(ITermVar var) {
+            //TODO Entails?
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                return findRepFinal(var);
+            }
+
+            DistributedUnifier.Immutable unifier = getUnifier(target);
+            return unifier == null ? var : unifier.findRepFinal(var);
+        }
+        
+        protected ITermVar findRepFinal(ITermVar var) {
+            return super.findRep(var);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Ground
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isGround(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                return isGroundFinal(var, stack, visited);
+            } else {
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? false : unifier.isGroundFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isGroundFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isGround(var, stack, visited);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Cyclic
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            final IModule target;
+            if (owner.equals(var.getResource()) || (target = getOwner(var)) == null) {
+                return isCyclicFinal(var, stack, visited);
+            } else {
+                DistributedUnifier.Immutable unifier = getUnifier(target);
+                return unifier == null ? isCyclicFinal(var, stack, visited) : unifier.isCyclicFinal(var, stack, visited);
+            }
+        }
+        
+        private boolean isCyclicFinal(final ITermVar var, final Set<ITermVar> stack,
+                final java.util.Map<ITermVar, Boolean> visited) {
+            return super.isCyclic(var, stack, visited);
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Get own vars
+        // ----------------------------------------------------------------------------------------
+        
+        /**
+         * Collects all the variables in the given term that are owned by the module owning this
+         * unifier. Variables from other modules will not be expanded.
+         * The result only contains variables that are not ground.
+         * <p>
+         * Keep in mind that expanding variables from other modules could yield additional
+         * variables that belong to this unifier. These variables are not reported by this method.
+         * <p>
+         * The variables in this set should be non-ground, otherwise it will have been instantiated
+         * or it is cyclic (which might be considered non-ground).
+         * 
+         * @param term
+         *      the term
+         * 
+         * @return
+         *      all the variables in the given term that belong to this unifier
+         */
+        public Set<ITermVar> getOwnVariables(ITerm term) {
+            final Set<ITermVar> vars = Sets.newHashSet();
+            getOwnVars(term.getVars().elementSet(), Lists.newLinkedList(), Sets.newHashSet(), vars);
+            return vars;
+        }
+
+        private void getOwnVars(final Set<ITermVar> tryVars, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            tryVars.stream().forEach(var -> getOwnVars(var, stack, visited, vars));
+        }
+
+        private void getOwnVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
+                Set<ITermVar> vars) {
+            final ITermVar rep = findRepFinal(var);
+            if (!owner.equals(rep.getResource())) return; //Not our own variable
+            
+            if(!visited.contains(rep)) {
+                visited.add(rep);
+                stack.push(rep);
+                final ITerm term = terms().get(rep);
+                if(term != null) {
+                    getOwnVars(term.getVars().elementSet(), stack, visited, vars);
+                } else {
+                    vars.add(rep);
+                }
+                stack.pop();
+            } else {
+                final int index = stack.indexOf(rep); // linear
+                if(index >= 0) {
+                    vars.addAll(stack.subList(0, index + 1));
+                }
+            }
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Helper methods
+        // ----------------------------------------------------------------------------------------
+        
+        @Override
+        protected Map<ITermVar, ITerm> targetTerms(ITermVar var) {
+            final IModule module;
+            if (owner.equals(var.getResource()) || (module = getOwner(var)) == null) {
+                return this.terms();
+            }
+            
+            DistributedUnifier.Immutable unifier = getUnifier(module);
+            return unifier == null ? this.terms() : unifier.targetTerms(var);
+        }
+        
+        private IModule getOwner(ITermVar var) {
+            return unrestricted ? Vars.getOwnerUnchecked(var) : Vars.getOwner(var, owner);
+        }
+        
+        private DistributedUnifier.Immutable getUnifier(IModule target) {
+            IMState state = target.getCurrentState();
+            if (state == null) return null;
+            return state.unifier();
+        }
+        
+        // ----------------------------------------------------------------------------------------
+        // Other
+        // ----------------------------------------------------------------------------------------
+        
+        @Override public DistributedUnifier.Immutable freeze() {
+            return new DistributedUnifier.Immutable(owner, finite, reps.freeze(), ranks.freeze(), terms.freeze(), unrestricted);
+        }
+
+        /**
+         * @return
+         *      an unrestricted version of this unifier
+         */
+        @Override
+        public DistributedUnifier.Transient unrestricted() {
+            if (unrestricted) return this;
+            return new DistributedUnifier.Transient(owner, finite, reps, ranks, terms, true);
+        }
+        
+        /**
+         * @return
+         *      a restricted version of this unifier
+         */
+        @Override
+        public DistributedUnifier.Transient restricted() {
+            if (!unrestricted) return this;
+            return new DistributedUnifier.Transient(owner, finite, reps, ranks, terms, false);
+        }
+        
+        @Override
+        public boolean isUnrestricted() {
+            return unrestricted;
+        }
+        
+        @Override
+        protected boolean allowCrossModuleUnification() {
+            //TODO Base this on more info, e.g. only cross module unification for split modules
+            return TOverrides.CROSS_MODULE_UNIFICATION;
+        }
+        
+        public static DistributedUnifier.Transient of(String owner) {
+            return of(owner, true);
+        }
+
+        public static DistributedUnifier.Transient of(String owner, boolean finite) {
+            return new DistributedUnifier.Transient(owner, finite, Map.Transient.of(), Map.Transient.of(), Map.Transient.of());
+        }
+    }
+}

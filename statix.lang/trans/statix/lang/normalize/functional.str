@@ -32,16 +32,24 @@ rules
          t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
   normalize-functional-head:
-      Rule(h, bvs, body){a*} -> Rule(h', bvs', body'){a*}
-    where F(x, in_ts, out_t) := h
-    with ty@FUN(_, out_ty) := <norm-get-ast-type> h;
+      rule{a*} -> rule'{a*}
+    where <?Rule(head, bvs, body) + ?ModuleRule(head, _, bvs, body)> rule
+    where F(x, in_ts, out_t) := head
+    with ty@FUN(_, out_ty) := <norm-get-ast-type> head;
          out_v := <mk-fresh-Var(|out_ty)>("out");
          new-bvs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
          bvs' := <conc> (bvs, new-bvs);
          body' := CConj(body, CEqual(out_v, out_t));
          ts := <conc> (in_ts, [out_v]);
          ty' := <fun-to-pred-type> ty;
-         h' := <norm-set-ast-type(|ty')> C(x, ts)
+         head' := <norm-set-ast-type(|ty')> C(x, ts);
+         switch !rule
+         	case ?Rule(_, _, _):
+				rule' := Rule(head', bvs', body')
+         	case ?ModuleRule(_, name, _, _):
+				rule' := ModuleRule(head', name, bvs', body')
+         end
+         
 
   normalize-functional-cops =
     normalize-in-rules(replace-functional-cop,id,functional-cop-to-c)

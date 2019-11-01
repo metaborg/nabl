@@ -1,17 +1,24 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.modular.solver.MConstraintContext;
+import mb.statix.modular.solver.MConstraintResult;
+import mb.statix.modular.solver.state.IMState;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 
 public class CExists implements IConstraint, Serializable {
@@ -54,6 +61,20 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseExists(this);
+    }
+    
+    @Override
+    public Optional<MConstraintResult> solve(IMState state, MConstraintContext params)
+            throws InterruptedException, Delay {
+        final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
+        for(ITermVar var : vars()) {
+            final ITermVar freshVar = state.freshVar(var.getName());
+            existentialsBuilder.put(var, freshVar);
+        }
+        final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
+        final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
+        final IConstraint newConstraint = constraint().apply(subst).withCause(this);
+        return Optional.of(MConstraintResult.ofConstraints(newConstraint).withExistentials(existentials));
     }
 
     @Override public CExists apply(ISubstitution.Immutable subst) {

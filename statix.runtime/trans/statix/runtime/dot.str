@@ -1,0 +1,155 @@
+module nabl2/runtime/analysis/dot
+
+imports
+  
+  statix/runtime/modular-analysis
+
+//imports
+//  statix/runtime/pp
+//
+////TODO How to model associated data?
+//signature
+//  sorts ScopeGraph constructors
+//    ScopeGraph : list(ScopeEntry) -> ScopeGraph
+//  
+//  sorts ScopeEntry constructors
+//    Scope : Scope * ScopePartEntry -> ScopeEntry
+//  
+//  sorts ScopePartEntry constructors
+//    Decls     : list(DeclEntry)     -> ScopePartEntry
+//    Edges     : list(EdgeEntry)     -> ScopePartEntry
+//    DataEdges : list(DataEdgeEntry) -> ScopePartEntry
+//  
+//  sorts DeclEntry constructors
+//    Decl : Occurrence * DeclType -> DeclEntry
+//  
+//  sorts EdgeEntry constructors
+//    Edge : PathLabel * Scope -> EdgeEntry
+//  
+//  sorts DataEdgeEntry constructors
+//    DataEdge : PathLabel * Occurrence -> DataEdgeEntry //Declaration?
+//  
+//  sorts DeclType constructors
+//    Type   : CTerm -> DeclType
+//    NoType : DeclType
+
+rules
+  mstx--debug-file-scope-graph-dot =
+    mstx--debug-file-result(mstx--debug-scope-graph, id|"scope-graph.dot") // pp the scope graph ast?
+
+  mstx--debug-file-result(s,pp|ext):
+    (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|ext)> path;
+    	 <debug> <language>;
+    	 <debug> ast;
+         (<mstx--get-resource-analysis> $[[project-path]/[path]] <+
+         <call-in-language(|<language>, "editor-analyze")> AnalyzeSingle(("?", Added(ast)))) => analysis
+    with ( <s(|analysis)> path <+ !"(no result)") => result
+
+  mstx--debug-project-scope-graph-dot =
+    mstx--debug-project-result(mstx--debug-scope-graph, id|"scope-graph.dot") //Was: mstx--debug-scope-graph, scope-graph-to-dot
+
+  mstx--debug-project-result(s,pp|ext):
+    (_, _, _, path, project-path) -> (filename, result)
+    with filename := $[[project-path]/project.[ext]];
+         analysis := <mstx--get-resource-analysis> project-path
+    with ( s(|analysis) <+ !"(no result)") => result
+
+rules
+  mstx--debug-scope-graph(|result) = prim("MSTX-scope-graph", result)
+
+//scope-graph-to-dot: ScopeGraph(entries) ->
+//$[digraph scope_graph {
+//  layout=sfdp;
+//  overlap=scale;
+//  rankdir="BT";
+//  [scopes]
+//}] with scopes := <map(scope-to-dot);lines> entries
+//
+//rules
+//
+//scope-to-dot: Scope(scope, entries) ->
+//$<
+//  "<name>" [shape="ellipse"];
+//  <edges-dot>
+//  <dataedges-dot>
+//  { rank="same";
+//    <decls-dot>
+//  }
+//> with name := <pp-NaBL2-CTerm;escape> scope;
+//       decls-dot := <filter(decls-to-dot(|name));lines> entries;
+////       refs-dot  := <filter(refs-to-dot(|name));lines> entries;
+//       edges-dot := <filter(edges-to-dot(|name));lines> entries;
+//       dataedges-dot  := <filter(dataedges-to-dot(|name));lines> entries
+//
+//rules
+//
+//decls-to-dot(|scope-name): Decls(entries) -> decls-dot
+//  with decls-dot := <map(decl-to-dot(|scope-name));lines> entries
+//
+//decl-to-dot(|scope-name): Decl(decl, type) ->
+//${
+//  "{name}" [shape="box"];
+//  "{scope-name}" -> "{name}";
+//  {type-dot}
+//}
+//with name := <pp-NaBL2-CTerm;escape> decl;
+//       type-dot := <decl-type-to-dot(|name)> type
+//
+//decl-type-to-dot(|decl-name): NoType() -> ""
+//decl-type-to-dot(|decl-name): Type(type) ->
+//${
+//}
+//
+////rules
+////
+////refs-to-dot(|scope-name): Refs(entries) -> refs-dot
+////  with refs-dot := <map(ref-to-dot(|scope-name));lines> entries
+////
+////ref-to-dot(|scope-name): Ref(ref) ->
+////${
+////  "{name}" [shape="box"];
+////  "{name}" -> "{scope-name}";
+////} with name := <pp-NaBL2-CTerm;escape> ref
+//
+//rules
+//
+//edges-to-dot(|scope-name): Edges(entries) -> edges-dot
+//  with edges-dot := <map(edge-to-dot(|scope-name));lines> entries
+//
+//edge-to-dot(|scope-name): Edge(lbl, scope) ->
+//${
+//  "{scope-name}" -> "{name}" [label="{lbl'}"];
+//} with lbl' := <pp-NaBL2-PathLabel;escape> lbl;
+//       name := <pp-NaBL2-CTerm;escape> scope
+//
+//rules
+//
+//dataedges-to-dot(|scope-name): DataEdges(entries) -> dataedges-dot
+//  with dataedges-dot := <map(dataedge-to-dot(|scope-name));lines> entries
+//
+//dataedge-to-dot(|scope-name): DataEdge(lbl, decl) ->
+//${
+//  "{scope-name}" -> "{name}" [label="{lbl'}"];
+//} with lbl' := <pp-NaBL2-PathLabel;escape> lbl;
+//       name := <pp-NaBL2-CTerm;escape> decl
+//
+////exports-to-dot(|scope-name): AssocEdges(entries) -> exports-dot
+////  with exports-dot := <map(export-to-dot(|scope-name));lines> entries
+////
+////export-to-dot(|scope-name): AssocEdge(lbl, decl) ->
+////${
+////  "{name}" -> "{scope-name}" [label="{lbl'}",arrowhead="onormal"]
+////} with lbl' := <pp-NaBL2-PathLabel;escape> lbl;
+////       name := <pp-NaBL2-CTerm;escape> decl
+////
+////rules
+////
+////imports-to-dot(|scope-name): ImportEdges(entries) -> imports-dot
+////  with imports-dot := <map(import-to-dot(|scope-name));lines> entries
+////
+////import-to-dot(|scope-name): ImportEdge(lbl, decl) ->
+////${
+////  "{scope-name}" -> "{name}" [label="{lbl'}",arrowhead="onormal",constraint="false"]
+////} with lbl' := <pp-NaBL2-PathLabel;escape> lbl;
+////       name := <pp-NaBL2-CTerm;escape> decl
