@@ -50,8 +50,8 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -397,9 +397,9 @@ class GreedySolver {
                                 .withDataComplete(isComplete)
                                 .build(state.scopeGraph(), relation);
                     // @formatter:on
-                    final Collection<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+                    final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope);
                     final List<ITerm> pathTerms =
-                            paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+                            Streams.stream(paths).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                     return successNew(c, state, ImmutableList.of(C), fuel);
                 } catch(IncompleteDataException e) {

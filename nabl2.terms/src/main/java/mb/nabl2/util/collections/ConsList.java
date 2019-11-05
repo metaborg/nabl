@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Streams;
 
 public class ConsList<E> implements Iterable<E>, Serializable {
     private static final long serialVersionUID = 1L;
@@ -81,6 +84,10 @@ public class ConsList<E> implements Iterable<E>, Serializable {
             list = list.prepend(e);
         }
         return list;
+    }
+
+    @Override public String toString() {
+        return Streams.stream(this).map(Object::toString).collect(Collectors.joining(", ", "[", "]"));
     }
 
 }

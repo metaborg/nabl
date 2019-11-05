@@ -214,3 +214,43 @@ test relations have multiset behavior [[
       resolve Var
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test partial order is well-behaved (1) [[
+  resolve {s}
+    new s,
+    !r[] in s,
+    query r min $ < P, $ < Q in s |-> [_]
+  signature
+    name-resolution
+      labels P Q
+    relations
+      r :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test partial order is well-behaved (2) [[
+  resolve {s}
+    new s,
+    !r[] in s,
+    query r min $ < P, $ < Q, P < Q in s |-> [_]
+  signature
+    name-resolution
+      labels P Q
+    relations
+      r :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test partial order is well-behaved (3) [[
+  resolve {s}
+    new s,
+    !r[] in s,
+    query r min $ < P, $ < Q, P < R, Q < R in s |-> [_]
+  signature
+    name-resolution
+      labels P Q R
+    relations
+      r :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+

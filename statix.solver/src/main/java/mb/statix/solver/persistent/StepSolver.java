@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,8 +51,8 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -396,9 +397,9 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
             // @formatter:on
-            final Collection<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms =
-                    paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+                    Streams.stream(paths).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
             return Optional.of(StepResult.ofNew(state, ImmutableList.of(C)));
         } catch(IncompleteDataException e) {
