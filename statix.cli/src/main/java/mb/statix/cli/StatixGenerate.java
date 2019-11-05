@@ -104,7 +104,7 @@ public class StatixGenerate {
         };
 
         final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource);
-        final Spec spec = Paret.addFragments(statixGen.spec());
+        final Spec spec = statixGen.spec(); // Paret.addFragments(statixGen.spec());
         final RandomTermGenerator rtg =
                 new RandomTermGenerator(spec, statixGen.constraint(), Paret.search(), searchLog);
         final Stream<SearchState> resultStream = rtg.apply().nodes().map(sn -> {
@@ -153,7 +153,7 @@ public class StatixGenerate {
         log.log(lvl, "===============");
     }
 
-    private static void logTrace(ILogger log, Level lvl, SearchElement node, int maxDepth,
+    @SuppressWarnings("unused") private static void logTrace(ILogger log, Level lvl, SearchElement node, int maxDepth,
             Function1<SearchState, String> pp) {
         if(node instanceof SearchNodes) {
             SearchNodes<?> nodes = (SearchNodes<?>) node;
