@@ -55,4 +55,23 @@ public interface IUnifier {
 
     }
 
+    /**
+     * Implementing this interface allows control over the selection of representatives, and may be used to prevent
+     * unification of certain variables.
+     */
+    interface RepPicker<E extends Throwable> {
+
+        /**
+         * Given two variables to be unified, optionally pick the representative, or throw an exception.
+         * <ul>
+         * <li>Return Optional.empty to use the default rank-based mechanism to pick the representative.</li>
+         * <li>Return Optional.of(true) to use the left variable as the representative.</li>
+         * <li>Return Optional.of(false) to use the right variable as the representative.</li>
+         * <li>Throw E to fail unification with the given exception.</li>
+         * </ul>
+         */
+        Optional<Boolean> pick(ITermVar left, ITermVar right) throws E;
+
+    }
+
 }

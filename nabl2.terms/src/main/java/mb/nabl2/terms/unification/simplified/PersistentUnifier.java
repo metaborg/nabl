@@ -30,6 +30,7 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.VoidException;
 
 public class PersistentUnifier implements IUnifier, Serializable {
 
@@ -139,10 +140,12 @@ public class PersistentUnifier implements IUnifier, Serializable {
 
     @Override public Optional<Result<PersistentUnifier>>
             unifyAll(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-        return new UnifyAll(equalities).apply();
+        return new UnifyAll<VoidException>(equalities).apply();
     }
 
-    private class UnifyAll extends Transient {
+    private class UnifyAll<E extends Throwable> extends Transient {
+
+        private final RepPicker<E> repPicker = (t1, t2) -> Optional.empty();
 
         private final Deque<Entry<? extends ITerm, ? extends ITerm>> worklist = Lists.newLinkedList();
         private final List<ITermVar> result = Lists.newArrayList();
@@ -151,7 +154,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
             equalities.forEach(e -> worklist.push(e));
         }
 
-        public Optional<Result<PersistentUnifier>> apply() throws OccursException {
+        public Optional<Result<PersistentUnifier>> apply() throws OccursException, E {
             while(!worklist.isEmpty()) {
                 final Entry<? extends ITerm, ? extends ITerm> work = worklist.pop();
                 if(!unifyTerms(work.getKey(), work.getValue())) {
@@ -173,10 +176,10 @@ public class PersistentUnifier implements IUnifier, Serializable {
             return Optional.of(new Result<>(diff, unifier));
         }
 
-        private boolean unifyTerms(final ITerm left, final ITerm right) {
+        private boolean unifyTerms(final ITerm left, final ITerm right) throws E {
             // @formatter:off
-            return left.match(Terms.<Boolean>cases(
-                applLeft -> right.match(Terms.<Boolean>cases()
+            return left.matchOrThrow(Terms.<Boolean, E>checkedCases(
+                applLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                     .appl(applRight -> {
                         return applLeft.getArity() == applRight.getArity() &&
                                 applLeft.getOp().equals(applRight.getOp()) &&
@@ -189,7 +192,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                listLeft -> right.match(Terms.<Boolean>cases()
+                listLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                     .list(listRight -> {
                         return unifyLists(listLeft, listRight);
                     })
@@ -200,7 +203,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                stringLeft -> right.match(Terms.<Boolean>cases()
+                stringLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                     .string(stringRight -> {
                         return stringLeft.getValue().equals(stringRight.getValue());
                     })
@@ -211,7 +214,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                integerLeft -> right.match(Terms.<Boolean>cases()
+                integerLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                     .integer(integerRight -> {
                         return integerLeft.getValue() == integerRight.getValue();
                     })
@@ -222,7 +225,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                blobLeft -> right.match(Terms.<Boolean>cases()
+                blobLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                     .blob(blobRight -> {
                         return blobLeft.getValue().equals(blobRight.getValue());
                     })
@@ -233,7 +236,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                varLeft -> right.match(Terms.<Boolean>cases()
+                varLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                     .var(varRight -> {
                         return unifyVars(varLeft, varRight);
                     })
@@ -245,10 +248,10 @@ public class PersistentUnifier implements IUnifier, Serializable {
             // @formatter:on
         }
 
-        private boolean unifyLists(final IListTerm left, final IListTerm right) {
+        private boolean unifyLists(final IListTerm left, final IListTerm right) throws E {
             // @formatter:off
-            return left.match(ListTerms.<Boolean>cases(
-                consLeft -> right.match(ListTerms.<Boolean>cases()
+            return left.matchOrThrow(ListTerms.<Boolean, E>checkedCases(
+                consLeft -> right.matchOrThrow(ListTerms.<Boolean, E>checkedCases()
                     .cons(consRight -> {
                         worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
                         worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
@@ -261,7 +264,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                nilLeft -> right.match(ListTerms.<Boolean>cases()
+                nilLeft -> right.matchOrThrow(ListTerms.<Boolean, E>checkedCases()
                     .nil(nilRight -> {
                         return true;
                     })
@@ -272,7 +275,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
                         return false;
                     })
                 ),
-                varLeft -> right.match(ListTerms.<Boolean>cases()
+                varLeft -> right.matchOrThrow(ListTerms.<Boolean, E>checkedCases()
                     .var(varRight -> {
                         return unifyVars(varLeft, varRight);
                     })
@@ -284,7 +287,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
             // @formatter:on
         }
 
-        private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
+        private boolean unifyVarTerm(final ITermVar var, final ITerm term) throws E {
             final ITermVar rep = findRep(var);
             if(term instanceof ITermVar) {
                 throw new IllegalStateException();
@@ -299,7 +302,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
             return true;
         }
 
-        private boolean unifyVars(final ITermVar left, final ITermVar right) {
+        private boolean unifyVars(final ITermVar left, final ITermVar right) throws E {
             final ITermVar leftRep = findRep(left);
             final ITermVar rightRep = findRep(right);
             if(leftRep.equals(rightRep)) {
@@ -307,9 +310,9 @@ public class PersistentUnifier implements IUnifier, Serializable {
             }
             final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
             final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
-            final boolean swap = leftRank > rightRank;
-            final ITermVar var = swap ? rightRep : leftRep; // the eliminated variable
-            final ITermVar rep = swap ? leftRep : rightRep; // the new representative
+            final boolean useLeftRep = this.repPicker.pick(leftRep, rightRep).orElse(leftRank > rightRank);
+            final ITermVar rep = useLeftRep ? leftRep : rightRep; // the new representative
+            final ITermVar var = useLeftRep ? rightRep : leftRep; // the eliminated variable
             ranks.__put(rep, leftRank + rightRank);
             reps.__put(var, rep);
             final ITerm varTerm = terms.__remove(var); // term for the eliminated var
@@ -328,7 +331,7 @@ public class PersistentUnifier implements IUnifier, Serializable {
             return true;
         }
 
-        private boolean unifys(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
+        private boolean unifys(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) throws E {
             Iterator<ITerm> itLeft = lefts.iterator();
             Iterator<ITerm> itRight = rights.iterator();
             while(itLeft.hasNext()) {
