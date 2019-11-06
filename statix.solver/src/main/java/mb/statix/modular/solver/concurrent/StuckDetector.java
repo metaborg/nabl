@@ -97,7 +97,7 @@ public class StuckDetector implements Runnable {
         
         //Write the timings
         TTimings.endPhase("Stuck Detector");
-        TTimings.serialize(new File(TTimings.getFile().toString().replace(".csv", "_aborted.csv")));
+//        TTimings.serialize(new File(TTimings.getFile().toString().replace(".csv", "_aborted.csv")));
     }
     
 }
