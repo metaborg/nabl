@@ -726,11 +726,11 @@ public class MStatix implements Callable<Void> {
      */
     public void writeTimings() {
         if (output == null) {
-            TTimings.serialize();
+//            TTimings.serialize();
             return;
         }
         
-        TTimings.serialize(new File(output, "results.csv"));
+//        TTimings.serialize(new File(output, "results.csv"));
         List<Long> cleanTimes = new ArrayList<>();
         List<Long> incrementalTimes = new ArrayList<>();
         
@@ -756,7 +756,7 @@ public class MStatix implements Callable<Void> {
         
         LinkedHashMap<Integer, LinkedHashMap<String, PhaseDetails>> original = TTimings.results;
         TTimings.results = reducedDetail;
-        TTimings.serialize(new File(output, "results_reduced.csv"));
+//        TTimings.serialize(new File(output, "results_reduced.csv"));
         TTimings.results = original;
         
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(output, "analysis_times.csv")))) {

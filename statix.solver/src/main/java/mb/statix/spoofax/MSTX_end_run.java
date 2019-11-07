@@ -21,7 +21,7 @@ public class MSTX_end_run extends StatixPrimitive {
 
     @Override
     protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        TTimings.serialize();
+//        TTimings.serialize();
         return Optional.of(B.newInt(0));
     }
 }
