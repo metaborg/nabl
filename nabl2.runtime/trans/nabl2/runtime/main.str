@@ -9,7 +9,6 @@ imports
 
   nabl2/runtime/analysis/-
   nabl2/runtime/editor/-
-  nabl2/runtime/interpreter/-
   nabl2/runtime/prelude/-
   nabl2/runtime/stdlib/-
   nabl2/runtime/transform/-

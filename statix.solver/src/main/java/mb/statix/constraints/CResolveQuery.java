@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
@@ -22,19 +23,26 @@ public class CResolveQuery implements IConstraint, Serializable {
     private final ITerm resultTerm;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable IMessage message;
 
     public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
-        this(relation, filter, min, scopeTerm, resultTerm, null);
+        this(relation, filter, min, scopeTerm, resultTerm, null, null);
     }
 
     public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
-            @Nullable IConstraint cause) {
+            @Nullable IMessage message) {
+        this(relation, filter, min, scopeTerm, resultTerm, null, message);
+    }
+
+    public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+            @Nullable IConstraint cause, @Nullable IMessage message) {
         this.relation = relation;
         this.filter = filter;
         this.min = min;
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
+        this.message = message;
     }
 
     public ITerm relation() {
@@ -62,7 +70,15 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
-        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause);
+        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause, message);
+    }
+
+    @Override public Optional<IMessage> message() {
+        return Optional.ofNullable(message);
+    }
+
+    @Override public CResolveQuery withMessage(@Nullable IMessage message) {
+        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause, message);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -74,8 +90,8 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
-        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
-                cause);
+        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

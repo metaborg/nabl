@@ -29,10 +29,13 @@ rules
   < fatal-err(|"Missing AST index")
   + nabl2-get-ast-property(|a,prop)
 
-  norm-get-ast-decl-type(|a) =
+  norm-get-ast-decl(|a) =
     not(nabl2-get-ast-index)
   < fatal-err(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
+
+  norm-get-ast-decl-type(|a) =
+    norm-get-ast-decl(|a)
   ; nabl2-get-type(|a)
 
   norm-get-ast-decl-property(|a,prop) =
@@ -49,17 +52,19 @@ rules
   // replace : old:Term -> new:Term
   // to-c : (old:Term, new:Term) -> Constraint
 
-  normalize-in-rules(replace,add-vars,to-c):
-      Rule(head, bvs, body){a*} -> Rule(head, bvs', body''){a*}
-    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+  normalize-in-rules(replace,in-head,add-vars,to-c):
+      Rule(lbl, head, bvs, body){a*} -> Rule(lbl, head', bvs', body''){a*}
+    with (head', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> head;
+         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
-  normalize-in-rules(replace,add-vars,to-c):
-      LLam(ts, bvs, body){a*} -> LLam(ts, bvs', body''){a*}
-    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+  normalize-in-rules(replace,in-head,add-vars,to-c):
+      LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
+    with (ts', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> ts;
+         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
          new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
          bvs' := <conc> (bvs, new-bvs)
 
@@ -112,6 +117,8 @@ rules // smart constructors for typed terms
   mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
     with tys := <map(norm-get-ast-type)> ps;
          ty := PRED(tys)
+
+  mk-As(|ty): (v, t) -> <norm-set-ast-type(|ty)> As(v, t)
 
   mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, p)
 

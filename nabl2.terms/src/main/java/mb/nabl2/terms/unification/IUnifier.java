@@ -1,14 +1,14 @@
 package mb.nabl2.terms.unification;
 
+import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 
-import org.metaborg.util.functions.Predicate1;
-
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.VoidException;
 
 /**
  * Unification
@@ -34,7 +34,9 @@ import mb.nabl2.terms.substitution.ISubstitution;
  * Support for recursive terms is easy to add, but makes many operations exceptional. For example: remove(ITermVar),
  * findRecursive(ITerm).
  *
+ *
  */
+
 
 public interface IUnifier {
 
@@ -65,17 +67,12 @@ public interface IUnifier {
     /**
      * Return the domain of this unifier.
      */
-    Set<ITermVar> varSet();
-
-    /**
-     * Return the representative variables of this unifier.
-     */
-    Set<ITermVar> repSet();
+    java.util.Set<ITermVar> varSet();
 
     /**
      * Return the set of free variables appearing in this unifier.
      */
-    Set<ITermVar> freeVarSet();
+    java.util.Set<ITermVar> freeVarSet();
 
     /**
      * Test if the unifier contains any cycles.
@@ -124,7 +121,7 @@ public interface IUnifier {
     /**
      * Return the set of variables that appear in the given term relative to this unifier.
      */
-    Set<ITermVar> getVars(ITerm term);
+    Set.Immutable<ITermVar> getVars(ITerm term);
 
     /**
      * Return the size of the given term relative to this unifier.
@@ -142,16 +139,28 @@ public interface IUnifier {
     String toString(ITerm term, int n);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Methods on two terms
+    // Methods on a single term
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Test if the two terms are equal relative to this unifier. If terms are incomparable under this unifier an
-     * exception is thrown.
+     * Return a unifier that makes these terms equal, relative to the current unifier.
+     * 
+     * If no result is returned, the terms are unequal. Otherwise, if an empty unifier is returned, the terms are equal.
+     * Finally, if a non-empty unifier is returned, the terms are not equal, but can be made equal by the returned
+     * unifier.
      */
-    MaybeNotInstantiatedBool areEqual(ITerm term1, ITerm term2);
+    Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2);
 
-    public interface Immutable extends IUnifier {
+    ///////////////////////////////////////////
+    // asMap()
+    ///////////////////////////////////////////
+
+    Map.Immutable<ITermVar, ITerm> equalityMap();
+
+    Set.Immutable<Diseq> disequalities();
+
+
+    interface Immutable extends IUnifier {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////
         // Methods on two terms
@@ -160,18 +169,45 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Optional<Result<Immutable>> unify(ITerm term1, ITerm term2) throws OccursException;
+        <E extends Throwable> Optional<Result<Immutable>> unify(ITerm term1, ITerm term2, RepPicker<E> repPicker)
+                throws OccursException, E;
 
-        Optional<Result<Immutable>> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        default Optional<Result<Immutable>> unify(ITerm term1, ITerm term2) throws OccursException {
+            return unify(term1, term2, RepPicker.DEFAULT);
+        }
 
         /**
          * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Optional<Result<Immutable>> unify(IUnifier other) throws OccursException;
+        <E extends Throwable> Optional<Result<Immutable>> unify(IUnifier other, RepPicker<E> repPicker)
+                throws OccursException, E;
 
-        Optional<Result<Immutable>> unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        default Optional<Result<Immutable>> unify(IUnifier other) throws OccursException {
+            return unify(other, RepPicker.DEFAULT);
+        }
+
+        /**
+         * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
+         */
+        <E extends Throwable> Optional<Result<Immutable>>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, RepPicker<E> repPicker)
+                        throws OccursException, E;
+
+        default Optional<Result<Immutable>>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
+            return unify(equalities, RepPicker.DEFAULT);
+        }
+
+        /**
+         * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
+         * reduced inequality.
+         */
+        <E extends Throwable> Optional<Result<Immutable>> disunify(Iterable<ITermVar> universal, ITerm term1,
+                ITerm term2, RepPicker<E> repPicker) throws E;
+
+        default Optional<Result<Immutable>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2) {
+            return disunify(universal, term1, term2, RepPicker.DEFAULT);
+        }
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -215,7 +251,7 @@ public interface IUnifier {
 
     }
 
-    public interface Transient extends IUnifier {
+    interface Transient extends IUnifier {
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////
         // Methods on two terms
@@ -226,16 +262,25 @@ public interface IUnifier {
          */
         Optional<Immutable> unify(ITerm term1, ITerm term2) throws OccursException;
 
-        Optional<Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
-
         /**
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
         Optional<Immutable> unify(IUnifier other) throws OccursException;
 
-        Optional<Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidVarsException;
+        /**
+         * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
+         */
+        Optional<Immutable> unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities)
+                throws OccursException;
+
+        /**
+         * Disunify with the given unifier. Return whether it succeeded.
+         */
+        Optional<Immutable> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
+
+        default Optional<Immutable> disunify(ITerm term1, ITerm term2) {
+            return disunify(Set.Immutable.of(), term1, term2);
+        }
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed
@@ -265,6 +310,23 @@ public interface IUnifier {
          * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.
          */
         Immutable freeze();
+
+    }
+
+    interface RepPicker<E extends Throwable> {
+
+        static RepPicker<VoidException> DEFAULT = (t1, t2) -> Optional.empty();
+
+        /**
+         * Given two variables to be unified, optionally pick the representative, or throw an exception.
+         * <ul>
+         * <li>Return Optional.empty to use the default rank-based mechanism to pick the representative.</li>
+         * <li>Return Optional.of(true) to use the left variable as the representative.</li>
+         * <li>Return Optional.of(false) to use the right variable as the representative.</li>
+         * <li>Throw E to fail unification with the given exception.</li>
+         * </ul>
+         */
+        Optional<Boolean> pick(ITermVar left, ITermVar right) throws E;
 
     }
 

@@ -2,14 +2,17 @@ module statix/lang/menus
 
 imports
 
+  nabl2/api
+
   signatures/statix/lang/-
   statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
+  statix/lang/transform/-
 
   pp
 
-rules // Debugging
+rules // Parsing
 
   show-parsed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"aterm")> path;
@@ -20,7 +23,7 @@ rules // Debugging
          filename := <guarantee-extension(|$[formatted.[ext]])> path;
          result   := <pp-Statix-string> ast
 
-rules // Debugging
+rules // Desugaring
 
   show-desugared-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"desugared.aterm")> path;
@@ -31,7 +34,7 @@ rules // Debugging
          filename := <guarantee-extension(|$[desugared.[ext]])> path;
          result   := <desugar-all;pp-Statix-string> ast
 
-rules // Debugging
+rules // Analysis
 
   show-analyzed-aterm: (_, _, ast, path, project-path) -> (filename, result)
     with filename := <guarantee-extension(|"analyzed.aterm")> path;
@@ -42,7 +45,7 @@ rules // Debugging
          filename := <guarantee-extension(|$[analyzed.[ext]])> path;
          result   := <pp-Statix-string> ast
 
-rules // Debugging
+rules // Normalization
 
   show-normalized-aterm: (_, _, _, path, project-path) -> (filename, result)
     where ast := <get-normalized-ast>
@@ -60,13 +63,20 @@ rules // Debugging
           <not(nabl2-analysis-has-errors)> a
     with ast' := <normalize(|a)> ast
 
-rules // Debugging
+rules // Explicit signature rules
 
-  // Prints the analyzed annotated abstract syntax ATerm of a selection.
-  show-explicated-aterm: (_, _, ast, path, project-path) -> (filename, result)
+  show-signature-rules-aterm: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-signature-rules-ast>
+    with filename := <guarantee-extension(|"signature.aterm")> path;
+         result   := <nabl2-simplify-ast-indices> ast
+
+  format-signature-rules: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-signature-rules-ast>
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[signature.[ext]])> path;
+         result   := <pp-Statix-string> ast
+
+  get-signature-rules-ast: (_, _, ast, path, project-path) -> ast'
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
-    with ast' := <normalize(|a)> ast;
-         filename := <guarantee-extension(|"explicated.aterm")> path;
-         result   := <explicate-all(|a);nabl2-simplify-ast-indices> ast'
-
+    with ast' := <add-signature-rules(|a)> ast

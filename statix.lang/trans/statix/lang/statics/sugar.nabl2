@@ -93,7 +93,7 @@ rules
     Rel{l} -> s, Rel{l} |-> d, @l.decl := d,
     d : ty.
 
-  Constraint[[ CAskRel(rel, ts, st) ^ (s) ]] :=
+  Constraint[[ CAskRel(rel, ts, st, msg) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
     tys is `in-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
@@ -126,13 +126,6 @@ rules
     Map1(LabelPair)[[ prs ^ (s) ]].
 
 
-  HoConstraint[[ LPathMatch(re) ^ (s) : PRED([LIST(LABEL())]) ]] :=
-    LabelRE[[ re ^ (s) ]].
-
-  HoConstraint[[ LPathLt(ord) ^ (s) : PRED([LABEL(), LABEL()]) ]] :=
-    LabelOrd[[ ord ^ (s) ]].
-
-
 /******************************************************************
  * Resolve & Query
  ******************************************************************/
@@ -162,3 +155,12 @@ rules
  * Terms                                                          *
  ******************************************************************/
 
+
+/******************************************************************
+ * Arithmetic                                                     *
+ ******************************************************************/
+
+rules
+
+  Term(V)[[ ArithOp(ae) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ ae ^ (s) : INT() ]].

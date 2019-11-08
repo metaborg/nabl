@@ -21,11 +21,12 @@ rules
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
     bottomup(
       try(normalize-ast-ids)
-    ; try(normalize-in-rules(replace-term,not(term-no-add),term-to-c))
+    ; try(normalize-in-rules(replace-pattern,fail,not(pattern-no-add),pattern-to-c))
+    ; try(normalize-in-rules(replace-term,id,id,term-to-c))
     )
 
 
-  normalize-ast-ids = Occurrence(id, id, normalize-term-or-id)
+  normalize-ast-ids = WithId(normalize-term-or-id)
   normalize-ast-ids = CAstProperty(normalize-term-or-id, id, id)
 
   normalize-term-or-id: t -> t'
@@ -34,18 +35,18 @@ rules
     with t' := <norm-set-ast-type(|AST_ID())> AstIdOp(t)
 
 
-  replace-term: t@Wld() -> v
+  replace-pattern: t@Wld() -> v
     with ty := <norm-get-ast-type> t
        ; v := <mk-fresh-Var(|ty)>("wld")
-  
-  term-to-c: (Wld(), _) -> <fail>
+
+  pattern-to-c: (Wld(), _) -> <fail>
 
 
-  replace-term: As(v, t) -> v
+  replace-pattern: As(v, t) -> v
 
-  term-to-c: (As(v, t), _) -> CEqual(v, t)
+  pattern-to-c: (As(v, t), _) -> CEqual(v, t, NoMessage())
 
-  term-no-add = ?As(_, _)
+  pattern-no-add = ?As(_, _)
 
 
   replace-term: t@NewOp() -> v
@@ -60,3 +61,10 @@ rules
        ; v := <mk-fresh-Var(|ty)>("astId")
 
   term-to-c: (AstIdOp(t), v) -> CAstId(t, v)
+
+
+  replace-term: t@ArithOp(ae) -> v
+    with ty := <norm-get-ast-type> t
+       ; v := <mk-fresh-Var(|ty)>("n")
+
+  term-to-c: (ArithOp(ae), v) -> CArith(v, Equal(), ae, NoMessage())

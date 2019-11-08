@@ -20,7 +20,7 @@ public class UnificationPerformanceTest {
 
     public static void main(String[] args) {
         testCycle();
-        for(int n = Integer.MAX_VALUE; n <= 1000; n += 100) {
+        for(int n = 0; n <= 1000; n += 100) {
             System.out.println("Testing n = " + n);
             final long t0 = System.currentTimeMillis();
             System.out.println(testUnify(n));
@@ -31,7 +31,7 @@ public class UnificationPerformanceTest {
 
     private static void testCycle() {
         System.out.println("Testing cycle");
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of(false);
+        final IUnifier.Transient unifier = Unifiers.Immutable.of(false).melt();
         ITermVar varA = B.newVar("", X);
         ITermVar varB = B.newVar("", Y);
         ITermVar varC = B.newVar("", Z);
@@ -49,14 +49,14 @@ public class UnificationPerformanceTest {
         System.out.println("cyclic = " + unifier.isCyclic(termB));
         System.out.println("size = " + unifier.size(termB));
         System.out.println("vars = " + unifier.getVars(termB));
-        System.out.println("equal = " + unifier.areEqual(termB, termC));
+        System.out.println("equal = " + unifier.diff(termB, termC));
         System.out.println("string = " + unifier.toString(varA));
         System.out.println("string = " + unifier.toString(varB));
         System.out.println("string = " + unifier.toString(varC));
     }
 
     private static IUnifier testUnify(int n) {
-        final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
+        final IUnifier.Transient unifier = Unifiers.Immutable.of().melt();
         final ITerm left = B.newTuple(
                 Iterables.concat(createVars(X, n), createTuples(Y, n), Iterables2.singleton(createVar(X, n))));
         final ITerm right = B.newTuple(
@@ -71,8 +71,8 @@ public class UnificationPerformanceTest {
         System.out.println("cyclic = " + unifier.isCyclic(left));
         System.out.println("size = " + unifier.size(left));
         System.out.println("vars = " + unifier.getVars(left));
-        System.out.println("equal = " + unifier.areEqual(left, right));
-        return unifier;
+        System.out.println("equal = " + unifier.diff(left, right));
+        return unifier.freeze();
     }
 
     private static List<ITerm> createVars(String name, int n) {

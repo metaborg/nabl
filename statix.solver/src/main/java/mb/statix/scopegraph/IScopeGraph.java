@@ -1,7 +1,9 @@
 package mb.statix.scopegraph;
 
+import java.util.Map;
+import java.util.Map.Entry;
+
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.IRelation3;
 
 public interface IScopeGraph<S, L, D> {
 
@@ -11,19 +13,15 @@ public interface IScopeGraph<S, L, D> {
 
     Set.Immutable<L> getDataLabels();
 
-    Set<S> getAllScopes();
+    Map<? extends Entry<S, L>, ? extends Iterable<S>> getEdges();
 
-    IRelation3<S, L, S> getEdges();
+    Iterable<S> getEdges(S scope, L label);
 
-    java.util.Set<S> getEdges(S scope, L label);
+    Map<? extends Entry<S, L>, ? extends Iterable<D>> getData();
 
-    IRelation3<S, L, D> getData();
-
-    java.util.Set<D> getData(S scope, L relation);
+    Iterable<D> getData(S scope, L relation);
 
     interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
-
-        @Override Set.Immutable<S> getAllScopes();
 
         Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 

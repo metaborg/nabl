@@ -130,6 +130,10 @@ public class BaseConstraintStore implements IConstraintStore {
             }
         }
 
+        @Override public String toString() {
+            return activated ? "*" : constraint.toString();
+        }
+
     }
 
 }

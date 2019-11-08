@@ -28,7 +28,7 @@ import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.collections.IProperties;
 import mb.nabl2.util.collections.Properties;
 
@@ -88,7 +88,7 @@ public abstract class Solution implements ISolution {
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
                 Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
-                PersistentUnifier.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
+                Unifiers.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
                 Collections.emptySet());
     }
 

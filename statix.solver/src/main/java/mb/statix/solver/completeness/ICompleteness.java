@@ -4,6 +4,8 @@ import java.util.Set;
 
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
@@ -13,24 +15,39 @@ import mb.statix.solver.IConstraint;
 
 public interface ICompleteness {
 
+    boolean isEmpty();
+    
     boolean isComplete(Scope scope, ITerm label, IUnifier unifier);
 
-    void add(IConstraint constraint, IUnifier unifier);
+    interface Immutable extends ICompleteness {
 
-    default void addAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
-        Iterables2.stream(constraints).forEach(c -> add(c, unifier));
+        ICompleteness.Transient melt();
+
     }
 
-    Set<CriticalEdge> remove(IConstraint constraint, IUnifier unifier);
+    interface Transient extends ICompleteness {
 
-    default void removeAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
-        Iterables2.stream(constraints).forEach(c -> remove(c, unifier));
-    }
+        void add(IConstraint constraint, IUnifier unifier);
 
-    void update(ITermVar var, IUnifier unifier);
+        default void addAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
+            Iterables2.stream(constraints).forEach(c -> add(c, unifier));
+        }
 
-    default void updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
-        Iterables2.stream(vars).forEach(c -> update(c, unifier));
+        Set<CriticalEdge> remove(IConstraint constraint, IUnifier unifier);
+
+        default Set<CriticalEdge> removeAll(Iterable<? extends IConstraint> constraints, IUnifier unifier) {
+            return Iterables2.stream(constraints).flatMap(c -> remove(c, unifier).stream())
+                    .collect(ImmutableSet.toImmutableSet());
+        }
+
+        void update(ITermVar var, IUnifier unifier);
+
+        default void updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
+            Iterables2.stream(vars).forEach(c -> update(c, unifier));
+        }
+
+        ICompleteness.Immutable freeze();
+
     }
 
 }

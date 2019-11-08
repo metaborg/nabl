@@ -1,0 +1,44 @@
+package mb.statix.generator.util;
+
+import java.io.PrintStream;
+
+import org.metaborg.util.functions.Action1;
+
+import com.google.common.base.Strings;
+
+public class StreamProgressPrinter implements IProgressPrinter {
+
+    private final PrintStream out;
+    private final int lineWidth;
+    private final Action1<PrintStream> eol;
+
+    private int count = 0;
+
+    public StreamProgressPrinter(PrintStream out, int lineWidth) {
+        this(out, lineWidth, out::println);
+    }
+
+    public StreamProgressPrinter(PrintStream out, int lineWidth, Action1<PrintStream> eol) {
+        this.out = out;
+        this.lineWidth = lineWidth;
+        this.eol = eol;
+    }
+
+    @Override public void step(char c) {
+        if(c == '\n' || (++count % lineWidth) == 0) {
+            out.print(Strings.repeat(" ", lineWidth - count));
+            eol.apply(out);
+            count = 0;
+        } else {
+            out.print(c);
+        }
+    }
+
+    @Override public void done() {
+        if((count % lineWidth) != 0) {
+            out.print(Strings.repeat(" ", lineWidth - count - 1));
+            eol.apply(out);
+        }
+    }
+
+}

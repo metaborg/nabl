@@ -9,6 +9,8 @@ imports
   statix/lang/statics/-
   statix/lang/normalize
 
+  statix/runtime/-
+
   signatures/statix/test/-
   pp/statix/test/-
   statix/test/-
@@ -31,6 +33,24 @@ rules
       (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
     with result := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
          filename := <guarantee-extension(|"stxresult")> path
+
+rules
+
+  editor-evaluation-pair:
+      (_, _, Module(_, _), path, project-path) -> None()
+
+  editor-evaluation-pair:
+      (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
+    with result := <build-evaluation-pair> ast;
+         filename := <guarantee-extension(|"evalpair.aterm")> path
+
+  build-evaluation-pair: ast@Test(_, _, _) -> (CExists(bvs, body'), spec)
+    with a      := <nabl2-get-ast-analysis> ast;
+         ext    := <nabl2-get-custom-analysis> a;
+         ast'   := <normalize(|a)> ast;
+         Test(bvs, body, _) := ast';
+         spec   := <spec-ast-to-aterm(|a)> (ast', ext);
+         body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body
 
 rules
 

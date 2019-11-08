@@ -14,6 +14,7 @@ import org.metaborg.util.functions.Function3;
 import org.metaborg.util.functions.Function4;
 import org.metaborg.util.functions.Function5;
 import org.metaborg.util.functions.Function6;
+import org.metaborg.util.functions.Function7;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
@@ -31,7 +32,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 
 public class TermMatch {
 
@@ -186,6 +187,32 @@ public class TermMatch {
                     Optional<? extends T5> o5 = m5.match(appl.getArgs().get(4), unifier);
                     return Optionals.lift(o1, o2, o3, o4, o5,
                             (t1, t2, t3, t4, t5) -> f.apply(appl, t1, t2, t3, t4, t5));
+                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+            };
+        }
+
+        public <T1, T2, T3, T4, T5, T6> IMatcher<IApplTerm> appl6(String op, IMatcher<? extends T1> m1,
+                IMatcher<? extends T2> m2, IMatcher<T3> m3, IMatcher<T4> m4, IMatcher<T5> m5, IMatcher<T6> m6) {
+            return appl6(op, m1, m2, m3, m4, m5, m6, (appl, t1, t2, t3, t4, t5, t6) -> appl);
+        }
+
+        public <T1, T2, T3, T4, T5, T6, R> IMatcher<R> appl6(String op, IMatcher<? extends T1> m1,
+                IMatcher<? extends T2> m2, IMatcher<? extends T3> m3, IMatcher<? extends T4> m4,
+                IMatcher<? extends T5> m5, IMatcher<T6> m6,
+                Function7<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, ? super T5, ? super T6, R> f) {
+            return (term, unifier) -> {
+                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                    if(!(appl.getArity() == 6 && op.equals(appl.getOp()))) {
+                        return Optional.empty();
+                    }
+                    Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
+                    Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1), unifier);
+                    Optional<? extends T3> o3 = m3.match(appl.getArgs().get(2), unifier);
+                    Optional<? extends T4> o4 = m4.match(appl.getArgs().get(3), unifier);
+                    Optional<? extends T5> o5 = m5.match(appl.getArgs().get(4), unifier);
+                    Optional<? extends T6> o6 = m6.match(appl.getArgs().get(5), unifier);
+                    return Optionals.lift(o1, o2, o3, o4, o5, o6,
+                            (t1, t2, t3, t4, t5, t6) -> f.apply(appl, t1, t2, t3, t4, t5, t6));
                 }, this::empty, this::empty, this::empty, this::empty, this::empty));
             };
         }
@@ -456,7 +483,7 @@ public class TermMatch {
         Optional<T> match(ITerm term, IUnifier unifier);
 
         default Optional<T> match(ITerm term) {
-            return match(term, PersistentUnifier.Immutable.of());
+            return match(term, Unifiers.Immutable.of());
         }
 
         default <R> IMatcher<R> map(Function<T, R> fun) {

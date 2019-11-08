@@ -31,21 +31,12 @@ rules
   replace-ho-constraint: l@LFalse() -> lam
     with PRED(tys) := <norm-get-ast-type> l;
          ps := <mk-Wlds> tys;
-         lam := <mk-LLam>(ps, [], CFalse())
+         lam := <mk-LLam>(ps, [], CFalse(NoMessage()))
 
   replace-ho-constraint: l@LC(x) -> lam
     with PRED(tys) := <norm-get-ast-type> l;
          ps := <mk-seq-Vars(|"t")> tys;
-         lam := <mk-LLam>(ps, [], C(x, ps))
-
-  replace-ho-constraint: l@LPathMatch(re) -> lam
-    with p := <mk-Var(|LIST(LABEL()))>("ls");
-         lam := <mk-LLam>([p], [], CPathMatch(re, p))
-
-  replace-ho-constraint: l@LPathLt(ord) -> lam
-    with l1 := <mk-Var(|LABEL())>("l1");
-         l2 := <mk-Var(|LABEL())>("l2");
-         lam := <mk-LLam>([l1, l2], [], CPathLt(ord, l1, l2))
+         lam := <mk-LLam>(ps, [], C(x, ps, NoMessage()))
 
 rules
 

@@ -2,12 +2,8 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Map;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableMap;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -16,9 +12,11 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.collections.HashTrieRelation3;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
@@ -27,7 +25,7 @@ import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class AState implements IState {
+public abstract class AState implements IState.Immutable {
 
     @Override @Value.Parameter public abstract Spec spec();
 
@@ -35,7 +33,7 @@ public abstract class AState implements IState {
         return "";
     }
 
-    public State add(State other) {
+    @Override public IState.Immutable add(IState.Immutable other) {
         final Set.Immutable<ITermVar> vars = vars().union(other.vars());
         final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
         final IUnifier.Immutable unifier;
@@ -56,10 +54,6 @@ public abstract class AState implements IState {
         // @formatter:on
     }
 
-    public State clearVarsAndScopes() {
-        return State.copyOf(this).with__vars(Set.Immutable.of()).with__scopes(Set.Immutable.of());
-    }
-
     // --- variables ---
 
     @Value.Default int __varCounter() {
@@ -70,20 +64,12 @@ public abstract class AState implements IState {
         return Set.Immutable.of();
     }
 
-    public Tuple2<ITermVar, State> freshVar(String base) {
+    @Override public Tuple2<ITermVar, IState.Immutable> freshVar(String base) {
         final int i = __varCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final ITermVar var = B.newVar(resource(), name);
         final Set.Immutable<ITermVar> vars = __vars().__insert(var);
         return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());
-    }
-
-    public Tuple2<ITermVar, State> freshRigidVar(String base) {
-        final int i = __varCounter() + 1;
-        final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITermVar var = B.newVar(resource(), name);
-        // same as freshVar, but do not add to vars
-        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).build());
     }
 
     @Override public Set.Immutable<ITermVar> vars() {
@@ -100,7 +86,7 @@ public abstract class AState implements IState {
         return Set.Immutable.of();
     }
 
-    public Tuple2<Scope, State> freshScope(String base) {
+    @Override public Tuple2<Scope, IState.Immutable> freshScope(String base) {
         final int i = __scopeCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final Scope scope = Scope.of(resource(), name);
@@ -114,16 +100,16 @@ public abstract class AState implements IState {
 
     // --- solution ---
 
-    @Value.Default @Override public IUnifier.Immutable unifier() {
-        return PersistentUnifier.Immutable.of();
+    @Override @Value.Default public IUnifier.Immutable unifier() {
+        return Unifiers.Immutable.of();
     }
 
     @Value.Default @Override public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
     }
 
-    @Value.Default @Override public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
-        return ImmutableMap.of();
+    @Override @Value.Default public IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties() {
+        return HashTrieRelation3.Immutable.of();
     }
 
 }

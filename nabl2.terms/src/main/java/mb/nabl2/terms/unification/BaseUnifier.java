@@ -8,8 +8,9 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.util.Ref;
@@ -17,27 +18,35 @@ import org.metaborg.util.Ref;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.matching.MaybeNotInstantiatedBool;
-import mb.nabl2.util.Set2;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    protected abstract java.util.Map<ITermVar, ITermVar> reps();
+    protected abstract Map.Immutable<ITermVar, ITermVar> reps();
 
-    protected abstract java.util.Map<ITermVar, ITerm> terms();
+    protected abstract Map.Immutable<ITermVar, ITerm> terms();
+
+    @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
+        final Map.Transient<ITermVar, ITerm> map = Map.Transient.of();
+        map.__putAll(reps());
+        map.__putAll(terms());
+        return map.freeze();
+    }
 
     ///////////////////////////////////////////
     // unifier functions
@@ -55,20 +64,19 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return reps().containsKey(var) || terms().containsKey(var);
     }
 
-    @Override public Set<ITermVar> repSet() {
-        return ImmutableSet.copyOf(reps().values());
+    @Override public java.util.Set<ITermVar> varSet() {
+        final Set.Transient<ITermVar> varSet = Set.Transient.of();
+        varSet.__insertAll(reps().keySet());
+        varSet.__insertAll(terms().keySet());
+        return varSet.freeze();
     }
 
-    @Override public Set<ITermVar> varSet() {
-        return Sets.union(reps().keySet(), terms().keySet());
-    }
-
-    @Override public Set<ITermVar> freeVarSet() {
-        final Set<ITermVar> freeVars = Sets.newHashSet();
-        reps().values().stream().filter(var -> !contains(var)).forEach(freeVars::add);
+    @Override public java.util.Set<ITermVar> freeVarSet() {
+        final Set.Transient<ITermVar> freeVarSet = Set.Transient.of();
+        reps().values().stream().filter(var -> !contains(var)).forEach(freeVarSet::__insert);
         terms().values().stream().flatMap(term -> term.getVars().elementSet().stream()).filter(var -> !contains(var))
-                .forEach(freeVars::add);
-        return freeVars;
+                .forEach(freeVarSet::__insert);
+        return freeVarSet.freeze();
     }
 
     @Override public boolean isCyclic() {
@@ -258,15 +266,20 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             sb.append(first ? " " : ", ");
             first = false;
             sb.append(var);
-            sb.append(" |-> ");
+            sb.append(" == ");
             sb.append(terms().get(var));
         }
         for(ITermVar var : reps().keySet()) {
             sb.append(first ? " " : ", ");
             first = false;
             sb.append(var);
-            sb.append(" |-> ");
+            sb.append(" == ");
             sb.append(reps().get(var));
+        }
+        for(Diseq disequality : disequalities()) {
+            sb.append(first ? " " : ", ");
+            first = false;
+            sb.append(disequality);
         }
         sb.append(first ? "}" : " }");
         return sb.toString();
@@ -295,7 +308,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return findTermRecursive(term, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private ITerm findTermRecursive(final ITerm term, final Set<ITermVar> stack,
+    private ITerm findTermRecursive(final ITerm term, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         return term.match(Terms.cases(
         // @formatter:off
@@ -309,7 +322,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         ));
     }
 
-    private IListTerm findListTermRecursive(IListTerm list, final Set<ITermVar> stack,
+    private IListTerm findListTermRecursive(IListTerm list, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         Deque<IListTerm> elements = Lists.newLinkedList();
         while(list != null) {
@@ -343,7 +356,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return instance.get();
     }
 
-    private ITerm findVarRecursive(final ITermVar var, final Set<ITermVar> stack,
+    private ITerm findVarRecursive(final ITermVar var, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         final ITermVar rep = findRep(var);
         final ITerm instance;
@@ -363,152 +376,13 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return instance;
     }
 
-    private Iterable<ITerm> findRecursiveTerms(final Iterable<ITerm> terms, final Set<ITermVar> stack,
+    private Iterable<ITerm> findRecursiveTerms(final Iterable<ITerm> terms, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         List<ITerm> instances = Lists.newArrayList();
         for(ITerm term : terms) {
             instances.add(findTermRecursive(term, stack, visited));
         }
         return instances;
-    }
-
-    ///////////////////////////////////////////
-    // areEqual(ITerm, ITerm)
-    ///////////////////////////////////////////
-
-    @Override public MaybeNotInstantiatedBool areEqual(final ITerm left, final ITerm right) {
-        return equalTerms(left, right, Sets.newHashSet(), Maps.newHashMap());
-    }
-
-    private MaybeNotInstantiatedBool equalTerms(final ITerm left, final ITerm right, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        // @formatter:off
-        return left.match(Terms.<MaybeNotInstantiatedBool>cases(
-            applLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .appl(applRight -> {
-                    if(applLeft.getArity() == applRight.getArity() &&
-                            applLeft.getOp().equals(applRight.getOp())) {
-                        return equals(applLeft.getArgs(), applRight.getArgs(), stack, visited);
-                    } else {
-                        return MaybeNotInstantiatedBool.ofResult(false);
-                    }
-                 })
-                .var(varRight -> equalVarTerm(varRight, applLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            listLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .list(listRight -> listLeft.match(ListTerms.<MaybeNotInstantiatedBool>cases(
-                    consLeft -> listRight.match(ListTerms.<MaybeNotInstantiatedBool>cases()
-                        .cons(consRight -> {
-                            return equalTerms(consLeft.getHead(), consRight.getHead(), stack, visited).flatMap(m -> {
-                                if(m) {
-                                    return equalTerms(consLeft.getTail(), consRight.getTail(), stack, visited);
-                                } else {
-                                    return MaybeNotInstantiatedBool.ofResult(false);
-                                }
-                            });
-                        })
-                        .var(varRight -> equalVarTerm(varRight, consLeft, stack, visited))
-                        .otherwise(l -> MaybeNotInstantiatedBool.ofResult(false))
-                    ),
-                    nilLeft -> listRight.match(ListTerms.<MaybeNotInstantiatedBool>cases()
-                        .nil(nilRight -> MaybeNotInstantiatedBool.ofResult(true))
-                        .var(varRight -> equalVarTerm(varRight, nilLeft, stack, visited))
-                        .otherwise(l -> MaybeNotInstantiatedBool.ofResult(false))
-                    ),
-                    varLeft -> listRight.match(ListTerms.<MaybeNotInstantiatedBool>cases()
-                        .var(varRight -> equalVars(varLeft, varRight, stack, visited))
-                        .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
-                    )
-                )))
-                .var(varRight -> equalVarTerm(varRight, listLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            stringLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .string(stringRight -> MaybeNotInstantiatedBool.ofResult(stringLeft.getValue().equals(stringRight.getValue())))
-                .var(varRight -> equalVarTerm(varRight, stringLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            integerLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .integer(integerRight -> MaybeNotInstantiatedBool.ofResult(integerLeft.getValue() == integerRight.getValue()))
-                .var(varRight -> equalVarTerm(varRight, integerLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            blobLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                .blob(blobRight -> MaybeNotInstantiatedBool.ofResult(blobLeft.getValue().equals(blobRight.getValue())))
-                .var(varRight -> equalVarTerm(varRight, blobLeft, stack, visited))
-                .otherwise(t -> MaybeNotInstantiatedBool.ofResult(false))
-            ),
-            varLeft -> right.match(Terms.<MaybeNotInstantiatedBool>cases()
-                // match var before term, or term will always match
-                .var(varRight -> equalVars(varLeft, varRight, stack, visited))
-                .otherwise(termRight -> equalVarTerm(varLeft, termRight, stack, visited))
-            )
-        ));
-        // @formatter:on
-    }
-
-    private MaybeNotInstantiatedBool equalVarTerm(final ITermVar var, final ITerm term, final Set<Set2<ITermVar>> stack,
-            final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        final ITermVar rep = findRep(var);
-        if(terms().containsKey(rep)) {
-            return equalTerms(terms().get(rep), term, stack, visited);
-        } else {
-            return MaybeNotInstantiatedBool.ofNotInstantiated(rep);
-        }
-    }
-
-    private MaybeNotInstantiatedBool equalVars(final ITermVar left, final ITermVar right,
-            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        final ITermVar leftRep = findRep(left);
-        final ITermVar rightRep = findRep(right);
-        if(leftRep.equals(rightRep)) {
-            return MaybeNotInstantiatedBool.ofResult(true);
-        }
-        final Set2<ITermVar> pair = Set2.of(leftRep, rightRep);
-        final MaybeNotInstantiatedBool equal;
-        if(!visited.containsKey(pair)) {
-            stack.add(pair);
-            visited.put(pair, null);
-            final ITerm leftTerm = terms().get(leftRep);
-            final ITerm rightTerm = terms().get(rightRep);
-            if(leftTerm == null && rightTerm == null) {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep, rightRep);
-            } else if(leftTerm == null) {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(leftRep);
-            } else if(rightTerm == null) {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(rightRep);
-            }
-            equal = equalTerms(leftTerm, rightTerm, stack, visited);
-            equal.onResult(eq -> {
-                visited.put(pair, eq);
-            });
-            stack.remove(pair);
-        } else if(stack.contains(pair)) {
-            equal = MaybeNotInstantiatedBool.ofResult(false);
-        } else {
-            equal = MaybeNotInstantiatedBool.ofResult(visited.get(pair));
-        }
-        return equal;
-    }
-
-    private MaybeNotInstantiatedBool equals(final Iterable<ITerm> lefts, final Iterable<ITerm> rights,
-            final Set<Set2<ITermVar>> stack, final java.util.Map<Set2<ITermVar>, Boolean> visited) {
-        Iterator<ITerm> itLeft = lefts.iterator();
-        Iterator<ITerm> itRight = rights.iterator();
-        while(itLeft.hasNext()) {
-            if(!itRight.hasNext()) {
-                return MaybeNotInstantiatedBool.ofResult(false);
-            }
-            final MaybeNotInstantiatedBool result = equalTerms(itLeft.next(), itRight.next(), stack, visited);
-            if(!result.orElse(false)) {
-                return result;
-            }
-        }
-        if(itRight.hasNext()) {
-            return MaybeNotInstantiatedBool.ofResult(false);
-        }
-        return MaybeNotInstantiatedBool.ofResult(true);
     }
 
     ///////////////////////////////////////////
@@ -519,16 +393,16 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return isCyclic(term.getVars().elementSet(), Sets.newHashSet(), Maps.newHashMap());
     }
 
-    protected boolean isCyclic(final Set<ITermVar> vars) {
+    protected boolean isCyclic(final java.util.Set<ITermVar> vars) {
         return isCyclic(vars, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private boolean isCyclic(final Set<ITermVar> vars, final Set<ITermVar> stack,
+    private boolean isCyclic(final java.util.Set<ITermVar> vars, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         return vars.stream().anyMatch(var -> isCyclic(var, stack, visited));
     }
 
-    private boolean isCyclic(final ITermVar var, final Set<ITermVar> stack,
+    private boolean isCyclic(final ITermVar var, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         final boolean cyclic;
         final ITermVar rep = findRep(var);
@@ -555,12 +429,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return isGround(term.getVars().elementSet(), Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private boolean isGround(final Set<ITermVar> vars, final Set<ITermVar> stack,
+    private boolean isGround(final java.util.Set<ITermVar> vars, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         return vars.stream().allMatch(var -> isGround(var, stack, visited));
     }
 
-    private boolean isGround(final ITermVar var, final Set<ITermVar> stack,
+    private boolean isGround(final ITermVar var, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
         final boolean ground;
         final ITermVar rep = findRep(var);
@@ -583,19 +457,19 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     // getVars(ITerm)
     ///////////////////////////////////////////
 
-    @Override public Set<ITermVar> getVars(final ITerm term) {
-        final Set<ITermVar> vars = Sets.newHashSet();
+    @Override public Set.Immutable<ITermVar> getVars(final ITerm term) {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
         getVars(term.getVars().elementSet(), Lists.newLinkedList(), Sets.newHashSet(), vars);
-        return vars;
+        return vars.freeze();
     }
 
-    private void getVars(final Set<ITermVar> tryVars, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
-            Set<ITermVar> vars) {
+    private void getVars(final java.util.Set<ITermVar> tryVars, final LinkedList<ITermVar> stack,
+            final java.util.Set<ITermVar> visited, Set.Transient<ITermVar> vars) {
         tryVars.stream().forEach(var -> getVars(var, stack, visited, vars));
     }
 
-    private void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final Set<ITermVar> visited,
-            Set<ITermVar> vars) {
+    private void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final java.util.Set<ITermVar> visited,
+            Set.Transient<ITermVar> vars) {
         final ITermVar rep = findRep(var);
         if(!visited.contains(rep)) {
             visited.add(rep);
@@ -604,13 +478,13 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             if(term != null) {
                 getVars(term.getVars().elementSet(), stack, visited, vars);
             } else {
-                vars.add(rep);
+                vars.__insert(rep);
             }
             stack.pop();
         } else {
             final int index = stack.indexOf(rep); // linear
             if(index >= 0) {
-                vars.addAll(stack.subList(0, index + 1));
+                stack.subList(0, index + 1).forEach(vars::__insert);
             }
         }
     }
@@ -623,7 +497,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return size(term, Sets.newHashSet(), Maps.newHashMap());
     }
 
-    private TermSize size(final ITerm term, final Set<ITermVar> stack,
+    private TermSize size(final ITerm term, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, TermSize> visited) {
         return term.match(Terms.cases(
         // @formatter:off
@@ -637,7 +511,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         ));
     }
 
-    private TermSize size(IListTerm list, final Set<ITermVar> stack, final java.util.Map<ITermVar, TermSize> visited) {
+    private TermSize size(IListTerm list, final java.util.Set<ITermVar> stack,
+            final java.util.Map<ITermVar, TermSize> visited) {
         final Ref<TermSize> size = new Ref<>(TermSize.ZERO);
         while(list != null) {
             list = list.match(ListTerms.cases(
@@ -660,7 +535,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return size.get();
     }
 
-    private TermSize size(final ITermVar var, final Set<ITermVar> stack,
+    private TermSize size(final ITermVar var, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, TermSize> visited) {
         final ITermVar rep = findRep(var);
         final TermSize size;
@@ -680,7 +555,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return size;
     }
 
-    private TermSize sizes(final Iterable<ITerm> terms, final Set<ITermVar> stack,
+    private TermSize sizes(final Iterable<ITerm> terms, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, TermSize> visited) {
         TermSize size = TermSize.ZERO;
         for(ITerm term : terms) {
@@ -806,12 +681,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     // class Result
     ///////////////////////////////////////////
 
-    protected static class Result<T> implements IUnifier.Immutable.Result<T> {
+    protected static class ImmutableResult<T> implements IUnifier.Immutable.Result<T> {
 
         private final T result;
         private final IUnifier.Immutable unifier;
 
-        public Result(T result, IUnifier.Immutable unifier) {
+        public ImmutableResult(T result, IUnifier.Immutable unifier) {
             this.result = result;
             this.unifier = unifier;
         }
@@ -826,22 +701,161 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     }
 
-    protected static class _RigidVarsException extends RuntimeException {
+    ///////////////////////////////////////////
+    // class Transient
+    ///////////////////////////////////////////
+
+    protected static class Transient implements IUnifier.Transient, Serializable {
 
         private static final long serialVersionUID = 1L;
 
-        public final RigidVarsException exception;
+        private IUnifier.Immutable unifier;
 
-        public _RigidVarsException(ITermVar... vars) {
-            this(new RigidVarsException(vars));
+        public Transient(IUnifier.Immutable unifier) {
+            this.unifier = unifier;
         }
 
-        public _RigidVarsException(RigidVarsException exception) {
-            super("rigid vars", exception, false, false);
-            this.exception = exception;
+        @Override public boolean isFinite() {
+            return unifier.isFinite();
+        }
+
+        @Override public boolean isEmpty() {
+            return unifier.isEmpty();
+        }
+
+        @Override public boolean contains(ITermVar var) {
+            return unifier.contains(var);
+        }
+
+        @Override public int size() {
+            return unifier.size();
+        }
+
+        @Override public java.util.Set<ITermVar> varSet() {
+            return unifier.varSet();
+        }
+
+        @Override public java.util.Set<ITermVar> freeVarSet() {
+            return unifier.freeVarSet();
+        }
+
+        @Override public boolean isCyclic() {
+            return unifier.isCyclic();
+        }
+
+        @Override public ITermVar findRep(ITermVar var) {
+            return unifier.findRep(var);
+        }
+
+        @Override public boolean hasTerm(ITermVar var) {
+            return unifier.hasTerm(var);
+        }
+
+        @Override public ITerm findTerm(ITerm term) {
+            return unifier.findTerm(term);
+        }
+
+        @Override public ITerm findRecursive(ITerm term) {
+            return unifier.findRecursive(term);
+        }
+
+        @Override public boolean isGround(ITerm term) {
+            return unifier.isGround(term);
+        }
+
+        @Override public boolean isCyclic(ITerm term) {
+            return unifier.isCyclic(term);
+        }
+
+        @Override public Set.Immutable<ITermVar> getVars(ITerm term) {
+            return unifier.getVars(term);
+        }
+
+        @Override public TermSize size(ITerm term) {
+            return unifier.size(term);
+        }
+
+        @Override public String toString(ITerm term) {
+            return unifier.toString(term);
+        }
+
+        @Override public String toString(ITerm term, int n) {
+            return unifier.toString(term, n);
+        }
+
+        @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
+            return unifier.equalityMap();
+        }
+
+        @Override public Set.Immutable<Diseq> disequalities() {
+            return unifier.disequalities();
+        }
+
+        @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {
+            final Optional<Result<Immutable>> result = unifier.unify(term1, term2);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<IUnifier.Immutable> unify(IUnifier other) throws OccursException {
+            final Optional<Result<Immutable>> result = unifier.unify(other);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<IUnifier.Immutable>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
+            final Optional<Result<Immutable>> result = unifier.unify(equalities);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<IUnifier.Immutable> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2) {
+            final Optional<Result<IUnifier.Immutable>> result = unifier.disunify(universal, term1, term2);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<Immutable> diff(ITerm term1, ITerm term2) {
+            return unifier.diff(term1, term2);
+        }
+
+        @Override public ISubstitution.Immutable retain(ITermVar var) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.retain(var);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public ISubstitution.Immutable retainAll(Iterable<ITermVar> vars) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.retainAll(vars);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public ISubstitution.Immutable remove(ITermVar var) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.remove(var);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
+            final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.removeAll(vars);
+            unifier = result.unifier();
+            return result.result();
+        }
+
+        @Override public IUnifier.Immutable freeze() {
+            return unifier;
         }
 
     }
-
 
 }

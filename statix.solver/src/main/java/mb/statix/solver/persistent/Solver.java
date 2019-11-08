@@ -1,16 +1,31 @@
 package mb.statix.solver.persistent;
 
-import java.util.Optional;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 
+import com.google.common.collect.Sets;
+
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.Diseq;
 import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.IUnifier.Immutable;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.scopegraph.INameResolution;
+import mb.statix.scopegraph.reference.FastNameResolution;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
+import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 
@@ -19,37 +34,84 @@ public class Solver {
     private Solver() {
     }
 
-    public static SolverResult solve(final State state, final IConstraint constraint, final IDebugContext debug)
-            throws InterruptedException {
+    public static SolverResult solve(final IState.Immutable state, final IConstraint constraint,
+            final IDebugContext debug) throws InterruptedException {
         return solve(state, constraint, (s, l, st) -> true, debug);
     }
 
-    public static SolverResult solve(final State state, final IConstraint constraint, final IsComplete isComplete,
-            final IDebugContext debug) throws InterruptedException {
-        return new GreedySolver(state, isComplete, debug).solve(constraint);
-        //return new StepSolver(state, isComplete, debug).solve(constraint);
+    public static SolverResult solve(final IState.Immutable state, final IConstraint constraint,
+            final IsComplete isComplete, final IDebugContext debug) throws InterruptedException {
+        return new GreedySolver(state, constraint, isComplete, debug).solve();
+        //return new StepSolver(state, constraint, isComplete, debug).solve();
     }
 
-    public static Optional<SolverResult> entails(State state, final IConstraint constraint, final IsComplete isComplete,
-            final IDebugContext debug) throws InterruptedException, Delay {
+    public static SolverResult solve(final IState.Immutable state, final Iterable<IConstraint> constraints,
+            final Map<IConstraint, Delay> delays, final ICompleteness.Immutable completeness, final IDebugContext debug)
+            throws InterruptedException {
+        return new GreedySolver(state, constraints, delays, completeness, debug).solve();
+    }
+
+    public static boolean entails(IState.Immutable state, final IConstraint constraint, final IsComplete isComplete,
+            final IDebugContext debug) throws Delay, InterruptedException {
+        final Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Info)) {
-            debug.info("Checking entailment of {}", toString(constraint, state.unifier()));
-        }
-        // remove all previously created variables/scopes to make them rigid/closed
-        state = state.clearVarsAndScopes();
-        final SolverResult result = Solver.solve(state, constraint, isComplete, debug.subContext());
-        if(result.hasErrors()) {
-            debug.info("Constraints not entailed");
-            return Optional.empty();
-        } else if(result.delays().isEmpty()) {
-            debug.info("Constraints entailed");
-            return Optional.of(result);
-        } else {
-            debug.info("Cannot decide constraint entailment (unsolved constraints)");
-            // FIXME this doesn't remove rigid vars, as they are not part of State.vars()
-            throw result.delay().removeAll(result.state().vars(), result.state().scopes());
+            debug.info("Checking entailment of {}", toString(constraint, unifier));
         }
 
+        final SolverResult result = Solver.solve(state, constraint, isComplete, debug.subContext());
+
+        if(result.hasErrors()) {
+            // no entailment if errors
+            debug.info("Constraints not entailed: errors");
+            return false;
+        }
+
+        final IState.Immutable newState = result.state();
+        final Set<ITermVar> newVars = Sets.difference(newState.vars(), state.vars());
+        final Set<Scope> newScopes = Sets.difference(newState.scopes(), state.scopes());
+
+        if(!result.delays().isEmpty()) {
+            final Delay delay = result.delay().removeAll(newVars, newScopes);
+            if(delay.criticalEdges().isEmpty() && delay.vars().isEmpty()) {
+                debug.info("Constraints not entailed: internal stuckness"); // of the point-free mind
+                return false;
+            } else {
+                debug.info("Cannot decide constraint entailment: unsolved constraints");
+                throw delay;
+            }
+        }
+
+        // NOTE The retain operation is important because it may change
+        //      representatives, which can be local to newUnifier.
+        final IUnifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
+        if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
+            throw new IllegalStateException("Entailment internal variables leak");
+        }
+
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
+        // FIXME This test assumes the newUnifier is an extension of the old one.
+        //       Without this assumption, we should use the more expensive test
+        //       `newUnifier.equals(state.unifier())`
+        if(!unifiedVars.isEmpty()) {
+            debug.info("Cannot decide constraint entailment: unified rigid vars)");
+            throw Delay.ofVars(unifiedVars);
+        }
+
+        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
+        // FIXME This test completely ignores unversal quantifiers, that cannot be right
+        // @formatter:off
+        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
+                .filter(diseq -> diseq.apply((us, t1, t2) -> unifier.diff(t1, t2).isPresent()))
+                .flatMap(diseq -> diseq.apply((us, t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+                .collect(Collectors.toList());
+        // @formatter:on
+        if(!disunifiedVars.isEmpty()) {
+            debug.info("Cannot decide constraint entailment: disunified rigid vars)");
+            throw Delay.ofVars(disunifiedVars);
+        }
+
+        debug.info("Constraints entailed");
+        return true;
     }
 
     static void printTrace(IConstraint failed, IUnifier.Immutable unifier, IDebugContext debug) {
@@ -76,6 +138,11 @@ public class Solver {
             sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
         }
         return sb.toString();
+    }
+
+    public static INameResolution.Builder<Scope, ITerm, ITerm> nameResolutionBuilder() {
+        return FastNameResolution.builder();
+
     }
 
     public static TermFormatter shallowTermFormatter(final IUnifier unifier) {

@@ -75,16 +75,19 @@ public class PersistentUnifierStressTest {
         final List<Entry<ITerm, ITerm>> equalities = Lists.newArrayList(init.entries());
         final Random rnd = new Random(System.currentTimeMillis());
         try {
-            final IUnifier.Transient unifier = PersistentUnifier.Transient.of();
+            IUnifier.Transient unifier = Unifiers.Immutable.of().melt();
             Collections.shuffle(equalities);
             for(Entry<ITerm, ITerm> equality : equalities) {
+                final ITerm left;
+                final ITerm right;
                 if(rnd.nextBoolean()) {
-                    unifier.unify(equality.getKey(), equality.getValue())
-                            .orElseThrow(() -> new IllegalArgumentException());
+                    left = equality.getKey();
+                    right = equality.getValue();
                 } else {
-                    unifier.unify(equality.getValue(), equality.getKey())
-                            .orElseThrow(() -> new IllegalArgumentException());
+                    left = equality.getValue();
+                    right = equality.getKey();
                 }
+                unifier.unify(equality.getKey(), equality.getValue()).orElseThrow(() -> new IllegalArgumentException());
             }
             return unifier.freeze();
         } catch(OccursException e) {
@@ -92,27 +95,27 @@ public class PersistentUnifierStressTest {
         }
     }
 
-    @Test public void testEquals1() {
+    @Test(timeout = 10000) public void testEquals1() {
         testEquals(this::makeRandomUnifier1);
     }
 
-    @Test public void testRemove1() {
+    @Test(timeout = 10000) public void testRemove1() {
         testRemove(this::makeRandomUnifier1);
     }
 
-    @Test public void testEquals2() {
+    @Test(timeout = 10000) public void testEquals2() {
         testEquals(this::makeRandomUnifier2);
     }
 
-    @Test public void testRemove2() {
+    @Test(timeout = 10000) public void testRemove2() {
         testRemove(this::makeRandomUnifier2);
     }
 
-    @Test public void testEquals3() {
+    @Test(timeout = 10000) public void testEquals3() {
         testEquals(this::makeRandomUnifier3);
     }
 
-    @Test public void testRemove3() {
+    @Test(timeout = 10000) public void testRemove3() {
         testRemove(this::makeRandomUnifier3);
     }
 

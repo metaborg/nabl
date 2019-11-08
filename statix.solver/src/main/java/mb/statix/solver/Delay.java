@@ -6,7 +6,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.scopegraph.reference.CriticalEdge;
 
-public class Delay extends SolverException {
+public class Delay extends Throwable {
 
     private static final long serialVersionUID = 1L;
 
@@ -14,13 +14,9 @@ public class Delay extends SolverException {
     private final Set.Immutable<CriticalEdge> criticalEdges;
 
     public Delay(Iterable<? extends ITermVar> vars, Iterable<CriticalEdge> criticalEdges) {
-        super("delayed");
+        super("delayed", null, false, false);
         this.vars = CapsuleUtil.toSet(vars);
         this.criticalEdges = CapsuleUtil.toSet(criticalEdges);
-    }
-
-    @Override public void rethrow() throws Delay, InterruptedException {
-        throw this;
     }
 
     public Set.Immutable<ITermVar> vars() {
@@ -47,6 +43,16 @@ public class Delay extends SolverException {
         this.criticalEdges.stream().filter(ce -> !scopeSet.contains(ce.scope()))
                 .forEach(retainedCriticalEdges::__insert);
         return new Delay(retainedVars, retainedCriticalEdges.freeze());
+    }
+
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Delay(");
+        sb.append("vars=").append(vars);
+        sb.append(", ");
+        sb.append("criticalEdges=").append(criticalEdges);
+        sb.append(")");
+        return sb.toString();
     }
 
     public static Delay of() {

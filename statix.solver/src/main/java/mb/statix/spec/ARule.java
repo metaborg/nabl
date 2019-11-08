@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -20,19 +21,22 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
-import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 
 @Value.Immutable
 @Serial.Version(42L)
 public abstract class ARule {
+
+    @Value.Default public String label() {
+        return "";
+    }
 
     @Value.Parameter public abstract String name();
 
@@ -55,7 +59,7 @@ public abstract class ARule {
         // 2. Instantiate body
         final IConstraint instBody;
         try {
-            if((instBody = apply(args, PersistentUnifier.Immutable.of()).orElse(null)) == null) {
+            if((instBody = apply(args, Unifiers.Immutable.of()).orElse(null)) == null) {
                 return Optional.of(false);
             }
         } catch(Delay e) {
@@ -65,13 +69,7 @@ public abstract class ARule {
         // 3. Solve constraint
         try {
             final IConstraint constraint = new CExists(args, instBody);
-            final Optional<SolverResult> solverResult =
-                    Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext());
-            if(solverResult.isPresent()) {
-                return Optional.of(true);
-            } else {
-                return Optional.of(false);
-            }
+            return Optional.of(Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
         } catch(Delay d) {
             return Optional.empty();
         }
@@ -82,17 +80,15 @@ public abstract class ARule {
         return Rule.of(name(), params(), newBody);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier) throws Delay {
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier) throws Delay {
         return apply(args, unifier, null);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier unifier, @Nullable IConstraint cause)
-            throws Delay {
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier,
+            @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
-                P.match(params(), args, unifier).matchOrThrow(r -> r, vars -> {
-                    throw Delay.ofVars(vars);
-                });
+                P.match(params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars));
         if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
             return Optional.empty();
         }
@@ -103,6 +99,9 @@ public abstract class ARule {
 
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
+        if(!label().isEmpty()) {
+            sb.append("[").append(label()).append("] ");
+        }
         if(name().isEmpty()) {
             sb.append("{ ").append(params());
         } else {
@@ -110,7 +109,11 @@ public abstract class ARule {
         }
         sb.append(" :- ");
         sb.append(body().toString(termToString));
-        sb.append(".");
+        if(name().isEmpty()) {
+            sb.append(" }");
+        } else {
+            sb.append(".");
+        }
         return sb.toString();
     }
 
@@ -121,17 +124,25 @@ public abstract class ARule {
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    public static java.util.Comparator<Rule> leftRightPatternOrdering = new LeftRightPatternOrder();
+    public static final LeftRightOrder leftRightPatternOrdering = new LeftRightOrder();
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
-    private static class LeftRightPatternOrder implements Comparator<Rule> {
+    public static class LeftRightOrder {
 
-        @Override public int compare(Rule r1, Rule r2) {
+        public Optional<Integer> compare(Rule r1, Rule r2) {
             final Pattern p1 = P.newTuple(r1.params());
             final Pattern p2 = P.newTuple(r2.params());
             return Pattern.leftRightOrdering.compare(p1, p2);
+        }
+
+        public Comparator<Rule> asComparator() {
+            return new Comparator<Rule>() {
+                @Override public int compare(Rule r1, Rule r2) {
+                    return LeftRightOrder.this.compare(r1, r2).orElse(0);
+                }
+            };
         }
 
     }

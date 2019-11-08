@@ -17,6 +17,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.constraints.CExists;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
@@ -52,7 +53,7 @@ public class STX_solve_constraint extends StatixPrimitive {
     }
 
     private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug) {
-        final State state = State.of(spec);
+        final IState.Immutable state = State.of(spec);
 
         final SolverResult resultConfig;
         try {

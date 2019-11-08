@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -30,6 +31,7 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
+import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -40,6 +42,8 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
+import mb.statix.arithmetic.ArithTerms;
+import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CConj;
@@ -48,13 +52,18 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CPathLt;
-import mb.statix.constraints.CPathMatch;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.IMessagePart;
+import mb.statix.constraints.messages.Message;
+import mb.statix.constraints.messages.MessageKind;
+import mb.statix.constraints.messages.TermPart;
+import mb.statix.constraints.messages.TextPart;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -74,6 +83,7 @@ public class StatixTerms {
     public static final String OCCURRENCE_OP = "Occurrence";
     public static final String PATH_EMPTY_OP = "PathEmpty";
     public static final String PATH_STEP_OP = "PathStep";
+    public static final String WITHID_OP = "WithId";
     public static final String NOID_OP = "NoId";
 
     public static IMatcher<Spec> spec() {
@@ -87,8 +97,8 @@ public class StatixTerms {
 
     public static IMatcher<ListMultimap<String, Rule>> rules() {
         return M.listElems(M.req(rule())).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder =
-                    ImmutableListMultimap.<String, Rule>builder().orderValuesBy(Rule.leftRightPatternOrdering);
+            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.<String, Rule>builder()
+                    .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
             rules.stream().forEach(rule -> {
                 builder.put(rule.name(), rule);
             });
@@ -97,9 +107,18 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule() {
-        return M.appl3("Rule", head(), M.listElems(varTerm()), constraint(), (r, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), new CExists(bvs, bc));
+        return M.appl4("Rule", ruleLabel(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
+            return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
         });
+    }
+
+    public static IMatcher<String> ruleLabel() {
+        // @formatter:off
+        return M.<String>cases(
+            M.appl0("NoLabel", (t) -> ""),
+            M.appl1("Label", M.stringValue(), (t, n) -> n)
+        );
+        // @formatter:on
     }
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
@@ -112,6 +131,9 @@ public class StatixTerms {
         return (t, u) -> {
             // @formatter:off
             return M.<IConstraint>casesFix(m -> Iterables2.from(
+                M.appl4("CArith", ArithTerms.matchExpr(), ArithTerms.matchTest(), ArithTerms.matchExpr(), message(), (c, ae1, op, ae2, msg) -> {
+                    return new CArith(ae1, op, ae2, msg.orElse(null));
+                }),
                 M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
                     return new CAstId(t1, t2);
                 }),
@@ -121,42 +143,39 @@ public class StatixTerms {
                 M.appl2("CConj", m, m, (c, c1, c2) -> {
                     return new CConj(c1, c2);
                 }),
-                M.appl2("CEqual", term(), term(), (c, t1, t2) -> {
-                    return new CEqual(t1, t2);
+                M.appl3("CEqual", term(), term(), message(), (c, t1, t2, msg) -> {
+                    return new CEqual(t1, t2, msg.orElse(null));
                 }),
                 M.appl2("CExists", M.listElems(varTerm()), constraint(), (c, vs, body) -> {
                     return new CExists(vs, body);
                 }),
-                M.appl0("CFalse", (c) -> {
-                    return new CFalse();
+                M.appl1("CFalse", message(), (c, msg) -> {
+                    return new CFalse(msg.orElse(null));
                 }),
-                M.appl2("CInequal", term(), term(), (c, t1, t2) -> {
-                    return new CInequal(t1, t2);
+                M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
+                    return new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return new CNew(ts);
                 }),
-                M.appl3("CPathLt", labelLt(), term(), term(), (c, lt, l1, l2) -> {
-                    return new CPathLt(lt, l1, l2);
-                }),
-                M.appl2("CPathMatch", labelRE(new RegExpBuilder<>()), listTerm(), (c, re, lbls) -> {
-                    return new CPathMatch(re, lbls);
-                }),
-                M.appl5("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(),
-                        (c, rel, filter, min, scope, result) -> {
-                    return new CResolveQuery(rel, filter, min, scope, result);
+                M.appl6("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(), message(),
+                        (c, rel, filter, min, scope, result, msg) -> {
+                    return new CResolveQuery(rel, filter, min, scope, result, msg.orElse(null));
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    return new CTellRel(scope, rel, args);
+                    return new CTellRel(scope, rel, B.newTuple(args));
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
                 }),
-                M.appl2("C", constraintName(), M.listElems(term()), (c, name, args) -> {
-                    return new CUser(name, args);
+                M.appl2("CTry", constraint(), message(), (c, body, msg) -> {
+                    return new CTry(body, msg.orElse(null));
+                }),
+                M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
+                    return new CUser(name, args, msg.orElse(null));
                 }),
                 M.term(c -> {
                     throw new IllegalArgumentException("Unknown constraint: " + c);
@@ -254,13 +273,12 @@ public class StatixTerms {
             M.appl1("Str", M.stringValue(), (t, string) -> {
                 return B.newString(string, t.getAttachments());
             }),
-            M.appl1("Int", M.stringValue(), (t, integer) -> {
-                return B.newInt(Integer.parseInt(integer), t.getAttachments());
-            }),
+            intTerm(),
             listTerm(),
             // SCOPE_OP -- has no syntax
             // TERMINDEX_OP -- has no syntax
             // NOID_OP -- has no syntax
+            // WITHID_OP -- has no syntax
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
@@ -277,11 +295,17 @@ public class StatixTerms {
         // @formatter:on
     }
 
+    public static IMatcher<IIntTerm> intTerm() {
+        return M.appl1("Int", M.stringValue(), (t, integer) -> {
+            return B.newInt(Integer.parseInt(integer), t.getAttachments());
+        });
+    }
+
     private static IMatcher<ITerm> positionTerm() {
         // @formatter:off
         return M.cases(
-            M.appl0("NoId"),
-            varTerm()
+            M.appl0(NOID_OP),
+            M.appl1(WITHID_OP, varTerm(), (t, v) -> v)
         );
         // @formatter:on
     }
@@ -372,8 +396,56 @@ public class StatixTerms {
     private static IMatcher<Pattern> positionPattern() {
         // @formatter:off
         return M.cases(
-            M.appl0("NoId", t -> P.newWld()),
-            varPattern()
+            M.appl0(NOID_OP, t -> P.newWld()),
+            M.appl1(WITHID_OP, varPattern(), (t, p) -> p)
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<Optional<IMessage>> message() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("NoMessage", t -> Optional.empty()),
+            M.appl3("Message", messageKind(), messageContent(), messageOrigin(), (t, kind, content, origin) -> {
+                return Optional.of(new Message(kind, content, origin.orElse(null)));
+            })
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<List<IMessagePart>> messageContent() {
+        // @formatter:off
+        return M.cases(
+            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(text))),
+            M.appl1("Formatted", M.listElems(messagePart()), (t, parts) -> parts)
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<IMessagePart> messagePart() {
+        // @formatter:off
+        return M.cases(
+            M.appl1("Text", M.stringValue(), (t, text) -> new TextPart(text)),
+            M.appl1("Term", term(), (t, term) -> new TermPart(term))
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<MessageKind> messageKind() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("Error", t -> MessageKind.ERROR),
+            M.appl0("Warning", t -> MessageKind.WARNING),
+            M.appl0("Note", t -> MessageKind.NOTE)
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<Optional<ITerm>> messageOrigin() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("NoOrigin", t -> Optional.empty()),
+            M.appl1("Origin", varTerm(), (t, v) -> Optional.of(v))
         );
         // @formatter:on
     }
@@ -386,6 +458,7 @@ public class StatixTerms {
                     case SCOPE_OP:
                     case TERMINDEX_OP:
                     case NOID_OP:
+                    case WITHID_OP:
                     case PATH_EMPTY_OP:
                     case PATH_STEP_OP: {
                         return appl;
@@ -394,7 +467,7 @@ public class StatixTerms {
                         final ITerm ns = appl.getArgs().get(0);
                         final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = explicate(appl.getArgs().get(2));
+                        final ITerm pos = B.newAppl(WITHID_OP, explicate(appl.getArgs().get(2)));
                         return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
                     }
                     default: {

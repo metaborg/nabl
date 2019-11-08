@@ -167,16 +167,6 @@ test query ignores non-wellformed incomplete edge [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test adding same data multiple times is idempotent [[
-  resolve {s1}
-    new s1, !r[4] in s1, !r[4] in s1,
-    query r in s1 |-> [_]
-  signature
-    relations
-      r : int
-]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
-
 test same data in different scopes does not shadow by default [[
   resolve {s1 s2 s3}
     new s1 s2 s3,

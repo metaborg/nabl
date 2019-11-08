@@ -18,8 +18,8 @@ public final class Paths {
         return EmptyScopePath.of(scope);
     }
 
-    public static <S, L, D> IResolutionPath<S, L, D> resolve(IScopePath<S, L> path, L label, D datum) {
-        return ResolutionPath.of(path, label, datum);
+    public static <S, L, D> IResolutionPath<S, L, D> resolve(IScopePath<S, L> path, L label, int index, D datum) {
+        return ResolutionPath.of(path, label, index, datum);
     }
 
     public static <S, L> Optional<IScopePath<S, L>> append(IScopePath<S, L> left, IScopePath<S, L> right) {
@@ -29,7 +29,7 @@ public final class Paths {
     public static <S, L, D> Optional<IResolutionPath<S, L, D>> append(IScopePath<S, L> left,
             IResolutionPath<S, L, D> right) {
         return Optional.ofNullable(ComposedScopePath.of(left, right.getPath()))
-                .map(p -> ResolutionPath.of(p, right.getLabel(), right.getDatum()));
+                .map(p -> ResolutionPath.of(p, right.getLabel(), right.getIndex(), right.getDatum()));
     }
 
 }

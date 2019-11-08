@@ -32,8 +32,8 @@ rules
          t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
   normalize-functional-query:
-      CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts)
-      -> CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts)
+      CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts, msg)
+      -> CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts, msg)
     where ty@FUN(in_tys, out_ty) := <norm-get-ast-type> rel
     with ty' := <fun-to-pred-type> ty;
          rel' := <norm-set-ast-type(|ty')> rel;
@@ -64,7 +64,7 @@ rules
            us := <mk-fresh-Vars(|"u")> in_tys;
            p' := <conc;mk-Tuple>(us, [wld]);
            vs := <all-vars> p;
-           c* := [CEqual(<mk-Tuple>(us), p)]
+           c* := [CEqual(<mk-Tuple>(us), p, NoMessage())]
          end
 
   match-terms(|tys): t -> ts

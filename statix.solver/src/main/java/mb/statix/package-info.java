@@ -9,9 +9,6 @@
     allowedClasspathAnnotations = {Override.class}
 )
 // @formatter:on
-@DefaultQualifier(NonNull.class)
 package mb.statix;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.framework.qual.DefaultQualifier;
 import org.immutables.value.Value;

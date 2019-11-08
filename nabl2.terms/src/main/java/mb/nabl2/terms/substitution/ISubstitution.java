@@ -35,6 +35,8 @@ public interface ISubstitution {
 
         Immutable compose(ISubstitution.Immutable other);
 
+        Immutable compose(ITermVar var, ITerm term);
+
         ISubstitution.Transient melt();
 
     }
@@ -48,6 +50,8 @@ public interface ISubstitution {
         void removeAll(Iterable<ITermVar> var);
 
         void compose(ISubstitution.Immutable other);
+
+        void compose(ITermVar var, ITerm term);
 
         ISubstitution.Immutable freeze();
 

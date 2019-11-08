@@ -22,7 +22,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 
 public class CheckedTermMatch {
 
@@ -247,7 +247,7 @@ public class CheckedTermMatch {
         Optional<T> matchOrThrow(ITerm term, IUnifier unifier) throws E;
 
         default Optional<T> matchOrThrow(ITerm term) throws E {
-            return matchOrThrow(term, PersistentUnifier.Immutable.of());
+            return matchOrThrow(term, Unifiers.Immutable.of());
         }
 
         default <R> ICheckedMatcher<R, E> map(Function<T, R> fun) {

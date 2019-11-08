@@ -11,6 +11,7 @@ lexical syntax
 context-free syntax
 
   Term.Scope     = <#<String>-<String>>
+  Term.Var       = <?<String>-<String>>
   Term.NoId      = <@->
   Term.TermIndex = <@<String>-<Int>>
 

@@ -11,7 +11,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 
 public class TermMultisetTest {
 
@@ -19,7 +19,7 @@ public class TermMultisetTest {
     private TermMultiset terms;
 
     @Before public void setUp() {
-        this.unifier = PersistentUnifier.Transient.of();
+        this.unifier = Unifiers.Immutable.of().melt();
         this.terms = new TermMultiset();
 
     }

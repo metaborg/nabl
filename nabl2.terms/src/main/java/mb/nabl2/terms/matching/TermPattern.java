@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.Predicate1;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -101,23 +104,27 @@ public class TermPattern {
         }
 
         public Pattern fromTerm(ITerm term) {
+            return fromTerm(term, v -> false);
+        }
+
+        public Pattern fromTerm(ITerm term, Predicate1<ITermVar> isWildcard) {
             // @formatter:off
             return term.match(Terms.cases(
                 appl -> {
-                    final List<Pattern> args = appl.getArgs().stream().map(this::fromTerm).collect(ImmutableList.toImmutableList());
+                    final List<Pattern> args = appl.getArgs().stream().map(a -> fromTerm(a, isWildcard)).collect(ImmutableList.toImmutableList());
                     return new ApplPattern(appl.getOp(), args);
                 },
                 list -> list.match(ListTerms.cases(
-                    cons -> new ConsPattern(fromTerm(cons.getHead()), fromTerm(cons.getTail())),
+                    cons -> new ConsPattern(fromTerm(cons.getHead(), isWildcard), fromTerm(cons.getTail(), isWildcard)),
                     nil -> new NilPattern(),
-                    var -> new PatternVar(var)
+                    var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var)
                 )),
                 string -> new StringPattern(string.getValue()),
                 integer -> new IntPattern(integer.getValue()),
                 blob -> {
                     throw new IllegalArgumentException("Cannot create blob patterns.");
                 },
-                var -> new PatternVar(var)
+                var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var)
             ));
             // @formatter:on
         }
@@ -127,8 +134,14 @@ public class TermPattern {
         }
 
         public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(final Iterable<Pattern> patterns,
-                final Iterable<? extends ITerm> terms, IUnifier unifier) {
+                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier) {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
+        }
+
+        public Optional<MatchResult> matchWithEqs(final Iterable<Pattern> patterns,
+                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier,
+                Function1<Optional<ITermVar>, ITermVar> fresh) {
+            return TermPattern.P.newTuple(patterns).matchWithEqs(B.newTuple(terms), unifier, fresh);
         }
 
     }

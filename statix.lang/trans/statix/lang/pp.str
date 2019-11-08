@@ -27,6 +27,7 @@ rules
     ; !V([], <id>)
     ; box2text-string(|120)
 
+rules
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term

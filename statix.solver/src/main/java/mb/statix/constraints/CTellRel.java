@@ -1,14 +1,9 @@
 package mb.statix.constraints;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.io.Serializable;
-import java.util.List;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -20,18 +15,18 @@ public class CTellRel implements IConstraint, Serializable {
 
     private final ITerm scopeTerm;
     private final ITerm relation;
-    private final List<ITerm> datumTerms;
+    private final ITerm datumTerm;
 
     private final @Nullable IConstraint cause;
 
-    public CTellRel(ITerm scopeTerm, ITerm relation, Iterable<ITerm> datumTerms) {
-        this(scopeTerm, relation, datumTerms, null);
+    public CTellRel(ITerm scopeTerm, ITerm relation, ITerm datumTerm) {
+        this(scopeTerm, relation, datumTerm, null);
     }
 
-    public CTellRel(ITerm scopeTerm, ITerm relation, Iterable<ITerm> datumTerms, @Nullable IConstraint cause) {
+    public CTellRel(ITerm scopeTerm, ITerm relation, ITerm datumTerm, @Nullable IConstraint cause) {
         this.scopeTerm = scopeTerm;
         this.relation = relation;
-        this.datumTerms = ImmutableList.copyOf(datumTerms);
+        this.datumTerm = datumTerm;
         this.cause = cause;
     }
 
@@ -43,12 +38,8 @@ public class CTellRel implements IConstraint, Serializable {
         return relation;
     }
 
-    public List<ITerm> datumTerms() {
-        return datumTerms;
-    }
-
     public ITerm datumTerm() {
-        return B.newTuple(datumTerms);
+        return datumTerm;
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -56,7 +47,7 @@ public class CTellRel implements IConstraint, Serializable {
     }
 
     @Override public CTellRel withCause(@Nullable IConstraint cause) {
-        return new CTellRel(scopeTerm, relation, datumTerms, cause);
+        return new CTellRel(scopeTerm, relation, datumTerm, cause);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -68,7 +59,7 @@ public class CTellRel implements IConstraint, Serializable {
     }
 
     @Override public CTellRel apply(ISubstitution.Immutable subst) {
-        return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerms));
+        return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerm));
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -77,7 +68,7 @@ public class CTellRel implements IConstraint, Serializable {
         sb.append(" -");
         sb.append(termToString.format(relation));
         sb.append("-[] ");
-        sb.append(termToString.format(B.newTuple(datumTerms)));
+        sb.append(termToString.format(datumTerm));
         return sb.toString();
     }
 

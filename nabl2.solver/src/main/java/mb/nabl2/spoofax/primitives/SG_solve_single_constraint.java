@@ -33,7 +33,7 @@ import mb.nabl2.stratego.MessageTerms;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoBlob;
 import mb.nabl2.terms.stratego.StrategoTerms;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
 
 public class SG_solve_single_constraint extends AbstractPrimitive {
 
@@ -64,7 +64,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final ISolution solution;
         try {
             GraphSolution graphSolution = solver.solveGraph(
-                    ImmutableBaseSolution.of(solverConfig, constraints, PersistentUnifier.Immutable.of()), fresh::fresh,
+                    ImmutableBaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
                     cancel, progress);
             ISolution constraintSolution = solver.solve(graphSolution, fresh::fresh, cancel, progress);
             solution = constraintSolution;
