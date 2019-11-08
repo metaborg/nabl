@@ -196,8 +196,22 @@ rules
 
 rules
 
+  /**
+   * @param a : Analysis
+   * @type : (Scope * Label) -> [Term]
+   */
   stx--get-scopegraph-data(|a) =
     prim("STX_get_scopegraph_data", a)
 
+  /**
+   * @param a : Analysis
+   * @type : (Scope * Label) -> [Scope]
+   */
   stx--get-scopegraph-edges(|a) =
     prim("STX_get_scopegraph_edges", a)
+
+  /**
+   * @type : Analysis -> ScopeGraph
+   */
+  stx--debug-scopegraph =
+    prim("STX_debug_scopegraph")
