@@ -7,18 +7,15 @@ imports
   statix/lang/Core
   statix/lang/Sugar
   statix/lang/Deprecated
+  statix/runtime/NoParse
 
 template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
-sorts
-
-  SolverResult
-
 context-free syntax
 
-  TestResult = <
+  TestResult.EvalResult = <
     <Solution>
 
     errors
@@ -35,11 +32,48 @@ context-free syntax
     substitution
       <{SubstEntry "\n"}*>
 
-    <SolverResult>
+    <Analysis>
   >
+
+context-free syntax
+
+  // special pretty print rule in statix/runtime/pp to support printing blob analyses too
+
+  Analysis.Analysis = <
+    analysis
+      <ScopeGraph>
+  >
+
+context-free syntax
 
   SubstEntry = [[Var] |-> [Term]]
   
+context-free syntax
+
+  ScopeGraph = <
+    scope graph
+      <{ScopeEntry "\n"}*>
+  >
+
+  ScopeEntry = <
+    <Scope> {
+      data {
+        <{DataEntry "\n"}*>
+      }
+      edges {
+        <{EdgeEntry "\n"}*>
+      }
+    }
+  >
+
+  DataEntry = <<RelRef> : <EntryValues>>
+
+  EdgeEntry = <<Label> : <EntryValues>>
+
+  EntryValues = {Term "\n"}*
+
+context-free syntax
+
   EditorMessage = [[MessagePos] : [String]]
 
   MessagePos = "*"

@@ -521,7 +521,7 @@ public class StatixTerms {
         return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
     }
 
-    private static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
+    public static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
         return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
     }
 

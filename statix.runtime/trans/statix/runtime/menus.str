@@ -1,0 +1,18 @@
+module statix/runtime/menus
+
+imports
+
+  libspoofax/analysis/constraint
+
+  statix/runtime/-
+
+rules
+
+  stx--show-scopegraph:
+      (_, _, _, path, project-path) -> (filename, result)
+    where
+      a := <stx--get-resource-analysis> path
+    with
+      filename := <guarantee-extension(|"scopegraph")> path
+    ; sg := <stx--debug-scopegraph> a
+    ; result := <write-to-string> sg

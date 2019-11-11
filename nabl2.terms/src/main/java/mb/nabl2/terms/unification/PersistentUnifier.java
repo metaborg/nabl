@@ -97,48 +97,54 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right)
-                throws OccursException {
-            return new Unify(this, left, right).apply(true);
+        @Override public <E extends Throwable> Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(ITerm left,
+                ITerm right, RepPicker<E> repPicker) throws OccursException, E {
+            return new Unify<>(this, left, right, repPicker).apply(true);
         }
 
-        @Override public Optional<Result<mb.nabl2.terms.unification.IUnifier.Immutable>>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            return new Unify(this, equalities).apply(true);
+        @Override public <E extends Throwable> Optional<Result<mb.nabl2.terms.unification.IUnifier.Immutable>>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, RepPicker<E> repPicker)
+                        throws OccursException, E {
+            return new Unify<>(this, equalities, repPicker).apply(true);
         }
 
-        @Override public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unify(IUnifier other)
-                throws OccursException {
-            return new Unify(this, other).apply(true);
+        @Override public <E extends Throwable> Optional<IUnifier.Immutable.Result<IUnifier.Immutable>>
+                unify(IUnifier other, RepPicker<E> repPicker) throws OccursException, E {
+            return new Unify<>(this, other, repPicker).apply(true);
         }
 
-        private static class Unify extends PersistentUnifier.Transient {
+        private static class Unify<E extends Throwable> extends PersistentUnifier.Transient {
+
+            private final RepPicker<E> repPicker;
 
             private final Deque<Map.Entry<ITerm, ITerm>> worklist = Lists.newLinkedList();
             private final List<ITermVar> result = Lists.newArrayList();
 
-            public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right) {
+            public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right, RepPicker<E> repPicker) {
                 super(unifier);
+                this.repPicker = repPicker;
                 worklist.push(ImmutableTuple2.of(left, right));
             }
 
             public Unify(PersistentUnifier.Immutable unifier,
-                    Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) {
+                    Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, RepPicker<E> repPicker) {
                 super(unifier);
+                this.repPicker = repPicker;
                 equalities.forEach(e -> {
                     worklist.push(Tuple2.of(e));
                 });
             }
 
-            public Unify(PersistentUnifier.Immutable unifier, IUnifier other) {
+            public Unify(PersistentUnifier.Immutable unifier, IUnifier other, RepPicker<E> repPicker) {
                 super(unifier);
+                this.repPicker = repPicker;
                 other.varSet().forEach(v -> {
                     worklist.push(ImmutableTuple2.of(v, other.findTerm(v)));
                 });
             }
 
             public Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> apply(boolean disunify)
-                    throws OccursException {
+                    throws OccursException, E {
                 while(!worklist.isEmpty()) {
                     final Map.Entry<ITerm, ITerm> work = worklist.pop();
                     if(!unifyTerms(work.getKey(), work.getValue())) {
@@ -155,15 +161,15 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                     }
                 }
                 final IUnifier.Immutable diffUnifier = diffUnifier(result);
-                return (disunify ? unifier.disunifyAll() : Optional.of(unifier)).map(u -> {
+                return (disunify ? unifier.disunifyAll(repPicker) : Optional.of(unifier)).map(u -> {
                     return new BaseUnifier.ImmutableResult<>(diffUnifier, u);
                 });
             }
 
-            private boolean unifyTerms(final ITerm left, final ITerm right) {
+            private boolean unifyTerms(final ITerm left, final ITerm right) throws E {
                 // @formatter:off
-                return left.match(Terms.<Boolean>cases(
-                    applLeft -> right.match(Terms.<Boolean>cases()
+                return left.matchOrThrow(Terms.<Boolean, E>checkedCases(
+                    applLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                         .appl(applRight -> {
                             return applLeft.getArity() == applRight.getArity() &&
                                     applLeft.getOp().equals(applRight.getOp()) &&
@@ -176,7 +182,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    listLeft -> right.match(Terms.<Boolean>cases()
+                    listLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                         .list(listRight -> {
                             return unifyLists(listLeft, listRight);
                         })
@@ -187,7 +193,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    stringLeft -> right.match(Terms.<Boolean>cases()
+                    stringLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                         .string(stringRight -> {
                             return stringLeft.getValue().equals(stringRight.getValue());
                         })
@@ -198,7 +204,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    integerLeft -> right.match(Terms.<Boolean>cases()
+                    integerLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                         .integer(integerRight -> {
                             return integerLeft.getValue() == integerRight.getValue();
                         })
@@ -209,7 +215,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    blobLeft -> right.match(Terms.<Boolean>cases()
+                    blobLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                         .blob(blobRight -> {
                             return blobLeft.getValue().equals(blobRight.getValue());
                         })
@@ -220,7 +226,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    varLeft -> right.match(Terms.<Boolean>cases()
+                    varLeft -> right.matchOrThrow(Terms.<Boolean, E>checkedCases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
@@ -232,10 +238,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 // @formatter:on
             }
 
-            private boolean unifyLists(final IListTerm left, final IListTerm right) {
+            private boolean unifyLists(final IListTerm left, final IListTerm right) throws E {
                 // @formatter:off
-                return left.match(ListTerms.<Boolean>cases(
-                    consLeft -> right.match(ListTerms.<Boolean>cases()
+                return left.matchOrThrow(ListTerms.<Boolean, E>checkedCases(
+                    consLeft -> right.matchOrThrow(ListTerms.<Boolean, E>checkedCases()
                         .cons(consRight -> {
                             worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
                             worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
@@ -248,7 +254,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    nilLeft -> right.match(ListTerms.<Boolean>cases()
+                    nilLeft -> right.matchOrThrow(ListTerms.<Boolean, E>checkedCases()
                         .nil(nilRight -> {
                             return true;
                         })
@@ -259,7 +265,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                             return false;
                         })
                     ),
-                    varLeft -> right.match(ListTerms.<Boolean>cases()
+                    varLeft -> right.matchOrThrow(ListTerms.<Boolean, E>checkedCases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
@@ -271,7 +277,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 // @formatter:on
             }
 
-            private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
+            private boolean unifyVarTerm(final ITermVar var, final ITerm term) throws E {
                 final ITermVar rep = findRep(var);
                 if(term instanceof ITermVar) {
                     throw new IllegalStateException();
@@ -286,7 +292,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 return true;
             }
 
-            private boolean unifyVars(final ITermVar left, final ITermVar right) {
+            private boolean unifyVars(final ITermVar left, final ITermVar right) throws E {
                 final ITermVar leftRep = findRep(left);
                 final ITermVar rightRep = findRep(right);
                 if(leftRep.equals(rightRep)) {
@@ -294,9 +300,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 }
                 final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
                 final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
-                final boolean swap = leftRank > rightRank;
-                final ITermVar var = swap ? rightRep : leftRep; // the eliminated variable
-                final ITermVar rep = swap ? leftRep : rightRep; // the new representative
+                final boolean useLeftRep = this.repPicker.pick(leftRep, rightRep).orElse(leftRank > rightRank);
+                final ITermVar rep = useLeftRep ? leftRep : rightRep; // the new representative
+                final ITermVar var = useLeftRep ? rightRep : leftRep; // the eliminated variable
                 ranks.__put(rep, leftRank + rightRank);
                 putRep(var, rep);
                 final ITerm varTerm = removeTerm(var); // term for the eliminated var
@@ -315,7 +321,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
                 return true;
             }
 
-            private boolean unifys(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
+            private boolean unifys(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) throws E {
                 Iterator<ITerm> itLeft = lefts.iterator();
                 Iterator<ITerm> itRight = rights.iterator();
                 while(itLeft.hasNext()) {
@@ -366,9 +372,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         // disunify(Set<ITermVar>, ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<Result<IUnifier.Immutable>> disunify(Iterable<ITermVar> universals, ITerm left,
-                ITerm right) {
-            final Optional<IUnifier.Immutable> result = disunify(new Unify(this, left, right));
+        @Override public <E extends Throwable> Optional<Result<IUnifier.Immutable>>
+                disunify(Iterable<ITermVar> universals, ITerm left, ITerm right, RepPicker<E> repPicker) throws E {
+            final Optional<IUnifier.Immutable> result = disunify(new Unify<>(this, left, right, repPicker));
             if(!result.isPresent()) {
                 // disequality discharged, terms are unequal
                 return Optional.of(new BaseUnifier.ImmutableResult<>(PersistentUnifier.Immutable.of(finite), this));
@@ -395,12 +401,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
         /**
          * Simplify disequalities for an updated unifier
          */
-        private Optional<IUnifier.Immutable> disunifyAll() {
+        private <E extends Throwable> Optional<IUnifier.Immutable> disunifyAll(RepPicker<E> repPicker) throws E {
             final Set.Transient<Diseq> disequalities = Set.Transient.of();
 
             // reduce 
             for(Diseq diseq : this.disequalities) {
-                final Optional<IUnifier.Immutable> result = disunify(new Unify(this, diseq.disequalities().entrySet()));
+                final Optional<IUnifier.Immutable> result =
+                        disunify(new Unify<>(this, diseq.disequalities().entrySet(), repPicker));
                 if(!result.isPresent()) {
                     // disequality discharged, terms are unequal
                     disequalities.__remove(diseq);
@@ -441,7 +448,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements Serializa
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced map of disequalities, or
          * none if the disequality is satisfied.
          */
-        private Optional<IUnifier.Immutable> disunify(Unify unify) {
+        private <E extends Throwable> Optional<IUnifier.Immutable> disunify(Unify<E> unify) throws E {
             final Optional<Result<IUnifier.Immutable>> unifyResult;
             try {
                 // NOTE We prevent Unify from doing disunification, as this
