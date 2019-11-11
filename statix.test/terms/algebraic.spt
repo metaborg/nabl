@@ -12,6 +12,7 @@ test disallow duplicate constructors of same arity [[
       C : S
 ]] analysis fails
 
+/*
 test allow duplicate constructors of different arity [[
   module test
   signature
@@ -25,6 +26,7 @@ test allow duplicate constructors of different arity [[
 ]] analysis succeeds
    resolve #3 to #1
    resolve #4 to #2
+*/
 
 test sort type ascription [[
   resolve _:Exp == Var("x")
