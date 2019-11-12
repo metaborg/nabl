@@ -211,6 +211,12 @@ rules
     prim("STX_get_scopegraph_edges", a)
 
   /**
+   * @type : Analysis -> Analysis
+   */
+  stx--is-analysis =
+    prim("STX_is_analysis")
+
+  /**
    * @type : Analysis -> ScopeGraph
    */
   stx--debug-scopegraph =
