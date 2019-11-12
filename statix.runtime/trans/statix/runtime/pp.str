@@ -28,5 +28,5 @@ rules
     ![S(<is-int;int-to-string>)]
 
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
-    where not(Analysis(_) := a)
+    where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)
