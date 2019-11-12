@@ -69,7 +69,8 @@ public abstract class ARule {
         // 3. Solve constraint
         try {
             final IConstraint constraint = new CExists(args, instBody);
-            return Optional.of(Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
+            return Optional
+                    .of(Solver.entails(spec, State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
         } catch(Delay d) {
             return Optional.empty();
         }

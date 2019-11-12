@@ -4,8 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,10 +78,12 @@ import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
+import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
 
+    private final Spec spec;
     private IState.Immutable state;
     private Map<ITermVar, ITermVar> existentials;
     private final List<ITermVar> updatedVars;
@@ -97,14 +97,15 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
     private final LazyDebugContext proxyDebug;
     private final IDebugContext subDebug;
 
-    public StepSolver(IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
+    public StepSolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug) {
+        this.spec = spec;
         this.state = state;
         this.existentials = null;
         this.updatedVars = Lists.newArrayList();
         this.removedEdges = Lists.newArrayList();
         this.constraints = new BaseConstraintStore(debug);
-        this.completeness = Completeness.Transient.of(state.spec());
+        this.completeness = Completeness.Transient.of(spec);
         this.isComplete = (s, l, st) -> completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
@@ -386,7 +387,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                     return false;
                 }
             };
-            final ConstraintQueries cq = new ConstraintQueries(state, params);
+            final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
             // @formatter:off
             final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                         .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
@@ -520,7 +521,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
 
     @Override public Optional<StepResult> caseTry(CTry c) throws SolverException {
         try {
-            if(Solver.entails(state, c.constraint(), isComplete, new NullDebugContext())) {
+            if(Solver.entails(spec, state, c.constraint(), isComplete, new NullDebugContext())) {
                 return Optional.of(StepResult.of(state));
             } else {
                 return Optional.empty();
@@ -539,7 +540,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
 
         final IDebugContext debug = params.debug();
 
-        final List<Rule> rules = state.spec().rules().get(name);
+        final List<Rule> rules = spec.rules().get(name);
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(state, rules, args, c);
         if(results.isEmpty()) {
             debug.info("No rule applies");

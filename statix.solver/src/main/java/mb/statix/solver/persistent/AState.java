@@ -27,8 +27,6 @@ import mb.statix.spec.Spec;
 @Serial.Version(value = 42L)
 public abstract class AState implements IState.Immutable {
 
-    @Override @Value.Parameter public abstract Spec spec();
-
     @Override @Value.Default public String resource() {
         return "";
     }
@@ -100,16 +98,16 @@ public abstract class AState implements IState.Immutable {
 
     // --- solution ---
 
-    @Override @Value.Default public IUnifier.Immutable unifier() {
-        return Unifiers.Immutable.of();
-    }
+    @Value.Parameter @Override public abstract IUnifier.Immutable unifier();
 
-    @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
-        return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
-    }
+    @Value.Parameter @Override public abstract IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 
-    @Override @Value.Default public IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties() {
-        return HashTrieRelation3.Immutable.of();
+    @Value.Parameter @Override public abstract IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties();
+
+    public static State of(Spec spec) {
+        return State.of(Unifiers.Immutable.of(),
+                ScopeGraph.Immutable.of(spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel()),
+                HashTrieRelation3.Immutable.of());
     }
 
 }

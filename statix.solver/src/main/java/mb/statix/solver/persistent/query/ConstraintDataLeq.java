@@ -16,16 +16,20 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Rule;
+import mb.statix.spec.Spec;
 
 class ConstraintDataLeq implements DataLeq<ITerm> {
 
+    private final Spec spec;
     private final Rule constraint;
     private final IState.Immutable state;
     private final IsComplete isComplete;
     private final IDebugContext debug;
     private volatile Boolean alwaysTrue;
 
-    public ConstraintDataLeq(Rule constraint, IState.Immutable state, IsComplete isComplete, IDebugContext debug) {
+    public ConstraintDataLeq(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete,
+            IDebugContext debug) {
+        this.spec = spec;
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
@@ -39,7 +43,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
             if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(state, result, isComplete, debug)) {
+            if(Solver.entails(spec, state, result, isComplete, debug)) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
@@ -59,7 +63,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         if(alwaysTrue != null)
             return alwaysTrue.booleanValue();
 
-        return alwaysTrue = constraint.isAlways(state.spec()).orElse(false);
+        return alwaysTrue = constraint.isAlways(spec).orElse(false);
     }
 
 }

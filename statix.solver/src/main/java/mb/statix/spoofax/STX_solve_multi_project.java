@@ -31,6 +31,7 @@ import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.spec.Spec;
 
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
@@ -42,10 +43,14 @@ public class STX_solve_multi_project extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
+        final Spec spec =
+                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        reportOverlappingRules(spec);
+
+        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(1))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
-        final IDebugContext debug = getDebugContext(terms.get(1));
+        final IDebugContext debug = getDebugContext(terms.get(2));
 
         final List<SolverResult> results = M.listElems(M.blobValue(SolverResult.class)).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
@@ -84,7 +89,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
         final SolverResult resultConfig;
         try {
             final double t0 = System.currentTimeMillis();
-            resultConfig = Solver.solve(state, Constraints.conjoin(constraints), (s, l, st) -> true, debug);
+            resultConfig = Solver.solve(spec, state, Constraints.conjoin(constraints), (s, l, st) -> true, debug);
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Project analyzed in {} s", (dt / 1_000d));
         } catch(InterruptedException e) {

@@ -203,8 +203,8 @@ public class RuleUtil {
                         // normalize the rule by solving it
                         final SolverResult solverResult;
                         try {
-                            if((solverResult =
-                                    Solver.solve(applyState, applyResult.body(), new NullDebugContext())) == null) {
+                            if((solverResult = Solver.solve(spec, applyState, applyResult.body(),
+                                    new NullDebugContext())) == null) {
                                 continue;
                             }
                         } catch(InterruptedException e) {
@@ -236,7 +236,7 @@ public class RuleUtil {
                                     }
                                     final SolverResult sr;
                                     try {
-                                        if((sr = Solver.solve(ar.state(),
+                                        if((sr = Solver.solve(spec, ar.state(),
                                                 Constraints.conjoin(Iterables2.from(ar.body(), uc)),
                                                 new NullDebugContext())) == null) {
                                             continue;

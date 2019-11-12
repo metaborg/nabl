@@ -76,6 +76,7 @@ import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
+import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 class GreedySolver {
@@ -83,6 +84,7 @@ class GreedySolver {
     private static final int MAX_DEPTH = 32;
 
     // set-up
+    private final Spec spec;
     private final IDebugContext debug;
     private final IConstraintStore constraints;
     private final ICompleteness.Transient completeness;
@@ -94,13 +96,14 @@ class GreedySolver {
     private final List<CriticalEdge> removedEdges = Lists.newArrayList();
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
-    public GreedySolver(IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
+    public GreedySolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug) {
+        this.spec = spec;
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
         constraints.add(initialConstraint);
-        this.completeness = Completeness.Transient.of(state.spec());
+        this.completeness = Completeness.Transient.of(spec);
         completeness.add(initialConstraint, initialState.unifier());
         final IsComplete isComplete = (s, l, st) -> {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
@@ -109,8 +112,9 @@ class GreedySolver {
 
     }
 
-    public GreedySolver(IState.Immutable state, Iterable<IConstraint> constraints, Map<IConstraint, Delay> delays,
-            ICompleteness.Immutable completeness, IDebugContext debug) {
+    public GreedySolver(Spec spec, IState.Immutable state, Iterable<IConstraint> constraints,
+            Map<IConstraint, Delay> delays, ICompleteness.Immutable completeness, IDebugContext debug) {
+        this.spec = spec;
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
@@ -386,7 +390,7 @@ class GreedySolver {
                     final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
                         return params.isComplete(s, l, state);
                     };
-                    final ConstraintQueries cq = new ConstraintQueries(state, params);
+                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
                     // @formatter:off
                     final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                                 .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
@@ -519,7 +523,7 @@ class GreedySolver {
 
             @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
                 try {
-                    if(Solver.entails(state, c.constraint(), params::isComplete, new NullDebugContext())) {
+                    if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext())) {
                         return success(c, state, fuel);
                     } else {
                         return fail(c, state);
@@ -537,7 +541,7 @@ class GreedySolver {
                 final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
                 final IDebugContext debug = params.debug();
 
-                final List<Rule> rules = state.spec().rules().get(name);
+                final List<Rule> rules = spec.rules().get(name);
                 final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(state, rules, args, c);
                 if(results.isEmpty()) {
                     debug.info("No rule applies");

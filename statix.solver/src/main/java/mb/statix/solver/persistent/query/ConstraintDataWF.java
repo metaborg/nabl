@@ -18,15 +18,18 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.Rule;
+import mb.statix.spec.Spec;
 
 class ConstraintDataWF implements DataWF<ITerm> {
 
+    private final Spec spec;
     private final Rule constraint;
     private final IState.Immutable state;
     private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(Rule constraint, IState.Immutable state, IsComplete isComplete, IDebugContext debug) {
+    public ConstraintDataWF(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete, IDebugContext debug) {
+        this.spec = spec;
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
@@ -40,7 +43,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
             if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(state, result, isComplete, debug)) {
+            if(Solver.entails(spec, state, result, isComplete, debug)) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }

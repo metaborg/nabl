@@ -9,11 +9,8 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.spec.Spec;
 
 public interface IState {
-
-    Spec spec();
 
     String resource();
 
@@ -66,11 +63,6 @@ public interface IState {
 
         private Transient(IState.Immutable state) {
             this.state = state;
-        }
-
-        @Override public Spec spec() {
-            freezeTwiceShameOnYou();
-            return state.spec();
         }
 
         @Override public String resource() {
