@@ -50,12 +50,17 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
+import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
 
     private final int sizes = 2;
     private final int subsetsPerSize = 3;
+
+    Resolve(Spec spec) {
+        super(spec);
+    }
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CResolveQuery>> node) {
@@ -71,7 +76,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(state.spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways(spec()).orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -83,7 +88,8 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
-        final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
+        final DataWF<ITerm, CEqual> dataWF =
+                new ResolveDataWF(spec(), state, completeness, query.filter().getDataWF(), query);
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(

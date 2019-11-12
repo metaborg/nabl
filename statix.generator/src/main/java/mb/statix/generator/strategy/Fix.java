@@ -19,6 +19,7 @@ import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.util.StreamUtil;
+import mb.statix.spec.Spec;
 
 public class Fix extends SearchStrategy<SearchState, SearchState> {
 
@@ -28,11 +29,12 @@ public class Fix extends SearchStrategy<SearchState, SearchState> {
     private final Predicate1<CUser> done;
     private final int maxConsecutiveFailures;
 
-    public Fix(SearchStrategy<SearchState, SearchState> search, SearchStrategy<SearchState, SearchState> infer,
-            Predicate1<CUser> done, int maxConsecutiveFailures) {
+    public Fix(Spec spec, SearchStrategy<SearchState, SearchState> search,
+            SearchStrategy<SearchState, SearchState> infer, Predicate1<CUser> done, int maxConsecutiveFailures) {
+        super(spec);
         this.search = search;
         this.infer = infer;
-        this.searchAndInfer = SearchStrategies.seq(search).$(infer).$();
+        this.searchAndInfer = new SearchStrategies(spec()).seq(search).$(infer).$();
         this.done = done;
         this.maxConsecutiveFailures = maxConsecutiveFailures;
     }

@@ -16,11 +16,13 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 final class Concat<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
     private final List<SearchStrategy<I, O>> ss;
 
-    Concat(Iterable<SearchStrategy<I, O>> ss) {
+    Concat(Spec spec, Iterable<SearchStrategy<I, O>> ss) {
+        super(spec);
         this.ss = ImmutableList.copyOf(ss);
     }
 

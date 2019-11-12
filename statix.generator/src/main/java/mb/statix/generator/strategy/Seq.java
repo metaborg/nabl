@@ -17,12 +17,14 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 final class Seq<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final List<SearchStrategy<?, ?>> ss;
 
-    private Seq(List<SearchStrategy<?, ?>> ss) {
+    private Seq(Spec spec, List<SearchStrategy<?, ?>> ss) {
+        super(spec);
         this.ss = ss;
     }
 
@@ -48,9 +50,11 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
 
     public static class Builder<I extends SearchState, O extends SearchState> {
 
+        private final Spec spec;
         private final ImmutableList.Builder<SearchStrategy<?, ?>> ss = ImmutableList.builder();
 
-        public Builder(SearchStrategy<I, O> s) {
+        public Builder(Spec spec, SearchStrategy<I, O> s) {
+            this.spec = spec;
             ss.add(s);
         }
 
@@ -60,7 +64,7 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
         }
 
         public Seq<I, O> $() {
-            return new Seq<>(ss.build());
+            return new Seq<>(spec, ss.build());
         }
 
     }

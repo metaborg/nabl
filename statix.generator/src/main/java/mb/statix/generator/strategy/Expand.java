@@ -14,6 +14,7 @@ import org.metaborg.util.functions.Function2;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -44,10 +45,17 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
 
     private final Mode mode;
     private final Function2<Rule, Long, Double> ruleWeight;
+    private final ListMultimap<String, Rule> rules;
 
-    Expand(Mode mode, Function2<Rule, Long, Double> ruleWeight) {
+    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight) {
+        this(spec, mode, ruleWeight, spec.rules());
+    }
+
+    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight, ListMultimap<String, Rule> rules) {
+        super(spec);
         this.mode = mode;
         this.ruleWeight = ruleWeight;
+        this.rules = rules;
     }
 
     final Cache<String, java.util.Map<Rule, Double>> cache = CacheBuilder.newBuilder().maximumSize(1000).build();
@@ -57,7 +65,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         final FocusedSearchState<CUser> input = node.output();
         final CUser predicate = input.focus();
 
-        final java.util.Map<Rule, Double> rules = getRules(input.state().spec(), predicate.name());
+        final java.util.Map<Rule, Double> rules = getWeightedRules(predicate.name());
         final List<Tuple2<Rule, ApplyResult>> results =
                 RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate);
 
@@ -100,10 +108,10 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         return SearchNodes.of(node, () -> desc, nodes);
     }
 
-    private java.util.Map<Rule, Double> getRules(Spec spec, String name) {
+    private java.util.Map<Rule, Double> getWeightedRules(String name) {
         try {
             return cache.get(name, () -> {
-                final List<Rule> rs = spec.rules().get(name);
+                final List<Rule> rs = rules.get(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
                 final ImmutableMap.Builder<Rule, Double> ruleWeights = ImmutableMap.builder();

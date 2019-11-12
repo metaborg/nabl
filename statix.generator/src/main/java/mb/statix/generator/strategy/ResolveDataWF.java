@@ -32,14 +32,17 @@ import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
+import mb.statix.spec.Spec;
 
 class ResolveDataWF implements DataWF<ITerm, CEqual> {
+    private final Spec spec;
     private final IState.Immutable state;
     private final ICompleteness.Immutable completeness;
     private final Rule dataWf;
     private final IConstraint cause;
 
-    ResolveDataWF(IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf, IConstraint cause) {
+    ResolveDataWF(Spec spec, IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf, IConstraint cause) {
+        this.spec = spec;
         this.state = state;
         this.completeness = completeness;
         this.dataWf = dataWf;
@@ -66,7 +69,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      kept in sync
 
         // solve rule constraint
-        final SolverResult result = Solver.solve(applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
+        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
                 completeness.freeze(), new NullDebugContext());
         if(result.hasErrors()) {
             return Optional.empty();

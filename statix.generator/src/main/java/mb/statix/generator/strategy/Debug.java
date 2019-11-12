@@ -7,12 +7,14 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 final class Debug<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
     private final Action1<SearchNode<O>> debug;
     private final SearchStrategy<I, O> s;
 
-    Debug(Action1<SearchNode<O>> debug, SearchStrategy<I, O> s) {
+    Debug(Spec spec, Action1<SearchNode<O>> debug, SearchStrategy<I, O> s) {
+        super(spec);
         this.debug = debug;
         this.s = s;
     }

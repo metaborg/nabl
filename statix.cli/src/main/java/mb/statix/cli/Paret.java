@@ -1,7 +1,6 @@
 package mb.statix.cli;
 
 import static mb.statix.constraints.Constraints.collectBase;
-import static mb.statix.generator.strategy.SearchStrategies.*;
 import static mb.statix.generator.util.StreamUtil.flatMap;
 
 import java.util.List;
@@ -15,7 +14,6 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 
@@ -31,6 +29,7 @@ import mb.statix.generator.SearchStrategy.Mode;
 import mb.statix.generator.predicate.Any;
 import mb.statix.generator.predicate.Match;
 import mb.statix.generator.predicate.Not;
+import mb.statix.generator.strategy.SearchStrategies;
 import mb.statix.generator.util.StreamUtil;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.IConstraint;
@@ -46,34 +45,43 @@ public class Paret {
     private static final String GEN_RE = "gen_.*";
     private static final String IS_RE = "is_.*";
 
-    public static SearchStrategy<SearchState, SearchState> search() {
+    private final Spec spec;
+    private final SearchStrategies S;
+
+    public Paret(Spec spec) {
+        this.spec = spec;
+        this.S = new SearchStrategies(spec);
+    }
+
+    public SearchStrategy<SearchState, SearchState> search() {
         // @formatter:off
-        return seq(searchExp())
-               .$(marker("generateLex"))
+        return S.seq(searchExp())
+               .$(S.marker("generateLex"))
                .$(generateLex())
-               .$(marker("done"))
+               .$(S.marker("done"))
                .$();
         // @formatter:on
     }
 
     // inference step
 
-    private static SearchStrategy<SearchState, SearchState> inferDelayAndDrop() {
-        return seq(infer()).$(delayStuckQueries()).$(dropAst()).$();
+    private SearchStrategy<SearchState, SearchState> inferDelayAndDrop() {
+        return S.seq(S.infer()).$(S.delayStuckQueries()).$(S.dropAst()).$();
     }
 
     // generation of expressions
 
-    private static SearchStrategy<SearchState, SearchState> searchExp() {
+    private SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
-        return repeat(limit(10, fix(
-            seq(selectConstraint(1))
-            .$(match(
-               limit(3, seq(limit(5, resolve())).$(infer()).$()),
-               limit(1, seq(concat(
-                          limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights)),
-                          expand(Mode.ENUM, Paret::hasNoSubGoals)
-                        )).$(infer()).$())))
+        final ListMultimap<String, Rule> fragments = makeFragments(spec);
+        return S.repeat(S.limit(10, S.fix(
+            S.seq(selectConstraint(1))
+            .$(S.match(
+               S.limit(3, S.seq(S.limit(5, S.resolve())).$(S.infer()).$()),
+               S.limit(1, S.seq(S.concat(
+                          S.limit(5, S.expand(Mode.RND, defaultRuleWeight, ruleWeights)),
+                          S.expand(Mode.ENUM, fragments)
+                        )).$(S.infer()).$())))
             .$(),
             inferDelayAndDrop(),
             new Match(IS_RE), // everything except is_* constraints should be resolved
@@ -82,16 +90,16 @@ public class Paret {
         // @formatter:on
     }
 
-    private static Function1<IConstraint, List<IConstraint>> collectSubGoals = collectBase(
+    private Function1<IConstraint, List<IConstraint>> collectSubGoals = collectBase(
             c -> c instanceof CUser && ((CUser) c).name().matches(GEN_RE) ? Optional.of(c) : Optional.empty());
 
-    private static double hasNoSubGoals(Rule rule, long count) {
+    private double hasNoSubGoals(Rule rule, long count) {
         return collectSubGoals.apply(rule.body()).isEmpty() ? 1d : 0d;
     }
 
     // @formatter:off
-    private static int defaultRuleWeight = 1;
-    private static Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
+    private int defaultRuleWeight = 1;
+    private Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
         // TWEAK Disable operations until better inference in the solver
         .put("G-UnOp", 1.0)
         .put("G-BinOp", 1.0)
@@ -109,25 +117,24 @@ public class Paret {
         .build();
     // @formatter:on
 
-    public static
-            SearchStrategy<SearchState, EitherSearchState<FocusedSearchState<CResolveQuery>, FocusedSearchState<CUser>>>
+    public SearchStrategy<SearchState, EitherSearchState<FocusedSearchState<CResolveQuery>, FocusedSearchState<CUser>>>
             selectConstraint(int limit) {
         // @formatter:off
-        return limit(limit, concatAlt(
+        return S.limit(limit, S.concatAlt(
             // TWEAK Resolve queries first, to improve inference
-            select(CResolveQuery.class, new Any<>()),
-            select(CUser.class, /*Paret::predWeights*/ new Match(GEN_RE))
+            S.select(CResolveQuery.class, new Any<>()),
+            S.select(CUser.class, /*Paret::predWeights*/ new Match(GEN_RE))
         ));
         // @formatter:on
     }
 
-    private static Function1<CUser, Double> predWeights(SearchState state) {
+    private Function1<CUser, Double> predWeights(SearchState state) {
         final IUnifier unifier = state.state().unifier();
         final Set<CriticalEdge> criticalEdges =
                 flatMap(state.delays().values().stream(), d -> d.criticalEdges().stream()).collect(Collectors.toSet());
         // @formatter:off
         final Stream<CUser> criticalPreds = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
-            .filter(c -> CompletenessUtil.criticalEdges(c, state.state().spec(), unifier).stream().anyMatch(criticalEdges::contains));
+            .filter(c -> CompletenessUtil.criticalEdges(c, spec, unifier).stream().anyMatch(criticalEdges::contains));
         final Set<ITermVar> criticalVars = flatMap(criticalPreds, c -> flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()))
             .collect(Collectors.toSet());
         // @formatter:on
@@ -145,20 +152,20 @@ public class Paret {
 
     // generation of id's
 
-    private static SearchStrategy<SearchState, SearchState> generateLex() {
-        return require(limit(1, fix(expandLex(), infer(), new Not<>(new Match(IS_RE)), -1)));
+    private SearchStrategy<SearchState, SearchState> generateLex() {
+        return S.require(S.limit(1, S.fix(expandLex(), S.infer(), new Not<>(new Match(IS_RE)), -1)));
     }
 
-    private static SearchStrategy<SearchState, SearchState> expandLex() {
+    private SearchStrategy<SearchState, SearchState> expandLex() {
         // @formatter:off
-        return seq(select(CUser.class, new Match(IS_RE)))
-               .$(limit(1, seq(expand(Mode.RND, 1, idWeights)).$(infer()).$()))
+        return S.seq(S.select(CUser.class, new Match(IS_RE)))
+               .$(S.limit(1, S.seq(S.expand(Mode.RND, 1, idWeights)).$(S.infer()).$()))
                .$();
         // @formatter:on
     }
 
     // @formatter:off
-    private static Map<String, Double> idWeights = ImmutableMap.<String, Double>builder()
+    private Map<String, Double> idWeights = ImmutableMap.<String, Double>builder()
         // TWEAK Increase likelihood of duplicate choices, while still providing many identifiers
         .put("[ID-A]", 16.0)
         .put("[ID-B]", 8.0)
@@ -189,19 +196,12 @@ public class Paret {
         .build();
     // @formatter:on
 
-    public static Spec addFragments(Spec spec) {
+    public ListMultimap<String, Rule> makeFragments(Spec spec) {
         log.info("Building fragments.");
-        final ImmutableListMultimap.Builder<String, Rule> rules = ImmutableListMultimap.<String, Rule>builder()
-                .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
-        rules.putAll(spec.rules());
         final ListMultimap<String, Rule> fragments =
                 RuleUtil.makeFragments(spec, n -> n.matches(GEN_RE), (n, l) -> true, 2);
-        rules.putAll(fragments);
-        fragments.forEach((name, rule) -> {
-            log.info(" * {}", rule);
-        });
-        log.info("Built {} fragments.", fragments.size());
-        return Spec.copyOf(spec).withRules(rules.build());
+        log.info("Built fragments.");
+        return fragments;
     }
 
 }
