@@ -73,15 +73,18 @@ public class Paret {
 
     private SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
-        final ListMultimap<String, Rule> fragments = makeFragments(spec);
+//        final ListMultimap<String, Rule> fragments = makeFragments(spec);
+//        fragments.forEach((n,r) -> {
+//            log.info(" * {}", r);
+//        });
         return S.repeat(S.limit(10, S.fix(
             S.seq(selectConstraint(1))
             .$(S.match(
                S.limit(3, S.seq(S.limit(5, S.resolve())).$(S.infer()).$()),
-               S.limit(1, S.seq(S.concat(
-                          S.limit(5, S.expand(Mode.RND, defaultRuleWeight, ruleWeights)),
-                          S.expand(Mode.ENUM, fragments)
-                        )).$(S.infer()).$())))
+               S.limit(1, S.seq(
+//                            S.concat(S.limit(5, S.expand(Mode.RND, defaultRuleWeight, ruleWeights)), S.expand(Mode.ENUM, fragments))
+                            S.limit(5, S.expand(Mode.RND, defaultRuleWeight, ruleWeights))
+                          ).$(S.infer()).$())))
             .$(),
             inferDelayAndDrop(),
             new Match(IS_RE), // everything except is_* constraints should be resolved
