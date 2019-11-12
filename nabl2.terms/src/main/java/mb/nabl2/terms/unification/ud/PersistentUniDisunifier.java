@@ -109,8 +109,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             return new Unify(this, equalities).apply(true);
         }
 
-        @Override public
-                Optional<? extends mb.nabl2.terms.unification.u.IUnifier.Result<? extends mb.nabl2.terms.unification.u.IUnifier.Immutable>>
+        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>>
                 unify(mb.nabl2.terms.unification.u.IUnifier other) throws OccursException {
             return new Unify(this, other).apply(true);
         }

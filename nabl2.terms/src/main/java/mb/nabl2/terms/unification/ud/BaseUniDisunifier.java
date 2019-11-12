@@ -802,8 +802,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
         }
 
         @Override public Optional<? extends IUnifier.Immutable> unify(IUnifier other) throws OccursException {
-            final Optional<? extends mb.nabl2.terms.unification.u.IUnifier.Result<? extends mb.nabl2.terms.unification.u.IUnifier.Immutable>> result =
-                    unifier.unify(other);
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();

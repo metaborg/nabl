@@ -40,10 +40,6 @@ import mb.nabl2.terms.unification.u.IUnifier;
 
 public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Methods on a single term
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * Return a unifier that makes these terms equal, relative to the current unifier.
      * 
@@ -67,6 +63,11 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          */
         @Override Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(ITerm term1, ITerm term2)
                 throws OccursException;
+
+        /**
+         * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
+         */
+        @Override Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUnifier other) throws OccursException;
 
         /**
          * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
