@@ -61,11 +61,6 @@ public interface IUnifier {
     boolean contains(ITermVar var);
 
     /**
-     * Return the size of this substitution.
-     */
-    int size();
-
-    /**
      * Return the domain of this unifier.
      */
     java.util.Set<ITermVar> varSet();

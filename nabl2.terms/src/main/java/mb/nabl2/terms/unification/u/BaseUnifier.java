@@ -57,10 +57,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return reps().isEmpty() && terms().isEmpty();
     }
 
-    @Override public int size() {
-        return reps().size() + terms().size();
-    }
-
     @Override public boolean contains(ITermVar var) {
         return reps().containsKey(var) || terms().containsKey(var);
     }
@@ -701,9 +697,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     // class Transient
     ///////////////////////////////////////////
 
-    protected static class Transient implements IUnifier.Transient, Serializable {
-
-        private static final long serialVersionUID = 1L;
+    protected static class Transient implements IUnifier.Transient {
 
         private IUnifier.Immutable unifier;
 
@@ -721,10 +715,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
         @Override public boolean contains(ITermVar var) {
             return unifier.contains(var);
-        }
-
-        @Override public int size() {
-            return unifier.size();
         }
 
         @Override public java.util.Set<ITermVar> varSet() {

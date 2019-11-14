@@ -29,27 +29,22 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     ///////////////////////////////////////////
 
     @Override public boolean isEmpty() {
-        // FIXME Include disequalities
-        return unifier().isEmpty();
-    }
-
-    @Override public int size() {
-        // FIXME Include disequalities
-        return unifier().size();
+        return unifier().isEmpty() && disequalities().isEmpty();
     }
 
     @Override public boolean contains(ITermVar var) {
-        // FIXME Include disequalities
+        // disequalities do not contribute to the domain
         return unifier().contains(var);
     }
 
     @Override public java.util.Set<ITermVar> varSet() {
-        // FIXME Include disequalities
+        // disequalities do not contribute to the domain
+        // as a consequence, this.isEmpty() != this.varSet().isEmpty()
         return unifier().varSet();
     }
 
     @Override public java.util.Set<ITermVar> freeVarSet() {
-        // FIXME Include disequalities
+        // FIXME Include disequalities: disequalities.freeVars - unifier.vars?
         return unifier().freeVarSet();
     }
 
@@ -196,9 +191,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     // class Transient
     ///////////////////////////////////////////
 
-    protected static class Transient implements IUniDisunifier.Transient, Serializable {
-
-        private static final long serialVersionUID = 1L;
+    protected static class Transient implements IUniDisunifier.Transient {
 
         private IUniDisunifier.Immutable unifier;
 
@@ -216,10 +209,6 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
 
         @Override public boolean contains(ITermVar var) {
             return unifier.contains(var);
-        }
-
-        @Override public int size() {
-            return unifier.size();
         }
 
         @Override public java.util.Set<ITermVar> varSet() {
