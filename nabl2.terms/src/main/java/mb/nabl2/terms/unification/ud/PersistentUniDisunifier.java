@@ -1,36 +1,22 @@
 package mb.nabl2.terms.unification.ud;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IListTerm;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
-import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.Tuple2;
+import mb.nabl2.terms.unification.u.PersistentUnifier;
 
 public abstract class PersistentUniDisunifier extends BaseUniDisunifier implements Serializable {
 
@@ -55,33 +41,26 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
         private static final long serialVersionUID = 42L;
 
-        private final boolean finite;
-
-        private final Ref<Map.Immutable<ITermVar, ITermVar>> reps;
-        private final Map.Immutable<ITermVar, Integer> ranks;
-        private final Map.Immutable<ITermVar, ITerm> terms;
+        private final IUnifier.Immutable unifier;
         private final Set.Immutable<Diseq> disequalities;
 
         Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms,
                 Set.Immutable<Diseq> disequalities) {
-            this.finite = finite;
-            this.reps = new Ref<>(reps);
-            this.ranks = ranks;
-            this.terms = terms;
+            this(new PersistentUnifier.Immutable(finite, reps, ranks, terms), disequalities);
+        }
+
+        Immutable(final IUnifier.Immutable unifier, Set.Immutable<Diseq> disequalities) {
+            this.unifier = unifier;
             this.disequalities = disequalities;
         }
 
         @Override public boolean isFinite() {
-            return finite;
+            return unifier.isFinite();
         }
 
-        @Override protected Map.Immutable<ITermVar, ITermVar> reps() {
-            return reps.get();
-        }
-
-        @Override protected Map.Immutable<ITermVar, ITerm> terms() {
-            return terms;
+        @Override protected IUnifier.Immutable unifier() {
+            return unifier;
         }
 
         @Override public Set.Immutable<Diseq> disequalities() {
@@ -89,10 +68,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         @Override public ITermVar findRep(ITermVar var) {
-            final Map.Transient<ITermVar, ITermVar> reps = this.reps.get().asTransient();
-            final ITermVar rep = findRep(var, reps);
-            this.reps.set(reps.freeze());
-            return rep;
+            return unifier.findRep(var);
         }
 
         ///////////////////////////////////////////
@@ -101,266 +77,42 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right)
                 throws OccursException {
-            return new Unify(this, left, right).apply(true);
+            return unifier.unify(left, right).flatMap(r -> {
+                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
+                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                    return new ImmutableResult<>(r.result(), ud);
+                });
+            });
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>>
                 unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            return new Unify(this, equalities).apply(true);
+            return unifier.unify(equalities).flatMap(r -> {
+                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
+                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                    return new ImmutableResult<>(r.result(), ud);
+                });
+            });
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>>
                 unify(mb.nabl2.terms.unification.u.IUnifier other) throws OccursException {
-            return new Unify(this, other).apply(true);
+            return unifier.unify(other).flatMap(r -> {
+                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
+                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                    return new ImmutableResult<>(r.result(), ud);
+                });
+            });
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other)
                 throws OccursException {
-            return new Unify(this, other).apply(true);
-        }
-
-        private static class Unify extends PersistentUniDisunifier.Transient {
-
-            private final Deque<Map.Entry<ITerm, ITerm>> worklist = Lists.newLinkedList();
-            private final List<ITermVar> result = Lists.newArrayList();
-
-            public Unify(PersistentUniDisunifier.Immutable unifier, ITerm left, ITerm right) {
-                super(unifier);
-                worklist.push(ImmutableTuple2.of(left, right));
-            }
-
-            public Unify(PersistentUniDisunifier.Immutable unifier,
-                    Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) {
-                super(unifier);
-                equalities.forEach(e -> {
-                    worklist.push(Tuple2.of(e));
+            return unifier.unify(other.equalityMap().entrySet()).flatMap(r -> {
+                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
+                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                    return new ImmutableResult<>(r.result(), ud);
                 });
-            }
-
-            public Unify(PersistentUniDisunifier.Immutable unifier, mb.nabl2.terms.unification.u.IUnifier other) {
-                super(unifier);
-                other.varSet().forEach(v -> {
-                    worklist.push(ImmutableTuple2.of(v, other.findTerm(v)));
-                });
-            }
-
-            public Unify(PersistentUniDisunifier.Immutable unifier, IUniDisunifier other) {
-                super(unifier);
-                other.varSet().forEach(v -> {
-                    worklist.push(ImmutableTuple2.of(v, other.findTerm(v)));
-                });
-            }
-
-            public Optional<IUniDisunifier.Result<IUnifier.Immutable>> apply(boolean disunify) throws OccursException {
-                while(!worklist.isEmpty()) {
-                    final Map.Entry<ITerm, ITerm> work = worklist.pop();
-                    if(!unifyTerms(work.getKey(), work.getValue())) {
-                        return Optional.empty();
-                    }
-                }
-
-                final PersistentUniDisunifier.Immutable unifier = freeze();
-                if(finite) {
-                    final ImmutableSet<ITermVar> cyclicVars =
-                            result.stream().filter(v -> unifier.isCyclic(v)).collect(ImmutableSet.toImmutableSet());
-                    if(!cyclicVars.isEmpty()) {
-                        throw new OccursException(cyclicVars);
-                    }
-                }
-                final IUniDisunifier.Immutable diffUnifier = diffUnifier(result);
-                return (disunify ? unifier.disunifyAll() : Optional.of(unifier)).map(u -> {
-                    return new BaseUniDisunifier.ImmutableResult<>(diffUnifier, u);
-                });
-            }
-
-            private boolean unifyTerms(final ITerm left, final ITerm right) {
-                // @formatter:off
-                return left.match(Terms.<Boolean>cases(
-                    applLeft -> right.match(Terms.<Boolean>cases()
-                        .appl(applRight -> {
-                            return applLeft.getArity() == applRight.getArity() &&
-                                    applLeft.getOp().equals(applRight.getOp()) &&
-                                    unifys(applLeft.getArgs(), applRight.getArgs());
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, applLeft)  ;
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    listLeft -> right.match(Terms.<Boolean>cases()
-                        .list(listRight -> {
-                            return unifyLists(listLeft, listRight);
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, listLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    stringLeft -> right.match(Terms.<Boolean>cases()
-                        .string(stringRight -> {
-                            return stringLeft.getValue().equals(stringRight.getValue());
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, stringLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    integerLeft -> right.match(Terms.<Boolean>cases()
-                        .integer(integerRight -> {
-                            return integerLeft.getValue() == integerRight.getValue();
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, integerLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    blobLeft -> right.match(Terms.<Boolean>cases()
-                        .blob(blobRight -> {
-                            return blobLeft.getValue().equals(blobRight.getValue());
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, blobLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    varLeft -> right.match(Terms.<Boolean>cases()
-                        .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
-                        })
-                        .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
-                        })
-                    )
-                ));
-                // @formatter:on
-            }
-
-            private boolean unifyLists(final IListTerm left, final IListTerm right) {
-                // @formatter:off
-                return left.match(ListTerms.<Boolean>cases(
-                    consLeft -> right.match(ListTerms.<Boolean>cases()
-                        .cons(consRight -> {
-                            worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
-                            worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
-                            return true;
-                        })
-                        .var(varRight -> {
-                            return unifyLists(varRight, consLeft);
-                        })
-                        .otherwise(l -> {
-                            return false;
-                        })
-                    ),
-                    nilLeft -> right.match(ListTerms.<Boolean>cases()
-                        .nil(nilRight -> {
-                            return true;
-                        })
-                        .var(varRight -> {
-                            return unifyVarTerm(varRight, nilLeft)  ;
-                        })
-                        .otherwise(l -> {
-                            return false;
-                        })
-                    ),
-                    varLeft -> right.match(ListTerms.<Boolean>cases()
-                        .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
-                        })
-                        .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
-                        })
-                    )
-                ));
-                // @formatter:on
-            }
-
-            private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
-                final ITermVar rep = findRep(var);
-                if(term instanceof ITermVar) {
-                    throw new IllegalStateException();
-                }
-                final ITerm repTerm = getTerm(rep); // term for the representative
-                if(repTerm != null) {
-                    worklist.push(ImmutableTuple2.of(repTerm, term));
-                } else {
-                    putTerm(rep, term);
-                    result.add(rep);
-                }
-                return true;
-            }
-
-            private boolean unifyVars(final ITermVar left, final ITermVar right) {
-                final ITermVar leftRep = findRep(left);
-                final ITermVar rightRep = findRep(right);
-                if(leftRep.equals(rightRep)) {
-                    return true;
-                }
-                final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
-                final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
-                final boolean swap = leftRank > rightRank;
-                final ITermVar var = swap ? rightRep : leftRep; // the eliminated variable
-                final ITermVar rep = swap ? leftRep : rightRep; // the new representative
-                ranks.__put(rep, leftRank + rightRank);
-                putRep(var, rep);
-                final ITerm varTerm = removeTerm(var); // term for the eliminated var
-                if(varTerm != null) {
-                    final ITerm repTerm = getTerm(rep); // term for the representative
-                    if(repTerm != null) {
-                        worklist.push(ImmutableTuple2.of(varTerm, repTerm));
-                        // don't add to result
-                    } else {
-                        putTerm(rep, varTerm);
-                        result.add(rep);
-                    }
-                } else {
-                    result.add(var);
-                }
-                return true;
-            }
-
-            private boolean unifys(final Iterable<ITerm> lefts, final Iterable<ITerm> rights) {
-                Iterator<ITerm> itLeft = lefts.iterator();
-                Iterator<ITerm> itRight = rights.iterator();
-                while(itLeft.hasNext()) {
-                    if(!itRight.hasNext()) {
-                        return false;
-                    }
-                    worklist.push(ImmutableTuple2.of(itLeft.next(), itRight.next()));
-                }
-                if(itRight.hasNext()) {
-                    return false;
-                }
-                return true;
-            }
-
-            ///////////////////////////////////////////
-            // diffUnifier(Set<ITermVar>)
-            ///////////////////////////////////////////
-
-            private IUniDisunifier.Immutable diffUnifier(Collection<ITermVar> vars) {
-                final PersistentUniDisunifier.Transient diff = new PersistentUniDisunifier.Transient(finite);
-                for(ITermVar var : vars) {
-                    final ITermVar rep;
-                    final ITerm term;
-                    if((rep = getRep(var)) != null) {
-                        diff.putRep(var, rep);
-                    } else if((term = getTerm(var)) != null) {
-                        diff.putTerm(var, term);
-                    }
-                }
-                return diff.freeze();
-            }
-
+            });
         }
 
         ///////////////////////////////////////////
@@ -368,6 +120,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2) {
+            // FIXME Do we need to include disequalities in this result?
             try {
                 return unify(term1, term2).map(IUniDisunifier.Result::result);
             } catch(OccursException e) {
@@ -379,45 +132,39 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         // disunify(Set<ITermVar>, ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> disunify(Iterable<ITermVar> universals,
-                ITerm left, ITerm right) {
-            final Optional<IUnifier.Immutable> result = disunify(new Unify(this, left, right));
-            if(!result.isPresent()) {
-                // disequality discharged, terms are unequal
-                return Optional.of(
-                        new BaseUniDisunifier.ImmutableResult<>(PersistentUniDisunifier.Immutable.of(finite), this));
+        @Override public Optional<IUniDisunifier.Immutable> disunify(Iterable<ITermVar> universals, ITerm left,
+                ITerm right) {
+            final IUnifier.Transient diseqs = PersistentUnifier.Immutable.of(isFinite()).melt();
+            try {
+                if(!diseqs.unify(left, right).isPresent()) {
+                    return Optional.of(this);
+                }
+            } catch(OccursException e) {
+                return Optional.of(this);
             }
+            final Diseq diseq = new Diseq(universals, diseqs.freeze());
 
-            final IUnifier.Immutable disequality = result.get().removeAll(universals).unifier();
-            if(disequality.isEmpty()) {
-                // no disequalities left, terms are equal
+            final Set.Immutable<Diseq> disequalities;
+            if((disequalities = disunifyAll(unifier, this.disequalities.__insert(diseq)).orElse(null)) == null) {
                 return Optional.empty();
             }
 
-            final java.util.Set<ITermVar> universalVars =
-                    Sets.intersection(ImmutableSet.copyOf(universals), disequality.freeVarSet());
-
-            final Set.Transient<Diseq> disequalities = this.disequalities.asTransient();
-            disequalities.__insert(new Diseq(universalVars, disequality.equalityMap()));
-            removeImpliedDisequalities(disequalities);
-
-            final IUniDisunifier.Immutable newUnifier =
-                    new PersistentUniDisunifier.Immutable(finite, reps.get(), ranks, terms, disequalities.freeze());
-            return Optional.of(new BaseUniDisunifier.ImmutableResult<>(disequality, newUnifier));
+            final IUniDisunifier.Immutable newUnifier = new PersistentUniDisunifier.Immutable(unifier, disequalities);
+            return Optional.of(newUnifier);
         }
 
         /**
          * Simplify disequalities for an updated unifier
          */
-        private Optional<IUniDisunifier.Immutable> disunifyAll() {
-            final Set.Transient<Diseq> disequalities = Set.Transient.of();
+        private static Optional<Set.Immutable<Diseq>> disunifyAll(IUnifier.Immutable unifier,
+                Set.Immutable<Diseq> disequalities) {
+            final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
 
             // reduce 
-            for(Diseq diseq : this.disequalities) {
-                final Optional<IUnifier.Immutable> result = disunify(new Unify(this, diseq.disequalities().entrySet()));
+            for(Diseq diseq : disequalities) {
+                final Optional<IUnifier.Immutable> result = disunify(unifier, diseq.disequalities());
                 if(!result.isPresent()) {
                     // disequality discharged, terms are unequal
-                    disequalities.__remove(diseq);
                     continue;
                 }
 
@@ -427,21 +174,20 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                     return Optional.empty();
                 }
 
-                final java.util.Set<ITermVar> universalVars =
-                        Sets.intersection(diseq.universals(), newDiseq.freeVarSet());
+                final Set.Immutable<ITermVar> universals = diseq.universals().stream()
+                        .flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
+                final java.util.Set<ITermVar> universalVars = Sets.intersection(universals, newDiseq.freeVarSet());
 
                 // not unified yet, keep
-                disequalities.__insert(new Diseq(universalVars, newDiseq.equalityMap()));
+                newDisequalities.__insert(new Diseq(universalVars, newDiseq));
             }
 
-            removeImpliedDisequalities(disequalities);
+            removeImpliedDisequalities(unifier, newDisequalities);
 
-            final IUniDisunifier.Immutable result =
-                    new PersistentUniDisunifier.Immutable(finite, reps.get(), ranks, terms, disequalities.freeze());
-            return Optional.of(result);
+            return Optional.of(newDisequalities.freeze());
         }
 
-        private void removeImpliedDisequalities(Set.Transient<Diseq> disequalities) {
+        private static void removeImpliedDisequalities(IUnifier.Immutable unifier, Set.Transient<Diseq> disequalities) {
             for(Diseq diseq : disequalities) {
                 for(Diseq otherDiseq : disequalities) {
                     // check entailment
@@ -455,12 +201,10 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced map of disequalities, or
          * none if the disequality is satisfied.
          */
-        private Optional<IUnifier.Immutable> disunify(Unify unify) {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> unifyResult;
+        private static Optional<IUnifier.Immutable> disunify(IUnifier.Immutable unifier, IUnifier.Immutable diseq) {
+            final Optional<? extends IUnifier.Result<? extends IUnifier.Immutable>> unifyResult;
             try {
-                // NOTE We prevent Unify from doing disunification, as this
-                //      results in infinite recursion
-                unifyResult = unify.apply(false);
+                unifyResult = unifier.unify(diseq);
             } catch(OccursException e) {
                 // unify failed, terms are unequal
                 return Optional.empty();
@@ -479,11 +223,14 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retain(ITermVar var) {
-            return retainAll(Set.Immutable.of(var));
+            return retainAll(Iterables2.singleton(var));
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Sets.difference(varSet(), ImmutableSet.copyOf(vars)));
+            final IUnifier.Result<ISubstitution.Immutable> r = unifier.retainAll(vars);
+            // FIXME Update disequalities
+            final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), disequalities);
+            return new ImmutableResult<>(r.result(), ud);
         }
 
         ///////////////////////////////////////////
@@ -495,85 +242,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
-            return new RemoveAll(this, vars).apply();
+            final IUnifier.Result<ISubstitution.Immutable> r = unifier.removeAll(vars);
+            // FIXME Update disequalities
+            final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), disequalities);
+            return new ImmutableResult<>(r.result(), ud);
         }
 
-        private static class RemoveAll extends PersistentUniDisunifier.Transient {
-
-            private final Set.Immutable<ITermVar> vars;
-
-            public RemoveAll(PersistentUniDisunifier.Immutable unifier, Iterable<ITermVar> vars) {
-                super(unifier);
-                this.vars = CapsuleUtil.toSet(vars);
-            }
-
-            public IUniDisunifier.Result<ISubstitution.Immutable> apply() {
-                // remove vars from unifier
-                final ISubstitution.Immutable subst = removeAll();
-                // remove disequalities
-                CapsuleUtil.updateOrRemove(disequalities, diseq -> {
-                    final Map.Transient<ITermVar, ITerm> newDiseq = Map.Transient.of();
-                    for(Map.Entry<ITermVar, ITerm> entry : diseq.disequalities().entrySet()) {
-                        ITermVar var = (ITermVar) subst.apply(entry.getKey());
-                        ITerm term = subst.apply(entry.getValue());
-                        if(!(vars.contains(var) || vars.contains(term))) {
-                            newDiseq.__put(var, term);
-                        }
-                    }
-                    final Set.Immutable<ITermVar> universalVars = diseq.universals().subtract(vars);
-                    return newDiseq.isEmpty() ? null : new Diseq(universalVars, newDiseq.freeze());
-                });
-                // TODO Check if variables escaped?
-                final IUniDisunifier.Immutable newUnifier = freeze();
-                return new BaseUniDisunifier.ImmutableResult<>(subst, newUnifier);
-            }
-
-            private ISubstitution.Immutable removeAll() {
-                final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-                final ListMultimap<ITermVar, ITermVar> invReps;
-                if(vars.isEmpty()) {
-                    return subst.freeze();
-                }
-                invReps = getInvReps();
-                for(ITermVar var : vars) {
-                    ITermVar rep;
-                    if((rep = removeRep(var)) != null) { // var |-> rep
-                        subst.compose(var, rep);
-                        for(ITermVar notRep : invReps.get(var)) {
-                            putRep(notRep, rep);
-                        }
-                    } else {
-                        final Collection<ITermVar> newReps = invReps.get(var);
-                        if(!newReps.isEmpty()) { // rep |-> var
-                            rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
-                            removeRep(rep);
-                            subst.compose(var, rep);
-                            for(ITermVar notRep : newReps) {
-                                if(!notRep.equals(rep)) {
-                                    putRep(notRep, rep);
-                                }
-                            }
-                            final ITerm term;
-                            if((term = removeTerm(var)) != null) { // var |-> term
-                                putTerm(rep, term);
-                            }
-                        } else {
-                            final ITerm term;
-                            if((term = removeTerm(var)) != null) { // var |-> term
-                                subst.compose(var, term);
-                            }
-                        }
-                    }
-                }
-                for(Entry<ITermVar, ITerm> entry : termEntries()) {
-                    final ITermVar rep = entry.getKey();
-                    final ITerm term = entry.getValue();
-                    putTerm(rep, subst.apply(term));
-                }
-                return subst.freeze();
-            }
-
-        }
 
         ///////////////////////////////////////////
         // construction
@@ -588,95 +262,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         public static IUniDisunifier.Immutable of(boolean finite) {
-            return new PersistentUniDisunifier.Immutable(finite, Map.Immutable.of(), Map.Immutable.of(),
-                    Map.Immutable.of(), Set.Immutable.of());
-        }
-
-    }
-
-    ///////////////////////////////////////////
-    // class Transient
-    ///////////////////////////////////////////
-
-    static class Transient {
-
-        protected final boolean finite;
-
-        private final Map.Transient<ITermVar, ITermVar> reps;
-        protected final Map.Transient<ITermVar, Integer> ranks;
-        private final Map.Transient<ITermVar, ITerm> terms;
-        protected final Set.Transient<Diseq> disequalities;
-
-        Transient(boolean finite) {
-            this(finite, Map.Transient.of(), Map.Transient.of(), Map.Transient.of(), Set.Transient.of());
-        }
-
-        Transient(PersistentUniDisunifier.Immutable unifier) {
-            this(unifier.finite, unifier.reps.get().asTransient(), unifier.ranks.asTransient(),
-                    unifier.terms.asTransient(), unifier.disequalities.asTransient());
-        }
-
-        Transient(boolean finite, Map.Transient<ITermVar, ITermVar> reps, Map.Transient<ITermVar, Integer> ranks,
-                Map.Transient<ITermVar, ITerm> terms, Set.Transient<Diseq> disequalities) {
-            this.finite = finite;
-            this.reps = reps;
-            this.ranks = ranks;
-            this.terms = terms;
-            this.disequalities = disequalities;
-        }
-
-        protected Iterable<Entry<ITermVar, ITermVar>> repEntries() {
-            return reps.entrySet();
-        }
-
-        protected Iterable<Entry<ITermVar, ITerm>> termEntries() {
-            return terms.entrySet();
-        }
-
-        protected ITermVar findRep(ITermVar var) {
-            return PersistentUniDisunifier.findRep(var, reps);
-        }
-
-        protected ITermVar getRep(ITermVar var) {
-            return reps.get(var);
-        }
-
-        protected ListMultimap<ITermVar, ITermVar> getInvReps() {
-            final ListMultimap<ITermVar, ITermVar> invReps = LinkedListMultimap.create();
-            reps.forEach((var, rep) -> {
-                invReps.put(rep, var);
-            });
-            return invReps;
-        }
-
-        protected void putRep(ITermVar var, ITermVar rep) {
-            reps.__put(var, rep);
-        }
-
-        protected ITermVar removeRep(ITermVar var) {
-            return reps.__remove(var);
-        }
-
-        protected ITerm getTerm(ITermVar rep) {
-            return terms.get(rep);
-        }
-
-        protected void putTerm(ITermVar rep, ITerm term) {
-            terms.__put(rep, term);
-        }
-
-        protected ITerm removeTerm(ITermVar rep) {
-            return terms.__remove(rep);
-        }
-
-        protected int getRank(ITermVar var) {
-            return ranks.getOrDefault(var, 1);
-        }
-
-        protected PersistentUniDisunifier.Immutable freeze() {
-            final PersistentUniDisunifier.Immutable unifier = new PersistentUniDisunifier.Immutable(finite,
-                    reps.freeze(), ranks.freeze(), terms.freeze(), disequalities.freeze());
-            return unifier;
+            return new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(finite), Set.Immutable.of());
         }
 
     }

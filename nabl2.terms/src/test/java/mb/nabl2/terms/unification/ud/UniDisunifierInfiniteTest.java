@@ -13,7 +13,7 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.TermSize;
 
 @SuppressWarnings("unused")
-public class UnifierInfiniteTest {
+public class UniDisunifierInfiniteTest {
 
     private final ITermVar a = B.newVar("", "a");
     private final ITermVar b = B.newVar("", "b");

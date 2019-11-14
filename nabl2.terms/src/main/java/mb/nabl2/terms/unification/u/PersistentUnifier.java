@@ -49,7 +49,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         private final Map.Immutable<ITermVar, Integer> ranks;
         private final Map.Immutable<ITermVar, ITerm> terms;
 
-        Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
+        // FIXME Should be `package`, but is `public` for constructor in PersistentUniDisunifier
+        public Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
             this.finite = finite;
             this.reps = new Ref<>(reps);

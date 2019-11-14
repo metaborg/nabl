@@ -840,6 +840,10 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier;
         }
 
+        @Override public String toString() {
+            return unifier.toString();
+        }
+
     }
 
 }

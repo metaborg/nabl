@@ -19,7 +19,7 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.TermSize;
 
 @SuppressWarnings("unused")
-public class UnifierFiniteTest {
+public class UniDisunifierFiniteTest {
 
     private final ITermVar a = B.newVar("", "a");
     private final ITermVar b = B.newVar("", "b");
@@ -72,7 +72,8 @@ public class UnifierFiniteTest {
         assertTrue(phi.diff(b, x).orElseThrow(() -> new RuntimeException()).isEmpty());
     }
 
-    @Test(timeout = 10000, expected = OccursException.class) public void testUnifyOccursDirect() throws OccursException {
+    @Test(timeout = 10000, expected = OccursException.class) public void testUnifyOccursDirect()
+            throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
     }
@@ -114,9 +115,8 @@ public class UnifierFiniteTest {
         reps.__put(a, b);
         reps.__put(b, c);
         terms.__put(d, B.newAppl(f, a));
-        IUniDisunifier.Transient phi =
-                new PersistentUniDisunifier.Transient(true, reps, Map.Transient.of(), terms, Set.Transient.of()).freeze()
-                        .melt();
+        IUniDisunifier.Transient phi = new PersistentUniDisunifier.Immutable(true, reps.freeze(), Map.Immutable.of(),
+                terms.freeze(), Set.Immutable.of()).melt();
         phi.remove(b);
         assertTrue(phi.diff(a, c).orElseThrow(() -> new RuntimeException()).isEmpty());
         assertTrue(phi.diff(d, B.newAppl(f, c)).orElseThrow(() -> new RuntimeException()).isEmpty());
@@ -127,9 +127,8 @@ public class UnifierFiniteTest {
         Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         reps.__put(b, c);
-        IUniDisunifier.Transient phi =
-                new PersistentUniDisunifier.Transient(true, reps, Map.Transient.of(), terms, Set.Transient.of()).freeze()
-                        .melt();
+        IUniDisunifier.Transient phi = new PersistentUniDisunifier.Immutable(true, reps.freeze(), Map.Immutable.of(),
+                terms.freeze(), Set.Immutable.of()).melt();
         phi.remove(c);
         assertTrue(phi.diff(a, b).orElseThrow(() -> new RuntimeException()).isEmpty());
         assertFalse(phi.diff(b, c).orElseThrow(() -> new RuntimeException()).isEmpty());
@@ -140,9 +139,8 @@ public class UnifierFiniteTest {
         Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         terms.__put(b, B.newAppl(f, c));
-        IUniDisunifier.Transient phi =
-                new PersistentUniDisunifier.Transient(true, reps, Map.Transient.of(), terms, Set.Transient.of()).freeze()
-                        .melt();
+        IUniDisunifier.Transient phi = new PersistentUniDisunifier.Immutable(true, reps.freeze(), Map.Immutable.of(),
+                terms.freeze(), Set.Immutable.of()).melt();
         phi.remove(b);
         assertTrue(phi.diff(a, B.newAppl(f, c)).orElseThrow(() -> new RuntimeException()).isEmpty());
     }
@@ -190,10 +188,10 @@ public class UnifierFiniteTest {
     }
 
     @Test(timeout = 10000) public void testEquivalenceClasses() throws OccursException {
-        final IUniDisunifier.Immutable phi = new PersistentUniDisunifier.Transient(true, Map.Transient.of(a, b), Map.Transient.of(),
-                Map.Transient.of(), Set.Transient.of()).freeze();
-        final IUniDisunifier.Immutable theta = new PersistentUniDisunifier.Transient(true, Map.Transient.of(b, a),
-                Map.Transient.of(), Map.Transient.of(), Set.Transient.of()).freeze();
+        final IUniDisunifier.Immutable phi = new PersistentUniDisunifier.Immutable(true, Map.Immutable.of(a, b),
+                Map.Immutable.of(), Map.Immutable.of(), Set.Immutable.of());
+        final IUniDisunifier.Immutable theta = new PersistentUniDisunifier.Immutable(true, Map.Immutable.of(b, a),
+                Map.Immutable.of(), Map.Immutable.of(), Set.Immutable.of());
         assertEquals(phi, theta);
     }
 
@@ -219,31 +217,31 @@ public class UnifierFiniteTest {
         assertEquals(phi.freeze(), theta.freeze());
     }
 
-    @Test(timeout = 10000) public void testVariableDisunify() throws OccursException {
+    @Test(/*timeout = 10000*/) public void testVariableDisunify() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
-        assertPresent(phi.disunify(a, b));
-        assertFalse(phi.diff(a, b).isPresent());
+        assertTrue(phi.disunify(a, b));
+        assertAbsent(phi.diff(a, b));
     }
 
     @Test(timeout = 10000) public void testVariableDisunifyAndTransitiveUnify() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
-        assertPresent(phi.disunify(a, b));
+        assertTrue(phi.disunify(a, b));
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
-        assertFalse(phi.unify(c, b).isPresent());
+        assertAbsent(phi.unify(c, b));
     }
 
     @Test(timeout = 10000) public void testVariableTransitiveUnifyAndDisunify() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
         phi.unify(c, b).orElseThrow(() -> new RuntimeException());
-        assertAbsent(phi.disunify(a, b));
+        assertFalse(phi.disunify(a, b));
     }
 
     @Test(timeout = 10000) public void testVariableUnifyDisunifyUnify() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         phi.unify(a, c).orElseThrow(() -> new RuntimeException());
-        assertPresent(phi.disunify(a, b));
-        assertFalse(phi.unify(c, b).isPresent());
+        assertTrue(phi.disunify(a, b));
+        assertAbsent(phi.unify(c, b));
     }
 
     @Test(timeout = 10000, expected = OccursException.class) public void testRecursive1() throws OccursException {
@@ -286,12 +284,12 @@ public class UnifierFiniteTest {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         phi.unify(a, x).orElseThrow(() -> new RuntimeException());
         phi.unify(b, x).orElseThrow(() -> new RuntimeException());
-        assertAbsent(phi.disunify(a, b));
+        assertFalse(phi.disunify(a, b));
     }
 
     @Test(timeout = 10000) public void testRemoveDisunifiedVar() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
-        assertPresent(phi.disunify(a, b));
+        assertTrue(phi.disunify(a, b));
         assertPresent(phi.unify(a, c));
         phi.remove(c);
         assertAbsent(phi.unify(a, b));
@@ -299,7 +297,7 @@ public class UnifierFiniteTest {
 
     @Test(timeout = 10000) public void testUniversalDisequality() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
-        assertPresent(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
+        assertTrue(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
         assertAbsent(phi.unify(b, B.newAppl(f, B.newInt(7))));
         assertAbsent(phi.unify(b, B.newAppl(f, c)));
         assertAbsent(phi.unify(b, B.newAppl(f, a)));
@@ -307,7 +305,7 @@ public class UnifierFiniteTest {
 
     @Test(timeout = 10000) public void testUniversalDisequalityViaVarVarUnify() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
-        assertPresent(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
+        assertTrue(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
         assertPresent(phi.unify(b, c));
         assertAbsent(phi.unify(c, B.newAppl(f, x)));
     }

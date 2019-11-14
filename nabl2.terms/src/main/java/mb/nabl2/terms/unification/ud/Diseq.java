@@ -5,10 +5,10 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
-import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
@@ -16,11 +16,11 @@ import mb.nabl2.util.Tuple3;
 public class Diseq {
 
     private final Set.Immutable<ITermVar> universals;
-    private final Map.Immutable<ITermVar, ITerm> diseqs;
+    private final IUnifier.Immutable diseqs;
 
-    public Diseq(Iterable<ITermVar> universals, java.util.Map<ITermVar, ITerm> eqMap) {
+    public Diseq(Iterable<ITermVar> universals, IUnifier.Immutable diseqs) {
         this.universals = CapsuleUtil.toSet(universals);
-        this.diseqs = CapsuleUtil.toMap(eqMap);
+        this.diseqs = diseqs;
     }
 
     /**
@@ -30,7 +30,7 @@ public class Diseq {
         return universals;
     }
 
-    public Map.Immutable<ITermVar, ITerm> disequalities() {
+    public IUnifier.Immutable disequalities() {
         return diseqs;
     }
 
@@ -38,13 +38,13 @@ public class Diseq {
      * Free variables in this disequality.
      */
     public java.util.Set<ITermVar> freeVars() {
-        return Sets.difference(diseqs.keySet(), universals).immutableCopy();
+        return Sets.difference(diseqs.freeVarSet(), universals).immutableCopy();
     }
 
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {
         ImmutableList.Builder<ITerm> lefts = ImmutableList.builder();
         ImmutableList.Builder<ITerm> rights = ImmutableList.builder();
-        diseqs.forEach((v, t) -> {
+        diseqs.equalityMap().forEach((v, t) -> {
             lefts.add(v);
             rights.add(t);
         });
