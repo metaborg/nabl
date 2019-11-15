@@ -38,7 +38,6 @@ public class UniDisunifierFiniteTest {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         phi.unify(a, a).orElseThrow(() -> new IllegalArgumentException());
         assertTrue(phi.isEmpty());
-        assertEquals(0, phi.size());
     }
 
     @Test(timeout = 10000) public void testNonEmpty() throws OccursException {
@@ -46,7 +45,6 @@ public class UniDisunifierFiniteTest {
         phi.unify(a, x).orElseThrow(() -> new IllegalArgumentException());
         phi.unify(b, y).orElseThrow(() -> new IllegalArgumentException());
         assertFalse(phi.isEmpty());
-        assertEquals(2, phi.size());
     }
 
     @Test(timeout = 10000) public void testVarIdentity() throws OccursException {
