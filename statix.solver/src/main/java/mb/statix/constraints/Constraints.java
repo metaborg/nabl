@@ -519,7 +519,7 @@ public final class Constraints {
                 onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
                 RuleUtil.freeVars(onResolveQuery.filter().getDataWF(), onVar);
                 RuleUtil.freeVars(onResolveQuery.min().getDataEquiv(), onVar);
-                onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
+                onResolveQuery.resultTerm().getVars().forEach(onVar::apply);
                 return null;
             },
             onTellEdge -> {

@@ -17,12 +17,7 @@ imports
   
   statix/api
   statixruntime
-  statix/runtime/analysis
-
-signature
-  constructors
-    SUCCEEDS : TestResult
-    FAILS    : TestResult
+  statix/runtime/-
 
 rules
   
@@ -31,7 +26,7 @@ rules
 
   editor-evaluate:
       (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
-    with result := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
+    with result   := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
          filename := <guarantee-extension(|"stxresult")> path
 
 rules
@@ -41,7 +36,7 @@ rules
 
   editor-evaluation-pair:
       (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
-    with result := <build-evaluation-pair> ast;
+    with result   := <build-evaluation-pair> ast;
          filename := <guarantee-extension(|"evalpair.aterm")> path
 
   build-evaluation-pair: ast@Test(_, _, _) -> (CExists(bvs, body'), spec)
@@ -52,10 +47,15 @@ rules
          spec   := <spec-ast-to-aterm(|a)> (ast', ext);
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body
 
+signature
+  constructors
+    SUCCEEDS : TestResult
+    FAILS    : TestResult
+
 rules
 
   evaluate-test: ast -> result
-    with if (_, [], _, _) := <evaluate> ast then
+    with if EvalResult(_, [], _, _) := <evaluate> ast then
            result := SUCCEEDS()
          else
            result := FAILS()
@@ -71,4 +71,4 @@ rules
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
          s@Solution(_, a') := <stx--solve-constraint(|spec, level)> (bvs, body');
          (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a';
-         result := (s, error*, warning*, note*)
+         result := EvalResult(s, error*, warning*, note*)
