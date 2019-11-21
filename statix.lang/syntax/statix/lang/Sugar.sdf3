@@ -42,8 +42,6 @@ context-free syntax
 
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
-  LocalVars.NoLocalVars = <>
-
   HoConstraint.LLam = <{ <{Term ", "}+> }>
 
   HoConstraint.LC = ConstraintId

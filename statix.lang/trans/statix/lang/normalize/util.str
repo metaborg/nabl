@@ -14,6 +14,27 @@ imports
 
 rules
 
+  free-constraint-vars = rec x (
+    collect-om(free-constraint-vars(x) + ![<is-var>])
+  )
+
+  free-constraint-vars(fv): CExists(vs, body) -> fvs
+    with fvs := <raw-diff> (<fv> body, vs)
+
+  free-constraint-vars(fv): LLam(ps, body) -> fvs
+    with fvs := <raw-diff> (<fv> body, <all-vars> ps)
+
+rules
+
+  try-in-constraints(s) = rec x (
+    CExists(id, x)
+ <+ CConj(x, x)
+ <+ CTry(x, id)
+ <+ try(s)
+  )
+
+rules
+
   norm-get-ast-type =
     nabl2-get-anno-type
  <+ fatal-err(|"Missing AST type")
@@ -52,23 +73,31 @@ rules
   // replace : old:Term -> new:Term
   // to-c : (old:Term, new:Term) -> Constraint
 
-  normalize-in-rules(replace,in-head,add-vars,to-c):
-      Rule(lbl, head, bvs, body){a*} -> Rule(lbl, head', bvs', body''){a*}
-    with (head', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> head;
-         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
-         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
+  normalize-scoped(replace,in-head,add-vars,to-c):
+      Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs'', body'')){a*}
+    with (head', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> head;
+         (body', bmaps) := <collect-map(replace, not-a-scope)> body;
+         body'' := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
+         bvs'' := <filter((add-vars,id);Snd);all-vars> bmaps
 
-  normalize-in-rules(replace,in-head,add-vars,to-c):
-      LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
-    with (ts', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> ts;
-         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+  normalize-scoped(replace,in-head,add-vars,to-c):
+      LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs'', body'')){a*}
+    with (ts', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> ts;
+         (body', bmaps) := <collect-map(replace, not-a-scope)> body;
          body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
-         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
+         bvs'' := <filter((add-vars,id);Snd);all-vars> bmaps
 
-  not-in-lambda = not(?LLam(_, _, _))
+  normalize-scoped(replace,in-head,add-vars,to-c):
+      CTry(body, msg){a*} -> CTry(<mk-CExists>(bvs'', body''), msg){a*}
+    with (body', bmaps) := <collect-map(replace, not-a-scope)> body;
+         body''  := <filter(to-c);list-to-conj(|body')> bmaps;
+         bvs'' := <filter((add-vars,id);Snd);all-vars> bmaps
+
+  is-scope = ?Rule(_, _, _)
+  is-scope = ?LLam(_, _)
+  is-scope = ?CTry(_, _)
+
+  not-a-scope = not(is-scope)
 
 rules // smart constructors for typed terms
 
@@ -114,7 +143,7 @@ rules // smart constructors for typed terms
          (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
          ty := LIST(ty')
 
-  mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
+  mk-LLam: (ps, c) -> <norm-set-ast-type(|ty)> LLam(ps, c)
     with tys := <map(norm-get-ast-type)> ps;
          ty := PRED(tys)
 
@@ -130,6 +159,12 @@ rules
   list-to-conj: []     -> CTrue()
   list-to-conj: [C]    -> C
   list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+
+  mk-CExists: ([], c              ) -> c
+  mk-CExists: (vs, CExists(vs', c)) -> CExists(<conc> (vs, vs'), c)
+    where not([] := vs)
+  mk-CExists: (vs, c              ) -> CExists(vs, c)
+    where not([] := vs)
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()

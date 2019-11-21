@@ -45,7 +45,7 @@ rules
     C{x}.ind := ind !!,
     C{x}.kind := DerivedC() !!.
 
-  RuleHead[[ F(x, inargs, outarg) ^ (s_rule, s_body, y) : ty ]] := x == y,
+  RuleHead[[ F(x, inargs, outarg) ^ (s_rule, y) : ty ]] := x == y,
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != PRED(_) | error "Use `c(...) | ...` for non-functional constraints." @x,

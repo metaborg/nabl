@@ -102,18 +102,14 @@ rules
   Ind[[ InductiveC() ]].
   Ind[[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
-  DeclOrRule[[ r@Rule(_, h, bvs, body) ^ (s) ]] :=
+  DeclOrRule[[ r@Rule(_, h, body) ^ (s) ]] :=
     Rule{x} <- s,
     new s_rule, s_rule -P-> s,
-    distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    RuleHead[[ h ^ (s_rule, s_body, x) : _ ]],
-    new s_body, s_body -P-> s_rule,
-    distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
-    (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
-    Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
-    Constraint[[ body ^ (s_body) ]].
+    distinct/name D(s_rule)/Var | error $[Duplicate variable [NAME]] @NAMES,
+    RuleHead[[ h ^ (s_rule, x) : _ ]],
+    Constraint[[ body ^ (s_rule) ]].
 
-  RuleHead[[ C(x, args) ^ (s_rule, s_body, y) : ty ]] := x == y,
+  RuleHead[[ C(x, args) ^ (s_rule, y) : ty ]] := x == y,
     C{x} -> s_rule, C{x} |-> d, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
@@ -127,10 +123,10 @@ rules
     Map1T(Build)[[ args ^ (s) : tys ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
-  HoConstraint[[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
+  HoConstraint[[ LLam(ps, c) ^ (s) : PRED(tys) ]] :=
     new s', s' -P-> s,
     Map1T(Match)[[ ps ^ (s') : tys ]],
-    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
+    (D(s') lsect/name V(s)) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
 
 
@@ -160,8 +156,15 @@ rules
     Build[[ t2 ^ (s) : ty ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ CTry(c, msg) ^ (s) ]] :=
-    [[ c ^ (s) ]],
+  Constraint[[ CExists(vs, c) ^ (s) ]] :=
+    new s', s' -P-> s,
+    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
+    distinct/name D(s')/Var | error $[Duplicate variable [NAME]] @NAMES,
+    (D(s') lsect/name V(s)) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+    Constraint[[ c ^ (s') ]].
+
+  Constraint[[ CTry(c, msg) ^ (s) ]] :=
+    Constraint[[ c ^ (s) ]],
     Message(TryKind)[[ msg ^ (s) ]].
 
 /******************************************************************

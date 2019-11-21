@@ -21,8 +21,8 @@ rules
     nabl2-custom-analysis-info-msg(|"| Normalize terms...");
     bottomup(
       try(normalize-ast-ids)
-    ; try(normalize-in-rules(replace-pattern,fail,not(pattern-no-add),pattern-to-c))
-    ; try(normalize-in-rules(replace-term,id,id,term-to-c))
+    ; try(normalize-scoped(replace-pattern,fail,not(pattern-no-add),pattern-to-c))
+    ; try(normalize-scoped(replace-term,id,id,term-to-c))
     )
 
 

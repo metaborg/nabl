@@ -8,34 +8,10 @@ imports
   statix/lang/-
   statix/lang/statics/-
 
-signature
-  sorts Extensions constructors
-    VarExt   : Term -> Extensions
-    ParamExt : Term * Integer -> Extension
-             : List(Term) -> Extension
-  sorts ExtensionConstraint constructors
-    Provide : Extensions * Extensions -> ExtensionConstraint
-    Require : Extensions * Extensions * Origin -> ExtensionConstraint
+rules
 
-rules // util
+  ext-explicate-set(|a): ExtParam(y, i) -> ExtParam(d, i)
+    with d := <nabl2-get-ast-property(|a,"decl")> y
 
-  combine-ext-constraints =
-    unzip
-  ; (concat, concat)
-
-rules // explicate occurrences
-
-  expl-ext-constraint(|a) = Provide(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)))
-  expl-ext-constraint(|a) = Require(keep-origin(expl-ext(|a)), keep-origin(expl-ext(|a)), id)
-
-  expl-ext(|a) = is-list
-
-  expl-ext(|a): VarExt(x) -> VarExt(d)
-    with d := <nabl2-get-ast-property(|a,"decl")> x
-    where SCOPE() := <nabl2-get-type(|a)> d
-
-  expl-ext(|a): ParamExt(x, i) -> ParamExt(d, i)
-    with d := <nabl2-get-ast-property(|a,"decl")> x
-       ; tys := <nabl2-get-type(|a);inout-types> d
-       ; ty := <index(|i)> tys
-    where SCOPE() := ty
+  ext-explicate-set(|a): ExtVar(y) -> ExtVar(d)
+    with d := <nabl2-get-ast-property(|a,"decl")> y

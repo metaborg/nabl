@@ -40,7 +40,7 @@ rules
   core-ast-to-spec-aterm: (ast, ext) -> spec
     with edge* := <collect-all(?Labels(<id>));concat;strip-annos> ast
        ; data* := [Decl()|<collect-all(?RelDecl(<id>, _));strip-annos> ast]
-       ; rule* := <collect-all(?Rule(_, _, _, _));strip-annos;eliminate-all> ast
+       ; rule* := <collect-all(?Rule(_, _, _));strip-annos;eliminate-all> ast
        ; spec := (edge*, data*, EOP(), rule*, ext)
 
 rules

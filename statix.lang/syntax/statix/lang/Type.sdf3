@@ -4,6 +4,9 @@ imports
 
   nabl2/API
 
+  statix/lang/Common
+  statix/lang/Core
+
 sorts
 
   IType // internal type
@@ -29,3 +32,21 @@ context-free syntax
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
 
+context-free syntax
+
+  ExtConstraints = <<{ExtConstraint ", "}*>>
+
+  ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet]]
+  ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet]]
+  ExtConstraint.ExtIsCovered = [[ExtId] is closed]
+
+  ExtSet.ExtParam = [[ExtId].[Int]]
+  ExtSet.ExtVar   = [[ExtId]]
+  ExtSet.ExtLit   = [{[{ExtLabel ", "}*]}]
+  ExtSet.ExtAll   = "*"
+
+  ExtId = ID
+  ExtId = NaBL2Occurrence
+
+  ExtLabel = RelRef
+  ExtLabel = EdgeRef

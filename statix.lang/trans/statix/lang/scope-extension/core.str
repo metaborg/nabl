@@ -11,62 +11,41 @@ imports
 
 rules // collect extension constraints
 
-  ext-constraints: Rule(C(x, arg*), _, body) -> c
-    with c := < add-indices
-              ; filter(param-ext-constraints(|x))
-              ; combine-ext-constraints
-              > arg*
+  ext-constraints: Rule(C(x, ps), _, body) -> c*
+    with c* := <map-with-index(ext-param-constraints(|x));concat> ps
 
-  param-ext-constraints(|x): (i, t) -> c
-    where (term-ext, term-c) := <term-ext> t
-    with param-ext := ParamExt(x, i)
-       ; origin := <nabl2-get-ast-index> x
-       ; provide* := [Provide(term-ext, [()])]
-         // Provide(param-ext, term-ext) for exporting permissions
-         // But need to figure out how to solve those, since a constriant
-         // should only provide permission if *all* its rules to so.
-       ; require* := [Require(term-ext, param-ext, origin)]
-       ; param-c := (provide*, require*)
-       ; c := <combine-ext-constraints> [term-c, param-c]
+  ext-param-constraints(|x): (i, Var(y)) -> c*
+    with c* := [ ExtProvides(ExtParam(x, i), ExtVar(y))
+               , ExtRequires(ExtParam(x, i), ExtVar(y))
+               ]
+
+  ext-param-constraints(|x): (i, p) -> c*
+    where not(Var(_) := p)
+    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> p
 
 
-  ext-constraints: CNew(vs) -> c
-    with (term-ext*, term-c*) := <map(term-ext);unzip> vs
-       ; provide* := <map(!Provide(<id>,[()]))> term-ext*
-       ; new-c := (provide*, [])
-       ; c := <combine-ext-constraints> [new-c|term-c*]
-
-  ext-constraints: CTellEdge(t, lbl, _) -> c
-    where (term-ext, term-c) := <term-ext> t
-    with origin := <nabl2-get-ast-index> t
-       ; require* := [Require([lbl], term-ext, origin)]
-       ; edge-c := ([], require*)
-       ; c := <combine-ext-constraints> [term-c, edge-c]
-
-  ext-constraints: CTellRel(lbl, _, t) -> c
-    where (term-ext, term-c) := <term-ext> t
-    with origin := <nabl2-get-ast-index> t
-       ; require* := [Require([lbl], term-ext, origin)]
-       ; data-c := ([], require*)
-       ; c := <combine-ext-constraints> [term-c, data-c]
-
-  // FIXME this also matches rule heads!
-  ext-constraints: C(x, arg*) -> c
-    with c := < add-indices
-              ; filter(arg-ext-constraints(|x))
-              ; combine-ext-constraints
-              > arg*
-
-  arg-ext-constraints(|x): (i, t) -> c
-    where (term-ext, term-c) := <term-ext> t
-    with param-ext := ParamExt(x, i)
-       ; origin := <nabl2-get-ast-index> t
-       ; require* := [Require(param-ext, term-ext, origin)]
-       ; arg-c := ([], require*)
-       ; c := <combine-ext-constraints> [term-c, arg-c]
+  ext-constraints: LLam(ps, body) -> c*
+    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> ps
 
 
-  term-ext: Var(x) -> (ext, c)
-    with ext := <with-origin(|x)> VarExt(x)
-       ; c := ([], [])
+  ext-constraints: CNew(vs) -> c*
+    with c* := <map(\ Var(y) -> ExtProvides(ExtVar(y), ExtAll()) \)> vs
 
+  ext-constraints: CTellEdge(Var(y), lbl, _) -> c*
+    with c* := [ExtRequires(ExtVar(y), ExtLit([lbl]))]
+
+  ext-constraints: CTellRel(lbl, _, Var(y)) -> c*
+    with c* := [ExtRequires(ExtVar(y), ExtLit([lbl]))]
+
+
+  // FIXME This also matches rule heads! This gives an unnecessary circular
+  //       constraint, but won't invalidate the result of the analysis.
+  ext-constraints: C(x, args) -> c*
+    with c* := <map-with-index(ext-arg-constraints(|x));concat> args
+
+  ext-arg-constraints(|x): (i, Var(y)) -> c*
+    with c* := [ ExtProvides(ExtVar(y), ExtParam(x, i))
+               , ExtRequires(ExtVar(y), ExtParam(x, i))
+               ]
+
+  ext-arg-constraints(|x): (i, _) -> []

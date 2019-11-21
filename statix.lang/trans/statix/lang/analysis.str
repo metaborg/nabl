@@ -17,6 +17,8 @@ imports
   statix/lang/normalize
   statix/lang/scope-extension
 
+  statix/runtime/pp
+  pp/statix/lang/-
   pp
 
 signature
@@ -33,8 +35,10 @@ rules // Analysis
        ; ext-c* := <collect-ext-constraints> ast
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
-    with ext-c* := <map(?CustomUnitAnalysis(_, <id>));unzip;(concat,concat)> units
+    with ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
        ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
+       ; nabl2-custom-analysis-info-msg(|"Extension constraints:")
+       ; <pp-Statix-string(prettyprint-Statix-ExtConstraints);debug> ext-c'*
        ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
        ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
        ; e* := [unit-e*, ext-e*]
