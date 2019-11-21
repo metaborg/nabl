@@ -29,7 +29,7 @@ test extend local scope in same rule fails [[
   rules
     c : 
     c() :- {s} !foo[""] in [[s]].
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 // extension in one step
 
@@ -67,7 +67,7 @@ test extend local scope in via other constraint fails [[
 
     c1 : scope
     c1(s) :- !foo[""] in s.
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 // extension in two steps
 
@@ -114,7 +114,7 @@ test extend local scope in via two other constraints fails [[
 
     c2 : scope
     c2(s) :- !foo[""] in s.
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 // extension via sugar construct
 
@@ -125,7 +125,7 @@ test extend local scope via declaration sugar fails [[
   rules
     c : 
     c() :- {s} [[s]] -> Var{"x"@-}.
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 test extend local scope via functional constraint fails [[
   resolve {s} c1([[s]]) == _
@@ -137,7 +137,7 @@ test extend local scope via functional constraint fails [[
 
     c1 : scope -> ()
     c1(s) = () :- s -> Var{"x"@-}.
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 // extension via mapped predicate constraint
 
@@ -167,7 +167,7 @@ test local extension of non-lifted parameter of lifted predicate fails [[
     
     d :
     d() :- {s1 s2} new s1, s1 == s2, cs([[s2]], []).
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 test extension of lifted parameter of lifted predicate fails [[
   resolve {s1 s2} new s1, s1 == s2, cs([s2], [])
@@ -181,7 +181,7 @@ test extension of lifted parameter of lifted predicate fails [[
     
     d :
     d() :- {s1 s2} new s1, s1 == s2, cs([s2], []).
-]] 1 errors at #1
+]] 1 errors //at #1
 
 
 // extension via mapped functional constraint
@@ -212,7 +212,7 @@ test local extension of non-lifted parameter of lifted functional fails [[
 
     d :
     d() :- {s1 s2} new s1, s1 == s2, fs([[s2]], []) == _.
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
 
 test extension of lifted parameter of lifted functional fails [[
   resolve {s1 s2} new s1, s1 == s2, fs([s2], []) == _
@@ -226,7 +226,7 @@ test extension of lifted parameter of lifted functional fails [[
     
     d :
     d() :- {s1 s2} new s1, s1 == s2, fs([s2], []) == _.
-]] 1 errors at #1
+]] 1 errors //at #1
 
 test extension of output of functional constraint fails [[
   resolve [[f()]] -> Var{"x"@-}
@@ -236,4 +236,20 @@ test extension of output of functional constraint fails [[
     c : 
     c() :- {s} [[f()]] -> Var{"x"@-}.
     f : -> scope
-]] 2 errors at #1, #2
+]] 2 errors //at #1, #2
+
+test extension of target scope in query fails [[
+  resolve {s} query () filter e and { s' :- [[s']] -P-> s } in s |-> _
+  signature
+    name-resolution
+      labels P
+]] 1 errors //at #1
+
+test extension of scope data in query fails [[
+  resolve {s} query r filter e and { s' :- [[s']] -P-> s } in s |-> _
+  signature
+    relations
+      r : scope
+    name-resolution
+      labels P
+]] 1 errors //at #1
