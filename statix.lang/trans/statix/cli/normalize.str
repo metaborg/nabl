@@ -17,7 +17,5 @@ rules // maps
 rules // util
 
   normalize-scoped(replace,add-vars,to-c):
-      Eval(body){a*} -> Eval(<mk-CExists>(vs'', body'')){a*}
-    with (body', bmaps) := <collect-map(replace, not-a-scope)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
-         vs'' := <filter((add-vars,id);Snd);all-vars> bmaps
+      Eval(body){a*} -> Eval(<mk-CExists>(bvs', body')){a*}
+    with (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body

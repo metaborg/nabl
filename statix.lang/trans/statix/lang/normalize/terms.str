@@ -26,6 +26,8 @@ rules
     )
 
 
+rules
+
   normalize-ast-ids = WithId(normalize-term-or-id)
   normalize-ast-ids = CAstProperty(normalize-term-or-id, id, id)
 
@@ -34,6 +36,8 @@ rules
     where <not(?AST_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
     with t' := <norm-set-ast-type(|AST_ID())> AstIdOp(t)
 
+
+rules
 
   replace-pattern: t@Wld() -> v
     with ty := <norm-get-ast-type> t
@@ -48,6 +52,8 @@ rules
 
   pattern-no-add = ?As(_, _)
 
+
+rules
 
   replace-term: t@NewOp() -> v
     with ty := <norm-get-ast-type> t
