@@ -16,6 +16,7 @@ rules
 
   free-constraint-vars = rec x (
     collect-om(free-constraint-vars(x) + ![<is-var>])
+  ; concat
   )
 
   free-constraint-vars(fv): CExists(vs, body) -> fvs

@@ -21,11 +21,11 @@ rules // collect extension constraints
 
   ext-param-constraints(|x): (i, p) -> c*
     where not(Var(_) := p)
-    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> p
+    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(y) \)> p
 
 
   ext-constraints: LLam(ps, body) -> c*
-    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> ps
+    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(y) \)> ps
 
 
   ext-constraints: CNew(vs) -> c*
