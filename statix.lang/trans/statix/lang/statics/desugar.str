@@ -7,6 +7,8 @@ module statix/lang/statics/desugar
 imports
 
   signatures/statix/lang/-
+
+  statix/lang/util
   statix/lang/statics/-
 
 rules
@@ -58,6 +60,13 @@ rules
          lord       := <with-origin(|rt)> LTrue();
          min        := <with-origin(|rt)> Min(ord, lord);
          c'         := CResolveQuery(rel, filter, min, st, pst, msg)
+
+rules
+
+  desugar-regexes = bottomup(try(desugar-regex))
+
+  desugar-regex: ZeroOrOne(re) -> Or(Epsilon(), re)
+  desugar-regex: OneOrMore(re) -> Concat(re, Closure(re))
 
 rules
 

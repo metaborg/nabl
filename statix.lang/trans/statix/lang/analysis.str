@@ -37,8 +37,7 @@ rules // Analysis
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
     with ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
        ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
-       ; nabl2-custom-analysis-info-msg(|"Extension constraints:")
-       ; <pp-Statix-string(prettyprint-Statix-ExtConstraints);debug> ext-c'*
+//       ; <with(warn-msg(|"Extension constraints:");pp-Statix-string(prettyprint-Statix-ExtConstraints);debug)> ext-c'*
        ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
        ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
        ; e* := [unit-e*, ext-e*]

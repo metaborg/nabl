@@ -10,9 +10,6 @@ imports
 
 rules
 
-  ext-explicate-ids(|a): ExtIsCovered(x) -> ExtIsCovered(d)
-    with d := <nabl2-get-ast-property(|a,"decl")> x
-
   ext-explicate-ids(|a): ExtParam(x, i) -> ExtParam(d, i)
     with d := <nabl2-get-ast-property(|a,"decl")> x
 

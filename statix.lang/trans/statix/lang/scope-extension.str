@@ -13,9 +13,7 @@ rules
   ; concat
 
   explicate-ext-constraints(|a) =
-    map(try(oncetd(ext-explicate-ids(|a))))
+    map(topdown(try(ext-explicate-ids(|a))))
   ; nub
 
-  solve-ext-constraints: c* -> (ext, e*)
-    with ext := []
-       ; e* := []
+  solve-ext-constraints = fail

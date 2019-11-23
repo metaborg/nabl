@@ -116,6 +116,64 @@ test extend local scope in via two other constraints fails [[
     c2(s) :- !foo[""] in s.
 ]] 2 errors //at #1, #2
 
+// extensions on scopes from predicates
+
+test extend scope from single-rule predicate succeeds [[
+  resolve {s} c1(s), s -P-> s
+  signature
+    name-resolution
+      labels P
+  rules
+    c1 : scope
+    c1(s) :- new s.
+]] analysis succeeds
+
+test extend scope from single-rule predicate in two steps succeeds [[
+  resolve {s} c2(s), s -P-> s
+  signature
+    name-resolution
+      labels P
+  rules
+    c2 : scope
+    c2(s) :- c1(s).
+
+    c1 : scope
+    c1(s) :- new s.
+]] analysis succeeds
+
+test extend scope from multi-rule predicate where all rules provide succeeds [[
+  resolve {i s} c1(i, s), s -P-> s
+  signature
+    name-resolution
+      labels P
+  rules
+    c1 : int * scope
+    c1(1, s) :- new s.
+    c1(2, s) :- new s.
+]] analysis succeeds
+
+test extend scope from multi-rule predicate where not all rules provide fails [[
+  resolve {i s} c1(i, s), s -P-> s
+  signature
+    name-resolution
+      labels P
+  rules
+    c1 : int * scope
+    c1(1, s) :- new s.
+    c1(2, s).
+]] analysis fails
+
+test extend scope from recursive multi-rule predicate where the base case provides succeeds [[
+  resolve {is s} c1(is, s), s -P-> s
+  signature
+    name-resolution
+      labels P
+  rules
+    c1 : list(int) * scope
+    c1([], s) :- new s.
+    c1([i|is], s) :- c1(is, s).
+]] analysis succeeds
+
 // extension via sugar construct
 
 test extend local scope via declaration sugar fails [[
@@ -236,7 +294,9 @@ test extension of output of functional constraint fails [[
     c : 
     c() :- {s} [[f()]] -> Var{"x"@-}.
     f : -> scope
-]] 2 errors //at #1, #2
+]] 0 errors
+
+// extension in lambdas and tries
 
 test extension of target scope in query fails [[
   resolve {s} query () filter e and { s' :- [[s']] -P-> s } in s |-> _
@@ -250,6 +310,20 @@ test extension of scope data in query fails [[
   signature
     relations
       r : scope
+    name-resolution
+      labels P
+]] 1 errors //at #1
+
+test extension of outer scope in try fails [[
+  resolve {s} s -P-> s, try { new s }
+  signature
+    name-resolution
+      labels P
+]] 1 errors //at #1
+
+test extension of outer scope in query fails [[
+  resolve {s} s -P-> s, query () filter e and { s' :- new s } in s |-> _
+  signature
     name-resolution
       labels P
 ]] 1 errors //at #1

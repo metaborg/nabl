@@ -9,37 +9,63 @@ imports
   statix/lang/statics/-
   statix/lang/scope-extension/-
 
+signature
+  sorts SetOp constructors
+    Union : List(ExtSet) -> SetOp
+    Intersection : List(ExtSet) -> SetOp
+
 rules
 
-//  external solve-ext-constraints(combine|)
-//
-//  solve-ext-constraints: (provide*, require*) -> (ext, e*)
-//    with p* := <map(\ Provide(ext1, ext2) -> (ext1, ext2) \)> provide*
-//       ; with(strip-annos;debug(!"p* := "))
-//       ; p'* := <solve-ext-constraints(combine-provides)> p*
-//       ; with(strip-annos;debug(!"p'* := "))
-//    with r* := <map(\ Require(ext1, ext2, _) -> (ext2, ext1) \)> require*
-//       ; with(strip-annos;debug(!"r* := "))
-//       ; r'* := <solve-ext-constraints(combine-requires)> r*
-//       ; with(strip-annos;debug(!"r'* := "))
-//    with ext := <filter(ext-entries);concat> r'*
-//       ; e* := <filter(ext-error(|p'*, r'*))> require*
-//       ; with(strip-annos;debug(!"e* := "))
-//
-//  ext-entries: (ParamExt(d, i), lbl*) -> ext
-//    with x := <nabl2-get-occurrence-name> d
-//       ; ext := <map(!(x, i, <id>))> lbl*
-//
-//  ext-error(|p*, r*): Require(ext1, ext2, origin) -> (origin, "Cannot extend local scope")
-//    where <ext-error(|p*, r*)> ext1
-//        + <ext-error(|p*, r*)> ext2
-//
-//  ext-error(|p*, r*): ext@VarExt(_) -> <id>
-//    where [_|_] := <raw-lookup> (ext, r*)
-//        ; not([_|_] := <raw-lookup> (ext, p*))
-//
-//  combine-provides =
-//    foldr(![()], raw-isect)
-//
-//  combine-requires =
-//    foldr(![], raw-union)
+  external set-fixed-point(|base)
+
+rules
+
+  solve-ext-constraints: c* -> (ext, e*)
+    with id
+
+       ; provide-eq* := < filter(\ ExtProvides(v, s) -> (v, s) \)
+                        ; group-by(Fst,Snd)
+                        ; map(provide-combine)
+//                        ; with(warn-msg(|"provide eqs:");pp-Statix-string(prettyprint-Statix-ExtEqs);debug)
+                        ; bottomup(try(provide-to-list))
+                        > c*
+       ; provides* := < set-fixed-point(|<provide-base>)
+                      ; filter(not(?(_, [])))
+                      ; map((id, try(list-to-provide)))
+                      > provide-eq*
+//       ; with(warn-msg(|"provides:");pp-Statix-string(prettyprint-Statix-ExtEqs);debug)
+
+       ; require-eq* := < filter(\ ExtRequires(v, s) -> (v, s) \)
+                        ; group-by(Fst,Snd)
+                        ; map(require-combine)
+//                        ; with(warn-msg(|"require eqs:");pp-Statix-string(prettyprint-Statix-ExtEqs);debug)
+                        ; bottomup(try(require-to-list))
+                        > c*
+       ; requires* := < set-fixed-point(|<require-base>)
+                      ; filter(not(?(_, [])))
+                      ; map((id, try(list-to-require)))
+                      > require-eq*
+//       ; with(warn-msg(|"requires:");pp-Statix-string(prettyprint-Statix-ExtEqs);debug)
+
+         // errors if requires != {} and provides == {}
+       ; cover* := <filter(\ ExtIsCovered(s) -> s \)> c*
+       ; uncovered* := <raw-diff> (<map(Fst)> requires*, <map(Fst)> provides*)
+       ; missing* := <raw-isect> (cover*, uncovered*)
+       ; e* := <map( (?ExtVar(<id>) + ?ExtParam(<id>, _))
+                   ; \ d -> (<nabl2-get-occurrence-index> d, $[Variable requires extensions, but it is not provided.]) \
+                   )> missing*
+
+    with ext := []
+
+  provide-base = ![()]
+  provide-combine: (p@ExtParam(_, _), components) -> (p, Intersection(components))
+  provide-combine: (p@ExtVar(_), components) -> (p, Union(components))
+  provide-to-list: ExtAll() -> <provide-base>
+  list-to-provide: [()] -> ExtAll()
+
+  require-base = ![]
+  require-combine: (p@ExtParam(_, _), components) -> (p, Union(components))
+  require-combine: (p@ExtVar(_), components) -> (p, Union(components))
+  require-to-list: ExtLit(labels) -> labels
+  list-to-require: labels -> ExtLit(labels)
+    where is-list

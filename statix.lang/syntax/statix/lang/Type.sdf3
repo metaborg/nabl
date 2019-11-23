@@ -34,11 +34,11 @@ context-free syntax
 
 context-free syntax
 
-  ExtConstraints = <<{ExtConstraint ", "}*>>
+  ExtConstraints = <| <{ExtConstraint "\n"}*>>
 
   ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet]]
   ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet]]
-  ExtConstraint.ExtIsCovered = [[ExtId] is closed]
+  ExtConstraint.ExtIsCovered = [[ExtSet] is closed]
 
   ExtSet.ExtParam = [[ExtId].[Int]]
   ExtSet.ExtVar   = [[ExtId]]
@@ -50,3 +50,11 @@ context-free syntax
 
   ExtLabel = RelRef
   ExtLabel = EdgeRef
+
+  ExtEqs = <| <{ExtEq "\n"}*>>
+
+  ExtEq = [[ExtSet] := [ExtOp]]
+
+  ExtOp.Union        = [union([{ExtOp ", "}*])]
+  ExtOp.Intersection = [isect([{ExtOp ", "}*])]
+  ExtOp              = ExtSet

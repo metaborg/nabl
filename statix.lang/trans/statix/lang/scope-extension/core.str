@@ -11,22 +11,25 @@ imports
 
 rules // collect extension constraints
 
-  ext-constraints: Rule(C(x, ps), _, body) -> c*
-    with c* := <map-with-index(ext-param-constraints(|x));concat> ps
+  ext-constraints: Rule(_, C(x, ps), body) -> c*
+    with c* := <ext-params-constraints(|x)> ps
 
-  ext-param-constraints(|x): (i, Var(y)) -> c*
-    with c* := [ ExtProvides(ExtParam(x, i), ExtVar(y))
-               , ExtRequires(ExtParam(x, i), ExtVar(y))
-               ]
-
-  ext-param-constraints(|x): (i, p) -> c*
-    where not(Var(_) := p)
-    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(y) \)> p
+  ext-params-constraints(|x): ps -> c*
+    with (i_v*, i_t*) := <add-indices;partition((id, is-var))> ps
+       ; c1* := <map(\ (i, Var(y)) -> [ ExtProvides(ExtParam(x, i), ExtVar(y))
+                                      , ExtRequires(ExtParam(x, i), ExtVar(y))
+                                      ] \);concat> i_v*
+       ; z* := <raw-diff> (<all-vars> i_t*, <all-vars> i_v*)
+       ; c2* := <map(\ Var(z) -> [ExtIsCovered(ExtVar(z))] \);concat> z*
+       ; c* := <conc> (c1*, c2*)
 
 
   ext-constraints: LLam(ps, body) -> c*
-    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(y) \)> ps
+    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> ps
 
+
+  ext-constraints: CExists(vs, _) -> c*
+    with c* := <map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> vs
 
   ext-constraints: CNew(vs) -> c*
     with c* := <map(\ Var(y) -> ExtProvides(ExtVar(y), ExtAll()) \)> vs
@@ -38,14 +41,11 @@ rules // collect extension constraints
     with c* := [ExtRequires(ExtVar(y), ExtLit([lbl]))]
 
 
-  // FIXME This also matches rule heads! This gives an unnecessary circular
-  //       constraint, but won't invalidate the result of the analysis.
-  ext-constraints: C(x, args) -> c*
-    with c* := <map-with-index(ext-arg-constraints(|x));concat> args
+  ext-constraints: C(x, args, _) -> c*
+    with c* := <ext-args-constraints(|x)> args
 
-  ext-arg-constraints(|x): (i, Var(y)) -> c*
-    with c* := [ ExtProvides(ExtVar(y), ExtParam(x, i))
-               , ExtRequires(ExtVar(y), ExtParam(x, i))
-               ]
-
-  ext-arg-constraints(|x): (i, _) -> []
+  ext-args-constraints(|x): args -> c*
+    with i_v* := <add-indices;filter((id, is-var))> args
+       ; c* := <map(\ (i, Var(y)) -> [ ExtProvides(ExtVar(y), ExtParam(x, i))
+                                     , ExtRequires(ExtVar(y), ExtParam(x, i))
+                                     ] \);concat> i_v*
