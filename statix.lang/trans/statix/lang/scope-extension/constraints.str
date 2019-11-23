@@ -15,3 +15,7 @@ rules
 
   ext-explicate-ids(|a): ExtVar(x) -> ExtVar(d)
     with d := <nabl2-get-ast-property(|a,"decl")> x
+
+  ext-get-id: ExtParam(d, i) -> <nabl2-get-occurrence-name> d
+
+  ext-get-id: ExtVar(d) -> <nabl2-get-occurrence-name> d

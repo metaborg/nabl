@@ -51,9 +51,8 @@ rules
        ; cover* := <filter(\ ExtIsCovered(s) -> s \)> c*
        ; uncovered* := <raw-diff> (<map(Fst)> requires*, <map(Fst)> provides*)
        ; missing* := <raw-isect> (cover*, uncovered*)
-       ; e* := <map( (?ExtVar(<id>) + ?ExtParam(<id>, _))
-                   ; \ d -> (<nabl2-get-occurrence-index> d, $[Variable requires extensions, but it is not provided.]) \
-                   )> missing*
+       ; missing-labels* := <map(\ v -> (v, <lookup;pp-Statix-string(prettyprint-Statix-ExtOp)> (v, requires*) ) \)> missing*
+       ; e* := <map(\ (v, lbls) -> (<ext-get-id> v, $[Scope missing permission to be extended with [lbls]]) \)> missing-labels*
 
     with ext := []
 
