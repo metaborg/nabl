@@ -5,6 +5,8 @@ imports
   nabl2/api
   statix/lang/scope-extension/-
 
+  statix/runtime/pp
+
 rules
 
   // collect extension constraints
@@ -15,3 +17,7 @@ rules
   explicate-ext-constraints(|a) = fail
 
   solve-ext-constraints = fail
+
+  prettyprint-Statix-ExtOrigin: _ -> [S("")]
+
+  ext-log(pp|msg) = id <+ with(warn-msg(|msg);pp-Statix-string(pp);debug)

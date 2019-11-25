@@ -12,7 +12,7 @@ rules
 
   explicate-ext-constraints(|a): c* -> (c-ok*, e*)
     with (b*, c'*) := <partition(ext-explicate-barrier(|a))> c*
-       ; <with(warn-msg(|"barriers:");pp-Statix-string(prettyprint-Statix-ExtBarriers);debug)> b*
+       ; <ext-log(prettyprint-Statix-ExtBarriers|"barriers:")> b*
        ; (c-ok*, c-e*) := <partition(ext-explicate-constraint(|a, b*))> c'*
        ; e* := <map(ext-barrier-error)> c-e*
 
@@ -22,13 +22,13 @@ rules
 
 
   ext-explicate-constraint(|a, b*) =
-    ExtProvides(ext-explicate-set(|a, b*), ext-explicate-set(|a, b*))
+    ExtProvides(ext-explicate-set(|a, b*), ext-explicate-set(|a, b*), id)
 
   ext-explicate-constraint(|a, b*) =
-    ExtRequires(ext-explicate-set(|a, b*), ext-explicate-set(|a, b*))
+    ExtRequires(ext-explicate-set(|a, b*), ext-explicate-set(|a, b*), id)
 
   ext-explicate-constraint(|a, b*) =
-    ExtIsCovered(ext-explicate-set(|a, b*))
+    ExtIsCovered(ext-explicate-set(|a, b*), id)
 
 
   ext-explicate-set(|a, b*): ExtParam(x, i) -> ExtParam(d, i)
@@ -36,9 +36,9 @@ rules
 
   ext-explicate-set(|a, b*): ExtVar(x) -> ExtVar(d)
     with d := <nabl2-get-ast-property(|a, "decl")> x
-    with if r := <nabl2-get-ast-property(|a, "ref");debug> x then
-           (d, p) := <nabl2-get-resolved-name(|a);debug> r
-         ; s* := <ext-path-scopes> p
+    with if r := <nabl2-get-ast-property(|a, "ref")> x
+          ; (d, p) := <nabl2-get-resolved-name(|a)> r then
+           s* := <ext-path-scopes> p
          else
            s* := []
          end
@@ -49,9 +49,9 @@ rules
   ext-explicate-set(|a, b*): ExtAll() -> <id>
 
 
-  ext-barrier-error: ExtProvides(x, _) -> (<ext-get-id> x, $[Scope creation crosses barrier])
+  ext-barrier-error: ExtProvides(x, _, o) -> (o, $[Scope creation crosses barrier])
 
-  ext-barrier-error: ExtRequires(x, _) -> (<ext-get-id> x, $[Scope extension crosses barrier])
+  ext-barrier-error: ExtRequires(x, _, o) -> (o, $[Scope extension crosses barrier])
 
 
   ext-get-id: ExtParam(d, i) -> <try(nabl2-get-occurrence-name)> d
@@ -63,4 +63,4 @@ rules
     with b := <nabl2-copy-ast-index(|t)> name
 
 
-  ext-path-scopes = filter(?E(<id>, _) + ?N(<id>, _, _, _))
+  ext-path-scopes = nabl2-get-path-scopes; init

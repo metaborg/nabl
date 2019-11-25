@@ -18,14 +18,14 @@ rules // collect extension constraints
     with lift* := <conc> (inlift*, [outlift])
     with c* := <add-indices;filter(ext-lift-constraints(|x, x'));concat> lift*
 
-  ext-lift-constraints(|x, x'): (i, IdLift()) -> c*
-    with c* := [ ExtProvides(ExtParam(x, i), ExtParam(x', i))
-               , ExtRequires(ExtParam(x, i), ExtParam(x', i))
+  ext-lift-constraints(|x, x'): (i, l@IdLift()) -> c*
+    with c* := [ ExtProvides(ExtParam(x, i), ExtParam(x', i), l)
+               , ExtRequires(ExtParam(x, i), ExtParam(x', i), l)
                ]
 
   ext-lift-constraints(|x, x'): (i, lift) -> c*
     where not(IdLift() := lift)
-    with c* := [ExtIsCovered(ExtParam(x', i))]
+    with c* := [ExtIsCovered(ExtParam(x', i), lift)]
 
 
   ext-constraints: Rule(_, F(x, inparam*, outparam), _) -> c*

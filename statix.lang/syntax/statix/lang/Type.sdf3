@@ -32,15 +32,21 @@ context-free syntax
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
 
+sorts
+
+  ExtOrigin // custom prettyprint rule in statix/lang/scope-extension.str
+
 context-free syntax
 
   ExtConstraints = <| <{ExtConstraint "\n"}*>>
 
-  ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet]]
-  ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet]]
-  ExtConstraint.ExtIsCovered = [[ExtSet] is closed]
+  ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet][ExtOrigin]]
+  ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet][ExtOrigin]]
+  ExtConstraint.ExtIsCovered = [[ExtSet] is closed[ExtOrigin]]
   ExtConstraint.ExtBarrier   = [[ExtBarrier] is barrier]
 
+
+  ExtSets = <| <{ExtSet "\n"}*>>
 
   ExtSet.ExtParam = [[ExtId].[Int]]
   ExtSet.ExtVar   = [[ExtId]]
