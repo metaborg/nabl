@@ -314,8 +314,43 @@ test extension of scope data in query fails [[
       labels P
 ]] 1 errors //at #1
 
-test extension of outer scope in try fails [[
+test creation of outer scope in try fails [[
+  resolve {s} try { new s }
+  signature
+    name-resolution
+      labels P
+]] 1 errors //at #1
+
+test creation of outer scope in try fails [[
+  resolve {s} try { try { new s } }
+  signature
+    name-resolution
+      labels P
+]] 1 errors //at #1
+
+test creation of outer scope in try fails [[
+  resolve try { {s} s -P-> s, try { new s } }
+  signature
+    name-resolution
+      labels P
+]] 2 errors //at #1
+
+test creation of outer scope in try fails [[
+  resolve try { {s} s -P-> s, new s }
+  signature
+    name-resolution
+      labels P
+]] 0 errors
+
+test creation of outer scope in try fails [[
   resolve {s} s -P-> s, try { new s }
+  signature
+    name-resolution
+      labels P
+]] 2 errors //at #1
+
+test extension of outer scope in try fails [[
+  resolve {s} new s, try { s -P-> s }
   signature
     name-resolution
       labels P
@@ -326,4 +361,4 @@ test extension of outer scope in query fails [[
   signature
     name-resolution
       labels P
-]] 1 errors //at #1
+]] 2 errors //at #1

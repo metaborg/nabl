@@ -11,8 +11,10 @@ imports
 
 rules // collect extension constraints
 
-  ext-constraints: Rule(_, C(x, ps), body) -> c*
-    with c* := <ext-params-constraints(|x)> ps
+  ext-constraints: r@Rule(_, C(x, ps), _) -> c*
+    with c-ps* := <ext-params-constraints(|x)> ps
+       ; c-b*  := [ExtBarrier(<ext-get-barrier(|"rule")> r)]
+       ; c* := <conc> (c-ps*, c-b*)
 
   ext-params-constraints(|x): ps -> c*
     with (i_v*, i_t*) := <add-indices;partition((id, is-var))> ps
@@ -24,11 +26,16 @@ rules // collect extension constraints
        ; c* := <conc> (c1*, c2*)
 
 
-  ext-constraints: LLam(ps, body) -> c*
-    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> ps
+  ext-constraints: l@LLam(ps, body) -> c*
+    with c-ps* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> ps
+       ; c-b*  := [ExtBarrier(<ext-get-barrier(|"lam")> l)]
+       ; c* := <conc> (c-ps*, c-b*)
 
 
-  ext-constraints: CExists(vs, _) -> c*
+  ext-constraints: c@CTry(_, _) -> c*
+    with c* := [ExtBarrier(<ext-get-barrier(|"try")> c)]
+
+  ext-constraints: c@CExists(vs, _) -> c*
     with c* := <map(\ Var(y) -> ExtIsCovered(ExtVar(y)) \)> vs
 
   ext-constraints: CNew(vs) -> c*

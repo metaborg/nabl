@@ -104,27 +104,27 @@ rules
 
   DeclOrRule[[ r@Rule(_, h, body) ^ (s) ]] :=
     Rule{x} <- s,
-    new s_rule, s_rule -P-> s,
+    new s_rule, s_rule -P-> s, @r.scope := s_rule,
     distinct/name D(s_rule)/Var | error $[Duplicate variable [NAME]] @NAMES,
     RuleHead[[ h ^ (s_rule, x) : _ ]],
     Constraint[[ body ^ (s_rule) ]].
 
   RuleHead[[ C(x, args) ^ (s_rule, y) : ty ]] := x == y,
-    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
+    C{x} -> s_rule, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
     tys is `in-types` of ty,
     Map1T(Match)[[ args ^ (s_rule) : tys ]].
 
   Constraint[[ C(x, args, msg) ^ (s) ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+    C{x} -> s, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
     d : ty, ty != FUN(_, _) | error "Use inline notation for functional constraints.",
     tys is `in-types` of ty,
     Map1T(Build)[[ args ^ (s) : tys ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
-  HoConstraint[[ LLam(ps, c) ^ (s) : PRED(tys) ]] :=
-    new s', s' -P-> s,
+  HoConstraint[[ l@LLam(ps, c) ^ (s) : PRED(tys) ]] :=
+    new s', s' -P-> s, @l.scope := s',
     Map1T(Match)[[ ps ^ (s') : tys ]],
     (D(s') lsect/name V(s)) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
@@ -156,15 +156,16 @@ rules
     Build[[ t2 ^ (s) : ty ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
-  Constraint[[ CExists(vs, c) ^ (s) ]] :=
+  Constraint[[ e@CExists(vs, c) ^ (s) ]] :=
     new s', s' -P-> s,
     Map1T(VarDecl)[[ vs ^ (s') : _ ]],
     distinct/name D(s')/Var | error $[Duplicate variable [NAME]] @NAMES,
     (D(s') lsect/name V(s)) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
 
-  Constraint[[ CTry(c, msg) ^ (s) ]] :=
-    Constraint[[ c ^ (s) ]],
+  Constraint[[ t@CTry(c, msg) ^ (s) ]] :=
+    new s', s' -P-> s, @t.scope := s',
+    Constraint[[ c ^ (s') ]],
     Message(TryKind)[[ msg ^ (s) ]].
 
 /******************************************************************
@@ -200,7 +201,7 @@ rules
     Rel{x} : ty !.
 
   RelRef[[ l@Label(x) ^ (s) : ty ]] :=
-    Rel{x} -> s, Rel{x} |-> d, @l.decl := d,
+    Rel{x} -> s, Rel{x} |-> d, @l.ref := Rel{x}, @l.decl := d,
     d : ty.
 
   RelRef[[ l@EOP() ^ (s) : PRED([SCOPE()]) ]].
@@ -235,7 +236,7 @@ rules
 
 
   EdgeRef[[ l@Label(x) ^ (s) ]] :=
-    Edge{x} -> s, Edge{x} |-> d, @l.decl := d.
+    Edge{x} -> s, Edge{x} |-> d, @l.ref := Edge{x}, @l.decl := d.
 
   EdgeRef[[ l@EOP() ^ (s) ]].
 
@@ -277,7 +278,7 @@ rules
     Build[[ t2 ^ (s) : SCOPE() ]].
 
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
-    Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
+    Ns{ns} -> s, Ns{ns} |-> d, @ns.ref := Ns{ns}, @ns.decl := d,
     d : NS(tys),
     Map1T(Term(V))[[ ts ^ (s) : tys ]],
     OccurrencePos(Term(V))[[ pos ^ (s) : _ ]].
@@ -357,7 +358,7 @@ rules
     RealSortRef[[ sort ^ (s) : ty ]].
 
   RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
-    Sort{x} -> s, Sort{x} |-> d, @x.decl := d,
+    Sort{x} -> s, Sort{x} |-> d, @x.ref := Sort{x}, @x.decl := d,
     d : ty !,
     d.kind := k, k != SortAlias() | error $[Cannot refer to alias [d]].
 
@@ -373,7 +374,7 @@ rules
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
   SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
-    Sort{x} -> s, Sort{x} |-> d, @x.decl := d,
+    Sort{x} -> s, Sort{x} |-> d, @x.ref := Sort{x}, @x.decl := d,
     d : ty.
 
   Type[[ SimpleType(sorts) ^ (s) : PRED(intys) ]] :=
@@ -403,7 +404,7 @@ rules
   VarDecl[[ Wld() ^ (_) : _ ]].
 
   VarRef[[ Var(x) ^ (s) : ty ]] :=
-    Var{x} -> s, Var{x} |-> d, @x.decl := d,
+    Var{x} -> s, Var{x} |-> d, @x.ref := Var{x}, @x.decl := d,
     d : ty.
 
   VarRef[[ Wld() ^ (_) : _ ]].
@@ -420,7 +421,7 @@ rules
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
     x' is `op-name` of (x, args),
-    Op{x'@x} -> s, Op{x'@x} |-> d, @x.decl := d,
+    Op{x'@x} -> s, Op{x'@x} |-> d, @x.ref := Op{x'@x}, @x.decl := d,
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]].
   Term(V)[[ Str(_) ^ (_) : STRING() ]].

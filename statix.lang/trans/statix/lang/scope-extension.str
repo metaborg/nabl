@@ -12,8 +12,6 @@ rules
     collect-all(ext-constraints, conc)
   ; concat
 
-  explicate-ext-constraints(|a) =
-    map(topdown(try(ext-explicate-ids(|a))))
-  ; nub
+  explicate-ext-constraints(|a) = fail
 
   solve-ext-constraints = fail

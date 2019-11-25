@@ -39,21 +39,33 @@ context-free syntax
   ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet]]
   ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet]]
   ExtConstraint.ExtIsCovered = [[ExtSet] is closed]
+  ExtConstraint.ExtBarrier   = [[ExtBarrier] is barrier]
+
 
   ExtSet.ExtParam = [[ExtId].[Int]]
   ExtSet.ExtVar   = [[ExtId]]
   ExtSet.ExtLit   = [{[{ExtLabel ", "}*]}]
   ExtSet.ExtAll   = "*"
 
+
+  ExtBarriers = <| <{ExtBarrier "\n"}*>>
+
+  ExtBarrier = ID
+  ExtBarrier = NaBL2Scope
+
+
   ExtId = ID
   ExtId = NaBL2Occurrence
+
 
   ExtLabel = RelRef
   ExtLabel = EdgeRef
 
+
   ExtEqs = <| <{ExtEq "\n"}*>>
 
   ExtEq = [[ExtSet] := [ExtOp]]
+
 
   ExtOp.Union        = [union([{ExtOp ", "}*])]
   ExtOp.Intersection = [isect([{ExtOp ", "}*])]

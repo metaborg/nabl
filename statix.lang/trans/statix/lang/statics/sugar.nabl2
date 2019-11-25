@@ -16,7 +16,7 @@ rules
  ******************************************************************/
 
   DeclOrRule[[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
-    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
+    C{x'} -> s, C{x'} |-> d, @x'.ref := C{x'}, @x'.decl := d,
     d : ty, ty != FUN(_, _) | error "Use `c maps c(...) = ...` for functional constraints." @x,
     d.ind := ind,
 
@@ -30,7 +30,7 @@ rules
     C{x}.kind := DerivedC() !!.
 
   DeclOrRule[[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
-    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
+    C{x'} -> s, C{x'} |-> d, @x'.ref := C{x'}, @x'.decl := d,
     d : ty, ty != PRED(_) | error "Use `c maps c(...)` for non-functional constraints." @x,
     d.ind := ind,
 
@@ -46,7 +46,7 @@ rules
     C{x}.kind := DerivedC() !!.
 
   RuleHead[[ F(x, inargs, outarg) ^ (s_rule, y) : ty ]] := x == y,
-    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
+    C{x} -> s_rule, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != PRED(_) | error "Use `c(...) | ...` for non-functional constraints." @x,
     intys is `in-types` of ty,
@@ -55,14 +55,14 @@ rules
     Match[[ outarg ^ (s_rule) : outty ]].
 
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+    C{x} -> s, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
     d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
   HoConstraint[[ LC(x) ^ (s) : ty ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+    C{x} -> s, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
     d : ty.
 
 
@@ -90,7 +90,7 @@ rules
  ******************************************************************/
 
   RelRef[[ l@Decl() ^ (s) : ty ]] :=
-    Rel{l} -> s, Rel{l} |-> d, @l.decl := d,
+    Rel{l} -> s, Rel{l} |-> d, @l.ref := Rel{l}, @l.decl := d,
     d : ty.
 
   Constraint[[ CAskRel(rel, ts, st, msg) ^ (s) ]] :=
@@ -112,7 +112,7 @@ rules
  ******************************************************************/
  
   DeclOrRule[[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
-    Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
+    Ns{x} -> s, Ns{x} |-> d, @x.ref := Ns{x}, @x.decl := d,
     NsQ{x} <- s,
     Filter[[ filter ^ (s, NsQ{x}) ]],
     Min[[ min ^ (s, NsQ{x}) ]].
@@ -132,11 +132,11 @@ rules
 
   LabelRE[[ t@ResolveMatch(r@Occurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
+    NsQ{ns} -> s, NsQ{ns} |-> d, @t.ref := NsQ{ns}, @t.decl := d.
 
   LabelOrd[[ t@ResolveLt(r@Occurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
+    NsQ{ns} -> s, NsQ{ns} |-> d, @t.ref := NsQ{ns}, @t.decl := d.
 
   HoConstraint[[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]].
