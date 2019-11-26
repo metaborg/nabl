@@ -42,8 +42,6 @@ context-free syntax
 
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
 
-  LocalVars.NoLocalVars = <>
-
   HoConstraint.LLam = <{ <{Term ", "}+> }>
 
   HoConstraint.LC = ConstraintId
@@ -117,8 +115,8 @@ context-free syntax
   Constraint.CTellDecl        = [[Term] -> [Occurrence]]
   Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [RelRef] [Term]]
 
-//LabelRE = <<LabelRE>?>
-//LabelRE = <<LabelRE>+>
+  LabelRE.ZeroOrOne = <<LabelRE>?>
+  LabelRE.OneOrMore = <<LabelRE>+>
 
 
 /******************************************************************

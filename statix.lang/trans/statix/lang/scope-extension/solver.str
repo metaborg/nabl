@@ -1,0 +1,86 @@
+module statix/lang/scope-extension/solver
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/-
+  statix/lang/statics/-
+  statix/lang/scope-extension/-
+
+  pp/statix/lang/-
+  statix/lang/pp
+  statix/runtime/pp
+
+signature
+  sorts SetOp constructors
+    Union : List(ExtSet) -> SetOp
+    Intersection : List(ExtSet) -> SetOp
+
+rules
+
+  external set-fixed-point(|base)
+
+rules
+
+  solve-ext-constraints: c* -> (ext, e*)
+    with id
+
+       ; provide-eq* := < filter(\ ExtProvides(v, s, _) -> (v, s) \)
+                        ; group-by(Fst,Snd)
+                        ; map(provide-combine)
+                        ; ext-log(prettyprint-Statix-ExtEqs|"provide eqs:")
+                        ; bottomup(try(provide-to-list))
+                        > c*
+       ; provides* := < set-fixed-point(|<provide-base>)
+                      ; filter(not(?(_, [])))
+                      ; map((id, try(list-to-provide)))
+                      > provide-eq*
+       ; ext-log(prettyprint-Statix-ExtEqs|"provides:")
+
+       ; require-eq* := < filter(\ ExtRequires(v, s, _) -> (v, s) \)
+                        ; group-by(Fst,Snd)
+                        ; map(require-combine)
+                        ; ext-log(prettyprint-Statix-ExtEqs|"require eqs:")
+                        ; bottomup(try(require-to-list))
+                        > c*
+       ; requires* := < set-fixed-point(|<require-base>)
+                      ; filter(not(?(_, [])))
+                      ; map((id, try(list-to-require)))
+                      > require-eq*
+       ; ext-log(prettyprint-Statix-ExtEqs|"requires:")
+
+         // errors if requires != {} and provides == {}
+       ; cover* := <filter(\ ExtIsCovered(s, o) -> (s, o) \)> c*
+       ; map(Fst);ext-log(prettyprint-Statix-ExtSets|"covered:")
+       ; uncovered* := <raw-diff> (<map(Fst)> requires*, <map(Fst)> provides*)
+       ; ext-log(prettyprint-Statix-ExtSets|"uncovered:")
+       ; missing* := <filter(where(<elem> (<Fst>, uncovered*)))> cover*
+       ; map(Fst);ext-log(prettyprint-Statix-ExtSets|"missing:")
+       ; e* := <filter(uncovered-error(|missing*, requires*))> c*
+
+    with ext := []
+
+
+  uncovered-error(|missing*, requires*) : ExtRequires(v, s, o) -> (t, msg)
+    where o' := <lookup> (v, missing*)
+    with lbls := <(lookup <+ !s); pp-Statix-string(prettyprint-Statix-ExtOp)> (s, requires*)
+       ; msg := $[Scope missing permission to be extended with [lbls]]
+       ; t := <if ?ExtVar(_) then !o else !o' end> v
+
+
+  provide-base = ![()]
+  provide-combine: (p@ExtParam(_, _), components) -> (p, Intersection(ExtAll(), components))
+  provide-combine: (p@ExtVar(_), components) -> (p, Union(ExtNone(), components))
+  provide-to-list: ExtAll()  -> <provide-base>
+  provide-to-list: ExtNone() -> []
+  list-to-provide: [] -> ExtNone()
+  list-to-provide: [()] -> ExtAll()
+
+  require-base = ![]
+  require-combine: (p@ExtParam(_, _), components) -> (p,  Union(ExtLit([]), components))
+  require-combine: (p@ExtVar(_), components) -> (p, Union(ExtLit([]), components))
+  require-to-list: ExtLit(labels) -> labels
+  list-to-require: labels -> ExtLit(labels)
+    where is-list

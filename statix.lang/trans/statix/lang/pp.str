@@ -8,6 +8,7 @@ imports
   libspoofax/editor/refactoring/-
   pp/statix/lang/-
 
+  nabl2/runtime/pp
   statix/runtime/pp
 
 rules
@@ -32,6 +33,17 @@ rules
   nabl2-prettyprint-hook   = prettyprint-Statix-TType
   prettyprint-Statix-TType = nabl2-prettyprint-term
 
+  prettyprint-Statix-NaBL2Occurrence = prettyprint-NaBL2Occurrence
+  prettyprint-Statix-NaBL2Scope      = prettyprint-NaBL2Scope
+
 rules
 
   construct-textual-change = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)
+
+rules
+
+  // FIXME These should be generated from the grammar
+
+  StatixLangParenthesize = CConj(!Parenthetical(<?CExists(_, _)>), id)
+
+  StatixLangParenthesize = CConj(id, !Parenthetical(<?CExists(_, _)>))

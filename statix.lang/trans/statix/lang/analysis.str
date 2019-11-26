@@ -9,57 +9,43 @@ imports
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
-  nabl2/runtime/transform/query // for private set-custom-analysis
 
   signatures/statix/lang/-
 
+  statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
   statix/lang/scope-extension
 
+  statix/runtime/pp
+  pp/statix/lang/-
   pp
+
+signature
+  sorts CustomAnalysis constructors
+    CustomUnitAnalysis : List(Error) * Extensions -> CustomAnalysis
+    CustomAnalysis : Extensions -> CustomAnalysis
 
 rules // Analysis
 
-  editor-analyze:
-      AnalyzeSingle(change*) -> AnalysisResult(result*)
-    with
-      ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; result* := <map({ resource, ast, ast', a', error*, warning*, note*:
-                        ?(resource, ast)
-                      ; ( (ast', a', error*, warning*, note*) :=
-                              <editor--analyze> (resource, ast)
-                        < !(resource, Full(ast', a', error*, warning*, note*))
-                        + !(resource, Failed())
-                        )
-                      })> ast*
+  editor-analyze = nabl2-analyze(desugar-all)
 
-  editor--analyze:
-      (resource, ast) -> (analyzed-ast, result, error*, warning*, note*)
-    with nabl2-custom-analysis-info-msg(|"Desugaring AST...");
-         desugared-ast := <desugar-all> ast;
-         nabl2-custom-analysis-info-msg(|"Desugared AST.");
+  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(or-e*, ext-c*)
+    with or-e* := <detect-overlapping-rules> ast
+       ; ext-c* := <collect-ext-constraints> ast
 
-         nabl2-custom-analysis-info-msg(|"Analyzing AST...");
-         (analyzed-ast, a, e*, w*, n*) :=
-            <nabl2-analyze-ast(|resource)> desugared-ast;
+  nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
+    with ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
+       ; (ext-c'*, ext-barrier-e*) := <explicate-ext-constraints(|a)> ext-c*
+       ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
+       ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
+       ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
+       ; e* := [unit-e*, ext-barrier-e*, ext-e*]
+       ; ca  := CustomAnalysis(ext)
 
-         if [] := e* then
-           nabl2-custom-analysis-info-msg(|"Detecting overlapping rules...");
-           or-e* := <detect-overlapping-rules> analyzed-ast;
+  nabl2-prettyprint-hook   = prettyprint-Statix-IType
+  prettyprint-Statix-IType = nabl2-prettyprint-term
 
-           nabl2-custom-analysis-info-msg(|"Computing scope extensions...");
-           (ext*, ext-e*, ext-w*, ext-n*) :=
-               <compute-scope-extensions> analyzed-ast;
+  nabl2-prettyprint-hook   = prettyprint-Statix-TType
+  prettyprint-Statix-TType = nabl2-prettyprint-term
 
-           result   := <nabl2--set-custom-analysis(|a)> ext*;
-           error*   := [e*, ext-e*, or-e*];
-           warning* := [w*, ext-w*];
-           note*    := [n*, ext-n*]
-         else
-           result   := a;
-           error*   := e*;
-           warning* := w*;
-           note*    := n*
-         end;
-         nabl2-custom-analysis-info-msg(|"Analyzed AST.")
