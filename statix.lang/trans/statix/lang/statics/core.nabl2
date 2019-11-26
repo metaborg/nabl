@@ -70,12 +70,12 @@ rules
     distinct/name D(s)/Sort | error $[Duplicate sort [NAME]] @NAMES,
     (D(s)/Rel isect/name D(s)/Edge) subseteq 0 | error $[Relation and edge label with same name [NAME]] @NAMES.
 
-  Section[[ Imports(imports) ^ (s, s_outer) ]] :=
-    Map1(Import)[[ ids ^ (s_outer, s) ]].
+//Section[[ Imports(imports) ^ (s, s_outer) ]] :=
+//  Map1(Import)[[ ids ^ (s_outer, s) ]].
 
-  Import[[ Import(id) ^ (s, s_imp) ]] :=
-    Mod{x} -> s, Mod{x} |-> d,
-    Mod{x} <=I= s_imp. 
+//Import[[ Import(id) ^ (s, s_imp) ]] :=
+//  Mod{x} -> s, Mod{x} |-> d,
+//  Mod{x} <=I= s_imp. 
 
   Section[[ Signature(sigs) ^ (s, _) ]] :=
     Map1(Signature)[[ sigs ^ (s) ]].
