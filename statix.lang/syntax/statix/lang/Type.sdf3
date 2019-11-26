@@ -52,6 +52,7 @@ context-free syntax
   ExtSet.ExtVar   = [[ExtId]]
   ExtSet.ExtLit   = [{[{ExtLabel ", "}*]}]
   ExtSet.ExtAll   = "*"
+  ExtSet.ExtNone  = "0"
 
 
   ExtBarriers = <| <{ExtBarrier "\n"}*>>
@@ -73,6 +74,6 @@ context-free syntax
   ExtEq = [[ExtSet] := [ExtOp]]
 
 
-  ExtOp.Union        = [union([{ExtOp ", "}*])]
-  ExtOp.Intersection = [isect([{ExtOp ", "}*])]
+  ExtOp.Union        = [union([ExtSet]|[{ExtOp ", "}*])]
+  ExtOp.Intersection = [isect([ExtSet]|[{ExtOp ", "}*])]
   ExtOp              = ExtSet
