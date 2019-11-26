@@ -55,9 +55,7 @@ public class set_fixed_point_0_1 extends Strategy {
         boolean again = true;
         while(again) {
             again = false;
-            List<Map.Entry<IStrategoTerm, Eq>> _eqs = Lists.newArrayList(eqs.entrySet());
-            Collections.shuffle(_eqs);
-            for(Map.Entry<IStrategoTerm, Eq> varEq : _eqs) {
+            for(Map.Entry<IStrategoTerm, Eq> varEq : eqs.entrySet()) {
                 final Set.Immutable<IStrategoTerm> varResult = varEq.getValue().apply(values);
                 final Set.Immutable<IStrategoTerm> prevResult = values.put(varEq.getKey(), varResult);
                 again |= prevResult == null || !prevResult.equals(varResult);
@@ -78,21 +76,18 @@ public class set_fixed_point_0_1 extends Strategy {
         if(!Tools.isTermAppl(term)) {
             throw new IllegalArgumentException("Expected equation, got " + term);
         }
-        if(Tools.hasConstructor((IStrategoAppl) term, "Union", 2)) {
-            final Set.Immutable<IStrategoTerm> baseSet = termToSet(term.getSubterm(0));
-            final IStrategoTerm components = term.getSubterm(1);
+        if(Tools.hasConstructor((IStrategoAppl) term, "Union", 1)) {
+            final IStrategoTerm components = term.getSubterm(0);
             if(!Tools.isTermList(components) || components.getSubtermCount() == 0) {
                 throw new IllegalArgumentException("Expected equations, got " + components);
             }
-            return new Union(baseSet,
-                    Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
-        } else if(Tools.hasConstructor((IStrategoAppl) term, "Intersection", 2)) {
-            final Set.Immutable<IStrategoTerm> baseSet = termToSet(term.getSubterm(0));
-            final IStrategoTerm components = term.getSubterm(1);
+            return new Union(Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
+        } else if(Tools.hasConstructor((IStrategoAppl) term, "Intersection", 1)) {
+            final IStrategoTerm components = term.getSubterm(0);
             if(!Tools.isTermList(components) || components.getSubtermCount() == 0) {
                 throw new IllegalArgumentException("Expected equations, got " + components);
             }
-            return new Intersection(baseSet,
+            return new Intersection(
                     Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
         } else {
             return new Var(term);
@@ -115,16 +110,14 @@ public class set_fixed_point_0_1 extends Strategy {
 
     private class Union extends Eq {
 
-        private final Set.Immutable<IStrategoTerm> base;
         private final List<Eq> components;
 
-        public Union(Set.Immutable<IStrategoTerm> base, Iterable<Eq> components) {
-            this.base = base;
+        public Union(Iterable<Eq> components) {
             this.components = ImmutableList.copyOf(components);
         }
 
         @Override public Set.Immutable<IStrategoTerm> apply(Map<IStrategoTerm, Set.Immutable<IStrategoTerm>> values) {
-            return components.stream().map(c -> c.apply(values)).reduce(base, (s1, s2) -> Set.Immutable.union(s1, s2));
+            return components.stream().map(c -> c.apply(values)).reduce((s1, s2) -> Set.Immutable.union(s1, s2)).get();
         }
 
         @Override public String toString() {
@@ -136,17 +129,15 @@ public class set_fixed_point_0_1 extends Strategy {
 
     private class Intersection extends Eq {
 
-        private final Set.Immutable<IStrategoTerm> base;
         private final List<Eq> components;
 
-        public Intersection(Set.Immutable<IStrategoTerm> base, Iterable<Eq> components) {
-            this.base = base;
+        public Intersection(Iterable<Eq> components) {
             this.components = ImmutableList.copyOf(components);
         }
 
         @Override public Set.Immutable<IStrategoTerm> apply(Map<IStrategoTerm, Set.Immutable<IStrategoTerm>> values) {
-            return components.stream().map(c -> c.apply(values)).reduce(base,
-                    (s1, s2) -> Set.Immutable.intersect(s1, s2));
+            return components.stream().map(c -> c.apply(values)).reduce((s1, s2) -> Set.Immutable.intersect(s1, s2))
+                    .get();
         }
 
         @Override public String toString() {

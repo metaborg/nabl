@@ -71,16 +71,16 @@ rules
 
 
   provide-base = ![()]
-  provide-combine: (p@ExtParam(_, _), components) -> (p, Intersection(ExtAll(), components))
-  provide-combine: (p@ExtVar(_), components) -> (p, Union(ExtNone(), components))
+  provide-combine: (p@ExtParam(_, _), components) -> (p, Intersection(components))
+  provide-combine: (p@ExtVar(_), components) -> (p, Union(components))
   provide-to-list: ExtAll()  -> <provide-base>
   provide-to-list: ExtNone() -> []
   list-to-provide: [] -> ExtNone()
   list-to-provide: [()] -> ExtAll()
 
   require-base = ![]
-  require-combine: (p@ExtParam(_, _), components) -> (p,  Union(ExtLit([]), components))
-  require-combine: (p@ExtVar(_), components) -> (p, Union(ExtLit([]), components))
+  require-combine: (p@ExtParam(_, _), components) -> (p,  Union(components))
+  require-combine: (p@ExtVar(_), components) -> (p, Union(components))
   require-to-list: ExtLit(labels) -> labels
   list-to-require: labels -> ExtLit(labels)
     where is-list

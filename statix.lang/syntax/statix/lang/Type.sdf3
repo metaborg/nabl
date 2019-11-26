@@ -74,6 +74,6 @@ context-free syntax
   ExtEq = [[ExtSet] := [ExtOp]]
 
 
-  ExtOp.Union        = [union([ExtSet]|[{ExtOp ", "}*])]
-  ExtOp.Intersection = [isect([ExtSet]|[{ExtOp ", "}*])]
+  ExtOp.Union        = [union([{ExtOp ", "}*])]
+  ExtOp.Intersection = [isect([{ExtOp ", "}*])]
   ExtOp              = ExtSet
