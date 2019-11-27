@@ -44,6 +44,8 @@ context-free syntax
   ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet][ExtOrigin]]
   ExtConstraint.ExtIsCovered = [[ExtSet] is closed[ExtOrigin]]
   ExtConstraint.ExtBarrier   = [[ExtBarrier] is barrier]
+  ExtConstraint.ExtProvidesEsc  = [[ExtSet] ^! [ExtSet][ExtOrigin]]
+  ExtConstraint.ExtRequiresEsc  = [[ExtSet] ^? [ExtSet][ExtOrigin]]
 
 
   ExtSets = <| <{ExtSet "\n"}*>>

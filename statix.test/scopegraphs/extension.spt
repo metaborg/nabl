@@ -377,3 +377,12 @@ test extension of outer scope in query fails [[
     name-resolution
       labels P
 ]] 2 errors at #1, #2
+
+test reference to non-scope outer variable succeeds [[
+  resolve {s} try { c(s) }
+  signature
+    name-resolution
+      labels P
+  rules
+    c : int
+]] 0 errors

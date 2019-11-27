@@ -36,11 +36,11 @@ rules // Analysis
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
     with ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
-       ; (ext-c'*, ext-barrier-e*) := <explicate-ext-constraints(|a)> ext-c*
+       ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
        ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
        ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
        ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
-       ; e* := [unit-e*, ext-barrier-e*, ext-e*]
+       ; e* := [unit-e*, ext-e*]
        ; ca  := CustomAnalysis(ext)
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType

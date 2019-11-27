@@ -58,16 +58,43 @@ rules
        ; ext-log(prettyprint-Statix-ExtSets|"uncovered:")
        ; missing* := <filter(where(<elem> (<Fst>, uncovered*)))> cover*
        ; map(Fst);ext-log(prettyprint-Statix-ExtSets|"missing:")
-       ; e* := <filter(uncovered-error(|missing*, requires*))> c*
+       ; uncovered-e* := <filter(ext-uncovered-error(|missing*, requires*))> c*
 
-    with ext := []
+         // errors if escapes and requries != {} or provides != {}
+       ; escape-e* := <filter(ext-escape-error(|provides*, requires*))> c*
+
+       ; e* := <conc> (uncovered-e*, escape-e*)
+
+       ; ext := <filter(ext-spec-entries);concat> requires*
 
 
-  uncovered-error(|missing*, requires*) : ExtRequires(v, s, o) -> (t, msg)
+  ext-uncovered-error(|missing*, requires*) : ExtRequires(v, s, o) -> (t, msg)
     where o' := <lookup> (v, missing*)
-    with lbls := <(lookup <+ !s); pp-Statix-string(prettyprint-Statix-ExtOp)> (s, requires*)
-       ; msg := $[Scope missing permission to be extended with [lbls]]
+        ; lbls := <ext-get-nonempty(|requires*)> s
+    with lbls-msg := <pp-Statix-string(prettyprint-Statix-ExtOp)> lbls
+       ; msg := $[Scope missing permission to be extended with [lbls-msg]]
        ; t := <if ?ExtVar(_) then !o else !o' end> v
+
+
+  ext-escape-error(|provide*, require*): ExtProvidesEsc(v, s, o) -> (o, msg)
+    where <ext-get-nonempty(|provide*)> s
+    with msg := $[Scope creation crosses barrier]
+
+  ext-escape-error(|provide*, require*): ExtRequiresEsc(v, s, o) -> (o, msg)
+    where lbls := <ext-get-nonempty(|require*)> s
+    with lbls-msg := <pp-Statix-string(prettyprint-Statix-ExtOp)> lbls
+       ; msg := $[Scope crosses barrier when extended with [lbls-msg]]
+  
+  
+  ext-get-nonempty(|values*): ExtAll() -> <id>
+  ext-get-nonempty(|values*): ExtLit([_|_]) -> <id>
+  ext-get-nonempty(|values*): v@ExtVar(_) -> <lookup> (v, values*)
+  ext-get-nonempty(|values*): v@ExtParam(_, _) -> <lookup> (v, values*)
+
+
+  ext-spec-entries: (ExtParam(d, i), ExtLit(lbls)) -> entry*
+    with x := <nabl2-get-occurrence-name> d
+       ; entry* := <map(\ lbl -> (x, i, lbl) \)> lbls
 
 
   provide-base = ![()]
