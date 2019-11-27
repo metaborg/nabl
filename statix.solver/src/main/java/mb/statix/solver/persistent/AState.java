@@ -104,7 +104,7 @@ public abstract class AState implements IState.Immutable {
         return Unifiers.Immutable.of();
     }
 
-    @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
+    @Value.Default @Override public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
         return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
     }
 

@@ -10,6 +10,29 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/util
+
+rules
+
+  free-constraint-vars = rec x (
+    collect-om(free-constraint-vars(x) + ![<is-var>])
+  ; concat
+  )
+
+  free-constraint-vars(fv): CExists(vs, body) -> fvs
+    with fvs := <raw-diff> (<fv> body, vs)
+
+  free-constraint-vars(fv): LLam(ps, body) -> fvs
+    with fvs := <raw-diff> (<fv> body, <all-vars> ps)
+
+
+  try-in-constraints(s) = rec x (
+    CExists(id, x)
+ <+ CConj(x, x)
+ <+ CTry(x, id)
+ <+ try(s)
+  )
+
 
 rules
 
@@ -46,28 +69,52 @@ rules
   norm-preserve-ast-type(s) =
     nabl2-preserve-anno-type(s)
 
+
 rules
 
   // replace : old:Term -> new:Term
   // to-c : (old:Term, new:Term) -> Constraint
 
-  normalize-in-rules(replace,in-head,add-vars,to-c):
-      Rule(lbl, head, bvs, body){a*} -> Rule(lbl, head', bvs', body''){a*}
-    with (head', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> head;
-         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
-         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
+  normalize-scoped(replace,in-head,add-vars,to-c):
+      Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs', body'')){a*}
+    with (head', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> head;
+         (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
+         body'' := <filter(to-c);list-to-conj(|body')> hmaps
 
-  normalize-in-rules(replace,in-head,add-vars,to-c):
-      LLam(ts, bvs, body){a*} -> LLam(ts', bvs', body''){a*}
-    with (ts', hmaps) := <in-head < collect-map(replace, not-in-lambda) + !(<id>, [])> ts;
-         (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body''  := <conc;filter(to-c);list-to-conj(|body')> (hmaps, bmaps);
-         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
+  normalize-scoped(replace,in-head,add-vars,to-c):
+      LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs', body'')){a*}
+    with (ts', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> ts;
+         (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
+         body''  := <filter(to-c);list-to-conj(|body')> hmaps
 
-  not-in-lambda = not(?LLam(_, _, _))
+
+  collect-map-in-constraints(replace,add-vars,to-c): CExists(vs, c) -> (c'', [])
+    with (c', vs') := <collect-map-in-constraints(replace,add-vars,to-c)> c
+       ; vs'' := <if add-vars then <conc> (vs, <id>) else !vs end> vs'
+       ; c'' := <mk-CExists>(vs'', c')
+
+  collect-map-in-constraints(replace,add-vars,to-c): CConj(c1, c2) -> (c'', vs'')
+    with (c1', vs1') := <collect-map-in-constraints(replace,add-vars,to-c)> c1
+       ; (c2', vs2') := <collect-map-in-constraints(replace,add-vars,to-c)> c2
+       ; c'' := CConj(c1', c2')
+       ; vs'' := <conc> (vs1', vs2')
+
+  collect-map-in-constraints(replace,add-vars,to-c): CTry(c, msg) -> (CTry(c'', msg), [])
+    with (c', vs') := <collect-map-in-constraints(replace,add-vars,to-c)> c
+       ; vs'' := <if add-vars then id else ![] end> vs'
+       ; c'' := <mk-CExists>(vs'', c')
+
+  collect-map-in-constraints(replace,add-vars,to-c): c -> (c'', vs'')
+    with (c', maps) := <collect-map(replace, not-a-scope)> c
+       ; c'' := <filter(to-c);list-to-conj(|c')> maps
+       ; vs'' := <map(Snd);all-vars> maps
+
+
+  is-scope = ?Rule(_, _, _)
+  is-scope = ?LLam(_, _)
+
+  not-a-scope = not(is-scope)
+
 
 rules // smart constructors for typed terms
 
@@ -113,7 +160,7 @@ rules // smart constructors for typed terms
          (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
          ty := LIST(ty')
 
-  mk-LLam: (ps, vs, c) -> <norm-set-ast-type(|ty)> LLam(ps, vs, c)
+  mk-LLam: (ps, c) -> <norm-set-ast-type(|ty)> LLam(ps, c)
     with tys := <map(norm-get-ast-type)> ps;
          ty := PRED(tys)
 
@@ -129,6 +176,12 @@ rules
   list-to-conj: []     -> CTrue()
   list-to-conj: [C]    -> C
   list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+
+  mk-CExists: ([], c              ) -> c
+  mk-CExists: (vs, CExists(vs', c)) -> CExists(<conc> (vs, vs'), c)
+    where not([] := vs)
+  mk-CExists: (vs, c              ) -> CExists(vs, c)
+    where not([] := vs)
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()

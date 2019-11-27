@@ -7,13 +7,14 @@ module statix/lang/statics/desugar
 imports
 
   signatures/statix/lang/-
+
+  statix/lang/util
   statix/lang/statics/-
 
 rules
 
   desugar-all =
     desugar-rules;
-    desugar-rule-vars;
     desugar-decl-shorthands;
     desugar-ref-shorthands;
     desugar-queries;
@@ -23,12 +24,7 @@ rules
 rules
 
   desugar-rules = bottomup(try(desugar-rule))
-  desugar-rule: AxiomRule(lbl, h) -> Rule(lbl, h, NoLocalVars(), CTrue())
-
-rules
-
-  desugar-rule-vars = bottomup(try(desugar-rule-var))
-  desugar-rule-var: NoLocalVars() -> []
+  desugar-rule: AxiomRule(lbl, h) -> Rule(lbl, h, CTrue())
 
 rules
 
@@ -67,6 +63,13 @@ rules
 
 rules
 
+  desugar-regexes = bottomup(try(desugar-regex))
+
+  desugar-regex: ZeroOrOne(re) -> Or(Epsilon(), re)
+  desugar-regex: OneOrMore(re) -> Concat(re, Closure(re))
+
+rules
+
   desugar-queries = bottomup(try(desugar-query))
 
   desugar-query: NoFilter() -> Filter(Neg(Empty()), LTrue())
@@ -86,7 +89,7 @@ rules
 rules
 
   desugar-lambdas = topdown(try(desugar-lambda))
-  desugar-lambda: LLam(ts) -> LLam(ts, [], CTrue())
+  desugar-lambda: LLam(ts) -> LLam(ts, CTrue())
 
 rules
 
