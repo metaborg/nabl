@@ -12,7 +12,6 @@ imports
   signatures/nabl2/runtime/common/-
   nabl2/runtime/analysis/-
   nabl2/runtime/prelude/-
-  nabl2/runtime/transform/-
 
 
 rules

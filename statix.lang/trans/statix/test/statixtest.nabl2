@@ -6,7 +6,10 @@ imports
 
 rules
 
-  [[ t@Test(c, sections) ^ (s) ]] :=
+  [[ t@Test(vs, c, sections) ^ (s) ]] :=
     new s', s' -P-> s, @t.scope := s',
-    Sections[[ sections ^ (s', s) ]],
-    Constraint[[ c ^ (s') ]].
+    Sections[[ sections ^ (s') ]],
+    new s'', s'' ---> s',
+    Map1T(VarDecl)[[ vs ^ (s'') : _ ]],
+    distinct/name D(s'')/Var | error $[Duplicate local variable [NAME]] @NAMES,
+    [[ c ^ (s'') ]].

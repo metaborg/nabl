@@ -17,4 +17,4 @@ context-free start-symbols
 
 context-free syntax
 
-  CommandLine.Eval = <<Constraint>>
+  CommandLine.Eval = <<LocalVars><Constraint>>

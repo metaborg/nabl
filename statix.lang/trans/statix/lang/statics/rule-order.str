@@ -6,14 +6,14 @@ imports
 
   signatures/statix/lang/-
 
-  statix/lang/util
+  statix/lang/statics/util
   statix/lang/pp
 
 rules
 
   detect-overlapping-rules: ast -> or-e*
     with
-      head*   := <collect-om(?Rule(_, <id>, _), conc)> ast
+      head*   := <collect-om(?Rule(_, <id>, _, _), conc)> ast
     ; o-head* := <partitions(rule-head-cmp(patterns-eq))> head*
     ; or-e*   := <filter(overlap-errors);concat> o-head*
 

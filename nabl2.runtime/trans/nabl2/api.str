@@ -398,13 +398,6 @@ rules // ###### Scope graphs ######
    */
   nabl2-get-occurrence-index = nabl2--occurrence-index
 
-  /**
-   * Get scopes of path
-   *
-   * @type Path -> [Scope]
-   */
-  nabl2-get-path-scopes = nabl2--get-path-scopes
-
 rules // ###### Symbolic Constraints ######
   
   /**

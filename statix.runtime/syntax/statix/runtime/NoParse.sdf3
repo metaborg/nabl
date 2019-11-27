@@ -19,3 +19,5 @@ context-free syntax
   Term.TermIndex = <@<String>-<Int>>
 
   TermOrId = Term
+
+  Constraint.CExists = <{<{Var ", "}*>} <Constraint>>

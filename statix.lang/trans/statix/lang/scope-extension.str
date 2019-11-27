@@ -2,22 +2,17 @@ module statix/lang/scope-extension
 
 imports
 
-  nabl2/api
   statix/lang/scope-extension/-
-
-  statix/runtime/pp
 
 rules
 
-  // collect extension constraints
-  collect-ext-constraints =
-    collect-all(ext-constraints, conc)
-  ; concat
-
-  explicate-ext-constraints(|a) = fail
-
-  solve-ext-constraints = fail
-
-  prettyprint-Statix-ExtOrigin: _ -> [S("")]
-
-  ext-log(pp|msg) = id <+ with(warn-msg(|msg);pp-Statix-string(pp);debug)
+  compute-scope-extensions: ast -> (ext*, error*, [], note*)
+    with error-iset := <new-iset>;
+         note-iset := <new-iset>;
+         base-ext* := <collect-om(base-extensions(|error-iset, note-iset));concat> ast;
+         ext-iset := <new-iset>;
+         <iset-addlist(|base-ext*)> ext-iset;
+         <iset-fixpoint(derive-extensions(|ast, error-iset, note-iset))> ext-iset;
+         ext* := <iset-elements> ext-iset;
+         error* := <iset-elements> error-iset;
+         note* := <iset-elements> note-iset

@@ -14,7 +14,7 @@ imports
 rules // maps
 
   normalize-mapping-constraints(|a):
-      Test(body, section*){a*} -> Test(body, section''*){a*}
+      Test(bvs, body, section*){a*} -> Test(bvs, body, section''*){a*}
     with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
     with (section'*, maps) := <collect-map(replace-map(|a))> section*;
          rule* := <map(map-to-rules(|a)); concat> maps;
@@ -22,6 +22,9 @@ rules // maps
 
 rules // util
 
-  normalize-scoped(replace,in-head,add-vars,to-c):
-      Test(body, section*){a*} -> Test(<mk-CExists>(bvs', body'), section*){a*}
-    with (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body
+  normalize-in-rules(replace,in-head,add-vars,to-c):
+      Test(bvs, body, section*){a*} -> Test(bvs', body'', section*){a*}
+    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
+         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
+         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
+         bvs' := <conc> (bvs, new-bvs)

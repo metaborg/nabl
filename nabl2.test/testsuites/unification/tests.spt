@@ -11,15 +11,3 @@ test cannot unfiy recursive [[
 test nested tails are nil [[
   nested tails are nil
 ]] 0 errors
-
-test compare empty lists succeeds [[
-  compare lists and
-]] 0 errors
-
-test compare equal non-empty lists succeeds [[
-  compare lists a a and a a
-]] 0 errors
-
-test compare non-equal non-empty lists fails [[
-  compare lists a a and a a a
-]] > 0 errors

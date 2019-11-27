@@ -7,31 +7,44 @@ imports
   signatures/statix/lang/-
   statix/lang/-
   statix/lang/statics/-
-  statix/lang/scope-extension/-
 
-rules // collect extension constraints
+rules // shared
 
-  ext-constraints: CDeriveMap(x, x', lift*) -> c*
-    with c* := <add-indices;filter(ext-lift-constraints(|x, x'));concat> lift*
+  head-name: F(x, _, _) -> x
 
-  ext-constraints: FDeriveMap(x, x', inlift*, outlift) -> c*
-    with lift* := <conc> (inlift*, [outlift])
-    with c* := <add-indices;filter(ext-lift-constraints(|x, x'));concat> lift*
+  head-projs: F(_, inarg*, _) -> proj*
+    with proj* := <map-with-index(Swap)> inarg*
 
-  ext-lift-constraints(|x, x'): (i, l@IdLift()) -> c*
-    with c* := [ ExtProvides(ExtParam(x, i), ExtParam(x', i), l)
-               , ExtRequires(ExtParam(x, i), ExtParam(x', i), l)
-               ]
+rules // base facts, constraints directly adding to the scope graph
 
-  ext-lift-constraints(|x, x'): (i, lift) -> c*
-    where not(IdLift() := lift)
-    with c* := [ExtIsCovered(ExtParam(x', i), lift)]
+  base-extends(|ext*): (NewOp(), l) -> <id>
 
+rules // derived facts, constraints indirectly adding to the scope graph
 
-  ext-constraints: Rule(_, F(x, inparam*, outparam), _) -> c*
-    with ps := <conc> (inparam*, [outparam])
-       ; c* := <ext-params-constraints(|x)> ps
+  derived-extensions(|ext, error-iset, note-iset): CDeriveMap(x, x', lift*) -> rule-ext*
+    with (y, i, lbl) := ext
+    where <raw-eq> (y, x')
+    with lift := <index(|i)> lift*;
+         if IdLift() := lift then
+           rule-ext* := [(x, i, lbl)]
+         else
+           rule-ext* := [];
+           <iset-add(|(lift, $[Cannot extend lifted scope in [<pp-partial-Statix-string> lbl]]))> error-iset
+         end
 
+  derived-extensions(|ext, error-iset, note-iset): FDeriveMap(x, x', inlift*, _) -> rule-ext*
+    with (y, i, lbl) := ext
+    where <raw-eq> (y, x')
+    with inlift := <index(|i)> inlift*;
+         if IdLift() := inlift then
+           rule-ext* := [(x, i, lbl)]
+         else
+           rule-ext* := [];
+           <iset-add(|(inlift, $[Cannot extend lifted scope in [<pp-partial-Statix-string> lbl]]))> error-iset
+         end
+  
+  derive-extension(|y, i): COp(x, inarg*) -> arg
+    where <raw-eq> (x, y)
+    with arg := <index(|i)> inarg*
 
-  ext-constraints: COp(x, args) -> c*
-    with c* := <ext-args-constraints(|x)> args
+  derive-extends(|ext*): NewOp() -> <id>

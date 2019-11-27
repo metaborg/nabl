@@ -180,13 +180,6 @@ rules
   nabl2--occurrence-index: Occurrence(_,_,index) -> index
 
 
-  nabl2--get-path-scopes = filter(
-    ?E(<id>, _)
-  + ?N(<id>, _, _, _)
-  + ?D(<id>, _)
-  )
-
-
   nabl2--mk-namespace: "" -> DefaultNamespace()
 
   nabl2--mk-namespace: ns -> Namespace(ns)

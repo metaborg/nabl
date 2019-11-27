@@ -11,8 +11,6 @@ import java.util.Optional;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
@@ -80,8 +78,6 @@ import mb.statix.spec.Spec;
 
 public class StatixTerms {
 
-    private static final ILogger log = LoggerUtils.logger(StatixTerms.class);
-
     public static final String SCOPE_OP = "Scope";
     public static final String TERMINDEX_OP = "TermIndex";
     public static final String OCCURRENCE_OP = "Occurrence";
@@ -111,18 +107,9 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> rule() {
-        // @formatter:off
-        return M.cases(
-            M.appl3("Rule", ruleLabel(), head(), constraint(), (r, n, h, bc) -> {
-                return Rule.of(h._1(), h._2(), bc).withLabel(n);
-            }),
-            // DEPRECATED
-            M.appl4("Rule", ruleLabel(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
-                log.warn("Rules with explicit local variables are deprecated.");
-                return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
-            })
-        );
-        // @formatter:on
+        return M.appl4("Rule", ruleLabel(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
+            return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
+        });
     }
 
     public static IMatcher<String> ruleLabel() {
@@ -215,18 +202,8 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> hoconstraint() {
-        // @formatter:off
-        return M.cases(
-            M.appl2("LLam", M.listElems(pattern()), constraint(), (t, ps, c) -> {
-                return Rule.of("", ps, c);
-            }),
-            // DEPRECATED
-            M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(), (t, ps, vs, c) -> {
-                log.warn("Lambdas with explicit local variables are deprecated.");
-                return Rule.of("", ps, new CExists(vs, c));
-            })
-        );
-        // @formatter:on
+        return M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(),
+                (t, ps, vs, c) -> Rule.of("", ps, new CExists(vs, c)));
     }
 
     public static IMatcher<Multimap<String, Tuple2<Integer, ITerm>>> scopeExtensions() {

@@ -11,6 +11,3 @@ rules
 
   [[ NestedTailsAreNil() ^ () ]] :=
     [|[|[]]] == [].
-
-  [[ CompareLists(xs, ys) ^ () ]] :=
-    xs == ys.
