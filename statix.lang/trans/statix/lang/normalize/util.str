@@ -78,23 +78,23 @@ rules
   normalize-scoped(replace,in-head,add-vars,to-c):
       Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs'', body'')){a*}
     with (head', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> head;
-         hvs := <raw-diff> (<all-vars> head, <all-vars> head');
+         hvs := <raw-diff> (<all-vars> hmaps, <all-vars> head');
          (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
          body'' := <filter(to-c);list-to-conj(|body')> hmaps;
-         bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end> hvs
+         bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end; raw-make-set> hvs
 
   normalize-scoped(replace,in-head,add-vars,to-c):
       LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs'', body'')){a*}
-    with (ts', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> ts;
-         tvs := <raw-diff> (<all-vars> ts, <all-vars> ts');
+    with (ts', tmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> ts;
+         tvs := <raw-diff> (<all-vars> tmaps, <all-vars> ts');
          (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
-         body''  := <filter(to-c);list-to-conj(|body')> hmaps;
-         bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end> tvs
+         body''  := <filter(to-c);list-to-conj(|body')> tmaps;
+         bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end; raw-make-set> tvs
 
 
   collect-map-in-constraints(replace,add-vars,to-c): CExists(vs, c) -> (c'', [])
     with (c', vs') := <collect-map-in-constraints(replace,add-vars,to-c)> c
-       ; vs'' := <if add-vars then <conc> (vs, <id>) else !vs end> vs'
+       ; vs'' := <if add-vars then <conc> (vs, <id>) else !vs end; raw-make-set> vs'
        ; c'' := <mk-CExists>(vs'', c')
 
   collect-map-in-constraints(replace,add-vars,to-c): CConj(c1, c2) -> (c'', vs'')
@@ -105,7 +105,7 @@ rules
 
   collect-map-in-constraints(replace,add-vars,to-c): CTry(c, msg) -> (CTry(c'', msg), [])
     with (c', vs') := <collect-map-in-constraints(replace,add-vars,to-c)> c
-       ; vs'' := <if add-vars then id else ![] end> vs'
+       ; vs'' := <if add-vars then id else ![] end; raw-make-set> vs'
        ; c'' := <mk-CExists>(vs'', c')
 
   collect-map-in-constraints(replace,add-vars,to-c): c -> (c'', vs'')
@@ -182,8 +182,9 @@ rules
   list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
 
   mk-CExists: ([], c              ) -> c
-  mk-CExists: (vs, CExists(vs', c)) -> CExists(<conc> (vs, vs'), c)
+  mk-CExists: (vs, CExists(vs', c)) -> CExists(vs'', c)
     where not([] := vs)
+    with vs'' := <conc; raw-make-set> (vs', vs)
   mk-CExists: (vs, c              ) -> CExists(vs, c)
     where not([] := vs)
 
