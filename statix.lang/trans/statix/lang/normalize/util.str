@@ -76,16 +76,20 @@ rules
   // to-c : (old:Term, new:Term) -> Constraint
 
   normalize-scoped(replace,in-head,add-vars,to-c):
-      Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs', body'')){a*}
+      Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs'', body'')){a*}
     with (head', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> head;
+         hvs := <raw-diff> (<all-vars> head, <all-vars> head');
          (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> hmaps
+         body'' := <filter(to-c);list-to-conj(|body')> hmaps;
+         bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end> hvs
 
   normalize-scoped(replace,in-head,add-vars,to-c):
-      LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs', body'')){a*}
+      LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs'', body'')){a*}
     with (ts', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> ts;
+         tvs := <raw-diff> (<all-vars> ts, <all-vars> ts');
          (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
-         body''  := <filter(to-c);list-to-conj(|body')> hmaps
+         body''  := <filter(to-c);list-to-conj(|body')> hmaps;
+         bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end> tvs
 
 
   collect-map-in-constraints(replace,add-vars,to-c): CExists(vs, c) -> (c'', [])

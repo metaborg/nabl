@@ -386,3 +386,29 @@ test reference to non-scope outer variable succeeds [[
   rules
     c : int
 ]] 0 errors
+
+test usage of predicate which argument extends and provides requires no more permission succeeds [[
+  resolve {s} c(s)
+  signature
+    name-resolution
+      labels P
+  rules
+    c : scope
+    c(s) :- new s, s -P-> s.
+
+    d :
+    d() :- {s} c(s).
+]] 0 errors
+
+test usage of predicate which argument extends and provides requires no more permission succeeds [[
+  resolve {s} c(1, s)
+  signature
+    name-resolution
+      labels P
+  rules
+    c : int * scope
+    c(i, s) :- new s, s -P-> s, d(s).
+
+    d : scope
+    d(s) :- s -P-> s.
+]] 0 errors
