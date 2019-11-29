@@ -1,0 +1,60 @@
+module generics-constructor
+
+language FGJ
+
+test generic constructor argument [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class T<X extends Object<>> extends Object<> {
+      T(X x) {
+        super();
+      }
+    }
+  in
+    new T<A<>>(new B<>())
+]] analysis succeeds
+
+test concrete argument for generic super parameter [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T1<X extends A<>> extends Object<> {
+      T1(X x) { super(); }
+    }
+    class T2<> extends T1<B<>> {
+      T2() { super(new B<>()); }
+    }
+  in new T2<>()
+]] analysis succeeds
+
+test generic super argument passed to super [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T1<X extends A<>> extends Object<> {
+      T1(X x) { super(); }
+    }
+    class T2<Y extends B<>> extends T1<Y> {
+      T2(Y y) { super(y); }
+    }
+  in new T2<B<>>(new C<>())
+]] analysis succeeds

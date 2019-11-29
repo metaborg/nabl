@@ -1,0 +1,53 @@
+module class-constructors
+
+language FGJ
+
+test wrong constructor name [[
+  class A<> extends Object<> {
+    B() { super(); }
+  }
+]] analysis fails
+
+test construct Object [[
+  let
+  in
+    new Object<>()
+]] analysis succeeds
+
+test nullary constructor [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+  in
+    new A<>()
+]] analysis succeeds
+
+test unary constructor [[
+  let
+    class A<> extends Object<> {
+      A(Object<> f) { super(); }
+    }
+  in
+    new A<>(new Object<>())
+]] analysis succeeds
+
+test binary constructor [[
+  let
+    class A<> extends Object<> {
+      A(Object<> f, Object<> g) { super(); }
+    }
+  in
+    new A<>(new Object<>(), new Object<>())
+]] analysis succeeds
+
+test missing constructor argument [[
+  let
+    class A<> extends Object<> {
+      A(Object<> f, Object<> g) { super(); }
+    }
+  in
+    new A<>(new Object<>())
+]] analysis fails
+
+// call constructor with incorrect type

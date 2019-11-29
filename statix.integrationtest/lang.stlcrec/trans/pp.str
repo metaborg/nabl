@@ -1,0 +1,75 @@
+module pp
+
+imports
+
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/editor/refactoring/-
+  pp/STLCrec-parenthesize
+  pp/STLCrec-pp
+
+  pp/statix/runtime/-
+  statix/runtime/pp
+
+rules
+
+  editor-format:
+    (node, _, ast, path, project-path) -> (filename, result)
+    with
+      ext      := <get-extension> path
+    ; filename := <guarantee-extension(|$[pp.[ext]])> path
+    ; result   := <pp-STLCrec-string> node
+
+rules
+  
+  pp-STLCrec-string =
+    parenthesize-STLCrec
+    ; prettyprint-STLCrec-start-symbols
+    ; !V([], <id>)
+    ; box2text-string(|120)
+      
+  pp-partial-STLCrec-string =
+    parenthesize-STLCrec
+    ; prettyprint-STLCrec
+    ; !V([], <id>)
+    ; box2text-string(|120)
+    
+  pp-partial-STLCrec-string(|sort) =
+    parenthesize-STLCrec
+    ; prettyprint-STLCrec(|sort)
+    ; !V([], <id>)
+    ; box2text-string(|120)  
+
+rules
+
+  pp-generated = pp-partial-STLCrec-string
+
+  pp-one(pp)   = prettyprint-Statix-Term
+  pp-one-V(pp) = prettyprint-Statix-Term
+  pp-one-Z(pp) = prettyprint-Statix-Term
+  
+  pp-option(pp) = prettyprint-Statix-Term
+
+  pp-V-list(pp)         = prettyprint-Statix-Term
+  pp-V-list(pp|vs)      = prettyprint-Statix-Term
+  pp-V-list(pp|vs, sep) = prettyprint-Statix-Term
+  
+  pp-H-list(pp)     = prettyprint-Statix-Term
+  pp-H-list(pp|sep) = prettyprint-Statix-Term
+  
+  pp-HV-list(pp)     = prettyprint-Statix-Term
+  pp-HV-list(pp|sep) = prettyprint-Statix-Term
+  
+  pp-HZ-list(pp)     = prettyprint-Statix-Term
+  pp-HZ-list(pp|sep) = prettyprint-Statix-Term
+  
+  prettyprint-STCLrec-ID      = prettyprint-Statix-Term
+  prettyprint-STCLrec-Exp     = prettyprint-Statix-Term
+  prettyprint-STCLrec-Bind    = prettyprint-Statix-Term
+  prettyprint-STCLrec-TypeExp = prettyprint-Statix-Term
+  prettyprint-STCLrec-Decl    = prettyprint-Statix-Term
+  prettyprint-STCLrec-Type    = prettyprint-Statix-Term
+
+rules
+  
+  construct-textual-change = construct-textual-change(pp-partial-STLCrec-string, parenthesize, override-reconstruction, resugar)

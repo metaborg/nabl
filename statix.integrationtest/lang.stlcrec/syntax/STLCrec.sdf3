@@ -1,0 +1,55 @@
+module STLCrec
+
+imports Common
+
+context-free start-symbols Start
+
+context-free syntax
+
+  Start = Exp
+
+  Exp         = <(<Exp>)> {bracket}
+
+  Exp.Var     = <<ID>>
+  Exp.Unit    = <unit>
+  Exp.Num     = <<INT>>
+  Exp.Plus    = <<Exp> + <Exp>> {left}
+  Exp.Fun     = <fun(<ID> : <TypeExp>){ <Exp> }>
+  Exp.App     = <<Exp> <Exp>> {left}
+  Exp.Rec     = <{<{Bind ","}*>}>
+  Exp.FAccess = <<Exp>.<ID>>
+  Exp.ERec    = <<Exp> extends <Exp>> {right}
+  Exp.With    = <with <Exp> do <Exp>> {longest-match}
+  Exp.TypeLet = <type <ID> = <TypeExp> in <Exp>> {longest-match}
+  Exp.Let     = <let <{Bind "; "}+> in <Exp>> {longest-match}
+
+  Exp.TAS     = <<Exp> : <TypeExp>>
+
+  Bind.Bind = <<ID> = <Exp>>
+
+  TypeExp.UnitType  = <unit>
+  TypeExp.NumType  = <num>
+  TypeExp.FunType  = [[TypeExp] -> [TypeExp]] {right}
+  TypeExp.RecType  = <{<{Decl ","}*>}>
+  TypeExp.ERecType = <<TypeExp> extends <TypeExp>> {right}
+  TypeExp.TypeRef  = <<ID>>
+  TypeExp          = <(<TypeExp>)> {bracket}
+
+  Decl.Decl = <<ID> : <TypeExp>>
+
+  Type.UNIT = [unit]
+  Type.NUM  = [num]
+  Type.FUN  = [[Type] -> [Type]]
+
+context-free priorities
+
+    Exp.TAS
+  > Exp.App
+  > Exp.ERec
+  > Exp.FAccess
+  > Exp.Plus
+  > { Exp.TypeLet Exp.Let }
+
+template options
+
+  ID = keyword {reject}

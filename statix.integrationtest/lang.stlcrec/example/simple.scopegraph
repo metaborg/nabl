@@ -1,0 +1,15 @@
+[ ( Scope("", "s_let_4-2")
+  , [ ( Label("typeOfDecl")
+      , [ Op(
+            ""
+          , [ Occurrence("Fld", [Str("x"{TermIndex("example/simple.stlcrec", 1)}){TermIndex("example/simple.stlcrec", 1)}], WithId(NoId()))
+            , Op("NUM", [])
+            ]
+          )
+        ]
+      )
+    , (Decl(), [Occurrence("Fld", [Str("x"{TermIndex("example/simple.stlcrec", 1)}){TermIndex("example/simple.stlcrec", 1)}], WithId(NoId()))])
+    ]
+  , [(Label("P"), [Scope("", "s_1-1")])]
+  )
+]

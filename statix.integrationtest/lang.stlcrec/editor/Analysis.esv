@@ -1,0 +1,16 @@
+module Analysis
+
+imports
+
+  statix/References
+  statix/Menus
+
+language
+
+  observer : editor-analyze (constraint)
+
+menus
+  
+  menu: "Analysis" (openeditor)
+
+    action: "Show analyzed AST" = debug-show-analyzed

@@ -1,0 +1,9 @@
+  let
+    class A<> extends Object<> {
+      Object<> f;
+      A(Object<> f) {
+        super();
+        this.f = f;
+      }
+    }
+  in new A<>(new Object<>()).f
