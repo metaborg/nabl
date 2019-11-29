@@ -31,17 +31,25 @@ rules // Analysis
   editor-analyze = nabl2-analyze(desugar-all)
 
   nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(or-e*, ext-c*)
-    with or-e* := <detect-overlapping-rules> ast
+    with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
+       ; nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
+       ; or-e* := <detect-overlapping-rules> ast
+       ; nabl2-custom-analysis-info-msg(|"| collecting scope extensions...")
        ; ext-c* := <collect-ext-constraints> ast
+       ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
-    with ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
+    with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
+       ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
+       ; nabl2-custom-analysis-info-msg(|"| explicate scope extensions...")
        ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
        ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
+       ; nabl2-custom-analysis-info-msg(|"| solve scope extensions...")
        ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
        ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
        ; e* := [unit-e*, ext-e*]
        ; ca  := CustomAnalysis(ext)
+       ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term
