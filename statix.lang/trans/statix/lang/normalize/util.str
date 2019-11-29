@@ -77,18 +77,20 @@ rules
 
   normalize-scoped(replace,in-head,add-vars,to-c):
       Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs'', body'')){a*}
-    with (head', hmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> head;
-         hvs := <raw-diff> (<all-vars> hmaps, <all-vars> head');
-         (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> hmaps;
+    with (head', hmaps) := <in-head < collectom-map(replace) + !(<id>, [])> head;
+         // variables in the removed terms which are not in the new head
+         hvs := <raw-diff> (<map(Fst);all-vars> hmaps, <all-vars> head');
+         body' := <filter(to-c);list-to-conj(|body)> hmaps;
+         (body'', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body';
          bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end; raw-make-set> hvs
 
   normalize-scoped(replace,in-head,add-vars,to-c):
       LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs'', body'')){a*}
-    with (ts', tmaps) := <in-head < collect-map(replace, not-a-scope) + !(<id>, [])> ts;
-         tvs := <raw-diff> (<all-vars> tmaps, <all-vars> ts');
-         (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body;
-         body''  := <filter(to-c);list-to-conj(|body')> tmaps;
+    with (ts', tmaps) := <in-head < collectom-map(replace) + !(<id>, [])> ts;
+         // variables in the removed terms which are not in the new head
+         tvs := <raw-diff> (<map(Fst);all-vars> tmaps, <all-vars> ts');
+         body'  := <filter(to-c);list-to-conj(|body)> tmaps;
+         (body'', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body';
          bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end; raw-make-set> tvs
 
 
@@ -109,9 +111,10 @@ rules
        ; c'' := <mk-CExists>(vs'', c')
 
   collect-map-in-constraints(replace,add-vars,to-c): c -> (c'', vs'')
-    with (c', maps) := <collect-map(replace, not-a-scope)> c
+    with (c', maps) := <collectbu-map(replace, not-a-scope)> c
        ; c'' := <filter(to-c);list-to-conj(|c')> maps
-       ; vs'' := <map(Snd);all-vars> maps
+         // variables in the new term that were not already in the old one
+       ; vs'' := <raw-diff> (<map(Snd);all-vars> maps, <all-vars> c)
 
 
   is-scope = ?Rule(_, _, _)

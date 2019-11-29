@@ -22,6 +22,16 @@ test extend new scope in same rule succeeds [[
     c() :- {s} new s, !foo[""] in s.
 ]] analysis succeeds
 
+test predicate with two rules where one rule extends and creates succeeds [[
+  resolve {s} c(_, s)
+  signature
+    relations foo : string
+  rules
+    c : int * scope
+    c(1, s) :- new s, !foo[""] in s.
+    c(_, s) :- true.
+]] analysis succeeds
+
 test extend local scope in same rule fails [[
   resolve {s} !foo[""] in [[s]]
   signature

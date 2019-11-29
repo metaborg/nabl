@@ -69,17 +69,44 @@ rules
 
 rules
 
-  // collect-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
+  // collectbu-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
   // apply bottomup and collect the substitutions that were done
 
-  collect-map(s) = collect-map(s, id)
+  collectbu-map(s) = collectbu-map(s, id)
 
-  collect-map(s, guard): t -> (t'', maps)
+  collectbu-map(s, guard): t -> (t'', maps)
     where where(guard); c#(ts){a*} := t
-    with (ts', tsmaps) := <map(collect-map(s, guard)); unzip; (id, concat)> ts;
+    with (ts', tsmaps) := <map(collectbu-map(s, guard)); unzip; (id, concat)> ts;
          t' := <with-origin(|t)> c#(ts'){a*};
          (t'', tmaps) := <keep-origin(s) < !(<id>, [(t', <id>)]) + !(<id>, [])> t';
          maps := <conc> (tmaps, tsmaps)
 
-  collect-map(s, guard): t{a*} -> (t{a*}, [])
+  collectbu-map(s, guard): t{a*} -> (t{a*}, [])
     where not(guard) + not(c#(_) := t)
+
+  // collectom-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
+  // apply outermost and collect the substitutions that were done
+
+  collectom-map(s) = collectom-map(s, id)
+
+  collectom-map(s, guard): t -> (t', maps)
+    where where(guard); c#(ts){a*} := t
+    with if t' := <keep-origin(s)> t then
+           maps := [(t, t')]
+         else
+           (ts', maps) := <map(collectom-map(s, guard)); unzip; (id, concat)> ts
+         ; t' := <with-origin(|t)> c#(ts'){a*}
+         end
+
+  collectom-map(s, guard): t{a*} -> (t{a*}, [])
+    where not(guard) + not(c#(_) := t)
+
+  // collect-map(s: a -> a) : [a] -> ([a], [(a * a)])
+  // apply to a list and collect the substitutions that were done
+
+  collect-map(s): ts -> (ts', maps)
+    where is-list
+    with (ts', maps) := < map({ p, p': ?p ; ( p' := <s> p < !(p', [(p, p')]) + !(p, [])) })
+                        ; unzip
+                        ; (id, concat)
+                        > ts

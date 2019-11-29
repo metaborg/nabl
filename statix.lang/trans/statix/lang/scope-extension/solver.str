@@ -40,6 +40,9 @@ rules
        ; ext-log(prettyprint-Statix-ExtEqs|"provides:")
 
        ; require-eq* := < filter(\ ExtRequires(v, s, _) -> (v, s) \)
+                          // do not propagate requires of local variables to parameters
+                          // if they are locally covered already
+                        ; filter(not(\ (ExtParam(_, _), v@ExtVar(_)) -> <id> where <lookup> (v, provides*) \))
                         ; group-by(Fst,Snd)
                         ; map(require-combine)
                         ; ext-log(prettyprint-Statix-ExtEqs|"require eqs:")

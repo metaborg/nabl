@@ -10,6 +10,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/util
   statix/lang/normalize/util
 
 rules
@@ -19,7 +20,7 @@ rules
   normalize-mapping-constraints(|a):
       Module(x, section*){a*} -> Module(x, section''*){a*}
     with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
-    with (section'*, maps) := <collect-map(replace-map(|a))> section*;
+    with (section'*, maps) := <collectbu-map(replace-map(|a))> section*;
          rule* := <map(map-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, <rules-to-sections> rule*)
 

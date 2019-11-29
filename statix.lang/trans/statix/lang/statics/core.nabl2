@@ -126,7 +126,7 @@ rules
   HoConstraint[[ l@LLam(ps, c) ^ (s) : PRED(tys) ]] :=
     new s', s' -P-> s, @l.scope := s',
     Map1T(Match)[[ ps ^ (s') : tys ]],
-    (D(s') lsect/name V(s)) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+  //(D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
 
 
@@ -160,7 +160,7 @@ rules
     new s', s' -P-> s,
     Map1T(VarDecl)[[ vs ^ (s') : _ ]],
     distinct/name D(s')/Var | error $[Duplicate variable [NAME]] @NAMES,
-    (D(s') lsect/name V(s)) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+  //(D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
 
   Constraint[[ t@CTry(c, msg) ^ (s) ]] :=
