@@ -22,4 +22,8 @@ public class TextPart implements IMessagePart, Serializable {
         return this;
     }
 
+    @Override public String toString() {
+        return text;
+    }
+
 }
