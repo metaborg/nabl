@@ -10,6 +10,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/util
   statix/lang/normalize/util
 
 rules
@@ -32,12 +33,15 @@ rules
          t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
   normalize-functional-head:
-      Rule(lbl, h, body){a*} -> Rule(lbl, h', body){a*}
+      Rule(lbl, h, body){a*} -> Rule(lbl, h', body'){a*}
     where F(x, in_ts, out_t) := h
     with ty@FUN(_, out_ty) := <norm-get-ast-type> h;
-         ts := <conc> (in_ts, [out_t]);
+         out_v := <mk-fresh-Var(|out_ty)>("out");
+         ts := <conc> (in_ts, [out_v]);
          ty' := <fun-to-pred-type> ty;
-         h' := <norm-set-ast-type(|ty')> C(x, ts)
+         h' := <norm-set-ast-type(|ty')> C(x, ts);
+         out_vs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
+         body' := <mk-CExists>(out_vs, CConj(CEqual(out_v, out_t, NoMessage()), body))
 
   normalize-functional-cops =
     normalize-scoped(replace-functional-cop,id,id,functional-cop-to-c)
