@@ -1,0 +1,230 @@
+module statics // Static semantics of System F using scopes-as-types
+
+signature
+  sorts ID = string
+
+  sorts Exp constructors                      // e :=
+    Num     : ID -> Exp                       //    | n
+    Fun     : ID * TypeExp * Exp -> Exp       //    | fun (x : te) { e }
+    Var     : ID -> Exp                       //    | x
+    App     : Exp * Exp -> Exp                //    | e e
+    TFun    : ID  * Exp -> Exp                //    | Fun (X) { e }
+    TApp    : Exp * TypeExp -> Exp            //    | e[te]
+    Let     : ID  * Exp * Exp -> Exp          //    | let x = e in e
+    LetT    : ID * TypeExp * Exp -> Exp       //    | type X = te in e
+    TAS     : Exp * TypeExp -> Exp            //    | e : t
+
+  sorts TypeExp constructors                  // te :=
+    NumType : TypeExp                         //     | num
+    FunType : TypeExp * TypeExp -> TypeExp    //     | te -> te
+    AllType : ID * TypeExp -> TypeExp         //     | X => te
+    VarType : ID -> TypeExp                   //     | X
+
+  namespaces
+    Var  : string
+    TVar : string
+
+  sorts Type constructors // variables: T, U, V
+    NUM   : Type
+    FUN   : Type * Type -> Type
+    ALL   : occurrence * scope -> Type
+    TVAR  : occurrence -> Type
+
+    PROJB : scope -> Type
+    PL    : scope -> Type
+
+  relations
+    var   : occurrence -> Type
+    body  : Type
+    type  : occurrence -> Type
+    subst : occurrence -> Type
+
+  name-resolution
+    labels
+      P // Parent (lexical)
+      I // Instantiation
+
+    resolve Var  filter P* min $ < P
+    resolve TVar filter P* min $ < P
+
+rules
+
+  programOK : Exp
+  programOK(e) :- {s T}
+    new s,
+    typeOfExp(s, e) == T.
+
+rules
+
+  typeOfTypeExp: scope * TypeExp -> Type
+
+  typeOfTypeExp(s, NumType()) = NUM().
+
+  typeOfTypeExp(s, FunType(t1, t2)) =
+    FUN(typeOfTypeExp(s, t1), typeOfTypeExp(s, t2)).
+
+  typeOfTypeExp(s, AllType(x, t)) = ALL(X, s_all) :-
+    new s_all, s_all -P-> s,
+    X == TVar{x@x},
+    s_all -> TVar{x@x} with var TVAR(X),
+    !body[typeOfTypeExp(s_all, t)] in s_all.
+        
+  typeOfTypeExp(s, VarType(X)) = T :-
+    var of TVar{X@X} in s |-> [(_, (_, T))].
+
+rules
+
+  typeOfExp: scope * Exp -> Type
+
+  typeOfExp(s, Num(_)) = NUM().
+
+  typeOfExp(s, Fun(x, t_arg, e)) = FUN(U, T) :- {s_fun}
+    typeOfTypeExp(s, t_arg) == U,
+    new s_fun, s_fun -P-> s,
+    s_fun -> Var{x@x} with type U,
+    typeOfExp(s_fun, e) == T.
+
+  typeOfExp(s, Var(x)) = T :-
+    type of Var{x@x} in s |-> [(_, (_, T))].
+
+  typeOfExp(s, App(e1, e2)) = T :- {U V}
+    strict(typeOfExp(s, e1)) == FUN(U, T),
+    typeOfExp(s, e2) == V,
+    typeEq(U, V).
+
+  typeOfExp(s, TFun(x, e)) = ALL(X, s_all) :-
+    new s_all, s_all -P-> s,
+    X == TVar{x@x},
+    s_all -> TVar{x@x} with var TVAR(X),
+    !body[typeOfExp(s_all, e)] in s_all.
+
+  typeOfExp(s, TApp(e, t)) = PROJB(s_inst) :- {x i s_all}
+    strict(typeOfExp(s, e)) == ALL(TVar{x@i}, s_all),
+    new s_inst, s_inst -I-> s_all,
+    s_inst -> TVar{x@i} with subst typeOfTypeExp(s, t).
+    
+  typeOfExp(s, Let(x, e1, e2)) = U :- {s_let}
+    new s_let, s_let -P-> s,
+    s_let -> Var{x@x} with type typeOfExp(s, e1),
+    typeOfExp(s_let, e2) == U.
+    
+  typeOfExp(s, LetT(x, t, e)) = U :- {s_let}
+    new s_let, s_let -P-> s,
+    s -> TVar{x@x} with var typeOfTypeExp(s, t),
+    typeOfExp(s_let, e) == U.    
+    
+  typeOfExp(s, TAS(e, t)) = T :- {U}
+    typeOfExp(s, e) == U,
+    typeOfTypeExp(s, t) == T,
+    typeEq(U, T).
+
+rules
+
+  typeEq: Type * Type
+
+  typeEq(NUM(), NUM()).
+
+  typeEq(FUN(T_arg, T_ret), FUN(U_arg, U_ret)) :-
+    typeEq(T_arg, U_arg),
+    typeEq(T_ret, U_ret).
+
+  typeEq(T@PROJB(_), U) :- typeEq(strict(T), U).
+
+  typeEq(U, T@PROJB(_)) :- typeEq(U, strict(T)).
+
+  typeEq(PL(X), PL(X)).
+
+  typeEq(ALL(TVar{x@i}, s_all1), ALL(TVar{y@j}, s_all2)) :- {Z s_inst1 s_inst2}
+    new Z,
+    new s_inst1, s_inst1 -I-> s_all1, s_inst1 -> TVar{x@i} with subst PL(Z),
+    new s_inst2, s_inst2 -I-> s_all2, s_inst2 -> TVar{y@j} with subst PL(Z),
+    typeEq(PROJB(s_inst1), PROJB(s_inst2)).
+
+  typeEq(TVAR(X), TVAR(X)). // Should not occur in programs with no free type variables
+
+rules
+
+  strict : Type -> Type
+  
+  strict(PROJB(s)) = T :- {p U ss}
+    query body filter I* min $ < I in s |-> [(p, U)],
+    [_|ss] == reverseOfScopes(scopes(p)),
+    strictp(ss, U) == T.
+  
+  strict(T) = T.
+
+rules
+
+  strictp : list(scope) * Type -> Type
+  
+  strictp([], T) = T.
+  
+  strictp(p, T@PROJB(s)) = strictp(p, strict(T)).
+  
+  strictp(p, NUM()) = NUM().
+
+  strictp(p, PL(X)) = PL(X).
+  
+  strictp(p, FUN(T1, T2)) = FUN(strictp(p, T1), strictp(p, T2)).
+  
+  strictp([s|p], ALL(TVar{x@i}, s_all)) = strictp(p, ALL(TVar{x@i}, s_inst)) :- {y j T}
+    query subst filter e in s |-> [(_, (TVar{y@j}, T))],
+    new s_inst, s_inst -I-> s_all, s_inst -> TVar{y@j} with subst T.
+  
+  strictp([s|p], TVAR(X)) = strictpVarR(p, X, hasSubst(s)).
+  
+  // where
+    
+     strictpVarR : list(scope) * occurrence * HasSubst -> Type
+     
+     strictpVarR(p, X, Yes(X, T)) = strictp(p, T).
+     
+     strictpVarR(p, X, Yes(Y, T)) = strictp(p, TVAR(X)).
+  
+     strictpVarR(p, X, No())      = strictp(p, TVAR(X)). // Should not occur
+  
+signature 
+
+  sorts HasSubst constructors
+    Yes : occurrence * Type -> HasSubst
+    No  : HasSubst
+
+rules
+  
+  hasSubst : scope -> HasSubst
+
+  hasSubst(s) = hasSubstR(r) :-
+    query subst filter e in s |-> r.
+
+  // where
+
+     hasSubstR : list((path * (occurrence * Type))) -> HasSubst
+     
+     hasSubstR([(_, (X, T))]) = Yes(X, T).
+     
+     hasSubstR([]) = No().
+     
+     hasSubstR([_|[_|_]]) = No(). // Should not occur
+
+rules // Scope list reversal
+
+  reverseOfScopes : list(scope) -> list(scope)
+  
+  reverseOfScopes(ss) = reverseOfScopesR(ss, []).
+  
+  // where
+
+     reverseOfScopesR : list(scope) * list(scope) -> list(scope)
+     
+     reverseOfScopesR([], ss) = ss.
+     
+     reverseOfScopesR([s|ss], ss') = reverseOfScopesR(ss, [s|ss']).
+
+rules
+
+  scopes : path -> list(scope)
+  scopes(p) = scopes_acc(p, []).
+
+  scopes_acc : path * list(scope) -> list(scope)
+  scopes_acc(_PathEmpty(s), acc) = [s|acc].
+  scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
