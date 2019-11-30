@@ -32,7 +32,7 @@ rules
          t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
 
   normalize-functional-head:
-      Rule(lbl, h, bvs, body){a*} -> Rule(lbl, h', bvs, body){a*}
+      Rule(lbl, h, body){a*} -> Rule(lbl, h', body){a*}
     where F(x, in_ts, out_t) := h
     with ty@FUN(_, out_ty) := <norm-get-ast-type> h;
          ts := <conc> (in_ts, [out_t]);
@@ -40,7 +40,7 @@ rules
          h' := <norm-set-ast-type(|ty')> C(x, ts)
 
   normalize-functional-cops =
-    normalize-in-rules(replace-functional-cop,id,id,functional-cop-to-c)
+    normalize-scoped(replace-functional-cop,id,id,functional-cop-to-c)
 
   replace-functional-cop: t@COp(x, in_ts){a*} -> out_v{a*}
     with ty := <norm-get-ast-type> t

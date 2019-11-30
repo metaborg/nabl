@@ -4,6 +4,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/util
   statix/lang/normalize/util
 
   signatures/statix/cli/-
@@ -11,13 +12,10 @@ imports
 rules // maps
 
   normalize-mapping-constraints(|a):
-    Eval(vs, body){a*} -> Eval(vs, body){a*}
+    Eval(body){a*} -> Eval(body){a*}
 
 rules // util
 
-  normalize-in-rules(replace,add-vars,to-c):
-      Eval(bvs, body){a*} -> Eval(bvs', body''){a*}
-    with (body', bmaps) := <collect-map(replace, not-in-lambda)> body;
-         body'' := <filter(to-c);list-to-conj(|body')> bmaps;
-         new-bvs := <filter((add-vars,id);Snd);all-vars> bmaps;
-         bvs' := <conc> (bvs, new-bvs)
+  normalize-scoped(replace,add-vars,to-c):
+      Eval(body){a*} -> Eval(<mk-CExists>(bvs', body')){a*}
+    with (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body

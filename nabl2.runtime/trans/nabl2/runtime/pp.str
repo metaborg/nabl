@@ -113,3 +113,5 @@ rules
     where(<string-starts-with(|"NaBL2")> sort);
     nabl2-prettyprint-term
 
+  prettyprint-NaBL2Occurrence = prettyprint-NaBL2-NaBL2-Occurrence
+  prettyprint-NaBL2Scope      = prettyprint-NaBL2-NaBL2-Scope
