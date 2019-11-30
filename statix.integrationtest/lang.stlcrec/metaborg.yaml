@@ -11,7 +11,7 @@ dependencies:
   - "org.metaborg:statix.runtime:${metaborgVersion}"
 runtime:
   nabl2:
-    debug: analysis files custom
+    debug: analysis files # custom
 exports:
 - language: ATerm
   directory: src-gen/statix
