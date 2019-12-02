@@ -15,8 +15,9 @@ imports
   pp/statix/test/-
   statix/test/-
   
+  statix/api
   statixruntime
-  signatures/statix/runtime/-
+  statix/runtime/-
 
 rules
   
@@ -24,7 +25,7 @@ rules
       (_, _, Module(_, _), path, project-path) -> None()
 
   editor-evaluate:
-      (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
+      (_, _, ast@Test(_, _), path, project-path) -> (filename, result)
     with result   := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
          filename := <guarantee-extension(|"stxresult")> path
 
@@ -34,16 +35,16 @@ rules
       (_, _, Module(_, _), path, project-path) -> None()
 
   editor-evaluation-pair:
-      (_, _, ast@Test(_, _, _), path, project-path) -> (filename, result)
+      (_, _, ast@Test(_, _), path, project-path) -> (filename, result)
     with result   := <build-evaluation-pair> ast;
          filename := <guarantee-extension(|"evalpair.aterm")> path
 
-  build-evaluation-pair: ast@Test(_, _, _) -> (CExists(bvs, body'), spec)
+  build-evaluation-pair: ast@Test(_, _) -> (body', spec)
     with a      := <nabl2-get-ast-analysis> ast;
          ext    := <nabl2-get-custom-analysis> a;
          ast'   := <normalize(|a)> ast;
-         Test(bvs, body, _) := ast';
-         spec   := <spec-ast-to-aterm(|a)> (ast', ext);
+         Test(body, _) := ast';
+         spec   := <core-ast-to-spec-aterm> (ast', ext);
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body
 
 signature
@@ -60,14 +61,14 @@ rules
            result := FAILS()
          end
 
-  evaluate: ast@Test(_, _, _) -> result
+  evaluate: ast@Test(_, _) -> result
     with a      := <nabl2-get-ast-analysis> ast;
-         ext    := <nabl2-get-custom-analysis> a;
+         CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
          ast'   := <normalize(|a)> ast;
-         Test(bvs, body, _) := ast';
-         spec   := <spec-ast-to-aterm(|a)> (ast', ext);
+         Test(body, _) := ast';
+         spec   := <core-ast-to-spec-aterm> (ast', ext);
          level  := <stx--log-level>;
          body'  := <eliminate-all;stx--index-ast(|""/*path*/)> body;
-         s@Solution(_, a') := <stx--solve-constraint(|spec, level)> (bvs, body');
+         s@Solution(_, a') := <stx--solve-constraint(|spec, level)> ([], body');
          (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a';
          result := EvalResult(s, error*, warning*, note*)

@@ -1,0 +1,61 @@
+module generics-method2
+
+language FGJ
+
+test method returning new with generic [[
+  class A<S extends Object<>> extends Object<> {
+    A() { super(); }
+    
+    <T extends Object<>> A<T> m() { return new A<T>(); }
+  }
+]] analysis succeeds
+
+test method returning new with generics [[
+  class A<S extends Object<>, T extends Object<>> extends Object<> {
+    A() { super(); }
+    
+    <U extends Object<>> A<U, S> m() { return new A<U, S>(); }
+  }
+]] analysis succeeds
+
+test method type parameter bounded by class type [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T<X extends Object<>> extends Object<> {
+      T() { super(); }
+      <Y extends B<>> Y m(Y y) {
+        return y;
+      }
+    }
+  in
+    new T<A<>>().<B<>>m(new C<>()):B<>
+]] analysis succeeds
+
+test method type parameter is bounded by class type but enforces own bound [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T<X extends Object<>> extends Object<> {
+      T() { super(); }
+      <Y extends B<>> Y m(Y y) {
+        return y;
+      }
+    }
+  in
+    new T<A<>>().<B<>>m(new A<>()):B<>
+]] analysis fails

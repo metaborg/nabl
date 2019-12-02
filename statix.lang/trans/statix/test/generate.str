@@ -7,4 +7,4 @@ imports
 rules
 
   generate-aterm:
-    (_, _, Test(_, _, _), path, project-path) -> None()
+    (_, _, Test(_, _), path, project-path) -> None()

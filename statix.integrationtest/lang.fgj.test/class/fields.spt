@@ -1,0 +1,65 @@
+module class-fields
+
+language FGJ
+
+test initialize single class field [[
+  class A<> extends Object<> {
+    Object<> f;
+    A(Object<> f) {
+      super();
+      this.f = f;
+    }
+  }
+]] analysis succeeds
+
+test initialize multiple class fields [[
+  class A<> extends Object<> {
+    Object<> f;
+    Object<> g;
+    A(Object<> f, Object<> g) {
+      super();
+      this.f = f;
+      this.g = g;
+    }
+  }
+]] analysis succeeds
+
+test initialize field with incorrect type [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends Object<> {
+    B() { super(); }
+  }
+  class C<> extends Object<> {
+    B<> f;
+    C() {
+      super();
+      this.f = new A<>();
+    }
+  }
+]] analysis fails
+
+test access field [[
+  let
+    class A<> extends Object<> {
+      Object<> f;
+      A(Object<> f) {
+        super();
+        this.f = f;
+      }
+    }
+  in new A<>(new Object<>()).f
+]] analysis succeeds
+
+test access non-existing field [[
+  let
+    class A<> extends Object<> {
+      Object<> f;
+      A() {
+        super();
+        this.f = new Object<>();
+      }
+    }
+  in new A<>().g
+]] analysis fails

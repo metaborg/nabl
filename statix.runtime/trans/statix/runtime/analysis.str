@@ -42,7 +42,7 @@ rules // single file analysis
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
-    ; result* := <zip({ : \
+    ; result* := <zip({ file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(_, a)) ->
             (resource, Full(ast', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
@@ -64,7 +64,7 @@ rules // single file elaboration
     ; V := Var("out")
     ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
-    ; result* := <zip({ ast'': \
+    ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(subst, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
@@ -108,7 +108,7 @@ rules // multi file analysis
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-constraint, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
     ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
-    ; file-result* := <zip({ file-state', error*, warning*, note*, file-analysis: \
+    ; file-result* := <zip({ file-state', file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast', file-analysis, [], [], []))
           with file-analysis := FileAnalysis(file-state)

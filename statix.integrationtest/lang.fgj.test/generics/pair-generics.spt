@@ -1,0 +1,50 @@
+module generics-pair
+
+language FGJ
+
+test generic pairs [[
+class A<> extends Object<> { 
+  A() { super(); }
+}
+
+class B<> extends Object<> {
+  B() { super(); } 
+}
+
+class Pair<T extends Object<>, S extends Object<>> extends Object<> { 
+  T fst;
+  S snd;
+
+  Pair(T fst, S snd) {
+    super(); 
+    this.fst = fst; 
+    this.snd = snd;
+  }
+  
+  <> Pair<T, S> self() { 
+    return this;
+  }
+  
+  <> Pair<T, S> setfst(T newfst) {
+    return new Pair<T, S>(newfst, this.snd);
+  }
+ 
+  <> Pair<T, S> setsnd(S newsnd) {
+    return new Pair<T, S>(this.fst, newsnd);
+  }
+ 
+  <> Pair<S, T> swap() {
+    return new Pair<S, T>(this.snd, this.fst);
+  } 
+}
+
+class Main<> extends Object<> {
+  Main() {
+    super();
+  }
+  <> Pair<B<>, A<>> mkPair() { 
+    return new Pair<A<>, B<>>(new A<>(), new B<>()).<>swap();
+  }
+}
+]] analysis succeeds
+

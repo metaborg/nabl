@@ -1,0 +1,30 @@
+module inheritance-cyclic
+
+language FGJ
+
+test immediate inheritance cycle [[
+  class A<> extends A<> {
+    A() { super(); }
+  }
+]] analysis fails
+
+test one-step inheritance cycle [[
+  class A<> extends B<> {
+    A() { super(); }
+  }
+  class B<> extends A<> {
+    B() { super(); }
+  }
+]] analysis fails
+
+test two-step inheritance cycle [[
+  class A<> extends B<> {
+    A() { super(); }
+  }
+  class B<> extends C<> {
+    B() { super(); }
+  }
+  class C<> extends A<> {
+    C() { super(); }
+  }
+]] analysis fails

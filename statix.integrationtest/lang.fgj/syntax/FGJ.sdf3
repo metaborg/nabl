@@ -1,0 +1,63 @@
+module FGJ
+
+imports
+  
+  Common
+
+context-free start-symbols
+
+  Start
+
+context-free syntax
+
+  Start = Program
+
+  Program.Program = <<{ClassDecl "\n\n"}*>>
+
+  Program.Let = <
+    let
+      <{ClassDecl "\n\n"}*>
+    in <Exp>
+  >
+
+  ClassDecl.ClassDecl = [
+    class [ID]<[{TVarDecl ","}*]> extends [NTypeExp] {
+      [{FieldDecl "\n"}*]
+      [CtorDecl]
+      [{MethodDecl "\n"}*]
+    }
+  ]
+
+  TVarDecl.TVarDecl = [[ID] extends [NTypeExp]]
+
+  FieldDecl.FieldDecl = [[TypeExp] [ID];]
+
+  CtorDecl.CtorDecl = [
+    [ID]([{Param ", "}*]) {
+      super([{Exp ", "}*]);
+      [{FieldInit "\n"}*]
+    }
+  ]
+
+  FieldInit.FieldInit = [this.[ID] = [Exp];]
+  
+  MethodDecl.MethodDecl = [
+    <[{TVarDecl ","}*]> [TypeExp] [ID]([{Param ", "}*]) {
+      return [Exp];
+    }
+  ]
+
+  Param.Param = [[TypeExp] [ID]]
+
+  Exp.Var     = ID
+  Exp.Fld     = [[Exp].[ID]]
+  Exp.Call    = [[Exp].<[{TypeExp ","}*]>[ID]([{Exp ", "}*])]
+  Exp.New     = [new [NTypeExp]([{Exp ", "}*])]
+  Exp.Cast    = [([TypeExp])[Exp]]
+  Exp         = [([Exp])] {bracket}
+  Exp.Ascribe = [[Exp]:[TypeExp]]
+
+  NTypeExp.ClassT = [[ID]<[{TypeExp ","}*]>]
+
+  TypeExp      = NTypeExp
+  TypeExp.TVar = ID

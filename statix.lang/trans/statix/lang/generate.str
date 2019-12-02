@@ -9,7 +9,7 @@ imports
   nabl2/api
 
   signatures/statix/lang/-
-  statix/lang/statics/-
+  statix/lang/analysis
   statix/lang/normalize
 
 rules
@@ -17,12 +17,12 @@ rules
   generate-aterm:
       (_, _, ast@Module(name, _), path, project-path) -> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-    with if <nabl2-analysis-has-errors> a then
+    with if fail ; <nabl2-analysis-has-errors> a then
            result := None()
          else
-           ast'     := <normalize(|a)> ast;
-           ext      := <nabl2-get-custom-analysis> a;
-           spec     := <spec-ast-to-aterm(|a)> (ast', ext);
+           ast' := <normalize(|a)> ast;
+           CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
+           spec     := <core-ast-to-spec-aterm> (ast', ext);
            filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
            result   := (filename, spec)
          end
@@ -37,10 +37,10 @@ rules
 
 rules
 
-  spec-ast-to-aterm(|a): (ast, ext) -> spec
+  core-ast-to-spec-aterm: (ast, ext) -> spec
     with edge* := <collect-all(?Labels(<id>));concat;strip-annos> ast
        ; data* := [Decl()|<collect-all(?RelDecl(<id>, _));strip-annos> ast]
-       ; rule* := <collect-all(?Rule(_, _, _, _));strip-annos;eliminate-all> ast
+       ; rule* := <collect-all(?Rule(_, _, _));strip-annos;eliminate-all> ast
        ; spec := (edge*, data*, EOP(), rule*, ext)
 
 rules

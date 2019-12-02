@@ -20,8 +20,7 @@ test entailment requires all parts to be equal [[
 test var equality entails sub-var equality [[
   resolve {x y} x == [y], try { x == [_] }
 ]] analysis succeeds
-   // this fails because we do not have local variables in the try
-   run evaluate-test to FAILS() // SUCCEEDS()
+   // FIXME // run evaluate-test to SUCCEEDS()
 
 test var equality does not entail disequality [[
   resolve {x y} x == y, try { x != y }
@@ -69,4 +68,4 @@ test rule application implies forall disequalities [[
    c(0, [_]).
    c(_, _).
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   // FIXME // run evaluate-test to SUCCEEDS()

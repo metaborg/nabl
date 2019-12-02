@@ -1,0 +1,80 @@
+module class-method
+
+language FGJ
+
+test factory method [[
+let
+  class A<> extends Object<> {
+    A() {
+      super();
+    }
+    <> B<> mkB() {
+      return new B<>();
+    }
+  }
+  class B<> extends Object<> {
+    B() { super(); }
+  }
+in new A<>().<>mkB()
+]] analysis succeeds
+
+test constant method [[
+let
+  class A<> extends Object<> {
+    A() {
+      super();
+    }
+    <> A<> const() {
+      return new A<>();
+    }
+  }
+in new A<>().<>const() 
+]] analysis succeeds
+
+test identity method [[
+let
+  class A<> extends Object<> {
+    A() {
+      super();
+    }
+    <> B<> id(B<> b) {
+      return b;
+    }
+  }
+  class B<> extends Object<> {
+    B() { super(); }
+  }
+in new A<>().<>id(new B<>()) 
+]] analysis succeeds
+
+test override [[
+class A<> extends Object<> {
+  A() { super(); }
+  <> A<> const() {
+    return new A<>();
+  }
+}
+
+class B<> extends A<> {
+  B() { super(); }
+  <> A<> const() {
+    return new A<>();
+  }
+}
+]] analysis succeeds
+
+test override [[
+class A<> extends Object<> {
+  A() { super(); }
+  <> A<> const() {
+    return new A<>();
+  }
+}
+
+class B<> extends A<> {
+  B() { super(); }
+  <> B<> const() {
+    return new A<>();
+  }
+}
+]] analysis fails

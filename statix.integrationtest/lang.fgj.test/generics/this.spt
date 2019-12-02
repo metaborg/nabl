@@ -1,0 +1,56 @@
+module generics-this
+
+language FGJ
+
+test one generic parameter [[
+  let
+    class A<T extends Object<>> extends Object<> {
+      A() {
+        super();
+      }
+      <> A<T> self() {
+        return this;
+      }
+    }
+    class B<> extends Object<> { 
+      B() {
+        super(); 
+      }
+    }
+  in new A<B<>>().<>self():A<B<>>
+]] analysis succeeds
+
+test two generic parameters [[
+  let
+    class A<T extends Object<>, S extends Object<>> extends Object<> {
+      A() {
+        super();
+      }
+      <> A<T, S> self() {
+        return this;
+      }
+    }
+    class B<> extends Object<> { 
+      B() {
+        super();  
+      }
+    }
+    class C<> extends Object<> { 
+      C() {
+        super(); 
+      }
+    }
+  in new A<B<>,C<>>().<>self():A<B<>, C<>>
+]] analysis succeeds
+
+
+test two generic parameters; just the class [[
+   class A<T extends Object<>, S extends Object<>> extends Object<> {
+      A() {
+        super();
+      }
+      <> A<T, S> self() {
+        return this;
+      }
+    }
+]] analysis succeeds

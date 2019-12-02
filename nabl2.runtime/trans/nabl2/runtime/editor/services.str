@@ -6,6 +6,7 @@ imports
   libspoofax/editor/resolution
 
   nabl2/runtime/analysis/-
+  nabl2/runtime/transform/-
   nabl2/runtime/prelude/-
   nabl2/runtime/pp
   nabl2/api
@@ -52,9 +53,12 @@ rules
          end
 
   nabl2--decl-hover(|a, resource): node -> labels
-    with decls := <nabl2-get-ast-decls(|a)> node;
-         declTypes := <filter(!(<id>, <nabl2-get-type(|a)>))> decls;
-         labels := <map(\ (decl, type) -> $[[<nabl2--hover-decl-string(|resource)> decl] : [<nabl2--hover-type-string(|resource)> type]] \)> declTypes
+    with if decls := <nabl2-get-ast-decls(|a)> node;
+            declTypes := <filter(!(<id>, <nabl2-get-type(|a)>))> decls then
+           labels := <map(\ (decl, type) -> $[[<nabl2--hover-decl-string(|resource)> decl] : [<nabl2--hover-type-string(|resource)> type]] \)> declTypes
+         else
+           labels := []
+         end
 
   nabl2--hover-decl-string(|resource) = nabl2--strict(
     topdown(try(nabl2--strip-occurrence-index));

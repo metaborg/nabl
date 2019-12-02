@@ -1,0 +1,50 @@
+module inheritance-fields
+
+language FGJ
+
+test initialize field with subtype [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends A<> {
+    B() { super(); }
+  }
+  class C<> extends Object<> {
+    A<> f;
+    C() {
+      super();
+      this.f = new B<>();
+    }
+  }
+]] analysis succeeds
+
+test initialize field with supertype [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends A<> {
+    B() { super(); }
+  }
+  class C<> extends Object<> {
+    B<> f;
+    C() {
+      super();
+      this.f = new A<>();
+    }
+  }
+]] analysis fails
+
+test access supertype field [[
+  let
+    class A<> extends Object<> {
+      Object<> f;
+      A() {
+        super();
+        this.f = new Object<>();
+      }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+  in new B<>().f
+]] analysis succeeds

@@ -51,4 +51,13 @@ public class Message implements IMessage, Serializable {
         return new Message(kind, newContent, newOrigin);
     }
 
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(kind);
+        sb.append(" $[");
+        content.forEach(sb::append);
+        sb.append("]");
+        return sb.toString();
+    }
+    
 }

@@ -23,4 +23,12 @@ public class TermPart implements IMessagePart, Serializable {
         return new TermPart(subst.apply(term));
     }
 
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        sb.append(term);
+        sb.append("]");
+        return sb.toString();
+    }
+
 }
