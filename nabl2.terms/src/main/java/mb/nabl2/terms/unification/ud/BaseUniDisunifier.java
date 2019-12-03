@@ -2,7 +2,6 @@ package mb.nabl2.terms.unification.ud;
 
 import java.io.Serializable;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 
 import io.usethesource.capsule.Map;
@@ -37,47 +36,21 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
         return unifier().contains(var);
     }
 
-    @Override public java.util.Set<ITermVar> varSet() {
+    @Override public Set.Immutable<ITermVar> varSet() {
         // disequalities do not contribute to the domain
         // as a consequence, this.isEmpty() != this.varSet().isEmpty()
         return unifier().varSet();
     }
 
-    @Override public java.util.Set<ITermVar> freeVarSet() {
-        // FIXME Include disequalities: disequalities.freeVars - unifier.vars?
-        return unifier().freeVarSet();
+    @Override public Set.Immutable<ITermVar> freeVarSet() {
+        final Set.Transient<ITermVar> freeVarSet = unifier().freeVarSet().asTransient();
+        disequalities().stream().flatMap(diseq -> diseq.freeVars().stream()).filter(v -> !unifier().contains(v))
+                .forEach(freeVarSet::__insert);
+        return freeVarSet.freeze();
     }
 
     @Override public boolean isCyclic() {
-        // FIXME Include disequalities
         return unifier().isCyclic();
-    }
-
-    ///////////////////////////////////////////
-    // equals
-    ///////////////////////////////////////////
-
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(other == this) {
-            return true;
-        }
-        if(!(other instanceof IUniDisunifier)) {
-            return false;
-        }
-        final IUniDisunifier that = (IUniDisunifier) other;
-        return equals(that);
-    }
-
-    public boolean equals(IUniDisunifier other) {
-        // FIXME Include disequalities
-        return unifier().equals(other);
-    }
-
-    @Override public int hashCode() {
-        return Objects.hash(unifier(), disequalities());
     }
 
     ///////////////////////////////////////////
@@ -211,11 +184,11 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.contains(var);
         }
 
-        @Override public java.util.Set<ITermVar> varSet() {
+        @Override public Set.Immutable<ITermVar> varSet() {
             return unifier.varSet();
         }
 
-        @Override public java.util.Set<ITermVar> freeVarSet() {
+        @Override public Set.Immutable<ITermVar> freeVarSet() {
             return unifier.freeVarSet();
         }
 

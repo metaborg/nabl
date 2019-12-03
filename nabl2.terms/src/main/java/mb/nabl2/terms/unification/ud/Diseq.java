@@ -2,13 +2,17 @@ package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Optional;
+
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
@@ -21,6 +25,10 @@ public class Diseq {
     public Diseq(Iterable<ITermVar> universals, IUnifier.Immutable diseqs) {
         this.universals = CapsuleUtil.toSet(universals);
         this.diseqs = diseqs;
+        if(!Set.Immutable.intersect(this.universals, this.diseqs.varSet()).isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Universal variables should onyl appear in the free variables of a disequality.");
+        }
     }
 
     /**
@@ -37,8 +45,8 @@ public class Diseq {
     /**
      * Free variables in this disequality.
      */
-    public java.util.Set<ITermVar> freeVars() {
-        return Sets.difference(diseqs.freeVarSet(), universals).immutableCopy();
+    public Set.Immutable<ITermVar> freeVars() {
+        return Set.Immutable.subtract(diseqs.freeVarSet(), universals);
     }
 
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {
@@ -49,6 +57,32 @@ public class Diseq {
             rights.add(t);
         });
         return ImmutableTuple3.of(universals, B.newTuple(lefts.build()), B.newTuple(rights.build()));
+    }
+
+    public Diseq apply(ISubstitution.Immutable subst) {
+        final ISubstitution.Immutable localSubst = subst.removeAll(universals);
+        final IUnifier.Transient newDiseqs = PersistentUnifier.Immutable.of(diseqs.isFinite()).melt();
+        diseqs.equalityMap().forEach((v, t) -> {
+            try {
+                if(!newDiseqs.unify(v, localSubst.apply(t)).isPresent()) {
+                    throw new IllegalArgumentException("Applying substitution failed unexpectedly.");
+                }
+            } catch(OccursException e) {
+                throw new IllegalArgumentException("Applying substitution failed unexpectedly.");
+            }
+        });
+        return new Diseq(universals, newDiseqs.freeze());
+    }
+
+    /**
+     * Remove variables. Return the new, reduced disequality, or none if it is now empty.
+     */
+    public Optional<Diseq> removeAll(Iterable<ITermVar> vars) {
+        final IUnifier.Immutable newDiseqs = diseqs.removeAll(vars).unifier();
+        if(newDiseqs.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new Diseq(universals, newDiseqs));
     }
 
     @Override public String toString() {

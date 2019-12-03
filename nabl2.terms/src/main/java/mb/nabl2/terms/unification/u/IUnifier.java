@@ -63,12 +63,12 @@ public interface IUnifier {
     /**
      * Return the domain of this unifier.
      */
-    java.util.Set<ITermVar> varSet();
+    Set.Immutable<ITermVar> varSet();
 
     /**
      * Return the set of free variables appearing in this unifier.
      */
-    java.util.Set<ITermVar> freeVarSet();
+    Set.Immutable<ITermVar> freeVarSet();
 
     /**
      * Test if the unifier contains any cycles.

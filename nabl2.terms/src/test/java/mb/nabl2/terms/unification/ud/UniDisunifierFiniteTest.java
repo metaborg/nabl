@@ -285,7 +285,7 @@ public class UniDisunifierFiniteTest {
         assertFalse(phi.disunify(a, b));
     }
 
-    @Test(timeout = 10000) public void testRemoveDisunifiedVar() throws OccursException {
+    @Test(/*timeout = 10000*/) public void testRemoveDisunifiedVar() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         assertTrue(phi.disunify(a, b));
         assertPresent(phi.unify(a, c));

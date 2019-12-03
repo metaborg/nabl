@@ -9,13 +9,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -350,7 +348,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Sets.difference(varSet(), ImmutableSet.copyOf(vars)));
+            return removeAll(Set.Immutable.subtract(varSet(), CapsuleUtil.toSet(vars)));
         }
 
         ///////////////////////////////////////////
@@ -358,7 +356,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         ///////////////////////////////////////////
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> remove(ITermVar var) {
-            return removeAll(Iterables2.singleton(var));
+            return removeAll(Set.Immutable.of(var));
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {

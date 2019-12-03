@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import org.metaborg.util.iterators.Iterables2;
-
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -120,7 +120,6 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2) {
-            // FIXME Do we need to include disequalities in this result?
             try {
                 return unify(term1, term2).map(IUniDisunifier.Result::result);
             } catch(OccursException e) {
@@ -190,7 +189,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         private static void removeImpliedDisequalities(IUnifier.Immutable unifier, Set.Transient<Diseq> disequalities) {
             for(Diseq diseq : disequalities) {
                 for(Diseq otherDiseq : disequalities) {
-                    // check entailment
+                    // FIXME check entailment
                 }
             }
         }
@@ -223,14 +222,11 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retain(ITermVar var) {
-            return retainAll(Iterables2.singleton(var));
+            return retainAll(Set.Immutable.of(var));
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            final IUnifier.Result<ISubstitution.Immutable> r = unifier.retainAll(vars);
-            // FIXME Update disequalities
-            final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), disequalities);
-            return new ImmutableResult<>(r.result(), ud);
+            return removeAll(Sets.difference(varSet(), ImmutableSet.copyOf(vars)));
         }
 
         ///////////////////////////////////////////
@@ -238,16 +234,18 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> remove(ITermVar var) {
-            return removeAll(Iterables2.singleton(var));
+            return removeAll(Set.Immutable.of(var));
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final IUnifier.Result<ISubstitution.Immutable> r = unifier.removeAll(vars);
-            // FIXME Update disequalities
-            final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), disequalities);
+            final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
+            disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result()).removeAll(vars)))
+                    .forEach(newDisequalities::__insert);
+            final IUniDisunifier.Immutable ud =
+                    new PersistentUniDisunifier.Immutable(r.unifier(), newDisequalities.freeze());
             return new ImmutableResult<>(r.result(), ud);
         }
-
 
         ///////////////////////////////////////////
         // construction
