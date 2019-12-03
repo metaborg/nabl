@@ -4,7 +4,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
@@ -18,7 +18,7 @@ public interface IState {
 
     Set<Scope> scopes();
 
-    IUnifier unifier();
+    IUniDisunifier unifier();
 
     IScopeGraph<Scope, ITerm, ITerm> scopeGraph();
 
@@ -38,9 +38,9 @@ public interface IState {
 
         @Override Set.Immutable<Scope> scopes();
 
-        @Override IUnifier.Immutable unifier();
+        @Override IUniDisunifier.Immutable unifier();
 
-        IState.Immutable withUnifier(IUnifier.Immutable unifier);
+        IState.Immutable withUnifier(IUniDisunifier.Immutable unifier);
 
         @Override IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 
@@ -80,7 +80,7 @@ public interface IState {
             return state.scopes();
         }
 
-        @Override public IUnifier unifier() {
+        @Override public IUniDisunifier unifier() {
             freezeTwiceShameOnYou();
             return state.unifier();
         }

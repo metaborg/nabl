@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 public class MessageTerms {
 

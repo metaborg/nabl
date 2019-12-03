@@ -25,7 +25,7 @@ import com.google.common.collect.Streams;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CResolveQuery;
@@ -66,7 +66,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
             SearchNode<FocusedSearchState<CResolveQuery>> node) {
         final FocusedSearchState<CResolveQuery> input = node.output();
         final IState.Immutable state = input.state();
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
 
         final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
@@ -172,7 +172,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         return subsetSizes;
     }
 
-    private Range<Integer> resultSize(ITerm result, IUnifier unifier, int max) {
+    private Range<Integer> resultSize(ITerm result, IUniDisunifier unifier, int max) {
         // @formatter:off
         final AtomicInteger min = new AtomicInteger(0);
         return M.<Range<Integer>>list(ListTerms.<Range<Integer>>casesFix(

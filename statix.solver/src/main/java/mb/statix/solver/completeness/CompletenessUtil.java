@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
@@ -76,7 +76,7 @@ public class CompletenessUtil {
     /**
      * Return critical edges for this constraint, normalized against the given unifier.
      */
-    public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
+    public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUniDisunifier unifier) {
         ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
         criticalEdges(constraint, spec, (s, l) -> {
             scopeOrVar().match(s, unifier).ifPresent(scopeOrVar -> {

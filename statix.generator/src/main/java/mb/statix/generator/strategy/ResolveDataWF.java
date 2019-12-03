@@ -18,8 +18,9 @@ import com.google.common.collect.Sets;
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.Diseq;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.Diseq;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -41,7 +42,8 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
     private final Rule dataWf;
     private final IConstraint cause;
 
-    ResolveDataWF(Spec spec, IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf, IConstraint cause) {
+    ResolveDataWF(Spec spec, IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf,
+            IConstraint cause) {
         this.spec = spec;
         this.state = state;
         this.completeness = completeness;
@@ -50,7 +52,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
     }
 
     @Override public Optional<Optional<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
-        final IUnifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Immutable unifier = state.unifier();
 
         // apply rule
         final ApplyResult applyResult;
@@ -69,8 +71,8 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      kept in sync
 
         // solve rule constraint
-        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
-                completeness.freeze(), new NullDebugContext());
+        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
+                Map.Immutable.of(), completeness.freeze(), new NullDebugContext());
         if(result.hasErrors()) {
             return Optional.empty();
         }
@@ -81,12 +83,12 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         final IState.Immutable newState = result.state();
         // NOTE The retain operation is important because it may change
         //      representatives, which can be local to newUnifier.
-        final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
+        final IUniDisunifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
 
         // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
         // @formatter:off
         final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.result().varSet().stream()).orElse(Stream.empty()))
+                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.varSet().stream()).orElse(Stream.empty()))
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {

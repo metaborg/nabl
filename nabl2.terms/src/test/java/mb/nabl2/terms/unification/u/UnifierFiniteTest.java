@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification.u;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -153,7 +154,7 @@ public class UnifierFiniteTest {
         IUnifier.Transient theta = PersistentUnifier.Immutable.of().melt();
         theta.unify(a, B.newAppl(f, x)).orElseThrow(() -> new IllegalArgumentException());
         theta.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
-        assertEquals(phi.freeze(), theta.freeze()); // equality on transients is broken
+        assertSame(phi.freeze(), theta.freeze()); // equality on transients is broken
     }
 
     @Test(timeout = 10000) public void testEquals2() throws OccursException {
@@ -187,7 +188,7 @@ public class UnifierFiniteTest {
         final IUnifier.Immutable theta =
                 new PersistentUnifier.Transient(true, Map.Transient.of(b, a), Map.Transient.of(), Map.Transient.of())
                         .freeze();
-        assertEquals(phi, theta);
+        assertSame(phi, theta);
     }
 
     @Test(timeout = 10000) public void testRetainRemoveInverse() throws OccursException {
@@ -197,7 +198,7 @@ public class UnifierFiniteTest {
         IUnifier.Immutable theta = phi.freeze();
         IUnifier.Immutable theta1 = theta.remove(b).unifier();
         IUnifier.Immutable theta2 = theta.retain(a).unifier();
-        assertEquals(theta1, theta2);
+        assertSame(theta1, theta2);
     }
 
     @Test(timeout = 10000) public void testEntailment() throws OccursException {
@@ -209,7 +210,7 @@ public class UnifierFiniteTest {
         theta.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         theta.unify(b, c).orElseThrow(() -> new IllegalArgumentException());
         theta.remove(c);
-        assertEquals(phi.freeze(), theta.freeze());
+        assertSame(phi.freeze(), theta.freeze());
     }
 
     @Test(timeout = 10000, expected = OccursException.class) public void testRecursive1() throws OccursException {

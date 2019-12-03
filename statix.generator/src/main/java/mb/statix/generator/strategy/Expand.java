@@ -20,7 +20,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CUser;
 import mb.statix.generator.FocusedSearchState;
@@ -130,7 +130,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
     private Optional<SearchState> updateSearchState(IConstraint predicate, ApplyResult result, SearchState input) {
         final IConstraint applyConstraint = result.body();
         final IState.Immutable applyState = result.state();
-        final IUnifier.Immutable applyUnifier = applyState.unifier();
+        final IUniDisunifier.Immutable applyUnifier = applyState.unifier();
 
         // update constraints
         final Set.Transient<IConstraint> constraints = input.constraints().asTransient();

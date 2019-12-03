@@ -7,7 +7,7 @@ import org.metaborg.util.log.Level;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -37,7 +37,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
-        final IUnifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Immutable unifier = state.unifier();
         try {
             final IConstraint result;
             if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {

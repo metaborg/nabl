@@ -41,7 +41,7 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.arithmetic.ArithTerms;
@@ -553,7 +553,7 @@ public class StatixTerms {
     }
 
     public static IListTerm explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries,
-            IUnifier unifier) {
+            IUniDisunifier unifier) {
         return B.newList(Iterables2.stream(entries)
                 .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
                 .collect(ImmutableList.toImmutableList()));

@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 public class TermMultisetTest {
 

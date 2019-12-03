@@ -3,7 +3,7 @@ package mb.statix.generator.strategy;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.generator.FocusedSearchState;
@@ -33,7 +33,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
             SearchNode<FocusedSearchState<CResolveQuery>> node) {
         FocusedSearchState<CResolveQuery> input = node.output();
         final IState.Immutable state = input.state();
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
 
         final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);

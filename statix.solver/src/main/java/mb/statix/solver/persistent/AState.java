@@ -9,10 +9,9 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -34,9 +33,9 @@ public abstract class AState implements IState.Immutable {
     @Override public IState.Immutable add(IState.Immutable other) {
         final Set.Immutable<ITermVar> vars = vars().union(other.vars());
         final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
-        final IUnifier.Immutable unifier;
+        final IUniDisunifier.Immutable unifier;
         try {
-            unifier = unifier().unify(other.unifier()).map(Result::unifier)
+            unifier = unifier().unify(other.unifier()).map(IUniDisunifier.Result::unifier)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot merge unifiers."));
         } catch(OccursException e) {
             throw new IllegalArgumentException("Cannot merge unifiers.");
@@ -98,7 +97,7 @@ public abstract class AState implements IState.Immutable {
 
     // --- solution ---
 
-    @Value.Parameter @Override public abstract IUnifier.Immutable unifier();
+    @Value.Parameter @Override public abstract IUniDisunifier.Immutable unifier();
 
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 

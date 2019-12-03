@@ -15,11 +15,9 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.Diseq;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.terms.unification.ud.Diseq;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.INameResolution;
@@ -57,7 +55,7 @@ public class Solver {
 
     public static boolean entails(final Spec spec, IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug) throws Delay, InterruptedException {
-        final IUnifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraint, unifier));
         }
@@ -87,7 +85,7 @@ public class Solver {
 
         // NOTE The retain operation is important because it may change
         //      representatives, which can be local to newUnifier.
-        final IUnifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
+        final IUniDisunifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
         if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
             throw new IllegalStateException("Entailment internal variables leak");
         }
@@ -106,13 +104,13 @@ public class Solver {
         final List<ITermVar> disunifiedVars = Lists.newArrayList();
         for(Diseq diseq : newUnifier.disequalities()) {
             final Tuple3<io.usethesource.capsule.Set<ITermVar>, ITerm, ITerm> diseqTuple = diseq.toTuple();
-            final Result<Immutable> disunifyResult;
+            final IUniDisunifier.Immutable disunifyResult;
             if((disunifyResult = unifier.disunify(diseqTuple._1(), diseqTuple._2(), diseqTuple._3()).orElse(null)) == null) {
                 continue;
             }
         }
         newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.result().varSet().stream()).orElse(Stream.empty()))
+                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.varSet().stream()).orElse(Stream.empty()))
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {
@@ -124,7 +122,7 @@ public class Solver {
         return true;
     }
 
-    static void printTrace(IConstraint failed, IUnifier.Immutable unifier, IDebugContext debug) {
+    static void printTrace(IConstraint failed, IUniDisunifier.Immutable unifier, IDebugContext debug) {
         @Nullable IConstraint constraint = failed;
         while(constraint != null) {
             debug.error(" * {}", constraint.toString(Solver.shallowTermFormatter(unifier)));
@@ -132,11 +130,11 @@ public class Solver {
         }
     }
 
-    static String toString(IConstraint constraint, IUnifier.Immutable unifier) {
+    static String toString(IConstraint constraint, IUniDisunifier.Immutable unifier) {
         return constraint.toString(Solver.shallowTermFormatter(unifier));
     }
 
-    static String toString(Iterable<IConstraint> constraints, IUnifier.Immutable unifier) {
+    static String toString(Iterable<IConstraint> constraints, IUniDisunifier.Immutable unifier) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
         for(IConstraint constraint : constraints) {
@@ -155,7 +153,7 @@ public class Solver {
 
     }
 
-    public static TermFormatter shallowTermFormatter(final IUnifier unifier) {
+    public static TermFormatter shallowTermFormatter(final IUniDisunifier unifier) {
         return new UnifierFormatter(unifier, 3);
     }
 

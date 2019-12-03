@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification.u;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -50,7 +51,7 @@ public class UnifierInfiniteTest {
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         IUnifier.Transient theta = PersistentUnifier.Immutable.of(false).melt();
         theta.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
-        assertEquals(phi.freeze(), theta.freeze()); // equality on transients is broken
+        assertSame(phi.freeze(), theta.freeze()); // equality on transients is broken
     }
 
     @Test(timeout = 10000) public void testCyclicToString() throws OccursException {

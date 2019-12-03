@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +17,7 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 @SuppressWarnings("unused")
 public class PersistentUnifierStressTest {
@@ -134,14 +136,6 @@ public class PersistentUnifierStressTest {
                 final IUnifier.Immutable theta = init.apply();
                 assertSame(phi.remove(v).unifier(), theta.remove(v).unifier());
             }
-        }
-    }
-
-    private void assertSame(IUnifier phi, IUnifier theta) {
-        boolean phiEqualsTheta = phi.equals(theta);
-        boolean thetaEqualsPhi = theta.equals(phi);
-        if(!phiEqualsTheta || !thetaEqualsPhi) {
-            throw new AssertionError();
         }
     }
 

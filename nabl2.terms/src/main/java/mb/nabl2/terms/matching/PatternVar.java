@@ -14,8 +14,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 class PatternVar extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -53,7 +52,7 @@ class PatternVar extends Pattern {
         if(isWildcard()) {
             return true;
         } else if(subst.contains(var)) {
-            final Optional<Immutable> diff = unifier.diff(subst.apply(var), term);
+            final Optional<? extends IUnifier.Immutable> diff = unifier.diff(subst.apply(var), term);
             if(!diff.isPresent()) {
                 return false;
             }

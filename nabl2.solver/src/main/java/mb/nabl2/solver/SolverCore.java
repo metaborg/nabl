@@ -5,7 +5,7 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction2;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 public class SolverCore {
 

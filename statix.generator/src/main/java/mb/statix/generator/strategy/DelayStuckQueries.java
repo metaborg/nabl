@@ -7,7 +7,7 @@ import org.metaborg.util.functions.Predicate2;
 import com.google.common.collect.Maps;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.generator.SearchContext;
@@ -57,7 +57,7 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
 
     private Optional<Delay> checkDelay(CResolveQuery query, IState.Immutable state,
             ICompleteness.Immutable completeness) {
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
 
         if(!unifier.isGround(query.scopeTerm())) {
             return Optional.of(Delay.ofVars(unifier.getVars(query.scopeTerm())));

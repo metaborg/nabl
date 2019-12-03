@@ -27,9 +27,9 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -166,7 +166,7 @@ class GreedySolver {
         if(this.existentials == null) {
             this.existentials = existentials;
         }
-        final IUnifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Immutable unifier = state.unifier();
 
         // updates from unified variables
         completeness.updateAll(updatedVars, unifier);
@@ -254,7 +254,7 @@ class GreedySolver {
         return constraint.matchOrThrow(new IConstraint.CheckedCases<IState.Immutable, InterruptedException>() {
 
             @Override public IState.Immutable caseArith(CArith c) throws InterruptedException {
-                final IUnifier unifier = state.unifier();
+                final IUniDisunifier unifier = state.unifier();
                 final Optional<ITerm> term1 = c.expr1().isTerm();
                 final Optional<ITerm> term2 = c.expr2().isTerm();
                 try {
@@ -289,9 +289,9 @@ class GreedySolver {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
-                IUnifier.Immutable unifier = state.unifier();
+                IUniDisunifier.Immutable unifier = state.unifier();
                 try {
-                    final Result<IUnifier.Immutable> result;
+                    final IUniDisunifier.Result<IUnifier.Immutable> result;
                     if((result = unifier.unify(term1, term2).orElse(null)) != null) {
                         if(debug.isEnabled(Level.Info)) {
                             debug.info("Unification succeeded: {}", result.result());
@@ -339,16 +339,15 @@ class GreedySolver {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
-                final IUnifier.Immutable unifier = state.unifier();
-                final Result<IUnifier.Immutable> result;
+                final IUniDisunifier.Immutable unifier = state.unifier();
+                final IUniDisunifier.Immutable result;
                 if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification succeeded: {}", result);
                     }
-                    final IState.Immutable newState = state.withUnifier(result.unifier());
-                    final Set<ITermVar> updatedVars = result.result().varSet();
-                    return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(),
-                            fuel);
+                    final IState.Immutable newState = state.withUnifier(result);
+                    return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(),
+                            ImmutableMap.of(), fuel);
                 } else {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification failed");
@@ -379,7 +378,7 @@ class GreedySolver {
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm resultTerm = c.resultTerm();
 
-                final IUnifier unifier = state.unifier();
+                final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
                 }
@@ -426,7 +425,7 @@ class GreedySolver {
                 final ITerm label = c.label();
                 final ITerm targetTerm = c.targetTerm();
 
-                final IUnifier unifier = state.unifier();
+                final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(sourceTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)), fuel);
                 }
@@ -452,7 +451,7 @@ class GreedySolver {
                 final ITerm relation = c.relation();
                 final ITerm datum = c.datumTerm();
 
-                final IUnifier unifier = state.unifier();
+                final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
                 }
@@ -471,7 +470,7 @@ class GreedySolver {
                 final ITerm term = c.astTerm();
                 final ITerm idTerm = c.idTerm();
 
-                final IUnifier unifier = state.unifier();
+                final IUniDisunifier unifier = state.unifier();
                 if(!(unifier.isGround(term))) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(term)), fuel);
                 }
@@ -498,7 +497,7 @@ class GreedySolver {
                 final ITerm prop = c.property();
                 final ITerm value = c.value();
 
-                final IUnifier unifier = state.unifier();
+                final IUniDisunifier unifier = state.unifier();
                 if(!(unifier.isGround(idTerm))) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(idTerm)), fuel);
                 }

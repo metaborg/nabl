@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -158,7 +159,7 @@ public class UniDisunifierFiniteTest {
         IUniDisunifier.Transient theta = PersistentUniDisunifier.Immutable.of().melt();
         theta.unify(a, B.newAppl(f, x)).orElseThrow(() -> new IllegalArgumentException());
         theta.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
-        assertEquals(phi.freeze(), theta.freeze()); // equality on transients is broken
+        assertSame(phi.freeze(), theta.freeze()); // equality on transients is broken
     }
 
     @Test(timeout = 10000) public void testEquals2() throws OccursException {
@@ -190,7 +191,7 @@ public class UniDisunifierFiniteTest {
                 Map.Immutable.of(), Map.Immutable.of(), Set.Immutable.of());
         final IUniDisunifier.Immutable theta = new PersistentUniDisunifier.Immutable(true, Map.Immutable.of(b, a),
                 Map.Immutable.of(), Map.Immutable.of(), Set.Immutable.of());
-        assertEquals(phi, theta);
+        assertSame(phi, theta);
     }
 
     @Test(timeout = 10000) public void testRetainRemoveInverse() throws OccursException {
@@ -200,7 +201,7 @@ public class UniDisunifierFiniteTest {
         IUniDisunifier.Immutable theta = phi.freeze();
         IUniDisunifier.Immutable theta1 = theta.remove(b).unifier();
         IUniDisunifier.Immutable theta2 = theta.retain(a).unifier();
-        assertEquals(theta1, theta2);
+        assertSame(theta1, theta2);
     }
 
     @Test(timeout = 10000) public void testEntailment() throws OccursException {
@@ -212,7 +213,7 @@ public class UniDisunifierFiniteTest {
         theta.unify(b, x).orElseThrow(() -> new IllegalArgumentException());
         theta.unify(b, c).orElseThrow(() -> new IllegalArgumentException());
         theta.remove(c);
-        assertEquals(phi.freeze(), theta.freeze());
+        assertSame(phi.freeze(), theta.freeze());
     }
 
     @Test(/*timeout = 10000*/) public void testVariableDisunify() throws OccursException {

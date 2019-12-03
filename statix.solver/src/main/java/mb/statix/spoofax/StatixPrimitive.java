@@ -30,10 +30,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.build.TermBuild.B;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
@@ -116,7 +117,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected void addMessage(IMessage message, IConstraint constraint, IUnifier unifier, Collection<ITerm> errors,
+    protected void addMessage(IMessage message, IConstraint constraint, IUniDisunifier unifier, Collection<ITerm> errors,
             Collection<ITerm> warnings, Collection<ITerm> notes) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
 
@@ -156,7 +157,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     }
 
-    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUnifier unifier) {
+    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
         final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
             onArith -> Stream.empty(),
@@ -181,7 +182,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
-    private Optional<ITerm> getOriginTerm(ITerm term, IUnifier unifier) {
+    private Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
         // @formatter:off
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())

@@ -34,10 +34,10 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.terms.unification.Diseq;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.Diseq;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
@@ -82,7 +82,7 @@ public class RuleUtil {
                 applyResult = ApplyResult.of(newState.freeze(), ImmutableSet.of(), Optional.empty(), newConstraint);
             } else {
                 // simplify guard constraints
-                final Result<IUnifier.Immutable> unifyResult;
+                final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
                 try {
                     if((unifyResult = state.unifier().unify(matchResult.equalities()).orElse(null)) == null) {
                         return Optional.empty();
@@ -90,11 +90,11 @@ public class RuleUtil {
                 } catch(OccursException e) {
                     return Optional.empty();
                 }
-                final IUnifier.Immutable newUnifier = unifyResult.unifier();
+                final IUniDisunifier.Immutable newUnifier = unifyResult.unifier();
                 final IUnifier.Immutable diff = unifyResult.result();
 
                 // construct guard
-                final Map<ITermVar, ITerm> guard = diff.retainAll(constrainedVars).unifier().equalityMap();
+                final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
                 if(guard.isEmpty()) {
                     throw new IllegalStateException("Guard not expected to be empty here.");
                 }
@@ -142,8 +142,8 @@ public class RuleUtil {
                 // next rules are unreachable after this unconditional match
                 break;
             }
-            final Optional<IUnifier.Immutable> newUnifier =
-                    state.unifier().disunify(guard._1(), guard._2(), guard._3()).map(r -> r.unifier());
+            final Optional<IUniDisunifier.Immutable> newUnifier =
+                    state.unifier().disunify(guard._1(), guard._2(), guard._3());
             if(!newUnifier.isPresent()) {
                 // guards are equalities missing in the unifier, disunifying them should never fail
                 throw new IllegalStateException("Unexpected incompatible guard.");
@@ -187,15 +187,15 @@ public class RuleUtil {
                     }
 
                     // add disequalities
-                    final IUnifier.Transient _applyUnifier = applyResult.state().unifier().melt();
+                    final IUniDisunifier.Transient _applyUnifier = applyResult.state().unifier().melt();
                     for(Diseq diseq : unguard) {
                         final Tuple3<Set<ITermVar>, ITerm, ITerm> _diseq = diseq.toTuple();
-                        if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3()).isPresent()) {
+                        if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3())) {
                             log.warn("Rule seems overlapping with previous rule. This shouldn't really happen.");
                             continue;
                         }
                     }
-                    final IUnifier.Immutable applyUnifier = _applyUnifier.freeze();
+                    final IUniDisunifier.Immutable applyUnifier = _applyUnifier.freeze();
                     final IState.Immutable applyState = applyResult.state().withUnifier(applyUnifier);
 
                     if(rule.label().isEmpty() || includeRule.test(name, rule.label())) {
@@ -278,10 +278,10 @@ public class RuleUtil {
                                             .collect(ImmutableSet.toImmutableSet());
 
                             // unifier without match and unused vars
-                            final IUnifier.Transient _unifier = st.unifier().melt();
+                            final IUniDisunifier.Transient _unifier = st.unifier().melt();
                             _unifier.removeAll(paramVars);
                             _unifier.retainAll(bodyVars);
-                            final IUnifier.Immutable unifier = _unifier.freeze();
+                            final IUniDisunifier.Immutable unifier = _unifier.freeze();
 
                             // build body
                             final IConstraint eqs = Constraints.conjoin(StateUtil.asConstraint(unifier));

@@ -5,7 +5,7 @@ import org.metaborg.util.log.Level;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -37,7 +37,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
     }
 
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
-        final IUnifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Immutable unifier = state.unifier();
         try {
             final IConstraint result;
             if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {

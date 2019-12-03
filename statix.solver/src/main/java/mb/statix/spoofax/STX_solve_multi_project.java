@@ -18,8 +18,9 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.constraints.Constraints;
@@ -60,14 +61,14 @@ public class STX_solve_multi_project extends StatixPrimitive {
         IState.Immutable state = initial.state();
         final IRelation3.Transient<TermIndex, ITerm, ITerm> termProperties = HashTrieRelation3.Transient.of();
         termProperties.putAll(state.termProperties());
-        IUnifier.Immutable unifier = state.unifier();
+        IUniDisunifier.Immutable unifier = state.unifier();
         final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph().melt();
         for(SolverResult result : results) {
             state = state.add(result.state());
             constraints.add(result.delayed());
             messages.putAll(result.messages());
             try {
-                final Optional<IUnifier.Immutable.Result<IUnifier.Immutable>> unifyResult =
+                final Optional<IUniDisunifier.Result<IUnifier.Immutable>> unifyResult =
                         unifier.unify(result.state().unifier());
                 if(!unifyResult.isPresent()) {
                     return Optional.empty();
