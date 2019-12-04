@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CUser;
 import mb.statix.generator.EitherSearchState;
