@@ -17,10 +17,15 @@ test entailment requires all parts to be equal [[
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
-test var equality entails sub-var equality [[
+test var equality does not entails existential sub-var equality [[
   resolve {x y} x == [y], try { x == [_] }
 ]] analysis succeeds
-   // FIXME // run evaluate-test to SUCCEEDS()
+   run evaluate-test to FAILS()
+
+test no constraints do not entail disequality [[
+  resolve {x y} try { x != y }
+]] analysis succeeds
+   run evaluate-test to FAILS()
 
 test var equality does not entail disequality [[
   resolve {x y} x == y, try { x != y }
@@ -60,12 +65,3 @@ test rule application implies disequalities which entails disequality [[
    c(_, [_|_]).
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
-
-test rule application implies forall disequalities [[
-  resolve {xs} c(1, xs), try { xs != [_] }
-  rules
-   c : int * list(int)
-   c(0, [_]).
-   c(_, _).
-]] analysis succeeds
-   // FIXME // run evaluate-test to SUCCEEDS()

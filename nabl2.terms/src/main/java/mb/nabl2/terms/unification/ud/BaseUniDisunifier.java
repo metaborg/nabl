@@ -44,7 +44,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
 
     @Override public Set.Immutable<ITermVar> freeVarSet() {
         final Set.Transient<ITermVar> freeVarSet = unifier().freeVarSet().asTransient();
-        disequalities().stream().flatMap(diseq -> diseq.freeVars().stream()).filter(v -> !unifier().contains(v))
+        disequalities().stream().flatMap(diseq -> diseq.freeVarSet().stream()).filter(v -> !unifier().contains(v))
                 .forEach(freeVarSet::__insert);
         return freeVarSet.freeze();
     }
@@ -277,12 +277,12 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             });
         }
 
-        @Override public boolean disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2) {
-            final Optional<IUniDisunifier.Immutable> result = unifier.disunify(universal, term1, term2);
+        @Override public Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2) {
+            final Optional<IUniDisunifier.Result<Optional<Diseq>>> result = unifier.disunify(universal, term1, term2);
             return result.map(ud -> {
-                unifier = ud;
-                return ud;
-            }).isPresent();
+                unifier = ud.unifier();
+                return ud.result();
+            });
         }
 
         @Override public Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2) {

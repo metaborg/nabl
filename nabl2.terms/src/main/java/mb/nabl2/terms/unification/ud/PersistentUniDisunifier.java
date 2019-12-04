@@ -131,25 +131,33 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         // disunify(Set<ITermVar>, ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<IUniDisunifier.Immutable> disunify(Iterable<ITermVar> universals, ITerm left,
-                ITerm right) {
+        @Override public Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universals,
+                ITerm left, ITerm right) {
             final IUnifier.Transient diseqs = PersistentUnifier.Immutable.of(isFinite()).melt();
             try {
                 if(!diseqs.unify(left, right).isPresent()) {
-                    return Optional.of(this);
+                    // terms are not equal
+                    return Optional.of(new ImmutableResult<>(Optional.empty(), this));
                 }
             } catch(OccursException e) {
-                return Optional.of(this);
+                // terms are not equal
+                return Optional.of(new ImmutableResult<>(Optional.empty(), this));
             }
             final Diseq diseq = new Diseq(universals, diseqs.freeze());
 
-            final Set.Immutable<Diseq> disequalities;
-            if((disequalities = disunifyAll(unifier, this.disequalities.__insert(diseq)).orElse(null)) == null) {
+            final Optional<Diseq> reducedDiseq;
+            if((reducedDiseq = disunify(this, diseq).orElse(null)) == null) {
+                // disunify failed, terms are equal
                 return Optional.empty();
             }
+            if(!reducedDiseq.isPresent()) {
+                // terms are not equal
+                return Optional.of(new ImmutableResult<>(Optional.empty(), this));
+            }
 
-            final IUniDisunifier.Immutable newUnifier = new PersistentUniDisunifier.Immutable(unifier, disequalities);
-            return Optional.of(newUnifier);
+            final IUniDisunifier.Immutable newUnifier =
+                    new PersistentUniDisunifier.Immutable(unifier, disequalities.__insert(reducedDiseq.get()));
+            return Optional.of(new ImmutableResult<>(reducedDiseq, newUnifier));
         }
 
         /**
@@ -159,39 +167,22 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 Set.Immutable<Diseq> disequalities) {
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
 
-            // reduce 
+            // reduce all
             for(Diseq diseq : disequalities) {
-                final Optional<IUnifier.Immutable> result = disunify(unifier, diseq.disequalities());
-                if(!result.isPresent()) {
+                final Optional<Diseq> reducedDiseq;
+                if((reducedDiseq = disunify(unifier, diseq).orElse(null)) == null) {
+                    // disunify failed
+                    return Optional.empty();
+                }
+                if(!reducedDiseq.isPresent()) {
                     // disequality discharged, terms are unequal
                     continue;
                 }
-
-                final IUnifier.Immutable newDiseq = result.get().removeAll(diseq.universals()).unifier();
-                if(newDiseq.isEmpty()) {
-                    // no disequalities left, terms are equal
-                    return Optional.empty();
-                }
-
-                final Set.Immutable<ITermVar> universals = diseq.universals().stream()
-                        .flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
-                final java.util.Set<ITermVar> universalVars = Sets.intersection(universals, newDiseq.freeVarSet());
-
                 // not unified yet, keep
-                newDisequalities.__insert(new Diseq(universalVars, newDiseq));
+                newDisequalities.__insert(reducedDiseq.get());
             }
-
-            removeImpliedDisequalities(unifier, newDisequalities);
 
             return Optional.of(newDisequalities.freeze());
-        }
-
-        private static void removeImpliedDisequalities(IUnifier.Immutable unifier, Set.Transient<Diseq> disequalities) {
-            for(Diseq diseq : disequalities) {
-                for(Diseq otherDiseq : disequalities) {
-                    // FIXME check entailment
-                }
-            }
         }
 
         /**
@@ -200,21 +191,35 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced map of disequalities, or
          * none if the disequality is satisfied.
          */
-        private static Optional<IUnifier.Immutable> disunify(IUnifier.Immutable unifier, IUnifier.Immutable diseq) {
+        private static Optional<Optional<Diseq>> disunify(IUnifier.Immutable unifier, Diseq diseq) {
             final Optional<? extends IUnifier.Result<? extends IUnifier.Immutable>> unifyResult;
             try {
-                unifyResult = unifier.unify(diseq);
+                unifyResult = unifier.unify(diseq.disequalities());
             } catch(OccursException e) {
                 // unify failed, terms are unequal
-                return Optional.empty();
+                return Optional.of(Optional.empty());
             }
             if(!unifyResult.isPresent()) {
                 // unify failed, terms are unequal
-                return Optional.empty();
+                return Optional.of(Optional.empty());
             }
             // unify succeeded, terms are not unequal
             final IUnifier.Immutable diff = unifyResult.get().result();
-            return Optional.of(diff);
+
+            final IUnifier.Immutable newDiseqs = diff.removeAll(diseq.universals()).unifier();
+            if(newDiseqs.isEmpty()) {
+                // no disequalities left, terms are equal
+                return Optional.empty();
+            }
+
+            final Set.Immutable<ITermVar> universals = diseq.universals().stream()
+                    .flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
+            final java.util.Set<ITermVar> universalVars = Sets.intersection(universals, newDiseqs.freeVarSet());
+
+            // not disunified yet, keep
+            final Diseq newDiseq = new Diseq(universalVars, newDiseqs);
+
+            return Optional.of(Optional.of(newDiseq));
         }
 
         ///////////////////////////////////////////

@@ -29,6 +29,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CArith;
@@ -340,14 +341,16 @@ class GreedySolver {
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
                 final IUniDisunifier.Immutable unifier = state.unifier();
-                final IUniDisunifier.Immutable result;
+                final IUniDisunifier.Result<Optional<Diseq>> result;
                 if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification succeeded: {}", result);
                     }
-                    final IState.Immutable newState = state.withUnifier(result);
-                    return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(),
-                            ImmutableMap.of(), fuel);
+                    final IState.Immutable newState = state.withUnifier(result.unifier());
+                    final Set<ITermVar> updatedVars =
+                            result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(ImmutableSet.of());
+                    return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(),
+                            fuel);
                 } else {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification failed");
@@ -553,7 +556,7 @@ class GreedySolver {
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
-                            .flatMap(g -> g.freeVars().stream()).collect(Collectors.toSet());
+                            .flatMap(g -> g.varSet().stream()).collect(Collectors.toSet());
                     proxyDebug.info("Rule delayed (multiple conditional matches)");
                     return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
                 }

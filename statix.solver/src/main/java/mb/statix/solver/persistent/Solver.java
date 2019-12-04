@@ -4,22 +4,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.UnifierFormatter;
-import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple3;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.terms.Scope;
@@ -87,7 +83,8 @@ public class Solver {
         //      representatives, which can be local to newUnifier.
         final IUniDisunifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
         if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
-            throw new IllegalStateException("Entailment internal variables leak");
+            debug.info("Constraints not entailed: internal variables leak");
+            return false;
         }
 
         final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
@@ -99,18 +96,12 @@ public class Solver {
             throw Delay.ofVars(unifiedVars);
         }
 
-        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
+        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier,
+        // which is the case if disunify succeeds with no remaining disequality
         // @formatter:off
-        final List<ITermVar> disunifiedVars = Lists.newArrayList();
-        for(Diseq diseq : newUnifier.disequalities()) {
-            final Tuple3<io.usethesource.capsule.Set<ITermVar>, ITerm, ITerm> diseqTuple = diseq.toTuple();
-            final IUniDisunifier.Immutable disunifyResult;
-            if((disunifyResult = unifier.disunify(diseqTuple._1(), diseqTuple._2(), diseqTuple._3()).orElse(null)) == null) {
-                continue;
-            }
-        }
-        newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.varSet().stream()).orElse(Stream.empty()))
+        final List<ITermVar> disunifiedVars = newUnifier.disequalities().stream()
+                .filter(diseq -> diseq.toTuple().apply(unifier::disunify).map(r -> r.result().isPresent()).orElse(true))
+                .flatMap(diseq -> diseq.varSet().stream())
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {

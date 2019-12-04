@@ -2,12 +2,10 @@ package mb.statix.generator.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.metaborg.util.iterators.Iterables2;
 
@@ -19,7 +17,6 @@ import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.generator.scopegraph.DataWF;
@@ -87,8 +84,9 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
         // @formatter:off
-        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .flatMap(diseq -> diseq.apply(unifier::disunify).map(r -> r.varSet().stream()).orElse(Stream.empty()))
+        final List<ITermVar> disunifiedVars = newUnifier.disequalities().stream()
+                .filter(diseq -> diseq.toTuple().apply(unifier::disunify).map(r -> r.result().isPresent()).orElse(true))
+                .flatMap(diseq -> diseq.varSet().stream())
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {

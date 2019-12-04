@@ -45,8 +45,15 @@ public class Diseq {
     /**
      * Free variables in this disequality.
      */
-    public Set.Immutable<ITermVar> freeVars() {
+    public Set.Immutable<ITermVar> freeVarSet() {
         return Set.Immutable.subtract(diseqs.freeVarSet(), universals);
+    }
+
+    /**
+     * Variables in this disequality.
+     */
+    public Set.Immutable<ITermVar> varSet() {
+        return Set.Immutable.subtract(diseqs.varSet(), universals);
     }
 
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {

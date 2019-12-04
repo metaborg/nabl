@@ -143,7 +143,7 @@ public class RuleUtil {
                 break;
             }
             final Optional<IUniDisunifier.Immutable> newUnifier =
-                    state.unifier().disunify(guard._1(), guard._2(), guard._3());
+                    state.unifier().disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
             if(!newUnifier.isPresent()) {
                 // guards are equalities missing in the unifier, disunifying them should never fail
                 throw new IllegalStateException("Unexpected incompatible guard.");
@@ -190,7 +190,7 @@ public class RuleUtil {
                     final IUniDisunifier.Transient _applyUnifier = applyResult.state().unifier().melt();
                     for(Diseq diseq : unguard) {
                         final Tuple3<Set<ITermVar>, ITerm, ITerm> _diseq = diseq.toTuple();
-                        if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3())) {
+                        if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3()).isPresent()) {
                             log.warn("Rule seems overlapping with previous rule. This shouldn't really happen.");
                             continue;
                         }

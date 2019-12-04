@@ -84,9 +84,10 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
          * reduced inequality.
          */
-        Optional<IUniDisunifier.Immutable> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
+        Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universal, ITerm term1,
+                ITerm term2);
 
-        default Optional<IUniDisunifier.Immutable> disunify(ITerm term1, ITerm term2) {
+        default Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(ITerm term1, ITerm term2) {
             return disunify(Set.Immutable.of(), term1, term2);
         }
 
@@ -157,9 +158,9 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
         /**
          * Disunify with the given unifier. Return whether it succeeded.
          */
-        boolean disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
+        Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2);
 
-        default boolean disunify(ITerm term1, ITerm term2) {
+        default Optional<Optional<Diseq>> disunify(ITerm term1, ITerm term2) {
             return disunify(Set.Immutable.of(), term1, term2);
         }
 

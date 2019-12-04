@@ -21,7 +21,10 @@ public class UnifierTests {
         } catch(OccursException e) {
             throw new AssertionError();
         }
-        // FIXME Check disequality entailment
+        assertTrue(phi.disequalities().stream().noneMatch(
+                diseq -> diseq.toTuple().apply(theta::disunify).map(r -> r.result().isPresent()).orElse(true)));
+        assertTrue(theta.disequalities().stream().noneMatch(
+                diseq -> diseq.toTuple().apply(phi::disunify).map(r -> r.result().isPresent()).orElse(true)));
     }
 
 }
