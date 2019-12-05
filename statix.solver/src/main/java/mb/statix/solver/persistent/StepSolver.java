@@ -249,11 +249,11 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final Optional<ITerm> term1 = c.expr1().isTerm();
         final Optional<ITerm> term2 = c.expr2().isTerm();
         try {
-            if(term1.isPresent()) {
+            if(c.op().isEquals() && term1.isPresent()) {
                 int i2 = c.expr2().eval(unifier);
                 final IConstraint eq = new CEqual(term1.get(), B.newInt(i2), c);
                 return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
-            } else if(term2.isPresent()) {
+            } else if(c.op().isEquals() && term2.isPresent()) {
                 int i1 = c.expr1().eval(unifier);
                 final IConstraint eq = new CEqual(B.newInt(i1), term2.get(), c);
                 return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
