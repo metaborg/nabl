@@ -5,7 +5,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -539,13 +538,11 @@ class GreedySolver {
                 final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
                 final IDebugContext debug = params.debug();
                 final Log unsuccessfulLog = new Log();
-                final Iterator<Rule> it = state.spec().rules().get(name).iterator();
                 final List<ApplyResult> results = Lists.newArrayList();
-                while(it.hasNext()) {
+                for(Rule rule : state.spec().rules().get(name)) {
                     if(Thread.interrupted()) {
                         throw new InterruptedException();
                     }
-                    final Rule rule = it.next();
                     if(proxyDebug.isEnabled(Level.Info)) {
                         proxyDebug.info("Try rule {}", rule.toString());
                     }

@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -537,12 +536,9 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final List<ITerm> args = c.args();
 
         final IDebugContext debug = params.debug();
-        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
         final Log unsuccessfulLog = new Log();
-        final Iterator<Rule> it = rules.iterator();
         final List<ApplyResult> results = Lists.newArrayList();
-        while(it.hasNext()) {
-            final Rule rule = it.next();
+        for(Rule rule : state.spec().rules().get(name)) {
             if(proxyDebug.isEnabled(Level.Info)) {
                 proxyDebug.info("Try rule {}", rule.toString());
             }
