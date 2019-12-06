@@ -1,0 +1,11 @@
+// 3-state Busy Beaver Turing machine specification
+// https://en.wikipedia.org/wiki/Turing_machine_examples#3-state_Busy_Beaver
+
+resolve
+
+  busybeaver(A(), ([], Zero(), []))
+
+imports
+
+  busybeaver/bb-sig
+  busybeaver/bb-rules

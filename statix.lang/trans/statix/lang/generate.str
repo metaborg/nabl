@@ -17,7 +17,7 @@ rules
   generate-aterm:
       (_, _, ast@Module(name, _), path, project-path) -> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-    with if fail ; <nabl2-analysis-has-errors> a then
+    with if <nabl2-analysis-has-errors> a then
            result := None()
          else
            ast' := <normalize(|a)> ast;

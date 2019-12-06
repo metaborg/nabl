@@ -1,0 +1,46 @@
+// 3-state Busy Beaver Turing machine specification
+// https://en.wikipedia.org/wiki/Turing_machine_examples#3-state_Busy_Beaver
+
+module busybeaver/bb-rules
+
+imports
+
+  busybeaver/bb-sig
+
+rules
+
+  busybeaver : State * Tape
+
+  busybeaver(A(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), R())).
+
+  busybeaver(A(), (left, One(), right)) :-
+    busybeaver(C(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, Zero(), right)) :-
+    busybeaver(A(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, One(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, One(), right)) :-
+    busybeaver(HALT(), move((left, One(), right), R())).
+
+  busybeaver(HALT(), (left, s, right)).
+
+rules
+
+  move : Tape * Move -> Tape
+
+  move((left, s, [s'|right]), R()) = ([s|left], s', right).
+
+  move((left, s, []), R()) = ([s|left], Zero(), []).
+
+  move(([s'|left], s, right), L()) = (left, s', [s|right]).
+
+  move(([], s, right), L()) = ([], Zero(), [s|right]).
+
+  move(T, N()) = T.
