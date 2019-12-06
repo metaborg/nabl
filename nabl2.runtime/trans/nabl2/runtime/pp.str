@@ -115,3 +115,4 @@ rules
 
   prettyprint-NaBL2Occurrence = prettyprint-NaBL2-NaBL2-Occurrence
   prettyprint-NaBL2Scope      = prettyprint-NaBL2-NaBL2-Scope
+  prettyprint-NaBL2TermIndex  = prettyprint-NaBL2-NaBL2-TermIndex

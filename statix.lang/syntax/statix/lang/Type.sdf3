@@ -59,12 +59,12 @@ context-free syntax
 
   ExtBarriers = <| <{ExtBarrier "\n"}*>>
 
-  ExtBarrier = ID
+  ExtBarrier.ExtTerm  = <<ID><NaBL2TermIndex>>
   ExtBarrier = NaBL2Scope
 
 
-  ExtId = ID
-  ExtId = NaBL2Occurrence
+  ExtId.ExtRef  = <ref <NaBL2Occurrence>>
+  ExtId.ExtDecl = <decl <NaBL2Occurrence>>
 
 
   ExtLabel = RelRef

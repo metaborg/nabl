@@ -12,22 +12,26 @@ imports
 rules // collect extension constraints
 
   ext-constraints: r@Rule(_, C(x, ps), _) -> c*
-    with c-ps* := <ext-params-constraints(|x)> ps
+    with r-ref := <ext-get-constraint-ref> x
+       ; c-ps* := <ext-params-constraints(|r-ref)> ps
        ; c-b*  := [ExtBarrier(<ext-get-barrier(|"rule")> r)]
        ; c* := <conc> (c-ps*, c-b*)
 
-  ext-params-constraints(|x): ps -> c*
+  ext-params-constraints(|r-ref): ps -> c*
     with (i_v*, i_t*) := <add-indices;partition((id, is-var))> ps
-       ; c1* := <map(\ (i, v@Var(y)) -> [ ExtProvides(ExtParam(x, i), ExtVar(y), v)
-                                        , ExtRequires(ExtParam(x, i), ExtVar(y), v)
-                                        ] \);concat> i_v*
+       ; c1* := <map(ext-param-constraints(|r-ref));concat> i_v*
        ; z* := <raw-diff> (<all-vars> i_t*, <all-vars> i_v*)
-       ; c2* := <map(\ v@Var(z) -> [ExtIsCovered(ExtVar(z), v)] \);concat> z*
+       ; c2* := <map(\ v@Var(z) -> [ExtIsCovered(ExtVar(<ext-get-var-decl> z), v)] \);concat> z*
        ; c* := <conc> (c1*, c2*)
 
+  ext-param-constraints(|r-ref): (i, v@Var(y)) -> c*
+    with v-decl := <ext-get-var-decl> y
+       ; c* := [ ExtProvides(ExtParam(r-ref, i), ExtVar(v-decl), v)
+               , ExtRequires(ExtParam(r-ref, i), ExtVar(v-decl), v)
+               ]
 
   ext-constraints: l@LLam(ps, body) -> c*
-    with c-ps* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(y), l) \)> ps
+    with c-ps* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), l) \)> ps
        ; c-b*  := [ExtBarrier(<ext-get-barrier(|"lam")> l)]
        ; c* := <conc> (c-ps*, c-b*)
 
@@ -36,23 +40,28 @@ rules // collect extension constraints
     with c* := [ExtBarrier(<ext-get-barrier(|"try")> c)]
 
   ext-constraints: c@CExists(vs, _) -> c*
-    with c* := <map(\ v@Var(y) -> ExtIsCovered(ExtVar(y), v) \)> vs
+    with c* := <map(\ v@Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), v) \)> vs
 
   ext-constraints: CNew(vs) -> c*
-    with c* := <map(\ v@Var(y) -> ExtProvides(ExtVar(y), ExtAll(), v) \)> vs
+    with c* := <map(\ v@Var(y) -> ExtProvides(ExtVar(<ext-get-var-ref> y), ExtAll(), v) \)> vs
 
   ext-constraints: CTellEdge(v@Var(y), lbl, _) -> c*
-    with c* := [ExtRequires(ExtVar(y), ExtLit([lbl]), v)]
+    with c* := [ExtRequires(ExtVar(<ext-get-var-ref> y), ExtLit([lbl]), v)]
 
   ext-constraints: CTellRel(lbl, _, v@Var(y)) -> c*
-    with c* := [ExtRequires(ExtVar(y), ExtLit([lbl]), v)]
+    with c* := [ExtRequires(ExtVar(<ext-get-var-ref> y), ExtLit([lbl]), v)]
 
 
   ext-constraints: C(x, args, _) -> c*
-    with c* := <ext-args-constraints(|x)> args
+    with r-ref := <ext-get-constraint-ref> x
+       ; c* := <ext-args-constraints(|r-ref)> args
 
-  ext-args-constraints(|x): args -> c*
+  ext-args-constraints(|r-ref): args -> c*
     with i_v* := <add-indices;filter((id, is-var))> args
-       ; c* := <map(\ (i, v@Var(y)) -> [ ExtProvides(ExtVar(y), ExtParam(x, i), v)
-                                       , ExtRequires(ExtVar(y), ExtParam(x, i), v)
-                                       ] \);concat> i_v*
+       ; c* := <map(ext-arg-constraints(|r-ref));concat> i_v*
+
+  ext-arg-constraints(|r-ref): (i, v@Var(y)) -> c*
+    with v-ref := <ext-get-var-ref> y
+       ; c* := [ ExtProvides(ExtVar(v-ref), ExtParam(r-ref, i), v)
+               , ExtRequires(ExtVar(v-ref), ExtParam(r-ref, i), v)
+               ]

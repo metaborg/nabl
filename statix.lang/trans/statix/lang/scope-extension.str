@@ -2,6 +2,8 @@ module statix/lang/scope-extension
 
 imports
 
+  libstratego-gpp
+
   nabl2/api
   statix/lang/scope-extension/-
 

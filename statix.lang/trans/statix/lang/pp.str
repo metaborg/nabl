@@ -35,6 +35,7 @@ rules
 
   prettyprint-Statix-NaBL2Occurrence = prettyprint-NaBL2Occurrence
   prettyprint-Statix-NaBL2Scope      = prettyprint-NaBL2Scope
+  prettyprint-Statix-NaBL2TermIndex  = prettyprint-NaBL2TermIndex
 
 rules
 

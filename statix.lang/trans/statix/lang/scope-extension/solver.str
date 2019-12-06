@@ -96,7 +96,7 @@ rules
 
 
   ext-spec-entries: (ExtParam(d, i), ExtLit(lbls)) -> entry*
-    with x := <nabl2-get-occurrence-name> d
+    with x := <ext-get-name> d
        ; entry* := <map(\ lbl -> (x, i, lbl) \)> lbls
 
 
