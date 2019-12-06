@@ -2,12 +2,10 @@ package mb.statix.generator.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.metaborg.util.iterators.Iterables2;
 
@@ -18,8 +16,8 @@ import com.google.common.collect.Sets;
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.Diseq;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -32,14 +30,18 @@ import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
+import mb.statix.spec.Spec;
 
 class ResolveDataWF implements DataWF<ITerm, CEqual> {
+    private final Spec spec;
     private final IState.Immutable state;
     private final ICompleteness.Immutable completeness;
     private final Rule dataWf;
     private final IConstraint cause;
 
-    ResolveDataWF(IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf, IConstraint cause) {
+    ResolveDataWF(Spec spec, IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf,
+            IConstraint cause) {
+        this.spec = spec;
         this.state = state;
         this.completeness = completeness;
         this.dataWf = dataWf;
@@ -47,6 +49,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
     }
 
     @Override public Optional<Optional<CEqual>> wf(ITerm datum) throws ResolutionException, InterruptedException {
+        final IUniDisunifier.Immutable unifier = state.unifier();
 
         // apply rule
         final ApplyResult applyResult;
@@ -65,8 +68,8 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      kept in sync
 
         // solve rule constraint
-        final SolverResult result = Solver.solve(applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
-                completeness.freeze(), new NullDebugContext());
+        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
+                Map.Immutable.of(), completeness.freeze(), new NullDebugContext());
         if(result.hasErrors()) {
             return Optional.empty();
         }
@@ -77,25 +80,28 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
         final IState.Immutable newState = result.state();
         // NOTE The retain operation is important because it may change
         //      representatives, which can be local to newUnifier.
-        final IUnifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
+        final IUniDisunifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
 
+        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier
         // @formatter:off
-        final Collection<ITermVar> disunifiedVars = newUnifier.disequalities().stream().map(Diseq::toTuple)
-                .filter(diseq -> diseq.apply((us, t1, t2) -> state.unifier().diff(t1, t2).isPresent()))
-                .flatMap(diseq -> diseq.apply((us, t1, t2) -> Stream.concat(t1.getVars().stream(), t2.getVars().stream())))
+        final List<ITermVar> disunifiedVars = newUnifier.disequalities().stream()
+                .filter(diseq -> diseq.toTuple().apply(unifier::disunify).map(r -> r.result().isPresent()).orElse(true))
+                .flatMap(diseq -> diseq.varSet().stream())
                 .collect(Collectors.toList());
-        // @formatter:off
+        // @formatter:on
         if(!disunifiedVars.isEmpty()) {
             return Optional.empty();
         }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), state.unifier().varSet());
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
+        //       Without this assumption, we should use the more expensive test
+        //       `newUnifier.equals(state.unifier())`
         final List<ITerm> leftTerms = Lists.newArrayList();
         final List<ITerm> rightTerms = Lists.newArrayList();
         for(ITermVar var : unifiedVars) {
             final ITerm term = newUnifier.findTerm(var);
-            if(!state.unifier().diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
+            if(!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
                 leftTerms.add(var);
                 rightTerms.add(term);
             }

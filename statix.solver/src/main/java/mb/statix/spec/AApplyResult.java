@@ -7,7 +7,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.Diseq;
+import mb.nabl2.terms.unification.ud.Diseq;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 

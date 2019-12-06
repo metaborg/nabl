@@ -106,7 +106,7 @@ public class StatixGenerate {
         final StatixGenerator statixGen = new StatixGenerator(STX.S, STX.context, resource);
         final Spec spec = statixGen.spec(); // Paret.addFragments(statixGen.spec());
         final RandomTermGenerator rtg =
-                new RandomTermGenerator(spec, statixGen.constraint(), Paret.search(), searchLog);
+                new RandomTermGenerator(spec, statixGen.constraint(), new Paret(spec).search(), searchLog);
         final Stream<SearchState> resultStream = rtg.apply().nodes().map(sn -> {
             searchLog.success(sn);
             return sn.output();

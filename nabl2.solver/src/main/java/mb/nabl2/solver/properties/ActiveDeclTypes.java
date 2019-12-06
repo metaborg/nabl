@@ -18,7 +18,7 @@ import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.collection.TermMultiset;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 /**
  * Track active declaration types.

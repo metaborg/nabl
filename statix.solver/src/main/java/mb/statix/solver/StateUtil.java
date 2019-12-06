@@ -5,7 +5,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.collections.IRelation3;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CEqual;
@@ -42,7 +42,7 @@ public class StateUtil {
         return constraints.build();
     }
     
-    public static List<IConstraint> asConstraint(IUnifier unifier) {
+    public static List<IConstraint> asConstraint(IUniDisunifier unifier) {
         final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
         unifier.equalityMap().forEach((left, right) -> {
             constraints.add(new CEqual(left, right));

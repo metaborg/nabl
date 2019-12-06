@@ -12,6 +12,7 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 final class Require<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
@@ -19,7 +20,8 @@ final class Require<I extends SearchState, O extends SearchState> extends Search
 
     private final SearchStrategy<I, O> s;
 
-    Require(SearchStrategy<I, O> s) {
+    Require(Spec spec, SearchStrategy<I, O> s) {
+        super(spec);
         this.s = s;
     }
 

@@ -2,10 +2,10 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.matching.TermPattern.P;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,10 +34,10 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.terms.unification.Diseq;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.Diseq;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
@@ -82,7 +82,7 @@ public class RuleUtil {
                 applyResult = ApplyResult.of(newState.freeze(), ImmutableSet.of(), Optional.empty(), newConstraint);
             } else {
                 // simplify guard constraints
-                final Result<IUnifier.Immutable> unifyResult;
+                final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
                 try {
                     if((unifyResult = state.unifier().unify(matchResult.equalities()).orElse(null)) == null) {
                         return Optional.empty();
@@ -90,11 +90,11 @@ public class RuleUtil {
                 } catch(OccursException e) {
                     return Optional.empty();
                 }
-                final IUnifier.Immutable newUnifier = unifyResult.unifier();
+                final IUniDisunifier.Immutable newUnifier = unifyResult.unifier();
                 final IUnifier.Immutable diff = unifyResult.result();
 
                 // construct guard
-                final Map<ITermVar, ITerm> guard = diff.retainAll(constrainedVars).unifier().equalityMap();
+                final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
                 if(guard.isEmpty()) {
                     throw new IllegalStateException("Guard not expected to be empty here.");
                 }
@@ -106,6 +106,52 @@ public class RuleUtil {
             }
             return Optional.of(applyResult);
         });
+    }
+
+    public static final Optional<Tuple2<Rule, ApplyResult>> applyOne(IState.Immutable state, Iterable<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause) {
+        // we assume apply(..., true) only returns empty or singleton lists
+        return apply(state, rules, args, cause, true).stream().findFirst();
+    }
+
+    public static final List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Iterable<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause) {
+        return apply(state, rules, args, cause, false);
+    }
+
+    private static final List<Tuple2<Rule, ApplyResult>> apply(IState.Immutable state, Iterable<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
+        final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
+        final AtomicBoolean foundOne = new AtomicBoolean(false);
+        for(Rule rule : rules) {
+            // apply rule
+            final ApplyResult applyResult;
+            if((applyResult = apply(state, rule, args, cause).orElse(null)) == null) {
+                // this rule does not apply, continue to next rules
+                continue;
+            }
+            if(onlyOne && foundOne.getAndSet(true)) {
+                // we require exactly one, but found multiple
+                return ImmutableList.of();
+            }
+            results.add(ImmutableTuple2.of(rule, applyResult));
+
+            // stop or add guard to state for next rule
+            final Tuple3<Set<ITermVar>, ITerm, ITerm> guard;
+            if((guard = applyResult.guard().map(Diseq::toTuple).orElse(null)) == null) {
+                // next rules are unreachable after this unconditional match
+                break;
+            }
+            final Optional<IUniDisunifier.Immutable> newUnifier =
+                    state.unifier().disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
+            if(!newUnifier.isPresent()) {
+                // guards are equalities missing in the unifier, disunifying them should never fail
+                throw new IllegalStateException("Unexpected incompatible guard.");
+            }
+            state = state.withUnifier(newUnifier.get());
+        }
+        return results.build();
+
     }
 
     public static final ListMultimap<String, Rule> makeFragments(Spec spec, Predicate1<String> includePredicate,
@@ -141,7 +187,7 @@ public class RuleUtil {
                     }
 
                     // add disequalities
-                    final IUnifier.Transient _applyUnifier = applyResult.state().unifier().melt();
+                    final IUniDisunifier.Transient _applyUnifier = applyResult.state().unifier().melt();
                     for(Diseq diseq : unguard) {
                         final Tuple3<Set<ITermVar>, ITerm, ITerm> _diseq = diseq.toTuple();
                         if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3()).isPresent()) {
@@ -149,7 +195,7 @@ public class RuleUtil {
                             continue;
                         }
                     }
-                    final IUnifier.Immutable applyUnifier = _applyUnifier.freeze();
+                    final IUniDisunifier.Immutable applyUnifier = _applyUnifier.freeze();
                     final IState.Immutable applyState = applyResult.state().withUnifier(applyUnifier);
 
                     if(rule.label().isEmpty() || includeRule.test(name, rule.label())) {
@@ -157,8 +203,8 @@ public class RuleUtil {
                         // normalize the rule by solving it
                         final SolverResult solverResult;
                         try {
-                            if((solverResult =
-                                    Solver.solve(applyState, applyResult.body(), new NullDebugContext())) == null) {
+                            if((solverResult = Solver.solve(spec, applyState, applyResult.body(),
+                                    new NullDebugContext())) == null) {
                                 continue;
                             }
                         } catch(InterruptedException e) {
@@ -183,16 +229,14 @@ public class RuleUtil {
                                 final IConstraint uc = st_uc._2();
 
                                 final List<Tuple2<IState.Immutable, IConstraint>> sts = Lists.newArrayList();
-                                final Iterator<Rule> it = newRules.get(c.name()).iterator();
-                                while(it.hasNext()) {
-                                    final Rule r = it.next();
+                                for(Rule r : newRules.get(c.name())) {
                                     ApplyResult ar;
                                     if((ar = apply(st, r, c.args(), null).orElse(null)) == null) {
                                         continue;
                                     }
                                     final SolverResult sr;
                                     try {
-                                        if((sr = Solver.solve(ar.state(),
+                                        if((sr = Solver.solve(spec, ar.state(),
                                                 Constraints.conjoin(Iterables2.from(ar.body(), uc)),
                                                 new NullDebugContext())) == null) {
                                             continue;
@@ -234,10 +278,10 @@ public class RuleUtil {
                                             .collect(ImmutableSet.toImmutableSet());
 
                             // unifier without match and unused vars
-                            final IUnifier.Transient _unifier = st.unifier().melt();
+                            final IUniDisunifier.Transient _unifier = st.unifier().melt();
                             _unifier.removeAll(paramVars);
                             _unifier.retainAll(bodyVars);
-                            final IUnifier.Immutable unifier = _unifier.freeze();
+                            final IUniDisunifier.Immutable unifier = _unifier.freeze();
 
                             // build body
                             final IConstraint eqs = Constraints.conjoin(StateUtil.asConstraint(unifier));

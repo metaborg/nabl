@@ -27,8 +27,8 @@ import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
 import mb.nabl2.util.collections.Properties;
 

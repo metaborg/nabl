@@ -10,13 +10,15 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 final class For<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final SearchStrategy<I, O> s;
     private final int n;
 
-    For(int n, SearchStrategy<I, O> s) {
+    For(Spec spec, int n, SearchStrategy<I, O> s) {
+        super(spec);
         this.s = s;
         this.n = n;
     }

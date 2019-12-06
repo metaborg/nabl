@@ -17,12 +17,14 @@ import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.util.RandomGenerator;
 import mb.statix.generator.util.StreamUtil;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.Spec;
 
 final class Select<C extends IConstraint> extends SearchStrategy<SearchState, FocusedSearchState<C>> {
     private final Class<C> cls;
     private final Function1<SearchState, Function1<C, Double>> weight;
 
-    Select(Class<C> cls, Function1<SearchState, Function1<C, Double>> weight) {
+    Select(Spec spec, Class<C> cls, Function1<SearchState, Function1<C, Double>> weight) {
+        super(spec);
         this.cls = cls;
         this.weight = weight;
     }

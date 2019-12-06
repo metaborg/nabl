@@ -1,7 +1,6 @@
 package mb.statix.generator.strategy;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -11,24 +10,18 @@ import java.util.stream.Stream;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.metaborg.util.functions.Function2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.Diseq;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.ImmutableTuple3;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CUser;
 import mb.statix.generator.FocusedSearchState;
 import mb.statix.generator.SearchContext;
@@ -50,51 +43,36 @@ import mb.statix.spec.Spec;
 
 final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
 
-    private static ILogger log = LoggerUtils.logger(Expand.class);
-
     private final Mode mode;
     private final Function2<Rule, Long, Double> ruleWeight;
+    private final ListMultimap<String, Rule> rules;
 
-    Expand(Mode mode, Function2<Rule, Long, Double> ruleWeight) {
-        this.mode = mode;
-        this.ruleWeight = ruleWeight;
+    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight) {
+        this(spec, mode, ruleWeight, spec.rules());
     }
 
-    final Cache<String, List<Tuple2<Rule, Double>>> cache = CacheBuilder.newBuilder().maximumSize(1000).build();
+    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight, ListMultimap<String, Rule> rules) {
+        super(spec);
+        this.mode = mode;
+        this.ruleWeight = ruleWeight;
+        this.rules = rules;
+    }
+
+    final Cache<String, java.util.Map<Rule, Double>> cache = CacheBuilder.newBuilder().maximumSize(1000).build();
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CUser>> node) {
         final FocusedSearchState<CUser> input = node.output();
         final CUser predicate = input.focus();
 
-        final List<Tuple2<Rule, Double>> rules = getRules(input.state().spec(), predicate.name());
-
-        // next block is a almost a copy of the CUser case in the solver and must be kept in sync
-        final Iterator<Tuple2<Rule, Double>> it = rules.iterator();
-        final Set.Transient<Tuple3<Tuple2<Rule, Double>, ApplyResult, Set<Diseq>>> _results = Set.Transient.of();
-        Set.Immutable<Diseq> unguard = Set.Immutable.of();
-        while(it.hasNext()) {
-            final Tuple2<Rule, Double> ruleAndWeight = it.next();
-            final Rule rule = ruleAndWeight._1();
-            final ApplyResult applyResult;
-            if((applyResult = RuleUtil.apply(input.state(), rule, predicate.args(), predicate).orElse(null)) == null) {
-                // ignore
-            } else {
-                _results.__insert(ImmutableTuple3.of(ruleAndWeight, applyResult, unguard));
-                final Optional<Diseq> guard = applyResult.guard();
-                if(!guard.isPresent()) {
-                    break;
-                } else {
-                    unguard = unguard.__insert(guard.get());
-                }
-            }
-        }
-        final Set.Immutable<Tuple3<Tuple2<Rule, Double>, ApplyResult, Set<Diseq>>> results = _results.freeze();
+        final java.util.Map<Rule, Double> rules = getWeightedRules(predicate.name());
+        final List<Tuple2<Rule, ApplyResult>> results =
+                RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {
-            final Rule rule = result._1()._1();
-            final Optional<SearchState> output = updateSearchState(predicate, result._2(), result._3(), input);
+            final Rule rule = result._1();
+            final Optional<SearchState> output = updateSearchState(predicate, result._2(), input);
             if(!output.isPresent()) {
                 return;
             }
@@ -102,7 +80,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
                     + rule.params().stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
             final SearchNode<SearchState> newNode =
                     new SearchNode<>(ctx.nextNodeId(), output.get(), node, "expand(" + head + ")");
-            final double weight = result._1()._2();
+            final double weight = rules.get(rule);
             if(weight > 0) {
                 newNodes.add(new Pair<>(newNode, weight));
             }
@@ -130,38 +108,29 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         return SearchNodes.of(node, () -> desc, nodes);
     }
 
-    private List<Tuple2<Rule, Double>> getRules(Spec spec, String name) {
+    private java.util.Map<Rule, Double> getWeightedRules(String name) {
         try {
             return cache.get(name, () -> {
-                final List<Rule> rs = spec.rules().get(name);
+                final List<Rule> rs = rules.get(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
-                return rs.stream().map(r -> {
+                final ImmutableMap.Builder<Rule, Double> ruleWeights = ImmutableMap.builder();
+                rs.forEach(r -> {
                     long count = rcs.getOrDefault(r.label(), 1l);
                     double weight = ruleWeight.apply(r, count);
-                    return ImmutableTuple2.of(r, weight);
-                }).collect(Collectors.toList());
+                    ruleWeights.put(r, weight);
+                });
+                return ruleWeights.build();
             });
         } catch(ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Optional<SearchState> updateSearchState(IConstraint predicate, ApplyResult result, Set<Diseq> unguard,
-            SearchState input) {
+    private Optional<SearchState> updateSearchState(IConstraint predicate, ApplyResult result, SearchState input) {
         final IConstraint applyConstraint = result.body();
-
-        // add disequalities
-        final IUnifier.Transient _applyUnifier = result.state().unifier().melt();
-        for(Diseq diseq : unguard) {
-            Tuple3<Set<ITermVar>, ITerm, ITerm> _diseq = diseq.toTuple();
-            if(!_applyUnifier.disunify(_diseq._1(), _diseq._2(), _diseq._3()).isPresent()) {
-                log.warn("Rule seems overlapping with previous rule. This shouldn't really happen.");
-                return Optional.empty();
-            }
-        }
-        final IUnifier.Immutable applyUnifier = _applyUnifier.freeze();
-        final IState.Immutable applyState = result.state().withUnifier(applyUnifier);
+        final IState.Immutable applyState = result.state();
+        final IUniDisunifier.Immutable applyUnifier = applyState.unifier();
 
         // update constraints
         final Set.Transient<IConstraint> constraints = input.constraints().asTransient();

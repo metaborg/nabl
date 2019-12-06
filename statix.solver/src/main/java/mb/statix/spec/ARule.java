@@ -20,8 +20,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
 import mb.statix.solver.Delay;
@@ -69,7 +69,8 @@ public abstract class ARule {
         // 3. Solve constraint
         try {
             final IConstraint constraint = new CExists(args, instBody);
-            return Optional.of(Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
+            return Optional
+                    .of(Solver.entails(spec, State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
         } catch(Delay d) {
             return Optional.empty();
         }
@@ -80,11 +81,11 @@ public abstract class ARule {
         return Rule.of(name(), params(), newBody);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier) throws Delay {
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier) throws Delay {
         return apply(args, unifier, null);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier,
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier,
             @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =

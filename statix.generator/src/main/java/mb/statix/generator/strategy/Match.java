@@ -6,13 +6,15 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 final class Match<I1 extends SearchState, I2 extends SearchState, O extends SearchState>
         extends SearchStrategy<EitherSearchState<I1, I2>, O> {
     private final SearchStrategy<I2, O> s2;
     private final SearchStrategy<I1, O> s1;
 
-    Match(SearchStrategy<I1, O> s1, SearchStrategy<I2, O> s2) {
+    Match(Spec spec, SearchStrategy<I1, O> s1, SearchStrategy<I2, O> s2) {
+        super(spec);
         this.s2 = s2;
         this.s1 = s1;
     }

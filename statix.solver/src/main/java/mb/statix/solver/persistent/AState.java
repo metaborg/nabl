@@ -9,10 +9,9 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -27,8 +26,6 @@ import mb.statix.spec.Spec;
 @Serial.Version(value = 42L)
 public abstract class AState implements IState.Immutable {
 
-    @Override @Value.Parameter public abstract Spec spec();
-
     @Override @Value.Default public String resource() {
         return "";
     }
@@ -36,9 +33,9 @@ public abstract class AState implements IState.Immutable {
     @Override public IState.Immutable add(IState.Immutable other) {
         final Set.Immutable<ITermVar> vars = vars().union(other.vars());
         final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
-        final IUnifier.Immutable unifier;
+        final IUniDisunifier.Immutable unifier;
         try {
-            unifier = unifier().unify(other.unifier()).map(Result::unifier)
+            unifier = unifier().unify(other.unifier()).map(IUniDisunifier.Result::unifier)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot merge unifiers."));
         } catch(OccursException e) {
             throw new IllegalArgumentException("Cannot merge unifiers.");
@@ -100,16 +97,16 @@ public abstract class AState implements IState.Immutable {
 
     // --- solution ---
 
-    @Override @Value.Default public IUnifier.Immutable unifier() {
-        return Unifiers.Immutable.of();
-    }
+    @Value.Parameter @Override public abstract IUniDisunifier.Immutable unifier();
 
-    @Value.Default @Override public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
-        return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
-    }
+    @Value.Parameter @Override public abstract IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 
-    @Override @Value.Default public IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties() {
-        return HashTrieRelation3.Immutable.of();
+    @Value.Parameter @Override public abstract IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties();
+
+    public static State of(Spec spec) {
+        return State.of(Unifiers.Immutable.of(),
+                ScopeGraph.Immutable.of(spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel()),
+                HashTrieRelation3.Immutable.of());
     }
 
 }

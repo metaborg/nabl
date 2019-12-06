@@ -26,7 +26,7 @@ import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
 
 public class InterpreterTerms {

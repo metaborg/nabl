@@ -13,13 +13,16 @@ import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spec.Rule;
+import mb.statix.spec.Spec;
 
 public class ConstraintQueries implements IConstraintQueries {
 
+    final Spec spec;
     final IState.Immutable state;
     final ConstraintContext params;
 
-    public ConstraintQueries(IState.Immutable state, ConstraintContext params) {
+    public ConstraintQueries(Spec spec, IState.Immutable state, ConstraintContext params) {
+        this.spec = spec;
         this.state = state;
         this.params = params;
     }
@@ -29,7 +32,7 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataWF<ITerm> getDataWF(Rule dataWf) {
-        return new ConstraintDataWF(dataWf, state, params::isComplete, params.debug());
+        return new ConstraintDataWF(spec, dataWf, state, params::isComplete, params.debug());
     }
 
     @Override public LabelOrder<ITerm> getLabelOrder(IRelation<ITerm> labelOrd) throws InterruptedException {
@@ -37,7 +40,7 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataLeq<ITerm> getDataEquiv(Rule dataLeq) {
-        return new ConstraintDataLeq(dataLeq, state, params::isComplete, params.debug());
+        return new ConstraintDataLeq(spec, dataLeq, state, params::isComplete, params.debug());
     }
 
 }

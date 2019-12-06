@@ -22,8 +22,8 @@ import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.unification.UnificationMessages;
 
 public class EqualityComponent extends ASolver {
@@ -86,7 +86,7 @@ public class EqualityComponent extends ASolver {
     private Optional<SolveResult> solve(CInequal constraint) {
         final ITerm left = constraint.getLeft();
         final ITerm right = constraint.getRight();
-        Optional<IUnifier.Immutable> result = unifier().diff(left, right);
+        Optional<? extends IUnifier.Immutable> result = unifier().diff(left, right);
         if(!result.isPresent()) {
             return Optional.of(SolveResult.empty());
         } else if(result.get().isEmpty()) {

@@ -19,7 +19,7 @@ import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
@@ -37,7 +37,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final IState.Immutable state = analysis.state();
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph();
-        final IUnifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Immutable unifier = state.unifier();
 
         final Map<Scope, List<ITerm>> edgeEntries = Maps.newHashMap(); // Scope * [Label * Scope]
         scopeGraph.getEdges().forEach((src_lbl, tgt) -> {

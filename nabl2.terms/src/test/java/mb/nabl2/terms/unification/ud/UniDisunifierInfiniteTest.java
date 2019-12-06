@@ -1,6 +1,7 @@
-package mb.nabl2.terms.unification;
+package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -9,9 +10,11 @@ import org.junit.Test;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.TermSize;
 
 @SuppressWarnings("unused")
-public class UnifierInfiniteTest {
+public class UniDisunifierInfiniteTest {
 
     private final ITermVar a = B.newVar("", "a");
     private final ITermVar b = B.newVar("", "b");
@@ -26,33 +29,33 @@ public class UnifierInfiniteTest {
     private final ITerm z = B.newString("z");
 
     @Test(timeout = 10000) public void testCyclicVarFree() throws OccursException {
-        IUnifier.Transient phi = Unifiers.Immutable.of(false).melt();
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         assertFalse(phi.freeVarSet().contains(a));
     }
 
     @Test(timeout = 10000) public void testCyclicSize() throws OccursException {
-        IUnifier.Transient phi = Unifiers.Immutable.of(false).melt();
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         assertEquals(TermSize.INF, phi.size(a));
     }
 
     @Test(timeout = 10000) public void testCyclicGround() throws OccursException {
-        IUnifier.Transient phi = Unifiers.Immutable.of(false).melt();
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
         assertTrue(phi.isGround(a));
     }
 
     @Test(timeout = 10000) public void testCyclicEquals() throws OccursException {
-        IUnifier.Transient phi = Unifiers.Immutable.of(false).melt();
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
-        IUnifier.Transient theta = Unifiers.Immutable.of(false).melt();
+        IUniDisunifier.Transient theta = PersistentUniDisunifier.Immutable.of(false).melt();
         theta.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
-        assertEquals(phi.freeze(), theta.freeze()); // equality on transients is broken
+        assertSame(phi.freeze(), theta.freeze()); // equality on transients is broken
     }
 
     @Test(timeout = 10000) public void testCyclicToString() throws OccursException {
-        IUnifier.Transient phi = Unifiers.Immutable.of(false).melt();
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a, b)).orElseThrow(() -> new IllegalArgumentException());
         phi.unify(b, B.newAppl(g, a)).orElseThrow(() -> new IllegalArgumentException());
         assertEquals("μX0.f(X0,g(X0))", phi.toString(a));

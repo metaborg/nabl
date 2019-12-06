@@ -24,8 +24,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
@@ -119,7 +119,7 @@ public abstract class Pattern implements Serializable {
     }
 
     protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst,
-            mb.nabl2.terms.unification.IUnifier.Immutable unifier, Eqs eqs);
+            IUnifier.Immutable unifier, Eqs eqs);
 
     protected static boolean matchTerms(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
             ISubstitution.Transient subst, IUnifier.Immutable unifier, Eqs eqs) {

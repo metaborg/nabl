@@ -46,7 +46,7 @@ import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.symbolic.SymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.Properties;
 
 public class BaseMultiFileSolver extends BaseSolver {

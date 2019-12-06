@@ -3,7 +3,7 @@ package mb.statix.generator.strategy;
 import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.generator.FocusedSearchState;
@@ -21,14 +21,19 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
+import mb.statix.spec.Spec;
 
 final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
+
+    CanResolve(Spec spec) {
+        super(spec);
+    }
 
     @Override protected SearchNodes<FocusedSearchState<CResolveQuery>> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CResolveQuery>> node) {
         FocusedSearchState<CResolveQuery> input = node.output();
         final IState.Immutable state = input.state();
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
 
         final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
@@ -38,7 +43,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(state.spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways(spec()).orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -50,7 +55,8 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
-        final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
+        final DataWF<ITerm, CEqual> dataWF =
+                new ResolveDataWF(spec(), state, completeness, query.filter().getDataWF(), query);
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(

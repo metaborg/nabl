@@ -14,7 +14,8 @@ import com.google.common.collect.Lists;
 import mb.nabl2.constraints.namebinding.DeclProperties;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.build.TermBuild.B;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
 
 public final class ScopeGraphTerms {

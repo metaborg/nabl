@@ -13,12 +13,14 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.spec.Spec;
 
 final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
 
     private final Function1<IConstraint, IConstraint> f;
 
-    MapConstraints(Function1<IConstraint, IConstraint> f) {
+    MapConstraints(Spec spec, Function1<IConstraint, IConstraint> f) {
+        super(spec);
         this.f = f;
     }
 
@@ -27,7 +29,7 @@ final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
         final IState.Immutable state = input.state();
         final Set.Immutable<IConstraint> constraints =
                 input.constraints().stream().map(f::apply).collect(CapsuleCollectors.toSet());
-        final ICompleteness.Transient completeness = Completeness.Transient.of(state.spec());
+        final ICompleteness.Transient completeness = Completeness.Transient.of(spec());
         completeness.addAll(constraints, state.unifier());
         completeness.addAll(input.delays().keySet(), state.unifier());
         final SearchState output = input.replace(state, constraints, input.delays(), completeness.freeze());

@@ -14,7 +14,7 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.solver.persistent.SolverResult;
 
 public class STX_extract_messages extends StatixPrimitive {
@@ -28,7 +28,7 @@ public class STX_extract_messages extends StatixPrimitive {
 
         final SolverResult result = M.blobValue(SolverResult.class).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
-        final IUnifier unifier = result.state().unifier();
+        final IUniDisunifier unifier = result.state().unifier();
 
         final List<ITerm> errorList = Lists.newArrayList();
         final List<ITerm> warningList = Lists.newArrayList();
