@@ -1,0 +1,17 @@
+module statix/lang/statics/module-name
+
+imports
+
+  libspoofax/resource/path
+
+  signatures/statix/test/-
+  statix/lang/util
+
+rules
+
+  check-module-name'(|path): Test(_, _) -> <fail>
+
+  check-module-ext'(|path): m@Test(_, _) -> (m, msg)
+    with ext := <get-extension> path
+    where <not(raw-eq)> ("stxtest", ext)
+    with msg := $[test extension [ext] should be .stxtest]

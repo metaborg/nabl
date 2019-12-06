@@ -30,13 +30,15 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(or-e*, ext-c*)
+  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(e*, ext-c*)
     with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
+       ; n-e* := <check-module-name(|resource)> ast
        ; nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
        ; or-e* := <detect-overlapping-rules> ast
        ; nabl2-custom-analysis-info-msg(|"| collecting scope extensions...")
        ; ext-c* := <collect-ext-constraints> ast
        ; nabl2-custom-analysis-info-msg(|"| Done.")
+       ; e* := [n-e*, or-e*]
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
