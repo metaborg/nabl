@@ -1,4 +1,4 @@
-module string
+module terms/string
 
 language StatixLang
 

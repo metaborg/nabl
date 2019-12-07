@@ -1,4 +1,4 @@
-module terms-algebraic
+module terms/algebraic
 
 language StatixLang
 
