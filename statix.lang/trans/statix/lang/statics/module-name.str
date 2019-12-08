@@ -9,11 +9,6 @@ imports
 
 rules
 
-  check-module-name(|path): ast -> e*
-    with name-e* := <check-module-name'(|path) < ![<id>] + ![]> ast
-       ; ext-e* := <check-module-ext'(|path) < ![<id>] + ![]> ast
-       ; e* := [name-e*, ext-e*]
-
   check-module-name'(|path): Module(name, _) -> (name, msg)
     with rel-path := <current-language-relative-source-or-include-path> path;
          rel-name := <remove-extension> rel-path
@@ -22,5 +17,5 @@ rules
 
   check-module-ext'(|path): m@Module(_, _) -> (m, msg)
     with ext := <get-extension> path
-    where <not(raw-eq)> ("stx", ext)
+    where <not(raw-eq)> (ext, "stx")
     with msg := $[module extension [ext] should be .stx]

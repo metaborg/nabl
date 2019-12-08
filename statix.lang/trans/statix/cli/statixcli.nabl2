@@ -8,4 +8,5 @@ rules
 
   [[ e@Eval(c) ^ (s) ]] :=
     new s', s' -P-> s, @e.scope := s',
-    Constraint[[ c ^ (s') ]].
+    Constraint[[ c ^ (s') ]],
+    This{()} <- s', This{()}.qname := "". // FIXME This should be something else

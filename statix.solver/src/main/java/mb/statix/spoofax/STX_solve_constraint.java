@@ -33,8 +33,9 @@ public class STX_solve_constraint extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final Spec spec =
-                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        final ITerm specTerm = terms.get(0);
+        final Spec spec = StatixTerms.spec().match(specTerm)
+                .orElseThrow(() -> new InterpreterException("Expected spec, got " + specTerm));
         reportOverlappingRules(spec);
 
         final IDebugContext debug = getDebugContext(terms.get(1));

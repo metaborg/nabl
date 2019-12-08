@@ -13,5 +13,5 @@ rules
 
   check-module-ext'(|path): m@Test(_, _) -> (m, msg)
     with ext := <get-extension> path
-    where <not(raw-eq)> ("stxtest", ext)
+    where <not(raw-eq)> (ext, "stxtest")
     with msg := $[test extension [ext] should be .stxtest]

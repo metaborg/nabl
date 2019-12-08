@@ -53,6 +53,16 @@ rules // Analysis
        ; ca  := CustomAnalysis(ext)
        ; nabl2-custom-analysis-info-msg(|"| Done.")
 
+  check-module-name(|path): ast -> e*
+    with ext := <get-extension> path
+       ; if <raw-eq> (ext, "spt") then
+           e* := []
+         else
+           name-e* := <check-module-name'(|path) < ![<id>] + ![]> ast
+         ; ext-e* := <check-module-ext'(|path) < ![<id>] + ![]> ast
+         ; e* := [name-e*, ext-e*]
+         end
+
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term
 

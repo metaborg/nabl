@@ -27,7 +27,8 @@ rules
     C{x} <- s, @x.decl := C{x},
     C{x} : PRED(tys') !!,
     C{x}.ind := ind !!,
-    C{x}.kind := DerivedC() !!.
+    C{x}.kind := DerivedC() !!,
+    C{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   DeclOrRule[[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.ref := C{x'}, @x'.decl := d,
@@ -43,7 +44,8 @@ rules
     C{x} <- s, @x.decl := C{x},
     C{x} : FUN(intys', outty') !!,
     C{x}.ind := ind !!,
-    C{x}.kind := DerivedC() !!.
+    C{x}.kind := DerivedC() !!,
+    C{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   RuleHead[[ F(x, inargs, outarg) ^ (s_rule, y) : ty ]] := x == y,
     C{x} -> s_rule, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
@@ -52,7 +54,9 @@ rules
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Match[[ outarg ^ (s_rule) : outty ]].
+    Match[[ outarg ^ (s_rule) : outty ]],
+    d.qname := qname, This{()} -> s_rule, This{()} |-> d_this, d_this.qname := this_qname,
+    this_qname <`same-name`? qname | error "Rules must be defined in the same module as the constraint" @x.
 
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
@@ -115,7 +119,8 @@ rules
     Ns{x} -> s, Ns{x} |-> d, @x.ref := Ns{x}, @x.decl := d,
     NsQ{x} <- s,
     Filter[[ filter ^ (s, NsQ{x}) ]],
-    Min[[ min ^ (s, NsQ{x}) ]].
+    Min[[ min ^ (s, NsQ{x}) ]],
+    NsQ{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   Filter[[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,

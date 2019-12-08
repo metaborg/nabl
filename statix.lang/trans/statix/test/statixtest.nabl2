@@ -9,4 +9,5 @@ rules
   [[ t@Test(c, sections) ^ (s) ]] :=
     new s', s' -P-> s, @t.scope := s',
     Sections[[ sections ^ (s', s) ]],
-    Constraint[[ c ^ (s') ]].
+    Constraint[[ c ^ (s') ]],
+    This{()} <- s', This{()}.qname := "<test>" !!.
