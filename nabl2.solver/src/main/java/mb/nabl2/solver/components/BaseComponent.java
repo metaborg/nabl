@@ -22,6 +22,7 @@ import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 
@@ -52,10 +53,14 @@ public class BaseComponent extends ASolver {
     private SolveResult solve(CExists constraint) {
         final ISubstitution.Transient tsubst = PersistentSubstitution.Transient.of();
         constraint.getEVars().forEach(var -> {
-            tsubst.put(var, B.newVar(var.getResource(), fresh(var.getName())));
+            tsubst.put(var, newVar(var));
         });
         final ISubstitution.Immutable subst = tsubst.freeze();
         return SolveResult.constraints(Constraints.substitute(constraint.getConstraint(), subst));
+    }
+
+    private ITermVar newVar(ITermVar var) {
+        return B.newVar(var.getResource(), fresh(var.getName())).withAttachments(var.getAttachments());
     }
 
     private SolveResult solve(CNew constraint) {
@@ -68,7 +73,7 @@ public class BaseComponent extends ASolver {
 
     private Scope newScope(ITerm term) {
         return M.var(v -> ImmutableScope.of(v.getResource(), fresh(v.getName()))).match(term, unifier())
-                .orElseGet(() -> ImmutableScope.of("", fresh("s")));
+                .orElseGet(() -> ImmutableScope.of("", fresh("s"))).withAttachments(term.getAttachments());
     }
 
 }
