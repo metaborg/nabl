@@ -12,26 +12,32 @@ imports
 rules // collect extension constraints
 
   ext-constraints: CDeriveMap(x, x', lift*) -> c*
-    with c* := <add-indices;filter(ext-lift-constraints(|x, x'));concat> lift*
+    with r-ref := <ext-get-constraint-ref> x
+       ; r-ref' := <ext-get-constraint-ref> x'
+       ; c* := <add-indices;filter(ext-lift-constraints(|r-ref, r-ref'));concat> lift*
 
   ext-constraints: FDeriveMap(x, x', inlift*, outlift) -> c*
-    with lift* := <conc> (inlift*, [outlift])
-    with c* := <add-indices;filter(ext-lift-constraints(|x, x'));concat> lift*
+    with r-ref := <ext-get-constraint-ref> x
+       ; r-ref' := <ext-get-constraint-ref> x'
+       ; lift* := <conc> (inlift*, [outlift])
+       ; c* := <add-indices;filter(ext-lift-constraints(|r-ref, r-ref'));concat> lift*
 
-  ext-lift-constraints(|x, x'): (i, l@IdLift()) -> c*
-    with c* := [ ExtProvides(ExtParam(x, i), ExtParam(x', i), l)
-               , ExtRequires(ExtParam(x, i), ExtParam(x', i), l)
+  ext-lift-constraints(|r-ref, r-ref'): (i, l@IdLift()) -> c*
+    with c* := [ ExtProvides(ExtParam(r-ref, i), ExtParam(r-ref', i), l)
+               , ExtRequires(ExtParam(r-ref, i), ExtParam(r-ref', i), l)
                ]
 
-  ext-lift-constraints(|x, x'): (i, lift) -> c*
+  ext-lift-constraints(|r-ref, r-ref'): (i, lift) -> c*
     where not(IdLift() := lift)
-    with c* := [ExtIsCovered(ExtParam(x', i), lift)]
+    with c* := [ExtIsCovered(ExtParam(r-ref', i), lift)]
 
 
   ext-constraints: Rule(_, F(x, inparam*, outparam), _) -> c*
-    with ps := <conc> (inparam*, [outparam])
-       ; c* := <ext-params-constraints(|x)> ps
+    with r-ref := <ext-get-constraint-ref> x
+       ; ps := <conc> (inparam*, [outparam])
+       ; c* := <ext-params-constraints(|r-ref)> ps
 
 
   ext-constraints: COp(x, args) -> c*
-    with c* := <ext-args-constraints(|x)> args
+    with r-ref := <ext-get-constraint-ref> x
+       ; c* := <ext-args-constraints(|r-ref)> args

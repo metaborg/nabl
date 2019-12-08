@@ -6,6 +6,7 @@ imports
 
   libspoofax/analysis/constraint
   libspoofax/core/language
+  libspoofax/resource/path
 
   statix/runtime/ast
   statix/runtime/constraints
@@ -18,7 +19,11 @@ signature
     ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
     FileAnalysis    : Constraint -> AnalysisResult
 
+    FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
+    Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Solution : List(Var, Term) * SolverResult -> Solution
+
+    EOP : Label // duplicate from statix.lang
 
 rules
 
@@ -35,12 +40,13 @@ rules // single file analysis
 
   stx-editor-analyze(desugar|spec-name, init-constraint):
       AnalyzeSingle(change*) -> AnalysisResult(result*)
-    with spec  := <stx--find-spec(|spec-name)>
+    with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
+       ; c-name := <stx--mk-qualified-name(|spec-name)> init-constraint
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; C* := <map(\ (resource, ast') -> ([], C(init-constraint, [<stx--explode> ast'], NoMessage())) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> ([], C(c-name, [<stx--explode> ast'], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(_, a)) ->
@@ -56,13 +62,14 @@ rules // single file elaboration
 
   stx-editor-elaborate(desugar|spec-name, init-constraint):
       AnalyzeSingle(change*) -> AnalysisResult(result*)
-    with spec  := <stx--find-spec(|spec-name)>
+    with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
+       ; c-name := <stx--mk-qualified-name(|spec-name)> init-constraint
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; V := Var("out")
-    ; C* := <map(\ (resource, ast') -> ([V], C(init-constraint, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> ([V], C(c-name, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(subst, a)) ->
@@ -79,8 +86,10 @@ rules // multi file analysis
 
   stx-editor-analyze(desugar|spec-name, project-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
-    with spec  := <stx--find-spec(|spec-name)>
+    with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
+       ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
+       ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
     with
       switch !project-change
         case ?Added(_) + ?Changed(_, _):
@@ -94,7 +103,7 @@ rules // multi file analysis
           //
           // 2. partially solve project constraint
           //
-        ; project-C := C(project-constraint, <map(stx--explode)> [global-scope], NoMessage())
+        ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
         ; [initial-project-state] := <stx--solve-multi-file(|global-scope-state, level)> [(project-resource, project-C)]
         case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
           id
@@ -106,7 +115,7 @@ rules // multi file analysis
       //
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-constraint, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
+    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
     ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
     ; file-result* := <zip({ file-state', file-analysis: \
         ((resource, ast'), file-state) ->
@@ -154,10 +163,11 @@ rules
 
   stx--evaluate(|spec-name, constraint):
       in* -> (out, s, error*, warning*, note*)
-    with spec  := <stx--find-spec(|spec-name)>
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; c-name := <stx--mk-qualified-name(|spec-name)> constraint
        ; T*    := <map(stx--explode)> in*
        ; V     := Var("out")
-       ; C     := C(constraint, [T*, V], NoMessage())
+       ; C     := C(c-name, [T*, V], NoMessage())
        ; level := <stx--log-level>
        ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level)> ([V], C)
        ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
@@ -167,14 +177,41 @@ rules
 
   stx--log-level = stx--is-debug-custom-enabled < !"Info" + !"None"
 
-  stx--find-spec(|name) =
-    language-components;
-    getfirst({ loc, spec-file:
-               ?(_, _, _, loc);
-               spec-file := $[[loc]/src-gen/statix/[name].spec.aterm];
-               <file-exists> spec-file;
-               <ReadFromFile> spec-file
-            })
+  stx--language-spec-by-name =
+    MkSingleton
+  ; language-resources(stx--module-to-path, stx--spec-imports)
+  ; map(Snd)
+  ; stx--merge-spec-aterms
+
+  stx--local-spec-from-spec =
+    ?spec
+  ; stx--spec-imports
+  ; project-resources(stx--module-to-path, stx--spec-imports)
+  ; map(Snd)
+  ; ![spec|<id>]
+  ; stx--merge-spec-aterms
+
+
+  stx--spec-imports = ?FileSpec(<id>, _, _, _, _, _)
+
+  stx--module-to-path: name -> $[src-gen/statix/[name].spec.aterm]
+
+  stx--mk-qualified-name(|qname): name -> $[[qname]![name]]
+
+  stx--merge-spec-aterms = foldr(stx--merge-spec-aterms-init, stx--merge-spec-aterms-step)
+
+  stx--merge-spec-aterms-init = !Spec([], [], EOP(), [], [])
+
+  stx--merge-spec-aterms-step: (spec1, spec) -> spec'
+    with FileSpec(_, edge1*, data1*, eop, rule1*, ext1*) := spec1
+       ; Spec(edge*, data*, eop, rule*, ext*) := spec
+       ; spec' := Spec( <conc> (edge1*, edge*)
+                      , <conc> (data1*, data*)
+                      , eop
+                      , <conc> (rule1*, rule*)
+                      , <conc> (ext1*, ext*)
+                      )
+
 
   // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> Solution
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)

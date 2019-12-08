@@ -9,6 +9,21 @@ imports
   statix/lang/statics/-
 
   pp
+  pp/statix/lang/-
+
+rules
+
+  ext-get-barrier(|name): t -> b
+    with i := <nabl2-get-ast-index> t
+       ; b := <nabl2-copy-ast-index(|t)> ExtTerm(name, i)
+
+
+  ext-get-constraint-ref: x -> ExtRef(<nabl2-mk-occurrence(|"C")> x)
+
+  ext-get-var-ref: x -> ExtRef(<nabl2-mk-occurrence(|"Var")> x)
+
+  ext-get-var-decl: x -> ExtDecl(<nabl2-mk-occurrence(|"Var")> x)
+
 
 rules
 
@@ -16,11 +31,11 @@ rules
     with (b*, c'*) := <partition(ext-explicate-barrier(|a))> c*
        ; <ext-log(prettyprint-Statix-ExtBarriers|"barriers:")> b*
        ; c''* := <map(try(ext-escape-constraint(|a, b*)))> c'*
-       ; c'''* := <map(ext-explicate-constraint(|a))> c''*
+       ; c'''* := <map(topdown(try(ext-explicate-set(|a))))> c''*
 
 
-  ext-explicate-barrier(|a): ExtBarrier(x) -> s
-    with s := <nabl2-get-ast-property(|a,"scope")> x
+  ext-explicate-barrier(|a): ExtBarrier(b) -> s
+    with s := <nabl2-get-ast-property(|a,"scope")> b
 
 
   ext-escape-constraint(|a, b*): ExtProvides(v, s, o) -> ExtProvidesEsc(v, s, o)
@@ -29,50 +44,33 @@ rules
   ext-escape-constraint(|a, b*): ExtRequires(v, s, o) -> ExtRequiresEsc(v, s, o)
     where <ext-var-escapes(|a, b*)> v
 
-  ext-var-escapes(|a, b*): ExtVar(x) -> <id>
-    with if r := <nabl2-get-ast-property(|a, "ref")> x
-         ; (d, p) := <nabl2-get-resolved-name(|a)> r then
+  ext-var-escapes(|a, b*): ExtVar(ExtRef(r)) -> <id>
+    with if (d, p) := <nabl2-get-resolved-name(|a)> r then
            s* := <ext-path-scopes> p
          else
            s* := []
          end
     where [_|_] := <isect> (s*, b*)
 
-
-  ext-explicate-constraint(|a) =
-    ExtProvides(ext-explicate-set(|a), ext-explicate-set(|a), id)
-
-  ext-explicate-constraint(|a) =
-    ExtRequires(ext-explicate-set(|a), ext-explicate-set(|a), id)
-
-  ext-explicate-constraint(|a) =
-    ExtIsCovered(ext-explicate-set(|a), id)
-
-  ext-explicate-constraint(|a) =
-    ExtProvidesEsc(ext-explicate-set(|a), ext-explicate-set(|a), id)
-
-  ext-explicate-constraint(|a) =
-    ExtRequiresEsc(ext-explicate-set(|a), ext-explicate-set(|a), id)
-
-
-  ext-explicate-set(|a): ExtParam(x, i) -> ExtParam(d, i)
-    with d := <nabl2-get-ast-property(|a, "decl")> x
-
-  ext-explicate-set(|a): ExtVar(x) -> ExtVar(d)
-    with d := <nabl2-get-ast-property(|a, "decl")> x
-
-  ext-explicate-set(|a): ExtLit(_) -> <id>
-
-  ext-explicate-set(|a): ExtAll() -> <id>
-
-
-  ext-get-id: ExtParam(d, i) -> <try(nabl2-get-occurrence-name)> d
-
-  ext-get-id: ExtVar(d) -> <try(nabl2-get-occurrence-name)> d
-
-
-  ext-get-barrier(|name): t -> b
-    with b := <nabl2-copy-ast-index(|t)> name
-
-
   ext-path-scopes = nabl2-get-path-scopes; init
+
+
+  // Variable occurrences have scopes as indices, which makes it difficult to
+  // construct them directly. Therefore, we construct regular (ast indexed)
+  // occurrences, but get the real declaration from the ast using the index
+  // in the initial occurrence.
+
+  ext-explicate-set(|a): ExtDecl(d) -> ExtDecl(d')
+    with i := <nabl2-get-occurrence-index> d
+       ; t := <nabl2-set-ast-index(|i)> ()
+       ; d' := <nabl2-get-ast-property(|a, "decl")> t
+
+  ext-explicate-set(|a): ExtRef(r) -> ExtDecl(d)
+    with i := <nabl2-get-occurrence-index> r
+       ; t := <nabl2-set-ast-index(|i)> ()
+       ; d := <nabl2-get-ast-property(|a, "decl")> t
+
+
+  ext-get-name: ExtRef(o) -> <nabl2-get-occurrence-name> o
+
+  ext-get-name: ExtDecl(o) -> <nabl2-get-occurrence-name> o

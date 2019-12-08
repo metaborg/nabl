@@ -30,13 +30,15 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(or-e*, ext-c*)
+  nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(e*, ext-c*)
     with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
+       ; n-e* := <check-module-name(|resource)> ast
        ; nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
        ; or-e* := <detect-overlapping-rules> ast
        ; nabl2-custom-analysis-info-msg(|"| collecting scope extensions...")
        ; ext-c* := <collect-ext-constraints> ast
        ; nabl2-custom-analysis-info-msg(|"| Done.")
+       ; e* := [n-e*, or-e*]
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
@@ -50,6 +52,16 @@ rules // Analysis
        ; e* := [unit-e*, ext-e*]
        ; ca  := CustomAnalysis(ext)
        ; nabl2-custom-analysis-info-msg(|"| Done.")
+
+  check-module-name(|path): ast -> e*
+    with ext := <get-extension> path
+       ; if <raw-eq> (ext, "spt") then
+           e* := []
+         else
+           name-e* := <check-module-name'(|path) < ![<id>] + ![]> ast
+         ; ext-e* := <check-module-ext'(|path) < ![<id>] + ![]> ast
+         ; e* := [name-e*, ext-e*]
+         end
 
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term

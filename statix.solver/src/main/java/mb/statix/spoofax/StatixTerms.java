@@ -91,7 +91,7 @@ public class StatixTerms {
     public static final String NOID_OP = "NoId";
 
     public static IMatcher<Spec> spec() {
-        return M.tuple5(M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
+        return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
                 (t, edgeLabels, relationLabels, noRelationLabel, rules, ext) -> {
                     final IAlphabet<ITerm> labels = new FiniteAlphabet<>(
                             Iterables2.cons(noRelationLabel, Iterables.concat(relationLabels, edgeLabels)));

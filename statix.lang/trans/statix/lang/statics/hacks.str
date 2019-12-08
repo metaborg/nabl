@@ -5,6 +5,7 @@ imports
   signatures/nabl2/shared/constraints/-
 
   signatures/statix/lang/-
+  statix/lang/util
   statix/lang/statics/-
 
 rules
@@ -14,6 +15,9 @@ rules
               + ?ConstOp(_); !0
               + ?ArrowOp(<id>, _); length
               > ts
+
+  same-name: (x, y, msginfo) -> c
+    with if <raw-eq> (x, y) then c := CTrue(msginfo) else c := CFalse(msginfo) end
 
 rules
 
