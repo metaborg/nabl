@@ -68,7 +68,7 @@ rules
     Sections[[ sections ^ (s', s) ]].
 
   Sections[[ sections ^ (s, s_outer) ]] :=
-    Map1(Section)[[ sections ^ (s, s_outer) ]],
+    Map2(Section)[[ sections ^ (s, s_outer) ]],
     distinct/name D(s)/C    | error $[Duplicate constraint [NAME]] @NAMES,
     distinct/name D(s)/Rel  | error $[Duplicate relation [NAME]] @NAMES,
     distinct/name D(s)/Edge | error $[Duplicate edge [NAME]] @NAMES,
