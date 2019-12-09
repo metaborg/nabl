@@ -79,7 +79,7 @@ public class NameSetsComponent extends ASolver {
         }
 
         @Override public ITerm getPosition() {
-            return occurrence.getIndex();
+            return occurrence.getNameOrIndexOrigin();
         }
 
         @Override public Object project(String name) {

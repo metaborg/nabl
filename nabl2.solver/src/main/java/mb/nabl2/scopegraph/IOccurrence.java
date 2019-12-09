@@ -10,6 +10,8 @@ public interface IOccurrence {
 
     IOccurrenceIndex getIndex();
 
+    ITerm getNameOrIndexOrigin();
+
     static boolean match(IOccurrence ref, IOccurrence decl) {
         return ref.getNamespace().equals(decl.getNamespace()) && ref.getName().equals(decl.getName());
     }

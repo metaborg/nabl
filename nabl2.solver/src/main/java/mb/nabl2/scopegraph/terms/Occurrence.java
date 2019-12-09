@@ -14,6 +14,7 @@ import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.stratego.TermOrigin;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -28,6 +29,10 @@ public abstract class Occurrence extends AbstractApplTerm implements IOccurrence
     @Value.Parameter @Override public abstract ITerm getName();
 
     @Value.Parameter @Override public abstract OccurrenceIndex getIndex();
+
+    @Override public ITerm getNameOrIndexOrigin() {
+        return TermOrigin.get(getName()).map(o -> getName()).orElseGet(this::getIndex);
+    }
 
     // IApplTerm implementation
 
