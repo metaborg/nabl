@@ -15,7 +15,7 @@ rules
  * User Constraints                                               *
  ******************************************************************/
 
-  DeclOrRule[[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
+  DeclOrRule[[ CDeriveMap(x, x', lifts) ^ (s, s_syn) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.ref := C{x'}, @x'.decl := d,
     d : ty, ty != FUN(_, _) | error "Use `c maps c(...) = ...` for functional constraints." @x,
     d.ind := ind,
@@ -30,7 +30,7 @@ rules
     C{x}.kind := DerivedC() !!,
     C{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  DeclOrRule[[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
+  DeclOrRule[[ FDeriveMap(x, x', inlifts, outlift) ^ (s, s_syn) ]] :=
     C{x'} -> s, C{x'} |-> d, @x'.ref := C{x'}, @x'.decl := d,
     d : ty, ty != PRED(_) | error "Use `c maps c(...)` for non-functional constraints." @x,
     d.ind := ind,
@@ -115,7 +115,7 @@ rules
  * Scope Graph                                                    *
  ******************************************************************/
  
-  DeclOrRule[[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
+  DeclOrRule[[ NamespaceQuery(x, filter, min) ^ (s, s_syn) ]] :=
     Ns{x} -> s, Ns{x} |-> d, @x.ref := Ns{x}, @x.decl := d,
     NsQ{x} <- s,
     Filter[[ filter ^ (s, NsQ{x}) ]],

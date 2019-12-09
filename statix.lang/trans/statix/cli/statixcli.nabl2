@@ -7,6 +7,6 @@ imports
 rules
 
   [[ e@Eval(c) ^ (s) ]] :=
-    new s', s' -P-> s, @e.scope := s',
-    Constraint[[ c ^ (s') ]],
-    This{()} <- s', This{()}.qname := "". // FIXME This should be something else
+    new s_eval, s_eval -P-> s, @e.scope := s_eval,
+    Constraint[[ c ^ (s_eval) ]],
+    This{()} <- s_eval, This{()}.qname := "". // FIXME This should be something else

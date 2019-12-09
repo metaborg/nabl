@@ -30,14 +30,20 @@ signature
 
   name resolution
     labels
-      P // lexical parent
-      I // module import
+      P  // lexical parent
+      I  // module interface (qualified, non-transitively imported)
+      S  // module syntax (unqualified, transitively imported)
+      LS // local module syntax
     well-formedness
-      P* I?
+      P* (I? | LS S*)
     order
       D < P,
+      // module interface
       D < I,
-      I < P
+      I < P,
+      // module syntax
+      D < S,
+      LS < S
 
 rules
 
@@ -57,58 +63,69 @@ rules
 
   [[ m@Module(x, sections) ^ (s) ]] :=
     // define module
-    new s', s' -P-> s, @m.scope := s',
-    Mod{x} <- s, Mod{x} =I=> s',
+    new s_mod, s_mod -P-> s, @m.scope := s_mod,
+    Mod{x} <- s, Mod{x} =I=> s_mod,
+    // syntax part of the interface
+    new s_syn, s_mod -LS-> s_syn,
+    Mod{x} =S=> s_syn,
     // define the current module
     Mod{x}.qname := x,
-    This{()} <- s', This{()}.qname := x !!,
+    This{()} <- s_mod, This{()}.qname := x !!,
     // check duplicates
     distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
     // check sections
-    Sections[[ sections ^ (s', s) ]].
+    Sections[[ sections ^ (s_mod, s_syn, s) ]].
 
-  Sections[[ sections ^ (s, s_outer) ]] :=
-    Map2(Section)[[ sections ^ (s, s_outer) ]],
-    distinct/name D(s)/C    | error $[Duplicate constraint [NAME]] @NAMES,
-    distinct/name D(s)/Rel  | error $[Duplicate relation [NAME]] @NAMES,
-    distinct/name D(s)/Edge | error $[Duplicate edge [NAME]] @NAMES,
-    distinct/name D(s)/Ns   | error $[Duplicate namespace [NAME]] @NAMES,
-    distinct/name D(s)/NsQ  | error $[Duplicate resolution policy for namespace [NAME]] @NAMES,
-    distinct/name D(s)/Op   | error $[Duplicate constructor [NAME]] @NAMES,
-    distinct/name D(s)/Sort | error $[Duplicate sort [NAME]] @NAMES,
-    (D(s)/Rel isect/name D(s)/Edge) subseteq 0 | error $[Relation and edge label with same name [NAME]] @NAMES,
-    (D(s)/C    lsect/name (W(s)/C    minus D(s)/C   )) subseteq 0 | warning $[Shadows imported constraint [NAME]] @NAMES,
-    (D(s)/Rel  lsect/name (W(s)/Rel  minus D(s)/Rel )) subseteq 0 | warning $[Shadows imported relation [NAME]] @NAMES,
-    (D(s)/Edge lsect/name (W(s)/Edge minus D(s)/Edge)) subseteq 0 | warning $[Shadows imported edge label [NAME]] @NAMES,
-    (D(s)/Ns   lsect/name (W(s)/Ns   minus D(s)/Ns  )) subseteq 0 | warning $[Shadows imported namespace [NAME]] @NAMES,
-    (D(s)/NsQ  lsect/name (W(s)/NsQ  minus D(s)/NsQ )) subseteq 0 | warning $[Shadows imported resolution policy for namespace [NAME]] @NAMES,
-    // FIXME Change to warnings when parser returns qualified sorts and constructors
-    (D(s)/Sort lsect/name (W(s)/Sort minus D(s)/Sort)) subseteq 0 | error $[Duplicate of imported sort [NAME]] @NAMES,
-    (D(s)/Op   lsect/name (W(s)/Op   minus D(s)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES,
+  Sections[[ sections ^ (s, s_syn, s_outer) ]] :=
+    Map3(Section)[[ sections ^ (s, s_syn, s_outer) ]],
+
+    // duplicate checks for all non-transitively scoped identifiers
+    distinct/name D(s)/C                     | error $[Duplicate constraint [NAME]] @NAMES,
+    distinct/name D(s)/Ns                    | error $[Duplicate namespace [NAME]] @NAMES,
+    distinct/name D(s)/NsQ                   | error $[Duplicate resolution policy for namespace [NAME]] @NAMES,
+    distinct/name (D(s)/Rel union D(s)/Edge) | error $[Duplicate label/relation [NAME]] @NAMES,
+    (D(s)/C                     lsect/name (W(s)/C                     minus D(s)/C                    )) subseteq 0 | warning $[Shadows imported constraint [NAME]] @NAMES,
+    (D(s)/Ns                    lsect/name (W(s)/Ns                    minus D(s)/Ns                   )) subseteq 0 | warning $[Shadows imported namespace [NAME]] @NAMES,
+    (D(s)/NsQ                   lsect/name (W(s)/NsQ                   minus D(s)/NsQ                  )) subseteq 0 | warning $[Shadows imported resolution policy for namespace [NAME]] @NAMES,
+    ((D(s)/Rel union D(s)/Edge) lsect/name ((W(s)/Rel union W(s)/Edge) minus (D(s)/Rel union D(s)/Edge))) subseteq 0 | warning $[Shadows imported edge label / relation [NAME]] @NAMES,
+
+    // duplicate checks for transitively scoped sorts and constructors
+    distinct/name D(s_syn)/Op   | error $[Duplicate constructor [NAME]] @NAMES,
+    distinct/name D(s_syn)/Sort | error $[Duplicate sort [NAME]] @NAMES,
+    (D(s_syn)/Sort lsect/name (W(s)/Sort minus D(s_syn)/Sort)) subseteq 0 | error $[Duplicate of imported sort [NAME]] @NAMES,
+    (D(s_syn)/Op   lsect/name (W(s)/Op   minus D(s_syn)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES,
+
     true.
 
-  Section[[ Imports(imports) ^ (s, s_outer) ]] :=
-    Map1(Import)[[ imports ^ (s_outer, s) ]].
+  Section[[ Imports(imports) ^ (s, s_syn, s_outer) ]] :=
+    Map3(Import)[[ imports ^ (s_outer, s, s_syn) ]].
 
-  Import[[ Import(x) ^ (s, s_imp) ]] :=
+  Import[[ Import(x) ^ (s, s_mod, s_syn) ]] :=
     Mod{x} -> s, Mod{x} |-> d,
-    Mod{x} <=I= s_imp.
+    d ?=I=> s_mod', s_mod -I-> s_mod',
+    (V(s_mod')/C                          lsect/name (V(s_mod)/C                         minus (D(s_mod)/C                         union V(s_mod')/C                         ))) subseteq 0 | error $[Duplicate imported constraints [NAME]] @x,
+    (V(s_mod')/Ns                         lsect/name (V(s_mod)/Ns                        minus (D(s_mod)/Ns                        union V(s_mod')/Ns                        ))) subseteq 0 | error $[Duplicate imported namespaces [NAME]] @x,
+    (V(s_mod')/NsQ                        lsect/name (V(s_mod)/NsQ                       minus (D(s_mod)/NsQ                       union V(s_mod')/NsQ                       ))) subseteq 0 | error $[Duplicate imported resolution policies for [NAME]] @x,
+    ((V(s_mod')/Rel union V(s_mod')/Edge) lsect/name ((V(s_mod)/Rel union V(s_mod)/Edge) minus ((D(s_mod)/Rel union D(s_mod)/Edge) union (V(s_mod')/Rel union V(s_mod')/Edge)))) subseteq 0 | error $[Duplicate imported edge labels / relations [NAME]] @x,
+    d ?=S=> s_syn', s_syn -S-> s_syn'.
+//    Mod{x} <=I= s_mod,
+//    Mod{x} <=S= s_syn.
 
-  Section[[ Signature(sigs) ^ (s, _) ]] :=
-    Map1(Signature)[[ sigs ^ (s) ]].
+  Section[[ Signature(sigs) ^ (s, s_syn, _) ]] :=
+    Map2(Signature)[[ sigs ^ (s, s_syn) ]].
 
-  Section[[ Rules(rs) ^ (s, _) ]] :=
-    Map1(DeclOrRule)[[ rs ^ (s) ]].
+  Section[[ Rules(rs) ^ (s, s_syn, _) ]] :=
+    Map2(DeclOrRule)[[ rs ^ (s, s_syn) ]].
 
 
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
 
-  Signature[[ Constraints(cs) ^ (s) ]] :=
-    Map1(DeclOrRule)[[ cs ^ (s) ]].
+  Signature[[ Constraints(cs) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ cs ^ (s, s_syn) ]].
 
-  DeclOrRule[[ CDecl(ind, x, type) ^ (s) ]] :=
+  DeclOrRule[[ CDecl(ind, x, type) ^ (s, s_syn) ]] :=
     Ind[[ ind ]],
     Type[[ type ^ (s) : ty ]],
 
@@ -121,7 +138,7 @@ rules
   Ind[[ InductiveC() ]].
   Ind[[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
-  DeclOrRule[[ r@Rule(_, h, body) ^ (s) ]] :=
+  DeclOrRule[[ r@Rule(_, h, body) ^ (s, s_syn) ]] :=
     new s_rule, s_rule -P-> s, @r.scope := s_rule,
     distinct/name D(s_rule)/Var | error $[Duplicate variable [NAME]] @NAMES,
     RuleHead[[ h ^ (s_rule, x) : _ ]],
@@ -147,7 +164,7 @@ rules
   HoConstraint[[ l@LLam(ps, c) ^ (s) : PRED(tys) ]] :=
     new s', s' -P-> s, @l.scope := s',
     Map1T(Match)[[ ps ^ (s') : tys ]],
-  //(D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+    (D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
 
 
@@ -181,7 +198,7 @@ rules
     new s', s' -P-> s,
     Map1T(VarDecl)[[ vs ^ (s') : _ ]],
     distinct/name D(s')/Var | error $[Duplicate variable [NAME]] @NAMES,
-  //(D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+    (D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
 
   Constraint[[ t@CTry(c, msg) ^ (s) ]] :=
@@ -210,10 +227,10 @@ rules
  * Relations                                                      *
  ******************************************************************/
 
-  Signature[[ Relations(rdecls) ^ (s) ]] :=
-    Map1(DeclOrRule)[[ rdecls ^ (s) ]].
+  Signature[[ Relations(rdecls) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ rdecls ^ (s, s_syn) ]].
 
-  DeclOrRule[[ RelDecl(rel, type) ^ (s) ]] :=
+  DeclOrRule[[ RelDecl(rel, type) ^ (s, s_syn) ]] :=
     Type[[ type ^ (s) : ty ]],
     RelDecl[[ rel ^ (s) : ty ]].
 
@@ -239,19 +256,19 @@ rules
  * Scope Graph                                                    *
  ******************************************************************/
 
-  Signature[[ Namespaces(nss) ^ (s) ]] :=
-    Map1(DeclOrRule)[[ nss ^ (s) ]].
+  Signature[[ Namespaces(nss) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ nss ^ (s, s_syn) ]].
 
-  DeclOrRule[[ NsDecl(x, sorts) ^ (s) ]] :=
+  DeclOrRule[[ NsDecl(x, sorts) ^ (s, s_syn) ]] :=
     Ns{x} <- s, @x.decl := Ns{x},
     Map1T(SortRef)[[ sorts ^ (s) : tys ]],
     Ns{x} : NS(tys) !,
     Ns{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  Signature[[ NameResolution(params) ^ (s) ]] :=
-    Map1(DeclOrRule)[[ params ^ (s) ]].
+  Signature[[ NameResolution(params) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ params ^ (s, s_syn) ]].
 
-  DeclOrRule[[ Labels(lbls) ^ (s) ]] :=
+  DeclOrRule[[ Labels(lbls) ^ (s, s_syn) ]] :=
     Map1(EdgeDecl)[[ lbls ^ (s) ]].
 
   EdgeDecl[[ l@Label(x) ^ (s) ]] :=
@@ -352,28 +369,28 @@ rules
  * Sorts & Constructors                                           *
  ******************************************************************/
 
-  Signature[[ Sorts(sorts) ^ (s) ]] :=
-    Map1(SortDecl)[[ sorts ^ (s) ]].
+  Signature[[ Sorts(sorts) ^ (s, s_syn) ]] :=
+    Map2(SortDecl)[[ sorts ^ (s, s_syn) ]].
 
-  SortDecl[[ SortDecl(x) ^ (s) ]] :=
-    Sort{x} <- s, @x.decl := Sort{x},
+  SortDecl[[ SortDecl(x) ^ (s, s_syn) ]] :=
+    Sort{x} <- s_syn, @x.decl := Sort{x},
     Sort{x} : SORT(Sort{x}) !!,
     Sort{x}.kind := SimpleSort(),
     Sort{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  SortDecl[[ SortAlias(x, sort) ^ (s) ]] :=
-    Sort{x} <- s, @x.decl := Sort{x},
+  SortDecl[[ SortAlias(x, sort) ^ (s, s_syn) ]] :=
+    Sort{x} <- s_syn, @x.decl := Sort{x},
     Sort{x} : ty !!,
     Sort{x}.kind := SortAlias(),
     SortRef[[ sort ^ (s) : ty ]],
     Sort{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  Signature[[ Constructors(ctors) ^ (s) ]] :=
-    Map1(OpDecl)[[ ctors ^ (s) ]].
+  Signature[[ Constructors(ctors) ^ (s, s_syn) ]] :=
+    Map2(OpDecl)[[ ctors ^ (s, s_syn) ]].
 
-  OpDecl[[ OpDecl(x, sort) ^ (s) ]] :=
+  OpDecl[[ OpDecl(x, sort) ^ (s, s_syn) ]] :=
     x' is `op-name` of (x, sort),
-    Op{x'@x} <- s, @x.decl := Op{x'@x},
+    Op{x'@x} <- s_syn, @x.decl := Op{x'@x},
     Op{x'@x} : ty !!,
     OpSort[[ sort ^ (s) : ty ]],
     Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.

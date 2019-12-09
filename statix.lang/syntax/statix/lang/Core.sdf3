@@ -40,10 +40,16 @@ context-free syntax
       <{Rule "\n\n"}*>
   > {longest-match}
 
+lexical syntax
+
+  ModuleId = "imports" | "signature" | "rules" {reject}
+
 
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
+
+context-free syntax
 
   Signature.Constraints = <
     constraints

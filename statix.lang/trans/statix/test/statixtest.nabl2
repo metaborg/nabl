@@ -7,7 +7,8 @@ imports
 rules
 
   [[ t@Test(c, sections) ^ (s) ]] :=
-    new s', s' -P-> s, @t.scope := s',
-    Sections[[ sections ^ (s', s) ]],
-    Constraint[[ c ^ (s') ]],
-    This{()} <- s', This{()}.qname := "<test>" !!.
+    new s_test, s_test -P-> s, @t.scope := s_test,
+    new s_syn, s_test -LS-> s_syn,
+    Sections[[ sections ^ (s_test, s_syn, s) ]],
+    Constraint[[ c ^ (s_test) ]],
+    This{()} <- s_test, This{()}.qname := "" !!.
