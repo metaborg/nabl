@@ -49,7 +49,6 @@ public class FixedPointSolver {
         propertiesAddAll(initialConstraints);
 
         final IMessages.Transient messages = Messages.Transient.of();
-        final Multimap<String, String> dependencies = HashMultimap.create();
 
         final Set<IConstraint> constraints = Sets.newHashSet(initialConstraints);
         boolean progress;
@@ -64,8 +63,6 @@ public class FixedPointSolver {
                 propertiesRemove(constraint); // property only on other constraints
                 if((result = component.apply(constraint).orElse(null)) != null) {
                     messages.addAll(result.messages());
-
-                    dependencies.putAll(result.dependencies());
 
                     propertiesAddAll(result.constraints());
                     newConstraints.addAll(result.constraints());
@@ -87,7 +84,6 @@ public class FixedPointSolver {
         return ImmutableSolveResult.builder()
         // @formatter:off
                 .messages(messages.freeze())
-                .dependencies(dependencies)
                 .constraints(constraints)
                 // @formatter:on
                 .build();

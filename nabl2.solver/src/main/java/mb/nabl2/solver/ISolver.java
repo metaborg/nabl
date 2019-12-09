@@ -10,9 +10,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.CheckedFunction1;
 
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.solver.ISolver.SolveResult;
@@ -75,10 +72,6 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
 
         @Value.Default public IMessages.Immutable messages() {
             return Messages.Immutable.of();
-        }
-
-        @Value.Default public SetMultimap<String, String> dependencies() {
-            return ImmutableSetMultimap.of();
         }
 
         @Value.Default public IUnifier.Immutable unifierDiff() {

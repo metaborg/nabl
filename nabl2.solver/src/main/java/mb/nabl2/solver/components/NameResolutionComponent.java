@@ -2,14 +2,14 @@ package mb.nabl2.solver.components;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.constraints.IConstraint;
@@ -107,10 +107,7 @@ public class NameResolutionComponent extends ASolver {
             return Optional.empty();
         }
         final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get();
-        final List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths);
-        final Multimap<String, String> deps = HashMultimap.create();
-        deps.putAll(ref.getIndex().getResource(),
-                declarations.stream().map(d -> d.getIndex().getResource()).collect(Collectors.toSet()));
+        final Set<Occurrence> declarations = Sets.newHashSet(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;
         switch(declarations.size()) {
             case 0: {
@@ -120,7 +117,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
             case 1: {
-                final Occurrence decl = declarations.get(0);
+                final Occurrence decl = Iterables.getOnlyElement(declarations);
                 result = SolveResult.constraints(ImmutableCEqual.of(r.getDeclaration(), decl, r.getMessageInfo()));
                 break;
             }
@@ -131,7 +128,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return Optional.of(ImmutableSolveResult.copyOf(result).withDependencies(deps));
+        return Optional.of(ImmutableSolveResult.copyOf(result));
     }
 
     private Optional<SolveResult> solve(CAssoc a) {
