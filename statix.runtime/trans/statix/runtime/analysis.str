@@ -179,22 +179,20 @@ rules
 
   stx--language-spec-by-name =
     MkSingleton
-  ; language-resources(stx--module-to-path, stx--spec-imports)
+  ; language-resources(stx--module-path, stx--spec-imports)
   ; map(Snd)
   ; stx--merge-spec-aterms
 
   stx--local-spec-from-spec =
     ?spec
   ; stx--spec-imports
-  ; project-resources(stx--module-to-path, stx--spec-imports)
+  ; project-resources(stx--module-path, stx--spec-imports)
   ; map(Snd)
   ; ![spec|<id>]
   ; stx--merge-spec-aterms
 
 
   stx--spec-imports = ?FileSpec(<id>, _, _, _, _, _)
-
-  stx--module-to-path: name -> $[src-gen/statix/[name].spec.aterm]
 
   stx--mk-qualified-name(|qname): name -> $[[qname]![name]]
 
@@ -205,13 +203,26 @@ rules
   stx--merge-spec-aterms-step: (spec1, spec) -> spec'
     with FileSpec(_, edge1*, data1*, eop, rule1*, ext1*) := spec1
        ; Spec(edge*, data*, eop, rule*, ext*) := spec
-       ; spec' := Spec( <conc> (edge1*, edge*)
-                      , <conc> (data1*, data*)
+       ; spec' := Spec( <union> (edge1*, edge*)
+                      , <union> (data1*, data*)
                       , eop
                       , <conc> (rule1*, rule*)
                       , <conc> (ext1*, ext*)
                       )
 
+rules
+
+  stx--module-path: name -> filename
+    with filename := <stx--src-gen-file(|"statix", ".spec.aterm")> name
+
+  stx--src-gen-file(|sub-dir, ext): name -> filename
+    with filename := $[[<stx--src-gen-dir(|sub-dir)>]/[name][ext]]
+
+  stx--src-gen-dir(|sub-dir): _ -> dirname
+    with dirname := <project-srcgen-dir> sub-dir
+
+
+rules
 
   // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> Solution
   stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)

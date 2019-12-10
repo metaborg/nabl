@@ -56,7 +56,7 @@ public class Statix {
         S = new Spoofax(new StatixCLIModule());
         cli = new CLIUtils(S);
         stxLang = loadStxLang();
-        project = cli.getOrCreateCWDProject();
+        project = cli.getOrCreateProject(findProjectDir(cli.getCWD()));
         context = S.contextService.get(project.location(), project, stxLang);
         msgStream = System.out;
     }
@@ -132,21 +132,27 @@ public class Statix {
                 .filter(r -> r.source().getName().equals(resource.getName())).findFirst();
     }
 
-    Optional<FileObject> findProject(FileObject resource) {
+    private FileObject findProjectDir(FileObject resource) throws MetaborgException {
+        final FileObject init;
         try {
-            FileObject dir = (resource.isFolder() ? resource : resource.getParent());
+            init = (resource.isFolder() ? resource : resource.getParent());
+        } catch(FileSystemException e) {
+            logger.error("Error while searching for project configuration.", e);
+            throw new MetaborgException(e);
+        }
+        try {
+            FileObject dir = init;
             while(dir != null) {
                 FileObject config = dir.resolveFile(MetaborgConstants.FILE_CONFIG);
                 if(config != null && config.exists()) {
-                    return Optional.of(dir);
+                    return dir;
                 }
                 dir = dir.getParent();
             }
         } catch(FileSystemException e) {
             logger.error("Error while searching for project configuration.", e);
         }
-        logger.warn("No project configuration file was found for {}.", resource);
-        return Optional.empty();
+        return init;
     }
 
     String format(IStrategoTerm term) throws MetaborgException {

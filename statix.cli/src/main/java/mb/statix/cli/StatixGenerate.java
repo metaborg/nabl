@@ -3,7 +3,6 @@ package mb.statix.cli;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -11,7 +10,6 @@ import org.apache.commons.vfs2.FileObject;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.context.IContext;
 import org.metaborg.core.language.ILanguageImpl;
-import org.metaborg.core.project.IProject;
 import org.metaborg.spoofax.core.shell.StatixGenerator;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
@@ -52,17 +50,16 @@ public class StatixGenerate {
     public void run(String file) throws MetaborgException, InterruptedException {
         final FileObject resource = STX.S.resolve(file);
 
-        final TermFormatter tf;
-        final Optional<FileObject> maybeProject = STX.findProject(resource);
-        if(maybeProject.isPresent()) {
-            final IProject project = STX.cli.getOrCreateProject(maybeProject.get());
-            final ILanguageImpl lang = STX.cli.loadLanguage(project.location());
-            final IContext context = STX.S.contextService.get(resource, project, lang);
+        TermFormatter tf = ITerm::toString;
+        try {
+            final ILanguageImpl lang = STX.cli.loadLanguage(STX.project.location());
+            final IContext context = STX.S.contextService.get(resource, STX.project, lang);
             tf = StatixGenerator.pretty(STX.S, context, "pp-generated");
-        } else {
-            tf = ITerm::toString;
+        } catch(MetaborgException e) {
+            // ignore
         }
-        final Function1<SearchState, String> pretty = (s) -> tf.format(project(VAR, s));
+        final TermFormatter _tf = tf;
+        final Function1<SearchState, String> pretty = (s) -> _tf.format(project(VAR, s));
 
         final DescriptiveStatistics hitStats = new DescriptiveStatistics();
         final DescriptiveStatistics missStats = new DescriptiveStatistics();

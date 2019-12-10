@@ -5,6 +5,7 @@ imports
   libstrc
 
   libspoofax/core/language
+  libspoofax/resource/path
 
   nabl2/api
 
@@ -25,18 +26,10 @@ rules
            ast' := <normalize(|a)> ast;
            CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
            spec     := <core-ast-to-spec-aterm(|a)> (ast', ext);
-           filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
+           filename := <stx--module-path> name;
            result   := (filename, spec)
          end
  
-rules
-
-  src-gen-file(|sub-dir, ext): name -> filename
-    with filename := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
-
-  src-gen-dir(|sub-dir): _ -> dirname
-    with dirname := <language-srcgen-dir> sub-dir
-
 rules
 
   core-ast-to-spec-aterm(|a): (ast, ext) -> spec

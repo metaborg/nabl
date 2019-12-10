@@ -41,7 +41,7 @@ rules
 
   build-evaluation-pair: ast@Test(_, _) -> (body', spec')
     with a      := <nabl2-get-ast-analysis> ast;
-         ext    := <nabl2-get-custom-analysis> a;
+         CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
          ast'   := <normalize(|a)> ast;
          Test(body, _) := ast';
          spec   := <core-ast-to-spec-aterm(|a)> (ast', ext);
