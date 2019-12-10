@@ -63,58 +63,71 @@ rules
 
   typeOfExp : scope * Exp ->  Type
 
+  [T-Unit]
   typeOfExp(s, Unit()) = UNIT().
 
+  [T-Num]
   typeOfExp(s, Num(_)) = NUM().
 
+  [T-Plus]
   typeOfExp(s, Plus(e1, e2)) = NUM() :-
     typeOfExp(s, e1) == NUM(),
     typeOfExp(s, e2) == NUM().
 
+  [T-Fun]
   typeOfExp(s, Fun(x, te, e)) = FUN(S, T) :- {s_fun}
     typeOfTypeExp(s, te) == S,
     new s_fun, s_fun -P-> s,
     s_fun -> Var{x} with typeOfDecl S,
     typeOfExp(s_fun, e) == T.
 
+  [T-Var]
   typeOfExp(s, v@Var(x)) = T :- {d} @x.ref := varOrFldPos(d),
     query typeOfDecl
           filter P*(R|E)* and { d :- varOrFld(x, d) }
           min $ < P, $ < R, $ < E, R < P, R < E and true
           in s |-> [(_, (d, T))].
 
+  [T-App]
   typeOfExp(s, App(e1, e2)) = T :- {S U}
     typeOfExp(s, e1) == FUN(S, T),
     typeOfExp(s, e2) == U,
     subType(U, S).
 
+  [T-Rec]
   typeOfExp(s, Rec(finits)) = REC(rs) :-
     new rs, fieldInitsOK(s, finits, rs).
 
+  [T-ERec]
   typeOfExp(s, ERec(e1, e2)) = REC(rs) :- {rs1 rs2}
     typeOfExp(s, e1) == REC(rs1),
     typeOfExp(s, e2) == REC(rs2),
     new rs, rs -R-> rs1, rs -E-> rs2.
 
+  [T-With]
   typeOfExp(s, With(e1, e2)) = T :- {rs s_with}
     typeOfExp(s, e1) == REC(rs),
     new s_with, s_with -R-> rs, s_with -P-> s,
     typeOfExp(s_with, e2) == T.
 
+  [T-FAccess]
   typeOfExp(s, FAccess(e, x)) = T :- {rs x'} @x.ref := x',
     typeOfExp(s, e) == REC(rs),
     typeOfDecl of Fld{x} in rs |-> [(_, (Fld{x'}, T))].
 
+  [T-TypeLet]
   typeOfExp(s, TypeLet(x, te, e)) = S :- {s_let}
     new s_let, s_let -P-> s,
     s_let -> Type{x} with typeOfDecl typeOfTypeExp(s, te),
     typeOfExp(s_let, e) == S.
 
+  [T-Let]
   typeOfExp(s, Let(binds, e)) = T :- {s_let}
     new s_let, s_let -P-> s,
     letBindsOK(s, binds, s_let),
     typeOfExp(s_let, e) == T.
 
+  [T-TAS]
   typeOfExp(s, TAS(e, te)) = T :- {S}
     typeOfExp(s, e) == S,
     typeOfTypeExp(s, te) == T,
@@ -125,6 +138,7 @@ rules
   letBindOK : scope * Bind * scope
   letBindsOK maps letBindOK(*, list(*), *)
 
+  [T-Bind]
   letBindOK(s, Bind(x, e), s_bnd) :-
     s_bnd -> Fld{x} with typeOfDecl typeOfExp(s, e).
 
@@ -133,6 +147,7 @@ rules
   fieldInitOK : scope * Bind * scope
   fieldInitsOK maps fieldInitOK(*, list(*), *)
 
+  [T-FieldInit]
   fieldInitOK(s, Bind(x, e), rs) :- {T}
     rs -> Fld{x} with typeOfDecl typeOfExp(s, e),
     unique(x, rs).
@@ -145,22 +160,28 @@ rules
 
   typeOfTypeExp : scope * TypeExp ->  Type
 
+  [TE-Unit]
   typeOfTypeExp(s, UnitType()) = UNIT().
 
+  [TE-Num]
   typeOfTypeExp(s, NumType()) = NUM().
 
+  [TE-Fun]
   typeOfTypeExp(s, FunType(te1, te2)) = FUN(T1, T2) :-
     typeOfTypeExp(s, te1) == T1,
     typeOfTypeExp(s, te2) == T2.
 
+  [TE-Rec]
   typeOfTypeExp(s, RecType(ftypes)) = REC(rs) :-
     new rs, fieldTypesOK(s, ftypes, rs).
 
+  [TE-ERec]
   typeOfTypeExp(s, ERecType(te1, te2)) = REC(rs) :- {rs1 rs2}
     typeOfTypeExp(s, te1) == REC(rs1),
     typeOfTypeExp(s, te2) == REC(rs2),
     new rs, rs -R-> rs1, rs -E-> rs2.
 
+  [TE-Ref]
   typeOfTypeExp(s, TypeRef(x)) = T :- {x'} @x.ref := x',
     typeOfDecl of Type{x} in s |-> [(_, (Type{x'}, T))].
 
@@ -169,6 +190,7 @@ rules
   fieldTypeOK : scope * Decl * scope
   fieldTypesOK maps fieldTypeOK(*, list(*), *)
 
+  [TE-Decl]
   fieldTypeOK(s, Decl(x, te), rs) :-
     rs -> Fld{x} with typeOfDecl typeOfTypeExp(s, te),
     unique(x, rs).
