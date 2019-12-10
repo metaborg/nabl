@@ -41,6 +41,7 @@ rules // Analysis
        ; e* := [n-e*, or-e*]
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
+    where <not(nabl2-analysis-has-errors)> a
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
        ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
        ; nabl2-custom-analysis-info-msg(|"| explicate scope extensions...")

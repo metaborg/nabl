@@ -93,23 +93,19 @@ rules
     distinct/name D(s_syn)/Op   | error $[Duplicate constructor [NAME]] @NAMES,
     distinct/name D(s_syn)/Sort | error $[Duplicate sort [NAME]] @NAMES,
     (D(s_syn)/Sort lsect/name (W(s)/Sort minus D(s_syn)/Sort)) subseteq 0 | error $[Duplicate of imported sort [NAME]] @NAMES,
-    (D(s_syn)/Op   lsect/name (W(s)/Op   minus D(s_syn)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES,
-
-    true.
+    (D(s_syn)/Op   lsect/name (W(s)/Op   minus D(s_syn)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES.
 
   Section[[ Imports(imports) ^ (s, s_syn, s_outer) ]] :=
     Map3(Import)[[ imports ^ (s_outer, s, s_syn) ]].
 
   Import[[ Import(x) ^ (s, s_mod, s_syn) ]] :=
-    Mod{x} -> s, Mod{x} |-> d,
-    d ?=I=> s_mod', s_mod -I-> s_mod',
+    Mod{x} -> s, Mod{x} |-> d | error $[Unresolved import module [x]] @x, @x.ref := Mod{x}, @x.decl := d,
+    Mod{x} <=I= s_mod, d ?=I=> s_mod',
     (V(s_mod')/C                          lsect/name (V(s_mod)/C                         minus (D(s_mod)/C                         union V(s_mod')/C                         ))) subseteq 0 | error $[Duplicate imported constraints [NAME]] @x,
     (V(s_mod')/Ns                         lsect/name (V(s_mod)/Ns                        minus (D(s_mod)/Ns                        union V(s_mod')/Ns                        ))) subseteq 0 | error $[Duplicate imported namespaces [NAME]] @x,
     (V(s_mod')/NsQ                        lsect/name (V(s_mod)/NsQ                       minus (D(s_mod)/NsQ                       union V(s_mod')/NsQ                       ))) subseteq 0 | error $[Duplicate imported resolution policies for [NAME]] @x,
     ((V(s_mod')/Rel union V(s_mod')/Edge) lsect/name ((V(s_mod)/Rel union V(s_mod)/Edge) minus ((D(s_mod)/Rel union D(s_mod)/Edge) union (V(s_mod')/Rel union V(s_mod')/Edge)))) subseteq 0 | error $[Duplicate imported edge labels / relations [NAME]] @x,
-    d ?=S=> s_syn', s_syn -S-> s_syn'.
-//    Mod{x} <=I= s_mod,
-//    Mod{x} <=S= s_syn.
+    Mod{x} <=S= s_syn, d ?=S=> s_syn'.
 
   Section[[ Signature(sigs) ^ (s, s_syn, _) ]] :=
     Map2(Signature)[[ sigs ^ (s, s_syn) ]].
@@ -145,7 +141,7 @@ rules
     Constraint[[ body ^ (s_rule) ]].
 
   RuleHead[[ C(x, args) ^ (s_rule, y) : ty ]] := x == y,
-    C{x} -> s_rule, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
+    C{x} -> s_rule, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
     tys is `in-types` of ty,
@@ -155,7 +151,7 @@ rules
 
 
   Constraint[[ C(x, args, msg) ^ (s) ]] :=
-    C{x} -> s, C{x} |-> d, @x.ref := C{x}, @x.decl := d,
+    C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty, ty != FUN(_, _) | error "Use inline notation for functional constraints.",
     tys is `in-types` of ty,
     Map1T(Build)[[ args ^ (s) : tys ]],
@@ -240,7 +236,7 @@ rules
     Rel{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   RelRef[[ l@Label(x) ^ (s) : ty ]] :=
-    Rel{x} -> s, Rel{x} |-> d, @l.ref := Rel{x}, @x.decl := d,
+    Rel{x} -> s, Rel{x} |-> d | error $[Unresolved relation [x]] @x, @l.ref := Rel{x}, @x.decl := d,
     d : ty.
 
   RelRef[[ l@EOP() ^ (s) : PRED([SCOPE()]) ]].
@@ -277,7 +273,7 @@ rules
 
 
   EdgeRef[[ l@Label(x) ^ (s) ]] :=
-    Edge{x} -> s, Edge{x} |-> d, @l.ref := Edge{x}, @x.decl := d.
+    Edge{x} -> s, Edge{x} |-> d | error $[Unresolved edge label [x]] @x, @l.ref := Edge{x}, @x.decl := d.
 
   EdgeRef[[ l@EOP() ^ (s) ]].
 
@@ -319,7 +315,7 @@ rules
     Build[[ t2 ^ (s) : SCOPE() ]].
 
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
-    Ns{ns} -> s, Ns{ns} |-> d, @ns.ref := Ns{ns}, @ns.decl := d,
+    Ns{ns} -> s, Ns{ns} |-> d | error $[Unresolved namespace [ns]] @ns, @ns.ref := Ns{ns}, @ns.decl := d,
     d : NS(tys),
     Map1T(Term(V))[[ ts ^ (s) : tys ]],
     OccurrencePos(Term(V))[[ pos ^ (s) : _ ]],
@@ -403,7 +399,7 @@ rules
     RealSortRef[[ sort ^ (s) : ty ]].
 
   RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
-    Sort{x} -> s, Sort{x} |-> d, @x.ref := Sort{x}, @x.decl := d,
+    Sort{x} -> s, Sort{x} |-> d | error $[Unresolved sort [x]] @x, @x.ref := Sort{x}, @x.decl := d,
     d : ty !,
     d.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := this_qname,
     this_qname <`same-name`? qname | error "Constructors must be defined in the same module as the sort",
@@ -421,7 +417,7 @@ rules
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
   SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
-    Sort{x} -> s, Sort{x} |-> d, @x.ref := Sort{x}, @x.decl := d,
+    Sort{x} -> s, Sort{x} |-> d | error $[Unresolved sort [x]] @x, @x.ref := Sort{x}, @x.decl := d,
     d : ty,
     Sort{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
@@ -452,7 +448,7 @@ rules
   VarDecl[[ Wld() ^ (_) : _ ]].
 
   VarRef[[ Var(x) ^ (s) : ty ]] :=
-    Var{x} -> s, Var{x} |-> d, @x.ref := Var{x}, @x.decl := d,
+    Var{x} -> s, Var{x} |-> d | error $[Unresolved variable [x]] @x, @x.ref := Var{x}, @x.decl := d,
     d : ty.
 
   VarRef[[ Wld() ^ (_) : _ ]].
@@ -469,7 +465,7 @@ rules
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
     x' is `op-name` of (x, args),
-    Op{x'@x} -> s, Op{x'@x} |-> d, @x.ref := Op{x'@x}, @x.decl := d,
+    Op{x'@x} -> s, Op{x'@x} |-> d | error $[Unresolved constructor [x']] @x, @x.ref := Op{x'@x}, @x.decl := d,
     d : OP(tys, ty),
     Map1T(Term(V))[[ args ^ (s) : tys ]],
     Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
