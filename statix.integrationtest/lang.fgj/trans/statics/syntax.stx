@@ -1,4 +1,4 @@
-module statics/ast
+module statics/syntax
 
 signature
 

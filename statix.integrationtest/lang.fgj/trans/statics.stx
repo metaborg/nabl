@@ -2,7 +2,7 @@ module statics // Static semantics of Featherweight Generic Java
 
 imports
 
-  statics/ast
+  statics/syntax
   statics/name-resolution
   statics/normalization
   statics/types
@@ -174,11 +174,11 @@ rules
   typeOfTypeExp : scope * TypeExp -> TYPE
   typesOfTypeExps maps typeOfTypeExp(*, list(*)) = list(*)
 
-  typeOfTypeExp(s, TVar(x)) = TVAR(d) :-
-    TVar{x@x} in s |-> [(_, d)].            // type var reference
+  typeOfTypeExp(s, TVar(x)) = TVAR(d) :- {x'} @x.ref := x',
+    TVar{x@x} in s |-> [(_, d@TVar{x'@_})].        // type var reference
 
-  typeOfTypeExp(s, ClassT(x, tes)) = CLASS(s_inst) :- {s_class Xs Ts Us}
-    typeOfDecl of Class{x@x} in s |-> [(_, (_, CLASS(s_class)))],    // class type
+  typeOfTypeExp(s, ClassT(x, tes)) = CLASS(s_inst) :- {x' s_class Xs Ts Us} @x.ref := x',
+    typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, CLASS(s_class)))],    // class type
     typesOfTypeExps(s, tes) == Ts,          // type arguments
     ?tparamsOfClass[] in s_class == Xs,     // type parameters
     instWith(s_class, Xs, Ts) == s_inst,    // super class type variable instantiation
@@ -190,16 +190,16 @@ rules
   typeOfExp : scope * Exp -> TYPE
   typesOfExps maps typeOfExp(*, list(*)) = list(*)
 
-  typeOfExp(s, Var(x)) = T :- {r p d}
-    typeOfDecl of Var{x@x} in s |-> [(p, (d, T))].
+  typeOfExp(s, Var(x)) = T :- {x' p d} @x.ref := x',
+    typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, T))].
 
   typeOfExp(s, Fld(e, x)) = S :- {s_inst}
     promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_inst),    // receiver type
     PROJ(s_inst, Field{x@x}) == S.                               // field reference
 
-  typeOfExp(s, Call(e, tys, x, es)) = U :- {S s_cls Ts m_inst Xs s_mtype s_minst Us Ss p}
+  typeOfExp(s, Call(e, tys, x, es)) = U :- {S s_cls x' Ts m_inst Xs s_mtype s_minst Us Ss p} @x.ref := x',
     promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_cls),
-    typeOfDecl of Method{x@x} in s_cls |-> [(p, (_, METHOD(Xs, s_mtype)))],
+    typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, METHOD(Xs, s_mtype)))],
     typesOfTypeExps(s, tys) == Ts,
     instWith(s_mtype, Xs, Ts) == s_minst,
     norm(scopes(p), PROJ(s_minst, MType{@-})) == MTY(U, Us),

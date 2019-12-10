@@ -5,6 +5,7 @@ imports
   libspoofax/core/language
   
   statixruntime
+  statix/api
 
   signatures/-
   pp/-
