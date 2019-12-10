@@ -113,11 +113,11 @@ public class StatixTerms {
     public static IMatcher<Rule> rule() {
         // @formatter:off
         return M.cases(
-            M.appl3("Rule", ruleLabel(), head(), constraint(), (r, n, h, bc) -> {
+            M.appl3("Rule", ruleName(), head(), constraint(), (r, n, h, bc) -> {
                 return Rule.of(h._1(), h._2(), bc).withLabel(n);
             }),
             // DEPRECATED
-            M.appl4("Rule", ruleLabel(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
+            M.appl4("Rule", ruleName(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
                 log.warn("Rules with explicit local variables are deprecated.");
                 return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
             })
@@ -125,11 +125,11 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<String> ruleLabel() {
+    public static IMatcher<String> ruleName() {
         // @formatter:off
         return M.<String>cases(
-            M.appl0("NoLabel", (t) -> ""),
-            M.appl1("Label", M.stringValue(), (t, n) -> n)
+            M.appl0("NoName", (t) -> ""),
+            M.appl1("Name", M.stringValue(), (t, n) -> n)
         );
         // @formatter:on
     }

@@ -37,7 +37,7 @@ context-free syntax
   // rule shorthands
 
   Rule.AxiomRule = <
-    <RuleLabel><RuleHead>.
+    <RuleName><RuleHead>.
   >
 
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]

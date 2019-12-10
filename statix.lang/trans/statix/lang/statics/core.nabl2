@@ -485,7 +485,7 @@ rules
 
 rules
 
-  [[ CArith(ae1, op, ae2, msg) ^ (s) ]] :=
+  Constraint[[ CArith(ae1, op, ae2, msg) ^ (s) ]] :=
     ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
     ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
     Message(ErrorKind)[[ msg ^ (s) ]].

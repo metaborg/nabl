@@ -62,12 +62,12 @@ context-free syntax
   CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleLabel><RuleHead> :-
+    <RuleName><RuleHead> :-
       <Constraint>.
   >
 
-  RuleLabel.NoLabel = <>
-  RuleLabel.Label = <
+  RuleName.NoName = <>
+  RuleName.Name = <
     [<STRID>]
   >
   RuleHead.C = [[ConstraintId]([{Term ", "}*])]

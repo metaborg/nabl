@@ -27,7 +27,7 @@ rules
     with r* := [
            CDeriveMap(<sig-list-rule-name> x, <sig-rule-name> x, [ListLift()])
          , CDecl(InductiveC(), <sig-rule-name> x, SimpleType([SimpleSort(x)]))
-         , Rule(NoLabel(), C(<sig-rule-name> x, [Var("x")]), <sort-sig-pred> (sort, [Var("x")]))
+         , Rule(NoName(), C(<sig-rule-name> x, [Var("x")]), <sort-sig-pred> (sort, [Var("x")]))
          ]
 
   mk-signature-rules: SortDecl(x) -> r*
@@ -37,13 +37,13 @@ rules
          ]
 
   mk-signature-rules: OpDecl(x, ConstOp(sort)) -> [r]
-    with r := Rule(NoLabel(), C(<sort-sig-name> sort, [Op(x, [])]), CTrue())
+    with r := Rule(NoName(), C(<sort-sig-name> sort, [Op(x, [])]), CTrue())
 
   mk-signature-rules: OpDecl(x, ArrowOp(sort*, sort)) -> [r]
     with sort-var* := <map-with-index(\ (i, sort) -> (sort, [Var($[x[<int-to-string> i]])]) \)> sort*
        ; var* := <map(Snd;Hd)> sort-var*
        ; c* := <filter(sort-sig-pred);list-to-conj> sort-var*
-       ; r := Rule(NoLabel(), C(<sort-sig-name> sort, [Op(x, var*)]), c*)
+       ; r := Rule(NoName(), C(<sort-sig-name> sort, [Op(x, var*)]), c*)
 
   sort-sig-name: SimpleSort(x)  -> <sig-rule-name> x
   sort-sig-name: ListSort(sort) -> $[[<sort-sig-name> sort]s]
