@@ -1,5 +1,6 @@
 package mb.statix.generator.strategy;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -67,7 +68,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
 
         final java.util.Map<Rule, Double> rules = getWeightedRules(predicate.name());
         final List<Tuple2<Rule, ApplyResult>> results =
-                RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate);
+                RuleUtil.applyAll(input.state(), new ArrayList<>(rules.keySet()), predicate.args(), predicate);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {
@@ -108,12 +109,16 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         return SearchNodes.of(node, () -> desc, nodes);
     }
 
+    /**
+     * Return a map with ordered keys mapping rules to their weights.
+     */
     private java.util.Map<Rule, Double> getWeightedRules(String name) {
         try {
             return cache.get(name, () -> {
                 final List<Rule> rs = rules.get(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
+                // ImmutableMap iterates over keys in insertion-order
                 final ImmutableMap.Builder<Rule, Double> ruleWeights = ImmutableMap.builder();
                 rs.forEach(r -> {
                     long count = rcs.getOrDefault(r.label(), 1l);

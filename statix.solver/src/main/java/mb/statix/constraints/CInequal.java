@@ -90,7 +90,7 @@ public class CInequal implements IConstraint, Serializable {
         final StringBuilder sb = new StringBuilder();
         if(!universals.isEmpty()) {
             sb.append("(forall ");
-            sb.append(universals.stream().map(termToString::format).collect(Collectors.joining(" ")));
+            sb.append(universals.stream().map(termToString::format).collect(Collectors.joining(", ")));
             sb.append(". ");
         }
         sb.append(termToString.format(term1));

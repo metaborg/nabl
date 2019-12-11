@@ -7,14 +7,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -24,6 +27,7 @@ import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
@@ -76,6 +80,11 @@ public abstract class ARule {
         }
     }
 
+    @Value.Check void check() {
+        final Set<ITermVar> freeVars = Sets.difference(Constraints.freeVars(body()), paramVars());
+        Preconditions.checkState(freeVars.isEmpty(), "Rule must be closed, but has free variables %s", freeVars);
+    }
+
     public Rule apply(ISubstitution.Immutable subst) {
         final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
         return Rule.of(name(), params(), newBody);
@@ -104,9 +113,13 @@ public abstract class ARule {
             sb.append("[").append(label()).append("] ");
         }
         if(name().isEmpty()) {
-            sb.append("{ ").append(params());
+            sb.append("{ ");
         } else {
-            sb.append(name()).append("(").append(params()).append(")");
+            sb.append(name()).append("(");
+        }
+        sb.append(params().stream().map(Pattern::toString).collect(Collectors.joining(", ")));
+        if(!name().isEmpty()) {
+            sb.append(")");
         }
         sb.append(" :- ");
         sb.append(body().toString(termToString));

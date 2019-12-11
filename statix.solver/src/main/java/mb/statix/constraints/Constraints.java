@@ -17,6 +17,7 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.RuleUtil;
@@ -449,6 +450,19 @@ public final class Constraints {
     }
 
     /**
+     * Convert constraints into a conjunction constraint, using the given constraint as tail.
+     */
+    public static IConstraint conjoin(Iterable<? extends IConstraint> constraints, IConstraint tail) {
+        // FIXME What about causes? Unfolding this conjunction might overwrite
+        //       causes in the constraints by null.
+        IConstraint conj = tail;
+        for(IConstraint constraint : constraints) {
+            conj = (conj != null) ? new CConj(constraint, conj) : constraint;
+        }
+        return conj;
+    }
+
+    /**
      * Split a conjunction constraint into constraints.
      */
     public static List<IConstraint> disjoin(IConstraint constraint) {
@@ -555,5 +569,11 @@ public final class Constraints {
         // @formatter:on
 
     }
+
+    public static IConstraint exists(Iterable<ITermVar> vars, IConstraint body) {
+        final io.usethesource.capsule.Set.Immutable<ITermVar> varSet = CapsuleUtil.toSet(vars);
+        return varSet.isEmpty() ? body : new CExists(varSet, body);
+    }
+
 
 }
