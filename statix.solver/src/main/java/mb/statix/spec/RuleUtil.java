@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
@@ -110,8 +111,7 @@ public class RuleUtil {
 
     public static final Optional<Tuple2<Rule, ApplyResult>> applyOne(IState.Immutable state, Iterable<Rule> rules,
             List<? extends ITerm> args, @Nullable IConstraint cause) {
-        // we assume apply(..., true) only returns empty or singleton lists
-        return apply(state, rules, args, cause, true).stream().findFirst();
+        return apply(state, rules, args, cause, true).stream().collect(MoreCollectors.toOptional());
     }
 
     public static final List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Iterable<Rule> rules,
