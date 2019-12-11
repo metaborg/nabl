@@ -141,6 +141,9 @@ rules
                            })> ast*
     ; unit-analysis-new* := <map(Snd;?Full(_, <id>, _, _, _))> unit-result*
     ; unit-analysis-cached* := <filter(?(_, Cached(<id>)))> change*
+    ; if not([] := <filter(?CompatProjectAnalysis(_, _))> unit-analysis-cached*) then
+        fatal-err-msg(|"Context is in inconsistent state. Clean the project to reset the context. This can happen when a context is written in one environment (e.g., Eclipse) and later read in another (e.g., Maven).")
+      end
     ; unit-analysis* := [unit-analysis-new*, unit-analysis-cached*]
     ; FinalResult(final-analysis, error*, warning*, note*) :=
           <analyze> AnalyzeFinal(project-resource, initial-analysis, unit-analysis*)
