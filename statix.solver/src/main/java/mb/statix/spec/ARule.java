@@ -14,7 +14,6 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -81,9 +80,8 @@ public abstract class ARule {
         }
     }
 
-    @Value.Check void check() {
-        final Set<ITermVar> freeVars = Sets.difference(Constraints.freeVars(body()), paramVars());
-        Preconditions.checkState(freeVars.isEmpty(), "Rule must be closed, but has free variables %s", freeVars);
+    public Set<ITermVar> freeVars() {
+        return Sets.difference(Constraints.freeVars(body()), paramVars());
     }
 
     public Rule apply(ISubstitution.Immutable subst) {
