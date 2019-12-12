@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -62,6 +63,10 @@ class PatternVar extends Pattern {
             subst.put(var, term);
             return true;
         }
+    }
+
+    @Override public PatternVar apply(IRenaming subst) {
+        return isWildcard() ? this : new PatternVar(subst.rename(var));
     }
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {

@@ -15,6 +15,7 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -61,6 +62,10 @@ class ConsPattern extends Pattern {
         }).match(unifier.findTerm(term)).orElse(false);
     }
 
+    @Override public ConsPattern apply(IRenaming subst) {
+        return new ConsPattern(head.apply(subst), tail.apply(subst));
+    }
+    
     @Override
     protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
         return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh));

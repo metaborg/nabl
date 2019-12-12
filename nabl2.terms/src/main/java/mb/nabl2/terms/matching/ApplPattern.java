@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -63,9 +64,13 @@ class ApplPattern extends Pattern {
         // @formatter:on
     }
 
-    @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
-        return B.newAppl(op, args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()));
+    @Override public Pattern apply(IRenaming subst) {
+        return new ApplPattern(op, args.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList()));
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+        return B.newAppl(op,
+                args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()));
     }
 
     @Override public String toString() {

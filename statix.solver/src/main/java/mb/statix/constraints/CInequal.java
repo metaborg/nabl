@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
@@ -82,6 +83,12 @@ public class CInequal implements IConstraint, Serializable {
     @Override public CInequal apply(ISubstitution.Immutable subst) {
         final Set<ITermVar> us = universals.stream().flatMap(v -> subst.apply(v).getVars().stream())
                 .collect(ImmutableSet.toImmutableSet());
+        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
+                message == null ? null : message.apply(subst));
+    }
+
+    @Override public CInequal apply(IRenaming subst) {
+        final Set<ITermVar> us = universals.stream().map(v -> subst.rename(v)).collect(ImmutableSet.toImmutableSet());
         return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
                 message == null ? null : message.apply(subst));
     }

@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -59,6 +60,10 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
+    }
+
+    @Override public CTellEdge apply(IRenaming subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
     }
 

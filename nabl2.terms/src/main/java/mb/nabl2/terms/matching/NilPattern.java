@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -43,8 +44,11 @@ class NilPattern extends Pattern {
         // @formatter:on
     }
 
-    @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+    @Override public NilPattern apply(IRenaming subst) {
+        return this;
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
         return B.newNil();
     }
 

@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CArith;
@@ -43,6 +44,8 @@ public interface IConstraint {
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
     IConstraint apply(ISubstitution.Immutable subst);
+
+    IConstraint apply(IRenaming subst);
 
     String toString(TermFormatter termToString);
 

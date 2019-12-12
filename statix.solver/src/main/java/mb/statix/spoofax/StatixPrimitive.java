@@ -30,7 +30,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.build.TermBuild.B;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;

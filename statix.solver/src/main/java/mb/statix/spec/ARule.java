@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -88,6 +89,13 @@ public abstract class ARule {
     public Rule apply(ISubstitution.Immutable subst) {
         final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
         return Rule.of(name(), params(), newBody);
+    }
+
+    public Rule apply(IRenaming subst) {
+        final List<Pattern> newParams =
+                params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+        final IConstraint newBody = body().apply(subst);
+        return Rule.of(name(), newParams, newBody);
     }
 
     public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier) throws Delay {

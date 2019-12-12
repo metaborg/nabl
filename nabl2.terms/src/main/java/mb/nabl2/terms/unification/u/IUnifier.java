@@ -173,8 +173,8 @@ public interface IUnifier {
         /**
          * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Result<? extends Immutable>> unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities)
-                throws OccursException;
+        Optional<? extends Result<? extends Immutable>>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException;
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to

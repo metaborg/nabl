@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -58,6 +59,10 @@ class PatternAs extends Pattern {
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
+    }
+
+    @Override public PatternAs apply(IRenaming subst) {
+        return new PatternAs(var.apply(subst), pattern.apply(subst));
     }
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {

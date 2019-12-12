@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.Unifiers;
@@ -118,8 +119,8 @@ public abstract class Pattern implements Serializable {
         return Optional.of(ImmutableMatchResult.of(subst, stuckVars.build(), allEqs.build()));
     }
 
-    protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst,
-            IUnifier.Immutable unifier, Eqs eqs);
+    protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
+            Eqs eqs);
 
     protected static boolean matchTerms(final Iterable<Pattern> patterns, final Iterable<ITerm> terms,
             ISubstitution.Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
@@ -138,6 +139,8 @@ public abstract class Pattern implements Serializable {
         }
         return true;
     }
+
+    public abstract Pattern apply(IRenaming subst);
 
     protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh);
 
