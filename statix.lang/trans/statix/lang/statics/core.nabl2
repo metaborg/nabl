@@ -35,7 +35,7 @@ signature
       S  // module syntax (unqualified, transitively imported)
       LS // local module syntax
     well-formedness
-      P* (I? | LS S*)
+      P* (I? | LS? S*)
     order
       D < P,
       // module interface
@@ -105,7 +105,9 @@ rules
     (V(s_mod')/Ns                         lsect/name (V(s_mod)/Ns                        minus (D(s_mod)/Ns                        union V(s_mod')/Ns                        ))) subseteq 0 | error $[Duplicate imported namespaces [NAME]] @x,
     (V(s_mod')/NsQ                        lsect/name (V(s_mod)/NsQ                       minus (D(s_mod)/NsQ                       union V(s_mod')/NsQ                       ))) subseteq 0 | error $[Duplicate imported resolution policies for [NAME]] @x,
     ((V(s_mod')/Rel union V(s_mod')/Edge) lsect/name ((V(s_mod)/Rel union V(s_mod)/Edge) minus ((D(s_mod)/Rel union D(s_mod)/Edge) union (V(s_mod')/Rel union V(s_mod')/Edge)))) subseteq 0 | error $[Duplicate imported edge labels / relations [NAME]] @x,
-    Mod{x} <=S= s_syn, d ?=S=> s_syn'.
+    Mod{x} <=S= s_syn, d ?=S=> s_syn',
+    (V(s_syn')/Sort lsect/name (V(s_syn)/Sort minus (D(s_syn)/Sort union V(s_syn')/Sort))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x,
+    (V(s_syn')/Op   lsect/name (V(s_syn)/Op   minus (D(s_syn)/Op   union V(s_syn')/Op  ))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x.
 
   Section[[ Signature(sigs) ^ (s, s_syn, _) ]] :=
     Map2(Signature)[[ sigs ^ (s, s_syn) ]].
@@ -402,8 +404,7 @@ rules
     Sort{x} -> s, Sort{x} |-> d | error $[Unresolved sort [x]] @x, @x.ref := Sort{x}, @x.decl := d,
     d : ty !,
     d.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := this_qname,
-    this_qname <`same-name`? qname | error "Constructors must be defined in the same module as the sort",
-    d.kind := k, k != SortAlias() | error $[Cannot refer to alias [d]].
+    d.kind := k, k != SortAlias() | error $[Cannot define constructors for sort alias [d]].
 
   SortRef[[ IntSort() ^ (_) : INT() ]].
   SortRef[[ StringSort() ^ (_) : STRING() ]].
