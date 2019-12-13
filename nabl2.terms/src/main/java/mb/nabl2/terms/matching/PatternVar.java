@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -69,11 +70,13 @@ class PatternVar extends Pattern {
         return isWildcard() ? this : new PatternVar(subst.rename(var));
     }
 
-    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
-        if(isWildcard()) {
-            return fresh.apply();
-        }
-        return var;
+    @Override public PatternVar eliminateWld(Function0<ITermVar> fresh) {
+        return isWildcard() ? new PatternVar(fresh.apply()) : this;
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
+        return fresh.apply(Optional.ofNullable(var));
     }
 
     @Override public String toString() {

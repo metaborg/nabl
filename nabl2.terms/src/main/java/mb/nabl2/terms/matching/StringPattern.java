@@ -2,10 +2,12 @@ package mb.nabl2.terms.matching;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -52,7 +54,12 @@ class StringPattern extends Pattern {
         return this;
     }
 
-    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+    @Override public StringPattern eliminateWld(Function0<ITermVar> fresh) {
+        return this;
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
         return B.newString(value);
     }
 

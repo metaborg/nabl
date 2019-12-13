@@ -10,7 +10,9 @@ import mb.nabl2.terms.ITermVar;
 
 public interface IRenaming {
 
-    Set<ITermVar> varSet();
+    Set<ITermVar> keySet();
+
+    Set<ITermVar> valueSet();
 
     ITermVar rename(ITermVar term);
 

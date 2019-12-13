@@ -22,13 +22,9 @@ public class Diseq {
     private final Set.Immutable<ITermVar> universals;
     private final IUnifier.Immutable diseqs;
 
-    public Diseq(Iterable<ITermVar> universals, IUnifier.Immutable diseqs) {
+    private Diseq(Set.Immutable<ITermVar> universals, IUnifier.Immutable diseqs) {
         this.universals = CapsuleUtil.toSet(universals);
         this.diseqs = diseqs;
-        if(!Set.Immutable.intersect(this.universals, this.diseqs.varSet()).isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Universal variables should onyl appear in the free variables of a disequality.");
-        }
     }
 
     /**
@@ -47,6 +43,10 @@ public class Diseq {
      */
     public Set.Immutable<ITermVar> freeVarSet() {
         return Set.Immutable.subtract(diseqs.freeVarSet(), universals);
+    }
+
+    public boolean isEmpty() {
+        return diseqs.isEmpty();
     }
 
     /**
@@ -100,6 +100,13 @@ public class Diseq {
                 return "forall " + us + " . " + v + " != " + t;
             }
         });
+    }
+
+    public static Diseq of(Iterable<ITermVar> universals, IUnifier.Immutable diseqs) {
+        final IUnifier.Immutable newDiseqs = diseqs.removeAll(universals).unifier();
+        final Set.Immutable<ITermVar> newUniversals =
+                Set.Immutable.intersect(CapsuleUtil.toSet(universals), newDiseqs.freeVarSet());
+        return new Diseq(newUniversals, newDiseqs);
     }
 
 }

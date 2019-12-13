@@ -84,6 +84,10 @@ public abstract class ARule {
         return Sets.difference(Constraints.freeVars(body()), paramVars());
     }
 
+    public Set<ITermVar> varSet() {
+        return Sets.union(Constraints.freeVars(body()), paramVars());
+    }
+
     public Rule apply(ISubstitution.Immutable subst) {
         final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
         return Rule.of(name(), params(), newBody);

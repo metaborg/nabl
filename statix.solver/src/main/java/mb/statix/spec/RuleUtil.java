@@ -1,5 +1,6 @@
 package mb.statix.spec;
 
+import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.List;
@@ -35,10 +36,12 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
@@ -185,7 +188,7 @@ public class RuleUtil {
                 if(guard.isEmpty()) {
                     throw new IllegalStateException("Guard not expected to be empty here.");
                 }
-                final Diseq diseq = new Diseq(universalVars, guard);
+                final Diseq diseq = Diseq.of(universalVars, guard);
 
                 // construct result
                 final IState.Immutable resultState = newState.freeze().withUnifier(newUnifier);
@@ -207,25 +210,54 @@ public class RuleUtil {
      * @return A set of rules that are mutually independent
      */
     public static final java.util.Set<Rule> makeUnordered(List<Rule> rules) {
-        if(rules.isEmpty()) {
-            return ImmutableSet.of();
-        }
-        final IState.Transient preState = State.of(Spec.of()).melt();
-        final Rule firstRule = rules.get(0);
-        final List<ITermVar> args =
-                firstRule.params().stream().map(p -> preState.freshVar("p")).collect(Collectors.toList());
-        final IState.Immutable state = preState.freeze();
-        final List<Tuple2<Rule, ApplyResult>> applyResults = applyAll(state, rules, args, null);
-        final List<Pattern> params = args.stream().map(P::fromTerm).collect(Collectors.toList());
-        final java.util.Set<Rule> newRules = applyResults.stream().map(r_a -> {
-            final Rule rule = r_a._1();
-            final ApplyResult applyResult = r_a._2();
-            final Set<ITermVar> newVars = Set.Immutable.subtract(applyResult.state().vars(), state.vars());
-            final IConstraint body = Constraints.exists(newVars,
-                    Constraints.conjoin(StateUtil.asConstraint(applyResult.state().unifier()), applyResult.body()));
-            return Rule.builder().from(rule).params(params).body(body).build();
+        final List<Pattern> guards = Lists.newArrayList();
+        // go thorugh all rules in sequence
+        return rules.stream().<Rule>flatMap(r -> {
+            final IUniDisunifier.Transient diseqs = PersistentUniDisunifier.Immutable.of().melt();
+
+            // eliminate wildcards in the patterns
+            final FreshVars fresh = new FreshVars(r.varSet());
+            final List<Pattern> paramPatterns = r.params().stream().map(p -> p.eliminateWld(() -> fresh.freshNew("_")))
+                    .collect(ImmutableList.toImmutableList());
+            fresh.fix();
+            final Pattern paramsPattern = P.newTuple(paramPatterns);
+
+            // create term for params and add implied equalities
+            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = paramsPattern.asTerm(v -> v.get());
+            try {
+                if(!diseqs.unify(p_eqs._2()).isPresent()) {
+                    return Stream.empty();
+                }
+            } catch(OccursException e) {
+                return Stream.empty();
+            }
+
+            // add disunifications for all patterns from previous rules
+            final boolean guardsOk = guards.stream().allMatch(g -> {
+                g.getVars().forEach(fresh::freshExisting);
+                final Pattern g1 = g.eliminateWld(() -> fresh.freshNew("_"));
+                final IRenaming renaming = fresh.reset();
+                final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> t_eqs = g1.apply(renaming).asTerm(v -> v.get());
+                // add internal equalities from the guard pattern, which are also reasons why the guard wouldn't match
+                final List<ITermVar> leftEqs =
+                        t_eqs._2().stream().map(Tuple2::_1).collect(ImmutableList.toImmutableList());
+                final List<ITerm> rightEqs =
+                        t_eqs._2().stream().map(Tuple2::_2).collect(ImmutableList.toImmutableList());
+                final ITerm left = B.newTuple(p_eqs._1(), B.newTuple(leftEqs));
+                final ITerm right = B.newTuple(t_eqs._1(), B.newTuple(rightEqs));
+                final java.util.Set<ITermVar> universals = renaming.valueSet();
+                return diseqs.disunify(universals, left, right).isPresent();
+            });
+            if(!guardsOk) {
+                return Stream.empty();
+            }
+
+            // add params as guard for next rule
+            guards.add(paramsPattern);
+
+            final IConstraint body = Constraints.conjoin(StateUtil.asInequalities(diseqs), r.body());
+            return Stream.of(r.withParams(paramPatterns).withBody(body));
         }).collect(ImmutableSet.toImmutableSet());
-        return newRules;
     }
 
     public static final ListMultimap<String, Rule> makeFragments(Spec spec, Predicate1<String> includePredicate,

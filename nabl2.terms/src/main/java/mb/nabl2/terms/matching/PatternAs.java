@@ -1,11 +1,13 @@
 package mb.nabl2.terms.matching;
 
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -65,7 +67,12 @@ class PatternAs extends Pattern {
         return new PatternAs(var.apply(subst), pattern.apply(subst));
     }
 
-    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+    @Override public PatternAs eliminateWld(Function0<ITermVar> fresh) {
+        return new PatternAs(var.eliminateWld(fresh), pattern.eliminateWld(fresh));
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
         final ITerm term = pattern.asTerm(equalities, fresh);
         if(!var.isWildcard()) {
             equalities.apply(var.getVar(), term);

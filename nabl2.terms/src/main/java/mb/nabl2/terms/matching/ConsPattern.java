@@ -3,10 +3,12 @@ package mb.nabl2.terms.matching;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -66,8 +68,12 @@ class ConsPattern extends Pattern {
         return new ConsPattern(head.apply(subst), tail.apply(subst));
     }
     
+    @Override public ConsPattern eliminateWld(Function0<ITermVar> fresh) {
+        return new ConsPattern(head.eliminateWld(fresh), tail.eliminateWld(fresh));
+    }
+
     @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh) {
         return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh));
     }
 

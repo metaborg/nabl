@@ -143,7 +143,11 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 // terms are not equal
                 return Optional.of(new ImmutableResult<>(Optional.empty(), this));
             }
-            final Diseq diseq = new Diseq(universals, diseqs.freeze());
+            final Diseq diseq = Diseq.of(universals, diseqs.freeze());
+            if(diseq.isEmpty()) {
+                // no disequalities left, terms are equal
+                return Optional.empty();
+            }
 
             final Optional<Diseq> reducedDiseq;
             if((reducedDiseq = disunify(this, diseq).orElse(null)) == null) {
@@ -206,18 +210,14 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             // unify succeeded, terms are not unequal
             final IUnifier.Immutable diff = unifyResult.get().result();
 
-            final IUnifier.Immutable newDiseqs = diff.removeAll(diseq.universals()).unifier();
-            if(newDiseqs.isEmpty()) {
+            final Set.Immutable<ITermVar> universals = diseq.universals().stream()
+                    .flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
+            final Diseq newDiseq = Diseq.of(universals, diff);
+
+            if(newDiseq.isEmpty()) {
                 // no disequalities left, terms are equal
                 return Optional.empty();
             }
-
-            final Set.Immutable<ITermVar> universals = diseq.universals().stream()
-                    .flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
-            final java.util.Set<ITermVar> universalVars = Sets.intersection(universals, newDiseqs.freeVarSet());
-
-            // not disunified yet, keep
-            final Diseq newDiseq = new Diseq(universalVars, newDiseqs);
 
             return Optional.of(Optional.of(newDiseq));
         }

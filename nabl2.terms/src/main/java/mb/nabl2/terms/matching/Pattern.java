@@ -111,7 +111,7 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(ImmutableTuple2.of(subst.apply(v), subst.apply(t)));
-            }, () -> fresh.apply(Optional.empty()));
+            }, (v) -> fresh.apply(Optional.empty()));
             stuckVars.add(leftVar);
             allEqs.add(ImmutableTuple2.of(leftVar, subst.apply(rightTerm)));
         }
@@ -142,7 +142,17 @@ public abstract class Pattern implements Serializable {
 
     public abstract Pattern apply(IRenaming subst);
 
-    protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh);
+    public abstract Pattern eliminateWld(Function0<ITermVar> fresh);
+
+    public Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> asTerm(Function1<Optional<ITermVar>, ITermVar> fresh) {
+        final ImmutableList.Builder<Tuple2<ITermVar, ITerm>> eqs = ImmutableList.builder();
+        final ITerm term = asTerm((v, t) -> {
+            eqs.add(ImmutableTuple2.of(v, t));
+        }, fresh);
+        return ImmutableTuple2.of(term, eqs.build());
+    }
+
+    protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh);
 
     protected interface Eqs {
 

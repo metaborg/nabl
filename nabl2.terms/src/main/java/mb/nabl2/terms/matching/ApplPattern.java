@@ -3,10 +3,12 @@ package mb.nabl2.terms.matching;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -68,7 +70,13 @@ class ApplPattern extends Pattern {
         return new ApplPattern(op, args.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList()));
     }
 
-    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+    @Override public ApplPattern eliminateWld(Function0<ITermVar> fresh) {
+        return new ApplPattern(op,
+                args.stream().map(p -> p.eliminateWld(fresh)).collect(ImmutableList.toImmutableList()));
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
         return B.newAppl(op,
                 args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()));
     }

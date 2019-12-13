@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IListTerm;
@@ -20,12 +20,16 @@ public class Renaming implements IRenaming {
 
     private final BiMap<ITermVar, ITermVar> renaming;
 
-    public Renaming(BiMap<ITermVar, ITermVar> renaming) {
+    private Renaming(BiMap<ITermVar, ITermVar> renaming) {
         this.renaming = renaming;
     }
 
-    @Override public Set<ITermVar> varSet() {
+    @Override public Set<ITermVar> keySet() {
         return renaming.keySet();
+    }
+
+    @Override public Set<ITermVar> valueSet() {
+        return renaming.values();
     }
 
     @Override public ITermVar rename(ITermVar var) {
@@ -69,10 +73,18 @@ public class Renaming implements IRenaming {
 
     public static class Builder {
 
-        private final ImmutableBiMap.Builder<ITermVar, ITermVar> renaming;
+        private final BiMap<ITermVar, ITermVar> renaming;
 
         private Builder() {
-            this.renaming = ImmutableBiMap.builder();
+            this.renaming = HashBiMap.create();
+        }
+
+        public boolean containsKey(ITermVar var) {
+            return renaming.containsKey(var);
+        }
+
+        public boolean containsValue(ITermVar var) {
+            return renaming.containsValue(var);
         }
 
         public Builder put(ITermVar v1, ITermVar v2) {
@@ -81,7 +93,7 @@ public class Renaming implements IRenaming {
         }
 
         public Renaming build() {
-            return new Renaming(renaming.build());
+            return new Renaming(renaming);
         }
 
     }
