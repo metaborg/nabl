@@ -262,9 +262,11 @@ public class RuleUtil {
     }
 
     /**
-     * Inline rule into the i-th matching premise of the second rule.
+     * Inline rule into the i-th matching premise of the second rule. Inlining always succeeds (use simplify to solve
+     * equalities in the resulting rule). The function returns empty if nothing was inlined because no i-th matching
+     * premise existed.
      */
-    public static final Rule inline(Rule rule, int ith, Rule into) {
+    public static final Optional<Rule> inline(Rule rule, int ith, Rule into) {
         final FreshVars fresh = new FreshVars(into.varSet());
         final IRenaming swap = fresh.fresh(rule.paramVars());
 
@@ -281,20 +283,32 @@ public class RuleUtil {
             if(!constraint.name().equals(rule.name())) {
                 return c;
             }
-            if(i.getAndIncrement() < ith) {
+            if(i.getAndIncrement() != ith) {
                 return c;
             }
 
             final ITerm t = B.newTuple(constraint.args());
-
+            final CEqual eq = new CEqual(t, p);
             final Set.Immutable<ITermVar> newVars = fresh.reset();
-            final IConstraint newConstraint =
-                    Constraints.exists(newVars, new CConj(new CEqual(p, t), rule.body().apply(swap)));
+            final IConstraint newConstraint = Constraints.exists(newVars, new CConj(eq, rule.body().apply(swap)));
 
             return newConstraint;
         }, false).apply(into.body());
 
-        return into.withBody(newBody);
+        if(i.get() <= ith) {
+            // nothing was inlined
+            return Optional.empty();
+        }
+
+        return Optional.of(into.withBody(newBody));
+    }
+
+    public static Optional<Rule> simplify(Rule rule) {
+        // FIXME Implement rule simplification:
+        //       * Hoist existential variables
+        //       * Solve equalities
+        //       * (?) Inline unfication results in rule heads
+        return Optional.of(rule);
     }
 
     public static final ListMultimap<String, Rule> makeFragments(Spec spec, Predicate1<String> includePredicate,

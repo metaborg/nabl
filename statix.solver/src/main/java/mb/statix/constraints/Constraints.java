@@ -2,6 +2,7 @@ package mb.statix.constraints;
 
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -10,6 +11,7 @@ import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -396,9 +398,16 @@ public final class Constraints {
         // @formatter:off
         return cases(
             c -> f.apply(c),
-            c -> new CConj(map(f, recurseInLogicalScopes).apply(c.left()), map(f, recurseInLogicalScopes).apply(c.right()), c.cause().orElse(null)),
+            c -> {
+                final IConstraint left = map(f, recurseInLogicalScopes).apply(c.left());
+                final IConstraint right = map(f, recurseInLogicalScopes).apply(c.right());
+                return new CConj(left, right, c.cause().orElse(null));
+            },
             c -> f.apply(c),
-            c -> new CExists(c.vars(), map(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null)),
+            c -> {
+                final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
+                return new CExists(c.vars(), body, c.cause().orElse(null));
+            },
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
@@ -408,7 +417,54 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
-            c -> recurseInLogicalScopes ? new CTry(map(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null)) : c,
+            c -> {
+                if(recurseInLogicalScopes) {
+                    final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
+                    return new CTry(body, c.cause().orElse(null), c.message().orElse(null));
+                } else {
+                    return c;
+                }
+            },
+            c -> f.apply(c)
+        );
+        // @formatter:on
+    }
+
+    /**
+     * In order transformation of the leaf constraints, fail if the given function fails on any of the leaves.
+     */
+    public static Function1<IConstraint, Optional<IConstraint>> filter(Function1<IConstraint, Optional<IConstraint>> f,
+            boolean recurseInLogicalScopes) {
+        // @formatter:off
+        return cases(
+            c -> f.apply(c),
+            c -> {
+                final Optional<IConstraint> left = filter(f, recurseInLogicalScopes).apply(c.left());
+                final Optional<IConstraint> right = filter(f, recurseInLogicalScopes).apply(c.right());
+                return Optionals.lift(left, right, (l, r) -> new CConj(l, r, c.cause().orElse(null)));
+            },
+            c -> f.apply(c),
+            c -> {
+                final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
+                return body.map(b -> new CExists(c.vars(), b, c.cause().orElse(null)));
+            },
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> {
+                if(recurseInLogicalScopes) {
+                    final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
+                    return body.map(b -> new CTry(b, c.cause().orElse(null), c.message().orElse(null)));
+                } else {
+                    return Optional.of(c);
+                }
+            },
             c -> f.apply(c)
         );
         // @formatter:on

@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.log.ILogger;
@@ -28,6 +29,8 @@ public class RuleUtilTest {
         testUnorderedRules1();
         testUnorderedRules2();
         testInlineRules1();
+        testInlineRules2();
+        testInlineRules3();
     }
 
     private static void testUnorderedRules1() {
@@ -74,16 +77,46 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule r1 = Rule.of("c", Arrays.asList(p1, P.newWld()),
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
                 new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, v2)))));
-        final Rule r2 = Rule.of("c", Arrays.asList(p1, p2), new CEqual(v1, v2));
+        final Rule rule = Rule.of("c", Arrays.asList(p1, p2), new CEqual(v1, v2));
+        testInlineRules(rule, 0, into);
+    }
+
+    private static void testInlineRules2() {
+        final Pattern p1 = P.newVar("p1");
+        final Pattern p2 = P.newVar("p2");
+        final ITermVar v1 = B.newVar("", "p1");
+        final ITermVar v2 = B.newVar("", "p2");
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(B.newList(), v2)))));
+        final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
+        testInlineRules(rule, 0, into);
+    }
+
+    private static void testInlineRules3() {
+        final Pattern p1 = P.newVar("p1");
+        final Pattern p2 = P.newVar("p2");
+        final ITermVar v1 = B.newVar("", "p1");
+        final ITermVar v2 = B.newVar("", "p2");
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
+        final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
+        testInlineRules(rule, 0, into);
+    }
+
+    private static void testInlineRules(Rule rule, int i, Rule into) {
         logger.info("Inline");
-        logger.info("* {}", r2);
-        logger.info("into premise {} of", 1);
-        logger.info("* {}", r1);
-        final Rule r = RuleUtil.inline(r2, 0, r1);
-        logger.info("gives");
-        logger.info("* {}", r);
+        logger.info("* {}", rule);
+        logger.info("into premise {} of", i);
+        logger.info("* {}", into);
+        final Optional<Rule> r = RuleUtil.inline(rule, i, into);
+        if(r.isPresent()) {
+            logger.info("gives");
+            logger.info("* {}", r.get());
+        } else {
+            logger.info("failed");
+        }
     }
 
 }
