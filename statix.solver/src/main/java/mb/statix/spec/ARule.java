@@ -85,7 +85,7 @@ public abstract class ARule {
     }
 
     public Set<ITermVar> varSet() {
-        return Sets.union(Constraints.freeVars(body()), paramVars());
+        return Sets.union(Constraints.vars(body()), paramVars());
     }
 
     public Rule apply(ISubstitution.Immutable subst) {

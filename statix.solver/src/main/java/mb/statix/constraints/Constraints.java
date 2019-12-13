@@ -361,15 +361,18 @@ public final class Constraints {
     }
     // @formatter:on
 
-    public static Function1<IConstraint, IConstraint> bottomup(Function1<IConstraint, IConstraint> f) {
+    /**
+     * Bottom up transformation, where the transformation is applied starting from the leaves, then to the transformed
+     * parents until the root.
+     */
+    public static Function1<IConstraint, IConstraint> bottomup(Function1<IConstraint, IConstraint> f,
+            boolean recurseInLogicalScopes) {
         // @formatter:off
         return cases(
             c -> f.apply(c),
-            c -> f.apply(new CConj(bottomup(f).apply(c.left()), bottomup(f).apply(c.right()), c.cause().orElse(null))),
+            c -> f.apply(new CConj(bottomup(f, recurseInLogicalScopes).apply(c.left()), bottomup(f, recurseInLogicalScopes).apply(c.right()), c.cause().orElse(null))),
             c -> f.apply(c),
-            c -> f.apply(new CExists(c.vars(), bottomup(f).apply(c.constraint()), c.cause().orElse(null))),
-            c -> f.apply(c),
-            c -> f.apply(c),
+            c -> f.apply(new CExists(c.vars(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null))),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
@@ -377,30 +380,57 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
-            c -> f.apply(new CTry(bottomup(f).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null))),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(recurseInLogicalScopes ? new CTry(bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null)) : c),
             c -> f.apply(c)
         );
         // @formatter:on
     }
 
-    public static <T> Function1<IConstraint, List<T>> collectBase(PartialFunction1<IConstraint, T> f) {
+    /**
+     * In order transformation of the leaf constraints.
+     */
+    public static Function1<IConstraint, IConstraint> map(Function1<IConstraint, IConstraint> f,
+            boolean recurseInLogicalScopes) {
+        // @formatter:off
+        return cases(
+            c -> f.apply(c),
+            c -> new CConj(map(f, recurseInLogicalScopes).apply(c.left()), map(f, recurseInLogicalScopes).apply(c.right()), c.cause().orElse(null)),
+            c -> f.apply(c),
+            c -> new CExists(c.vars(), map(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null)),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> recurseInLogicalScopes ? new CTry(map(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null)) : c,
+            c -> f.apply(c)
+        );
+        // @formatter:on
+    }
+
+    public static <T> Function1<IConstraint, List<T>> collectBase(PartialFunction1<IConstraint, T> f,
+            boolean recurseInLogicalScopes) {
         return c -> {
             final ImmutableList.Builder<T> ts = ImmutableList.builder();
-            collectBase(c, f, ts);
+            collectBase(c, f, ts, recurseInLogicalScopes);
             return ts.build();
         };
     }
 
     private static <T> List<T> collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
-            ImmutableList.Builder<T> ts) {
+            ImmutableList.Builder<T> ts, boolean recurseInLogicalScopes) {
         // @formatter:off
         return constraint.match(cases(
             c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { disjoin(c).forEach(cc -> collectBase(cc, f, ts)); return null; },
+            c -> { disjoin(c).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts)); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
@@ -408,7 +438,9 @@ public final class Constraints {
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts)); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { f.apply(c).ifPresent(ts::add); return null; },
+            c -> { if(recurseInLogicalScopes) { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); } return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; }
         ));
         // @formatter:on
@@ -559,6 +591,86 @@ public final class Constraints {
             onTrue -> null,
             onTry -> {
                 freeVars(onTry.constraint(), onVar);
+                return null;
+            },
+            onUser -> {
+                onUser.args().forEach(t -> t.getVars().forEach(onVar::apply));
+                return null;
+            }
+        ));
+        // @formatter:on
+
+    }
+
+    public static Set<ITermVar> vars(IConstraint constraint) {
+        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
+        vars(constraint, vars::add);
+        return vars.build();
+    }
+
+    public static void vars(IConstraint constraint, Action1<ITermVar> onVar) {
+        // @formatter:off
+        constraint.match(Constraints.cases(
+            onArith -> {
+                onArith.expr1().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
+                onArith.expr2().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
+                return null;
+            },
+            onConj -> {
+                Constraints.disjoin(onConj).forEach(c -> vars(c, onVar));
+                return null;
+            },
+            onEqual -> {
+                onEqual.term1().getVars().forEach(onVar::apply);
+                onEqual.term2().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onExists -> {
+                vars(onExists.constraint(), onVar);
+                return null;
+            },
+            onFalse -> {
+                return null;
+            },
+            onInequal -> {
+                onInequal.term1().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
+                onInequal.term2().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
+                return null;
+            },
+            onNew -> {
+                onNew.terms().forEach(t -> t.getVars().forEach(onVar::apply));
+                return null;
+            },
+            onResolveQuery -> {
+                onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
+                RuleUtil.vars(onResolveQuery.filter().getDataWF(), onVar);
+                RuleUtil.vars(onResolveQuery.min().getDataEquiv(), onVar);
+                onResolveQuery.resultTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTellEdge -> {
+                onTellEdge.sourceTerm().getVars().forEach(onVar::apply);
+                onTellEdge.targetTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTellRel -> {
+                onTellRel.scopeTerm().getVars().forEach(onVar::apply);
+                onTellRel.datumTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTermId -> {
+                onTermId.astTerm().getVars().forEach(onVar::apply);
+                onTermId.idTerm().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTermProperty -> {
+                onTermProperty.idTerm().getVars().forEach(onVar::apply);
+                onTermProperty.value().getVars().forEach(onVar::apply);
+                return null;
+            },
+            onTrue -> null,
+            onTry -> {
+                vars(onTry.constraint(), onVar);
                 return null;
             },
             onUser -> {
