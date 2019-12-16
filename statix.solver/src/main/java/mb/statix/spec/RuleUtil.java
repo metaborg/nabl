@@ -260,11 +260,6 @@ public class RuleUtil {
      */
     public static final Optional<Rule> inline(Rule rule, int ith, Rule into) {
         final FreshVars fresh = new FreshVars(into.varSet());
-        final IRenaming swap = fresh.fresh(rule.paramVars());
-
-        final Pattern rulePatterns = P.newTuple(rule.params()).eliminateWld(() -> fresh.fresh("_"));
-        final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = rulePatterns.asTerm(v -> v.get());
-        final ITerm p = swap.apply(p_eqs._1());
 
         final AtomicInteger i = new AtomicInteger(0);
         final IConstraint newBody = Constraints.map(c -> {
@@ -279,12 +274,7 @@ public class RuleUtil {
                 return c;
             }
 
-            final ITerm t = B.newTuple(constraint.args());
-            final CEqual eq = new CEqual(t, p);
-            final Set.Immutable<ITermVar> newVars = fresh.reset();
-            final IConstraint newConstraint = Constraints.exists(newVars, new CConj(eq, rule.body().apply(swap)));
-
-            return newConstraint;
+            return applyToConstraint(fresh, rule, constraint.args());
         }, false).apply(into.body());
 
         if(i.get() <= ith) {
@@ -293,6 +283,18 @@ public class RuleUtil {
         }
 
         return Optional.of(into.withBody(newBody));
+    }
+
+    private static final IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
+        final IRenaming swap = fresh.fresh(rule.paramVars());
+        final Pattern rulePatterns = P.newTuple(rule.params()).eliminateWld(() -> fresh.fresh("_"));
+        final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = rulePatterns.asTerm(v -> v.get());
+        final ITerm p = swap.apply(p_eqs._1());
+        final ITerm t = B.newTuple(args);
+        final CEqual eq = new CEqual(t, p);
+        final Set.Immutable<ITermVar> newVars = fresh.reset();
+        final IConstraint newConstraint = Constraints.exists(newVars, new CConj(eq, rule.body().apply(swap)));
+        return newConstraint;
     }
 
     /**
@@ -381,23 +383,12 @@ public class RuleUtil {
             rules.forEach((name, r) -> {
                 final FreshVars fresh = new FreshVars(r.varSet());
                 Constraints.flatMap(c -> {
-                    return Streams.stream(expandable.apply(c)).<IConstraint>flatMap(u -> {
-                        return fragments.get(u.name()).stream().<IConstraint>map(f -> {
-                            // this code is almost a duplicate of inline(Rule,int,Rule)
-                            final IRenaming swap = fresh.fresh(f.paramVars());
-                            final Pattern rulePatterns = P.newTuple(f.params()).eliminateWld(() -> fresh.fresh("_"));
-                            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs =
-                                    rulePatterns.asTerm(v -> v.get());
-                            final ITerm p = swap.apply(p_eqs._1());
-                            final ITerm t = B.newTuple(u.args());
-                            final CEqual eq = new CEqual(t, p);
-                            final Set.Immutable<ITermVar> newVars = fresh.reset();
-                            final IConstraint newConstraint =
-                                    Constraints.exists(newVars, new CConj(eq, f.body().apply(swap)));
-                            return newConstraint;
-                        });
+                    return Streams.stream(expandable.apply(c)).flatMap(u -> {
+                        return fragments.get(u.name()).stream().map(f -> applyToConstraint(fresh, f, u.args()));
                     });
-                }, false).apply(r.body()).map(c -> r.withBody(c)).flatMap(f -> Streams.stream(simplify(f)))
+                }, false).apply(r.body()) //
+                        .map(c -> r.withBody(c)) //
+                        .flatMap(f -> Streams.stream(simplify(f))) //
                         .forEach(f -> generation.put(name, f));
             });
             fragments.putAll(generation);
