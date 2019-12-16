@@ -3,6 +3,7 @@ package mb.statix.spec;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MoreCollectors;
@@ -304,11 +306,46 @@ public class RuleUtil {
     }
 
     public static Optional<Rule> simplify(Rule rule) {
-        // FIXME Implement rule simplification:
-        //       * Hoist existential variables
-        //       * Solve equalities
-        //       * (?) Inline unfication results in rule heads
-        return Optional.of(rule);
+        final List<IConstraint> constraints = Lists.newArrayList();
+        final IUniDisunifier.Transient unifier = PersistentUniDisunifier.Immutable.of().melt();
+        final FreshVars fresh = new FreshVars(rule.paramVars());
+        final Deque<IConstraint> worklist = Lists.newLinkedList();
+        worklist.push(rule.body());
+        while(!worklist.isEmpty()) {
+            final IConstraint constraint = worklist.removeLast();
+            // @formatter:off
+            final boolean okay = constraint.match(Constraints.<Boolean>cases(
+                c -> { constraints.add(c); return true; },
+                conj -> { Constraints.disjoin(conj).forEach(worklist::addLast); return true; },
+                equal -> { try { return unifier.unify(equal.term1(), equal.term2()).isPresent(); } catch(OccursException e) { return false; } },
+                exists -> {
+                    final IRenaming renaming = fresh.fresh(exists.vars());
+                    worklist.addLast(exists.constraint().apply(renaming));
+                    return true;
+                },
+                c -> { constraints.add(c); return true; },
+                inequal -> { return unifier.disunify(inequal.universals(), inequal.term1(), inequal.term2()).isPresent(); },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; },
+                c -> { constraints.add(c); return true; }
+            ));
+            // @formatter:on
+            if(!okay) {
+                return Optional.empty();
+            }
+        }
+        final Set.Immutable<ITermVar> newVars = fresh.reset();
+        final IConstraint newBody = Constraints.exists(newVars,
+                Constraints.conjoin(Iterables.concat(StateUtil.asConstraint(unifier), constraints)));
+        // FIXME Add option to inline unifier in head patterns
+        Rule newRule = Rule.builder().from(rule).body(newBody).build();
+        return Optional.of(newRule);
     }
 
     public static final ListMultimap<String, Rule> makeFragments(Spec spec, Predicate1<String> includePredicate,

@@ -114,6 +114,14 @@ public class RuleUtilTest {
         if(r.isPresent()) {
             logger.info("gives");
             logger.info("* {}", r.get());
+            final Optional<Rule> rs = RuleUtil.simplify(r.get());
+            if(rs.isPresent()) {
+                logger.info("which simplifies to");
+                logger.info("* {}", rs.get());
+            } else {
+                logger.info("which cannot be simplified");
+            }
+
         } else {
             logger.info("failed");
         }
