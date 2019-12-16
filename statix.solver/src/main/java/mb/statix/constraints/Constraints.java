@@ -4,6 +4,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -463,6 +464,50 @@ public final class Constraints {
                     return body.map(b -> new CTry(b, c.cause().orElse(null), c.message().orElse(null)));
                 } else {
                     return Optional.of(c);
+                }
+            },
+            c -> f.apply(c)
+        );
+        // @formatter:on
+    }
+
+    /**
+     * In order transformation of the leaf constraints, return a list of new constraints.
+     */
+    public static Function1<IConstraint, Stream<IConstraint>> flatMap(Function1<IConstraint, Stream<IConstraint>> f,
+            boolean recurseInLogicalScopes) {
+        // @formatter:off
+        return cases(
+            c -> f.apply(c),
+            c -> {
+                return flatMap(f, recurseInLogicalScopes).apply(c.left()).flatMap(l -> {
+                    return flatMap(f, recurseInLogicalScopes).apply(c.right()).map(r -> {
+                        return new CConj(l, r, c.cause().orElse(null));
+                    });
+                });
+            },
+            c -> f.apply(c),
+            c -> {
+                return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
+                    return new CExists(c.vars(), b, c.cause().orElse(null));
+                });
+            },
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> {
+                if(recurseInLogicalScopes) {
+                    return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
+                        return new CTry(b, c.cause().orElse(null), c.message().orElse(null));
+                    });
+                } else {
+                    return Stream.of(c);
                 }
             },
             c -> f.apply(c)

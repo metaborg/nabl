@@ -15,7 +15,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ListMultimap;
+import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -94,7 +94,7 @@ public class Paret {
     }
 
     private Function1<IConstraint, List<IConstraint>> collectSubGoals = collectBase(
-            c -> c instanceof CUser && ((CUser) c).name().matches(GEN_RE) ? Optional.of(c) : Optional.empty());
+            c -> c instanceof CUser && ((CUser) c).name().matches(GEN_RE) ? Optional.of(c) : Optional.empty(), false);
 
     private double hasNoSubGoals(Rule rule, long count) {
         return collectSubGoals.apply(rule.body()).isEmpty() ? 1d : 0d;
@@ -199,10 +199,10 @@ public class Paret {
         .build();
     // @formatter:on
 
-    public ListMultimap<String, Rule> makeFragments(Spec spec) {
+    public SetMultimap<String, Rule> makeFragments(Spec spec) {
         log.info("Building fragments.");
-        final ListMultimap<String, Rule> fragments =
-                RuleUtil.makeFragments(spec, n -> n.matches(GEN_RE), (n, l) -> true, 2);
+        final SetMultimap<String, Rule> fragments =
+                RuleUtil.makeFragments(spec.rules(), n -> n.matches(GEN_RE), (n, l) -> true, 2);
         log.info("Built fragments.");
         return fragments;
     }

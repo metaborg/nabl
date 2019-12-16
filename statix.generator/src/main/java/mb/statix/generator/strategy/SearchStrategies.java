@@ -196,7 +196,7 @@ public final class SearchStrategies {
             }
         }).otherwise(c -> {
             return c;
-        })));
+        }), false));
     }
 
     public SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
