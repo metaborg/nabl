@@ -131,11 +131,11 @@ public class SetComponent extends ASolver {
         boolean nameOrigin = M.appl0(NAME_OP).match(template.getOriginTerm(), unifier()).isPresent();
         if(nameOrigin && !elements.isEmpty()) {
             return elements.stream().<IMessageInfo>map(e -> {
-                Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> e.getValue()).match(t, unifier()));
+                Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> e.getName()).match(t, unifier()));
                 return ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f), e.getPosition());
             }).collect(Collectors.toList());
         } else {
-            ITerm es = B.newList(elements.stream().map(e -> e.getValue()).collect(Collectors.toList()));
+            ITerm es = B.newList(elements.stream().map(e -> e.getName()).collect(Collectors.toList()));
             Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> es).match(t, unifier()));
             return Iterables2.singleton(ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f),
                     template.getOriginTerm()));

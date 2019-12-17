@@ -6,8 +6,6 @@ import java.util.Set;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.constraints.IConstraint;

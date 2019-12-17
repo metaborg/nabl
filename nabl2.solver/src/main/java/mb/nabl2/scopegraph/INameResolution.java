@@ -13,6 +13,10 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
 
     Optional<Set<IResolutionPath<S, L, O>>> resolve(O ref);
 
+    Optional<Set<O>> decls(S scope);
+
+    Optional<Set<O>> refs(S scope);
+
     Optional<Set<O>> visible(S scope);
 
     Optional<Set<O>> reachable(S scope);

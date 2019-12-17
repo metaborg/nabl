@@ -38,6 +38,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final Set<L> labels;
     private final L labelD;
+    private final L labelR;
     private final IRegExpMatcher<L> wf;
     private final IRelation.Immutable<L> order;
     private final IRelation<L> noOrder;
@@ -54,6 +55,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.scopeGraph = scopeGraph;
         this.labels = ImmutableSet.copyOf(params.getLabels());
         this.labelD = params.getLabelD();
+        this.labelR = params.getLabelR();
         this.wf = RegExpMatcher.create(params.getPathWf());
         this.order = params.getSpecificityOrder();
         assert order.getDescription().equals(
@@ -101,6 +103,22 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     @Override public Set<Map.Entry<O, Set<IResolutionPath<S, L, O>>>> resolutionEntries() {
         return Collections.unmodifiableSet(resolution.entrySet());
+    }
+
+    @Override public Optional<Set<O>> decls(S scope) {
+        if(!isEdgeClosed.test(scope, labelD)) {
+            return Optional.empty();
+        } else {
+            return Optional.of(scopeGraph.getDecls().inverse().get(scope));
+        }
+    }
+
+    @Override public Optional<Set<O>> refs(S scope) {
+        if(!isEdgeClosed.test(scope, labelR)) {
+            return Optional.empty();
+        } else {
+            return Optional.of(scopeGraph.getRefs().inverse().get(scope));
+        }
     }
 
     @Override public Optional<Set<O>> visible(S scope) {

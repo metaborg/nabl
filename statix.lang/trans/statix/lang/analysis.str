@@ -33,25 +33,29 @@ rules // Analysis
   nabl2-custom-analysis-unit-hook: (resource, ast, _) -> CustomUnitAnalysis(e*, ext-c*)
     with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
        ; n-e* := <check-module-name(|resource)> ast
-       ; nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
-       ; or-e* := <detect-overlapping-rules> ast
        ; nabl2-custom-analysis-info-msg(|"| collecting scope extensions...")
        ; ext-c* := <collect-ext-constraints> ast
        ; nabl2-custom-analysis-info-msg(|"| Done.")
-       ; e* := [n-e*, or-e*]
+       ; e* := n-e*
 
   nabl2-custom-analysis-final-hook(|a): (resource, _, units) -> (e*, [], [], ca)
-    where <not(nabl2-analysis-has-errors)> a
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
-       ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
-       ; nabl2-custom-analysis-info-msg(|"| explicate scope extensions...")
-       ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
-       ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
-       ; nabl2-custom-analysis-info-msg(|"| solve scope extensions...")
-       ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
        ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
-       ; e* := [unit-e*, ext-e*]
-       ; ca  := CustomAnalysis(ext)
+       ; if <nabl2-analysis-has-errors> a then
+           or-e* := []
+         ; (ext, ext-e*) := ([], [])
+         else
+           nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
+         ; or-e* := <detect-overlapping-rules(|a)>
+         ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
+         ; nabl2-custom-analysis-info-msg(|"| explicate scope extensions...")
+         ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
+         ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
+         ; nabl2-custom-analysis-info-msg(|"| solve scope extensions...")
+         ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
+         end
+       ; e* := [unit-e*, ext-e*, or-e*]
+       ; ca := CustomAnalysis(ext)
        ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   check-module-name(|path): ast -> e*

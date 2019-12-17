@@ -47,16 +47,15 @@ rules
     C{x}.kind := DerivedC() !!,
     C{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  RuleHead[[ F(x, inargs, outarg) ^ (s_rule, y) : ty ]] := x == y,
+  RuleHead[[ h@F(x, inargs, outarg) ^ (s_rule, s_syn) : ty ]] :=
     C{x} -> s_rule, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    Rule{x} <- s_syn, Rule{x}.decl := d, Rule{x}.head := h,
     d : ty, ty != PRED(_) | error "Use `c(...) | ...` for non-functional constraints." @x,
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Match[[ outarg ^ (s_rule) : outty ]],
-    d.qname := qname, This{()} -> s_rule, This{()} |-> d_this, d_this.qname := this_qname,
-    this_qname <`same-name`? qname | error "Rules must be defined in the same module as the constraint" @x.
+    Match[[ outarg ^ (s_rule) : outty ]].
 
   Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
