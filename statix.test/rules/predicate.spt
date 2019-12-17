@@ -229,6 +229,25 @@ test matching rule is selected based on two concrete argument [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
+test inferred equalities during matching are properly used in body [[
+  resolve {s} c(s), d(s)
+  rules
+    c : list(scope)
+    c([s]) :- new s.
+    d : list(scope)
+    d([s]) :- query () in s |-> [_].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test multiple occurrences of variables in a non-linear patterns require equal arguments [[
+  resolve {s} c(s, s)
+  rules
+    c : int * int
+    c(x, x) :- true.
+    c(x, y) :- false.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
 test number of stuck constraints is non-deterministic [[
 resolve {xs ys}
   c(xs, ys),   // (1)

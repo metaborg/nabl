@@ -147,6 +147,9 @@ class GreedySolver {
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         debug.info("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
+        for(Delay delayedConstraint : delayed.values()) {
+            debug.info(" * {}", delayedConstraint.toString());
+        }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
         return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze());
@@ -551,8 +554,9 @@ class GreedySolver {
                 } else if(results.size() == 1) {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.info("Rule accepted");
+                    proxyDebug.info("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
-                    return success(c, applyResult.state(), applyResult.updatedVars(), disjoin(applyResult.body()),
+                    return success(c, applyResult.state(), applyResult.diff().varSet(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))

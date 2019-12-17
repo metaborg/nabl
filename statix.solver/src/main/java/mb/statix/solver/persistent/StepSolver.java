@@ -550,8 +550,9 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         } else if(results.size() == 1) {
             final ApplyResult applyResult = results.get(0)._2();
             proxyDebug.info("Rule accepted");
+            proxyDebug.info("| Implied equalities: {}", applyResult.diff());
             proxyDebug.commit();
-            return Optional.of(StepResult.of(applyResult.state(), applyResult.updatedVars(),
+            return Optional.of(StepResult.of(applyResult.state(), applyResult.diff().varSet(),
                     disjoin(applyResult.body()), ImmutableMap.of(), ImmutableMap.of()));
         } else {
             final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))

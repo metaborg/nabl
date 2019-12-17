@@ -111,7 +111,7 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(ImmutableTuple2.of(subst.apply(v), subst.apply(t)));
-            }, (v) -> fresh.apply(Optional.empty()));
+            }, (v) -> v.orElse(fresh.apply(Optional.empty())));
             stuckVars.add(leftVar);
             allEqs.add(ImmutableTuple2.of(leftVar, subst.apply(rightTerm)));
         }

@@ -39,6 +39,7 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
@@ -163,7 +164,8 @@ public class RuleUtil {
 
             final ApplyResult applyResult;
             if(constrainedVars.isEmpty()) {
-                applyResult = ApplyResult.of(newState.freeze(), ImmutableSet.of(), Optional.empty(), newConstraint);
+                applyResult = ApplyResult.of(newState.freeze(), PersistentUnifier.Immutable.of(), Optional.empty(),
+                        newConstraint);
             } else {
                 // simplify guard constraints
                 final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
@@ -186,7 +188,7 @@ public class RuleUtil {
 
                 // construct result
                 final IState.Immutable resultState = newState.freeze().withUnifier(newUnifier);
-                applyResult = ApplyResult.of(resultState, diff.varSet(), Optional.of(diseq), newConstraint);
+                applyResult = ApplyResult.of(resultState, diff, Optional.of(diseq), newConstraint);
             }
             return Optional.of(applyResult);
         });

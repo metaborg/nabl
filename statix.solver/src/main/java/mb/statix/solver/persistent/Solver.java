@@ -145,7 +145,7 @@ public class Solver {
     }
 
     public static TermFormatter shallowTermFormatter(final IUniDisunifier unifier) {
-        return new UnifierFormatter(unifier, 3);
+        return new UnifierFormatter(unifier, 4);
     }
 
 }

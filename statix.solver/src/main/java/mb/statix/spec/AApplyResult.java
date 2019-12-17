@@ -1,12 +1,11 @@
 package mb.statix.spec;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -23,7 +22,7 @@ public abstract class AApplyResult {
     /**
      * All variables that were instantiated by this application.
      */
-    @Value.Parameter public abstract Set<ITermVar> updatedVars();
+    @Value.Parameter public abstract IUnifier.Immutable diff();
 
     /**
      * Guard constraints necessary for this rule application. The domain of the guard are variables that pre-existed the

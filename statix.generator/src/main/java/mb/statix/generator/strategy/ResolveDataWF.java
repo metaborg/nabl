@@ -61,7 +61,7 @@ class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
-        completeness.updateAll(applyResult.updatedVars(), applyState.unifier());
+        completeness.updateAll(applyResult.diff().varSet(), applyState.unifier());
         completeness.add(applyConstraint, applyState.unifier());
 
         // NOTE This method is almost a duplicate of Solver::entails and should be
