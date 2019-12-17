@@ -81,7 +81,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
-        final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
+        final NameSetsComponent nameSetSolver = new NameSetsComponent(core, nameResolution);
         final PolymorphismComponent polySolver = new PolymorphismComponent(core, Predicate1.never(), Predicate1.never(),
                 nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, Predicate1.never(), config.getFunctions(),

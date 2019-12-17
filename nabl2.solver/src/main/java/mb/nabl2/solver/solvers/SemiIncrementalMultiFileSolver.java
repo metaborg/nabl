@@ -84,7 +84,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, initial.declProperties().melt());
-        final NameSetsComponent nameSetSolver = new NameSetsComponent(core, scopeGraph, nameResolution);
+        final NameSetsComponent nameSetSolver = new NameSetsComponent(core, nameResolution);
         final RelationComponent relationSolver = new RelationComponent(core, isRelationComplete, config.getFunctions(),
                 VariantRelations.melt(initial.relations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());

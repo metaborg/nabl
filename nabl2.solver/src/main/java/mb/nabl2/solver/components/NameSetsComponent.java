@@ -8,7 +8,6 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
-import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Namespace;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -21,13 +20,10 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class NameSetsComponent extends ASolver {
 
-    private final IEsopScopeGraph<Scope, Label, Occurrence, ITerm> scopeGraph;
     private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
 
-    public NameSetsComponent(SolverCore core, IEsopScopeGraph<Scope, Label, Occurrence, ITerm> scopeGraph,
-            IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
+    public NameSetsComponent(SolverCore core, IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
         super(core);
-        this.scopeGraph = scopeGraph;
         this.nameResolution = nameResolution;
     }
 
@@ -35,12 +31,14 @@ public class NameSetsComponent extends ASolver {
         return IMatcher.flatten(M.<Optional<java.util.Set<IElement<ITerm>>>>cases(
         // @formatter:off
             M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                Iterable<Occurrence> decls = NameSetsComponent.this.scopeGraph.getDecls().inverse().get(scope);
-                return Optional.of(makeSet(decls, ns));
+                Optional<? extends Set<Occurrence>> decls =
+                        NameSetsComponent.this.nameResolution.decls(scope);
+                return decls.map(ds -> makeSet(ds, ns));
             }),
             M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                Iterable<Occurrence> refs = NameSetsComponent.this.scopeGraph.getRefs().inverse().get(scope);
-                return Optional.of(makeSet(refs, ns));
+                Optional<? extends Set<Occurrence>> refs =
+                        NameSetsComponent.this.nameResolution.refs(scope);
+                return refs.map(rs -> makeSet(rs, ns));
             }),
             M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                 Optional<? extends Set<Occurrence>> decls =
