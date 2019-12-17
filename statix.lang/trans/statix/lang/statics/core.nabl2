@@ -19,6 +19,7 @@ signature
 
   namespaces
     C      // constraint
+    Rule   // rule
     Rel    // data label
     Edge   // edge label
     Mod    // module
@@ -49,6 +50,9 @@ rules
 
   init ^ (s) :=
     new s,
+
+    // check duplicates
+    distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
   
     // sugar
 
@@ -71,8 +75,6 @@ rules
     // define the current module
     Mod{x}.qname := x,
     This{()} <- s_mod, This{()}.qname := x !!,
-    // check duplicates
-    distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
     // check sections
     Sections[[ sections ^ (s_mod, s_syn, s) ]].
 
@@ -92,8 +94,12 @@ rules
     // duplicate checks for transitively scoped sorts and constructors
     distinct/name D(s_syn)/Op   | error $[Duplicate constructor [NAME]] @NAMES,
     distinct/name D(s_syn)/Sort | error $[Duplicate sort [NAME]] @NAMES,
+    ?- DistinctPatterns(localRules),
+        localRules is set D(s_syn)/Rule,
     (D(s_syn)/Sort lsect/name (W(s)/Sort minus D(s_syn)/Sort)) subseteq 0 | error $[Duplicate of imported sort [NAME]] @NAMES,
-    (D(s_syn)/Op   lsect/name (W(s)/Op   minus D(s_syn)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES.
+    (D(s_syn)/Op   lsect/name (W(s)/Op   minus D(s_syn)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES,
+    ?- NoDuplicatePatterns(localRules, importedRules, ()),
+        importedRules is set (W(s)/Rule minus D(s_syn)/Rule).
 
   Section[[ Imports(imports) ^ (s, s_syn, s_outer) ]] :=
     Map3(Import)[[ imports ^ (s_outer, s, s_syn) ]].
@@ -107,7 +113,10 @@ rules
     ((V(s_mod')/Rel union V(s_mod')/Edge) lsect/name ((V(s_mod)/Rel union V(s_mod)/Edge) minus ((D(s_mod)/Rel union D(s_mod)/Edge) union (V(s_mod')/Rel union V(s_mod')/Edge)))) subseteq 0 | error $[Duplicate imported edge labels / relations [NAME]] @x,
     Mod{x} <=S= s_syn, d ?=S=> s_syn',
     (V(s_syn')/Sort lsect/name (V(s_syn)/Sort minus (D(s_syn)/Sort union V(s_syn')/Sort))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x,
-    (V(s_syn')/Op   lsect/name (V(s_syn)/Op   minus (D(s_syn)/Op   union V(s_syn')/Op  ))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x.
+    (V(s_syn')/Op   lsect/name (V(s_syn)/Op   minus (D(s_syn)/Op   union V(s_syn')/Op  ))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x,
+    ?- NoDuplicatePatterns(importedRules, otherImportedRules, x),
+        importedRules is set W(s_syn')/Rule,
+        otherImportedRules is set (W(s_syn)/Rule minus (D(s_syn)/Rule union W(s_syn')/Rule)).
 
   Section[[ Signature(sigs) ^ (s, s_syn, _) ]] :=
     Map2(Signature)[[ sigs ^ (s, s_syn) ]].
@@ -139,18 +148,16 @@ rules
   DeclOrRule[[ r@Rule(_, h, body) ^ (s, s_syn) ]] :=
     new s_rule, s_rule -P-> s, @r.scope := s_rule,
     distinct/name D(s_rule)/Var | error $[Duplicate variable [NAME]] @NAMES,
-    RuleHead[[ h ^ (s_rule, x) : _ ]],
+    RuleHead[[ h ^ (s_rule, s_syn) : _ ]],
     Constraint[[ body ^ (s_rule) ]].
 
-  RuleHead[[ C(x, args) ^ (s_rule, y) : ty ]] := x == y,
+  RuleHead[[ h@C(x, args) ^ (s_rule, s_syn) : ty ]] :=
     C{x} -> s_rule, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    Rule{x} <- s_syn, Rule{x}.decl := d, Rule{x}.head := h,
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
     tys is `in-types` of ty,
-    Map1T(Match)[[ args ^ (s_rule) : tys ]],
-    d.qname := qname, This{()} -> s_rule, This{()} |-> d_this, d_this.qname := this_qname,
-    this_qname <`same-name`? qname | error "Rules must be defined in the same module as the constraint" @x.
-
+    Map1T(Match)[[ args ^ (s_rule) : tys ]].
 
   Constraint[[ C(x, args, msg) ^ (s) ]] :=
     C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,

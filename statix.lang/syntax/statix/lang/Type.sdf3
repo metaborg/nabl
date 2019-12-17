@@ -79,3 +79,8 @@ context-free syntax
   ExtOp.Union        = [union([{ExtOp ", "}*])]
   ExtOp.Intersection = [isect([{ExtOp ", "}*])]
   ExtOp              = ExtSet
+
+context-free syntax
+
+  PatternConstraint.DistinctPatterns = <distinct patterns <{NaBL2Occurrence ", "}*>>
+  PatternConstraint.NoDuplicatePatterns = <patterns {<{NaBL2Occurrence ", "}*>} do not duplicate {<{NaBL2Occurrence ", "}*>} <ExtOrigin>>
