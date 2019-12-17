@@ -80,6 +80,10 @@ public class NameSetsComponent extends ASolver {
             return occurrence.getNameOrIndexOrigin();
         }
 
+        @Override public ITerm getName() {
+            return occurrence.getName();
+        }
+
         @Override public Object project(String name) {
             switch(name) {
                 case "name":
