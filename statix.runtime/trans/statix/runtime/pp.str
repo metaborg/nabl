@@ -30,3 +30,7 @@ rules
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
     where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)
+
+  stx-prettyprint-term =
+    where(is-Statix-Term)
+  ; prettyprint-Statix-Term

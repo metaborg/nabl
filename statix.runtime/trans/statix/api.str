@@ -22,3 +22,7 @@ rules // services
 
   stx-editor-resolve = fail
   stx-editor-hover = fail
+
+rules // prettyprinting
+
+  stx-prettyprint-term = fail
