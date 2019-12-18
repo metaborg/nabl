@@ -42,8 +42,8 @@ public class Paret {
 
     private static final ILogger log = LoggerUtils.logger(Paret.class);
 
-    private static final String GEN_RE = "gen_.*";
-    private static final String IS_RE = "is_.*";
+    private static final String GEN_RE = ".*!gen_.*";
+    private static final String IS_RE = ".*!is_.*";
 
     private final Spec spec;
     private final SearchStrategies S;
