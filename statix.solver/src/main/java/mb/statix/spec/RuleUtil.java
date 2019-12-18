@@ -74,9 +74,10 @@ public class RuleUtil {
      * @return Some application result if one rule applies, some empty if no rules apply, and empty if multiple rules
      *         apply.
      */
-    public static final Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOne(IState.Immutable state, List<Rule> rules,
-            List<? extends ITerm> args, @Nullable IConstraint cause) {
-        return apply(state, rules, args, cause, true).map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
+    public static final Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(IState.Immutable state,
+            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause) {
+        return applyOrdered(state, rules, args, cause, true)
+                .map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
     }
 
     /**
@@ -95,17 +96,17 @@ public class RuleUtil {
      * 
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
-    public static final List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, List<Rule> rules,
+    public static final List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IState.Immutable state, List<Rule> rules,
             List<? extends ITerm> args, @Nullable IConstraint cause) {
-        return apply(state, rules, args, cause, false).get();
+        return applyOrdered(state, rules, args, cause, false).get();
     }
 
     /**
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
      * rules that could be applied, or empty if onlyOne is true, and multiple matches were found.
      */
-    private static final Optional<List<Tuple2<Rule, ApplyResult>>> apply(IState.Immutable state, List<Rule> rules,
-            List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
+    private static final Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state,
+            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
@@ -195,6 +196,16 @@ public class RuleUtil {
     }
 
     /**
+     * Apply the given rules to the given arguments. Returns the results of application.
+     */
+    public static final List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Collection<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause) {
+        return rules.stream().flatMap(
+                rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> ImmutableTuple2.of(rule, result)))
+                .collect(ImmutableList.toImmutableList());
+    }
+
+    /**
      * Convert an ordered list of rules to a set of rules where the match order is reflected in (dis)equality
      * constraints in the rule bodies. The resulting rules can be applied independent of the other rules in the set.
      * Note that compared to using applyAll, mismatches may only be discovered when the body of the returned rules is
@@ -253,6 +264,12 @@ public class RuleUtil {
             final IConstraint body = Constraints.conjoin(StateUtil.asInequalities(diseqs), r.body());
             return Stream.of(r.withParams(paramPatterns).withBody(body));
         }).collect(ImmutableSet.toImmutableSet());
+    }
+
+    public static final SetMultimap<String, Rule> makeUnordered(ListMultimap<String, Rule> rules) {
+        final ImmutableSetMultimap.Builder<String, Rule> newRules = ImmutableSetMultimap.builder();
+        rules.asMap().forEach((name, rs) -> newRules.putAll(name, makeUnordered(rs)));
+        return newRules.build();
     }
 
     /**

@@ -1,6 +1,5 @@
 package mb.statix.generator.strategy;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -15,8 +14,8 @@ import org.metaborg.util.functions.Function2;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
@@ -46,13 +45,13 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
 
     private final Mode mode;
     private final Function2<Rule, Long, Double> ruleWeight;
-    private final ListMultimap<String, Rule> rules;
+    private final SetMultimap<String, Rule> rules;
 
     Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight) {
-        this(spec, mode, ruleWeight, spec.rules());
+        this(spec, mode, ruleWeight, RuleUtil.makeUnordered(spec.rules()));
     }
 
-    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight, ListMultimap<String, Rule> rules) {
+    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight, SetMultimap<String, Rule> rules) {
         super(spec);
         this.mode = mode;
         this.ruleWeight = ruleWeight;
@@ -68,7 +67,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
 
         final java.util.Map<Rule, Double> rules = getWeightedRules(predicate.name());
         final List<Tuple2<Rule, ApplyResult>> results =
-                RuleUtil.applyAll(input.state(), new ArrayList<>(rules.keySet()), predicate.args(), predicate);
+                RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {
@@ -115,7 +114,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
     private java.util.Map<Rule, Double> getWeightedRules(String name) {
         try {
             return cache.get(name, () -> {
-                final List<Rule> rs = rules.get(name);
+                final java.util.Set<Rule> rs = rules.get(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
                 // ImmutableMap iterates over keys in insertion-order

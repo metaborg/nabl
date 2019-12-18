@@ -199,7 +199,7 @@ public class Paret {
         .build();
     // @formatter:on
 
-    public SetMultimap<String, Rule> makeFragments(Spec spec) {
+    private SetMultimap<String, Rule> makeFragments(Spec spec) {
         log.info("Building fragments.");
         final SetMultimap<String, Rule> fragments =
                 RuleUtil.makeFragments(spec.rules(), n -> n.matches(GEN_RE), (n, l) -> true, 2);

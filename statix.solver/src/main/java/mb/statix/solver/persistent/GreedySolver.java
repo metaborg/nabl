@@ -547,7 +547,7 @@ class GreedySolver {
                 final IDebugContext debug = params.debug();
 
                 final List<Rule> rules = spec.rules().get(name);
-                final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(state, rules, args, c);
+                final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
                 if(results.isEmpty()) {
                     debug.info("No rule applies");
                     return fail(c, state);

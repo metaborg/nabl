@@ -9,7 +9,7 @@ import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ListMultimap;
+import com.google.common.collect.SetMultimap;
 
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CUser;
@@ -122,7 +122,7 @@ public final class SearchStrategies {
         return expand(mode, 1d, ImmutableMap.of());
     }
 
-    public final Expand expand(Mode mode, ListMultimap<String, Rule> rules) {
+    public final Expand expand(Mode mode, SetMultimap<String, Rule> rules) {
         return expand(mode, 1d, ImmutableMap.of(), rules);
     }
 
@@ -137,7 +137,7 @@ public final class SearchStrategies {
     }
 
     public final Expand expand(Mode mode, double defaultWeight, Map<String, Double> weights,
-            ListMultimap<String, Rule> rules) {
+            SetMultimap<String, Rule> rules) {
         return expand(mode, (r, n) -> {
             if(weights.containsKey(r.label())) {
                 return weights.get(r.label()) / (double) n;
@@ -151,7 +151,7 @@ public final class SearchStrategies {
         return new Expand(spec, mode, ruleWeight);
     }
 
-    public final Expand expand(Mode mode, Function2<Rule, Long, Double> ruleWeight, ListMultimap<String, Rule> rules) {
+    public final Expand expand(Mode mode, Function2<Rule, Long, Double> ruleWeight, SetMultimap<String, Rule> rules) {
         return new Expand(spec, mode, ruleWeight, rules);
     }
 
