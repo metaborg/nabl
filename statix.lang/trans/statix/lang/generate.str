@@ -18,21 +18,21 @@ imports
 rules
 
   generate-aterm:
-      (_, _, ast, path, project-path) -> result
+      (_, _, ast@Module(name, _), path, project-path) -> <debug(!7)> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-        ; if <nabl2-analysis-has-errors> a then
-            result := <catch-with(generate-aterm'(|a), fail) <+ !None()> ast
-          else
-            result := <generate-aterm'(|a)> ast
-          end
+    with filename := <stx--module-path> name
+       ; if <nabl2-analysis-has-errors> a then
+           spec := <empty-spec> // FIXME Change generation to work as well as possible on results with errors
+         else
+           spec := <generate-aterm'(|a)> ast
+         end
+       ; result := (filename, spec)
 
   generate-aterm'(|a):
-      ast@Module(name, _) -> result
-    with ast' := <normalize(|a)> ast;
-         CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-         spec     := <core-ast-to-spec-aterm(|a)> (ast', ext);
-         filename := <stx--module-path> name;
-         result   := (filename, spec)
+      ast@Module(_, _) -> spec
+    with ast' := <normalize(|a)> ast
+       ; CustomAnalysis(ext) := <nabl2-get-custom-analysis> a
+       ; spec     := <core-ast-to-spec-aterm(|a)> (ast', ext)
  
 rules
 
@@ -42,6 +42,8 @@ rules
        ; data* := [Decl()|<collect-all(?RelDecl(<qualify-name(|a)>, _));strip-annos> ast]
        ; rule* := <collect-all(?Rule(_, _, _);qualify-names(|a));strip-annos;eliminate-all> ast
        ; spec := FileSpec(import*, edge*, data*, EOP(), rule*, ext)
+
+  empty-spec = !FileSpec([], [], [], EOP(), [], [])
 
   qualify-names(|a) = bottomup(try(qualify-name(|a)))
 

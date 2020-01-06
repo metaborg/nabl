@@ -43,9 +43,7 @@ rules // Analysis
       (resource, _, units) -> result
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
     where if <nabl2-analysis-has-errors> a then
-            result := <catch-with( nabl2-custom-analysis-final-hook'(|a)
-                                 , nabl2-custom-analysis-info-msg(|"| Aborted.");fail
-                                 )> units
+            fail // FIXME Change custom analysis to work as well as possible on results with errors
           else
             result := <nabl2-custom-analysis-final-hook'(|a)> units
           end
