@@ -18,7 +18,7 @@ imports
 rules
 
   generate-aterm:
-      (_, _, ast@Module(name, _), path, project-path) -> <debug(!7)> result
+      (_, _, ast@Module(name, _), path, project-path) -> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
     with filename := <stx--module-path> name
        ; if <nabl2-analysis-has-errors> a then
