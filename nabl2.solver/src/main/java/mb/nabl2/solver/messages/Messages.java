@@ -104,8 +104,9 @@ public abstract class Messages implements IMessages {
 
     public static java.util.Set<IMessageInfo> unsolvedErrors(Iterable<? extends IConstraint> constraints) {
         return Iterables2.stream(constraints).map(c -> {
-            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-            return c.getMessageInfo().withDefaultContent(content);
+            final IMessageContent content = MessageContent.builder().append("Unsolved: ")
+                    .append(c.getMessageInfo().getContent().withDefault(c.pp())).build();
+            return c.getMessageInfo().withContent(content);
         }).collect(Collectors.toSet());
     }
 
