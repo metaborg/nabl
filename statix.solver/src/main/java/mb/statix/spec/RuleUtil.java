@@ -6,9 +6,11 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -33,10 +35,12 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
@@ -301,7 +305,7 @@ public class RuleUtil {
             return Optional.empty();
         }
 
-        return Optional.of(into.withBody(newBody));
+        return Optional.of(into.withLabel("").withBody(newBody));
     }
 
     private static final IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
@@ -374,42 +378,52 @@ public class RuleUtil {
 
         // 1. make all rules unordered, and keep included rules
         final SetMultimap<String, Rule> rules = HashMultimap.create();
-        // @formatter:off
-        orderedRules.asMap().entrySet().stream()
-                .filter(e -> includePredicate.test(e.getKey()))
-                .forEach(e -> {
-                    makeUnordered(e.getValue()).stream()
-                            .filter(r -> includeRule.test(r.name(), r.label()))
-                            .forEach(r -> rules.put(e.getKey(), r));
-                });
-        // @formatter:on
+        for(Map.Entry<String, Collection<Rule>> e : orderedRules.asMap().entrySet()) {
+            if(includePredicate.test(e.getKey())) {
+                for(Rule r : makeUnordered(e.getValue())) {
+                    if(includeRule.test(r.name(), r.label())) {
+                        rules.put(e.getKey(), r);
+                    }
+                }
+            }
+        }
 
         final PartialFunction1<IConstraint, CUser> expandable =
                 c -> (c instanceof CUser && rules.containsKey(((CUser) c).name())) ? Optional.of(((CUser) c))
                         : Optional.empty();
 
         // 2. find the included axioms and move to fragments
-        // @formatter:off
-        rules.entries().stream()
-                .filter(e -> Constraints.collectBase(expandable, false).apply(e.getValue().body()).isEmpty())
-                .forEach(e -> fragments.put(e.getKey(), e.getValue()));
-        // @formatter:on
+        for(Map.Entry<String, Rule> e : rules.entries()) {
+            if(Constraints.collectBase(expandable, false).apply(e.getValue().body()).isEmpty()) {
+                fragments.put(e.getKey(), e.getValue());
+            }
+        }
         fragments.forEach(rules::remove);
 
         // 3. for each generation, inline fragments into rules
         for(int g = 0; g < generations; g++) {
             final SetMultimap<String, Rule> generation = HashMultimap.create();
-            rules.forEach((name, r) -> {
+            for(Map.Entry<String, Rule> e : rules.entries()) {
+                final String name = e.getKey();
+                final Rule r = e.getValue();
                 final FreshVars fresh = new FreshVars(r.varSet());
-                Constraints.flatMap(c -> {
-                    return Streams.stream(expandable.apply(c)).flatMap(u -> {
-                        return fragments.get(u.name()).stream().map(f -> applyToConstraint(fresh, f, u.args()));
-                    });
-                }, false).apply(r.body()) //
-                        .map(c -> r.withBody(c)) //
-                        .flatMap(f -> Streams.stream(simplify(f))) //
-                        .forEach(f -> generation.put(name, f));
-            });
+                final List<IConstraint> cs = Constraints.flatMap(c -> {
+                    final Optional<CUser> u = expandable.apply(c);
+                    if(u.isPresent()) {
+                        return fragments.get(u.get().name()).stream()
+                                .map(f -> applyToConstraint(fresh, f, u.get().args()));
+                    } else {
+                        return Stream.of(c);
+                    }
+                }, false).apply(r.body()).collect(Collectors.toList());
+                for(IConstraint c : cs) {
+                    final Rule f = r.withLabel("").withBody(c);
+                    final Optional<Rule> sf = simplify(f);
+                    if(sf.isPresent()) {
+                        generation.put(name, sf.get());
+                    }
+                }
+            }
             fragments.putAll(generation);
         }
 

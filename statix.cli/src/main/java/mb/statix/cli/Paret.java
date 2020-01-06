@@ -73,10 +73,7 @@ public class Paret {
 
     private SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
-//        final ListMultimap<String, Rule> fragments = makeFragments(spec);
-//        fragments.forEach((n,r) -> {
-//            log.info(" * {}", r);
-//        });
+        final SetMultimap<String, Rule> fragments = makeFragments(spec);
         return S.repeat(S.limit(10, S.fix(
             S.seq(selectConstraint(1))
             .$(S.match(
@@ -203,6 +200,9 @@ public class Paret {
         log.info("Building fragments.");
         final SetMultimap<String, Rule> fragments =
                 RuleUtil.makeFragments(spec.rules(), n -> n.matches(GEN_RE), (n, l) -> true, 2);
+        fragments.forEach((n, r) -> {
+            log.info(" * {}", r);
+        });
         log.info("Built fragments.");
         return fragments;
     }

@@ -31,6 +31,7 @@ public class RuleUtilTest {
         testInlineRules1();
         testInlineRules2();
         testInlineRules3();
+        testInlineRules4();
     }
 
     private static void testUnorderedRules1() {
@@ -102,6 +103,17 @@ public class RuleUtilTest {
         final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
                 new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
+        testInlineRules(rule, 0, into);
+    }
+
+    private static void testInlineRules4() {
+        final Pattern p1 = P.newVar("p1");
+        final Pattern p2 = P.newVar("p2");
+        final ITermVar v1 = B.newVar("", "p1");
+        final ITermVar v2 = B.newVar("", "p2");
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
+        final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CTrue());
         testInlineRules(rule, 0, into);
     }
 
