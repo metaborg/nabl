@@ -42,17 +42,19 @@ rules // Analysis
   nabl2-custom-analysis-final-hook(|a):
       (resource, _, units) -> result
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
-    where if <nabl2-analysis-has-errors> a then
-            fail // FIXME Change custom analysis to work as well as possible on results with errors
+       ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
+       ; if <nabl2-analysis-has-errors> a then
+            // FIXME Change custom analysis to work as well as possible on results with errors
+            (e*, ca) := <empty-custom-analysis>
           else
-            result := <nabl2-custom-analysis-final-hook'(|a)> units
+            (e*, ca) := <nabl2-custom-analysis-final-hook'(|a)> units
           end
+        ; result := ([unit-e*, e*], [], [], ca)
         ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   nabl2-custom-analysis-final-hook'(|a):
-      units -> (e*, [], [], ca)
-    with unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
-       ; nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
+      units -> (e*, ca)
+    with nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
        ; or-e* := <detect-overlapping-rules(|a)>
        ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
        ; nabl2-custom-analysis-info-msg(|"| explicate scope extensions...")
@@ -60,8 +62,10 @@ rules // Analysis
        ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
        ; nabl2-custom-analysis-info-msg(|"| solve scope extensions...")
        ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
-       ; e* := [unit-e*, ext-e*, or-e*]
+       ; e* := [ext-e*, or-e*]
        ; ca := CustomAnalysis(ext)
+
+  empty-custom-analysis = !([], CustomAnalysis([]))
 
   check-module-name(|path): ast -> e*
     with ext := <get-extension> path
