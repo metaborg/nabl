@@ -127,9 +127,8 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             for(ISolution unitSolution : unitSolutions) {
                 seed(astSolver.seed(unitSolution.astProperties(), message), messages, constraints);
                 seed(equalitySolver.seed(unitSolution.unifier(), message), messages, constraints);
-                final NameResolutionResult nameResult =
-                        ImmutableNameResolutionResult.of(unitSolution.scopeGraph(), unitSolution.declProperties())
-                                .withResolutionCache(unitSolution.nameResolutionCache());
+                final NameResolutionResult nameResult = ImmutableNameResolutionResult.of(unitSolution.scopeGraph(),
+                        unitSolution.nameResolutionCache(), unitSolution.declProperties());
                 seed(nameResolutionSolver.seed(nameResult, message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
                 seed(symSolver.seed(unitSolution.symbolic(), message), messages, constraints);

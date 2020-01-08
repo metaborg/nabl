@@ -20,6 +20,7 @@ import mb.nabl2.constraints.nameresolution.CAssoc;
 import mb.nabl2.constraints.nameresolution.CDeclProperty;
 import mb.nabl2.constraints.nameresolution.CResolve;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -60,7 +61,7 @@ public class NameResolutionComponent extends ASolver {
     public SeedResult seed(NameResolutionResult solution, IMessageInfo message) throws InterruptedException {
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
         scopeGraph.addAll(solution.scopeGraph());
-        solution.resolutionCache().ifPresent(nameResolution::addAll);
+        nameResolution.addCached(solution.resolutionCache());
         constraints.addAll(seed(solution.declProperties(), message).constraints());
         return SeedResult.constraints(constraints);
     }
@@ -80,12 +81,10 @@ public class NameResolutionComponent extends ASolver {
 
     public void update() throws InterruptedException {
         scopeGraph.reduce(this::findScope, this::findOccurrence);
-        nameResolution.resolveAll(scopeGraph.getRefs().keySet());
     }
 
     public NameResolutionResult finish() {
-        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), properties.freeze())
-                .withResolutionCache(nameResolution.toCache());
+        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), nameResolution.toCache(), properties.freeze());
     }
 
     public IProperties.Immutable<Occurrence, ITerm, ITerm> finishDeclProperties() {
@@ -101,12 +100,12 @@ public class NameResolutionComponent extends ASolver {
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        final Optional<java.util.Set<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
-                nameResolution.resolve(ref);
-        if(!maybePathsAndDeps.isPresent()) {
+        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths;
+        try {
+            paths = nameResolution.resolve(ref);
+        } catch(CriticalEdgeException e) {
             return Optional.empty();
         }
-        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get();
         final Set<Occurrence> declarations = Sets.newHashSet(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;
         switch(declarations.size()) {
@@ -212,7 +211,7 @@ public class NameResolutionComponent extends ASolver {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-        @Value.Auxiliary public abstract Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>>
+        @Value.Parameter public abstract IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
                 resolutionCache();
 
         @Value.Parameter public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();

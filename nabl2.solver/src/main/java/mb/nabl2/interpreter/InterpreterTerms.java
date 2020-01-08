@@ -17,6 +17,7 @@ import com.google.common.collect.Multimap;
 
 import mb.nabl2.constraints.namebinding.DeclProperties;
 import mb.nabl2.scopegraph.IScopeGraph;
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
@@ -34,7 +35,8 @@ public class InterpreterTerms {
     private static final ILogger logger = LoggerUtils.logger(InterpreterTerms.class);
 
     public static ITerm context(ISolution solution) {
-        return B.newAppl("NaBL2", scopegraph(solution.scopeGraph()), nameresolution(solution.nameResolution()),
+        return B.newAppl("NaBL2", scopegraph(solution.scopeGraph()),
+                nameresolution(solution.scopeGraph().getAllRefs(), solution.nameResolution()),
                 declTypes(solution.declProperties(), solution.unifier()));
     }
 
@@ -76,19 +78,21 @@ public class InterpreterTerms {
         return map(entries.entrySet());
     }
 
-    private static ITerm nameresolution(IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
-        nameResolution.resolveAll();
+    private static ITerm nameresolution(Iterable<Occurrence> refs,
+            IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
         final Map<ITerm, ITerm> entries = Maps.newHashMap();
-        for(Map.Entry<Occurrence, Set<IResolutionPath<Scope, Label, Occurrence>>> entry : nameResolution
-                .resolutionEntries()) {
-            final Occurrence ref = entry.getKey();
-            final Set<IResolutionPath<Scope, Label, Occurrence>> paths = entry.getValue();
-            if(paths.size() == 1) {
-                IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
-                ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));
-                entries.put(ref, value);
-            } else {
-                logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
+        for(Occurrence ref : refs) {
+            try {
+                Set<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                if(paths.size() == 1) {
+                    IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
+                    ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));
+                    entries.put(ref, value);
+                } else {
+                    logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
+                }
+            } catch(CriticalEdgeException e) {
+                logger.warn("Could not convert unresolvable {}.", ref);
             }
         }
         return map(entries.entrySet());

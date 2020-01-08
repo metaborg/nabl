@@ -1,9 +1,9 @@
 package mb.nabl2.scopegraph;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 
 
@@ -11,15 +11,15 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
 
     java.util.Set<O> getResolvedRefs();
 
-    Optional<Set<IResolutionPath<S, L, O>>> resolve(O ref);
+    Set<IResolutionPath<S, L, O>> resolve(O ref) throws CriticalEdgeException;
 
-    Optional<Set<O>> decls(S scope);
+    Set<O> decls(S scope) throws CriticalEdgeException;
 
-    Optional<Set<O>> refs(S scope);
+    Set<O> refs(S scope) throws CriticalEdgeException;
 
-    Optional<Set<O>> visible(S scope);
+    Set<O> visible(S scope) throws CriticalEdgeException;
 
-    Optional<Set<O>> reachable(S scope);
+    Set<O> reachable(S scope) throws CriticalEdgeException;
 
     Set<Map.Entry<O, Set<IResolutionPath<S, L, O>>>> resolutionEntries();
 

@@ -5,6 +5,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.optionals.Optionals;
+
 import com.google.common.collect.Sets;
 
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
@@ -32,22 +34,22 @@ public class NameSetsComponent extends ASolver {
         // @formatter:off
             M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                 Optional<? extends Set<Occurrence>> decls =
-                        NameSetsComponent.this.nameResolution.decls(scope);
+                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.decls(scope));
                 return decls.map(ds -> makeSet(ds, ns));
             }),
             M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                 Optional<? extends Set<Occurrence>> refs =
-                        NameSetsComponent.this.nameResolution.refs(scope);
+                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.refs(scope));
                 return refs.map(rs -> makeSet(rs, ns));
             }),
             M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                 Optional<? extends Set<Occurrence>> decls =
-                        NameSetsComponent.this.nameResolution.visible(scope);
+                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.visible(scope));
                 return decls.map(ds -> makeSet(ds, ns));
             }),
             M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
                 Optional<? extends Set<Occurrence>> decls =
-                        NameSetsComponent.this.nameResolution.reachable(scope);
+                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.reachable(scope));
                 return decls.map(ds -> makeSet(ds, ns));
             })
             // @formatter:on

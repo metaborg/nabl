@@ -2,11 +2,9 @@ package mb.nabl2.solver;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -59,19 +57,15 @@ public abstract class Solution implements ISolution {
     }
 
     @Override public IEsopNameResolution<Scope, Label, Occurrence> nameResolution() {
-        return nameResolution((s, l) -> true);
-    }
-
-    @Override public IEsopNameResolution<Scope, Label, Occurrence>
-            nameResolution(Predicate2<Scope, Label> isEdgeComplete) {
-        final EsopNameResolution<Scope, Label, Occurrence> nr =
-                EsopNameResolution.of(config().getResolutionParams(), scopeGraph(), isEdgeComplete);
-        nameResolutionCache().ifPresent(nr::addAll);
+        final EsopNameResolution<Scope, Label, Occurrence> nr = EsopNameResolution.of(config().getResolutionParams(),
+                scopeGraph(), (s, l) -> true, nameResolutionCache());
         return nr;
     }
 
-    @Value.Auxiliary @Override public abstract Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>>
-            nameResolutionCache();
+    @Value.Default @Override public IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
+            nameResolutionCache() {
+        return EsopNameResolution.ResolutionCache.of();
+    }
 
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
@@ -87,9 +81,8 @@ public abstract class Solution implements ISolution {
 
     public static ISolution of(SolverConfig config) {
         return ImmutableSolution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
-                Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()),
-                Unifiers.Immutable.of(), mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(),
-                Collections.emptySet());
+                Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
+                mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(), Collections.emptySet());
     }
 
 }
