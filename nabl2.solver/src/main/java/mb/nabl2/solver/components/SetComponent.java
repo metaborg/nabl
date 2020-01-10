@@ -14,6 +14,7 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -25,10 +26,15 @@ import mb.nabl2.constraints.sets.CDistinct;
 import mb.nabl2.constraints.sets.CEvalSet;
 import mb.nabl2.constraints.sets.CSubsetEq;
 import mb.nabl2.constraints.sets.ISetConstraint;
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.sets.IElement;
+import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.sets.SetEvaluator;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -38,15 +44,15 @@ public class SetComponent extends ASolver {
 
     private static final String NAME_OP = "NAME";
 
-    private final IMatcher<Set<IElement<ITerm>>> evaluator;
+    private final IMatcher<ISetProducer<ITerm>> evaluator;
 
-    public SetComponent(SolverCore core, IMatcher<Set<IElement<ITerm>>> elems) {
+    public SetComponent(SolverCore core, IMatcher<ISetProducer<ITerm>> elems) {
         super(core);
         this.evaluator = SetEvaluator.matcher(elems);
     }
 
-    public Optional<SolveResult> solve(ISetConstraint constraint) {
-        return constraint.match(ISetConstraint.Cases.of(this::solve, this::solve, this::solve));
+    public SolveResult solve(ISetConstraint constraint) throws DelayException {
+        return constraint.matchOrThrow(ISetConstraint.CheckedCases.of(this::solve, this::solve, this::solve));
     }
 
     public Unit finish() {
@@ -55,45 +61,57 @@ public class SetComponent extends ASolver {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private Optional<SolveResult> solve(CSubsetEq constraint) {
+    private SolveResult solve(CSubsetEq constraint) throws DelayException {
         ITerm left = constraint.getLeft();
         ITerm right = constraint.getRight();
         if(!unifier().isGround(left) && unifier().isGround(right)) {
-            return Optional.empty();
+            throw new VariableDelayException(Iterables.concat(unifier().getVars(left), unifier().getVars(right)));
         }
-        Optional<Set<IElement<ITerm>>> maybeLeftSet = evaluator.match(left, unifier());
-        Optional<Set<IElement<ITerm>>> maybeRightSet = evaluator.match(right, unifier());
+        Optional<ISetProducer<ITerm>> maybeLeftSet = evaluator.match(left, unifier());
+        Optional<ISetProducer<ITerm>> maybeRightSet = evaluator.match(right, unifier());
         if(!(maybeLeftSet.isPresent() && maybeRightSet.isPresent())) {
-            return Optional.empty();
+            return SolveResult.empty();
         }
-        Multimap<Object, IElement<ITerm>> leftProj =
-                SetEvaluator.project(maybeLeftSet.get(), constraint.getProjection());
-        Multimap<Object, IElement<ITerm>> rightProj =
-                SetEvaluator.project(maybeRightSet.get(), constraint.getProjection());
+        final Set<IElement<ITerm>> leftSet;
+        final Set<IElement<ITerm>> rightSet;
+        try {
+            leftSet = maybeLeftSet.get().apply();
+            rightSet = maybeRightSet.get().apply();
+        } catch(CriticalEdgeException e) {
+            throw new CriticalEdgeDelayException(e);
+        }
+        Multimap<Object, IElement<ITerm>> leftProj = SetEvaluator.project(leftSet, constraint.getProjection());
+        Multimap<Object, IElement<ITerm>> rightProj = SetEvaluator.project(rightSet, constraint.getProjection());
         Multimap<Object, IElement<ITerm>> result = HashMultimap.create();
         result.putAll(leftProj);
         result.keySet().removeAll(rightProj.keySet());
         if(result.isEmpty()) {
-            return Optional.of(SolveResult.empty());
+            return SolveResult.empty();
         } else {
             MessageContent content =
                     MessageContent.builder().append(B.newAppl(NAME_OP)).append(" not in ").append(right).build();
             Iterable<IMessageInfo> messages =
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values());
-            return Optional.of(SolveResult.messages(messages));
+            return SolveResult.messages(messages);
         }
     }
 
-    private Optional<SolveResult> solve(CDistinct constraint) {
+    private SolveResult solve(CDistinct constraint) throws DelayException {
         ITerm setTerm = constraint.getSet();
         if(!unifier().isGround(setTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(setTerm));
         }
-        Optional<Set<IElement<ITerm>>> maybeSet = evaluator.match(setTerm, unifier());
+        Optional<ISetProducer<ITerm>> maybeSet = evaluator.match(setTerm, unifier());
         if(!(maybeSet.isPresent())) {
-            return Optional.empty();
+            return SolveResult.empty();
         }
-        Multimap<Object, IElement<ITerm>> proj = SetEvaluator.project(maybeSet.get(), constraint.getProjection());
+        Set<IElement<ITerm>> set;
+        try {
+            set = maybeSet.get().apply();
+        } catch(CriticalEdgeException e) {
+            throw new CriticalEdgeDelayException(e);
+        }
+        Multimap<Object, IElement<ITerm>> proj = SetEvaluator.project(set, constraint.getProjection());
         List<IElement<ITerm>> duplicates = Lists.newArrayList();
         for(Object key : proj.keySet()) {
             Collection<IElement<ITerm>> values = proj.get(key);
@@ -102,28 +120,34 @@ public class SetComponent extends ASolver {
             }
         }
         if(duplicates.isEmpty()) {
-            return Optional.of(SolveResult.empty());
+            return SolveResult.empty();
         } else {
             MessageContent content = MessageContent.builder().append(B.newAppl(NAME_OP)).append(" has duplicates in ")
                     .append(setTerm).build();
             Iterable<IMessageInfo> messages =
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates);
-            return Optional.of(SolveResult.messages(messages));
+            return SolveResult.messages(messages);
         }
     }
 
-    private Optional<SolveResult> solve(CEvalSet constraint) {
+    private SolveResult solve(CEvalSet constraint) throws DelayException {
         ITerm setTerm = constraint.getSet();
         if(!unifier().isGround(setTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(setTerm));
         }
-        Optional<Set<IElement<ITerm>>> maybeSet = evaluator.match(setTerm, unifier());
+        Optional<ISetProducer<ITerm>> maybeSet = evaluator.match(setTerm, unifier());
         if(!(maybeSet.isPresent())) {
-            return Optional.empty();
+            return SolveResult.empty();
         }
-        List<ITerm> set = maybeSet.get().stream().map(i -> i.getValue()).collect(Collectors.toList());
-        return Optional.of(SolveResult
-                .constraints(ImmutableCEqual.of(constraint.getResult(), B.newList(set), constraint.getMessageInfo())));
+        Set<IElement<ITerm>> set;
+        try {
+            set = maybeSet.get().apply();
+        } catch(CriticalEdgeException e) {
+            throw new CriticalEdgeDelayException(e);
+        }
+        List<ITerm> elements = set.stream().map(i -> i.getValue()).collect(Collectors.toList());
+        return SolveResult.constraints(
+                ImmutableCEqual.of(constraint.getResult(), B.newList(elements), constraint.getMessageInfo()));
 
     }
 

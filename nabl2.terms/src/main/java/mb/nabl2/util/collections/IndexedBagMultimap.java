@@ -11,6 +11,7 @@ import org.metaborg.util.functions.Function1;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -99,7 +100,7 @@ public class IndexedBagMultimap<K, V, I> {
     }
 
     public Collection<Entry> reindexAll(Function1<I, ? extends Iterable<? extends I>> normalize) {
-        return entries.keySet().stream().flatMap(i -> reindex(i, normalize).stream())
+        return Lists.newArrayList(entries.keySet()).stream().flatMap(i -> reindex(i, normalize).stream())
                 .collect(ImmutableList.toImmutableList());
     }
 

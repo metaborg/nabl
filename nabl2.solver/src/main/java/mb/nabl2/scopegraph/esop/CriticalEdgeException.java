@@ -11,24 +11,27 @@ public class CriticalEdgeException extends Throwable {
 
     private static final long serialVersionUID = 1L;
 
-    private final List<CriticalEdge> incompletes;
+    private final List<CriticalEdge> criticalEdges;
 
-    public CriticalEdgeException(Iterable<CriticalEdge> incompletes) {
+    public CriticalEdgeException(Iterable<CriticalEdge> criticalEdges) {
         super("incomplete", null, false, false);
-        this.incompletes = ImmutableList.copyOf(incompletes);
+        this.criticalEdges = ImmutableList.copyOf(criticalEdges);
+        if(this.criticalEdges.isEmpty()) {
+            throw new IllegalArgumentException("Critical edges cannot be empty.");
+        }
     }
 
     public CriticalEdgeException(IScope scope, ILabel label) {
         this(ImmutableList.of(ImmutableCriticalEdge.of(scope, label)));
     }
 
-    public List<CriticalEdge> incompletes() {
-        return incompletes;
+    public List<CriticalEdge> criticalEdges() {
+        return criticalEdges;
     }
 
     public static CriticalEdgeException of(Iterable<CriticalEdgeException> exceptions) {
         ImmutableList.Builder<CriticalEdge> incompletes = ImmutableList.builder();
-        exceptions.forEach(e -> incompletes.addAll(e.incompletes()));
+        exceptions.forEach(e -> incompletes.addAll(e.criticalEdges()));
         return new CriticalEdgeException(incompletes.build());
     }
 

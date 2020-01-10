@@ -1,17 +1,15 @@
 package mb.nabl2.solver.properties;
 
-import java.util.Collection;
-
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.base.IBaseConstraint;
 import mb.nabl2.constraints.relations.IRelationConstraint;
 import mb.nabl2.relations.IRelationName;
-import mb.nabl2.terms.ITermVar;
 
-public class HasRelationBuildConstraints implements IConstraintSetProperty {
+public class HasRelationBuildConstraints {
 
     private final Multiset<String> relations;
 
@@ -19,68 +17,86 @@ public class HasRelationBuildConstraints implements IConstraintSetProperty {
         this.relations = HashMultiset.create();
     }
 
-    @Override public boolean add(IConstraint constraint) {
-        return constraint.match(IConstraint.Cases.of(
+    public void add(IConstraint constraint) {
         // @formatter:off
-            c -> false,
+        constraint.match(IConstraint.Cases.of(
+            c -> null,
             c -> c.match(IBaseConstraint.Cases.of(
-                t -> false,
-                f -> false,
+                t -> null,
+                f -> null,
                 cc -> {
-                    boolean change = false;
-                    change |= add(cc.getLeft());
-                    change |= add(cc.getRight());
-                    return change;
+                    add(cc.getLeft());
+                    add(cc.getRight());
+                    return null;
                 },
-                e -> add(e.getConstraint()),
-                n -> false
+                e -> {
+                    add(e.getConstraint());
+                    return null;
+                },
+                n -> null
             )),
-            c -> false,
-            c -> false,
-            c -> false,
-            c -> c.match(IRelationConstraint.Cases.of(
-                br -> br.getRelation().match(IRelationName.Cases.of(name -> relations.add(name), extName -> false)),
-                cr -> false,
-                ev -> false
-            )),
-            c -> false,
-            c -> false
-            // @formatter:on
+            c -> null,
+            c -> null,
+            c -> null,
+            c -> {
+                c.match(IRelationConstraint.Cases.of(
+                    br -> {
+                        br.getRelation().match(IRelationName.Cases.of(
+                            name -> {
+                                relations.add(name);
+                                return null;
+                            },
+                            extName -> null
+                        ));
+                        return null;
+                    },
+                    cr -> null,
+                    ev -> null
+                ));
+                return null;
+            },
+            c -> null,
+            c -> null
         ));
+        // @formatter:on
     }
 
-    @Override public boolean remove(IConstraint constraint) {
-        return constraint.match(IConstraint.Cases.of(
+    public void addAll(Iterable<IConstraint> constraints) {
+        constraints.forEach(this::add);
+    }
+
+    public Set.Immutable<String> remove(IConstraint constraint) {
         // @formatter:off
-            c -> false,
+        return constraint.match(IConstraint.Cases.of(
+            c -> Set.Immutable.of(),
             c -> c.match(IBaseConstraint.Cases.of(
-                t -> false,
-                f -> false,
-                cc -> {
-                    boolean change = false;
-                    change |= remove(cc.getLeft());
-                    change |= remove(cc.getRight());
-                    return change;
-                },
+                t -> Set.Immutable.of(),
+                f -> Set.Immutable.of(),
+                cc -> Set.Immutable.union(remove(cc.getLeft()), remove(cc.getRight())),
                 e -> remove(e.getConstraint()),
-                n -> false
+                n -> Set.Immutable.of()
             )),
-            c -> false,
-            c -> false,
-            c -> false,
+            c -> Set.Immutable.of(),
+            c -> Set.Immutable.of(),
+            c -> Set.Immutable.of(),
             c -> c.match(IRelationConstraint.Cases.of(
-                br -> br.getRelation().match(IRelationName.Cases.of(name -> relations.remove(name), extName -> false)),
-                cr -> false,
-                ev -> false
+                br -> br.getRelation().match(IRelationName.Cases.of(
+                    name -> {
+                        if(relations.remove(name) && relations.count(name) == 0) {
+                            return Set.Immutable.of(name);
+                        } else {
+                            return Set.Immutable.of();
+                        }
+                    },
+                    extName -> Set.Immutable.of()
+                )),
+                cr -> Set.Immutable.of(),
+                ev -> Set.Immutable.of()
             )),
-            c -> false,
-            c -> false
-            // @formatter:on
+            c -> Set.Immutable.of(),
+            c -> Set.Immutable.of()
         ));
-    }
-
-    @Override public boolean update(Collection<ITermVar> vars) {
-        return false;
+        // @formatter:on
     }
 
     public boolean contains(String name) {

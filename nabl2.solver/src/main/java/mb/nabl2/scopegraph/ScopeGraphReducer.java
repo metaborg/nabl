@@ -1,7 +1,6 @@
 package mb.nabl2.scopegraph;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.metaborg.util.Ref;
 
@@ -27,21 +26,25 @@ public class ScopeGraphReducer {
     }
 
     public List<CriticalEdge> updateAll() throws InterruptedException {
-        return update(scopeGraph.incompleteVars());
+        final List<CriticalEdge> criticalEdges =
+                scopeGraph.reduceAll(unifier.get()::getVars, this::findScope, this::findOccurrence);
+        return criticalEdges;
     }
 
     public List<CriticalEdge> update(Iterable<? extends ITerm> vars) throws InterruptedException {
-        return scopeGraph.reduce(vars, unifier.get()::getVars, this::findScope, this::findOccurrence);
+        final List<CriticalEdge> criticalEdges =
+                scopeGraph.reduce(vars, unifier.get()::getVars, this::findScope, this::findOccurrence);
+        return criticalEdges;
     }
 
-    private Optional<Scope> findScope(ITerm scopeTerm) {
-        return Optional.of(scopeTerm).filter(unifier.get()::isGround).map(st -> Scope.matcher().match(st, unifier.get())
-                .orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+    private Scope findScope(ITerm scopeTerm) {
+        return Scope.matcher().match(scopeTerm, unifier.get())
+                .orElseThrow(() -> new TypeException("Expected a scope, got " + unifier.get().toString(scopeTerm)));
     }
 
-    private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
-        return Optional.of(occurrenceTerm).filter(unifier.get()::isGround).map(ot -> Occurrence.matcher()
-                .match(ot, unifier.get()).orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+    private Occurrence findOccurrence(ITerm occurrenceTerm) {
+        return Occurrence.matcher().match(occurrenceTerm, unifier.get()).orElseThrow(
+                () -> new TypeException("Expected an occurrence, got " + unifier.get().toString(occurrenceTerm)));
     }
 
 }

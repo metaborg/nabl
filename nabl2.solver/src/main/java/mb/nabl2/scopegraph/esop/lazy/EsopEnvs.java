@@ -10,7 +10,6 @@ import org.metaborg.util.functions.CheckedFunction0;
 import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
@@ -118,7 +117,7 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private final Deque<IEsopEnv<S, L, O, P>> _envs = Queues.newArrayDeque(Arrays.asList(envs));
+            private final Deque<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(Arrays.asList(envs));
             private final Set.Transient<Object> _shadowed = Set.Transient.of();
             private final Set.Transient<P> _paths = Set.Transient.of();
             private final Set.Transient<String> _trace = Set.Transient.of();

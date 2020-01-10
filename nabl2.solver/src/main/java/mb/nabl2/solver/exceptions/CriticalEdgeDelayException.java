@@ -1,4 +1,4 @@
-package mb.nabl2.solver;
+package mb.nabl2.solver.exceptions;
 
 import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 

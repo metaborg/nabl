@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.functions.PartialFunction1;
 
 import com.google.common.annotations.Beta;
 
@@ -70,10 +69,11 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
 
         boolean addAll(IEsopScopeGraph<S, L, O, V> other, Function1<V, ? extends Iterable<? extends V>> norm);
 
-        List<CriticalEdge> reduceAll(Function1<V, ? extends Iterable<? extends V>> norm);
+        List<CriticalEdge> reduceAll(Function1<V, ? extends Iterable<? extends V>> norm, Function1<V, S> fs,
+                Function1<V, O> fo);
 
         List<CriticalEdge> reduce(Iterable<? extends V> vs, Function1<V, ? extends Iterable<? extends V>> norm,
-                PartialFunction1<V, S> fs, PartialFunction1<V, O> fo);
+                Function1<V, S> fs, Function1<V, O> fo);
 
         // -----------------------
 

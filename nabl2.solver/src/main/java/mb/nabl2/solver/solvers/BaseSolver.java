@@ -1,18 +1,17 @@
 package mb.nabl2.solver.solvers;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
 
+import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.scopegraph.ScopeGraphReducer;
@@ -21,20 +20,21 @@ import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.solver.DelayException;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
-import mb.nabl2.solver.SolverException;
 import mb.nabl2.solver.components.AstComponent;
 import mb.nabl2.solver.components.BaseComponent;
 import mb.nabl2.solver.components.EqualityComponent;
 import mb.nabl2.solver.components.ExternalRelationComponent;
 import mb.nabl2.solver.components.ScopeGraphComponent;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.SolverException;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
@@ -67,33 +67,32 @@ public class BaseSolver {
         final ExternalRelationComponent relationSolver = new ExternalRelationComponent(core);
 
         try {
-            ISolver component =
-                    c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, DelayException>builder()
-                    // @formatter:off
-                    .onAst(astSolver::solve)
-                    .onBase(baseSolver::solve)
-                    .onEquality(equalitySolver::solve)
-                    .onScopeGraph(scopeGraphSolver::solve)
-                    .onRelation(relationSolver::solve)
-                    .otherwise(ISolver.defer())
-                    // @formatter:on
-                    );
+            // @formatter:off
+            ISolver component = c -> c.matchOrThrow(IConstraint.CheckedCases.<SolveResult, DelayException>builder()
+                .onAst(astSolver::solve)
+                .onBase(baseSolver::solve)
+                .onEquality(equalitySolver::solve)
+                .onScopeGraph(scopeGraphSolver::solve)
+                .onRelation(relationSolver::solve)
+                .otherwise(ISolver.defer())
+            );
+            // @formatter:on
 
-            final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.empty());
+            final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component);
 
             solver.step().subscribe(r -> {
-                if(!r.result.unifierDiff().isEmpty()) {
+                final Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
+                if(!vars.isEmpty()) {
                     try {
-                        r.release(scopeGraphReducer.update(r.result.unifierDiff().varSet()));
+                        r.resolveCriticalEdges(scopeGraphReducer.update(vars));
                     } catch(InterruptedException ex) {
                         // ignore here
                     }
                 }
             });
 
-            scopeGraph.reduceAll(unifier.get()::getVars);
             scopeGraphReducer.updateAll();
-            final SolveResult solveResult = solver.solve(initial.constraints());
+            final SolveResult solveResult = solver.solve(initial.constraints(), unifier);
 
             return ImmutableGraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
                     equalitySolver.finish(), solveResult.messages(), solveResult.constraints());

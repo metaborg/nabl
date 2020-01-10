@@ -1,7 +1,5 @@
 package mb.nabl2.solver.components;
 
-import java.util.Optional;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.sym.ISymbolicConstraint;
@@ -31,14 +29,14 @@ public class SymbolicComponent extends ASolver {
         return SeedResult.empty();
     }
 
-    public Optional<SolveResult> solve(ISymbolicConstraint constraint) {
+    public SolveResult solve(ISymbolicConstraint constraint) {
         // @formatter:off
         constraint.match(ISymbolicConstraint.Cases.of(
             fact -> facts.__insert(fact.getFact()),
             goal -> goals.__insert(goal.getGoal())
         ));
         // @formatter:on
-        return Optional.of(SolveResult.empty());
+        return SolveResult.empty();
     }
 
     public ISymbolicConstraints finish() {

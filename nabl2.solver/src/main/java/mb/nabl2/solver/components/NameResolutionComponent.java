@@ -31,10 +31,12 @@ import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.ImmutableSolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.TypeException;
-import mb.nabl2.solver.CriticalEdgeDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.collection.VarMultimap;
 import mb.nabl2.util.collections.IProperties;
@@ -76,8 +78,9 @@ public class NameResolutionComponent extends ASolver {
         return SeedResult.constraints(constraints);
     }
 
-    public Optional<SolveResult> solve(INameResolutionConstraint constraint) throws CriticalEdgeDelayException {
-        return constraint.matchOrThrow(INameResolutionConstraint.CheckedCases.of(this::solve, this::solve, this::solve));
+    public SolveResult solve(INameResolutionConstraint constraint) throws DelayException {
+        return constraint
+                .matchOrThrow(INameResolutionConstraint.CheckedCases.of(this::solve, this::solve, this::solve));
     }
 
     public NameResolutionResult finish() {
@@ -90,10 +93,10 @@ public class NameResolutionComponent extends ASolver {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private Optional<SolveResult> solve(CResolve r) throws CriticalEdgeDelayException {
+    private SolveResult solve(CResolve r) throws DelayException {
         final ITerm refTerm = r.getReference();
         if(!unifier().isGround(refTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(refTerm));
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
@@ -124,13 +127,13 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return Optional.of(ImmutableSolveResult.copyOf(result));
+        return ImmutableSolveResult.copyOf(result);
     }
 
-    private Optional<SolveResult> solve(CAssoc a) {
+    private SolveResult solve(CAssoc a) throws DelayException {
         final ITerm declTerm = a.getDeclaration();
         if(!unifier().isGround(declTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(declTerm));
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
@@ -155,19 +158,19 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return Optional.of(result);
+        return result;
     }
 
-    private Optional<SolveResult> solve(CDeclProperty c) {
+    private SolveResult solve(CDeclProperty c) throws DelayException {
         final ITerm declTerm = c.getDeclaration();
         if(!unifier().isGround(declTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(declTerm));
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         final SolveResult result = putProperty(decl, c.getKey(), c.getValue(), c.getMessageInfo())
                 .map(cc -> SolveResult.constraints(cc)).orElseGet(() -> SolveResult.empty());
-        return Optional.of(result);
+        return result;
     }
 
     private Optional<IConstraint> putProperty(Occurrence decl, ITerm key, ITerm value, IMessageInfo message) {

@@ -2,10 +2,7 @@ package mb.nabl2.solver.components;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.Optional;
 import java.util.Set;
-
-import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.Sets;
 
@@ -15,6 +12,7 @@ import mb.nabl2.scopegraph.terms.Namespace;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.sets.IElement;
+import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
@@ -29,31 +27,27 @@ public class NameSetsComponent extends ASolver {
         this.nameResolution = nameResolution;
     }
 
-    public IMatcher<java.util.Set<IElement<ITerm>>> nameSets() {
-        return IMatcher.flatten(M.<Optional<java.util.Set<IElement<ITerm>>>>cases(
+    public IMatcher<ISetProducer<ITerm>> nameSets() {
         // @formatter:off
-            M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                Optional<? extends Set<Occurrence>> decls =
-                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.decls(scope));
-                return decls.map(ds -> makeSet(ds, ns));
+        return M.<ISetProducer<ITerm>>cases(
+            M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
+                Set<Occurrence> decls = NameSetsComponent.this.nameResolution.decls(scope);
+                return makeSet(decls, ns);
             }),
-            M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                Optional<? extends Set<Occurrence>> refs =
-                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.refs(scope));
-                return refs.map(rs -> makeSet(rs, ns));
+            M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
+                Set<Occurrence> refs = NameSetsComponent.this.nameResolution.refs(scope);
+                return makeSet(refs, ns);
             }),
-            M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                Optional<? extends Set<Occurrence>> decls =
-                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.visible(scope));
-                return decls.map(ds -> makeSet(ds, ns));
+            M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
+                Set<Occurrence> decls = NameSetsComponent.this.nameResolution.visible(scope);
+                return makeSet(decls, ns);
             }),
-            M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> {
-                Optional<? extends Set<Occurrence>> decls =
-                        Optionals.ofThrowing(() -> NameSetsComponent.this.nameResolution.reachable(scope));
-                return decls.map(ds -> makeSet(ds, ns));
+            M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
+                Set<Occurrence> decls = NameSetsComponent.this.nameResolution.reachable(scope);
+                return makeSet(decls, ns);
             })
-            // @formatter:on
-        ));
+        );
+        // @formatter:on
     }
 
     private java.util.Set<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
