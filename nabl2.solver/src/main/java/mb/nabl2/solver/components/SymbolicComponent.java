@@ -31,7 +31,7 @@ public class SymbolicComponent extends ASolver {
         return SeedResult.empty();
     }
 
-    public Optional<SolveResult> solve(ISymbolicConstraint constraint) throws InterruptedException {
+    public Optional<SolveResult> solve(ISymbolicConstraint constraint) {
         // @formatter:off
         constraint.match(ISymbolicConstraint.Cases.of(
             fact -> facts.__insert(fact.getFact()),

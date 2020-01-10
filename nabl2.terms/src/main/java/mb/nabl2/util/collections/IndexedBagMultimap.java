@@ -1,6 +1,7 @@
 package mb.nabl2.util.collections;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -8,6 +9,7 @@ import java.util.stream.Collectors;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -15,7 +17,7 @@ import com.google.common.collect.Sets;
 /**
  * Collection of indexed values. Values can be reindexed incrementally, and removed when their indices fully reduce.
  */
-public class IndexedBagmap<K, V, I> {
+public class IndexedBagMultimap<K, V, I> {
 
     public enum RemovalPolicy {
         ANY, // remove value from the collection when any of its indices are removed
@@ -26,7 +28,7 @@ public class IndexedBagmap<K, V, I> {
     private final Multimap<I, Entry> entries;
     private final RemovalPolicy removalPolicy;
 
-    public IndexedBagmap(RemovalPolicy removalPolicy) {
+    public IndexedBagMultimap(RemovalPolicy removalPolicy) {
         this.values = MultiSetMap.Transient.of();
         this.entries = HashMultimap.create();
         this.removalPolicy = removalPolicy;
@@ -47,8 +49,16 @@ public class IndexedBagmap<K, V, I> {
     /**
      * Return all values in the collection.
      */
-    public Iterable<V> values() {
-        return entries.values().stream().map(e -> e.value).collect(Collectors.toList());
+    public Collection<V> values() {
+        return entries.values().stream().map(e -> e.getValue()).collect(Collectors.toList());
+    }
+
+    public Collection<Entry> entries() {
+        return Collections.unmodifiableCollection(entries.values());
+    }
+
+    public Collection<I> indices() {
+        return entries.keySet();
     }
 
     /**
@@ -68,7 +78,7 @@ public class IndexedBagmap<K, V, I> {
     /**
      * Update indices using the normalize function, returning any values for which the index was fully reduced.
      */
-    public Collection<Map.Entry<K, V>> reindex(I index, Function1<I, ? extends Iterable<? extends I>> normalize) {
+    public Collection<Entry> reindex(I index, Function1<I, ? extends Iterable<? extends I>> normalize) {
         final Collection<Entry> entries = this.entries.removeAll(index).stream().collect(Collectors.toList());
         final Set<I> newIndices = ImmutableSet.copyOf(normalize.apply(index));
         if(removalPolicy.equals(RemovalPolicy.ANY) && !newIndices.contains(index)) {
@@ -88,19 +98,24 @@ public class IndexedBagmap<K, V, I> {
         return entries.stream().filter(e -> tryRemove(e)).collect(Collectors.toList());
     }
 
+    public Collection<Entry> reindexAll(Function1<I, ? extends Iterable<? extends I>> normalize) {
+        return entries.keySet().stream().flatMap(i -> reindex(i, normalize).stream())
+                .collect(ImmutableList.toImmutableList());
+    }
+
     private boolean tryRemove(Entry entry) {
         if(entry.indices.isEmpty()) {
-            values.remove(entry.key, entry.value);
+            values.remove(entry.getKey(), entry.getValue());
             return true;
         } else {
             return false;
         }
     }
 
-    private class Entry implements Map.Entry<K, V> {
+    public final class Entry implements Map.Entry<K, V> {
 
-        public final K key;
-        public final V value;
+        private final K key;
+        private final V value;
 
         public final Set<I> indices;
 
@@ -120,6 +135,10 @@ public class IndexedBagmap<K, V, I> {
 
         @Override public V setValue(V value) {
             throw new UnsupportedOperationException();
+        }
+
+        public Set<I> getIndices() {
+            return indices;
         }
 
 

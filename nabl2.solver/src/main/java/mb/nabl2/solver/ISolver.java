@@ -20,7 +20,7 @@ import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 @FunctionalInterface
-public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, InterruptedException> {
+public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, DelayException> {
 
     default void update(@SuppressWarnings("unused") Collection<ITermVar> vars) {
         // ignore by default
@@ -109,7 +109,9 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
     }
 
     public static ISolver defer() {
-        return c -> Optional.empty();
+        return c -> {
+            throw new UnconditionalDelayExpection();
+        };
     }
 
     public static ISolver drop() {

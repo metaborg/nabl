@@ -2,6 +2,8 @@ package mb.nabl2.solver.components;
 
 import java.util.Optional;
 
+import org.metaborg.util.functions.Function1;
+
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.scopegraph.CGDecl;
 import mb.nabl2.constraints.scopegraph.CGDirectEdge;
@@ -34,7 +36,7 @@ public class ScopeGraphComponent extends ASolver {
 
     public ISolver.SeedResult seed(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> solution,
             @SuppressWarnings("unused") IMessageInfo message) throws InterruptedException {
-        scopeGraph.addAll(solution);
+        scopeGraph.addAll(solution, unifier()::getVars);
         return SeedResult.empty();
     }
 
@@ -92,7 +94,7 @@ public class ScopeGraphComponent extends ASolver {
             scopeGraph.addDirectEdge(sourceScope, c.getLabel(), targetScope);
             return true;
         }).orElseGet(() -> {
-            scopeGraph.addIncompleteDirectEdge(sourceScope, c.getLabel(), c.getTargetScope());
+            scopeGraph.addIncompleteDirectEdge(sourceScope, c.getLabel(), c.getTargetScope(), unifier()::getVars);
             return true;
         });
     }
@@ -108,7 +110,7 @@ public class ScopeGraphComponent extends ASolver {
             scopeGraph.addImportEdge(scope, c.getLabel(), ref);
             return true;
         }).orElseGet(() -> {
-            scopeGraph.addIncompleteImportEdge(scope, c.getLabel(), c.getReference());
+            scopeGraph.addIncompleteImportEdge(scope, c.getLabel(), c.getReference(), unifier()::getVars);
             return true;
         });
     }
@@ -125,6 +127,17 @@ public class ScopeGraphComponent extends ASolver {
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         scopeGraph.addExportEdge(decl, c.getLabel(), scope);
         return true;
+    }
+
+    // ------------------------------------------------------------------------------------------------------//
+
+    public void updateAll(Function1<ITerm, ? extends Iterable<? extends ITerm>> norm) throws InterruptedException {
+        scopeGraph.reduceAll(norm);
+    }
+
+    public void update(Iterable<? extends ITerm> vars, Function1<ITerm, ? extends Iterable<? extends ITerm>> norm)
+            throws InterruptedException {
+        scopeGraph.reduce(vars, norm, this::findScope, this::findOccurrence);
     }
 
     private Optional<Scope> findScope(ITerm scopeTerm) {

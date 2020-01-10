@@ -4,7 +4,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.scopegraph.INamespace;
-import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -22,10 +21,6 @@ public abstract class SpacedName {
         sb.append(getName());
         sb.append('}');
         return sb.toString();
-    }
-
-    public static SpacedName of(IOccurrence occurrence) {
-        return ImmutableSpacedName.of(occurrence.getNamespace(), occurrence.getName());
     }
 
 }

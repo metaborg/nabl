@@ -18,12 +18,14 @@ import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
+import mb.nabl2.scopegraph.ScopeGraphReducer;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
+import mb.nabl2.solver.DelayException;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SolveResult;
@@ -36,12 +38,10 @@ import mb.nabl2.solver.components.EqualityComponent;
 import mb.nabl2.solver.components.NameResolutionComponent;
 import mb.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
 import mb.nabl2.solver.components.NameSetsComponent;
-import mb.nabl2.solver.components.PolymorphismComponent;
 import mb.nabl2.solver.components.RelationComponent;
 import mb.nabl2.solver.components.SetComponent;
 import mb.nabl2.solver.components.SymbolicComponent;
 import mb.nabl2.solver.messages.IMessages;
-import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.symbolic.SymbolicConstraints;
 import mb.nabl2.terms.ITerm;
@@ -63,10 +63,6 @@ public class BaseMultiFileSolver extends BaseSolver {
         // shared
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
 
-        // constraint set properties
-        final ActiveVars activeVars = new ActiveVars(unifier);
-        intfVars.stream().forEach(activeVars::add);
-
         // guards -- intfScopes == null indicates we do not know the interface scopes, and resolution should be delayed.
         final Predicate2<Scope, Label> isEdgeClosed = (s, l) -> intfScopes != null && !intfScopes.contains(s);
 
@@ -74,6 +70,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.of(config.getResolutionParams(), scopeGraph, isEdgeClosed);
+        final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // solver components
         final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
@@ -82,32 +79,29 @@ public class BaseMultiFileSolver extends BaseSolver {
         final NameResolutionComponent nameResolutionSolver =
                 new NameResolutionComponent(core, scopeGraph, nameResolution, Properties.Transient.of());
         final NameSetsComponent nameSetSolver = new NameSetsComponent(core, nameResolution);
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, Predicate1.never(), Predicate1.never(),
-                nameResolutionSolver::getProperty);
         final RelationComponent relationSolver = new RelationComponent(core, Predicate1.never(), config.getFunctions(),
                 VariantRelations.transientOf(config.getRelations()));
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, SymbolicConstraints.of());
 
         final ISolver component =
-                c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
+                c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, DelayException>builder()
                 // @formatter:off
                     .onBase(baseSolver::solve)
                     .onEquality(equalitySolver::solve)
                     .onNameResolution(nameResolutionSolver::solve)
-                    .onPoly(polySolver::solve)
                     .onRelation(relationSolver::solve)
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
                     .otherwise(ISolver.defer())
                     // @formatter:on
                 );
-        final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.from(activeVars));
+        final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.empty());
 
         solver.step().subscribe(r -> {
-            if(!r.unifierDiff().isEmpty()) {
+            if(!r.result.unifierDiff().isEmpty()) {
                 try {
-                    nameResolutionSolver.update();
+                    r.release(scopeGraphReducer.update(r.result.unifierDiff().varSet()));
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -115,7 +109,8 @@ public class BaseMultiFileSolver extends BaseSolver {
         });
 
         try {
-            nameResolutionSolver.update();
+            scopeGraph.reduceAll(unifier.get()::getVars);
+            scopeGraphReducer.updateAll();
             final SolveResult solveResult = solver.solve(initial.constraints());
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();

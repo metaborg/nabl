@@ -15,11 +15,13 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.scopegraph.ScopeGraphReducer;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
+import mb.nabl2.solver.DelayException;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
@@ -54,6 +56,7 @@ public class BaseSolver {
         // shared
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = EsopScopeGraph.Transient.of();
+        final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // solver components
         final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal);
@@ -65,7 +68,7 @@ public class BaseSolver {
 
         try {
             ISolver component =
-                    c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
+                    c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, DelayException>builder()
                     // @formatter:off
                     .onAst(astSolver::solve)
                     .onBase(baseSolver::solve)
@@ -77,6 +80,19 @@ public class BaseSolver {
                     );
 
             final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component, Iterables2.empty());
+
+            solver.step().subscribe(r -> {
+                if(!r.result.unifierDiff().isEmpty()) {
+                    try {
+                        r.release(scopeGraphReducer.update(r.result.unifierDiff().varSet()));
+                    } catch(InterruptedException ex) {
+                        // ignore here
+                    }
+                }
+            });
+
+            scopeGraph.reduceAll(unifier.get()::getVars);
+            scopeGraphReducer.updateAll();
             final SolveResult solveResult = solver.solve(initial.constraints());
 
             return ImmutableGraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),

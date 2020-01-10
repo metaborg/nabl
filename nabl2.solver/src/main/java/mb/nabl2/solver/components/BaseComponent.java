@@ -32,7 +32,7 @@ public class BaseComponent extends ASolver {
         super(core);
     }
 
-    public Optional<SolveResult> solve(IBaseConstraint constraint) throws InterruptedException {
+    public Optional<SolveResult> solve(IBaseConstraint constraint) {
         final SolveResult result = constraint.match(IBaseConstraint.Cases.of(
         // @formatter:off
             t -> SolveResult.empty(),

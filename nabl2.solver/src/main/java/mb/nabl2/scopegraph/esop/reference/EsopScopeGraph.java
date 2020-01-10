@@ -1,20 +1,34 @@
 package mb.nabl2.scopegraph.esop.reference;
 
 import java.io.Serializable;
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map.Entry;
 
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate3;
+import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
+import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
+import mb.nabl2.util.CapsuleUtil;
+import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieFunction;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IFunction;
 import mb.nabl2.util.collections.IRelation3;
+import mb.nabl2.util.collections.IndexedBagMultimap;
+import mb.nabl2.util.collections.IndexedBagMultimap.RemovalPolicy;
 
 public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
         implements IEsopScopeGraph<S, L, O, V> {
@@ -30,8 +44,8 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         allScopes.__insertAll(getDirectEdges().valueSet());
         allScopes.__insertAll(getExportEdges().valueSet());
         allScopes.__insertAll(getImportEdges().keySet());
-        allScopes.__insertAll(incompleteDirectEdges().keySet());
-        allScopes.__insertAll(incompleteImportEdges().keySet());
+        incompleteDirectEdges().forEach(e -> allScopes.__insert(e.getKey()._1()));
+        incompleteImportEdges().forEach(e -> allScopes.__insert(e.getKey()._1()));
         return allScopes.freeze();
     }
 
@@ -53,10 +67,6 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         return incompleteDirectEdges().isEmpty() && incompleteImportEdges().isEmpty();
     }
 
-    @Override public boolean isOpen(S scope, L label) {
-        return incompleteDirectEdges().contains(scope, label) || incompleteImportEdges().contains(scope, label);
-    }
-
     // ------------------------------------
 
     public static class Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
@@ -69,13 +79,13 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         private final IRelation3.Immutable<O, L, S> assocEdges;
         private final IRelation3.Immutable<S, L, O> importEdges;
 
-        private final IRelation3.Immutable<S, L, V> incompleteDirectEdges;
-        private final IRelation3.Immutable<S, L, V> incompleteImportEdges;
+        private final Map.Immutable<Tuple2<S, L>, V> incompleteDirectEdges;
+        private final Map.Immutable<Tuple2<S, L>, V> incompleteImportEdges;
 
         Immutable(IFunction.Immutable<O, S> decls, IFunction.Immutable<O, S> refs,
                 IRelation3.Immutable<S, L, S> directEdges, IRelation3.Immutable<O, L, S> assocEdges,
-                IRelation3.Immutable<S, L, O> importEdges, IRelation3.Immutable<S, L, V> incompleteDirectEdges,
-                IRelation3.Immutable<S, L, V> incompleteImportEdges) {
+                IRelation3.Immutable<S, L, O> importEdges, Map.Immutable<Tuple2<S, L>, V> incompleteDirectEdges,
+                Map.Immutable<Tuple2<S, L>, V> incompleteImportEdges) {
             this.decls = decls;
             this.refs = refs;
             this.directEdges = directEdges;
@@ -83,6 +93,11 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             this.importEdges = importEdges;
             this.incompleteDirectEdges = incompleteDirectEdges;
             this.incompleteImportEdges = incompleteImportEdges;
+        }
+
+        @Override public boolean isOpen(S scope, L label) {
+            final Tuple2<S, L> key = ImmutableTuple2.of(scope, label);
+            return incompleteDirectEdges.containsKey(key) || incompleteImportEdges.containsKey(key);
         }
 
         // ------------------------------------------------------------
@@ -99,8 +114,8 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return directEdges;
         }
 
-        @Override public IRelation3.Immutable<S, L, V> incompleteDirectEdges() {
-            return incompleteDirectEdges;
+        @Override public Collection<? extends Entry<Tuple2<S, L>, V>> incompleteDirectEdges() {
+            return incompleteDirectEdges.entrySet();
         }
 
         @Override public IRelation3.Immutable<O, L, S> getExportEdges() {
@@ -111,15 +126,15 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return importEdges;
         }
 
-        @Override public IRelation3.Immutable<S, L, V> incompleteImportEdges() {
-            return incompleteImportEdges;
+        @Override public Collection<? extends Entry<Tuple2<S, L>, V>> incompleteImportEdges() {
+            return incompleteImportEdges.entrySet();
         }
 
         // ------------------------------------------------------------
 
         @Override public EsopScopeGraph.Transient<S, L, O, V> melt() {
             return new EsopScopeGraph.Transient<>(decls.melt(), refs.melt(), directEdges.melt(), assocEdges.melt(),
-                    importEdges.melt(), incompleteDirectEdges.melt(), incompleteImportEdges.melt());
+                    importEdges.melt(), incompleteDirectEdges.asTransient(), incompleteImportEdges.asTransient());
         }
 
         @Override public int hashCode() {
@@ -165,12 +180,10 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                 EsopScopeGraph.Immutable<S, L, O, V> of() {
             return new EsopScopeGraph.Immutable<>(HashTrieFunction.Immutable.of(), HashTrieFunction.Immutable.of(),
                     HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(),
-                    HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(),
-                    HashTrieRelation3.Immutable.of());
+                    HashTrieRelation3.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
         }
 
     }
-
 
     public static class Transient<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends EsopScopeGraph<S, L, O, V> implements IEsopScopeGraph.Transient<S, L, O, V> {
@@ -181,20 +194,33 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         private final IRelation3.Transient<O, L, S> assocEdges;
         private final IRelation3.Transient<S, L, O> importEdges;
 
-        private final IRelation3.Transient<S, L, V> incompleteDirectEdges;
-        private final IRelation3.Transient<S, L, V> incompleteImportEdges;
+        private final IndexedBagMultimap<Tuple2<S, L>, V, V> incompleteDirectEdges;
+        private final IndexedBagMultimap<Tuple2<S, L>, V, V> incompleteImportEdges;
 
         Transient(IFunction.Transient<O, S> decls, IFunction.Transient<O, S> refs,
                 IRelation3.Transient<S, L, S> directEdges, IRelation3.Transient<O, L, S> assocEdges,
-                IRelation3.Transient<S, L, O> importEdges, IRelation3.Transient<S, L, V> incompleteDirectEdges,
-                IRelation3.Transient<S, L, V> incompleteImportEdges) {
+                IRelation3.Transient<S, L, O> importEdges, Map.Transient<Tuple2<S, L>, V> incompleteDirectEdges,
+                Map.Transient<Tuple2<S, L>, V> incompleteImportEdges) {
             this.decls = decls;
             this.refs = refs;
             this.directEdges = directEdges;
             this.assocEdges = assocEdges;
             this.importEdges = importEdges;
-            this.incompleteDirectEdges = incompleteDirectEdges;
-            this.incompleteImportEdges = incompleteImportEdges;
+            this.incompleteDirectEdges = new IndexedBagMultimap<>(RemovalPolicy.ALL);
+            incompleteDirectEdges.entrySet().forEach(e -> {
+                this.incompleteDirectEdges.put(ImmutableTuple2.of(e.getKey()._1(), e.getKey()._2()), e.getValue(),
+                        Iterables2.singleton(e.getValue()));
+            });
+            this.incompleteImportEdges = new IndexedBagMultimap<>(RemovalPolicy.ALL);
+            incompleteImportEdges.entrySet().forEach(e -> {
+                this.incompleteImportEdges.put(ImmutableTuple2.of(e.getKey()._1(), e.getKey()._2()), e.getValue(),
+                        Iterables2.singleton(e.getValue()));
+            });
+        }
+
+        @Override public boolean isOpen(S scope, L label) {
+            final Tuple2<S, L> key = ImmutableTuple2.of(scope, label);
+            return incompleteDirectEdges.containsKey(key) || incompleteImportEdges.containsKey(key);
         }
 
         // ------------------------------------------------------------
@@ -211,8 +237,8 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return directEdges;
         }
 
-        @Override public IRelation3<S, L, V> incompleteDirectEdges() {
-            return incompleteDirectEdges;
+        @Override public Collection<? extends Map.Entry<Tuple2<S, L>, V>> incompleteDirectEdges() {
+            return incompleteDirectEdges.entries();
         }
 
         @Override public IRelation3<O, L, S> getExportEdges() {
@@ -223,8 +249,12 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return importEdges;
         }
 
-        @Override public IRelation3<S, L, V> incompleteImportEdges() {
-            return incompleteImportEdges;
+        @Override public Collection<? extends Map.Entry<Tuple2<S, L>, V>> incompleteImportEdges() {
+            return incompleteImportEdges.entries();
+        }
+
+        @Override public Iterable<V> incompleteVars() {
+            return Iterables.concat(incompleteDirectEdges.indices(), incompleteImportEdges.indices());
         }
 
         // ------------------------------------------------------------
@@ -241,69 +271,88 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return directEdges.put(sourceScope, label, targetScope);
         }
 
-        @Override public boolean addIncompleteDirectEdge(S scope, L label, V var) {
-            return incompleteDirectEdges.put(scope, label, var);
+        @Override public boolean addIncompleteDirectEdge(S scope, L label, V var,
+                Function1<V, ? extends Iterable<? extends V>> norm) {
+            incompleteDirectEdges.put(ImmutableTuple2.of(scope, label), var, norm.apply(var));
+            return true;
         }
 
         @Override public boolean addExportEdge(O decl, L label, S scope) {
             return assocEdges.put(decl, label, scope);
         }
 
-        @Override public boolean addIncompleteImportEdge(S scope, L label, V var) {
-            return incompleteImportEdges.put(scope, label, var);
+        @Override public boolean addIncompleteImportEdge(S scope, L label, V var,
+                Function1<V, ? extends Iterable<? extends V>> norm) {
+            incompleteImportEdges.put(ImmutableTuple2.of(scope, label), var, norm.apply(var));
+            return true;
         }
 
         @Override public boolean addImportEdge(S scope, L label, O ref) {
             return importEdges.put(scope, label, ref);
         }
 
-        @Override public boolean addAll(IEsopScopeGraph<S, L, O, V> other) {
+        @Override public boolean addAll(IEsopScopeGraph<S, L, O, V> other,
+                Function1<V, ? extends Iterable<? extends V>> norm) {
             boolean change = false;
-            change |= decls.putAll(other.getDecls());
-            change |= refs.putAll(other.getRefs());
-            change |= directEdges.putAll(other.getDirectEdges());
-            change |= assocEdges.putAll(other.getExportEdges());
-            change |= importEdges.putAll(other.getImportEdges());
-            change |= incompleteDirectEdges.putAll(other.incompleteDirectEdges());
-            change |= incompleteImportEdges.putAll(other.incompleteImportEdges());
+
+            change |= other.getDecls().stream().filter(e -> addDecl(e._2(), e._1())).count() > 0;
+            change |= other.getRefs().stream().filter(e -> addRef(e._1(), e._2())).count() > 0;
+
+            change |= other.getDirectEdges().stream().filter(e -> addDirectEdge(e._1(), e._2(), e._3())).count() > 0;
+            change |= other.getExportEdges().stream().filter(e -> addExportEdge(e._1(), e._2(), e._3())).count() > 0;
+            change |= other.getImportEdges().stream().filter(e -> addImportEdge(e._1(), e._2(), e._3())).count() > 0;
+
+            change |= other.incompleteDirectEdges().stream()
+                    .filter(e -> addIncompleteDirectEdge(e.getKey()._1(), e.getKey()._2(), e.getValue(), norm))
+                    .count() > 0;
+            change |= other.incompleteImportEdges().stream()
+                    .filter(e -> addIncompleteImportEdge(e.getKey()._1(), e.getKey()._2(), e.getValue(), norm))
+                    .count() > 0;
+
             return change;
         }
 
         // -------------------------
 
-        @Override public boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo) {
-            boolean progress = false;
-            progress |= reduce(incompleteDirectEdges, fs, this::addDirectEdge);
-            progress |= reduce(incompleteImportEdges, fo, this::addImportEdge);
-            return progress;
+        @Override public List<CriticalEdge> reduceAll(Function1<V, ? extends Iterable<? extends V>> norm) {
+            final ImmutableList.Builder<CriticalEdge> reduced = ImmutableList.builder();
+            incompleteDirectEdges.reindexAll(norm);
+            incompleteDirectEdges.reindexAll(norm);
+            return reduced.build();
         }
 
-        private <X> boolean reduce(IRelation3.Transient<S, L, V> relation, PartialFunction1<V, X> f,
-                Predicate3<S, L, X> add) {
-            return relation.stream().flatMap(slv -> {
-                return f.apply(slv._3()).map(x -> {
-                    add.test(slv._1(), slv._2(), x);
-                    return Stream.of(slv);
-                }).orElse(Stream.empty());
-            }).map(slv -> {
-                return relation.remove(slv._1(), slv._2(), slv._3());
-            }).count() != 0; // Do not use findAny().isPresent(), which short-cuts the side-effecty flatMap+map
+        @Override public List<CriticalEdge> reduce(Iterable<? extends V> vs,
+                Function1<V, ? extends Iterable<? extends V>> norm, PartialFunction1<V, S> fs,
+                PartialFunction1<V, O> fo) {
+            final ImmutableList.Builder<CriticalEdge> reduced = ImmutableList.builder();
+            this.<S>reduce(incompleteDirectEdges, vs, norm, fs, this::addDirectEdge, reduced);
+            this.<O>reduce(incompleteImportEdges, vs, norm, fo, this::addImportEdge, reduced);
+            return reduced.build();
+        }
+
+        private <X> void reduce(IndexedBagMultimap<Tuple2<S, L>, V, V> index, Iterable<? extends V> vs,
+                Function1<V, ? extends Iterable<? extends V>> norm, PartialFunction1<V, X> f, Predicate3<S, L, X> add,
+                ImmutableList.Builder<CriticalEdge> reduced) {
+            for(V v : vs) {
+                for(Map.Entry<Tuple2<S, L>, V> slv : index.reindex(v, norm)) {
+                    f.apply(slv.getValue()).ifPresent(x -> add.test(slv.getKey()._1(), slv.getKey()._2(), x));
+                }
+            }
         }
 
         // ------------------------------------------------------------
 
         @Override public EsopScopeGraph.Immutable<S, L, O, V> freeze() {
             return new EsopScopeGraph.Immutable<>(decls.freeze(), refs.freeze(), directEdges.freeze(),
-                    assocEdges.freeze(), importEdges.freeze(), incompleteDirectEdges.freeze(),
-                    incompleteImportEdges.freeze());
+                    assocEdges.freeze(), importEdges.freeze(), CapsuleUtil.toMap(incompleteDirectEdges.entries()),
+                    CapsuleUtil.toMap(incompleteImportEdges.entries()));
         }
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence, V>
                 EsopScopeGraph.Transient<S, L, O, V> of() {
             return new EsopScopeGraph.Transient<>(HashTrieFunction.Transient.of(), HashTrieFunction.Transient.of(),
                     HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
-                    HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
-                    HashTrieRelation3.Transient.of());
+                    HashTrieRelation3.Transient.of(), Map.Transient.of(), Map.Transient.of());
         }
 
     }

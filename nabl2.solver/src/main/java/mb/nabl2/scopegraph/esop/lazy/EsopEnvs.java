@@ -22,7 +22,6 @@ import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
-import mb.nabl2.scopegraph.terms.SpacedName;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -172,7 +171,7 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private final java.util.Set<IEsopEnv<S, L, O, P>> _envs = Sets.newHashSet(envs);
+            private final java.util.LinkedList<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(envs);
             private final Set.Transient<P> _paths = Set.Transient.of();
             private final Set.Transient<String> _trace = Set.Transient.of();
             private Set.Immutable<P> paths = null;
@@ -284,7 +283,7 @@ public class EsopEnvs {
             }
 
             @Override public Object matchToken(IResolutionPath<S, L, O> p) {
-                return SpacedName.of(p.getDeclaration());
+                return p.getDeclaration().getSpacedName();
             }
 
             @Override public boolean shortCircuit() {
@@ -304,7 +303,7 @@ public class EsopEnvs {
             }
 
             @Override public Object matchToken(IDeclPath<S, L, O> p) {
-                return SpacedName.of(p.getDeclaration());
+                return p.getDeclaration().getSpacedName();
             }
 
             @Override public boolean shortCircuit() {

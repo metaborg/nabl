@@ -42,7 +42,7 @@ public class IndexedBag<V, I> {
     /**
      * Return all values in the collection.
      */
-    public Iterable<V> values() {
+    public Collection<V> values() {
         return entries.values().stream().map(e -> e.value).collect(Collectors.toList());
     }
 

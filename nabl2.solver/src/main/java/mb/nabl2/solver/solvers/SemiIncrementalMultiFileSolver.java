@@ -17,12 +17,14 @@ import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
+import mb.nabl2.scopegraph.ScopeGraphReducer;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
+import mb.nabl2.solver.DelayException;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.ISolver.SolveResult;
@@ -37,15 +39,11 @@ import mb.nabl2.solver.components.ImmutableNameResolutionResult;
 import mb.nabl2.solver.components.NameResolutionComponent;
 import mb.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
 import mb.nabl2.solver.components.NameSetsComponent;
-import mb.nabl2.solver.components.PolymorphismComponent;
 import mb.nabl2.solver.components.RelationComponent;
 import mb.nabl2.solver.components.SetComponent;
 import mb.nabl2.solver.components.SymbolicComponent;
 import mb.nabl2.solver.messages.IMessages;
-import mb.nabl2.solver.properties.ActiveDeclTypes;
-import mb.nabl2.solver.properties.ActiveVars;
 import mb.nabl2.solver.properties.HasRelationBuildConstraints;
-import mb.nabl2.solver.properties.PolySafe;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
@@ -68,10 +66,9 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
                 EsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
+        final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // constraint set properties
-        final ActiveVars activeVars = new ActiveVars(unifier);
-        final ActiveDeclTypes activeDeclTypes = new ActiveDeclTypes(unifier);
         final HasRelationBuildConstraints hasRelationBuildConstraints = new HasRelationBuildConstraints();
 
         // guards
@@ -90,30 +87,25 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final SetComponent setSolver = new SetComponent(core, nameSetSolver.nameSets());
         final SymbolicComponent symSolver = new SymbolicComponent(core, initial.symbolic());
 
-        final PolySafe polySafe = new PolySafe(activeVars, activeDeclTypes, nameResolutionSolver);
-        final PolymorphismComponent polySolver = new PolymorphismComponent(core, polySafe::isGenSafe,
-                polySafe::isInstSafe, nameResolutionSolver::getProperty);
-
         final ISolver component =
-                c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, InterruptedException>builder()
+                c -> c.matchOrThrow(IConstraint.CheckedCases.<Optional<SolveResult>, DelayException>builder()
                 // @formatter:off
                     .onBase(baseSolver::solve)
                     .onEquality(equalitySolver::solve)
                     .onNameResolution(nameResolutionSolver::solve)
-                    .onPoly(polySolver::solve)
                     .onRelation(relationSolver::solve)
                     .onSet(setSolver::solve)
                     .onSym(symSolver::solve)
                     .otherwise(ISolver.defer())
                     // @formatter:on
                 );
-        final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component,
-                Iterables2.from(activeVars, hasRelationBuildConstraints));
+        final FixedPointSolver solver =
+                new FixedPointSolver(cancel, progress, component, Iterables2.singleton(hasRelationBuildConstraints));
 
         solver.step().subscribe(r -> {
-            if(!r.unifierDiff().isEmpty()) {
+            if(!r.result.unifierDiff().isEmpty()) {
                 try {
-                    nameResolutionSolver.update();
+                    r.release(scopeGraphReducer.update(r.result.unifierDiff().varSet()));
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
@@ -137,7 +129,8 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             }
 
             // solve constraints
-            nameResolutionSolver.update();
+            scopeGraph.reduceAll(unifier.get()::getVars);
+            scopeGraphReducer.updateAll();
             SolveResult solveResult = solver.solve(constraints);
             messages.addAll(solveResult.messages());
 

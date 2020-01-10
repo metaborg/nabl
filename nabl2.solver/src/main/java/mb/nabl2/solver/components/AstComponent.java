@@ -34,7 +34,7 @@ public class AstComponent extends ASolver {
         return SeedResult.empty();
     }
 
-    public Optional<SolveResult> solve(IAstConstraint constraint) throws InterruptedException {
+    public Optional<SolveResult> solve(IAstConstraint constraint) {
         SolveResult result = constraint.match(IAstConstraint.Cases.of(astp -> solve(astp)));
         return Optional.of(result);
     }
