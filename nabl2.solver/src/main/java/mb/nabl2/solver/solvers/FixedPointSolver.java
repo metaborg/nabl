@@ -129,8 +129,8 @@ public class FixedPointSolver {
             }
         } while(progress);
 
-        log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
-                unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
+      //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
+      //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
 
         unsolved.addAll(constraints);
         unsolved.addAll(variableDelays.values());
