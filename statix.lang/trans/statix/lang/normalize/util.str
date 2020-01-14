@@ -156,6 +156,11 @@ rules // smart constructors for typed terms
 
   mk-Nil(|ty): _ -> <norm-set-ast-type(|LIST(ty))> List([])
 
+  mk-Some: t -> <norm-set-ast-type(|OPTION(ty))> Some(t)
+    with ty := <norm-get-ast-type> t
+
+  mk-None(|ty): _ -> <norm-set-ast-type(|OPTION(ty))> None()
+
   mk-List: ts -> <norm-set-ast-type(|ty)> List(ts)
     with tys := <map(norm-get-ast-type)> ts;
          (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));

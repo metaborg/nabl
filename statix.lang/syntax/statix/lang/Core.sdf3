@@ -311,6 +311,7 @@ context-free syntax
 
   SortRef                = Sort
   SortRef.ListSort       = <list(<SortRef>)>
+  SortRef.OptionSort     = <option(<SortRef>)>
   SortRef.Tuple0Sort     = <( )>
   SortRef.TupleNSort     = <(<SortRef> * <{SortRef " * "}+>)>
   SortRef.IntSort        = "int"
@@ -332,7 +333,7 @@ context-free syntax
 lexical syntax
 
   SortId = STRID
-  SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "astId" {reject}
+  SortId = "list" | "option" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "astId" {reject}
 
   OpId = STRID
 
@@ -343,21 +344,21 @@ lexical syntax
 
 context-free syntax
 
-  Var.Var = VARID
+  Var.Var = VarId
   Var.Wld = <_>
 
   Int.Int = INT
 
-  Term            = Var
-  Term            = Int
-  Term            = Str
-  Term.List       = <[<{Term ", "}*>]>
-  Term.ListTail   = <[<{Term ", "}*>|<Term>]>
-  Term.Tuple0     = <( )>
-  Term.TupleN     = <(<Term>, <{Term ", "}+>)>
-  Term.As         = <<Var>@<Term>>
-  Term.Ascribe    = <<Term> : <SortRef>>
-  Term            = <(<Term>)> {bracket}
+  Term          = Var
+  Term          = Int
+  Term          = Str
+  Term.List     = <[<{Term ", "}*>]>
+  Term.ListTail = <[<{Term ", "}*>|<Term>]>
+  Term.Tuple0   = <( )>
+  Term.TupleN   = <(<Term>, <{Term ", "}+>)>
+  Term.As       = <<Var>@<Term>>
+  Term.Ascribe  = <<Term> : <SortRef>>
+  Term          = <(<Term>)> {bracket}
 
   CommaTerms = <<{Term ", "}*>>
   SpaceTerms = <<{Term " "}*>>
@@ -369,15 +370,22 @@ context-free priorities
 
 syntax
 
-  Term-CF.Op         = OpId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+  Term-CF.Op   = OpId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+  Term-CF.Some = "some" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
+  Term-CF.None = "none" "(" LAYOUT?-CF ")"
 
-  Str-CF.Str        = "\"" StrChars-LEX "\""
+  Str-CF.Str = "\"" StrChars-LEX "\""
 
 lexical syntax
 
-  StrChars   = StrChar*
-  StrChar    = ~[\"\\\t\r\n]
-  StrChar    =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
+  VarId = VARID
+  VarId = "some" | "none" {reject}
+
+  OpId = "some" | "none" {reject}
+
+  StrChars = StrChar*
+  StrChar  = ~[\"\\\t\r\n]
+  StrChar  =  "\\\"" | "\\\\" | "\\t" | "\\r" | "\\n"
 
 lexical restrictions
 

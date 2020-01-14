@@ -30,6 +30,7 @@ context-free syntax
   TType.AST_ID     = <astId>
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
+  TType.OPTION     = <option(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
 
 sorts

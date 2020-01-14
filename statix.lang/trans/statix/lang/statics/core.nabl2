@@ -424,6 +424,8 @@ rules
     Map1T(SortRef)[[ sorts ^ (s) : tys ]].
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
+  SortRef[[ OptionSort(sort) ^ (s) : OPTION(ty) ]] :=
+    SortRef[[ sort ^ (s) : ty ]].
   SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
     Sort{x} -> s, Sort{x} |-> d | error $[Unresolved sort [x]] @x, @x.ref := Sort{x}, @x.decl := d,
     d : ty,
@@ -469,6 +471,9 @@ rules
   Term(V)[[ ListTail(ts, t) ^ (s) : LIST(ty) ]] :=
     Map1t(Term(V))[[ ts ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : LIST(ty) ]].
+  Term(V)[[ Some(t) ^ (s) : OPTION(ty) ]] :=
+    Term(V)[[ t ^ (s) : ty ]].
+  Term(V)[[ None() ^ (s) : OPTION(ty) ]].
   Term(V)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=

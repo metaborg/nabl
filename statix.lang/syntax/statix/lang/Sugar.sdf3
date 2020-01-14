@@ -31,6 +31,7 @@ context-free syntax
 
   Lift.IdLift     = "*"
   Lift.ListLift   = "list(*)"
+//Lift.OptionLift = "option(*)"
   Lift.Tuple0Lift = <( )>
   Lift.TupleNLift = <(<Lift>, <{Lift ", "}+>)>
 
@@ -67,7 +68,7 @@ context-free syntax
 
 lexical syntax
 
-  VARID = "new" {reject}
+  VarId = "new" {reject}
 
   AstPropertyId = "ref" {reject}
 
