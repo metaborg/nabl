@@ -112,8 +112,10 @@ context-free syntax
   NamespaceMin.NamespaceMin   = < min <LabelPairs>>
   NamespaceMin.NoNamespaceMin = 
 
-  Constraint.CTellDecl        = [[Term] -> [Occurrence]]
-  Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [RelRef] [Term]]
+  Constraint.CTellDecl         = [[Term] -> [Occurrence]]
+  Constraint.CTellDeclWithRels = [[Term] -> [Occurrence] with [{RelData " and "}+]]
+
+  RelData = [[RelRef] [Term]]
 
   LabelRE.ZeroOrOne = <<LabelRE>?>
   LabelRE.OneOrMore = <<LabelRE>+>

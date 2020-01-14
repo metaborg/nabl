@@ -19,6 +19,9 @@ signature
 
 rules
 
+  stx--conj: []     -> CTrue()
+  stx--conj: [C]    -> C
   stx--conj: [C|C*] -> CConj(C, <stx--conj> C*)
-  stx--conj: [C] -> C
-  stx--conj: [] -> CTrue()
+
+  stx--conj(|tl): []     -> tl
+  stx--conj(|tl): [C|C*] -> CConj(C, <stx--conj(|tl)> C*)
