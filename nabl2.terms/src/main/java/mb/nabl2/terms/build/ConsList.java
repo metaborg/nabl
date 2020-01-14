@@ -2,44 +2,37 @@ package mb.nabl2.terms.build;
 
 import static org.metaborg.util.unit.Unit.unit;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.ImmutableList;
 
-import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IConsList;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class ConsTerm extends AbstractTerm implements IConsTerm {
+abstract class ConsList extends AbstractApplTerm implements IConsList {
+
+    @Override protected ConsList check() {
+        return this;
+    }
 
     @Value.Parameter @Override public abstract ITerm getHead();
 
     @Value.Parameter @Override public abstract IListTerm getTail();
 
-    @Value.Lazy @Override public boolean isGround() {
-        return getHead().isGround() && getTail().isGround();
+    @Override public String getOp() {
+        return ListTerms.CONS_OP;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(getHead().getVars());
-        vars.addAll(getTail().getVars());
-        return vars.build();
-    }
-
-    @Override public <T> T match(ITerm.Cases<T> cases) {
-        return cases.caseList(this);
-    }
-
-    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T, E> cases) throws E {
-        return cases.caseList(this);
+    @Override public List<ITerm> getArgs() {
+        return ImmutableList.of(getHead(), getTail());
     }
 
     @Override public <T> T match(IListTerm.Cases<T> cases) {
@@ -58,10 +51,10 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
         if(other == null) {
             return false;
         }
-        if(!(other instanceof IConsTerm)) {
+        if(!(other instanceof IConsList)) {
             return false;
         }
-        IConsTerm that = (IConsTerm) other;
+        IConsList that = (IConsList) other;
         if(!getHead().equals(that.getHead())) {
             return false;
         }

@@ -12,10 +12,10 @@ import org.metaborg.util.functions.CheckedFunction4;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IApplTerm;
-import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IConsList;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
-import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.INilList;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -172,7 +172,7 @@ public class CheckedTermMatch {
         }
 
         public <R, E extends Throwable> ICheckedMatcher<R, E>
-                cons(CheckedFunction1<? super IConsTerm, R, ? extends E> f) {
+                cons(CheckedFunction1<? super IConsList, R, ? extends E> f) {
             return (term, unifier) -> unifier.findTerm(term)
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> {
                         return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(
@@ -182,7 +182,7 @@ public class CheckedTermMatch {
         }
 
         public <R, E extends Throwable> ICheckedMatcher<R, E>
-                nil(CheckedFunction1<? super INilTerm, R, ? extends E> f) {
+                nil(CheckedFunction1<? super INilList, R, ? extends E> f) {
             return (term, unifier) -> unifier.findTerm(term)
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> {
                         return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(cons -> Optional.empty(),

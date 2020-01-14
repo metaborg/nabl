@@ -20,8 +20,6 @@ public interface ITerm {
 
         T caseAppl(IApplTerm appl);
 
-        T caseList(IListTerm cons);
-
         T caseString(IStringTerm string);
 
         T caseInt(IIntTerm integer);
@@ -38,8 +36,6 @@ public interface ITerm {
 
         T caseAppl(IApplTerm appl) throws E;
 
-        T caseList(IListTerm cons) throws E;
-
         T caseString(IStringTerm string) throws E;
 
         T caseInt(IIntTerm integer) throws E;
@@ -47,10 +43,6 @@ public interface ITerm {
         T caseBlob(IBlobTerm integer) throws E;
 
         T caseVar(ITermVar var) throws E;
-
-        default T caseLock(ITerm term) throws E {
-            return term.matchOrThrow(this);
-        }
 
     }
 

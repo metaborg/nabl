@@ -1,33 +1,31 @@
 package mb.nabl2.terms.build;
 
+import java.util.List;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IListTerm;
-import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.INilList;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.ListTerms;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class NilTerm extends AbstractTerm implements INilTerm {
+abstract class NilList extends AbstractApplTerm implements INilList {
 
-    @Override public boolean isGround() {
-        return true;
+    @Override protected NilList check() {
+        return this;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    @Override public String getOp() {
+        return ListTerms.NIL_OP;
     }
 
-    @Override public <T> T match(ITerm.Cases<T> cases) {
-        return cases.caseList(this);
-    }
-
-    @Override public <T, E extends Throwable> T matchOrThrow(ITerm.CheckedCases<T, E> cases) throws E {
-        return cases.caseList(this);
+    @Override public List<ITerm> getArgs() {
+        return ImmutableList.of();
     }
 
     @Override public <T> T match(IListTerm.Cases<T> cases) {
@@ -46,7 +44,7 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
         if(other == null) {
             return false;
         }
-        if(!(other instanceof INilTerm)) {
+        if(!(other instanceof INilList)) {
             return false;
         }
         return true;

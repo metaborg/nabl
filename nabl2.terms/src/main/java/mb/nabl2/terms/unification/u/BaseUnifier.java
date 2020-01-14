@@ -3,14 +3,11 @@ package mb.nabl2.terms.unification.u;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.metaborg.util.Ref;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -18,10 +15,8 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
@@ -127,47 +122,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return term.match(Terms.cases(
         // @formatter:off
             appl -> B.newAppl(appl.getOp(), findRecursiveTerms(appl.getArgs(), stack, visited), appl.getAttachments()),
-            list -> findListTermRecursive(list, stack, visited),
             string -> string,
             integer -> integer,
             blob -> blob,
             var -> findVarRecursive(var, stack, visited)
             // @formatter:on
         ));
-    }
-
-    private IListTerm findListTermRecursive(IListTerm list, final java.util.Set<ITermVar> stack,
-            final java.util.Map<ITermVar, ITerm> visited) {
-        Deque<IListTerm> elements = Lists.newLinkedList();
-        while(list != null) {
-            list = list.match(ListTerms.cases(
-            // @formatter:off
-                cons -> {
-                    elements.push(cons);
-                    return cons.getTail();
-                },
-                nil -> {
-                    elements.push(nil);
-                    return null;
-                },
-                var -> {
-                    elements.push(var);
-                    return null;
-                }
-                // @formatter:on
-            ));
-        }
-        Ref<IListTerm> instance = new Ref<>();
-        while(!elements.isEmpty()) {
-            instance.set(elements.pop().match(ListTerms.<IListTerm>cases(
-            // @formatter:off
-                cons -> B.newCons(findTermRecursive(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
-                nil -> nil,
-                var -> (IListTerm) findVarRecursive(var, stack, visited)
-                // @formatter:on
-            )));
-        }
-        return instance.get();
     }
 
     private ITerm findVarRecursive(final ITermVar var, final java.util.Set<ITermVar> stack,
@@ -316,37 +276,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return term.match(Terms.cases(
         // @formatter:off
             appl -> TermSize.ONE.add(sizes(appl.getArgs(), stack, visited)),
-            list -> size(list, stack, visited),
             string -> TermSize.ONE,
             integer -> TermSize.ONE,
             blob -> TermSize.ONE,
             var -> size(var, stack, visited)
             // @formatter:on
         ));
-    }
-
-    private TermSize size(IListTerm list, final java.util.Set<ITermVar> stack,
-            final java.util.Map<ITermVar, TermSize> visited) {
-        final Ref<TermSize> size = new Ref<>(TermSize.ZERO);
-        while(list != null) {
-            list = list.match(ListTerms.cases(
-            // @formatter:off
-                cons -> {
-                    size.set(size.get().add(TermSize.ONE).add(size(cons.getHead(), stack, visited)));
-                    return cons.getTail();
-                },
-                nil -> {
-                    size.set(size.get().add(TermSize.ONE));
-                    return null;
-                },
-                var -> {
-                    size.set(size.get().add(size(var, stack, visited)));
-                    return null;
-                }
-                // @formatter:on
-            ));
-        }
-        return size.get();
     }
 
     private TermSize size(final ITermVar var, final java.util.Set<ITermVar> stack,
@@ -401,46 +336,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1) + ")",
-            list -> toString(list, stack, visited, maxDepth),
             string -> string.toString(),
             integer -> integer.toString(),
             blob -> blob.toString(),
             var -> toString(var, stack, visited, maxDepth)
         ));
         // @formatter:on
-    }
-
-    private String toString(IListTerm list, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
-        if(maxDepth == 0) {
-            return "…";
-        }
-        final StringBuilder sb = new StringBuilder();
-        final AtomicBoolean tail = new AtomicBoolean();
-        sb.append("[");
-        while(list != null) {
-            list = list.match(ListTerms.cases(
-            // @formatter:off
-                cons -> {
-                    if(tail.getAndSet(true)) {
-                        sb.append(",");
-                    }
-                    sb.append(toString(cons.getHead(), stack, visited, maxDepth - 1));
-                    return cons.getTail();
-                },
-                nil -> {
-                    return null;
-                },
-                var -> {
-                    sb.append("|");
-                    sb.append(toString(var, stack, visited, maxDepth - 1));
-                    return null;
-                }
-                // @formatter:on
-            ));
-        }
-        sb.append("]");
-        return sb.toString();
     }
 
     private String toString(final ITermVar var, final java.util.Map<ITermVar, String> stack,

@@ -13,7 +13,7 @@ import mb.nabl2.terms.Terms;
 @Serial.Version(value = 42L)
 abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
 
-    @Override @Value.Check protected ApplTerm check() {
+    @Override @Value.Check public ApplTerm check() {
         if(getArity() == 1 && Terms.TUPLE_OP.equals(getOp())) {
             throw new IllegalArgumentException("1-tuples are not supported.");
         }

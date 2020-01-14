@@ -12,10 +12,8 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.util.CapsuleUtil;
 
@@ -46,21 +44,10 @@ public abstract class PersistentSubstitution implements ISubstitution {
                 final List<ITerm> args = appl.getArgs().stream().map(this::apply).collect(ImmutableList.toImmutableList());
                 return B.newAppl(appl.getOp(), args, appl.getAttachments());
             },
-            list -> apply(list),
             string -> string,
             integer -> integer,
             blob -> blob,
             var -> apply(var)
-        ));
-        // @formatter:on
-    }
-
-    private IListTerm apply(IListTerm list) {
-        // @formatter:off
-        return list.<IListTerm>match(ListTerms.cases(
-            cons -> B.newCons(apply(cons.getHead()), apply(cons.getTail()), cons.getAttachments()),
-            nil -> nil,
-            var -> (IListTerm) apply(var)
         ));
         // @formatter:on
     }

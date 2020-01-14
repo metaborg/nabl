@@ -11,9 +11,9 @@ public interface IListTerm extends ITerm {
 
     interface Cases<T> extends Function1<IListTerm, T> {
 
-        T caseCons(IConsTerm cons);
+        T caseCons(IConsList cons);
 
-        T caseNil(INilTerm nil);
+        T caseNil(INilList nil);
 
         T caseVar(ITermVar var);
 
@@ -28,9 +28,9 @@ public interface IListTerm extends ITerm {
 
     interface CheckedCases<T, E extends Throwable> extends CheckedFunction1<IListTerm, T, E> {
 
-        T caseCons(IConsTerm cons) throws E;
+        T caseCons(IConsList cons) throws E;
 
-        T caseNil(INilTerm nil) throws E;
+        T caseNil(INilList nil) throws E;
 
         T caseVar(ITermVar var) throws E;
 

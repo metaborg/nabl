@@ -9,20 +9,23 @@ import mb.nabl2.terms.build.ListTermIterator;
 
 public class ListTerms {
 
+    public static final String CONS_OP = "stx.cons";
+    public static final String NIL_OP = "stx.nil";
+
     public static <T> IListTerm.Cases<T> cases(
     // @formatter:off
-        Function1<? super IConsTerm,T> onCons,
-        Function1<? super INilTerm,T> onNil,
+        Function1<? super IConsList,T> onCons,
+        Function1<? super INilList,T> onNil,
         Function1<? super ITermVar,T> onVar
         // @formatter:on
     ) {
         return new IListTerm.Cases<T>() {
 
-            @Override public T caseCons(IConsTerm cons) {
+            @Override public T caseCons(IConsList cons) {
                 return onCons.apply(cons);
             }
 
-            @Override public T caseNil(INilTerm nil) {
+            @Override public T caseNil(INilList nil) {
                 return onNil.apply(nil);
             }
 
@@ -39,16 +42,16 @@ public class ListTerms {
 
     public static class CaseBuilder<T> {
 
-        private Function1<? super IConsTerm, T> onCons = null;
-        private Function1<? super INilTerm, T> onNil = null;
+        private Function1<? super IConsList, T> onCons = null;
+        private Function1<? super INilList, T> onNil = null;
         private Function1<? super ITermVar, T> onVar = null;
 
-        public CaseBuilder<T> cons(Function1<? super IConsTerm, T> onCons) {
+        public CaseBuilder<T> cons(Function1<? super IConsList, T> onCons) {
             this.onCons = onCons;
             return this;
         }
 
-        public CaseBuilder<T> nil(Function1<? super INilTerm, T> onNil) {
+        public CaseBuilder<T> nil(Function1<? super INilList, T> onNil) {
             this.onNil = onNil;
             return this;
         }
@@ -58,14 +61,14 @@ public class ListTerms {
             return this;
         }
 
-        public IListTerm.Cases<T> otherwise(final Function1<? super IListTerm, T> otherwise) {
+        public IListTerm.Cases<T> otherwise(final Function1<? super ITerm, T> otherwise) {
             return new IListTerm.Cases<T>() {
 
-                @Override public T caseCons(IConsTerm cons) {
+                @Override public T caseCons(IConsList cons) {
                     return onCons != null ? onCons.apply(cons) : otherwise.apply(cons);
                 }
 
-                @Override public T caseNil(INilTerm nil) {
+                @Override public T caseNil(INilList nil) {
                     return onNil != null ? onNil.apply(nil) : otherwise.apply(nil);
                 }
 
@@ -81,18 +84,18 @@ public class ListTerms {
 
     public static <T> IListTerm.Cases<T> casesFix(
     // @formatter:off
-        Function2<IListTerm.Cases<T>, ? super IConsTerm, ? extends T> onCons,
-        Function2<IListTerm.Cases<T>, ? super INilTerm, ? extends T> onNil,
+        Function2<IListTerm.Cases<T>, ? super IConsList, ? extends T> onCons,
+        Function2<IListTerm.Cases<T>, ? super INilList, ? extends T> onNil,
         Function2<IListTerm.Cases<T>, ? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
         return new IListTerm.Cases<T>() {
 
-            @Override public T caseCons(IConsTerm cons) {
+            @Override public T caseCons(IConsList cons) {
                 return onCons.apply(this, cons);
             }
 
-            @Override public T caseNil(INilTerm nil) {
+            @Override public T caseNil(INilList nil) {
                 return onNil.apply(this, nil);
             }
 
@@ -105,18 +108,18 @@ public class ListTerms {
 
     public static <T, E extends Throwable> IListTerm.CheckedCases<T, E> checkedCases(
     // @formatter:off
-        CheckedFunction1<? super IConsTerm,T,E> onCons,
-        CheckedFunction1<? super INilTerm,T,E> onNil,
+        CheckedFunction1<? super IConsList,T,E> onCons,
+        CheckedFunction1<? super INilList,T,E> onNil,
         CheckedFunction1<? super ITermVar,T,E> onVar
         // @formatter:on
     ) {
         return new IListTerm.CheckedCases<T, E>() {
 
-            @Override public T caseCons(IConsTerm cons) throws E {
+            @Override public T caseCons(IConsList cons) throws E {
                 return onCons.apply(cons);
             }
 
-            @Override public T caseNil(INilTerm nil) throws E {
+            @Override public T caseNil(INilList nil) throws E {
                 return onNil.apply(nil);
             }
 
@@ -133,16 +136,16 @@ public class ListTerms {
 
     public static class CheckedCaseBuilder<T, E extends Throwable> {
 
-        private CheckedFunction1<? super IConsTerm, T, E> onCons = null;
-        private CheckedFunction1<? super INilTerm, T, E> onNil = null;
+        private CheckedFunction1<? super IConsList, T, E> onCons = null;
+        private CheckedFunction1<? super INilList, T, E> onNil = null;
         private CheckedFunction1<? super ITermVar, T, E> onVar = null;
 
-        public CheckedCaseBuilder<T, E> cons(CheckedFunction1<? super IConsTerm, T, E> onCons) {
+        public CheckedCaseBuilder<T, E> cons(CheckedFunction1<? super IConsList, T, E> onCons) {
             this.onCons = onCons;
             return this;
         }
 
-        public CheckedCaseBuilder<T, E> nil(CheckedFunction1<? super INilTerm, T, E> onNil) {
+        public CheckedCaseBuilder<T, E> nil(CheckedFunction1<? super INilList, T, E> onNil) {
             this.onNil = onNil;
             return this;
         }
@@ -152,14 +155,14 @@ public class ListTerms {
             return this;
         }
 
-        public IListTerm.CheckedCases<T, E> otherwise(final CheckedFunction1<? super IListTerm, T, E> otherwise) {
+        public IListTerm.CheckedCases<T, E> otherwise(final CheckedFunction1<? super ITerm, T, E> otherwise) {
             return new IListTerm.CheckedCases<T, E>() {
 
-                @Override public T caseCons(IConsTerm cons) throws E {
+                @Override public T caseCons(IConsList cons) throws E {
                     return onCons != null ? onCons.apply(cons) : otherwise.apply(cons);
                 }
 
-                @Override public T caseNil(INilTerm nil) throws E {
+                @Override public T caseNil(INilList nil) throws E {
                     return onNil != null ? onNil.apply(nil) : otherwise.apply(nil);
                 }
 

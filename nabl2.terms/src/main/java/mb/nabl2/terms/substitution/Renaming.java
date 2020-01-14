@@ -10,10 +10,8 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 
 public class Renaming implements IRenaming {
@@ -43,21 +41,10 @@ public class Renaming implements IRenaming {
                 final List<ITerm> args = appl.getArgs().stream().map(this::apply).collect(ImmutableList.toImmutableList());
                 return B.newAppl(appl.getOp(), args, appl.getAttachments());
             },
-            list -> apply(list),
             string -> string,
             integer -> integer,
             blob -> blob,
             var -> rename(var)
-        ));
-        // @formatter:on
-    }
-
-    private IListTerm apply(IListTerm list) {
-        // @formatter:off
-        return list.<IListTerm>match(ListTerms.cases(
-            cons -> B.newCons(apply(cons.getHead()), apply(cons.getTail()), cons.getAttachments()),
-            nil -> nil,
-            var -> (IListTerm) rename(var)
         ));
         // @formatter:on
     }

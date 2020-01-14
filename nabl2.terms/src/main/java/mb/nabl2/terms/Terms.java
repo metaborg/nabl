@@ -18,7 +18,6 @@ public class Terms {
     public static <T> ITerm.Cases<T> cases(
     // @formatter:off
         Function1<? super IApplTerm, ? extends T> onAppl,
-        Function1<? super IListTerm, ? extends T> onList,
         Function1<? super IStringTerm, ? extends T> onString,
         Function1<? super IIntTerm, ? extends T> onInt,
         Function1<? super IBlobTerm, ? extends T> onBlob,
@@ -29,10 +28,6 @@ public class Terms {
 
             @Override public T caseAppl(IApplTerm appl) {
                 return onAppl.apply(appl);
-            }
-
-            @Override public T caseList(IListTerm list) {
-                return onList.apply(list);
             }
 
             @Override public T caseString(IStringTerm string) {
@@ -61,7 +56,6 @@ public class Terms {
     public static class CaseBuilder<T> {
 
         private Function1<? super IApplTerm, ? extends T> onAppl = null;
-        private Function1<? super IListTerm, ? extends T> onList = null;
         private Function1<? super IStringTerm, ? extends T> onString = null;
         private Function1<? super IIntTerm, ? extends T> onInt = null;
         private Function1<? super IBlobTerm, ? extends T> onBlob = null;
@@ -69,11 +63,6 @@ public class Terms {
 
         public CaseBuilder<T> appl(Function1<? super IApplTerm, ? extends T> onAppl) {
             this.onAppl = onAppl;
-            return this;
-        }
-
-        public CaseBuilder<T> list(Function1<? super IListTerm, ? extends T> onList) {
-            this.onList = onList;
             return this;
         }
 
@@ -104,10 +93,6 @@ public class Terms {
                     return onAppl != null ? onAppl.apply(appl) : otherwise.apply(appl);
                 }
 
-                @Override public T caseList(IListTerm list) {
-                    return onList != null ? onList.apply(list) : otherwise.apply(list);
-                }
-
                 @Override public T caseString(IStringTerm string) {
                     return onString != null ? onString.apply(string) : otherwise.apply(string);
                 }
@@ -132,7 +117,6 @@ public class Terms {
     public static <T> ITerm.Cases<T> casesFix(
     // @formatter:off
         Function2<ITerm.Cases<T>, ? super IApplTerm, ? extends T> onAppl,
-        Function2<ITerm.Cases<T>, ? super IListTerm, ? extends T> onList,
         Function2<ITerm.Cases<T>, ? super IStringTerm, ? extends T> onString,
         Function2<ITerm.Cases<T>, ? super IIntTerm, ? extends T> onInt,
         Function2<ITerm.Cases<T>, ? super IBlobTerm, ? extends T> onBlob,
@@ -143,10 +127,6 @@ public class Terms {
 
             @Override public T caseAppl(IApplTerm appl) {
                 return onAppl.apply(this, appl);
-            }
-
-            @Override public T caseList(IListTerm list) {
-                return onList.apply(this, list);
             }
 
             @Override public T caseString(IStringTerm string) {
@@ -172,19 +152,17 @@ public class Terms {
 
     public static <T, E extends Throwable> ITerm.CheckedCases<T, E> checkedCases(
     // @formatter:off
-            CheckedFunction1<? super IApplTerm, T, E> onAppl, CheckedFunction1<? super IListTerm, T, E> onList,
-            CheckedFunction1<? super IStringTerm, T, E> onString, CheckedFunction1<? super IIntTerm, T, E> onInt,
-            CheckedFunction1<? super IBlobTerm, T, E> onBlob, CheckedFunction1<? super ITermVar, T, E> onVar
+            CheckedFunction1<? super IApplTerm, T, E> onAppl,
+            CheckedFunction1<? super IStringTerm, T, E> onString,
+            CheckedFunction1<? super IIntTerm, T, E> onInt,
+            CheckedFunction1<? super IBlobTerm, T, E> onBlob,
+            CheckedFunction1<? super ITermVar, T, E> onVar
     // @formatter:on
     ) {
         return new ITerm.CheckedCases<T, E>() {
 
             @Override public T caseAppl(IApplTerm applTerm) throws E {
                 return onAppl.apply(applTerm);
-            }
-
-            @Override public T caseList(IListTerm list) throws E {
-                return onList.apply(list);
             }
 
             @Override public T caseString(IStringTerm string) throws E {
@@ -213,7 +191,6 @@ public class Terms {
     public static class CheckedCaseBuilder<T, E extends Throwable> {
 
         private CheckedFunction1<? super IApplTerm, ? extends T, E> onAppl = null;
-        private CheckedFunction1<? super IListTerm, ? extends T, E> onList = null;
         private CheckedFunction1<? super IStringTerm, ? extends T, E> onString = null;
         private CheckedFunction1<? super IIntTerm, ? extends T, E> onInt = null;
         private CheckedFunction1<? super IBlobTerm, ? extends T, E> onBlob = null;
@@ -221,11 +198,6 @@ public class Terms {
 
         public CheckedCaseBuilder<T, E> appl(CheckedFunction1<? super IApplTerm, ? extends T, E> onAppl) {
             this.onAppl = onAppl;
-            return this;
-        }
-
-        public CheckedCaseBuilder<T, E> list(CheckedFunction1<? super IListTerm, ? extends T, E> onList) {
-            this.onList = onList;
             return this;
         }
 
@@ -254,10 +226,6 @@ public class Terms {
 
                 @Override public T caseAppl(IApplTerm appl) throws E {
                     return onAppl != null ? onAppl.apply(appl) : otherwise.apply(appl);
-                }
-
-                @Override public T caseList(IListTerm list) throws E {
-                    return onList != null ? onList.apply(list) : otherwise.apply(list);
                 }
 
                 @Override public T caseString(IStringTerm string) throws E {

@@ -9,8 +9,7 @@ import mb.nabl2.terms.Terms;
 
 public abstract class AbstractTerm implements ITerm {
 
-    @Override
-    @Value.Auxiliary @Value.Default public ImmutableClassToInstanceMap<Object> getAttachments() {
+    @Override @Value.Auxiliary @Value.Default public ImmutableClassToInstanceMap<Object> getAttachments() {
         return Terms.NO_ATTACHMENTS;
     }
 

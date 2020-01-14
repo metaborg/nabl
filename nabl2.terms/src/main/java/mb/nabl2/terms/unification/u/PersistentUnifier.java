@@ -17,10 +17,8 @@ import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
@@ -153,17 +151,6 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    listLeft -> right.match(Terms.<Boolean>cases()
-                        .list(listRight -> {
-                            return unifyLists(listLeft, listRight);
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, listLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
                     stringLeft -> right.match(Terms.<Boolean>cases()
                         .string(stringRight -> {
                             return stringLeft.getValue().equals(stringRight.getValue());
@@ -198,45 +185,6 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                         })
                     ),
                     varLeft -> right.match(Terms.<Boolean>cases()
-                        .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
-                        })
-                        .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
-                        })
-                    )
-                ));
-                // @formatter:on
-            }
-
-            private boolean unifyLists(final IListTerm left, final IListTerm right) {
-                // @formatter:off
-                return left.match(ListTerms.<Boolean>cases(
-                    consLeft -> right.match(ListTerms.<Boolean>cases()
-                        .cons(consRight -> {
-                            worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
-                            worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
-                            return true;
-                        })
-                        .var(varRight -> {
-                            return unifyLists(varRight, consLeft);
-                        })
-                        .otherwise(l -> {
-                            return false;
-                        })
-                    ),
-                    nilLeft -> right.match(ListTerms.<Boolean>cases()
-                        .nil(nilRight -> {
-                            return true;
-                        })
-                        .var(varRight -> {
-                            return unifyVarTerm(varRight, nilLeft)  ;
-                        })
-                        .otherwise(l -> {
-                            return false;
-                        })
-                    ),
-                    varLeft -> right.match(ListTerms.<Boolean>cases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
