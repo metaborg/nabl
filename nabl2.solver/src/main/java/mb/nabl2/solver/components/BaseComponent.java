@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.google.common.collect.Lists;
 
@@ -32,8 +31,8 @@ public class BaseComponent extends ASolver {
         super(core);
     }
 
-    public Optional<SolveResult> solve(IBaseConstraint constraint) throws InterruptedException {
-        final SolveResult result = constraint.match(IBaseConstraint.Cases.of(
+    public SolveResult solve(IBaseConstraint constraint) {
+        return constraint.match(IBaseConstraint.Cases.of(
         // @formatter:off
             t -> SolveResult.empty(),
             f -> SolveResult.messages(
@@ -43,7 +42,6 @@ public class BaseComponent extends ASolver {
             this::solve
             // @formatter:on
         ));
-        return Optional.of(result);
     }
 
     private SolveResult solve(CConj constraint) {

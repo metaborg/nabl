@@ -10,6 +10,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.OccurrenceIndex;
 import mb.nabl2.scopegraph.terms.path.Paths;
@@ -29,11 +30,14 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
             final Collection<Occurrence> refs = solution.astRefs().get(OccurrenceIndex.of(index));
             final ImmutableList.Builder<ITerm> entriesBuilder = ImmutableList.builder();
             for(Occurrence ref : refs) {
-                solution.nameResolution().resolve(ref).map(Paths::resolutionPathsToDecls).ifPresent(decls -> {
+                try {
+                    final List<Occurrence> decls = Paths.resolutionPathsToDecls(solution.nameResolution().resolve(ref));
                     decls.stream().forEach(decl -> {
                         entriesBuilder.add(B.newTuple(ref, decl.getName()));
                     });
-                });
+                } catch(CriticalEdgeException e) {
+                    // ignore
+                }
             }
             final List<ITerm> entries = entriesBuilder.build();
             if(entries.isEmpty()) {

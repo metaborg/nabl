@@ -22,7 +22,7 @@ import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageKind;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
-import mb.nabl2.solver.SolverException;
+import mb.nabl2.solver.exceptions.SolverException;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.analysis.Actions;

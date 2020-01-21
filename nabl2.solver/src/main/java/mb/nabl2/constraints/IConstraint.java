@@ -10,7 +10,6 @@ import mb.nabl2.constraints.equality.IEqualityConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
-import mb.nabl2.constraints.poly.IPolyConstraint;
 import mb.nabl2.constraints.relations.IRelationConstraint;
 import mb.nabl2.constraints.scopegraph.IScopeGraphConstraint;
 import mb.nabl2.constraints.sets.ISetConstraint;
@@ -42,8 +41,6 @@ public interface IConstraint {
 
         T caseSym(ISymbolicConstraint constraint);
 
-        T casePoly(IPolyConstraint constraint);
-
         // @formatter:off
         static <T> Cases<T> of(
             Function<IAstConstraint,T> onAst,
@@ -53,8 +50,7 @@ public interface IConstraint {
             Function<INameResolutionConstraint,T> onNameResolution,
             Function<IRelationConstraint,T> onRelation,
             Function<ISetConstraint,T> onSet,
-            Function<ISymbolicConstraint,T> onSym,
-            Function<IPolyConstraint,T> onPoly
+            Function<ISymbolicConstraint,T> onSym
         ) /* @formatter:on */ {
             return new Cases<T>() {
 
@@ -90,10 +86,6 @@ public interface IConstraint {
                     return onSym.apply(constraint);
                 }
 
-                @Override public T casePoly(IPolyConstraint constraint) {
-                    return onPoly.apply(constraint);
-                }
-
             };
         }
 
@@ -111,7 +103,6 @@ public interface IConstraint {
             private Function<? super IRelationConstraint, T> onRelation = null;
             private Function<? super ISetConstraint, T> onSet = null;
             private Function<? super ISymbolicConstraint, T> onSym = null;
-            private Function<? super IPolyConstraint, T> onPoly = null;
 
             public Builder<T> onAst(Function<? super IAstConstraint, T> onAst) {
                 this.onAst = onAst;
@@ -153,11 +144,6 @@ public interface IConstraint {
                 return this;
             }
 
-            public Builder<T> onPoly(Function<? super IPolyConstraint, T> onPoly) {
-                this.onPoly = onPoly;
-                return this;
-            }
-
             public Cases<T> otherwise(Function<? super IConstraint, T> otherwise) {
                 return new Cases<T>() {
 
@@ -194,10 +180,6 @@ public interface IConstraint {
                         return(onSym != null ? onSym.apply(constraint) : otherwise.apply(constraint));
                     }
 
-                    @Override public T casePoly(IPolyConstraint constraint) {
-                        return(onPoly != null ? onPoly.apply(constraint) : otherwise.apply(constraint));
-                    }
-
                 };
             }
 
@@ -225,8 +207,6 @@ public interface IConstraint {
 
         T caseSym(ISymbolicConstraint cFact) throws E;
 
-        T casePoly(IPolyConstraint constraint) throws E;
-
         // @formatter:off
         static <T, E extends Throwable> CheckedCases<T, E> of(
             CheckedFunction1<IAstConstraint,T,E> onAst,
@@ -236,8 +216,7 @@ public interface IConstraint {
             CheckedFunction1<INameResolutionConstraint,T,E> onNameResolution,
             CheckedFunction1<IRelationConstraint,T,E> onRelation,
             CheckedFunction1<ISetConstraint,T,E> onSet,
-            CheckedFunction1<ISymbolicConstraint,T,E> onSym,
-            CheckedFunction1<IPolyConstraint,T,E> onPoly
+            CheckedFunction1<ISymbolicConstraint,T,E> onSym
         ) /* @formatter:on */ {
             return new CheckedCases<T, E>() {
 
@@ -273,10 +252,6 @@ public interface IConstraint {
                     return onSym.apply(constraint);
                 }
 
-                @Override public T casePoly(IPolyConstraint constraint) throws E {
-                    return onPoly.apply(constraint);
-                }
-
             };
         }
 
@@ -295,7 +270,6 @@ public interface IConstraint {
             private CheckedFunction1<? super IRelationConstraint, T, E> onRelation = null;
             private CheckedFunction1<? super ISetConstraint, T, E> onSet = null;
             private CheckedFunction1<? super ISymbolicConstraint, T, E> onSym = null;
-            private CheckedFunction1<? super IPolyConstraint, T, E> onPoly = null;
 
             public Builder<T, E> onAst(CheckedFunction1<? super IAstConstraint, T, E> onAst) {
                 this.onAst = onAst;
@@ -338,11 +312,6 @@ public interface IConstraint {
                 return this;
             }
 
-            public Builder<T, E> onPoly(CheckedFunction1<? super IPolyConstraint, T, E> onPoly) {
-                this.onPoly = onPoly;
-                return this;
-            }
-
             public CheckedCases<T, E> otherwise(CheckedFunction1<? super IConstraint, T, E> otherwise) {
                 return new CheckedCases<T, E>() {
 
@@ -377,10 +346,6 @@ public interface IConstraint {
 
                     @Override public T caseSym(ISymbolicConstraint constraint) throws E {
                         return(onSym != null ? onSym.apply(constraint) : otherwise.apply(constraint));
-                    }
-
-                    @Override public T casePoly(IPolyConstraint constraint) throws E {
-                        return(onPoly != null ? onPoly.apply(constraint) : otherwise.apply(constraint));
                     }
 
                 };
