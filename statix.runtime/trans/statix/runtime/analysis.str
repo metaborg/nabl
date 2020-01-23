@@ -194,12 +194,16 @@ rules
 
   stx--spec-imports = ?FileSpec(<id>, _, _, _, _, _)
 
+
+  stx--mk-qualified-name(|""): name -> name
+
   stx--mk-qualified-name(|qname): name -> name'
     with if <elem> ("!", <explode-string> name) then
            name' := name
          else
            name' := $[[qname]![name]]
          end
+
 
   stx--merge-spec-aterms = foldr(stx--merge-spec-aterms-init, stx--merge-spec-aterms-step)
 
