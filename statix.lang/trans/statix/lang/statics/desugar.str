@@ -19,6 +19,7 @@ rules
     desugar-rules;
     desugar-decl-shorthands;
     desugar-ref-shorthands;
+    desugar-regexes;
     desugar-queries;
     desugar-lambdas;
     desugar-tuples
