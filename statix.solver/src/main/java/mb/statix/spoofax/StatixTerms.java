@@ -189,9 +189,6 @@ public class StatixTerms {
                 }),
                 M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
                     return new CUser(name, args, msg.orElse(null));
-                }),
-                M.term(c -> {
-                    throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
             )).match(t, u);
             // @formatter:on
