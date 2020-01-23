@@ -46,7 +46,7 @@ rules // single file analysis
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; C* := <map(\ (resource, ast') -> ([], C(c-name, [<stx--explode> ast'], NoMessage())) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> C(c-name, [<stx--explode> ast'], NoMessage()) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(_, a)) ->
@@ -69,7 +69,7 @@ rules // single file elaboration
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; V := Var("out")
-    ; C* := <map(\ (resource, ast') -> ([V], C(c-name, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
+    ; C* := <map(\ (resource, ast') -> <stx--exists>([V], C(c-name, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level)> C*
     ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(subst, a)) ->
@@ -98,7 +98,7 @@ rules // multi file analysis
           //
           global-scope-var := Var("s")
         ; Solution(global-scope-subst, global-scope-state) :=
-              <stx--solve-constraint(|spec, level)> ([global-scope-var], CNew([global-scope-var]))
+              <stx--solve-constraint(|spec, level)> <stx--exists>([global-scope-var], CNew([global-scope-var]))
         ; global-scope := <lookup> (global-scope-var, global-scope-subst)
           //
           // 2. partially solve project constraint
@@ -167,9 +167,9 @@ rules
        ; c-name := <stx--mk-qualified-name(|spec-name)> constraint
        ; T*    := <map(stx--explode)> in*
        ; V     := Var("out")
-       ; C     := C(c-name, [T*, V], NoMessage())
+       ; C     := <stx--exists>([V], C(c-name, [T*, V], NoMessage()))
        ; level := <stx--log-level>
-       ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level)> ([V], C)
+       ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level)> C
        ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
        ; out := <substitute(stx--is-var);stx--implode> (subst, V)
 

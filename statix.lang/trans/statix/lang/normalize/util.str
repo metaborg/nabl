@@ -8,6 +8,8 @@ imports
   nabl2/shared/vars
   nabl2/api
 
+  statix/runtime/constraints
+
   signatures/statix/lang/-
   statix/lang/statics/-
   statix/lang/util
@@ -177,19 +179,11 @@ rules // smart constructors for typed terms
 
 rules
 
-  list-to-conj(|tl): []     -> tl
-  list-to-conj(|tl): [C|Cs] -> CConj(C, <list-to-conj(|tl)> Cs)
+  list-to-conj(|tl) = stx--conj(|tl)
 
-  list-to-conj: []     -> CTrue()
-  list-to-conj: [C]    -> C
-  list-to-conj: [C|Cs] -> CConj(C, <list-to-conj> Cs)
+  list-to-conj = stx--conj
 
-  mk-CExists: ([], c              ) -> c
-  mk-CExists: (vs, CExists(vs', c)) -> CExists(vs'', c)
-    where not([] := vs)
-    with vs'' := <conc; raw-make-set> (vs', vs)
-  mk-CExists: (vs, c              ) -> CExists(vs, c)
-    where not([] := vs)
+  mk-CExists = stx--exists
 
   type-to-sort: SORT(d)      -> SimpleSort(<nabl2-get-occurrence-name> d)
   type-to-sort: INT()        -> IntSort()

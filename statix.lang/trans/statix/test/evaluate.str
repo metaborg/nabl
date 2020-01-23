@@ -71,6 +71,6 @@ rules
          spec'  := <stx--local-spec-from-spec> spec;
          level  := <stx--log-level>;
          body'  := <qualify-names(|a);eliminate-all;stx--index-ast(|""/*path*/)> body;
-         s@Solution(_, a') := <stx--solve-constraint(|spec', level)> ([], body');
+         s@Solution(_, a') := <stx--solve-constraint(|spec', level)> body';
          (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a';
          result := EvalResult(s, error*, warning*, note*)
