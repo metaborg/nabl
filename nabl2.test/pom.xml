@@ -16,6 +16,10 @@
     <relativePath>../releng/parent/language</relativePath>
   </parent>
 
+  <properties>
+    <skipTests>true</skipTests>
+  </properties>
+
   <dependencies>
     <!-- compile -->
     <dependency>
