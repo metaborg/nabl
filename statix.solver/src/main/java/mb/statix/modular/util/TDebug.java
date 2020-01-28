@@ -28,7 +28,7 @@ import mb.statix.solver.log.NullDebugContext;
 
 public class TDebug {
     /** The location where debug files will be written. */
-    public static final String DEBUG_FILE_PATH = "/home/taico/spoofax";
+    public static final String DEBUG_FILE_PATH = ".";
     private static final String DEBUG_SCOPE_GRAPH_DOT_FILE = "yyyy.MM.dd 'at' HH_mm_ss";
     private static final String DEBUG_DIFF_FILE = "yyyy.MM.dd 'at' HH_mm_ss";
     public static String DIFF_OVERRIDE_FILE;

@@ -35,7 +35,7 @@ public class TOverrides {
     public static boolean OUTPUT_SCOPE_GRAPH_MULTI = true;
     
     /** If a diff should be generated after an incremental analysis. */
-    public static boolean OUTPUT_DIFF = true;
+    public static boolean OUTPUT_DIFF = false;
     
     /** If split modules should be used. */
     public static boolean SPLIT_MODULES = false;
