@@ -26,6 +26,7 @@ import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.solver.store.ModuleConstraintStore;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
@@ -52,7 +53,7 @@ public class SplitModuleUtil {
      */
     public static IModule createSplitModule(IModule module, boolean createSolver) {
         if (isSplitModule(module.getId())) throw new IllegalArgumentException("Cannot create a split for module " + module.getId() + ": module is already a split module.");
-        System.err.println("Creating split module for " + module.getId());
+        TDebug.DEV_OUT.info("Creating split module for " + module.getId());
         
         //We need to determine the canExtend set
         IMState contextFreeState = module.getCurrentState();
@@ -67,7 +68,7 @@ public class SplitModuleUtil {
         
         //Clear and retrieve the delayed constraints on the original module.
         Set<IConstraint> delayed = contextFreeState.solver().getStore().delayedConstraints();
-        System.err.println("Delayed constraints: " + delayed);
+        TDebug.DEV_OUT.info("Delayed constraints: " + delayed);
         
         //Create new variables for all variables of the original module that are delayed upon
         DistributedUnifier.Immutable cfUnifier = contextFreeState.unifier();
@@ -87,8 +88,8 @@ public class SplitModuleUtil {
             }
         }
         
-        System.err.println("New equality constraints: " + eqConstraints);
-        System.err.println("Substitution: " + subst.entrySet());
+        TDebug.DEV_OUT.info("New equality constraints: " + eqConstraints);
+        TDebug.DEV_OUT.info("Substitution: " + subst.entrySet());
         
         //We fix the initialization of the module to be the conjoined constraints with the given substitution applied
         //TODO IMPORTANT should we add a CExists here?
@@ -187,28 +188,28 @@ public class SplitModuleUtil {
      */
     public static void createSplitSolver(IModule module) {
         if (!isSplitModule(module.getId())) throw new IllegalArgumentException("Expected a split module, but was " + module.getId());
-        System.err.println("Creating split solver for " + module.getId());
+        TDebug.DEV_OUT.info("Creating split solver for " + module.getId());
         
         Context.context().getIncrementalManager().unregisterNonSplit(getMainModuleId(module.getId()));
         IMState parentState = Context.context().getState(module.getParentId());
         
         //Adds the new conjoined constraint to the completeness
-        System.err.println("Critical Add:");
+        TDebug.DEV_OUT.info("Critical Add:");
         Completeness.criticalEdges(module.getInitialization(), Context.context().getSpec(),
-                (s, l) -> System.err.println("  | " + TPrettyPrinter.prettyPrint(s) + " -" + TPrettyPrinter.prettyPrint(l) + "->"));
+                (s, l) -> TDebug.DEV_OUT.info("  | " + TPrettyPrinter.prettyPrint(s) + " -" + TPrettyPrinter.prettyPrint(l) + "->"));
         
-        System.err.println("Adding constraints: " + module.getInitialization());
+        TDebug.DEV_OUT.info("Adding constraints: " + module.getInitialization());
         parentState.solver().childSolver(module.getCurrentState(), module.getInitialization());
         
         //Remove all the old (unconjoined) constraints from the completeness
         Set<IConstraint> constraints = parentState.solver().getStore().clearDelays();
-        System.err.println("Critical Remove:");
+        TDebug.DEV_OUT.info("Critical Remove:");
         for (IConstraint constraint : constraints) {
             Completeness.criticalEdges(constraint, Context.context().getSpec(),
-                    (s, l) -> System.err.println("  | " + TPrettyPrinter.prettyPrint(s) + " -" + TPrettyPrinter.prettyPrint(l) + "->"));
+                    (s, l) -> TDebug.DEV_OUT.info("  | " + TPrettyPrinter.prettyPrint(s) + " -" + TPrettyPrinter.prettyPrint(l) + "->"));
         }
         
-        System.err.println("Removing constraints: " + constraints);
+        TDebug.DEV_OUT.info("Removing constraints: " + constraints);
         parentState.solver().getCompleteness().removeAll(constraints, parentState.unifier());
     }
     

@@ -81,7 +81,7 @@ public interface VarCompleteManager {
      *      the variable to activate
      */
     public default void activateObservers(ITermVar var) {
-        if (TDebug.COMPLETENESS) System.out.println("Activating variable " + var);
+        if (TDebug.COMPLETENESS) TDebug.DEV_OUT.info("Activating variable " + var);
         
         Set<VarCompleteObserver> observers;
         synchronized (observers()) {

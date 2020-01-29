@@ -99,7 +99,7 @@ public interface EdgeCompleteManager {
      *      the edge to activate
      */
     public default void activateObservers(CriticalEdge edge) {
-        if (TDebug.COMPLETENESS) System.out.println("Activating edge " + edge);
+        if (TDebug.COMPLETENESS) TDebug.DEV_OUT.info("Activating edge " + edge);
         
         Set<EdgeCompleteObserver> observers;
         synchronized (observers()) {

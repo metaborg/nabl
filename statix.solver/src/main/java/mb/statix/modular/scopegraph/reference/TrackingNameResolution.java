@@ -48,7 +48,7 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
             dataMap.put(scope, re);
         }
         
-        if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", data edge requested=" + l);
+        if (TDebug.QUERY_DEBUG) TDebug.DEV_OUT.info("Query hit scope " + scope + ", derivative query=" + re + ", data edge requested=" + l);
         return super.getData(re, path, l);
     }
     
@@ -61,7 +61,7 @@ public class TrackingNameResolution<S extends D, L, D> extends FastNameResolutio
             edgeMap.put(scope, re);
         }
 
-        if (TDebug.QUERY_DEBUG) System.out.println("Query hit scope " + scope + ", derivative query=" + re + ", edge requested=" + l);
+        if (TDebug.QUERY_DEBUG) TDebug.DEV_OUT.info("Query hit scope " + scope + ", derivative query=" + re + ", edge requested=" + l);
         return super.getEdges(re, path, l);
     }
     

@@ -1,6 +1,5 @@
 package mb.statix.modular.solver.concurrent;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -10,6 +9,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.progress.ProgressTracker;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TTimings;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
@@ -65,7 +65,7 @@ public class StuckDetector implements Runnable {
             }
             
             if (same == 4) {
-                System.err.println("Detected no progress for 1 minute, printing/saving results...");
+                TDebug.DEV_OUT.info("Detected no progress for 1 minute, printing/saving results...");
                 printSolverState();
             }
         }

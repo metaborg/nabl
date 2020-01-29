@@ -12,6 +12,7 @@ import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TDebug;
 import mb.statix.solver.IConstraint;
 
 public class QueryIncrementalManager extends IncrementalManager {
@@ -76,7 +77,7 @@ public class QueryIncrementalManager extends IncrementalManager {
     
     @Override
     public void solverStart(ModuleSolver solver) {
-        System.err.println("Solver start triggerd for " + solver.getOwner());
+        TDebug.DEV_OUT.info("Solver start triggerd for " + solver.getOwner());
 //        solver.getStore().enableExternalMode();
         
         //TODO IMPORTANT REFINE THIS
@@ -87,7 +88,7 @@ public class QueryIncrementalManager extends IncrementalManager {
     @Override
     public void solverDone(ModuleSolver solver, MSolverResult result) {
         if (solver.isSeparateSolver()) return;
-        System.err.println("Solver done triggered on incremental manager for " + solver.getOwner() + ". Switching module over to clean.");
+        TDebug.DEV_OUT.info("Solver done triggered on incremental manager for " + solver.getOwner() + ". Switching module over to clean.");
         switchToClean(solver.getOwner());
         results.put(solver.getOwner(), result);
     }
@@ -95,7 +96,7 @@ public class QueryIncrementalManager extends IncrementalManager {
     public void switchToClean(IModule module) {
         //If the module is already clean, then we don't have to do anything
         if (module.getTopCleanliness().isCleanish()) {
-            System.err.println("Module " + module + " is already clean, not switching to clean.");
+            TDebug.DEV_OUT.info("Module " + module + " is already clean, not switching to clean.");
             return;
         }
         

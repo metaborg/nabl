@@ -21,6 +21,7 @@ import mb.statix.modular.scopegraph.ModuleScopeGraph;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.util.function.TriConsumer;
 
@@ -125,7 +126,7 @@ public class Diff {
         while (!queue.isEmpty()) {
             String childId = queue.poll();
             if (!cNew.getModuleManager().hasModule(childId)) {
-                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
+                TDebug.DEV_OUT.info("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
                 continue;
             }
             if (sgOld.getChildIds().contains(childId)) {
@@ -147,7 +148,7 @@ public class Diff {
         while (!queue.isEmpty()) {
             String childId = queue.poll();
             if (!cOld.getModuleManager().hasModule(childId)) {
-                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
+                TDebug.DEV_OUT.info("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
                 continue;
             }
             //TODO Should split modules be included here?
@@ -205,7 +206,7 @@ public class Diff {
                         diff.addData(s, r, d);
                         NameAndRelation nar = Names.getNameOrNull(d, r, uNew);
                         if (nar == null) {
-                            System.err.println("DIFF: Skipping data " + d + " at scope " + s + " relation " + r + ": cannot convert to name");
+                            TDebug.DEV_OUT.info("DIFF: Skipping data " + d + " at scope " + s + " relation " + r + ": cannot convert to name");
                         } else {
                             diff.addDataName(s, r, nar);
                         }
@@ -219,7 +220,7 @@ public class Diff {
                         
                         NameAndRelation nar = Names.getNameOrNull(d, r, uNew);
                         if (nar == null) {
-                            System.err.println("DIFF: Skipping data " + d + " at scope " + s + " relation " + r + ": cannot convert to name");
+                            TDebug.DEV_OUT.info("DIFF: Skipping data " + d + " at scope " + s + " relation " + r + ": cannot convert to name");
                         } else {
                             diff.removeDataName(s, r, nar);
                         }
@@ -231,7 +232,7 @@ public class Diff {
         while (!queue.isEmpty()) {
             String childId = queue.poll();
             if (!cNew.getModuleManager().hasModule(childId)) {
-                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
+                TDebug.DEV_OUT.info("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgNew but is not in cNew!)");
                 continue;
             }
             if (sgOld.getChildIds().contains(childId)) {
@@ -254,7 +255,7 @@ public class Diff {
         while (!queue.isEmpty()) {
             String childId = queue.poll();
             if (!cOld.getModuleManager().hasModule(childId)) {
-                System.err.println("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
+                TDebug.DEV_OUT.info("Encountered child module " + childId + " of " + id + " which is a stale child (is a child in sgOld but is not in cOld!)");
                 continue;
             }
             //TODO Should split modules be included here?
@@ -297,7 +298,7 @@ public class Diff {
                     
                     NameAndRelation name = Names.getNameOrNull(actualData, relation, unifier);
                     if (name == null) {
-                        System.err.println("DIFF: Skipping data " + actualData + " at scope " + scope + " relation " + relation + ": cannot convert to name");
+                        TDebug.DEV_OUT.info("DIFF: Skipping data " + actualData + " at scope " + scope + " relation " + relation + ": cannot convert to name");
                     } else {
                         diff.addDataName(scope, relation, name);
                     }
@@ -335,7 +336,7 @@ public class Diff {
                     
                     NameAndRelation name = Names.getNameOrNull(actualData, relation, unifier);
                     if (name == null) {
-                        System.err.println("DIFF: Skipping data " + actualData + " at scope " + scope + " relation " + relation + ": cannot convert to name");
+                        TDebug.DEV_OUT.info("DIFF: Skipping data " + actualData + " at scope " + scope + " relation " + relation + ": cannot convert to name");
                     } else {
                         diff.removeDataName(scope, relation, name);
                     }
@@ -501,7 +502,7 @@ public class Diff {
             for (Entry<L, D> entry : data.get(s)) {
                 NameAndRelation name = dataToName.apply(entry.getValue(), entry.getKey());
                 if (name == null) {
-                    System.err.println("DIFF: Skipping data " + entry.getValue() + " at scope " + s + " relation " + entry.getKey() + ": cannot convert to name");
+                    TDebug.DEV_OUT.info("DIFF: Skipping data " + entry.getValue() + " at scope " + s + " relation " + entry.getKey() + ": cannot convert to name");
                     continue;
                 }
                 tbr.put(s, entry.getKey(), name);

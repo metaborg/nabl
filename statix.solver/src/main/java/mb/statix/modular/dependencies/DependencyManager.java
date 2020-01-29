@@ -19,6 +19,7 @@ import mb.statix.modular.dependencies.affect.IEdgeAdditionAffect;
 import mb.statix.modular.dependencies.affect.IEdgeRemovalAffect;
 import mb.statix.modular.name.NameAndRelation;
 import mb.statix.modular.ndependencies.observer.IDependencyObserver;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.terms.Scope;
 
@@ -85,7 +86,7 @@ public class DependencyManager<D extends Dependencies> implements Serializable, 
     public D setDependencies(String moduleId, D dependencies) {
         D old;
         if ((old = map.putIfAbsent(moduleId, dependencies)) != null && !dependencies.isCopyOf(old)) {
-            System.err.println("Replacing dependencies of " + moduleId + " with new dependencies!");
+            TDebug.DEV_OUT.info("Replacing dependencies of " + moduleId + " with new dependencies!");
             for (IDependencyObserver observer : observers) {
                 observer.removeDependencies(old.getDependencies().values());
                 for (Dependency dependency : dependencies.getDependencies().values()) {

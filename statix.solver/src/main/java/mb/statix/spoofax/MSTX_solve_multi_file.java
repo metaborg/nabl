@@ -2,7 +2,9 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.modular.util.TOverrides.*;
+import static mb.statix.modular.util.TOverrides.CONCURRENT;
+import static mb.statix.modular.util.TOverrides.OUTPUT_DIFF;
+import static mb.statix.modular.util.TOverrides.THREADS;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,19 +98,19 @@ public class MSTX_solve_multi_file extends StatixPrimitive {
             MChange change = tuple._1();
             switch (change.getChangeType()) {
                 case REMOVED:
-                    if (TDebug.CHANGESET) System.out.println("Removed: " + change.getModule());
+                    if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Removed: " + change.getModule());
                     removed.add(change.getModule());
                     continue;
                 case CHANGED:
-                    if (TDebug.CHANGESET) System.out.println("Changed: " + change.getModule());
+                    if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Changed: " + change.getModule());
                     changed.add(change.getModule());
                     break;
                 case ADDED:
-                    if (TDebug.CHANGESET) System.out.println("Added: " + change.getModule());
+                    if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Added: " + change.getModule());
                     added.add(change.getModule());
                     break;
                 default:
-                    if (TDebug.CHANGESET) System.out.println("Unchanged: " + change.getModule());
+                    if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Unchanged: " + change.getModule());
                     break;
             }
             order.put(change.getModule(), i++);

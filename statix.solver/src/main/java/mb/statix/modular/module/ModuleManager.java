@@ -15,6 +15,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
 import mb.statix.modular.module.split.SplitModuleUtil;
+import mb.statix.modular.util.TDebug;
 
 public class ModuleManager implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -77,7 +78,7 @@ public class ModuleManager implements Serializable {
      */
     @Deprecated
     public synchronized IModule getModuleByName(String name) {
-        System.err.println("getModuleByName request for " + name);
+        TDebug.DEV_OUT.info("getModuleByName request for " + name);
         Set<IModule> mods = moduleNames.get(name);
         if (mods.isEmpty()) return null;
         if (mods.size() == 1) return mods.iterator().next();
@@ -165,11 +166,11 @@ public class ModuleManager implements Serializable {
         if (old == null) return;
         
         if (old == module) {
-            System.err.println("[ModuleManager] Added module " + module.getId() + " twice");
+            TDebug.DEV_OUT.info("[ModuleManager] Added module " + module.getId() + " twice");
         } else if (old.getTopCleanliness() != ModuleCleanliness.CLEAN) {
-            System.err.println("[ModuleManager] Module " + old.getId() + " replaced with new version.");
+            TDebug.DEV_OUT.info("[ModuleManager] Module " + old.getId() + " replaced with new version.");
         } else {
-            System.err.println("[ModuleManager] Duplicate ID " + old.getId() + " discovered when adding module.");
+            TDebug.DEV_OUT.info("[ModuleManager] Duplicate ID " + old.getId() + " discovered when adding module.");
         }
     }
     

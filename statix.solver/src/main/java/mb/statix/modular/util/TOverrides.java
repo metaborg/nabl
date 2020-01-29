@@ -21,9 +21,9 @@ public class TOverrides {
     /** Redirect STX_solve_constraint to MSTX_solve_constraint. */
     public static boolean MODULES_OVERRIDE = false;
     /** If the log level should be overridden to the value below. */
-    public static boolean OVERRIDE_LOGLEVEL = true;
+    public static boolean OVERRIDE_LOGLEVEL = false;
     /** The log level to use, has no effect if OVERRIDE_LOGLEVEL is false. */
-    public static String LOGLEVEL = "none"; //"debug" "none" "info"
+    public static String LOGLEVEL = "info"; //"debug" "none" "info"
     /** If concurrency should be used. Uses the number of threads below. */
     public static boolean CONCURRENT = false;
     /** The number of threads for concurrency. Has no effect if CONCURRENT is false. */

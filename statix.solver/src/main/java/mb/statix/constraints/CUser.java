@@ -29,6 +29,7 @@ import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.spec.ModuleBoundary;
 import mb.statix.modular.util.Scopes;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -246,7 +247,7 @@ public class CUser implements IConstraint, Serializable {
             //TODO This code has never been tested
             
             //Reuse an old child if it is clean
-            System.err.println("Reusing old child module: " + child);
+            TDebug.DEV_OUT.info("Reusing old child module: " + child);
             
             MSolverResult result = Context.context().getOldContext().getResult(child);
             IMState childState = child.getCurrentState();

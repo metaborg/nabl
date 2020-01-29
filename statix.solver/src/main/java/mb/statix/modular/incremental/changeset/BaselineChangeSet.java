@@ -13,6 +13,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.ModuleCleanliness;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.util.Scopes;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 
 public class BaselineChangeSet extends AChangeSet {
@@ -61,11 +62,11 @@ public class BaselineChangeSet extends AChangeSet {
             for (String depModuleId : oldContext.getDependencies(module).getModuleDependantIds()) {
                 IModule depModule = oldContext.getModuleUnchecked(depModuleId);
                 if (depModule == null) {
-                    System.err.println("Dependent " + depModuleId + " of " + module.getId() + " does not exist");
+                    TDebug.DEV_OUT.info("Dependent " + depModuleId + " of " + module.getId() + " does not exist");
                     continue; //This module no longer exists
                 }
                 if (!visited.add(depModule)) continue;
-                if (depModule.getTopCleanliness() != CLEAN) System.err.println("Cleanliness algorithm seems incorrect, encountered clean module " + depModule);
+                if (depModule.getTopCleanliness() != CLEAN) TDebug.DEV_OUT.info("Cleanliness algorithm seems incorrect, encountered clean module " + depModule);
 
                 add(new Flag(UNSURE, 1), FlagCondition.FlagIfClean, depModule);
                 stack.push(depModule);
@@ -84,10 +85,10 @@ public class BaselineChangeSet extends AChangeSet {
         //#2 Compute clean = all modules that were not marked otherwise
         add(Flag.CLEAN, FlagCondition.DontFlag, oldContext.getModules().stream().filter(m -> m.getTopCleanliness() == CLEAN));
 
-        System.err.println("Based on the files, we identified:");
-        System.err.println("  Removed:  (" + removed().size()        + ") " + removedIds());
-        System.err.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
-        System.err.println("  Unsure:   (" + unsure().size()         + ") " + unsureIds());
-        System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Based on the files, we identified:");
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Removed:  (" + removed().size()        + ") " + removedIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Unsure:   (" + unsure().size()         + ") " + unsureIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Clean:    (" + clean().size()          + ") " + cleanIds());
     }
 }

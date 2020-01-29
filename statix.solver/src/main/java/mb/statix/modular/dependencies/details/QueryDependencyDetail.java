@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.modular.scopegraph.reference.TrackingNameResolution;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -192,18 +193,18 @@ public class QueryDependencyDetail implements IDependencyDetail {
             try {
                 if (labelWf.canStep(label)) return true;
             } catch (ResolutionException e) {
-                System.err.println(
+                TDebug.DEV_OUT.info(
                         "Encountered delay while checking if the addition of "
                                 + TPrettyPrinter.printEdge(scope, label)
                                 + " affects " + constraint);
-                System.err.println("Because we cannot determine for certain, returing true");
+                TDebug.DEV_OUT.info("Because we cannot determine for certain, returing true");
                 return true;
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
         }
         
-        System.err.println("Not affected by addition of " + TPrettyPrinter.printEdge(scope, label) + " : " + constraint);
+        TDebug.DEV_OUT.info("Not affected by addition of " + TPrettyPrinter.printEdge(scope, label) + " : " + constraint);
         return false;
     }
     

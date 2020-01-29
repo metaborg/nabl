@@ -85,7 +85,7 @@ public class IncrementalCompleteness implements ICompleteness {
      *      the label of the edge
      */
     protected void add(ITerm scope, ITerm label) {
-        if (TDebug.COMPLETENESS) System.out.println("Adding " + scope + "-" + label + " as incomplete in " + this);
+        if (TDebug.COMPLETENESS) TDebug.DEV_OUT.info("Adding " + scope + "-" + label + " as incomplete in " + this);
         final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
         labels.add(label);
     }
@@ -99,7 +99,7 @@ public class IncrementalCompleteness implements ICompleteness {
      *      the label of the edge
      */
     protected void remove(ITerm scope, ITerm label) {
-        if (TDebug.COMPLETENESS) System.out.println("Removing " + scope + "-" + label + " from incomplete in " + this);
+        if (TDebug.COMPLETENESS) TDebug.DEV_OUT.info("Removing " + scope + "-" + label + " from incomplete in " + this);
         final Multiset<ITerm> labels = incomplete.computeIfAbsent(scope, s -> createMultiset());
         //Remove one label from the set. If the multiset now no longer contains the label, trigger the observer.
         if (labels.remove(label) && edgeCompleteObserver != null && !labels.contains(label)) {

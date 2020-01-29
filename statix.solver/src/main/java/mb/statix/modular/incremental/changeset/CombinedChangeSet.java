@@ -14,6 +14,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.ModuleCleanliness;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.util.Scopes;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 
 public class CombinedChangeSet extends AChangeSet {
@@ -103,7 +104,7 @@ public class CombinedChangeSet extends AChangeSet {
                 
                 for (IModule depModule : oldContext.getDependencies(module).getModuleDependants()) {
                     if (depModule == null) {
-                        System.err.println("Encountered null depModule for " + module);
+                        TDebug.DEV_OUT.info("Encountered null depModule for " + module);
                         continue;
                     }
                     
@@ -134,14 +135,14 @@ public class CombinedChangeSet extends AChangeSet {
         //7. Flag all the remaining modules as clean.
         add(Flag.CLEAN, FlagCondition.DontFlag, oldContext.getModules().stream().filter(m -> m.getTopCleanliness() == CLEAN));
 
-        System.err.println("Based on the files, we identified:");
-        System.err.println("  Removed:  (" + removed().size()        + ") " + removedIds());
-        System.err.println("  NewChld:  (" + hasNewChild().size()    + ") " + hasNewChildIds());
-        System.err.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
-        System.err.println("  DirtyCh:  (" + hasDirtyChild().size()  + ") " + hasDirtyChildIds());
-        System.err.println("  Unsure:   (" + unsure().size()         + ") " + unsureIds());
-        System.err.println("  UnsureCh: (" + hasUnsureChild().size() + ") " + hasUnsureChildIds());
-        System.err.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Based on the files, we identified:");
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Removed:  (" + removed().size()        + ") " + removedIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  NewChld:  (" + hasNewChild().size()    + ") " + hasNewChildIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  DirtyCh:  (" + hasDirtyChild().size()  + ") " + hasDirtyChildIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Unsure:   (" + unsure().size()         + ") " + unsureIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  UnsureCh: (" + hasUnsureChild().size() + ") " + hasUnsureChildIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Clean:    (" + clean().size()          + ") " + cleanIds());
         
     }
 }

@@ -1,6 +1,8 @@
 package mb.statix.modular.solver.coordinator;
 
-import static mb.statix.modular.util.TDebug.*;
+import static mb.statix.modular.util.TDebug.COORDINATOR_LEVEL;
+import static mb.statix.modular.util.TDebug.COORDINATOR_SUMMARY;
+import static mb.statix.modular.util.TDebug.PROGRESS_TRACKER_INTERVAL;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -26,6 +28,7 @@ import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.progress.ProgressTrackerRunnable;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TDebug;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.ISolverResult;
@@ -249,7 +252,7 @@ public abstract class ASolverCoordinator implements ISolverCoordinator {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         ex.printStackTrace(pw);
-        System.err.println("Solving failed:");
+        TDebug.DEV_OUT.info("Solving failed:");
         ex.printStackTrace();
         
         debug.error("Solving failed with an exception: {}", sw.toString());

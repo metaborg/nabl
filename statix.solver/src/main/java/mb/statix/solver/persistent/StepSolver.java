@@ -129,7 +129,7 @@ public class StepSolver implements IConstraint.CheckedCases<Optional<ConstraintR
                     throw new InterruptedException();
                 }
                 if(proxyDebug.isEnabled(Level.Info)) {
-                    proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+                    // proxyDebug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
                 }
                 try {
                     final Optional<ConstraintResult> maybeResult;

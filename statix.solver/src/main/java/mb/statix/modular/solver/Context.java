@@ -34,6 +34,7 @@ import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.completeness.RedirectingIncrementalCompleteness;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TDebug;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.spec.Spec;
@@ -357,7 +358,7 @@ public class Context implements IContext, Serializable {
      */
     public void setState(IModule module, IMState state) {
         IMState old = states.put(module.getId(), state);
-        if (old != null) System.err.println("Overridden state of " + module);
+        if (old != null) TDebug.DEV_OUT.info("Overridden state of " + module);
     }
     
     public Map<String, IMState> getStates() {
@@ -566,7 +567,7 @@ public class Context implements IContext, Serializable {
         //Also clear solvers
         for (IMState state : states.values()) {
             if (!manager.hasModule(state.owner().getId())) {
-                System.err.println("Migrating module " + state.owner() + ": state is present, but module is not in current context!");
+                TDebug.DEV_OUT.info("Migrating module " + state.owner() + ": state is present, but module is not in current context!");
                 addModule(state.owner());
             }
             state.setSolver(null);
@@ -577,7 +578,7 @@ public class Context implements IContext, Serializable {
             if (module.isLibraryModule()) continue;
             String id = module.getId();
             if (!dependencies.hasDependencies(id)) {
-                System.err.println("There are no dependencies for module " + id + "!!!");
+                TDebug.DEV_OUT.info("There are no dependencies for module " + id + "!!!");
             }
         }
         
@@ -587,7 +588,7 @@ public class Context implements IContext, Serializable {
         }
         
         for (IModule module : Sets.difference(oldContext.manager.getModules(), getModules())) {
-            System.err.println("Removed module " + module);
+            TDebug.DEV_OUT.info("Removed module " + module);
         }
         
         //Clear now unnecessary fields

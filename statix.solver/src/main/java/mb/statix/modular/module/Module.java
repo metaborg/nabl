@@ -70,7 +70,7 @@ public class Module implements IModule {
 
     @Override
     public IModule createChild(String name, List<Scope> canExtend, IConstraint constraint, boolean transferDependencies) {
-//        System.err.println("Creating child module " + name + " on " + this + ". Transferring dependencies: " + transferDependencies);
+//        TDebug.DEV_OUT.info("Creating child module " + name + " on " + this + ". Transferring dependencies: " + transferDependencies);
         
         //Reuse an existing child module if possible
         String childId = ModulePaths.build(this.id, name);

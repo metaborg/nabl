@@ -268,7 +268,7 @@ public class Scopes {
                     M.appl(t -> t.getArgs()))
                 .match(term).orElse(null);
         } catch (IllegalStateException ex) {
-            System.err.println("Unable to find scopes in term " + TPrettyPrinter.prettyPrint(term) + ": " + ex.getMessage());
+            TDebug.DEV_OUT.info("Unable to find scopes in term " + TPrettyPrinter.prettyPrint(term) + ": " + ex.getMessage());
             return;
         }
         

@@ -3,6 +3,7 @@ package mb.statix.modular.dependencies.details;
 import java.util.Set;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.terms.Scope;
@@ -68,7 +69,7 @@ public class QueryResultDependencyDetail implements IDependencyDetail {
     public boolean isAffectedByEdgeRemoval(Scope scope, ITerm label) {
         //If any resolution path contains this scope and label, we are affected
         for (IResolutionPath<Scope, ITerm, ITerm> path : paths) {
-            System.out.println("Checking " + path + " if it is affected by " + scope + " -" + label + "->");
+            TDebug.DEV_OUT.info("Checking " + path + " if it is affected by " + scope + " -" + label + "->");
             
             //NOTE: The scope set is lazily computed
             if (!path.scopeSet().contains(scope)) continue;
@@ -92,7 +93,7 @@ public class QueryResultDependencyDetail implements IDependencyDetail {
      */
     public boolean isAffectedByDataRemoval(Scope scope, ITerm relation) {
         for (IResolutionPath<Scope, ITerm, ITerm> path : paths) {
-            System.out.println("Checking " + path + " if it is affected by " + scope + " -" + relation + "-[]");
+            TDebug.DEV_OUT.info("Checking " + path + " if it is affected by " + scope + " -" + relation + "-[]");
             
             if (!scope.equals(path.getPath().getTarget())) continue;
             if (relation.equals(path.getLabel())) return true;

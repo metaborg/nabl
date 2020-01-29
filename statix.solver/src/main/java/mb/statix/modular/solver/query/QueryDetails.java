@@ -126,19 +126,19 @@ public class QueryDetails implements IQueryDetails<Scope, ITerm, ITerm> {
             
             paths = nameResolution.resolve(scope);
         } catch(IncompleteDataException e) {
-            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
+            if (TDebug.QUERY_DELAY) TDebug.DEV_OUT.info("Delaying query on a (data) edge: " + e.scope() + " " + e.relation() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation()));
         } catch(IncompleteEdgeException e) {
-            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
+            if (TDebug.QUERY_DELAY) TDebug.DEV_OUT.info("Delaying query on an edge: " + e.scope() + " " + e.label() + ": (critical edge)");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label()));
         } catch(ResolutionDelayException e) {
-            if (TDebug.QUERY_DELAY) System.err.println("Delaying query for unknown reason");
+            if (TDebug.QUERY_DELAY) TDebug.DEV_OUT.info("Delaying query for unknown reason");
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw e.getCause();
         } catch(ModuleDelayException e) {
-            if (TDebug.QUERY_DELAY) System.err.println("Delaying query on module " + e.getModule());
+            if (TDebug.QUERY_DELAY) TDebug.DEV_OUT.info("Delaying query on module " + e.getModule());
             params.debug().info("Query resolution delayed: {}", e.getMessage());
             throw Delay.ofModule(e.getModule());
         } catch(ResolutionException e) {

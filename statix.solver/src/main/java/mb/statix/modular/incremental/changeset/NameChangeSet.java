@@ -40,10 +40,10 @@ public class NameChangeSet extends AChangeSet {
         //3. Flag all the remaining modules as clean.
         add(Flag.CLEAN, FlagCondition.DontFlag, oldContext.getModules().stream().filter(m -> m.getTopCleanliness() == CLEAN));
 
-        if (TDebug.CHANGESET) System.out.println("Based on the files, we identified:");
-        if (TDebug.CHANGESET) System.out.println("  Removed:  (" + removed().size()        + ") " + removedIds());
-        if (TDebug.CHANGESET) System.out.println("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
-        if (TDebug.CHANGESET) System.out.println("  Clean:    (" + clean().size()          + ") " + cleanIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("Based on the files, we identified:");
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Removed:  (" + removed().size()        + ") " + removedIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Dirty:    (" + dirty().size()          + ") " + dirtyIds());
+        if (TDebug.CHANGESET) TDebug.DEV_OUT.info("  Clean:    (" + clean().size()          + ") " + cleanIds());
         
     }
 }

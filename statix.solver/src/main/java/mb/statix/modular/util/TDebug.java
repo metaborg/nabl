@@ -49,7 +49,7 @@ public class TDebug {
     /** Debug info about delegation and events regarding the store. */
     public static final boolean STORE_DEBUG = false;
     
-    public static final boolean CHANGESET = false;
+    public static final boolean CHANGESET = true;
     
     /** The interval at which progress is listed (in ms). */
     public static final long PROGRESS_TRACKER_INTERVAL = 30000;
@@ -67,14 +67,14 @@ public class TDebug {
     public static final boolean COORDINATOR_EXTENDED_SUMMARY = true;
     
     /** If a module hierarchy should be added to the summary. */
-    public static final boolean COORDINATOR_HIERARCHY = false;
+    public static final boolean COORDINATOR_HIERARCHY = true;
     
     // --------------------------------------------------------------------------------------------
     // Dependencies
     // --------------------------------------------------------------------------------------------
     
     /** If a message should be logged whenever a dependency is found. */
-    public static final boolean DEPENDENCY_FOUND = false;
+    public static final boolean DEPENDENCY_FOUND = true;
     
     // --------------------------------------------------------------------------------------------
     // Incremental Strategy and Manager
@@ -83,14 +83,14 @@ public class TDebug {
     /** Initialization of modules */
     public static final boolean INCREMENTAL_STRATEGY = false;
     
-    public static final boolean INCREMENTAL_MANAGER = false;
+    public static final boolean INCREMENTAL_MANAGER = true;
     
-    public static final boolean INCREMENTAL_MANAGER_DIFFS = false;
+    public static final boolean INCREMENTAL_MANAGER_DIFFS = true;
     
     // --------------------------------------------------------------------------------------------
     
     public static final IDebugContext DEV_NULL = new NullDebugContext();
-    public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), TOverrides.LOGLEVEL.equalsIgnoreCase("none") ? Level.Error : Level.parse(TOverrides.LOGLEVEL));
+    public static final IDebugContext DEV_OUT = new LoggerDebugContext(LoggerUtils.logger(TDebug.class), Level.Info);
     
     public static String print() {
         StringBuilder sb = new StringBuilder();
@@ -100,7 +100,7 @@ public class TDebug {
                 sb.append(f.getName()).append('=').append(f.get(null)).append(", ");
             }
         } catch (Exception ex) {
-            System.err.println("Unable to print debug fields reflectively!");
+            DEV_OUT.info("Unable to print debug fields reflectively!");
             ex.printStackTrace();
             return "ERROR";
         }
@@ -193,28 +193,28 @@ public class TDebug {
     // --------------------------------------------------------------------------------------------
     
     public static void debugContext(Context context, boolean pretty) {
-        System.out.println("Debug context " + System.identityHashCode(context));
+        DEV_OUT.info("Debug context " + System.identityHashCode(context));
         
-        System.out.println("Modules: ");
+        DEV_OUT.info("Modules: ");
         IModule root = context.getRootModule();
         printModuleHierarchy(root, 1);
         
-        System.out.println("Unifiers: ");
+        DEV_OUT.info("Unifiers: ");
         for (IModule module : context.getModules()) {
-            System.out.println("| " + module + ":");
-            System.out.println(context.getUnifier(module).print(pretty, 2));
+            DEV_OUT.info("| " + module + ":");
+            DEV_OUT.info(context.getUnifier(module).print(pretty, 2));
         }
         
-        System.out.println("Scope graphs: ");
+        DEV_OUT.info("Scope graphs: ");
         for (IModule module : context.getModules()) {
-            System.out.println("| " + module + ":");
-            System.out.println(context.getScopeGraph(module).print(pretty, 2));
+            DEV_OUT.info("| " + module + ":");
+            DEV_OUT.info(context.getScopeGraph(module).print(pretty, 2));
         }
         
-        System.out.println("Dependencies: ");
+        DEV_OUT.info("Dependencies: ");
         for (IModule module : context.getModules()) {
-            System.out.println("| " + module + ":");
-            System.out.println(context.getDependencies(module).print(pretty, 2));
+            DEV_OUT.info("| " + module + ":");
+            DEV_OUT.info(context.getDependencies(module).print(pretty, 2));
         }
     }
     
@@ -222,7 +222,7 @@ public class TDebug {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < indent; i++) sb.append("| ");
         sb.append(printModule(module));
-        System.out.println(sb.toString());
+        DEV_OUT.info(sb.toString());
         for (IModule child : module.getChildren()) {
             printModuleHierarchy(child, indent + 1);
         }

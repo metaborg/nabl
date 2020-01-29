@@ -22,6 +22,7 @@ import mb.statix.modular.module.split.SplitModuleUtil;
 import mb.statix.modular.ndependencies.NDependencies;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TSettings;
 import mb.statix.modular.util.TTimings;
@@ -56,7 +57,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
             List<Class<?>> actual = tbr.getObservers().stream().map(Object::getClass).collect(Collectors.toList());
             if (!expected.equals(actual)) {
                 TTimings.startPhase("Rebuilding indices");
-                System.err.println("Dependency observers mismatch, rebuilding indices...");
+                if(TDebug.INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("Dependency observers mismatch, rebuilding indices...");
                 tbr.clearObservers();
                 tbr.registerObservers(TSettings.getDependencyObservers());
                 tbr.refreshObservers();
@@ -97,14 +98,14 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
         //We do NOT transfer dependencies since we transfer the entire dependency manager for this strategy.
-        System.err.println("[NIS] Transferring constraint-supplied modules...");
+        if(TDebug.INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[NIS] Transferring constraint-supplied modules...");
         Context oldContext = context.getOldContext();
         Map<IModule, IConstraint> newModules = new HashMap<>();
         Set<IModule> reuseChildren = new HashSet<>();
         moduleConstraints.entrySet().stream()
         .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
         .forEachOrdered(entry -> {
-            System.err.println("[NIS] Encountered entry for " + entry.getKey());
+            if(TDebug.INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[NIS] Encountered entry for " + entry.getKey());
             IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey(), false);
             
             if (oldModule == null || oldModule.getTopCleanliness() == ModuleCleanliness.DIRTY) {
@@ -125,7 +126,7 @@ public class NameIncrementalStrategy extends IncrementalStrategy {
         });
         
         if (oldContext != null) {
-            System.err.println("[NIS] Transferring child modules...");
+            if(TDebug.INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[NIS] Transferring child modules...");
             
             //Make sure we don't reuse the same module multiple times
             Set<IModule> allToReuse = new HashSet<>();

@@ -1,7 +1,8 @@
 package mb.statix.modular.incremental.manager;
 
 import static mb.statix.modular.solver.Context.context;
-import static mb.statix.modular.util.TDebug.*;
+import static mb.statix.modular.util.TDebug.INCREMENTAL_MANAGER;
+import static mb.statix.modular.util.TDebug.INCREMENTAL_MANAGER_DIFFS;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.unifier.DistributedUnifier;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.modular.util.TTimings;
@@ -104,12 +106,12 @@ public class NameIncrementalManager extends IncrementalManager {
         TTimings.startPhase("incremental phase " + phaseCounter,
                 modules.size() == context().getModuleManager()._getModules().size() ? modules.size() + " modules" : TPrettyPrinter.prettyPrint(modules));
         
-        //System.out.println("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
+        //TDebug.DEV_OUT.info("[NIM] TODO: Checking for cyclic dependencies COULD happen here");
         
         processedModules.addAll(modules);
         redoReasons.clear();
         
-        System.out.println("[NIM] Starting phase " + phaseCounter + " with modules " + modules);
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Starting phase " + phaseCounter + " with modules " + modules);
         
         Context context = context();
         context.getCoordinator().preventSolverStart();
@@ -139,7 +141,7 @@ public class NameIncrementalManager extends IncrementalManager {
             //TODO IMPORTANT #12 We need to remove the child modules, (remove their state / reset their state). Otherwise we can get stale values from the children, breaking the solving process!.
         }
         context().getCoordinator().allowSolverStart();
-        if (INCREMENTAL_MANAGER) System.out.println("[NIM] Phase " + phaseCounter + " started");
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Phase " + phaseCounter + " started");
     }
 
     /**
@@ -213,7 +215,7 @@ public class NameIncrementalManager extends IncrementalManager {
      */
     public Set<String> diff(Set<ModuleSolver> finished, Set<ModuleSolver> failed,
             Set<ModuleSolver> stuck, Map<IModule, MSolverResult> results) {
-        if (INCREMENTAL_MANAGER) System.out.println("[NIM] Computing diff to determine modules for next phase");
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Computing diff to determine modules for next phase");
         
         Context oldContext = context().getOldContext();
         if (oldContext == null) throw new IllegalStateException("The old context should not be null!");
@@ -241,7 +243,7 @@ public class NameIncrementalManager extends IncrementalManager {
         diffTime += (en - st);
         
         if (INCREMENTAL_MANAGER_DIFFS) {
-            System.out.println("[NIM] Effective diff result of phase " + phaseCounter + ":");
+            TDebug.DEV_OUT.info("[NIM] Effective diff result of phase " + phaseCounter + ":");
             eDiff.print(System.out);
         }
         
@@ -283,7 +285,7 @@ public class NameIncrementalManager extends IncrementalManager {
         dependencyTime += (en - st);
         
         //TODO IMPORTANT check for cyclic
-        //System.err.println("[NIM] TODO: Checking for cyclic dependencies SHOULD happen here");
+        //TDebug.DEV_OUT.info("[NIM] TODO: Checking for cyclic dependencies SHOULD happen here");
         
         return toRedo;
     }
@@ -337,14 +339,14 @@ public class NameIncrementalManager extends IncrementalManager {
         final Set<IModule> actualModules = determineActualModules(finished, failed, stuck);
         
         //TODO Check if we get results for the stub solvers that we created for the unchanged solvers. We want to ignore these.
-        System.out.println("[NIM] Finished phase " + phase + " with modules " + actualModules);
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Finished phase " + phase + " with modules " + actualModules);
         
         actualPhases.putAll(phase, actualModules);
         processedModules.addAll(actualModules);
         
         //Do not compute a diff if this was a clean run
         if (actualModules.containsAll(context().getModulesOnLevel(1, true, false).values())) {
-            System.out.println("[NIM] Last phase was the equivalent of a clean run, solving done :/");
+            if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Last phase was the equivalent of a clean run, solving done :/");
             return false;
         }
         
@@ -354,12 +356,12 @@ public class NameIncrementalManager extends IncrementalManager {
         TTimings.endPhase("diff " + phase);
         
         if (toRedo.isEmpty()) {
-            System.out.println("[NIM] No modules left to redo, solving done :)");
+            if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] No modules left to redo, solving done :)");
             return false;
         }
         
         if (phaseCounter >= TOverrides.MAX_PHASES) {
-            System.err.println("[NIM] !!!! Giving up after " + phaseCounter + " phases !!!!");
+            if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] !!!! Giving up after " + phaseCounter + " phases !!!!");
             return false;
         }
         
@@ -430,21 +432,21 @@ public class NameIncrementalManager extends IncrementalManager {
     @Override
     public void initSolver(ModuleSolver solver) {
         if (solver.isSeparateSolver()) return;
-        if (INCREMENTAL_MANAGER) System.out.println("[NIM] Solver init triggered for " + solver.getOwner());
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Solver init triggered for " + solver.getOwner());
         super.initSolver(solver);
     }
 
     @Override
     public void solverStart(ModuleSolver solver) {
         if (solver.isSeparateSolver()) return;
-        if (INCREMENTAL_MANAGER) System.out.println("[NIM] Solver start triggered for " + solver.getOwner());
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Solver start triggered for " + solver.getOwner());
         super.solverStart(solver);
     }
 
     @Override
     public void solverDone(ModuleSolver solver, MSolverResult result) {
         if (solver.isSeparateSolver()) return;
-        if (INCREMENTAL_MANAGER) System.out.println("[NIM] Solver done triggered for " + solver.getOwner());
+        if (INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[NIM] Solver done triggered for " + solver.getOwner());
         
         results.put(solver.getOwner(), result);
         super.solverDone(solver, result);

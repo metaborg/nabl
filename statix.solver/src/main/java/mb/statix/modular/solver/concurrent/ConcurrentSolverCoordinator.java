@@ -16,6 +16,7 @@ import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.solver.coordinator.ASolverCoordinator;
 import mb.statix.modular.solver.coordinator.ISolverCoordinator;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TDebug;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 
@@ -155,13 +156,13 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
      */
     private void onFinishPhase() {
         try {
-            System.out.println("COUNTER HAS INFORMED US THAT THE PHASE IS FINISHED :party:");
+            TDebug.DEV_OUT.info("COUNTER HAS INFORMED US THAT THE PHASE IS FINISHED :party:");
             roundDone = true;
             synchronized (this) {
                 notifyAll();
             }
         } catch (Exception ex) {
-            System.err.println("Uncaught exception in coordinator: ");
+            TDebug.DEV_OUT.info("Uncaught exception in coordinator: ");
             ex.printStackTrace();
             throw ex;
         }
@@ -185,18 +186,18 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
      */
     @Override
     protected void finishSolving() {
-        System.out.println("FinishSolving called");
+        TDebug.DEV_OUT.info("FinishSolving called");
         super.finishSolving();
-        System.out.println("Super call done");
+        TDebug.DEV_OUT.info("Super call done");
         
         try {
             finalResult = aggregateResults();
         } catch (Exception ex) {
-            System.err.println("ERROR while aggregating results!");
+            TDebug.DEV_OUT.info("ERROR while aggregating results!");
             ex.printStackTrace();
         }
         
-        System.out.println("Results aggregated");
+        TDebug.DEV_OUT.info("Results aggregated");
         try {
             if (onFinished != null) {
                 try {
@@ -226,9 +227,9 @@ public class ConcurrentSolverCoordinator extends ASolverCoordinator {
         }
         
         //TODO Remove debug info
-        System.err.println("Shutting down executor service...");
-        System.err.println("Remaining tasks: " + executors.shutdownNow().size());
-        System.err.println("Executor service shut down");
+        TDebug.DEV_OUT.info("Shutting down executor service...");
+        TDebug.DEV_OUT.info("Remaining tasks: " + executors.shutdownNow().size());
+        TDebug.DEV_OUT.info("Executor service shut down");
     }
     
     /**

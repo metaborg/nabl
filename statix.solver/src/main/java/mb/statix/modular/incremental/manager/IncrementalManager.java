@@ -14,6 +14,7 @@ import mb.statix.modular.module.split.SplitModuleUtil;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.solver.IConstraint;
 
@@ -47,7 +48,7 @@ public class IncrementalManager implements Serializable {
     public void registerNonSplit(String id) {
         if (!SPLIT_MODULES) return;
         
-        System.err.println("Registering " + id + " as non split (made restricted)");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("Registering " + id + " as non split (made restricted)");
         assert !SplitModuleUtil.isSplitModule(id) : "Registration of a non split module expects a non-split module!";
         nonSplitModules.add(id);
     }
@@ -65,7 +66,7 @@ public class IncrementalManager implements Serializable {
         if (!SPLIT_MODULES) return true;
         
         if (nonSplitModules.remove(id)) {
-            System.err.println("Unregistering " + id + " as non split (made unrestricted)");
+            if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("Unregistering " + id + " as non split (made unrestricted)");
             return true;
         }
         

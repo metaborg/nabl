@@ -27,6 +27,7 @@ import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.state.IMState;
 import mb.statix.modular.util.IOwnable;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 
@@ -149,7 +150,7 @@ public interface IModule extends Flaggable, Serializable {
     default void getDescendants(Context context, Consumer<IModule> consumer) {
         IMInternalScopeGraph<Scope, ITerm, ITerm> graph = context.getScopeGraph(getId());
         if (graph == null) {
-            System.err.println("Unable to get children of " + this + ": state is null!");
+            TDebug.DEV_OUT.info("Unable to get children of " + this + ": state is null!");
             return;
         }
         for (String childId : graph.getChildIds()) {
@@ -170,7 +171,7 @@ public interface IModule extends Flaggable, Serializable {
         consumer.accept(this);
         IMInternalScopeGraph<Scope, ITerm, ITerm> graph = context.getScopeGraph(getId());
         if (graph == null) {
-            System.err.println("Unable to get children of " + this + ": state is null!");
+            TDebug.DEV_OUT.info("Unable to get children of " + this + ": state is null!");
             return;
         }
         
@@ -295,7 +296,7 @@ public interface IModule extends Flaggable, Serializable {
      */
     default IMState getCurrentState() {
         IMState state = Context.context().getState(this);
-        if (state == null) System.err.println("State of " + this + " is null!"); //TODO Remove
+        if (state == null) TDebug.DEV_OUT.info("State of " + this + " is null!"); //TODO Remove
         return state;
     }
     

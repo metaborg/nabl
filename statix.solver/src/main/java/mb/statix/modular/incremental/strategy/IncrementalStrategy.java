@@ -36,6 +36,7 @@ import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.state.IMState;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TSettings;
 import mb.statix.scopegraph.terms.Scope;
@@ -153,14 +154,14 @@ public abstract class IncrementalStrategy implements Serializable {
     public Map<IModule, IConstraint> createInitialModules(Context context,
             IChangeSet changeSet, Map<String, IConstraint> moduleConstraints) {
         
-        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Transferring constraint-supplied modules...");
+        if (INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Transferring constraint-supplied modules...");
         Context oldContext = context.getOldContext();
         Map<IModule, IConstraint> newModules = new HashMap<>();
         Set<IModule> reuseChildren = new HashSet<>();
         moduleConstraints.entrySet().stream()
         .sorted((a, b) -> ModulePaths.INCREASING_PATH_LENGTH.compare(a.getKey(), b.getKey()))
         .forEachOrdered(entry -> {
-            if (INCREMENTAL_STRATEGY) System.out.println("[IS] Encountered entry for " + entry.getKey());
+            if (INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Encountered entry for " + entry.getKey());
             IModule oldModule = oldContext == null ? null : oldContext.getModuleByNameOrId(entry.getKey(), false);
             
             if (oldModule == null || oldModule.getTopCleanliness() != CLEAN) {
@@ -177,7 +178,7 @@ public abstract class IncrementalStrategy implements Serializable {
         });
         
         if (oldContext != null) {
-            if (INCREMENTAL_STRATEGY) System.out.println("[IS] Transferring child modules...");
+            if (INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Transferring child modules...");
             //Remove all the descendants from the set to reuse the children of
             for (IModule module : newModules.keySet()) {
                 module.getDescendants(oldContext, m -> reuseChildren.remove(m));
@@ -258,7 +259,7 @@ public abstract class IncrementalStrategy implements Serializable {
      */
     protected IModule createFileModule(
             Context context, String childName, IConstraint initConstraint, @Nullable IModule oldModule) {
-        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Creating file module for " + childName);
+        if (INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Creating file module for " + childName);
 
         List<Scope> scopes = getScopes(initConstraint);
         
@@ -292,14 +293,14 @@ public abstract class IncrementalStrategy implements Serializable {
      */
     protected IModule createChildModule(
             Context context, IChangeSet changeSet, String childId, IConstraint initConstraint, @Nullable IModule oldModule) {
-        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Creating child module for " + childId);
+        if (INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Creating child module for " + childId);
         
         String parent = ModulePaths.getParent(childId);
         IModule parentModule = context.getModuleUnchecked(parent);
         if (parentModule == null) throw new IllegalStateException("Could not find module " + parent + " even though one of its children changed: " + childId);
         if (parentModule.getTopCleanliness() != ModuleCleanliness.CLEAN) {
             //Parent is also dirty, we need to give up creating this module. It will be created because of the changeset, as long as it's file is reused (which it should be)
-            System.err.println("[IS] SKIPPING module " + childId + ": parent is not clean");
+            if(INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] SKIPPING module " + childId + ": parent is not clean");
             return null;
         }
         
@@ -325,7 +326,7 @@ public abstract class IncrementalStrategy implements Serializable {
      *      if dependencies should be transferred
      */
     protected void reuseOldModule(Context context, IChangeSet changeSet, IModule module, boolean transferDependencies) {
-        if (INCREMENTAL_STRATEGY) System.out.println("[IS] Reusing old module " + module);
+        if (INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Reusing old module " + module);
         IMState state = context.transferModule(module, transferDependencies);
         for (IModule child : changeSet.removed()) {
             state.scopeGraph().removeChild(child);

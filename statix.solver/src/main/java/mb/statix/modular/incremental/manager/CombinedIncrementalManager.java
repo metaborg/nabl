@@ -35,7 +35,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
     
     @Override
     public void startFirstPhase(Map<IModule, IConstraint> modules) {
-        System.out.println("[CIM] Starting first phase...");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Starting first phase...");
         this.initialModules = modules;
         setPhase(CombinedPhase.DirtyStructure);
         
@@ -65,11 +65,11 @@ public class CombinedIncrementalManager extends IncrementalManager {
         //TODO Determine from the changeset which modules to add to the solver
         
         //We add all modules that are dirty or new, after which the solving process begins
-        System.err.println("[CIM] Adding dirty and new modules");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Adding dirty and new modules");
         for (Entry<IModule, IConstraint> entry : modules.entrySet()) {
             final IModule module = entry.getKey();
             final IConstraint init = entry.getValue();
-            System.out.println(module + ": " + module.getTopCleanliness());
+            if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info(module + ": " + module.getTopCleanliness());
             switch (module.getTopCleanliness()) {
                 case DIRTY:
                 case NEW: //TODO Do added modules get this flag?
@@ -80,7 +80,7 @@ public class CombinedIncrementalManager extends IncrementalManager {
                     break;
             }
         }
-        System.out.println("[CIM] Phase First started");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Phase First started");
     }
 
     /**
@@ -153,11 +153,11 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
         final ISolverCoordinator coordinator = context().getCoordinator();
         final IModule root = coordinator.getRootModule();
-        System.err.println("[CIM] Diff in final phase");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Diff in final phase");
         DiffResult diff = Diff.diff(root.getId(), context(), context().getOldContext(), true);
         diff.print(System.err);
         
-        System.err.println("[CIM] Effective diff in final phase");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Effective diff in final phase");
         diff.toEffectiveDiff().print(System.err);
 
         //At this point we have redone the structure of dirty modules and of unclean modules
@@ -165,9 +165,9 @@ public class CombinedIncrementalManager extends IncrementalManager {
 
 
         //Schedule all stuck modules for the next phase.
-        System.out.println("[CIM] Scheduling all stuck modules for the Final phase: " + stuck);
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Scheduling all stuck modules for the Final phase: " + stuck);
         for (ModuleSolver solver : stuck) {
-            solver.getStore().activateFromModules(TDebug.DEV_OUT);
+            if(TDebug.INCREMENTAL_MANAGER) solver.getStore().activateFromModules(TDebug.DEV_OUT);
             coordinator.addSolver(solver);
         }
 
@@ -282,25 +282,25 @@ public class CombinedIncrementalManager extends IncrementalManager {
         IMState state = solver.getOwner().getCurrentState();
         IConstraint init = solver.getOwner().getInitialization();
         if (init == null) {
-            System.err.println("[CIM] Module " + solver.getOwner() + " does not have an init constraint.");
+            if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Module " + solver.getOwner() + " does not have an init constraint.");
             return;
         }
         
-        System.err.println("[CIM] Adding the init constraint of module " + solver.getOwner() + " to the completeness, to make it incomplete (it is uncertain)");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Adding the init constraint of module " + solver.getOwner() + " to the completeness, to make it incomplete (it is uncertain)");
         
         solver.getCompleteness().add(init, state.unifier());
     }
 
     @Override
     public void solverStart(ModuleSolver solver) {
-        System.err.println("[CIM] Solver start triggerd for " + solver.getOwner() + " (separate=" + solver.isSeparateSolver() + ")");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Solver start triggerd for " + solver.getOwner() + " (separate=" + solver.isSeparateSolver() + ")");
 
 
     }
 
     @Override
     public void solverDone(ModuleSolver solver, MSolverResult result) {
-        System.err.println("[CIM] Solver done triggered for " + solver.getOwner() + ". Switching module over to clean.");
+        if(TDebug.INCREMENTAL_MANAGER) TDebug.DEV_OUT.info("[CIM] Solver done triggered for " + solver.getOwner() + ". Switching module over to clean.");
 
         //If this solver is done, do we count that as the solving having succeeded?
         super.solverDone(solver, result);

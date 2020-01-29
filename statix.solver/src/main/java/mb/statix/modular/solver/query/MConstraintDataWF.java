@@ -64,7 +64,7 @@ public class MConstraintDataWF implements DataWF<ITerm>, Serializable {
     
     //TODO Temporary workaround
     private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
-        System.err.println("Serializing unserializable DataWF!");
+        TDebug.DEV_OUT.info("Serializing unserializable DataWF!");
         out.defaultWriteObject();
     }
     

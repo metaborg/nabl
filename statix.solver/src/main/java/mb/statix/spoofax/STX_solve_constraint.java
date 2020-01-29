@@ -65,7 +65,7 @@ public class STX_solve_constraint extends StatixPrimitive {
      *      If an exception occurs.
      */
     private Optional<? extends ITerm> callModularized(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        System.err.println("Running modularized solver!");
+        TDebug.DEV_OUT.info("Running modularized solver!");
         
         //Use an atomic integer as a counter to generate unique names
         AtomicInteger counter = new AtomicInteger();

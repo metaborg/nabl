@@ -12,6 +12,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.ModuleCleanliness;
 import mb.statix.modular.scopegraph.reference.ModuleDelayException;
 import mb.statix.modular.solver.Context;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 
@@ -58,7 +59,7 @@ public class CombinedStrategy extends IncrementalStrategy {
             transferDeps = true;
         }
         
-        System.err.println("[IS] Creating file module for " + childName);
+        if(TDebug.INCREMENTAL_STRATEGY) TDebug.DEV_OUT.info("[IS] Creating file module for " + childName);
 
         List<Scope> scopes = getScopes(initConstraint);
         

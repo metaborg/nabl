@@ -1,6 +1,8 @@
 package mb.statix.modular.scopegraph;
 
-import static mb.statix.modular.util.TOverrides.*;
+import static mb.statix.modular.util.TOverrides.CONCURRENT;
+import static mb.statix.modular.util.TOverrides.SYNC_SCOPEGRAPHS;
+import static mb.statix.modular.util.TOverrides.synchronizedSet;
 import static mb.statix.modular.util.TPrettyPrinter.printModule;
 
 import java.io.BufferedWriter;
@@ -30,6 +32,7 @@ import mb.statix.modular.module.ModulePaths;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.util.IOwnable;
 import mb.statix.modular.util.Scopes;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.modular.util.TPrettyPrinter;
 import mb.statix.scopegraph.terms.Scope;
@@ -135,7 +138,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public Set<Scope> getEdges(Scope scope, ITerm label) {
-        System.err.println("WARNING: Unchecked access to edges: " + scope + " -" + label + "->");
+        TDebug.DEV_OUT.info("WARNING: Unchecked access to edges: " + scope + " -" + label + "->");
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveEdges(scope, label);
         } else {
@@ -143,7 +146,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             IModule scopeOwner = Scopes.getOwner(scope, owner);
             IMInternalScopeGraph<Scope, ITerm, ITerm> graph = scopeOwner.getScopeGraph();
             if (graph == null) {
-                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                TDebug.DEV_OUT.info("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
                 return Collections.emptySet();
             }
             return graph.getTransitiveEdges(scope, label);
@@ -158,7 +161,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             IModule scopeOwner = Scopes.getOwner(scope, requester);
             IMInternalScopeGraph<Scope, ITerm, ITerm> graph = scopeOwner.getScopeGraph();
             if (graph == null) {
-                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                TDebug.DEV_OUT.info("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
                 return Collections.emptySet();
             }
             return graph.getTransitiveEdges(scope, label);
@@ -167,7 +170,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     
     @Override
     public Set<ITerm> getData(Scope scope, ITerm relation) {
-        System.err.println("WARNING: Unchecked access to data: " + scope + " -" + relation + "->");
+        TDebug.DEV_OUT.info("WARNING: Unchecked access to data: " + scope + " -" + relation + "->");
         if (owner.getId().equals(scope.getResource())) {
             return getTransitiveData(scope, relation);
         } else {
@@ -175,7 +178,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             IModule scopeOwner = Scopes.getOwner(scope, owner);
             IMInternalScopeGraph<Scope, ITerm, ITerm> graph = owner.getScopeGraph();
             if (graph == null) {
-                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                TDebug.DEV_OUT.info("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
                 return Collections.emptySet();
             }
             return graph.getTransitiveData(scope, relation);
@@ -190,7 +193,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
             IModule scopeOwner = Scopes.getOwner(scope, requester);
             IMInternalScopeGraph<Scope, ITerm, ITerm> graph = scopeOwner.getScopeGraph();
             if (graph == null) {
-                System.err.println("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
+                TDebug.DEV_OUT.info("Unable to get scope graph of " + printModule(scopeOwner) + " from " + printModule(owner) + ": no state in context for this module");
                 return Collections.emptySet();
             }
             return graph.getTransitiveData(scope, relation);
@@ -492,7 +495,7 @@ public class ModuleScopeGraph implements IMInternalScopeGraph<Scope, ITerm, ITer
     @Override
     public synchronized void substitute(List<? extends Scope> newScopes) {
         if (parentScopes.equals(newScopes)) {
-            System.err.println("Skipping substitution of scopes, no substitution necessary.");
+            TDebug.DEV_OUT.info("Skipping substitution of scopes, no substitution necessary.");
             return;
         }
         //Sometimes the order of constraints changes the scope numbers, so substitution is necessary.

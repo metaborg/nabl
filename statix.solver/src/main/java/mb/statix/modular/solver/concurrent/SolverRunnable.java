@@ -5,6 +5,7 @@ import static mb.statix.modular.util.TOverrides.STOP_IMMEDIATELY_ON_FAILURE;
 import java.util.function.Consumer;
 
 import mb.statix.modular.solver.ModuleSolver;
+import mb.statix.modular.util.TDebug;
 
 /**
  * Implementation for a runnable that represents the execution of a single solver.
@@ -90,7 +91,7 @@ public class SolverRunnable implements Runnable {
             setWorkingFalse();
             throw new RuntimeException("FATAL: Solver executor of module " + solver.getOwner() + " was interrupted unexpectedly! Giving up.", e);
         } catch (Exception ex) {
-            System.err.println("FATAL: Unexpected exception while solving!");
+            TDebug.DEV_OUT.info("FATAL: Unexpected exception while solving!");
             ex.printStackTrace();
         } finally {
             if (done) {

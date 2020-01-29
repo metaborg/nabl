@@ -25,18 +25,18 @@ public class MConstraintContext {
     
     public boolean isComplete(Scope scope, ITerm label, IState state) {
         return isComplete.test(scope, label, state);
-//        System.err.println("MCC: isComplete: scope of " + Scopes.getScope(scope).getResource() + ", state of " + state.owner() + ". IsComplete: " + result);
+//        TDebug.DEV_OUT.info("MCC: isComplete: scope of " + Scopes.getScope(scope).getResource() + ", state of " + state.owner() + ". IsComplete: " + result);
     }
 
     public boolean isRigid(ITermVar var, IState state) {
         boolean result = !state.vars().contains(var);
-//        System.err.println("MCC: isRigid: variable of " + var.getResource() + ", state of " + state.owner() + ". Rigid: " + result);
+//        TDebug.DEV_OUT.info("MCC: isRigid: variable of " + var.getResource() + ", state of " + state.owner() + ". Rigid: " + result);
         return result;
     }
 
     public boolean isClosed(Scope scope, IMState state) {
         boolean result = !state.scopes().contains(scope) && !state.scopeGraph().getExtensibleScopes().contains(scope);
-//        System.err.println("MCC: isClosed: scope of " + Scopes.getScope(scope).getResource() + ", state of " + state.owner() + ". Closed: " + result);
+//        TDebug.DEV_OUT.info("MCC: isClosed: scope of " + Scopes.getScope(scope).getResource() + ", state of " + state.owner() + ". Closed: " + result);
         return result;
     }
 

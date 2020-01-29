@@ -19,6 +19,7 @@ import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
 import mb.statix.modular.solver.ModuleSolver;
 import mb.statix.modular.util.Scopes;
+import mb.statix.modular.util.TDebug;
 import mb.statix.modular.util.TOverrides;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
@@ -101,7 +102,7 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
                         Entry<CriticalEdge, EdgeCompleteObserver> e = it.next();
                         if (!e.getKey().scope().equals(var)) continue;
                         
-                        System.err.println("Variable substitution required on observers!!!!");
+                        TDebug.DEV_OUT.info("Variable substitution required on observers!!!!");
                         it.remove();
                         substitution.put(CriticalEdge.of(scope, e.getKey().label()), e.getValue());
                     }
@@ -127,7 +128,7 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         //TODO IMPORTANT TEMPORARY CHECK
         ModuleSolver solver = Context.context().getSolver(owner);
         if (solver == null) {
-            System.err.println("Cannot find the owner of the given term: owner=" + owner + " requested by " + this.owner + ", term=" + term);
+            TDebug.DEV_OUT.info("Cannot find the owner of the given term: owner=" + owner + " requested by " + this.owner + ", term=" + term);
             return getOrCreateRecovery(owner);
         }
         return solver.getCompleteness();
@@ -240,7 +241,7 @@ public class RedirectingIncrementalCompleteness extends IncrementalCompleteness 
         for (Entry<CriticalEdge, EdgeCompleteObserver> entry : copy.entries()) {
             CriticalEdge ce = entry.getKey();
             if (!completeness._registerObserver((Scope) ce.scope(), ce.label(), entry.getValue())) {
-                System.err.println("Transfer resulted in observers getting triggered, this should not occur!");
+                TDebug.DEV_OUT.info("Transfer resulted in observers getting triggered, this should not occur!");
                 throw new IllegalStateException("Transfer of completeness immediately activated ");
             }
         }

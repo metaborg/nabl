@@ -147,7 +147,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     public void delay(IConstraint constraint, Delay delay) {
         final Delayed delayed = new Delayed(constraint);
         if (!delay.vars().isEmpty()) {
-            TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
             for (ITermVar var : delay.vars()) {
                 synchronized (stuckOnVar) {
                     stuckOnVar.put(var, delayed);
@@ -155,7 +155,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 if (!registerAsObserver(var, TDebug.DEV_OUT, null)) break;
             }
         } else if (!delay.criticalEdges().isEmpty()) {
-            TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
             for (CriticalEdge edge : delay.criticalEdges()) {
                 synchronized (stuckOnEdge) {
                     stuckOnEdge.put(edge, delayed);
@@ -163,7 +163,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 if (!registerAsObserver(edge, TDebug.DEV_OUT, null)) break;
             }
         } else if (delay.module() != null) {
-            TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
             synchronized (stuckOnModule) {
                 stuckOnModule.put(delay.module(), delayed);
             }
@@ -175,7 +175,7 @@ public class ModuleConstraintStore implements IConstraintStore {
     public void delay(IConstraint constraint, Delay delay, IMState state) {
         final Delayed delayed = new Delayed(constraint);
         if (!delay.vars().isEmpty()) {
-            TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("delayed {} on vars {}", constraint, delay.vars());
             for (ITermVar var : delay.vars()) {
                 synchronized (stuckOnVar) {
                     stuckOnVar.put(var, delayed);
@@ -183,7 +183,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 if (!registerAsObserver(var, TDebug.DEV_OUT, state)) break;
             }
         } else if (!delay.criticalEdges().isEmpty()) {
-            TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("delayed {} on critical edges {}", constraint, delay.criticalEdges());
             for (CriticalEdge edge : delay.criticalEdges()) {
                 synchronized (stuckOnEdge) {
                     stuckOnEdge.put(edge, delayed);
@@ -191,7 +191,7 @@ public class ModuleConstraintStore implements IConstraintStore {
                 if (!registerAsObserver(edge, TDebug.DEV_OUT, state)) break;
             }
         } else if (delay.module() != null) {
-            TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.warn("delayed {} on module {}", constraint, delay.module());
             synchronized (stuckOnModule) {
                 stuckOnModule.put(delay.module(), delayed);
             }
@@ -247,7 +247,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             
             for (ModuleConstraintStore store : observers) {
                 //We first need to active and then, if it is likely that the module is currently not solving, we send a notification
-                if (STORE_DEBUG) System.err.println(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
+                if (STORE_DEBUG) TDebug.DEV_OUT.info(owner + ": Delegating activation of variable " + termVar + " to " + store.owner);
                 
                 if (!store.activateFromVar(termVar, debug)) continue; //Activate but don't propagate
                 
@@ -258,7 +258,7 @@ public class ModuleConstraintStore implements IConstraintStore {
 
         //TODO This checks if the event sending optimization is even worth it in these cases.
         if (stores != null && !stores.isEmpty()) {
-            System.out.println("Caching stores for variable activation relieved " + counter + " notifications");
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("Caching stores for variable activation relieved " + counter + " notifications");
             
             //Notify each store only once
             for (ModuleConstraintStore store : stores) {
@@ -279,7 +279,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         for (Delayed delayed : activated) {
             if (delayed.activate()) {
                 final IConstraint constraint = delayed.constraint;
-                debug.info("activating {}", constraint);
+                if(TDebug.STORE_DEBUG) debug.info("activating {}", constraint);
                 add(constraint);
                 tbr = true;
             }
@@ -308,11 +308,11 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
         
         boolean tbr = false;
-        debug.info("activating edge {}", edge);
+        if(TDebug.STORE_DEBUG) debug.info("activating edge {}", edge);
         for(Delayed delayed : activated) {
             if(delayed.activate()) {
                 final IConstraint constraint = delayed.constraint;
-                debug.info("activating {}", constraint);
+                if(TDebug.STORE_DEBUG) debug.info("activating {}", constraint);
                 add(constraint);
                 tbr = true;
             }
@@ -343,11 +343,11 @@ public class ModuleConstraintStore implements IConstraintStore {
             stuckOnModule.clear();
         }
         
-        debug.info("activating all modules");
+        if(TDebug.STORE_DEBUG) debug.info("activating all modules");
         for(Delayed delayed : activated) {
             if(delayed.activate()) {
                 final IConstraint constraint = delayed.constraint;
-                debug.info("activating {}", constraint);
+                if(TDebug.STORE_DEBUG) debug.info("activating {}", constraint);
                 add(constraint);
             }
         }
@@ -361,11 +361,11 @@ public class ModuleConstraintStore implements IConstraintStore {
         }
         
         boolean tbr = false;
-        debug.info("activating module {}", module);
+        if(TDebug.STORE_DEBUG) debug.info("activating module {}", module);
         for(Delayed delayed : activated) {
             if(delayed.activate()) {
                 final IConstraint constraint = delayed.constraint;
-                debug.info("activating {}", constraint);
+                if(TDebug.STORE_DEBUG) debug.info("activating {}", constraint);
                 add(constraint);
                 tbr = true;
             }
@@ -438,7 +438,7 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (state == null) state = context().getState(this.owner);
         final IMState varState = varOwner.getCurrentState();
         if (varState == null) {
-            System.err.println("CRASHED!");
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("CRASHED!");
             TDebug.debugContext(context(), false);
             
             throw new NullPointerException();
@@ -452,7 +452,7 @@ public class ModuleConstraintStore implements IConstraintStore {
             //TODO OPTIMIZATION check if we are running concurrently
             //TODO Could we get a module delay exception here?
             if (!unifier.isGround(termVar)) {
-                debug.info("Registering {} as observer on {}, waiting on var {}", owner, varOwner, termVar);
+                if(TDebug.STORE_DEBUG) debug.info("Registering {} as observer on {}, waiting on var {}", owner, varOwner, termVar);
                 varStore.registerObserver(termVar, this, debug);
                 return true;
             }
@@ -490,14 +490,14 @@ public class ModuleConstraintStore implements IConstraintStore {
         if (!TOptimizations.USE_OBSERVER_MECHANISM_FOR_SELF && this.owner.equals(owner.getId())) return true;
         
         if (state instanceof DelegatingMState && this.owner.equals(owner.getId())) {
-            System.out.println("Running observer mechanism on a separate solver for " + this.owner);
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("Running observer mechanism on a separate solver for " + this.owner);
         } else if (state instanceof DelegatingMState) {
-            System.out.println("Using observer mechanism on a separate solver...");
+            if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("Using observer mechanism on a separate solver...");
         }
         
         final IMState ownerState = owner.getCurrentState();
         RedirectingIncrementalCompleteness completeness = ownerState.solver().getCompleteness();
-        debug.info("Registering {} as observer on {}, waiting on edge {}", this.owner, owner, edge);
+        if(TDebug.STORE_DEBUG) debug.info("Registering {} as observer on {}, waiting on edge {}", this.owner, owner, edge);
         return completeness.registerObserver(edge.scope(), edge.label(), ownerState.unifier(), e -> externalActivateFromEdge(e, debug));
     }
     
@@ -518,7 +518,7 @@ public class ModuleConstraintStore implements IConstraintStore {
      *      the store
      */
     public void transferAllObservers(ModuleConstraintStore store, IUnifier unifier) {
-        System.out.println("Transferring " + varObservers.size() + " observers for module " + owner);
+        if(TDebug.STORE_DEBUG) TDebug.DEV_OUT.info("Transferring " + varObservers.size() + " observers for module " + owner);
         synchronized (store.varObservers) {
             store.varObservers.putAll(this.varObservers);
         }

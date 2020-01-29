@@ -2,7 +2,10 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.modular.util.test.TestUtil.*;
+import static mb.statix.modular.util.test.TestUtil.createChild;
+import static mb.statix.modular.util.test.TestUtil.createSpec;
+import static mb.statix.modular.util.test.TestUtil.label;
+import static mb.statix.modular.util.test.TestUtil.list;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +21,7 @@ import mb.statix.modular.module.IModule;
 import mb.statix.modular.module.Module;
 import mb.statix.modular.solver.Context;
 import mb.statix.modular.solver.MSolverResult;
+import mb.statix.modular.util.TDebug;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Spec;
 
@@ -63,7 +67,7 @@ public class MSTX_scope_graphTest {
         data(B, SB, "Class{B}", ":");
         
         String str = call(null);
-        System.out.println(str);
+        TDebug.DEV_OUT.info(str);
     }
     
     protected String call(String file) {

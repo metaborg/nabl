@@ -192,7 +192,7 @@ public class GreedySolver {
         }
 
         if(debug.isEnabled(Level.Info)) {
-            debug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+            // debug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
         }
 
         // solve
