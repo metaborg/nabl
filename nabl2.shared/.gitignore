@@ -1,11 +1,1 @@
-# Build artifacts
-/src-gen
-/bin
-/target
-/.cache
-/.polyglot.metaborg.yaml
-
-# Eclipse
-/.project
-/.classpath
-/.settings
+## NOTE: .gitignore of repository root also applies

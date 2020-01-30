@@ -1,6 +1,3 @@
-target/
+## NOTE: .gitignore of repository root also applies
+
 META-INF/
-.classpath
-.factorypath
-.project
-.settings/
