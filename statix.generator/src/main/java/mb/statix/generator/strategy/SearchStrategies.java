@@ -2,6 +2,7 @@ package mb.statix.generator.strategy;
 
 import java.util.Map;
 
+import mb.statix.spec.RuleSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
@@ -122,7 +123,7 @@ public final class SearchStrategies {
         return expand(mode, 1d, ImmutableMap.of());
     }
 
-    public final Expand expand(Mode mode, SetMultimap<String, Rule> rules) {
+    public final Expand expand(Mode mode, RuleSet rules) {
         return expand(mode, 1d, ImmutableMap.of(), rules);
     }
 
@@ -136,8 +137,7 @@ public final class SearchStrategies {
         });
     }
 
-    public final Expand expand(Mode mode, double defaultWeight, Map<String, Double> weights,
-            SetMultimap<String, Rule> rules) {
+    public final Expand expand(Mode mode, double defaultWeight, Map<String, Double> weights, RuleSet rules) {
         return expand(mode, (r, n) -> {
             if(weights.containsKey(r.label())) {
                 return weights.get(r.label()) / (double) n;
@@ -151,7 +151,7 @@ public final class SearchStrategies {
         return new Expand(spec, mode, ruleWeight);
     }
 
-    public final Expand expand(Mode mode, Function2<Rule, Long, Double> ruleWeight, SetMultimap<String, Rule> rules) {
+    public final Expand expand(Mode mode, Function2<Rule, Long, Double> ruleWeight, RuleSet rules) {
         return new Expand(spec, mode, ruleWeight, rules);
     }
 

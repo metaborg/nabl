@@ -162,11 +162,7 @@ public abstract class ARule {
         }
 
         public Comparator<Rule> asComparator() {
-            return new Comparator<Rule>() {
-                @Override public int compare(Rule r1, Rule r2) {
-                    return LeftRightOrder.this.compare(r1, r2).orElse(0);
-                }
-            };
+            return (r1, r2) -> LeftRightOrder.this.compare(r1, r2).orElse(0);
         }
 
     }

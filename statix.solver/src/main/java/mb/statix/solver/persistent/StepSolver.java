@@ -542,7 +542,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
 
         final IDebugContext debug = params.debug();
 
-        final List<Rule> rules = spec.rules().get(name);
+        final List<Rule> rules = spec.rules().getRules(name);
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
         if(results.isEmpty()) {
             debug.info("No rule applies");
