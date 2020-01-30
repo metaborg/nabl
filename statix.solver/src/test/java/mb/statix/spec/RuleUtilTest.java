@@ -6,7 +6,6 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableCollection;
 import org.metaborg.util.log.ILogger;
@@ -69,7 +68,7 @@ public class RuleUtilTest {
         logger.info("Ordered rules:");
         rules.forEach(r -> logger.info(" * {}", r));
 
-        ImmutableCollection<Rule> newRules = RuleSet.of(rules).getAllIndependentRules().values();
+        ImmutableCollection<Rule> newRules = RuleSet.of(rules).getAllOrderIndependentRules().values();
         logger.info("Unordered rules:");
         newRules.forEach(r -> logger.info(" * {}", r));
     }

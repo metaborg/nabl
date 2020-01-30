@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.SetMultimap;
@@ -35,12 +34,10 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
@@ -78,7 +75,7 @@ public class RuleUtil {
      * @return Some application result if one rule applies, some empty if no rules apply, and empty if multiple rules
      *         apply.
      */
-    public static final Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(IState.Immutable state,
+    public static Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(IState.Immutable state,
             List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause) {
         return applyOrdered(state, rules, args, cause, true)
                 .map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
@@ -100,7 +97,7 @@ public class RuleUtil {
      * 
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
-    public static final List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IState.Immutable state, List<Rule> rules,
+    public static List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IState.Immutable state, List<Rule> rules,
             List<? extends ITerm> args, @Nullable IConstraint cause) {
         return applyOrdered(state, rules, args, cause, false).get();
     }
@@ -109,7 +106,7 @@ public class RuleUtil {
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
      * rules that could be applied, or empty if onlyOne is true, and multiple matches were found.
      */
-    private static final Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state,
+    private static Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state,
             List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
@@ -147,7 +144,7 @@ public class RuleUtil {
      * Apply the given rule to the given arguments. Returns the result of application, or nothing of the rule cannot be
      * applied.
      */
-    public static final Optional<ApplyResult> apply(IState.Immutable state, Rule rule, List<? extends ITerm> args,
+    public static Optional<ApplyResult> apply(IState.Immutable state, Rule rule, List<? extends ITerm> args,
             @Nullable IConstraint cause) {
         // create equality constraints
         final IState.Transient newState = state.melt();
@@ -202,7 +199,7 @@ public class RuleUtil {
     /**
      * Apply the given rules to the given arguments. Returns the results of application.
      */
-    public static final List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Collection<Rule> rules,
+    public static List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Collection<Rule> rules,
             List<? extends ITerm> args, @Nullable IConstraint cause) {
         return rules.stream().flatMap(
                 rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> ImmutableTuple2.of(rule, result)))
@@ -210,11 +207,65 @@ public class RuleUtil {
     }
 
     /**
+     * Computes the order independent rules.
+     *
+     * @param rules the ordered set of rules for which to compute
+     * @return the set of order independent rules
+     */
+    public static ImmutableSet<Rule> computeOrderIndependentRules(List<Rule> rules) {
+        final List<Pattern> guards = Lists.newArrayList();
+
+        return rules.stream().flatMap(r -> {
+            final IUniDisunifier.Transient diseqs = PersistentUniDisunifier.Immutable.of().melt();
+
+            // Eliminate wildcards in the patterns
+            final FreshVars fresh = new FreshVars(r.varSet());
+            final List<Pattern> paramPatterns = r.params().stream().map(p -> p.eliminateWld(() -> fresh.fresh("_")))
+                    .collect(ImmutableList.toImmutableList());
+            fresh.fix();
+            final Pattern paramsPattern = P.newTuple(paramPatterns);
+
+            // Create term for params and add implied equalities
+            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = paramsPattern.asTerm(Optional::get);
+            try {
+                if (!diseqs.unify(p_eqs._2()).isPresent()) {
+                    return Stream.empty();
+                }
+            } catch (OccursException e) {
+                return Stream.empty();
+            }
+
+            // Add disunifications for all patterns from previous rules
+            final boolean guardsOk = guards.stream().allMatch(g -> {
+                final IRenaming swap = fresh.fresh(g.getVars());
+                final Pattern g1 = g.eliminateWld(() -> fresh.fresh("_"));
+                final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> t_eqs = g1.apply(swap).asTerm(Optional::get);
+                // Add internal equalities from the guard pattern, which are also reasons why the guard wouldn't match
+                final List<ITermVar> leftEqs =
+                        t_eqs._2().stream().map(Tuple2::_1).collect(ImmutableList.toImmutableList());
+                final List<ITerm> rightEqs =
+                        t_eqs._2().stream().map(Tuple2::_2).collect(ImmutableList.toImmutableList());
+                final ITerm left = B.newTuple(p_eqs._1(), B.newTuple(leftEqs));
+                final ITerm right = B.newTuple(t_eqs._1(), B.newTuple(rightEqs));
+                final java.util.Set<ITermVar> universals = fresh.reset();
+                return diseqs.disunify(universals, left, right).isPresent();
+            });
+            if (!guardsOk) return Stream.empty();
+
+            // Add params as guard for next rule
+            guards.add(paramsPattern);
+
+            final IConstraint body = Constraints.conjoin(StateUtil.asInequalities(diseqs), r.body());
+            return Stream.of(r.withParams(paramPatterns).withBody(body));
+        }).collect(ImmutableSet.toImmutableSet());
+    }
+
+    /**
      * Inline rule into the i-th matching premise of the second rule. Inlining always succeeds (use simplify to solve
      * equalities in the resulting rule). The function returns empty if nothing was inlined because no i-th matching
      * premise existed.
      */
-    public static final Optional<Rule> inline(Rule rule, int ith, Rule into) {
+    public static Optional<Rule> inline(Rule rule, int ith, Rule into) {
         final FreshVars fresh = new FreshVars(into.varSet());
 
         final AtomicInteger i = new AtomicInteger(0);
@@ -241,7 +292,7 @@ public class RuleUtil {
         return Optional.of(into.withLabel("").withBody(newBody));
     }
 
-    private static final IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
+    private static IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
         final IRenaming swap = fresh.fresh(rule.paramVars());
         final Pattern rulePatterns = P.newTuple(rule.params()).eliminateWld(() -> fresh.fresh("_"));
         final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = rulePatterns.asTerm(v -> v.get());
@@ -305,7 +356,7 @@ public class RuleUtil {
      * includeRule determine which premises should be inlined. The fragments are closed only w.r.t. the included
      * predicates.
      */
-    public static final SetMultimap<String, Rule> makeFragments(RuleSet rules,
+    public static SetMultimap<String, Rule> makeFragments(RuleSet rules,
             Predicate1<String> includePredicate, Predicate2<String, String> includeRule, int generations) {
         final SetMultimap<String, Rule> fragments = HashMultimap.create();
 
@@ -313,7 +364,7 @@ public class RuleUtil {
         final SetMultimap<String, Rule> newRules = HashMultimap.create();
         for (String ruleName : rules.getRuleNames()) {
             if(includePredicate.test(ruleName)) {
-                for (Rule r : rules.getIndependentRules(ruleName)) {
+                for (Rule r : rules.getOrderIndependentRules(ruleName)) {
                     if(includeRule.test(r.name(), r.label())) {
                         newRules.put(ruleName, r);
                     }
@@ -363,7 +414,7 @@ public class RuleUtil {
         return ImmutableSetMultimap.copyOf(fragments);
     }
 
-    public static final void freeVars(Rule rule, Action1<ITermVar> onVar) {
+    public static void freeVars(Rule rule, Action1<ITermVar> onVar) {
         final java.util.Set<ITermVar> paramVars = rule.paramVars();
         Constraints.freeVars(rule.body(), v -> {
             if(!paramVars.contains(v)) {
@@ -372,7 +423,7 @@ public class RuleUtil {
         });
     }
 
-    public static final void vars(Rule rule, Action1<ITermVar> onVar) {
+    public static void vars(Rule rule, Action1<ITermVar> onVar) {
         Constraints.vars(rule.body(), onVar);
     }
 

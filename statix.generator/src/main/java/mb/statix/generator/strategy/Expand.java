@@ -109,7 +109,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
     private java.util.Map<Rule, Double> getWeightedRules(String name) {
         try {
             return cache.get(name, () -> {
-                final ImmutableList<Rule> rs = this.rules.getIndependentRules(name);
+                final ImmutableList<Rule> rs = this.rules.getOrderIndependentRules(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
                 // ImmutableMap iterates over keys in insertion-order

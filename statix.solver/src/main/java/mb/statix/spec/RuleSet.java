@@ -1,28 +1,10 @@
 package mb.statix.spec;
 
 import com.google.common.collect.*;
-import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
-import mb.nabl2.util.Tuple2;
-import mb.statix.constraints.CUser;
-import mb.statix.constraints.Constraints;
-import mb.statix.solver.IConstraint;
-import mb.statix.solver.StateUtil;
-import org.metaborg.util.functions.PartialFunction1;
-import org.metaborg.util.functions.Predicate1;
-import org.metaborg.util.functions.Predicate2;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermPattern.P;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -34,7 +16,7 @@ public final class RuleSet {
     private final ImmutableListMultimap<String, Rule> rules;
     /** The independent rules. If a rule name is not in this map,
      *  an independent version of its rules has not yet been created. */
-    private final Map<String, ImmutableList<Rule>> independentRules = new HashMap<>();
+    private final Map<String, ImmutableSet<Rule>> independentRules = new HashMap<>();
 
     /**
      * Makes a new ruleset from the specified collection of rules.
@@ -110,9 +92,9 @@ public final class RuleSet {
      *
      * @return a map of a list of rules that are mutually independent
      */
-    public ImmutableListMultimap<String, Rule> getAllIndependentRules() {
+    public ImmutableListMultimap<String, Rule> getAllOrderIndependentRules() {
         final ImmutableListMultimap.Builder<String, Rule> independentRules = ImmutableListMultimap.builder();
-        this.rules.keySet().forEach(name -> independentRules.putAll(name, getIndependentRules(name)));
+        this.rules.keySet().forEach(name -> independentRules.putAll(name, getOrderIndependentRules(name)));
         return independentRules.build();
     }
 
@@ -124,64 +106,10 @@ public final class RuleSet {
      * evaluated, instead of during the matching process already.
      *
      * @param name the name of the rules to find
-     * @return a list of rules that are mutually independent
+     * @return a list of rules that are order independent
      */
-    public ImmutableList<Rule> getIndependentRules(String name) {
-        return this.independentRules.computeIfAbsent(name, n -> computeIndependentRules(getRules(name)));
-    }
-
-    /**
-     * Computes the independent rules.
-     *
-     * @param rules the set of rules for which to compute
-     * @return the set of independent rules
-     */
-    private ImmutableList<Rule> computeIndependentRules(ImmutableList<Rule> rules) {
-        final List<Pattern> guards = Lists.newArrayList();
-
-        return rules.stream().flatMap(r -> {
-            final IUniDisunifier.Transient diseqs = PersistentUniDisunifier.Immutable.of().melt();
-
-            // Eliminate wildcards in the patterns
-            final FreshVars fresh = new FreshVars(r.varSet());
-            final List<Pattern> paramPatterns = r.params().stream().map(p -> p.eliminateWld(() -> fresh.fresh("_")))
-                    .collect(ImmutableList.toImmutableList());
-            fresh.fix();
-            final Pattern paramsPattern = P.newTuple(paramPatterns);
-
-            // Create term for params and add implied equalities
-            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = paramsPattern.asTerm(Optional::get);
-            try {
-                if (!diseqs.unify(p_eqs._2()).isPresent()) {
-                    return Stream.empty();
-                }
-            } catch (OccursException e) {
-                return Stream.empty();
-            }
-
-            // Add disunifications for all patterns from previous rules
-            final boolean guardsOk = guards.stream().allMatch(g -> {
-                final IRenaming swap = fresh.fresh(g.getVars());
-                final Pattern g1 = g.eliminateWld(() -> fresh.fresh("_"));
-                final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> t_eqs = g1.apply(swap).asTerm(v -> v.get());
-                // Add internal equalities from the guard pattern, which are also reasons why the guard wouldn't match
-                final List<ITermVar> leftEqs =
-                        t_eqs._2().stream().map(Tuple2::_1).collect(ImmutableList.toImmutableList());
-                final List<ITerm> rightEqs =
-                        t_eqs._2().stream().map(Tuple2::_2).collect(ImmutableList.toImmutableList());
-                final ITerm left = B.newTuple(p_eqs._1(), B.newTuple(leftEqs));
-                final ITerm right = B.newTuple(t_eqs._1(), B.newTuple(rightEqs));
-                final Set<ITermVar> universals = fresh.reset();
-                return diseqs.disunify(universals, left, right).isPresent();
-            });
-            if (!guardsOk) return Stream.empty();
-
-            // Add params as guard for next rule
-            guards.add(paramsPattern);
-
-            final IConstraint body = Constraints.conjoin(StateUtil.asInequalities(diseqs), r.body());
-            return Stream.of(r.withParams(paramPatterns).withBody(body));
-        }).collect(ImmutableList.toImmutableList());
+    public ImmutableSet<Rule> getOrderIndependentRules(String name) {
+        return this.independentRules.computeIfAbsent(name, n -> RuleUtil.computeOrderIndependentRules(getRules(name)));
     }
 
     /**
