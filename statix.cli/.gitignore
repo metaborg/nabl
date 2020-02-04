@@ -1,5 +1,3 @@
-/target/
-/META-INF/
-/.project
-/.classpath
-/.settings
+## NOTE: .gitignore of repository root also applies
+
+META-INF/

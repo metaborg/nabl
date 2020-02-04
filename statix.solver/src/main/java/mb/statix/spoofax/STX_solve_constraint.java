@@ -14,8 +14,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.statix.constraints.CExists;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
@@ -40,13 +38,11 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<IConstraint> constraintMatcher = M.tuple2(M.listElems(StatixTerms.varTerm()),
-                StatixTerms.constraint(), (t, vs, c) -> new CExists(vs, c));
         final Function1<IConstraint, ITerm> solveConstraint = constraint -> solveConstraint(spec, constraint, debug);
         // @formatter:off
         return M.cases(
-            constraintMatcher.map(solveConstraint::apply),
-            M.listElems(constraintMatcher).map(vars_constraints -> {
+            StatixTerms.constraint().map(solveConstraint::apply),
+            M.listElems(StatixTerms.constraint()).map(vars_constraints -> {
                 return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList()));
             })
         ).match(term);

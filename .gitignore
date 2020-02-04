@@ -1,0 +1,72 @@
+## Repository-wide .gitignore
+
+
+## General
+*.tmp
+*.bak
+*.log
+
+
+## Spoofax
+.polyglot.metaborg.yaml
+.cache/
+
+
+## Eclipse
+bin/
+tmp/
+.settings/
+.sts4-cache/
+.metadata
+.loadpath
+.recommenders
+.project
+.classpath
+.factorypath
+.apt_generated
+local.properties
+
+
+## Intellij
+.idea/
+.idea_modules/
+out/
+modules.xml
+*.iws
+*.iml
+*.ipr
+
+
+## Java
+src-gen/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.apt_generated_tests/
+
+
+## Maven
+/*/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+.flattened-pom.xml
+
+
+## Gradle
+.gradle/
+/*/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache

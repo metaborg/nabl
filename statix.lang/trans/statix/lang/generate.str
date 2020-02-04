@@ -41,7 +41,8 @@ rules
        ; edge* := <collect-all(?Labels(<map(qualify-name(|a))>));concat;strip-annos> ast
        ; data* := [Decl()|<collect-all(?RelDecl(<qualify-name(|a)>, _));strip-annos> ast]
        ; rule* := <collect-all(?Rule(_, _, _);qualify-names(|a));strip-annos;eliminate-all> ast
-       ; spec := FileSpec(import*, edge*, data*, EOP(), rule*, ext)
+       ; ext' := <qualify-names(|a);strip-annos> ext
+       ; spec := FileSpec(import*, edge*, data*, EOP(), rule*, ext')
 
   empty-spec = !FileSpec([], [], [], EOP(), [], [])
 

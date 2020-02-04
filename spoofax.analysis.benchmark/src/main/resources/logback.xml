@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!--pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern-->
+
+  <timestamp key="timestamp" datePattern="yyyyMMdd'T'HHmmss"/>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+		<encoder>
+			<pattern>%d{HH:mm:ss} %-5level - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+  <!--appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>analysis-benchmark-${timestamp}.log</file>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>DEBUG</level>
+    </filter>
+    <encoder>
+			<pattern>%d{HH:mm:ss} %-5level - %msg%n</pattern>
+    </encoder>
+  </appender-->
+
+	<root level="INFO">
+		<appender-ref ref="STDOUT" />
+		<!--appender-ref ref="FILE" /-->
+	</root>
+
+</configuration>

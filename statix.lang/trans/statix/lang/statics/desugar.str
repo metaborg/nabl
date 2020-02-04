@@ -11,12 +11,15 @@ imports
   statix/lang/util
   statix/lang/statics/-
 
+  statix/runtime/constraints
+
 rules
 
   desugar-all =
     desugar-rules;
     desugar-decl-shorthands;
     desugar-ref-shorthands;
+    desugar-regexes;
     desugar-queries;
     desugar-lambdas;
     desugar-tuples
@@ -33,33 +36,35 @@ rules
   desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
     with decl := <with-origin(|c)> Decl()
 
-  desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
+  desugar-decl-shorthand: c@CTellDeclWithRels(st, dt, rts) -> <stx--conj(|c1)> c2*
     with decl := <with-origin(|c)> Decl();
-         c1 := <with-origin(|c)> CTellRel(decl, [dt], st);
-         c2 := <with-origin(|c)> CTellRel(rel, [dt,rt], st)
+         c1   := <with-origin(|c)> CTellRel(decl, [dt], st);
+         c2*  := <map(\ (rel, rt) -> <with-origin(|c)> CTellRel(rel, [dt, rt], st) \)> rts
+
+
 
 rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
 
   desugar-ref-shorthand: c@CResolveRef(rt, st, pst, msg) -> c'
-    with rel        := <with-origin(|c)> Decl();
-         match      := <with-origin(|rt)> ResolveMatch(rt);
-         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
-         filter     := <with-origin(|rt)> Filter(match, lmatch);
-         ord        := <with-origin(|rt)> ResolveLt(rt);
-         lord       := <with-origin(|rt)> LTrue();
-         min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(rel, filter, min, st, pst, msg)
+    with rel    := <with-origin(|c)> Decl();
+         match  := <with-origin(|rt)> ResolveMatch(rt);
+         lmatch := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter := <with-origin(|rt)> Filter(match, lmatch);
+         ord    := <with-origin(|rt)> ResolveLt(rt);
+         lord   := <with-origin(|rt)> LTrue();
+         min    := <with-origin(|rt)> Min(ord, lord);
+         c'     := CResolveQuery(rel, filter, min, st, pst, msg)
 
   desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst, msg) -> c'
-    with match      := <with-origin(|rt)> ResolveMatch(rt);
-         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
-         filter     := <with-origin(|rt)> Filter(match, lmatch);
-         ord        := <with-origin(|rt)> ResolveLt(rt);
-         lord       := <with-origin(|rt)> LTrue();
-         min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(rel, filter, min, st, pst, msg)
+    with match  := <with-origin(|rt)> ResolveMatch(rt);
+         lmatch := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter := <with-origin(|rt)> Filter(match, lmatch);
+         ord    := <with-origin(|rt)> ResolveLt(rt);
+         lord   := <with-origin(|rt)> LTrue();
+         min    := <with-origin(|rt)> Min(ord, lord);
+         c'     := CResolveQuery(rel, filter, min, st, pst, msg)
 
 rules
 

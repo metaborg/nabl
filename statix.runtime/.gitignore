@@ -1,11 +1,4 @@
-/.cache
-/bin
-/src-gen
-/target
-
-/.classpath
-/.project
-/.settings
-/.factorypath
+## NOTE: .gitignore of repository root also applies
 
 /.polyglot.metaborg.yaml
+META-INF/

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import mb.statix.spec.RuleSet;
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -16,11 +17,9 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -99,15 +98,8 @@ public class StatixTerms {
                 });
     }
 
-    public static IMatcher<ListMultimap<String, Rule>> rules() {
-        return M.listElems(M.req(rule())).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.<String, Rule>builder()
-                    .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
-            rules.stream().forEach(rule -> {
-                builder.put(rule.name(), rule);
-            });
-            return builder.build();
-        });
+    public static IMatcher<RuleSet> rules() {
+        return M.listElems(M.req(rule())).map(RuleSet::of);
     }
 
     public static IMatcher<Rule> rule() {
@@ -189,9 +181,6 @@ public class StatixTerms {
                 }),
                 M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
                     return new CUser(name, args, msg.orElse(null));
-                }),
-                M.term(c -> {
-                    throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
             )).match(t, u);
             // @formatter:on

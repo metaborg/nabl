@@ -1,9 +1,3 @@
-/.classpath
-/.factorypath
-/.project
-/.settings
-/META-INF
-/target
-/bin
-/.idea
-/*.iml
+## NOTE: .gitignore of repository root also applies
+
+META-INF/

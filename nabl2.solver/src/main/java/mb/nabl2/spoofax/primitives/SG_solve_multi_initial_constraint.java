@@ -21,7 +21,7 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
-import mb.nabl2.solver.SolverException;
+import mb.nabl2.solver.exceptions.SolverException;
 import mb.nabl2.solver.solvers.BaseSolver.BaseSolution;
 import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
 import mb.nabl2.solver.solvers.ImmutableBaseSolution;
