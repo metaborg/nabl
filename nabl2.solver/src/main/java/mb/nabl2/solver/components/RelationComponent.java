@@ -152,7 +152,9 @@ public class RelationComponent extends ASolver {
                 if(relation(name).contains(left, right)) {
                     return SolveResult.empty();
                 } else {
-                    return SolveResult.messages(c.getMessageInfo());
+                    IMessageInfo message = c.getMessageInfo().withDefaultContent(
+                            MessageContent.builder().append(left).append(" and ").append(right).append(" not in ").append(name).build());
+                    return SolveResult.messages(message);
                 }
             },
             extName -> {
@@ -179,9 +181,11 @@ public class RelationComponent extends ASolver {
                     throw new FunctionUndefinedException("Function " + name + " undefined.");
                 }
                 Optional<ITerm> result = fun.apply(term);
+                IMessageInfo message = c.getMessageInfo().withDefaultContent(
+                        MessageContent.builder().append(name).append(" failed on ").append(term).build());
                 return result.map(ret -> {
                     return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
-                }).orElse(SolveResult.messages(c.getMessageInfo()));
+                }).orElse(SolveResult.messages(message));
             },
             extName -> {
                 return callExternal(extName, term).map(ret -> {
