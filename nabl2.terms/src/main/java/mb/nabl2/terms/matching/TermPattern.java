@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -25,7 +24,6 @@ public class TermPattern {
     public static class P {
 
         public final Pattern EMPTY_TUPLE = new ApplPattern(Terms.TUPLE_OP, ImmutableList.of());
-        public final Pattern EMPTY_LIST = new NilPattern();
 
         public Pattern newAppl(String op, Pattern... args) {
             return newAppl(op, Arrays.asList(args));
@@ -49,26 +47,6 @@ public class TermPattern {
             } else {
                 return new ApplPattern(Terms.TUPLE_OP, argList);
             }
-        }
-
-        public Pattern newList(Iterable<? extends Pattern> args) {
-            return newListTail(args, EMPTY_LIST);
-        }
-
-        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail) {
-            Pattern list = tail;
-            for(Pattern elem : ImmutableList.copyOf(args).reverse()) {
-                list = newCons(elem, list);
-            }
-            return list;
-        }
-
-        public Pattern newCons(Pattern head, Pattern tail) {
-            return new ConsPattern(head, tail);
-        }
-
-        public Pattern newNil() {
-            return new NilPattern();
         }
 
         public Pattern newString(String value) {
@@ -114,11 +92,6 @@ public class TermPattern {
                     final List<Pattern> args = appl.getArgs().stream().map(a -> fromTerm(a, isWildcard)).collect(ImmutableList.toImmutableList());
                     return new ApplPattern(appl.getOp(), args);
                 },
-                list -> list.match(ListTerms.cases(
-                    cons -> new ConsPattern(fromTerm(cons.getHead(), isWildcard), fromTerm(cons.getTail(), isWildcard)),
-                    nil -> new NilPattern(),
-                    var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var)
-                )),
                 string -> new StringPattern(string.getValue()),
                 integer -> new IntPattern(integer.getValue()),
                 blob -> {

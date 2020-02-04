@@ -15,9 +15,7 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
@@ -34,11 +32,6 @@ public class Transform {
                     final List<ITerm> args = appl.getArgs().stream().map(arg -> sometd(m).apply(arg)).collect(ImmutableList.toImmutableList());
                     return B.newAppl(appl.getOp(), args, appl.getAttachments());
                 },
-                (list) -> list.match(ListTerms.<IListTerm> cases(
-                    (cons) -> B.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
-                    (nil) -> nil,
-                    (var) -> var
-                )),
                 (string) -> string,
                 (integer) -> integer,
                 (blob) -> blob,
@@ -55,11 +48,6 @@ public class Transform {
                         final List<ITerm> args = appl.getArgs().stream().map(arg -> somebu(m).apply(arg)).collect(ImmutableList.toImmutableList());
                         return B.newAppl(appl.getOp(), args, appl.getAttachments());
                     },
-                    (list) -> list.match(ListTerms.<IListTerm> cases(
-                        (cons) -> B.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
-                        (nil) -> nil,
-                        (var) -> var
-                    )),
                     (string) -> string,
                     (integer) -> integer,
                     (blob) -> blob,
@@ -86,15 +74,6 @@ public class Transform {
                             }
                             return Unit.unit;
                         },
-                        (list) -> list.match(ListTerms.<Unit> cases(
-                            (cons) -> {
-                                f.match(cons.getHead(), u);
-                                f.match(cons.getTail(), u);
-                                return Unit.unit;
-                            },
-                            (nil) -> Unit.unit,
-                            (var) -> Unit.unit
-                        )),
                         (string) -> Unit.unit,
                         (integer) -> Unit.unit,
                         (blob) -> Unit.unit,

@@ -9,8 +9,8 @@ import mb.nabl2.terms.build.ListTermIterator;
 
 public class ListTerms {
 
-    public static final String CONS_OP = "stx.cons";
-    public static final String NIL_OP = "stx.nil";
+    public static final String CONS_OP = "str.cons";
+    public static final String NIL_OP = "str.nil";
 
     public static <T> IListTerm.Cases<T> cases(
     // @formatter:off

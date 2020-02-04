@@ -225,49 +225,6 @@ public abstract class Pattern implements Serializable {
                 } else {
                     return null;
                 }
-            } else if(p1 instanceof ConsPattern) {
-                final ConsPattern cons1 = (ConsPattern) p1;
-                if(p2 instanceof ConsPattern) {
-                    final ConsPattern cons2 = (ConsPattern) p2;
-                    Integer c = 0;
-                    c = compare(cons1.getHead(), cons2.getHead(), pos, vars1, vars2);
-                    if(c != null && c == 0) {
-                        c = compare(cons1.getTail(), cons2.getTail(), pos, vars1, vars2);
-                    }
-                    return c;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 0;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
-                } else {
-                    return null;
-                }
-            } else if(p1 instanceof NilPattern) {
-                if(p2 instanceof NilPattern) {
-                    return 0;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 0;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
-                } else {
-                    return null;
-                }
             } else if(p1 instanceof StringPattern) {
                 final StringPattern string1 = (StringPattern) p1;
                 if(p2 instanceof StringPattern) {

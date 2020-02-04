@@ -28,11 +28,11 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 
-public class StrategoTerms {
+public class StrategoLists {
 
     private final org.spoofax.interpreter.terms.ITermFactory termFactory;
 
-    public StrategoTerms(ITermFactory termFactory) {
+    public StrategoLists(ITermFactory termFactory) {
         this.termFactory = termFactory;
     }
 
@@ -40,17 +40,15 @@ public class StrategoTerms {
 
     public IStrategoTerm toStratego(ITerm term) {
         // @formatter:off
-        IStrategoTerm strategoTerm = term.match(Terms.cases(
+        IStrategoTerm strategoTerm = term.matchOrThrow(Terms.cases(
             appl -> {
                 List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
-                
-                fixmeHandleSpecialTerms();
-                
                 IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
                 return appl.getOp().equals(Terms.TUPLE_OP)
                         ? termFactory.makeTuple(argArray)
                         : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), argArray);
             },
+            list ->  toStrategoList(list),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
             blob -> new StrategoBlob(blob.getValue()),
@@ -67,6 +65,35 @@ public class StrategoTerms {
                 strategoTerm = putAttachments(strategoTerm, term.getAttachments());
         }
         return strategoTerm;
+    }
+
+    private IStrategoTerm toStrategoList(IListTerm list) {
+        final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
+        final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
+        while(list != null) {
+            attachments.push(list.getAttachments());
+            // @formatter:off
+            list = list.match(ListTerms.<IListTerm>cases(
+                cons -> {
+                    terms.push(toStratego(cons.getHead()));
+                    return cons.getTail();
+                },
+                nil -> {
+                    return null;
+                },
+                var -> {
+                    throw new IllegalArgumentException("Cannot convert specialized terms to Stratego.");
+                }
+            ));
+            // @formatter:on
+        }
+        IStrategoList strategoList = termFactory.makeList();
+        putAttachments(strategoList, attachments.pop());
+        while(!terms.isEmpty()) {
+            strategoList = termFactory.makeListCons(terms.pop(), strategoList);
+            putAttachments(strategoList, attachments.pop());
+        }
+        return strategoList;
     }
 
     private <T extends IStrategoTerm> T putAttachments(T term, ImmutableClassToInstanceMap<Object> attachments) {
@@ -95,7 +122,7 @@ public class StrategoTerms {
     public ITerm fromStratego(IStrategoTerm sterm) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
         // @formatter:off
-        ITerm term = match(sterm, StrategoTerms.cases(
+        ITerm term = match(sterm, StrategoLists.cases(
             appl -> {
                 final List<ITerm> args = Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
                 return B.newAppl(appl.getConstructor().getName(), args, attachments);
@@ -112,6 +139,18 @@ public class StrategoTerms {
         ));
         // @formatter:on
         return term;
+    }
+
+    private IListTerm fromStrategoList(IStrategoList list) {
+        final LinkedList<ITerm> terms = Lists.newLinkedList();
+        final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
+        while(!list.isEmpty()) {
+            terms.add(fromStratego(list.head()));
+            attachments.push(getAttachments(list));
+            list = list.tail();
+        }
+        attachments.add(getAttachments(list));
+        return B.newList(terms, attachments);
     }
 
     public static ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {

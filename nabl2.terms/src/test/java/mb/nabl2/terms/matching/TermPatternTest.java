@@ -41,7 +41,7 @@ public class TermPatternTest {
 
     @Test public void testMatchTerms() {
         final Pattern pattern = P.newAppl(g, P.newVar(a), P.newVar(b));
-        final ISubstitution.Immutable result = pattern.match(B.newAppl(g, B.newList(x), y)).get();
+        final ISubstitution.Immutable result = pattern.matchOrThrow(B.newAppl(g, B.newList(x), y)).get();
         assertEquals(B.newList(x), result.apply(a));
         assertEquals(y, result.apply(b));
     }
@@ -68,21 +68,21 @@ public class TermPatternTest {
     }
 
     @Test public void testMatchNils() {
-        assertTrue(P.newNil().match(B.newNil()).isPresent());
+        assertTrue(P.newNil().matchOrThrow(B.newNil()).isPresent());
     }
 
     @Test public void testMismatchNilAndList() {
-        assertFalse(P.newNil().match(B.newList(x)).isPresent());
+        assertFalse(P.newNil().matchOrThrow(B.newList(x)).isPresent());
     }
 
     @Test public void testMatchGroundAppls() {
         Pattern pattern = P.newAppl(f, P.newNil());
-        assertTrue(pattern.match(B.newAppl(f, B.newNil())).isPresent());
+        assertTrue(pattern.matchOrThrow(B.newAppl(f, B.newNil())).isPresent());
     }
 
     @Test public void testMatchWildcardWithNil() {
         Pattern pattern = P.newAppl(f, P.newWld());
-        assertTrue(pattern.match(B.newAppl(f, B.newNil())).isPresent());
+        assertTrue(pattern.matchOrThrow(B.newAppl(f, B.newNil())).isPresent());
     }
 
 }

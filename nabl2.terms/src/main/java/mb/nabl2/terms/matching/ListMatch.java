@@ -14,6 +14,7 @@ import org.metaborg.util.functions.Function3;
 import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IConsList;
 import mb.nabl2.terms.IListTerm;
@@ -51,15 +52,15 @@ public class ListMatch {
 
         public <T, R> IMatcher<R> listElems(IMatcher<T> m,
                 Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
-            //            return (term, unifier) -> {
-            //                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-            //                    List<Optional<T>> os = Lists.newArrayList();
-            //                    for(ITerm t : ListTerms.iterable(list)) {
-            //                        os.add(m.match(t, unifier));
-            //                    }
-            //                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
-            //                }, this::empty, this::empty, this::empty, this::empty));
-            //            };
+            return (term, unifier) -> {
+                return list().match(term, unifier).flatMap(list -> {
+                    List<Optional<T>> os = Lists.newArrayList();
+                    for(ITerm t : ListTerms.iterable(list)) {
+                        os.add(m.match(t, unifier));
+                    }
+                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
+                });
+            };
         }
 
         public IMatcher<IConsList> cons() {
