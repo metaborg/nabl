@@ -31,27 +31,10 @@ public class RandomTermGenerator {
         final long seed = System.currentTimeMillis();
         log.init(seed, strategy, initState.constraintsAndDelays());
 
-        final AtomicInteger nodeId = new AtomicInteger();
-        final Random rnd = new Random(seed);
-        final SearchContext ctx = new SearchContext() {
-
-            @Override
-            public Spec spec() {
-                return spec;
-            }
-
-            @Override public Random rnd() {
-                return rnd;
-            }
-
-            @Override public int nextNodeId() {
-                return nodeId.incrementAndGet();
-            }
-
+        final SearchContext ctx = new DefaultSearchContext(spec, seed) {
             @Override public void failure(SearchNodes<?> nodes) {
                 log.failure(nodes);
             }
-
         };
         return strategy.apply(ctx, new SearchNode<>(ctx.nextNodeId(), initState, null, "init"));
     }
