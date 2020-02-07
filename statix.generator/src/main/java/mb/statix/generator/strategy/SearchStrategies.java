@@ -75,6 +75,10 @@ public final class SearchStrategies {
         return new Fix(search, infer, done, maxConsecutiveFailures);
     }
 
+    public static Fix2 fix2(SearchStrategy<SearchState, SearchState> search) {
+        return new Fix2(search);
+    }
+
     public static <C extends IConstraint> Select<C> select(Class<C> cls) {
         return select(cls, (Predicate1<C>) c -> true);
     }
@@ -108,6 +112,10 @@ public final class SearchStrategies {
     public static <C extends IConstraint> Select<C> select(Class<C> cls,
             Function1<SearchState, Function1<C, Double>> weight) {
         return new Select<>(cls, weight);
+    }
+
+    public static <I extends SearchState, O extends SearchState> Shuffle<I, O> shuffle(SearchStrategy<I, O> s) {
+        return new Shuffle<>(s);
     }
 
     public static FilterConstraints filter(Predicate1<IConstraint> p) {
