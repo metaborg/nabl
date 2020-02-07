@@ -4,14 +4,17 @@ import java.util.Objects;
 
 import mb.statix.generator.SearchState;
 
+import javax.annotation.Nullable;
+
+
 public class SearchNode<O extends SearchState> implements SearchElement {
 
     private final int id;
     private final O output;
-    private final SearchNode<?> parent;
+    @Nullable private final SearchNode<?> parent;
     private final String desc;
 
-    public SearchNode(int id, O output, SearchNode<?> parent, String desc) {
+    public SearchNode(int id, O output, @Nullable SearchNode<?> parent, String desc) {
         this.id = id;
         this.output = output;
         this.parent = parent;
