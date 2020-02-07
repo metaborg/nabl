@@ -1,30 +1,26 @@
 package mb.statix.generator.strategy;
 
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Queues;
+import mb.statix.generator.SearchContext;
+import mb.statix.generator.SearchState;
+import mb.statix.generator.SearchStrategy;
+import mb.statix.generator.nodes.SearchNode;
+import mb.statix.generator.nodes.SearchNodes;
+import org.metaborg.util.functions.Function0;
 
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.metaborg.util.functions.Function0;
+import static mb.statix.generator.util.StreamUtil.flatMap;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Queues;
-
-import mb.statix.generator.SearchContext;
-import mb.statix.generator.SearchState;
-import mb.statix.generator.SearchStrategy;
-import mb.statix.generator.nodes.SearchNode;
-import mb.statix.generator.nodes.SearchNodes;
-import mb.statix.spec.Spec;
-
-final class Seq<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
+public final class Seq<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final List<SearchStrategy<?, ?>> ss;
 
-    private Seq(Spec spec, List<SearchStrategy<?, ?>> ss) {
-        super(spec);
+    private Seq(List<SearchStrategy<?, ?>> ss) {
         this.ss = ss;
     }
 
@@ -50,11 +46,9 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
 
     public static class Builder<I extends SearchState, O extends SearchState> {
 
-        private final Spec spec;
         private final ImmutableList.Builder<SearchStrategy<?, ?>> ss = ImmutableList.builder();
 
-        public Builder(Spec spec, SearchStrategy<I, O> s) {
-            this.spec = spec;
+        public Builder(SearchStrategy<I, O> s) {
             ss.add(s);
         }
 
@@ -64,7 +58,7 @@ final class Seq<I extends SearchState, O extends SearchState> extends SearchStra
         }
 
         public Seq<I, O> $() {
-            return new Seq<>(spec, ss.build());
+            return new Seq<>(ss.build());
         }
 
     }

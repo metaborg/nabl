@@ -5,14 +5,12 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
-import mb.statix.spec.Spec;
 
-final class Mark<I extends SearchState> extends SearchStrategy<I, I> {
+public final class Mark<I extends SearchState> extends SearchStrategy<I, I> {
 
     private final String marker;
 
-    public Mark(Spec spec, String marker) {
-        super(spec);
+    public Mark(String marker) {
         this.marker = "<" + marker + ">";
     }
 

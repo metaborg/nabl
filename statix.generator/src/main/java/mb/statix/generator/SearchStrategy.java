@@ -10,15 +10,10 @@ public abstract class SearchStrategy<I extends SearchState, O extends SearchStat
         ENUM, RND
     }
 
-    private final Spec spec;
+    public SearchStrategy() {
 
-    public SearchStrategy(Spec spec) {
-        this.spec = spec;
     }
 
-    protected Spec spec() {
-        return this.spec;
-    }
 
     public final SearchNodes<O> apply(SearchContext ctx, SearchNode<I> node) {
         return doApply(ctx, node);

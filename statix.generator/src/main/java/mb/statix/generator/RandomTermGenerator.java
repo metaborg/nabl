@@ -17,9 +17,11 @@ public class RandomTermGenerator {
     private final SearchStrategy<SearchState, SearchState> strategy;
 
     private final SearchLogger log;
+    private final Spec spec;
 
     public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy,
             SearchLogger log) {
+        this.spec = spec;
         this.initState = SearchState.of(spec, State.of(spec), ImmutableList.of(constraint));
         this.strategy = strategy;
         this.log = log;
@@ -32,6 +34,11 @@ public class RandomTermGenerator {
         final AtomicInteger nodeId = new AtomicInteger();
         final Random rnd = new Random(seed);
         final SearchContext ctx = new SearchContext() {
+
+            @Override
+            public Spec spec() {
+                return spec;
+            }
 
             @Override public Random rnd() {
                 return rnd;
