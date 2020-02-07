@@ -16,11 +16,11 @@ public class RandomTermGenerator {
     private final SearchState initState;
     private final SearchStrategy<SearchState, SearchState> strategy;
 
-    private final SearchLogger log;
+    private final SearchLogger<SearchState, SearchState> log;
     private final Spec spec;
 
     public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy,
-            SearchLogger log) {
+            SearchLogger<SearchState, SearchState> log) {
         this.spec = spec;
         this.initState = SearchState.of(spec, State.of(spec), ImmutableList.of(constraint));
         this.strategy = strategy;

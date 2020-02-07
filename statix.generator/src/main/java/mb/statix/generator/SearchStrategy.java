@@ -4,7 +4,7 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.spec.Spec;
 
-public abstract class SearchStrategy<I extends SearchState, O extends SearchState> {
+public abstract class SearchStrategy<I, O> {
 
     public enum Mode {
         ENUM, RND

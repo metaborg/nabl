@@ -72,7 +72,7 @@ public class Paret {
     private SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
         final SetMultimap<String, Rule> fragments = makeFragments(spec);
-        return S.repeat(S.limit(10, S.fix(
+        return repeat(limit(10, fix(
             seq(selectConstraint(1))
             .$(match(
                limit(3, seq(limit(5, resolve())).$(infer()).$()),

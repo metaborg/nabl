@@ -7,7 +7,7 @@ import mb.statix.generator.SearchState;
 import javax.annotation.Nullable;
 
 
-public class SearchNode<O extends SearchState> implements SearchElement {
+public class SearchNode<O> implements SearchElement {
 
     private final int id;
     private final O output;
