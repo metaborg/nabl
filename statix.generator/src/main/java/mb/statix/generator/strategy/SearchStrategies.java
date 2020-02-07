@@ -75,6 +75,10 @@ public final class SearchStrategies {
         return new Fix(search, infer, done, maxConsecutiveFailures);
     }
 
+    public static <C extends IConstraint> Select<C> select(Class<C> cls) {
+        return select(cls, (Predicate1<C>) c -> true);
+    }
+
     public static <C extends IConstraint> Select<C> select(Class<C> cls, Predicate1<C> include) {
         // full classes instead of lambda's to add forwarding toString
         return new Select<>(cls, new Function1<SearchState, Function1<C, Double>>() {
@@ -112,6 +116,10 @@ public final class SearchStrategies {
 
     public static MapConstraints map(Function1<IConstraint, IConstraint> f) {
         return new MapConstraints(f);
+    }
+
+    public static Expand expand() {
+        return expand(Mode.ENUM);
     }
 
     public static Expand expand(Mode mode) {
