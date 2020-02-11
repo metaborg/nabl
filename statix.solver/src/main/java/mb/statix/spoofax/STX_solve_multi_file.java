@@ -31,7 +31,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
     @Inject public STX_solve_multi_file() {
-        super(STX_solve_multi_file.class.getSimpleName(), 2);
+        super(STX_solve_multi_file.class.getSimpleName(), 3);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)

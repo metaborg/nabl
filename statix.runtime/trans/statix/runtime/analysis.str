@@ -104,7 +104,7 @@ rules // multi file analysis
           // 2. partially solve project constraint
           //
         ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
-        ; [initial-project-state] := <stx--solve-multi-file(|global-scope-state, level)> [(project-resource, project-C)]
+        ; [initial-project-state] := <stx--solve-multi-file(|spec, global-scope-state, level)> [(project-resource, project-C)]
         case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
           id
         otherwise:
@@ -116,7 +116,7 @@ rules // multi file analysis
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <desugar;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
-    ; file-state* := <stx--solve-multi-file(|global-scope-state, level)> file-C*
+    ; file-state* := <stx--solve-multi-file(|spec, global-scope-state, level)> file-C*
     ; file-result* := <zip({ file-state', file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast', file-analysis, [], [], []))
@@ -126,7 +126,7 @@ rules // multi file analysis
       // 4. Combine and solve all partial solution
       //
     ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
-    ; final-project-state := <stx--solve-multi-project(|initial-project-state, level)> [file-state*, cached-state*]
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level)> [file-state*, cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
     ; switch !project-change
@@ -143,12 +143,12 @@ rules // multi file analysis
   // @param state : SolverResult
   // @param level : LogLevel
   // @type [(String, Constraint)] -> [SolverResult]
-  stx--solve-multi-file(|state,level) = prim("STX_solve_multi_file", state, level)
+  stx--solve-multi-file(|spec, state, level) = prim("STX_solve_multi_file", spec, state, level)
 
   // @param state : SolverResult
   // @param level : LogLevel
   // @type [SolverResult] -> SolverResult
-  stx--solve-multi-project(|state,level) = prim("STX_solve_multi_project", state, level)
+  stx--solve-multi-project(|spec, state, level) = prim("STX_solve_multi_project", spec, state, level)
 
   // @type SolverResult -> SolverResult
   stx--delays-as-errors = prim("STX_delays_as_errors")

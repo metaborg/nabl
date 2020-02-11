@@ -38,7 +38,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
     @Inject public STX_solve_multi_project() {
-        super(STX_solve_multi_project.class.getSimpleName(), 2);
+        super(STX_solve_multi_project.class.getSimpleName(), 3);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
