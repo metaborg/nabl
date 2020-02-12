@@ -609,8 +609,12 @@ public final class Constraints {
         worklist.push(constraint);
         while(!worklist.isEmpty()) {
             worklist.pop().match(Constraints.cases().conj(conj -> {
-                worklist.push(conj.left().withCause(conj.cause().orElse(null)));
-                worklist.push(conj.right().withCause(conj.cause().orElse(null)));
+                // HEURISTIC Use the cause of the surrounding conjunction, or keep
+                //           the cause of the constraints. This is a heuristic which seems
+                //           to work well, but in general maintaining causes requires some
+                //           care throughout the solver code.
+                worklist.push(conj.left().withCause(conj.cause().orElse(conj.left().cause().orElse(null))));
+                worklist.push(conj.right().withCause(conj.cause().orElse(conj.right().cause().orElse(null))));
                 return null;
             }).otherwise(c -> {
                 action.apply(c);
