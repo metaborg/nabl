@@ -41,12 +41,15 @@ public abstract class AState implements IState.Immutable {
             throw new IllegalArgumentException("Cannot merge unifiers.");
         }
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
+        final IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties =
+                termProperties().putAll(other.termProperties());
         // @formatter:off
         return State.builder().from(this)
             .__vars(vars)
             .__scopes(scopes)
             .unifier(unifier)
             .scopeGraph(scopeGraph)
+            .termProperties(termProperties)
             .build();
         // @formatter:on
     }
