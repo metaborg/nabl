@@ -5,7 +5,7 @@ imports
   libspoofax/editor/outline
 
   signatures/statix/lang/-
-  statix/lang/statics/-
+  statix/lang/-
   statix/lang/pp
   pp
 
