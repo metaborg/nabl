@@ -81,7 +81,7 @@ public class Paret {
             .$(match(
                limit(3, seq(limit(5, resolve())).$(infer()).$()),
                limit(1, seq(
-                            concat(limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights)), expand(Mode.ENUM, fragments))
+                            concat(limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights2)), expand(Mode.ENUM, fragments))
 //                            limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights))
                           ).$(infer()).$())))
             .$(),
@@ -101,21 +101,30 @@ public class Paret {
 
     // @formatter:off
     private int defaultRuleWeight = 1;
-    private Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
+    private Map<String, Double> ruleWeights1 = ImmutableMap.<String, Double>builder()
         // TWEAK Disable operations until better inference in the solver
-        .put("G-UnOp", 1.0)
+        .put("G-UnOp" , 1.0)
         .put("G-BinOp", 1.0)
         // TWEAK Prefer rules that force types
-        .put("G-Num", 1.0)
-        .put("G-True", 1.0)
+        .put("G-Num"  , 1.0)
+        .put("G-True" , 1.0)
         .put("G-False", 1.0)
-        .put("G-Nil", 1.0)
-        .put("G-List", 1.0)
-        .put("G-Fun", 1.0)
+        .put("G-Nil"  , 1.0)
+        .put("G-List" , 1.0)
+        .put("G-Fun"  , 1.0)
         // TWEAK Discourage rules that are 'free'
-        .put("G-If", 1.0)
-        .put("G-App", 1.0)
-        .put("G-Let", 1.0)
+        .put("G-If"   , 1.0)
+        .put("G-App"  , 1.0)
+        .put("G-Let"  , 1.0)
+        .build();
+    private Map<String, Double> ruleWeights2 = ImmutableMap.<String, Double>builder()
+        // TWEAK Discourage rules leading to small terms
+        .put("G-Num"  , 0.4)
+        .put("G-True" , 0.4)
+        .put("G-False", 0.4)
+        .put("G-Nil"  , 0.4)
+        .put("G-List" , 0.4)
+        .put("G-Fun"  , 0.4)
         .build();
     // @formatter:on
 
