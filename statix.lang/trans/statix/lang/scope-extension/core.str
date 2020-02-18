@@ -40,10 +40,10 @@ rules // collect extension constraints
     with c* := [ExtBarrier(<ext-get-barrier(|"try")> c)]
 
   ext-constraints: c@CExists(vs, _) -> c*
-    with c* := <map(\ v@Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), v) \)> vs
+    with c* := <filter(is-var);map(\ v@Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), v) \)> vs
 
   ext-constraints: CNew(vs) -> c*
-    with c* := <map(\ v@Var(y) -> ExtProvides(ExtVar(<ext-get-var-ref> y), ExtAll(), v) \)> vs
+    with c* := <filter(is-var);map(\ v@Var(y) -> ExtProvides(ExtVar(<ext-get-var-ref> y), ExtAll(), v) \)> vs
 
   ext-constraints: CTellEdge(v@Var(y), lbl, _) -> c*
     with c* := [ExtRequires(ExtVar(<ext-get-var-ref> y), ExtLit([lbl]), v)]
