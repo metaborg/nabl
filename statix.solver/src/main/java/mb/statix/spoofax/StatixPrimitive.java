@@ -26,8 +26,8 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
@@ -90,7 +90,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ///////////////////////////////////////
 
     protected void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rules().getAllEquivalentRules();
+        final SetMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rules().getAllEquivalentRules();
         if(!rulesWithEquivalentPatterns.isEmpty()) {
             logger.error("+--------------------------------------+");
             logger.error("| FOUND RULES WITH EQUIVALENT PATTERNS |");

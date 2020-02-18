@@ -24,7 +24,7 @@ import mb.nabl2.util.Tuple2;
 @Serial.Version(value = 42L)
 public abstract class ASpec {
 
-    @Value.Parameter public abstract RuleSet rules();
+    @Value.Parameter public abstract OrderedRuleSet rules();
 
     @Value.Parameter public abstract Set<ITerm> edgeLabels();
 
@@ -37,7 +37,7 @@ public abstract class ASpec {
     @Value.Parameter public abstract SetMultimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
 
     public static Spec of() {
-        return Spec.of(new RuleSet(ImmutableListMultimap.of()), ImmutableSet.of(), ImmutableSet.of(), B.EMPTY_TUPLE,
+        return Spec.of(new OrderedRuleSet(ImmutableListMultimap.of()), ImmutableSet.of(), ImmutableSet.of(), B.EMPTY_TUPLE,
                 new FiniteAlphabet<>(), ImmutableSetMultimap.of());
     }
 

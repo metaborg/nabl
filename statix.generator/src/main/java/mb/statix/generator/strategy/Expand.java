@@ -1,5 +1,6 @@
 package mb.statix.generator.strategy;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -7,14 +8,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.collect.*;
-import mb.statix.spec.*;
+import javax.annotation.Nullable;
+
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.metaborg.util.functions.Function2;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -34,8 +38,10 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
-
-import javax.annotation.Nullable;
+import mb.statix.spec.ApplyResult;
+import mb.statix.spec.Rule;
+import mb.statix.spec.RuleSet;
+import mb.statix.spec.RuleUtil;
 
 
 public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
@@ -110,8 +116,9 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
     private java.util.Map<Rule, Double> getWeightedRules(SearchContext ctx, String name) {
         try {
             return cache.get(name, () -> {
-                RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
-                final ImmutableSet<Rule> rs = rules.getOrderIndependentRules(name);
+                final RuleSet rules = this.rules != null ? this.rules.getUnorderedRuleSet()
+                        : ctx.spec().rules().getUnorderedRuleSet();
+                final Collection<Rule> rs = rules.getRules(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
                 // ImmutableMap iterates over keys in insertion-order

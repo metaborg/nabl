@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import mb.statix.spec.RuleSet;
+import mb.statix.spec.OrderedRuleSet;
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -98,8 +98,8 @@ public class StatixTerms {
                 });
     }
 
-    public static IMatcher<RuleSet> rules() {
-        return M.listElems(M.req(rule())).map(RuleSet::of);
+    public static IMatcher<OrderedRuleSet> rules() {
+        return M.listElems(M.req(rule())).map(OrderedRuleSet::of);
     }
 
     public static IMatcher<Rule> rule() {

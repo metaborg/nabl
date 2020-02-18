@@ -1,13 +1,15 @@
 package mb.statix.cli;
 
 import static mb.statix.constraints.Constraints.collectBase;
-import static mb.statix.generator.util.StreamUtil.flatMap;
 import static mb.statix.generator.strategy.SearchStrategies.*;
+import static mb.statix.generator.util.StreamUtil.flatMap;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,7 +18,8 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -37,13 +40,14 @@ import mb.statix.solver.completeness.CompletenessUtil;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
+import mb.statix.spec.UnorderedRuleSet;
 
 public class Paret {
 
     private static final ILogger log = LoggerUtils.logger(Paret.class);
 
-    private static final String GEN_RE = ".*!gen_.*";
-    private static final String IS_RE = ".*!is_.*";
+    private static final String GEN_RE = "(.*!)?gen_.*";
+    private static final String IS_RE = "(.*!)?is_.*";
 
     private final Spec spec;
 
@@ -71,14 +75,14 @@ public class Paret {
 
     private SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
-        final SetMultimap<String, Rule> fragments = makeFragments(spec);
+        final UnorderedRuleSet fragments = makeFragments(spec, 5, 10);
         return repeat(limit(10, fix(
             seq(selectConstraint(1))
             .$(match(
                limit(3, seq(limit(5, resolve())).$(infer()).$()),
                limit(1, seq(
-//                            concat(limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights)), expand(Mode.ENUM, fragments))
-                            limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights))
+                            concat(limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights)), expand(Mode.ENUM, fragments))
+//                            limit(5, expand(Mode.RND, defaultRuleWeight, ruleWeights))
                           ).$(infer()).$())))
             .$(),
             inferDelayAndDrop(),
@@ -194,15 +198,24 @@ public class Paret {
         .build();
     // @formatter:on
 
-    private SetMultimap<String, Rule> makeFragments(Spec spec) {
+    private UnorderedRuleSet makeFragments(Spec spec, int generations, int limit) {
         log.info("Building fragments.");
-        final SetMultimap<String, Rule> fragments =
-                RuleUtil.makeFragments(spec.rules(), n -> n.matches(GEN_RE), (n, l) -> true, 2);
-        fragments.forEach((n, r) -> {
+        final UnorderedRuleSet fragments = RuleUtil.makeFragments(spec.rules(), n -> n.matches(GEN_RE), (n, l) -> true,
+                generations, combine(limit));
+        fragments.getRuleMap().forEach((n, r) -> {
             log.info(" * {}", r);
         });
-        log.info("Built fragments.");
+        log.info("Built {} fragments.", fragments.getRuleMap().size());
         return fragments;
+    }
+
+    private BinaryOperator<Set<Rule>> combine(int limit) {
+        return (all, added) -> {
+            List<Rule> elems = Lists.newArrayList(added);
+            Collections.shuffle(elems);
+            int l = Math.min(limit, elems.size());
+            return Sets.union(all, Sets.newHashSet(elems.subList(0, l)));
+        };
     }
 
 }

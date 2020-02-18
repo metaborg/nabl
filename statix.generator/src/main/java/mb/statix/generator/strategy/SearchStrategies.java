@@ -1,7 +1,15 @@
 package mb.statix.generator.strategy;
 
+import java.util.Map;
+
+import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate1;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
@@ -13,12 +21,6 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
-import org.metaborg.util.functions.Action1;
-import org.metaborg.util.functions.Function1;
-import org.metaborg.util.functions.Function2;
-import org.metaborg.util.functions.Predicate1;
-
-import java.util.Map;
 
 
 /**
@@ -56,7 +58,8 @@ public final class SearchStrategies {
         return concat(ImmutableList.copyOf(ss));
     }
 
-    public static <I extends SearchState, O extends SearchState> Concat<I, O> concat(Iterable<SearchStrategy<I, O>> ss) {
+    public static <I extends SearchState, O extends SearchState> Concat<I, O>
+            concat(Iterable<SearchStrategy<I, O>> ss) {
         return new Concat<>(ss);
     }
 
@@ -197,7 +200,7 @@ public final class SearchStrategies {
 
     // util
 
-    public static  SearchStrategy<SearchState, SearchState> mapPred(String pattern, Function1<CUser, IConstraint> f) {
+    public static SearchStrategy<SearchState, SearchState> mapPred(String pattern, Function1<CUser, IConstraint> f) {
         final mb.statix.generator.predicate.Match match = new mb.statix.generator.predicate.Match(pattern);
         return map(Constraints.bottomup(Constraints.<IConstraint>cases().user(c -> {
             if(match.test(c)) {
@@ -208,11 +211,11 @@ public final class SearchStrategies {
         }).otherwise(c -> c), false));
     }
 
-    public static  SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
+    public static SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
         return mapPred(pattern, c -> new CConj(c, f.apply(c), c));
     }
 
-    public static  SearchStrategy<SearchState, SearchState> dropPred(String pattern) {
+    public static SearchStrategy<SearchState, SearchState> dropPred(String pattern) {
         final mb.statix.generator.predicate.Match match = new mb.statix.generator.predicate.Match(pattern);
         return filter(Constraints.<Boolean>cases().user(c -> !match.test(c)).otherwise(c -> true)::apply);
     }
