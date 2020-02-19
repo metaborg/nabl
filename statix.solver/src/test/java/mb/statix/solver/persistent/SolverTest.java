@@ -19,8 +19,9 @@ import mb.statix.spec.Spec;
 
 public class SolverTest {
 
-    @Test public void testExistentialCaptureOneLevel() throws InterruptedException {
+    @Test public void testCaptureOfVarInSubst1() throws InterruptedException {
         // this test uses knowledge of how the solver generates fresh variables
+
         final Spec spec = Spec.of();
         final ITermVar v1 = B.newVar("", "x");
         final ITermVar v2 = B.newVar("", "x1");
@@ -35,8 +36,9 @@ public class SolverTest {
         assertFalse("Variable was captured.", solveResult.hasErrors());
     }
 
-    @Test public void testExistentialCaptureTwoLevel() throws InterruptedException {
+    @Test public void testCaptureOfVarInSubst2() throws InterruptedException {
         // this test uses knowledge of how the solver generates fresh variables
+
         final Spec spec = Spec.of();
         final ITermVar v1 = B.newVar("", "x");
         final ITermVar v2 = B.newVar("", "y");
@@ -56,8 +58,9 @@ public class SolverTest {
         assertFalse("Variable was captured.", solveResult.hasErrors());
     }
 
-    @Test public void testExistentialCaptureThreeLevel() throws InterruptedException {
+    @Test public void testCaptureOfVarInSubst3() throws InterruptedException {
         // this test uses knowledge of how the solver generates fresh variables
+
         final Spec spec = Spec.of();
         final ITermVar v1 = B.newVar("", "x");
         final ITermVar v2 = B.newVar("", "x1");

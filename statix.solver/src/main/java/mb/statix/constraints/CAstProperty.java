@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -58,8 +63,19 @@ public class CAstProperty implements IConstraint, Serializable {
         return cases.caseTermProperty(this);
     }
 
-    @Override public CAstProperty substitute(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, subst.apply(value), cause);
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(idTerm.getVars());
+        freeVars.addAll(value.getVars());
+        return freeVars.build();
+    }
+
+    @Override public CAstProperty doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CAstProperty(totalSubst.apply(idTerm), property, totalSubst.apply(value), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

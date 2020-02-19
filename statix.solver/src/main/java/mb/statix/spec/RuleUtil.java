@@ -458,15 +458,6 @@ public class RuleUtil {
         return new UnorderedRuleSet(fragments);
     }
 
-    public static void freeVars(Rule rule, Action1<ITermVar> onVar) {
-        final java.util.Set<ITermVar> paramVars = rule.paramVars();
-        Constraints.freeVars(rule.body(), v -> {
-            if(!paramVars.contains(v)) {
-                onVar.apply(v);
-            }
-        });
-    }
-
     public static void vars(Rule rule, Action1<ITermVar> onVar) {
         Constraints.vars(rule.body(), onVar);
     }

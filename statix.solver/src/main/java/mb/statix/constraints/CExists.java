@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -57,13 +58,20 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
-    @Override public CExists substitute(ISubstitution.Immutable subst) {
-        final ISubstitution.Immutable localSubst = subst.removeAll(vars);
-        final IRenaming.Immutable localRenaming = localSubst.captureAvoidingRenaming(vars);
+    @Override public Set<ITermVar> boundVars() {
+        return vars;
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(constraint.freeVars());
+        return Sets.difference(freeVars.build(), boundVars()).immutableCopy();
+    }
+
+    @Override public CExists doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
         final Set<ITermVar> newVars =
                 vars.stream().map(v -> localRenaming.apply(v)).collect(ImmutableSet.toImmutableSet());
-        final ISubstitution.Immutable newSubst = localRenaming.compose(localSubst);
-        return new CExists(newVars, constraint.substitute(newSubst), cause);
+        return new CExists(newVars, constraint.recSubstitute(totalSubst), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

@@ -16,7 +16,7 @@ import mb.statix.solver.IConstraint;
 public interface ICompleteness {
 
     boolean isEmpty();
-    
+
     boolean isComplete(Scope scope, ITerm label, IUniDisunifier unifier);
 
     interface Immutable extends ICompleteness {

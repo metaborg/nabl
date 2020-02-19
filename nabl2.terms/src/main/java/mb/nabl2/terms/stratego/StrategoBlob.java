@@ -23,7 +23,7 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
     public Object value() {
         return value;
     }
-    
+
     // IStrategoTerm implementation
 
     @Override public boolean isList() {
@@ -86,5 +86,5 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
             return Optional.empty();
         }
     }
-    
+
 }

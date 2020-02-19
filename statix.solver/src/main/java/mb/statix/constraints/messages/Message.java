@@ -3,13 +3,17 @@ package mb.statix.constraints.messages;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 
@@ -44,10 +48,21 @@ public class Message implements IMessage, Serializable {
         return Optional.ofNullable(origin);
     }
 
-    @Override public IMessage substitute(ISubstitution.Immutable subst) {
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        content.forEach(c -> freeVars.addAll(c.freeVars()));
+        origin().ifPresent(o -> freeVars.addAll(o.getVars()));
+        return freeVars.build();
+    }
+
+    @Override public IMessage doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
         final List<IMessagePart> newContent =
-                content.stream().map(p -> p.substitute(subst)).collect(ImmutableList.toImmutableList());
-        final ITerm newOrigin = origin != null ? subst.apply(origin) : null;
+                content.stream().map(p -> p.recSubstitute(totalSubst)).collect(ImmutableList.toImmutableList());
+        final ITerm newOrigin = origin != null ? totalSubst.apply(origin) : null;
         return new Message(kind, newContent, newOrigin);
     }
 

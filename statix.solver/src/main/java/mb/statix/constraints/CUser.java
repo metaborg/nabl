@@ -3,12 +3,16 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
@@ -70,8 +74,20 @@ public class CUser implements IConstraint, Serializable {
         return cases.caseUser(this);
     }
 
-    @Override public CUser substitute(ISubstitution.Immutable subst) {
-        return new CUser(name, subst.applyTerms(args), cause, message == null ? null : message.substitute(subst));
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        args.forEach(a -> freeVars.addAll(a.getVars()));
+        message().ifPresent(m -> freeVars.addAll(m.freeVars()));
+        return freeVars.build();
+    }
+
+    @Override public CUser doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CUser(name, totalSubst.applyTerms(args), cause,
+                message == null ? null : message.recSubstitute(totalSubst));
     }
 
     @Override public String toString(TermFormatter termToString) {

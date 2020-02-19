@@ -10,6 +10,7 @@ public interface TermFormatter {
     default String format(Iterable<? extends ITerm> terms) {
         return format(terms, ", ");
     }
+
     default String format(Iterable<? extends ITerm> terms, String sep) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;

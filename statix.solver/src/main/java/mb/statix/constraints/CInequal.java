@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -80,14 +81,23 @@ public class CInequal implements IConstraint, Serializable {
         return cases.caseInequal(this);
     }
 
-    @Override public CInequal substitute(ISubstitution.Immutable subst) {
-        final ISubstitution.Immutable localSubst = subst.removeAll(universals);
-        final IRenaming.Immutable localRenaming = localSubst.captureAvoidingRenaming(universals);
+    @Override public Set<ITermVar> boundVars() {
+        return universals;
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(term1.getVars());
+        freeVars.addAll(term2.getVars());
+        message().ifPresent(m -> freeVars.addAll(m.freeVars()));
+        return Sets.difference(freeVars.build(), boundVars()).immutableCopy();
+    }
+
+    @Override public IConstraint doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
         final Set<ITermVar> newVars =
                 universals.stream().map(v -> localRenaming.apply(v)).collect(ImmutableSet.toImmutableSet());
-        final ISubstitution.Immutable newSubst = localRenaming.compose(localSubst);
-        return new CInequal(newVars, newSubst.apply(term1), newSubst.apply(term2), cause,
-                message == null ? null : message.substitute(newSubst));
+        return new CInequal(newVars, totalSubst.apply(term1), totalSubst.apply(term2), cause,
+                message == null ? null : message.recSubstitute(totalSubst));
     }
 
     @Override public String toString(TermFormatter termToString) {

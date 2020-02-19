@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.arithmetic.ArithExpr;
@@ -76,9 +81,19 @@ public class CArith implements IConstraint, Serializable {
         return cases.caseArith(this);
     }
 
-    @Override public CArith substitute(ISubstitution.Immutable subst) {
-        return new CArith(expr1.substitute(subst), op, expr2.substitute(subst),
-                cause, message == null ? null : message.substitute(subst));
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        message().ifPresent(m -> freeVars.addAll(m.freeVars()));
+        return freeVars.build();
+    }
+
+    @Override public CArith doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CArith(expr1.recSubstitute(totalSubst), op, expr2.recSubstitute(totalSubst), cause,
+                message == null ? null : message.recSubstitute(totalSubst));
     }
 
     @Override public String toString(TermFormatter termToString) {

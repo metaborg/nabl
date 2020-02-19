@@ -28,7 +28,8 @@ class ConstraintDataWF implements DataWF<ITerm> {
     private final IsComplete isComplete;
     private final IDebugContext debug;
 
-    public ConstraintDataWF(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete, IDebugContext debug) {
+    public ConstraintDataWF(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete,
+            IDebugContext debug) {
         this.spec = spec;
         this.constraint = constraint;
         this.state = state;

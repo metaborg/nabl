@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -58,8 +63,19 @@ public class CTellRel implements IConstraint, Serializable {
         return cases.caseTellRel(this);
     }
 
-    @Override public CTellRel substitute(ISubstitution.Immutable subst) {
-        return new CTellRel(subst.apply(scopeTerm), relation, subst.apply(datumTerm));
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(scopeTerm.getVars());
+        freeVars.addAll(datumTerm.getVars());
+        return freeVars.build();
+    }
+
+    @Override public CTellRel doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CTellRel(totalSubst.apply(scopeTerm), relation, totalSubst.apply(datumTerm));
     }
 
     @Override public String toString(TermFormatter termToString) {

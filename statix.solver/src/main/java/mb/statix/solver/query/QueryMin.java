@@ -1,9 +1,14 @@
 package mb.statix.solver.query;
 
 import java.io.Serializable;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.spec.Rule;
@@ -27,8 +32,18 @@ public class QueryMin implements IQueryMin, Serializable {
         return dataOrd;
     }
 
-    @Override public IQueryMin substitute(ISubstitution.Immutable subst) {
-        return new QueryMin(labelOrd, dataOrd.substitute(subst));
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(dataOrd.freeVars());
+        return freeVars.build();
+    }
+
+    @Override public IQueryMin doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new QueryMin(labelOrd, dataOrd.recSubstitute(totalSubst));
     }
 
     @Override public String toString(TermFormatter termToString) {

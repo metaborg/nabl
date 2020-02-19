@@ -22,6 +22,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.ISubstitutable;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -36,7 +37,7 @@ import mb.statix.solver.persistent.State;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class ARule {
+public abstract class ARule implements ISubstitutable<Rule> {
 
     @Value.Default public String label() {
         return "";
@@ -80,22 +81,22 @@ public abstract class ARule {
         }
     }
 
-    public Set<ITermVar> freeVars() {
-        return Sets.difference(Constraints.freeVars(body()), paramVars());
-    }
-
     public Set<ITermVar> varSet() {
         return Sets.union(Constraints.vars(body()), paramVars());
     }
 
-    public Rule substitute(ISubstitution.Immutable subst) {
-        final Set<ITermVar> vars = paramVars();
-        final ISubstitution.Immutable localSubst = subst.removeAll(vars);
-        final IRenaming.Immutable localRenaming = localSubst.captureAvoidingRenaming(vars);
+    @Override public Set<ITermVar> freeVars() {
+        return Sets.difference(body().freeVars(), boundVars()).immutableCopy();
+    }
+
+    @Override public Set<ITermVar> boundVars() {
+        return paramVars();
+    }
+
+    @Override public Rule doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
         final List<Pattern> newParams =
                 params().stream().map(p -> p.rename(localRenaming)).collect(ImmutableList.toImmutableList());
-        final ISubstitution.Immutable newSubst = localRenaming.compose(localSubst);
-        final IConstraint newBody = body().substitute(newSubst);
+        final IConstraint newBody = body().recSubstitute(totalSubst);
         return Rule.builder().from(this).params(newParams).body(newBody).build();
     }
 

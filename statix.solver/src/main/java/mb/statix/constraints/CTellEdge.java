@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -58,8 +63,19 @@ public class CTellEdge implements IConstraint, Serializable {
         return cases.caseTellEdge(this);
     }
 
-    @Override public CTellEdge substitute(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(sourceTerm.getVars());
+        freeVars.addAll(targetTerm.getVars());
+        return freeVars.build();
+    }
+
+    @Override public CTellEdge doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CTellEdge(totalSubst.apply(sourceTerm), label, totalSubst.apply(targetTerm), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

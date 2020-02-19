@@ -1,8 +1,14 @@
 package mb.statix.arithmetic;
 
+import java.util.Set;
+
 import org.metaborg.util.functions.Function2;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
@@ -26,8 +32,19 @@ class BinExpr implements ArithExpr {
         return f.apply(ae1.eval(unifier), ae2.eval(unifier));
     }
 
-    @Override public ArithExpr substitute(ISubstitution.Immutable subst) {
-        return new BinExpr(op, ae1.substitute(subst), ae2.substitute(subst), f);
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(ae1.freeVars());
+        freeVars.addAll(ae2.freeVars());
+        return freeVars.build();
+    }
+
+    @Override public ArithExpr doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new BinExpr(op, ae1.recSubstitute(totalSubst), ae2.recSubstitute(totalSubst), f);
     }
 
     @Override public String toString(TermFormatter termToString) {

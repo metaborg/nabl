@@ -6,7 +6,6 @@ public interface IBlobTerm extends ITerm {
 
     Object getValue();
 
-    @Override
-    IBlobTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+    @Override IBlobTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

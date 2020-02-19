@@ -5,7 +5,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -28,12 +27,6 @@ public interface ISubstitution {
 
     default List<ITerm> applyTerms(List<ITerm> terms) {
         return terms.stream().map(this::apply).collect(ImmutableList.toImmutableList());
-    }
-
-    default IRenaming.Immutable captureAvoidingRenaming(Iterable<ITermVar> vars) {
-        final Set<ITermVar> varSet = ImmutableSet.copyOf(vars);
-        final FreshVars fresh = new FreshVars(freeVarSet());
-        return fresh.fresh(varSet);
     }
 
     interface Immutable extends ISubstitution {

@@ -1,8 +1,13 @@
 package mb.statix.constraints.messages;
 
 import java.io.Serializable;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 
@@ -19,8 +24,16 @@ public class TermPart implements IMessagePart, Serializable {
         return formatter.format(term);
     }
 
-    @Override public IMessagePart substitute(ISubstitution.Immutable subst) {
-        return new TermPart(subst.apply(term));
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        return term.getVars().elementSet();
+    }
+
+    @Override public IMessagePart doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new TermPart(totalSubst.apply(term));
     }
 
     @Override public String toString() {

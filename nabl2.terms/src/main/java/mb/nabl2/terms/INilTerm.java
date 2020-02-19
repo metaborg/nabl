@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public interface INilTerm extends IListTerm {
 
-    @Override
-    INilTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+    @Override INilTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
 }

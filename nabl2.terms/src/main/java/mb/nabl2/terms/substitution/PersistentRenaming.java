@@ -160,7 +160,7 @@ public abstract class PersistentRenaming implements IRenaming {
         }
 
         @Override public void removeAll(Iterable<ITermVar> vars) {
-            Iterables2.stream(vars).forEach(subst::remove);
+            Iterables2.stream(vars).forEach(subst::__remove);
         }
 
         @Override public void compose(IRenaming.Immutable other) {

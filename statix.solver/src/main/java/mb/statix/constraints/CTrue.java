@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -39,7 +44,15 @@ public class CTrue implements IConstraint, Serializable {
         return cases.caseTrue(this);
     }
 
-    @Override public CTrue substitute(ISubstitution.Immutable subst) {
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public CTrue doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
         return this;
     }
 

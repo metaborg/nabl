@@ -9,5 +9,5 @@ public interface IAlphabet<S> extends Iterable<S> {
     int indexOf(S s);
 
     Collection<S> symbols();
-    
+
 }

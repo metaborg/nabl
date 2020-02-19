@@ -3,12 +3,16 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -49,8 +53,18 @@ public class CNew implements IConstraint, Serializable {
         return new CNew(terms, cause);
     }
 
-    @Override public CNew substitute(ISubstitution.Immutable subst) {
-        return new CNew(subst.applyTerms(terms), cause);
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        terms.forEach(t -> freeVars.addAll(t.getVars()));
+        return freeVars.build();
+    }
+
+    @Override public CNew doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CNew(totalSubst.applyTerms(terms), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

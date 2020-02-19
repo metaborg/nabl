@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -52,8 +57,19 @@ public class CConj implements IConstraint, Serializable {
         return cases.caseConj(this);
     }
 
-    @Override public CConj substitute(ISubstitution.Immutable subst) {
-        return new CConj(left.substitute(subst), right.substitute(subst), cause);
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(left.freeVars());
+        freeVars.addAll(right.freeVars());
+        return freeVars.build();
+    }
+
+    @Override public CConj doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CConj(left.recSubstitute(totalSubst), right.recSubstitute(totalSubst), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

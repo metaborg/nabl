@@ -124,7 +124,7 @@ class RegExpCases<S, T> {
     }
 
     static <S, T> IRegExp.ICases<S, T> of(
-            // @formatter:off
+    // @formatter:off
             Supplier<T> onEmptySet,
             Supplier<T> onEmptyString,
             Function<S,T> onSymbol,

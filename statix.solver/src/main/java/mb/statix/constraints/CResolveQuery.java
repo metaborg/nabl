@@ -2,10 +2,15 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableSet;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
@@ -89,9 +94,24 @@ public class CResolveQuery implements IConstraint, Serializable {
         return cases.caseResolveQuery(this);
     }
 
-    @Override public CResolveQuery substitute(ISubstitution.Immutable subst) {
-        return new CResolveQuery(relation, filter.substitute(subst), min.substitute(subst), subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause, message == null ? null : message.substitute(subst));
+    @Override public Set<ITermVar> boundVars() {
+        return ImmutableSet.of();
+    }
+
+    @Override public Set<ITermVar> freeVars() {
+        final ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
+        freeVars.addAll(filter.freeVars());
+        freeVars.addAll(min.freeVars());
+        freeVars.addAll(scopeTerm.getVars());
+        freeVars.addAll(resultTerm.getVars());
+        message().ifPresent(m -> freeVars.addAll(m.freeVars()));
+        return freeVars.build();
+    }
+
+    @Override public IConstraint doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
+        return new CResolveQuery(relation, filter.recSubstitute(totalSubst), min.recSubstitute(totalSubst),
+                totalSubst.apply(scopeTerm), totalSubst.apply(resultTerm), cause,
+                message == null ? null : message.recSubstitute(totalSubst));
     }
 
     @Override public String toString(TermFormatter termToString) {

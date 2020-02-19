@@ -11,7 +11,7 @@ abstract class Symbol<S> implements IRegExp<S> {
 
     @Value.Parameter public abstract S getSymbol();
 
-    @Override public <T> T match(IRegExp.ICases<S,T> visitor) {
+    @Override public <T> T match(IRegExp.ICases<S, T> visitor) {
         return visitor.symbol(getSymbol());
     }
 

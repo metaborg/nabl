@@ -110,7 +110,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
                 return false;
             return true;
         }
-    
+
         public static <K, V> HashTrieRelation2.Immutable<K, V> of() {
             return new HashTrieRelation2.Immutable<>(SetMultimap.Immutable.of(), SetMultimap.Immutable.of());
         }
