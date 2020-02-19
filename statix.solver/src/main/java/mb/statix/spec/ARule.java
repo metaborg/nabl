@@ -106,14 +106,12 @@ public abstract class ARule implements ISubstitutable<Rule> {
 
     public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier,
             @Nullable IConstraint cause) throws Delay {
-        final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
                 P.match(params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars));
-        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
+        if(!matchResult.isPresent()) {
             return Optional.empty();
         }
-        final ISubstitution.Immutable isubst = subst.freeze();
-        final IConstraint newBody = body().substitute(isubst);
+        final IConstraint newBody = body().substitute(matchResult.get());
         return Optional.of(newBody.withCause(cause));
     }
 

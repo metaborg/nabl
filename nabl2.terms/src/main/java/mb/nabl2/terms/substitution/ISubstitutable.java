@@ -15,7 +15,8 @@ public interface ISubstitutable<T> {
      * Capture-avoiding substitution.
      */
     default T substitute(ISubstitution.Immutable subst) {
-        final ISubstitution.Transient totalSubst = subst.melt();
+        final ISubstitution.Transient totalSubst = PersistentSubstitution.Transient.of();
+        subst.entrySet().forEach(e -> totalSubst.put(e.getKey(), e.getValue()));
         for(ITermVar var : freeVars()) {
             if(!totalSubst.contains(var)) {
                 totalSubst.put(var, var);
@@ -43,7 +44,8 @@ public interface ISubstitutable<T> {
         if(boundVars.isEmpty()) {
             return doSubstitute(PersistentRenaming.Immutable.of(), totalSubst);
         }
-        final ISubstitution.Transient newTotalSubst = totalSubst.melt();
+        final ISubstitution.Transient newTotalSubst = PersistentSubstitution.Transient.of();
+        totalSubst.entrySet().forEach(e -> newTotalSubst.put(e.getKey(), e.getValue()));
         newTotalSubst.removeAll(boundVars);
         final FreshVars fresh = new FreshVars(newTotalSubst.freeVarSet());
         final IRenaming.Immutable localRenaming = fresh.fresh(boundVars);
