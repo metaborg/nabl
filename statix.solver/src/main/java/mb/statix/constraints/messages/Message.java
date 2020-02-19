@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 
@@ -45,16 +44,9 @@ public class Message implements IMessage, Serializable {
         return Optional.ofNullable(origin);
     }
 
-    @Override public IMessage apply(ISubstitution.Immutable subst) {
+    @Override public IMessage substitute(ISubstitution.Immutable subst) {
         final List<IMessagePart> newContent =
-                content.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
-        final ITerm newOrigin = origin != null ? subst.apply(origin) : null;
-        return new Message(kind, newContent, newOrigin);
-    }
-
-    @Override public IMessage apply(IRenaming subst) {
-        final List<IMessagePart> newContent =
-                content.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+                content.stream().map(p -> p.substitute(subst)).collect(ImmutableList.toImmutableList());
         final ITerm newOrigin = origin != null ? subst.apply(origin) : null;
         return new Message(kind, newContent, newOrigin);
     }
@@ -67,5 +59,5 @@ public class Message implements IMessage, Serializable {
         sb.append("]");
         return sb.toString();
     }
-    
+
 }

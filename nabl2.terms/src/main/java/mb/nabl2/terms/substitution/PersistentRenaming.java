@@ -20,9 +20,9 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.util.CapsuleUtil;
 
-public abstract class PersistentSubstitution implements ISubstitution {
+public abstract class PersistentRenaming implements IRenaming {
 
-    protected abstract Map<ITermVar, ITerm> subst();
+    protected abstract Map<ITermVar, ITermVar> subst();
 
     @Override public boolean isEmpty() {
         return subst().isEmpty();
@@ -37,10 +37,10 @@ public abstract class PersistentSubstitution implements ISubstitution {
     }
 
     @Override public Set<ITermVar> freeVarSet() {
-        return subst().values().stream().flatMap(t -> t.getVars().stream()).collect(ImmutableSet.toImmutableSet());
+        return ImmutableSet.copyOf(subst().values());
     }
 
-    @Override public Set<? extends Entry<ITermVar, ITerm>> entrySet() {
+    @Override public Set<Entry<ITermVar, ITermVar>> entrySet() {
         return subst().entrySet();
     }
 
@@ -70,76 +70,88 @@ public abstract class PersistentSubstitution implements ISubstitution {
         // @formatter:on
     }
 
-    @Override public ITerm apply(ITermVar var) {
-        return subst().containsKey(var) ? subst().get(var) : var;
+    @Override public ITermVar apply(ITermVar var) {
+        return subst().getOrDefault(var, var);
     }
 
-    public static class Immutable extends PersistentSubstitution implements ISubstitution.Immutable, Serializable {
+    public static class Immutable extends PersistentRenaming implements IRenaming.Immutable, Serializable {
 
         private static final long serialVersionUID = 1L;
 
-        private Map.Immutable<ITermVar, ITerm> subst;
+        private Map.Immutable<ITermVar, ITermVar> subst;
 
-        public Immutable(Map.Immutable<ITermVar, ITerm> sub) {
+        public Immutable(Map.Immutable<ITermVar, ITermVar> sub) {
             this.subst = sub;
         }
 
-        @Override protected Map<ITermVar, ITerm> subst() {
+        @Override protected Map<ITermVar, ITermVar> subst() {
             return subst;
         }
 
+        @Override public IRenaming.Immutable put(ITermVar var, ITermVar term) {
+            return new PersistentRenaming.Immutable(subst.__put(var, term));
+        }
+
         @Override public ISubstitution.Immutable put(ITermVar var, ITerm term) {
-            return new PersistentSubstitution.Immutable(subst.__put(var, term));
+            return PersistentSubstitution.Immutable.of(subst).put(var, term);
         }
 
-        @Override public ISubstitution.Immutable remove(ITermVar var) {
-            return new PersistentSubstitution.Immutable(subst.__remove(var));
+        @Override public IRenaming.Immutable remove(ITermVar var) {
+            return new PersistentRenaming.Immutable(subst.__remove(var));
         }
 
-        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
-            final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
+        @Override public IRenaming.Immutable removeAll(Iterable<ITermVar> vars) {
+            final Map.Transient<ITermVar, ITermVar> subst = this.subst.asTransient();
             Iterables2.stream(vars).forEach(subst::__remove);
-            return new PersistentSubstitution.Immutable(subst.freeze());
+            return new PersistentRenaming.Immutable(subst.freeze());
+        }
+
+        @Override public IRenaming.Immutable compose(IRenaming.Immutable other) {
+            final Map.Transient<ITermVar, ITermVar> subst = this.subst.asTransient();
+            CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
+            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+            return new PersistentRenaming.Immutable(subst.freeze());
         }
 
         @Override public ISubstitution.Immutable compose(ISubstitution.Immutable other) {
-            final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
+            final Map.Transient<ITermVar, ITerm> subst = Map.Transient.of();
+            subst.__putAll(this.subst);
             CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
             other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
-        @Override public ISubstitution.Transient melt() {
-            return new PersistentSubstitution.Transient(subst.asTransient());
+        @Override public IRenaming.Transient melt() {
+            return new PersistentRenaming.Transient(subst.asTransient());
         }
 
-        public static ISubstitution.Immutable of() {
-            return new PersistentSubstitution.Immutable(Map.Immutable.of());
+        public static IRenaming.Immutable of() {
+            return new PersistentRenaming.Immutable(Map.Immutable.of());
         }
 
-        public static ISubstitution.Immutable of(ITermVar var, ITerm term) {
-            return new PersistentSubstitution.Immutable(Map.Immutable.of(var, term));
+        public static IRenaming.Immutable of(ITermVar var, ITermVar term) {
+            return new PersistentRenaming.Immutable(Map.Immutable.of(var, term));
         }
 
-        public static ISubstitution.Immutable of(java.util.Map<ITermVar, ? extends ITerm> subst) {
-            return new PersistentSubstitution.Immutable(Map.Immutable.<ITermVar, ITerm>of().__putAll(subst));
+        public static IRenaming.Immutable of(java.util.Map<ITermVar, ? extends ITermVar> subst) {
+            return new PersistentRenaming.Immutable(Map.Immutable.<ITermVar, ITermVar>of().__putAll(subst));
         }
 
     }
 
-    public static class Transient extends PersistentSubstitution implements ISubstitution.Transient {
+    public static class Transient extends PersistentRenaming implements IRenaming.Transient {
 
-        private Map.Transient<ITermVar, ITerm> subst;
+        private Map.Transient<ITermVar, ITermVar> subst;
 
-        public Transient(Map.Transient<ITermVar, ITerm> subst) {
+        public Transient(Map.Transient<ITermVar, ITermVar> subst) {
             this.subst = subst;
         }
 
-        @Override protected Map<ITermVar, ITerm> subst() {
+        @Override protected Map<ITermVar, ITermVar> subst() {
             return subst;
         }
 
-        @Override public void put(ITermVar var, ITerm term) {
+        @Override public void put(ITermVar var, ITermVar term) {
             subst.__put(var, term);
         }
 
@@ -151,17 +163,17 @@ public abstract class PersistentSubstitution implements ISubstitution {
             Iterables2.stream(vars).forEach(subst::remove);
         }
 
-        @Override public void compose(ISubstitution.Immutable other) {
+        @Override public void compose(IRenaming.Immutable other) {
             CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
             other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
         }
 
-        @Override public ISubstitution.Immutable freeze() {
-            return new PersistentSubstitution.Immutable(subst.freeze());
+        @Override public IRenaming.Immutable freeze() {
+            return new PersistentRenaming.Immutable(subst.freeze());
         }
 
-        public static ISubstitution.Transient of() {
-            return new PersistentSubstitution.Transient(Map.Transient.of());
+        public static IRenaming.Transient of() {
+            return new PersistentRenaming.Transient(Map.Transient.of());
         }
 
     }

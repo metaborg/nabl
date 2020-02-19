@@ -46,7 +46,7 @@ class NilPattern extends Pattern {
         // @formatter:on
     }
 
-    @Override public NilPattern apply(IRenaming subst) {
+    @Override public NilPattern rename(IRenaming.Immutable subst) {
         return this;
     }
 

@@ -140,7 +140,7 @@ public abstract class Pattern implements Serializable {
         return true;
     }
 
-    public abstract Pattern apply(IRenaming subst);
+    public abstract Pattern rename(IRenaming.Immutable subst);
 
     public abstract Pattern eliminateWld(Function0<ITermVar> fresh);
 

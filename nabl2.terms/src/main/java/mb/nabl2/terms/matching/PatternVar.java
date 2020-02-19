@@ -66,8 +66,8 @@ class PatternVar extends Pattern {
         }
     }
 
-    @Override public PatternVar apply(IRenaming subst) {
-        return isWildcard() ? this : new PatternVar(subst.rename(var));
+    @Override public PatternVar rename(IRenaming.Immutable subst) {
+        return isWildcard() ? this : new PatternVar(subst.apply(var));
     }
 
     @Override public PatternVar eliminateWld(Function0<ITermVar> fresh) {

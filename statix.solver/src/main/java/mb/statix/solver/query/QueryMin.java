@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.spec.Rule;
@@ -28,12 +27,8 @@ public class QueryMin implements IQueryMin, Serializable {
         return dataOrd;
     }
 
-    @Override public IQueryMin apply(ISubstitution.Immutable subst) {
-        return new QueryMin(labelOrd, dataOrd.apply(subst));
-    }
-
-    @Override public IQueryMin apply(IRenaming subst) {
-        return new QueryMin(labelOrd, dataOrd.apply(subst));
+    @Override public IQueryMin substitute(ISubstitution.Immutable subst) {
+        return new QueryMin(labelOrd, dataOrd.substitute(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

@@ -50,7 +50,7 @@ class StringPattern extends Pattern {
         // @formatter:on
     }
 
-    @Override public StringPattern apply(IRenaming subst) {
+    @Override public StringPattern rename(IRenaming.Immutable subst) {
         return this;
     }
 

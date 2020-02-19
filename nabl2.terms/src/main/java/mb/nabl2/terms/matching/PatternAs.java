@@ -63,8 +63,8 @@ class PatternAs extends Pattern {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
     }
 
-    @Override public PatternAs apply(IRenaming subst) {
-        return new PatternAs(var.apply(subst), pattern.apply(subst));
+    @Override public PatternAs rename(IRenaming.Immutable subst) {
+        return new PatternAs(var.rename(subst), pattern.rename(subst));
     }
 
     @Override public PatternAs eliminateWld(Function0<ITermVar> fresh) {

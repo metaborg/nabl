@@ -57,7 +57,7 @@ public class Paret {
 
     public SearchStrategy<SearchState, SearchState> search() {
         // @formatter:off
-        return seq(searchExp())
+        return seq(searchCf())
                .$(marker("generateLex"))
                .$(generateLex())
                .$(marker("done"))
@@ -73,7 +73,7 @@ public class Paret {
 
     // generation of expressions
 
-    private SearchStrategy<SearchState, SearchState> searchExp() {
+    private SearchStrategy<SearchState, SearchState> searchCf() {
         // @formatter:off
         final UnorderedRuleSet fragments = makeFragments(spec, 5, 10);
         return repeat(limit(10, fix(

@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -17,12 +18,22 @@ public interface ISubstitution {
 
     Set<ITermVar> varSet();
 
-    Set<Entry<ITermVar, ITerm>> entrySet();
+    Set<ITermVar> freeVarSet();
+
+    Set<? extends Entry<ITermVar, ? extends ITerm>> entrySet();
 
     ITerm apply(ITerm term);
 
-    default List<ITerm> apply(List<ITerm> terms) {
+    ITerm apply(ITermVar term);
+
+    default List<ITerm> applyTerms(List<ITerm> terms) {
         return terms.stream().map(this::apply).collect(ImmutableList.toImmutableList());
+    }
+
+    default IRenaming.Immutable captureAvoidingRenaming(Iterable<ITermVar> vars) {
+        final Set<ITermVar> varSet = ImmutableSet.copyOf(vars);
+        final FreshVars fresh = new FreshVars(freeVarSet());
+        return fresh.fresh(varSet);
     }
 
     interface Immutable extends ISubstitution {
@@ -35,7 +46,9 @@ public interface ISubstitution {
 
         Immutable compose(ISubstitution.Immutable other);
 
-        Immutable compose(ITermVar var, ITerm term);
+        default Immutable compose(ITermVar var, ITerm term) {
+            return compose(PersistentSubstitution.Immutable.of(var, term));
+        }
 
         ISubstitution.Transient melt();
 
@@ -51,7 +64,9 @@ public interface ISubstitution {
 
         void compose(ISubstitution.Immutable other);
 
-        void compose(ITermVar var, ITerm term);
+        default void compose(ITermVar var, ITerm term) {
+            compose(PersistentSubstitution.Immutable.of(var, term));
+        }
 
         ISubstitution.Immutable freeze();
 

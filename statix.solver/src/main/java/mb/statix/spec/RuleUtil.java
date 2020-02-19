@@ -38,6 +38,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -163,7 +164,7 @@ public class RuleUtil {
         return P.matchWithEqs(rule.params(), args, state.unifier(), fresh).flatMap(matchResult -> {
             final Set.Immutable<ITermVar> universalVars = _universalVars.freeze();
             final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), universalVars);
-            final IConstraint newConstraint = rule.body().apply(matchResult.substitution()).withCause(cause);
+            final IConstraint newConstraint = rule.body().substitute(matchResult.substitution()).withCause(cause);
 
             final ApplyResult applyResult;
             if(constrainedVars.isEmpty()) {
@@ -239,9 +240,9 @@ public class RuleUtil {
 
             // Add disunifications for all patterns from previous rules
             final boolean guardsOk = guards.stream().allMatch(g -> {
-                final IRenaming swap = fresh.fresh(g.getVars());
+                final IRenaming.Immutable swap = fresh.fresh(g.getVars());
                 final Pattern g1 = g.eliminateWld(() -> fresh.fresh("_"));
-                final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> t_eqs = g1.apply(swap).asTerm(Optional::get);
+                final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> t_eqs = g1.rename(swap).asTerm(Optional::get);
                 // Add internal equalities from the guard pattern, which are also reasons why the guard wouldn't match
                 final List<ITermVar> leftEqs =
                         t_eqs._2().stream().map(Tuple2::_1).collect(ImmutableList.toImmutableList());
@@ -269,8 +270,6 @@ public class RuleUtil {
      * premise existed.
      */
     public static Optional<Rule> inline(Rule rule, int ith, Rule into) {
-        final FreshVars fresh = new FreshVars(into.varSet());
-
         final AtomicInteger i = new AtomicInteger(0);
         final IConstraint newBody = Constraints.map(c -> {
             if(!(c instanceof CUser)) {
@@ -284,7 +283,7 @@ public class RuleUtil {
                 return c;
             }
 
-            return applyToConstraint(fresh, rule, constraint.args());
+            return applyToConstraint(rule, constraint.args());
         }, false).apply(into.body());
 
         if(i.get() <= ith) {
@@ -295,15 +294,19 @@ public class RuleUtil {
         return Optional.of(into.withLabel("").withBody(newBody));
     }
 
-    private static IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
-        final IRenaming swap = fresh.fresh(rule.paramVars());
+    private static IConstraint applyToConstraint(Rule rule, List<? extends ITerm> args) {
+        final java.util.Set<ITermVar> argVars =
+                args.stream().flatMap(t -> t.getVars().stream()).collect(ImmutableSet.toImmutableSet());
+        final FreshVars fresh = new FreshVars(argVars);
+        final IRenaming.Immutable localRenaming = fresh.fresh(rule.paramVars());
         final Pattern rulePatterns = P.newTuple(rule.params()).eliminateWld(() -> fresh.fresh("_"));
         final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = rulePatterns.asTerm(v -> v.get());
-        final ITerm p = swap.apply(p_eqs._1());
+        final ITerm p = localRenaming.apply(p_eqs._1());
         final ITerm t = B.newTuple(args);
         final CEqual eq = new CEqual(t, p);
         final Set.Immutable<ITermVar> newVars = fresh.reset();
-        final IConstraint newConstraint = Constraints.exists(newVars, new CConj(eq, rule.body().apply(swap)));
+        final IConstraint newBody = rule.body().substitute(localRenaming);
+        final IConstraint newConstraint = Constraints.exists(newVars, new CConj(eq, newBody));
         return newConstraint;
     }
 
@@ -337,8 +340,8 @@ public class RuleUtil {
                 conj -> { Constraints.disjoin(conj).forEach(worklist::addLast); return true; },
                 equal -> { try { return unifier.unify(equal.term1(), equal.term2()).isPresent(); } catch(OccursException e) { return false; } },
                 exists -> {
-                    final IRenaming renaming = fresh.fresh(exists.vars());
-                    worklist.addLast(exists.constraint().apply(renaming));
+                    final IRenaming.Immutable renaming = fresh.fresh(exists.vars());
+                    worklist.addLast(exists.constraint().substitute(renaming));
                     return true;
                 },
                 c -> { return false; },
@@ -428,12 +431,10 @@ public class RuleUtil {
             for(Map.Entry<String, Rule> e : newRules.entries()) {
                 final String name = e.getKey();
                 final Rule r = e.getValue();
-                final FreshVars fresh = new FreshVars(r.varSet());
                 final List<IConstraint> cs = Constraints.flatMap(c -> {
                     final Optional<CUser> u = expandable.apply(c);
                     if(u.isPresent()) {
-                        return fragments.get(u.get().name()).stream()
-                                .map(f -> applyToConstraint(fresh, f, u.get().args()));
+                        return fragments.get(u.get().name()).stream().map(f -> applyToConstraint(f, u.get().args()));
                     } else {
                         return Stream.of(c);
                     }

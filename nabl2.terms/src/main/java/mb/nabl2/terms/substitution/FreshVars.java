@@ -1,11 +1,9 @@
-package mb.statix.spec;
+package mb.nabl2.terms.substitution;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.substitution.Renaming;
 
 /**
  * Class to generate fresh names, possibly relative to an already existing set of names. Generated fresh names are
@@ -13,6 +11,8 @@ import mb.nabl2.terms.substitution.Renaming;
  * kept unchanged.
  */
 public class FreshVars {
+
+    private static final String STRIP_RE = "[0-9\\_\\-]*$";
 
     private final Set.Transient<ITermVar> oldVars;
     private Set.Transient<ITermVar> newVars;
@@ -31,7 +31,7 @@ public class FreshVars {
      * Generate a variable with a fresh name, and remember the generated name.
      */
     public ITermVar fresh(String name) {
-        final String base = name.replaceAll("-?[0-9]*$", "");
+        final String base = name.replaceAll(STRIP_RE, "");
         ITermVar fresh = B.newVar("", name);
         int i = 0;
         while(oldVars.contains(fresh) || newVars.contains(fresh)) {
@@ -43,22 +43,21 @@ public class FreshVars {
 
     /**
      * Generate variables with fresh names, ensuring generated names do not overlap with variables in the set of
-     * freshened variables. Generated names are remembered. Returns a variable swapping.
+     * freshened variables. Generated names are remembered. Returns a renaming from variables to fresh variables.
      */
-    public IRenaming fresh(java.util.Set<ITermVar> vars) {
-        final Renaming.Builder renaming = Renaming.builder();
+    public IRenaming.Immutable fresh(java.util.Set<ITermVar> vars) {
+        final IRenaming.Transient renaming = PersistentRenaming.Transient.of();
         for(ITermVar var : vars) {
-            final String base = var.getName().replaceAll("-?[0-9]*$", "");
+            final String base = var.getName().replaceAll(STRIP_RE, "");
             ITermVar fresh = var;
             int i = 0;
             while((vars.contains(fresh) && !var.equals(fresh)) || oldVars.contains(fresh) || newVars.contains(fresh)) {
-                fresh = B.newVar(var.getResource(), base + "-" + Integer.toString(i++));
+                fresh = B.newVar(var.getResource(), base + Integer.toString(i++));
             }
             newVars.__insert(fresh);
             renaming.put(var, fresh);
-            renaming.put(fresh, var);
         }
-        return renaming.build();
+        return renaming.freeze();
     }
 
     /**

@@ -88,16 +88,15 @@ public abstract class ARule {
         return Sets.union(Constraints.vars(body()), paramVars());
     }
 
-    public Rule apply(ISubstitution.Immutable subst) {
-        final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
-        return Rule.of(name(), params(), newBody);
-    }
-
-    public Rule apply(IRenaming subst) {
+    public Rule substitute(ISubstitution.Immutable subst) {
+        final Set<ITermVar> vars = paramVars();
+        final ISubstitution.Immutable localSubst = subst.removeAll(vars);
+        final IRenaming.Immutable localRenaming = localSubst.captureAvoidingRenaming(vars);
         final List<Pattern> newParams =
-                params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
-        final IConstraint newBody = body().apply(subst);
-        return Rule.of(name(), newParams, newBody);
+                params().stream().map(p -> p.rename(localRenaming)).collect(ImmutableList.toImmutableList());
+        final ISubstitution.Immutable newSubst = localRenaming.compose(localSubst);
+        final IConstraint newBody = body().substitute(newSubst);
+        return Rule.builder().from(this).params(newParams).body(newBody).build();
     }
 
     public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier) throws Delay {
@@ -113,7 +112,7 @@ public abstract class ARule {
             return Optional.empty();
         }
         final ISubstitution.Immutable isubst = subst.freeze();
-        final IConstraint newBody = body().apply(isubst);
+        final IConstraint newBody = body().substitute(isubst);
         return Optional.of(newBody.withCause(cause));
     }
 

@@ -6,7 +6,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
@@ -72,12 +71,9 @@ public class CEqual implements IConstraint, Serializable {
         return cases.caseEqual(this);
     }
 
-    @Override public CEqual apply(ISubstitution.Immutable subst) {
-        return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
-    }
-
-    @Override public CEqual apply(IRenaming subst) {
-        return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
+    @Override public CEqual substitute(ISubstitution.Immutable subst) {
+        return new CEqual(subst.apply(term1), subst.apply(term2), cause,
+                message == null ? null : message.substitute(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

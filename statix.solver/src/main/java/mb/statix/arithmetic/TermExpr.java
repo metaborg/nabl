@@ -5,7 +5,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Optional;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
@@ -23,11 +22,7 @@ class TermExpr implements ArithExpr {
         return M.integerValue().match(term, unifier).orElseThrow(() -> Delay.ofVars(unifier.getVars(term)));
     }
 
-    @Override public ArithExpr apply(ISubstitution.Immutable subst) {
-        return new TermExpr(subst.apply(term));
-    }
-
-    @Override public ArithExpr apply(IRenaming subst) {
+    @Override public ArithExpr substitute(ISubstitution.Immutable subst) {
         return new TermExpr(subst.apply(term));
     }
 

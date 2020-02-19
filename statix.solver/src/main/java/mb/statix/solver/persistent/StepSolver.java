@@ -318,7 +318,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         }
         final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
-        final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+        final IConstraint newConstraint = c.constraint().substitute(subst).withCause(c.cause().orElse(null));
         return Optional.of(
                 StepResult.of(newState, ImmutableSet.of(), disjoin(newConstraint), ImmutableMap.of(), existentials));
     }

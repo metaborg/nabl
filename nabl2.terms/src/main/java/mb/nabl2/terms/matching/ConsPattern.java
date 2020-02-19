@@ -64,8 +64,8 @@ class ConsPattern extends Pattern {
         }).match(unifier.findTerm(term)).orElse(false);
     }
 
-    @Override public ConsPattern apply(IRenaming subst) {
-        return new ConsPattern(head.apply(subst), tail.apply(subst));
+    @Override public ConsPattern rename(IRenaming.Immutable subst) {
+        return new ConsPattern(head.rename(subst), tail.rename(subst));
     }
     
     @Override public ConsPattern eliminateWld(Function0<ITermVar> fresh) {

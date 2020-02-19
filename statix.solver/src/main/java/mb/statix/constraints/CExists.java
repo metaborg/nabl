@@ -57,12 +57,13 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
-    @Override public CExists apply(ISubstitution.Immutable subst) {
-        return new CExists(vars, constraint.apply(subst.removeAll(vars)), cause);
-    }
-
-    @Override public CExists apply(IRenaming subst) {
-        return new CExists(vars, constraint.apply(subst), cause);
+    @Override public CExists substitute(ISubstitution.Immutable subst) {
+        final ISubstitution.Immutable localSubst = subst.removeAll(vars);
+        final IRenaming.Immutable localRenaming = localSubst.captureAvoidingRenaming(vars);
+        final Set<ITermVar> newVars =
+                vars.stream().map(v -> localRenaming.apply(v)).collect(ImmutableSet.toImmutableSet());
+        final ISubstitution.Immutable newSubst = localRenaming.compose(localSubst);
+        return new CExists(newVars, constraint.substitute(newSubst), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

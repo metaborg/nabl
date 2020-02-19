@@ -6,7 +6,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -59,11 +58,7 @@ public class CAstProperty implements IConstraint, Serializable {
         return cases.caseTermProperty(this);
     }
 
-    @Override public CAstProperty apply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, subst.apply(value), cause);
-    }
-
-    @Override public CAstProperty apply(IRenaming subst) {
+    @Override public CAstProperty substitute(ISubstitution.Immutable subst) {
         return new CAstProperty(subst.apply(idTerm), property, subst.apply(value), cause);
     }
 

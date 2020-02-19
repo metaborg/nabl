@@ -6,7 +6,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -53,12 +52,8 @@ public class CConj implements IConstraint, Serializable {
         return cases.caseConj(this);
     }
 
-    @Override public CConj apply(ISubstitution.Immutable subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause);
-    }
-
-    @Override public CConj apply(IRenaming subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause);
+    @Override public CConj substitute(ISubstitution.Immutable subst) {
+        return new CConj(left.substitute(subst), right.substitute(subst), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

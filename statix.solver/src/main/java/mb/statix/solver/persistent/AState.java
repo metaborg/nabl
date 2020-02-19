@@ -66,7 +66,7 @@ public abstract class AState implements IState.Immutable {
 
     @Override public Tuple2<ITermVar, IState.Immutable> freshVar(String base) {
         final int i = __varCounter() + 1;
-        final String name = base.replaceAll("-", "_") + "-" + i;
+        final String name = base.replaceAll("-", "_") + i;
         final ITermVar var = B.newVar(resource(), name);
         final Set.Immutable<ITermVar> vars = __vars().__insert(var);
         return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());

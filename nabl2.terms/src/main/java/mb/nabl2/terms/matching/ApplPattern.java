@@ -66,8 +66,8 @@ class ApplPattern extends Pattern {
         // @formatter:on
     }
 
-    @Override public Pattern apply(IRenaming subst) {
-        return new ApplPattern(op, args.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList()));
+    @Override public Pattern rename(IRenaming.Immutable subst) {
+        return new ApplPattern(op, args.stream().map(p -> p.rename(subst)).collect(ImmutableList.toImmutableList()));
     }
 
     @Override public ApplPattern eliminateWld(Function0<ITermVar> fresh) {

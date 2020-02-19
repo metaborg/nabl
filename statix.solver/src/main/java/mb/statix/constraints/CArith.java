@@ -6,7 +6,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.arithmetic.ArithExpr;
@@ -77,12 +76,9 @@ public class CArith implements IConstraint, Serializable {
         return cases.caseArith(this);
     }
 
-    @Override public CArith apply(ISubstitution.Immutable subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause, message == null ? null : message.apply(subst));
-    }
-
-    @Override public CArith apply(IRenaming subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause, message == null ? null : message.apply(subst));
+    @Override public CArith substitute(ISubstitution.Immutable subst) {
+        return new CArith(expr1.substitute(subst), op, expr2.substitute(subst),
+                cause, message == null ? null : message.substitute(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

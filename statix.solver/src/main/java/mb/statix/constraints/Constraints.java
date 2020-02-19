@@ -547,13 +547,14 @@ public final class Constraints {
         // @formatter:on
     }
 
-    public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst) {
-        return Constraints.apply(constraints, subst, null);
+    public static List<IConstraint> substitute(List<IConstraint> constraints, ISubstitution.Immutable subst) {
+        return Constraints.substitute(constraints, subst, null);
     }
 
-    public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst,
+    public static List<IConstraint> substitute(List<IConstraint> constraints, ISubstitution.Immutable subst,
             @Nullable IConstraint cause) {
-        return constraints.stream().map(c -> c.apply(subst).withCause(cause)).collect(ImmutableList.toImmutableList());
+        return constraints.stream().map(c -> c.substitute(subst).withCause(cause))
+                .collect(ImmutableList.toImmutableList());
     }
 
     public static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {

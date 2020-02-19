@@ -6,7 +6,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
@@ -55,12 +54,8 @@ public class CFalse implements IConstraint, Serializable {
         return cases.caseFalse(this);
     }
 
-    @Override public CFalse apply(ISubstitution.Immutable subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst));
-    }
-
-    @Override public CFalse apply(IRenaming subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst));
+    @Override public CFalse substitute(ISubstitution.Immutable subst) {
+        return new CFalse(cause, message == null ? null : message.substitute(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

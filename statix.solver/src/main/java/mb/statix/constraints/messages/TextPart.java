@@ -2,7 +2,6 @@ package mb.statix.constraints.messages;
 
 import java.io.Serializable;
 
-import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 
@@ -19,11 +18,7 @@ public class TextPart implements IMessagePart, Serializable {
         return text;
     }
 
-    @Override public IMessagePart apply(ISubstitution.Immutable subst) {
-        return this;
-    }
-
-    @Override public IMessagePart apply(IRenaming subst) {
+    @Override public IMessagePart substitute(ISubstitution.Immutable subst) {
         return this;
     }
 

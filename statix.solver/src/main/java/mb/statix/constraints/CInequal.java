@@ -80,17 +80,14 @@ public class CInequal implements IConstraint, Serializable {
         return cases.caseInequal(this);
     }
 
-    @Override public CInequal apply(ISubstitution.Immutable subst) {
-        final Set<ITermVar> us = universals.stream().flatMap(v -> subst.apply(v).getVars().stream())
-                .collect(ImmutableSet.toImmutableSet());
-        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
-                message == null ? null : message.apply(subst));
-    }
-
-    @Override public CInequal apply(IRenaming subst) {
-        final Set<ITermVar> us = universals.stream().map(v -> subst.rename(v)).collect(ImmutableSet.toImmutableSet());
-        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
-                message == null ? null : message.apply(subst));
+    @Override public CInequal substitute(ISubstitution.Immutable subst) {
+        final ISubstitution.Immutable localSubst = subst.removeAll(universals);
+        final IRenaming.Immutable localRenaming = localSubst.captureAvoidingRenaming(universals);
+        final Set<ITermVar> newVars =
+                universals.stream().map(v -> localRenaming.apply(v)).collect(ImmutableSet.toImmutableSet());
+        final ISubstitution.Immutable newSubst = localRenaming.compose(localSubst);
+        return new CInequal(newVars, newSubst.apply(term1), newSubst.apply(term2), cause,
+                message == null ? null : message.substitute(newSubst));
     }
 
     @Override public String toString(TermFormatter termToString) {
