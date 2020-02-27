@@ -33,6 +33,10 @@ rules
     with ast' := <normalize(|a)> ast
        ; CustomAnalysis(ext) := <nabl2-get-custom-analysis> a
        ; spec     := <core-ast-to-spec-aterm(|a)> (ast', ext)
+
+rules
+
+  generate-combined-aterm = generate-aterm; \(filename, ast) -> (filename, spec) with spec := <stx--local-spec-from-spec> ast\
  
 rules
 
