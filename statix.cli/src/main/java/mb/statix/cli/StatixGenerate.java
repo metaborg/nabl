@@ -39,7 +39,7 @@ public class StatixGenerate {
     private static final boolean DEBUG = true;
     private static final boolean TRACE = false;
     private static final String VAR = "e";
-    private static final int COUNT = 2 * 42;
+    private static final int COUNT = 4 * 42;
 
     private final Statix STX;
 
