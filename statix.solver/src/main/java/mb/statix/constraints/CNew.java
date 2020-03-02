@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -50,6 +51,10 @@ public class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
+        return new CNew(subst.apply(terms), cause);
+    }
+
+    @Override public CNew apply(IRenaming subst) {
         return new CNew(subst.apply(terms), cause);
     }
 

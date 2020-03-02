@@ -8,6 +8,14 @@ test pair projection function [[
   pair projection function
 ]] 0 error
 
+test missing function case [[
+  missing function case
+]] > 0 errors
+
+test non-ground function argument [[
+  non-ground function argument
+]] > 0 errors
+
 //-------------------------------
 
 test sub relation is reflexive [[

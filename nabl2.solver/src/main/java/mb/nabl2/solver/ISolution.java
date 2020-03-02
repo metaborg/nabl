@@ -3,8 +3,6 @@ package mb.nabl2.solver;
 import java.util.Map;
 import java.util.Optional;
 
-import org.metaborg.util.functions.Predicate2;
-
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.constraints.IConstraint;
@@ -20,7 +18,7 @@ import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.symbolic.ISymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
 
 public interface ISolution {
@@ -36,14 +34,12 @@ public interface ISolution {
     Multimap<OccurrenceIndex, Occurrence> astRefs();
 
     Multimap<OccurrenceIndex, Occurrence> astDecls();
-    
+
     ISolution withScopeGraph(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph);
 
     IEsopNameResolution<Scope, Label, Occurrence> nameResolution();
 
-    IEsopNameResolution<Scope, Label, Occurrence> nameResolution(Predicate2<Scope, Label> isEdgeComplete);
-
-    Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>> nameResolutionCache();
+    IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence> nameResolutionCache();
 
     IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 

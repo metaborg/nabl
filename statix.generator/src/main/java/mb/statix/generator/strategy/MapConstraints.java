@@ -1,7 +1,5 @@
 package mb.statix.generator.strategy;
 
-import org.metaborg.util.functions.Function1;
-
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.statix.generator.SearchContext;
@@ -13,8 +11,9 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import org.metaborg.util.functions.Function1;
 
-final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
+public final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
 
     private final Function1<IConstraint, IConstraint> f;
 
@@ -27,7 +26,7 @@ final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
         final IState.Immutable state = input.state();
         final Set.Immutable<IConstraint> constraints =
                 input.constraints().stream().map(f::apply).collect(CapsuleCollectors.toSet());
-        final ICompleteness.Transient completeness = Completeness.Transient.of(state.spec());
+        final ICompleteness.Transient completeness = Completeness.Transient.of(ctx.spec());
         completeness.addAll(constraints, state.unifier());
         completeness.addAll(input.delays().keySet(), state.unifier());
         final SearchState output = input.replace(state, constraints, input.delays(), completeness.freeze());

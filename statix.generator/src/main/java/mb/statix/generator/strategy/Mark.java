@@ -6,7 +6,7 @@ import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 
-final class Mark<I extends SearchState> extends SearchStrategy<I, I> {
+public final class Mark<I extends SearchState> extends SearchStrategy<I, I> {
 
     private final String marker;
 

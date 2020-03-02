@@ -14,8 +14,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.statix.constraints.CExists;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
@@ -33,19 +31,18 @@ public class STX_solve_constraint extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final Spec spec =
-                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        final ITerm specTerm = terms.get(0);
+        final Spec spec = StatixTerms.spec().match(specTerm)
+                .orElseThrow(() -> new InterpreterException("Expected spec, got " + specTerm));
         reportOverlappingRules(spec);
 
         final IDebugContext debug = getDebugContext(terms.get(1));
 
-        final IMatcher<IConstraint> constraintMatcher = M.tuple2(M.listElems(StatixTerms.varTerm()),
-                StatixTerms.constraint(), (t, vs, c) -> new CExists(vs, c));
         final Function1<IConstraint, ITerm> solveConstraint = constraint -> solveConstraint(spec, constraint, debug);
         // @formatter:off
         return M.cases(
-            constraintMatcher.map(solveConstraint::apply),
-            M.listElems(constraintMatcher).map(vars_constraints -> {
+            StatixTerms.constraint().map(solveConstraint::apply),
+            M.listElems(StatixTerms.constraint()).map(vars_constraints -> {
                 return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList()));
             })
         ).match(term);
@@ -57,7 +54,7 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(state, constraint, debug);
+            resultConfig = Solver.solve(spec, state, constraint, debug);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

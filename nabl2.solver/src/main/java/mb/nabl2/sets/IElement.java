@@ -8,4 +8,6 @@ public interface IElement<T> {
 
     T getPosition();
 
+    T getName();
+
 }

@@ -1,14 +1,13 @@
 package mb.statix.generator.strategy;
 
-import org.metaborg.util.functions.Function0;
-
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import org.metaborg.util.functions.Function0;
 
-final class Limit<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
+public final class Limit<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
     private final SearchStrategy<I, O> s;
     private final int n;
 

@@ -1,9 +1,7 @@
 package mb.statix.generator.strategy;
 
-import org.metaborg.util.functions.Predicate2;
-
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.generator.FocusedSearchState;
@@ -21,14 +19,16 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
+import org.metaborg.util.functions.Predicate2;
 
-final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
+public final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
+
 
     @Override protected SearchNodes<FocusedSearchState<CResolveQuery>> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CResolveQuery>> node) {
         FocusedSearchState<CResolveQuery> input = node.output();
         final IState.Immutable state = input.state();
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         final CResolveQuery query = input.focus();
 
         final Scope scope = Scope.matcher().match(query.scopeTerm(), unifier).orElse(null);
@@ -38,7 +38,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(state.spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways(ctx.spec()).orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -54,6 +54,7 @@ final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>,
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
+                ctx.spec(),
                 state.scopeGraph(), query.relation(),
                 labelWF, labelOrd, isComplete2,
                 dataWF, isAlways, isComplete2);

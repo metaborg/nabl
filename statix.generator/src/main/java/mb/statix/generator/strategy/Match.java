@@ -7,7 +7,7 @@ import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 
-final class Match<I1 extends SearchState, I2 extends SearchState, O extends SearchState>
+public final class Match<I1 extends SearchState, I2 extends SearchState, O extends SearchState>
         extends SearchStrategy<EitherSearchState<I1, I2>, O> {
     private final SearchStrategy<I2, O> s2;
     private final SearchStrategy<I1, O> s1;
@@ -19,11 +19,10 @@ final class Match<I1 extends SearchState, I2 extends SearchState, O extends Sear
 
     @Override protected SearchNodes<O> doApply(SearchContext ctx, SearchNode<EitherSearchState<I1, I2>> node) {
         final EitherSearchState<I1, I2> input = node.output();
-        return input.map(i1 -> {
-            return s1.apply(ctx, new SearchNode<>(node.id(), i1, node.parent(), node.desc()));
-        }, i2 -> {
-            return s2.apply(ctx, new SearchNode<>(node.id(), i2, node.parent(), node.desc()));
-        });
+        return input.map(
+                i1 -> s1.apply(ctx, new SearchNode<>(node.id(), i1, node.parent(), node.desc())),
+                i2 -> s2.apply(ctx, new SearchNode<>(node.id(), i2, node.parent(), node.desc()))
+        );
     }
 
     @Override public String toString() {

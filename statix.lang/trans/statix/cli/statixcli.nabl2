@@ -6,7 +6,7 @@ imports
 
 rules
 
-  [[ Eval(vs, c) ^ (s) ]] :=
-    new s', s' -P-> s, s' ---> s,
-    distinct/name D(s')/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    [[ c ^ (s') ]].
+  [[ e@Eval(c) ^ (s) ]] :=
+    new s_eval, s_eval -P-> s, @e.scope := s_eval,
+    Constraint[[ c ^ (s_eval) ]],
+    This{()} <- s_eval, This{()}.qname := "". // FIXME This should be something else

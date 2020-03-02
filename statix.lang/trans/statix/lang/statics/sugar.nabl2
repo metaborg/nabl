@@ -15,8 +15,8 @@ rules
  * User Constraints                                               *
  ******************************************************************/
 
-  [[ CDeriveMap(x, x', lifts) ^ (s) ]] :=
-    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
+  DeclOrRule[[ CDeriveMap(x, x', lifts) ^ (s, s_syn) ]] :=
+    C{x'} -> s, C{x'} |-> d | error $[Unresolved constraint [x']] @x', @x'.ref := C{x'}, @x'.decl := d,
     d : ty, ty != FUN(_, _) | error "Use `c maps c(...) = ...` for functional constraints." @x,
     d.ind := ind,
 
@@ -27,10 +27,11 @@ rules
     C{x} <- s, @x.decl := C{x},
     C{x} : PRED(tys') !!,
     C{x}.ind := ind !!,
-    C{x}.kind := DerivedC() !!.
+    C{x}.kind := DerivedC() !!,
+    C{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  [[ FDeriveMap(x, x', inlifts, outlift) ^ (s) ]] :=
-    C{x'} -> s, C{x'} |-> d, @x'.decl := d,
+  DeclOrRule[[ FDeriveMap(x, x', inlifts, outlift) ^ (s, s_syn) ]] :=
+    C{x'} -> s, C{x'} |-> d | error $[Unresolved constraint [x']] @x', @x'.ref := C{x'}, @x'.decl := d,
     d : ty, ty != PRED(_) | error "Use `c maps c(...)` for non-functional constraints." @x,
     d.ind := ind,
 
@@ -43,11 +44,13 @@ rules
     C{x} <- s, @x.decl := C{x},
     C{x} : FUN(intys', outty') !!,
     C{x}.ind := ind !!,
-    C{x}.kind := DerivedC() !!.
+    C{x}.kind := DerivedC() !!,
+    C{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  RuleHead[[ F(x, inargs, outarg) ^ (s_rule, s_body, y) : ty ]] := x == y,
-    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
+  RuleHead[[ h@F(x, inargs, outarg) ^ (s_rule, s_syn) : ty ]] :=
+    C{x} -> s_rule, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    Rule{x} <- s_syn, Rule{x}.decl := d, Rule{x}.head := h,
     d : ty, ty != PRED(_) | error "Use `c(...) | ...` for non-functional constraints." @x,
     intys is `in-types` of ty,
     outty is `out-type` of ty,
@@ -55,14 +58,14 @@ rules
     Match[[ outarg ^ (s_rule) : outty ]].
 
   Term(V)[[ COp(x, args) ^ (s) : ty ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+    C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty', ty' != PRED(_) | error "Inline notation can only be used for functional constraints.",
     intys is `in-types` of ty',
     outty is `out-type` of ty', ?-Subtype(outty, ty),
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
-  [[ LC(x) ^ (s) : ty ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+  HoConstraint[[ LC(x) ^ (s) : ty ]] :=
+    C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty.
 
 
@@ -70,9 +73,9 @@ rules
  * Base Constraints                                               *
  ******************************************************************/
 
-  [[ LTrue() ^ (_) : PRED(_) ]].
+  HoConstraint[[ LTrue() ^ (_) : PRED(_) ]].
 
-  [[ LFalse() ^ (_) : PRED(_) ]].
+  HoConstraint[[ LFalse() ^ (_) : PRED(_) ]].
 
   Term(V)[[ NewOp() ^ (s) : ty ]] := ?-Subtype(SCOPE(), ty).
 
@@ -90,10 +93,10 @@ rules
  ******************************************************************/
 
   RelRef[[ l@Decl() ^ (s) : ty ]] :=
-    Rel{l} -> s, Rel{l} |-> d, @l.decl := d,
+    Rel{l} -> s, Rel{l} |-> d, @l.ref := Rel{l}, @l.decl := d,
     d : ty.
 
-  [[ CAskRel(rel, ts, st, msg) ^ (s) ]] :=
+  Constraint[[ CAskRel(rel, ts, st, msg) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != FUN(_, _) | error "Use inline notation for functional relations.",
     tys is `in-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
@@ -111,17 +114,18 @@ rules
  * Scope Graph                                                    *
  ******************************************************************/
  
-  [[ NamespaceQuery(x, filter, min) ^ (s) ]] :=
-    Ns{x} -> s, Ns{x} |-> d, @x.decl := d,
+  DeclOrRule[[ NamespaceQuery(x, filter, min) ^ (s, s_syn) ]] :=
+    Ns{x} -> s, Ns{x} |-> d | error $[Unresolved namespace [x]] @x, @x.ref := Ns{x}, @x.decl := d,
     NsQ{x} <- s,
-    [[ filter ^ (s, NsQ{x}) ]],
-    [[ min ^ (s, NsQ{x}) ]].
+    Filter[[ filter ^ (s, NsQ{x}) ]],
+    Min[[ min ^ (s, NsQ{x}) ]],
+    NsQ{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  [[ NamespaceFilter(re) ^ (s, d) ]] :=
+  Filter[[ NamespaceFilter(re) ^ (s, d) ]] :=
     d.wf := re,
     LabelRE[[ re ^ (s) ]].
 
-  [[ NamespaceMin(prs) ^ (s,d ) ]] :=
+  Min[[ NamespaceMin(prs) ^ (s,d ) ]] :=
     d.ord := prs,
     Map1(LabelPair)[[ prs ^ (s) ]].
 
@@ -132,13 +136,13 @@ rules
 
   LabelRE[[ t@ResolveMatch(r@Occurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
+    NsQ{ns} -> s, NsQ{ns} |-> d | error $[Unresolved resolution policy for namespace [ns]] @ns, @t.ref := NsQ{ns}, @t.decl := d.
 
   LabelOrd[[ t@ResolveLt(r@Occurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
-    NsQ{ns} -> s, NsQ{ns} |-> d, @t.decl := d.
+    NsQ{ns} -> s, NsQ{ns} |-> d | error $[Unresolved resolution policy for namespace [ns]] @ns, @t.ref := NsQ{ns}, @t.decl := d.
 
-  [[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
+  HoConstraint[[ OccurrenceMatch(r) ^ (s) : PRED([OCCURRENCE()]) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]].
 
 
@@ -146,7 +150,7 @@ rules
  * Sorts & Constructors                                           *
  ******************************************************************/
 
-  [[ FunType(insorts, outsort) ^ (s) : FUN(intys, outty) ]] :=
+  Type[[ FunType(insorts, outsort) ^ (s) : FUN(intys, outty) ]] :=
     Map1T(SortRef)[[ insorts ^ (s) : intys ]],
     SortRef[[ outsort ^ (s) : outty ]].
 

@@ -33,6 +33,10 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
             return cases.caseNamed(getName());
         }
 
+        @Override public <T, E extends Throwable> T matchOrThrow(IRelationName.CheckedCases<T, E> cases) throws E {
+            return cases.caseNamed(getName());
+        }
+
         // IApplTerm implementation
 
         @Override protected IApplTerm check() {
@@ -96,6 +100,10 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         // IRelationName implementation
 
         @Override public <T> T match(IRelationName.Cases<T> cases) {
+            return cases.caseExt(getName());
+        }
+
+        @Override public <T, E extends Throwable> T matchOrThrow(IRelationName.CheckedCases<T, E> cases) throws E {
             return cases.caseExt(getName());
         }
 

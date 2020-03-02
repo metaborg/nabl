@@ -9,18 +9,25 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.metaborg.core.MetaborgConstants;
 import org.metaborg.core.MetaborgException;
 import org.metaborg.core.MetaborgRuntimeException;
+import org.metaborg.core.action.CompileGoal;
+import org.metaborg.core.build.BuildInput;
+import org.metaborg.core.build.BuildInputBuilder;
 import org.metaborg.core.context.IContext;
 import org.metaborg.core.language.ILanguage;
 import org.metaborg.core.language.ILanguageImpl;
+import org.metaborg.core.language.LanguageFileSelector;
+import org.metaborg.core.messages.WithLocationStreamMessagePrinter;
+import org.metaborg.core.processing.ITask;
 import org.metaborg.core.project.IProject;
 import org.metaborg.spoofax.core.Spoofax;
+import org.metaborg.spoofax.core.build.ISpoofaxBuildOutput;
 import org.metaborg.spoofax.core.shell.CLIUtils;
 import org.metaborg.spoofax.core.unit.ISpoofaxAnalyzeUnit;
-import org.metaborg.spoofax.core.unit.ISpoofaxInputUnit;
-import org.metaborg.spoofax.core.unit.ISpoofaxParseUnit;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.terms.IStrategoTerm;
+
+import com.google.common.collect.Streams;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -49,7 +56,7 @@ public class Statix {
         S = new Spoofax(new StatixCLIModule());
         cli = new CLIUtils(S);
         stxLang = loadStxLang();
-        project = cli.getOrCreateCWDProject();
+        project = cli.getOrCreateProject(findProjectDir(cli.getCWD()));
         context = S.contextService.get(project.location(), project, stxLang);
         msgStream = System.out;
     }
@@ -96,35 +103,56 @@ public class Statix {
     }
 
     Optional<ISpoofaxAnalyzeUnit> loadStxFile(FileObject resource) throws MetaborgException {
-        ISpoofaxInputUnit inputUnit = cli.read(resource, stxLang);
-        ISpoofaxParseUnit parseUnit = cli.parse(inputUnit, stxLang);
-        if(!parseUnit.success()) {
-            cli.printMessages(msgStream, parseUnit.messages());
+        final ITask<ISpoofaxBuildOutput> task;
+        try {
+            final BuildInputBuilder inputBuilder = new BuildInputBuilder(project);
+            // @formatter:off
+            final BuildInput input = inputBuilder
+                .withDefaultIncludePaths(true)
+                .withSourcesFromDefaultSourceLocations(true)
+                .withSelector(new LanguageFileSelector(S.languageIdentifierService, stxLang))
+                .withMessagePrinter(new WithLocationStreamMessagePrinter(S.sourceTextService, S.projectService, msgStream))
+                .withThrowOnErrors(true)
+                .addTransformGoal(new CompileGoal())
+                .build(S.dependencyService, S.languagePathService);
+            // @formatter:on
+            task = S.processorRunner.build(input, null, null).schedule().block();
+        } catch(MetaborgException | InterruptedException e) {
+            throw new MetaborgException("Building Statix files failed unexpectedly", e);
+        } catch(MetaborgRuntimeException e) {
+            throw new MetaborgException("Building Statix files failed", e);
+        }
+
+        final ISpoofaxBuildOutput output = task.result();
+        if(!output.success()) {
             return Optional.empty();
         }
-        ISpoofaxAnalyzeUnit analyzeUnit = cli.analyze(parseUnit, context);
-        if(!analyzeUnit.success()) {
-            cli.printMessages(msgStream, analyzeUnit.messages());
-            return Optional.empty();
-        }
-        return Optional.of(analyzeUnit);
+
+        return Streams.stream(output.analysisResults().iterator())
+                .filter(r -> r.source().getName().equals(resource.getName())).findFirst();
     }
 
-    Optional<FileObject> findProject(FileObject resource) {
+    private FileObject findProjectDir(FileObject resource) throws MetaborgException {
+        final FileObject init;
         try {
-            FileObject dir = (resource.isFolder() ? resource : resource.getParent());
+            init = (resource.isFolder() ? resource : resource.getParent());
+        } catch(FileSystemException e) {
+            logger.error("Error while searching for project configuration.", e);
+            throw new MetaborgException(e);
+        }
+        try {
+            FileObject dir = init;
             while(dir != null) {
                 FileObject config = dir.resolveFile(MetaborgConstants.FILE_CONFIG);
                 if(config != null && config.exists()) {
-                    return Optional.of(dir);
+                    return dir;
                 }
                 dir = dir.getParent();
             }
         } catch(FileSystemException e) {
             logger.error("Error while searching for project configuration.", e);
         }
-        logger.warn("No project configuration file was found for {}.", resource);
-        return Optional.empty();
+        return init;
     }
 
     String format(IStrategoTerm term) throws MetaborgException {

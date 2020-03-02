@@ -1,0 +1,348 @@
+module statics // Static semantics of Featherweight Generic Java
+
+imports
+
+  statics/syntax
+  statics/name-resolution
+  statics/normalization
+  statics/types
+
+rules
+
+  programOK : Program
+
+  programOK(Program(cdecls)) :- {s}
+    new s,
+    object(s),
+    classesOK(s, cdecls).
+
+  programOK(Let(cdecls, e)) :- {s}
+    new s,
+    object(s),
+    classesOK(s, cdecls),
+    strict(typeOfExp(s, e)) == _.
+
+rules
+
+  object : scope
+
+  object(s) :- {s_class s_ctor}
+    // class
+    new s_class, s_class -P-> s,
+    s -> Class{"Object"@-} with typeOfDecl CLASS(s_class),
+    // type parameters
+    !tparamsOfClass[[]] in s_class,
+    // constructor
+    new s_ctor, s_ctor -P-> s_class,
+    s_class -> Ctor{@-} with typeOfDecl CTOR([]).
+
+rules
+
+  classOK : scope * ClassDecl
+  classesOK maps classOK(*, list(*))
+
+  classOK(s, ClassDecl(x, tvars, te_super, fields, ctor, methods)) :- {s_class Xs s_super p_super}
+    new s_class, s_class -P-> s,                  // class scope
+    s -> Class{x@x} with typeOfDecl CLASS(s_class),  // class declaration and type
+    classTParamsOK(s_class, tvars) == Xs,
+    typeOfTypeExp(s_class, te_super) == CLASS(s_super),
+    s_class -S-> s_super,
+    notExtends(s_super, s_class),
+    fieldDeclsOK(s_class, fields),                // assumed to be distinct
+    ctorOK(s_class, Class{x@x}, ctor),
+    methodsOK(s_class, methods).                  // assumed to be distinct
+
+  classTParamsOK: scope * list(TVarDecl) -> list(occurrence)
+
+  classTParamsOK(s_class, tvars) = Xs :-
+    typesOfTParams(s_class, tvars) == Xs,
+    !tparamsOfClass[Xs] in s_class.
+
+rules
+
+  fieldDeclOK : scope * FieldDecl
+  fieldDeclsOK maps fieldDeclOK(*, list(*))
+
+  fieldDeclOK(s_class, FieldDecl(ty, x)) :- {T}
+    typeOfTypeExp(s_class, ty) == T,            // field type
+    s_class -> Field{x@x} with typeOfDecl T.    // field declaration
+
+rules
+
+  ctorOK : scope * occurrence * CtorDecl
+
+  ctorOK(s_class, Class{x@_}, CtorDecl(y, params, es, finits)) :- {s_ctor s_super d_super CT Us Ts Ss}
+    x == y,                                          // constructor name corresponds to class name
+    new s_ctor, s_ctor -P-> s_class,                 // ctor body scope
+    typesOfParams(s_ctor, params) == Ts,             // ctor param types
+    s_class -> Ctor{@x} with typeOfDecl CTOR(Ts),    // ctor declaration
+    superClassCtorType(s_class) == CTOR(Ss),         // constructor type with instantiated type variables
+    typesOfExps(s_ctor, es) == Us,                   // argument types
+    subTypes(s_ctor, Us, Ss),                        // valid arguments
+    initsOK(s_ctor, finits).
+
+rules
+
+  initOK : scope * FieldInit
+  initsOK maps initOK(*, list(*))
+
+  initOK(s, FieldInit(x, e)) :- {T U}
+    query typeOfDecl filter I*P* and { Field{x'@_} :- x' == x }
+          in s |-> [(_, (_, T))],                    // field type
+    typeOfExp(s, e) == U,                            // expr type
+    subType(s, U, T).
+
+rules
+
+  methodOK : scope * MethodDecl
+  methodsOK maps methodOK(*, list(*))
+
+  relation tparamsOfMethod : -> list(occurrence)
+
+  methodOK(s_class, MethodDecl(tvars, ty, x, params, e)) :- {d s_method Xs T Ts U s_mtype}
+    d == Method{x@x},                         // method declaration
+    !decl[d] in s_class,
+
+    new s_method, s_method -P-> s_class,      // scope of method body
+
+    typesOfTParams(s_method, tvars) == Xs,    // type parameters
+
+    typesOfParams(s_method, params) == Ts,    // method parameters    
+    methodThisOK(s_method, s_class, d),       // declare this
+    typeOfTypeExp(s_method, ty) == T,         // return type
+    typeOfExp(s_method, e) == U,              // body type
+    subType(s_method, U, T),                  // body type is subtype of return type
+
+    new s_mtype,
+    s_mtype -> MType{@x} with typeOfDecl MTY(T, Ts),    //
+    !typeOfDecl[d, METHOD(Xs, s_mtype)] in s_class,         // method type
+
+    overrideOK(s_class, d, METHOD(Xs, s_mtype)).
+
+  methodThisOK : scope * scope * occurrence
+
+  methodThisOK(s_method, s_class, d@Method{_@x}) :- {s_inst}
+    new s_inst, s_inst -I-> s_class,
+    s_method -> Var{"this"@x} with typeOfDecl CLASS(s_inst).
+
+  overrideOK  : scope * occurrence * TYPE
+  overrideOK2 : scope * list((path * (occurrence * TYPE))) * TYPE
+
+  overrideOK(s, d@Method{x@_}, T) :- {ps}
+    overrides(s, d) == ps, overrideOK2(s, ps, T).
+
+  overrideOK2(s, [], T).
+
+  overrideOK2(s, [(_, (d', mt2))], mt1) :- {U Us}
+    typeEq(mt1, mt2).
+
+  overrides : scope * occurrence -> list((path * (occurrence * TYPE)))
+  overrides(s_class, Method{x@_}) = ps :-
+    query typeOfDecl filter S S* and { d :- d == Method{x@_} }
+                     min $ < I, $ < S and true
+                     in s_class |-> ps.
+
+rules
+
+  typeOfParam:  scope * Param -> TYPE
+  typesOfParams maps typeOfParam(*, list(*)) = list(*)
+
+  typeOfParam(s, Param(ty, x)) = T :- {d}
+    typeOfTypeExp(s, ty) == T,          // param type
+    s -> Var{x@x} with typeOfDecl T.    // param declaration
+
+rules
+
+  typeOfTParam : scope * TVarDecl -> occurrence
+  typesOfTParams maps typeOfTParam(*, list(*)) = list(*)
+
+  typeOfTParam(s, TVarDecl(x, ty)) = TVar{x@x} :-
+    s -> TVar{x@x} with typeOfDecl typeOfTypeExp(s, ty). // t is upper bound of type parameter
+
+  boundsOfTParams: scope * list(occurrence) -> list(TYPE)
+  boundsOfTParams(s, []) = [].
+  boundsOfTParams(s, [X|Xs]) = [PROJ(s, X)|boundsOfTParams(s, Xs)].
+
+  promoteType: scope * TYPE -> TYPE
+  promoteTypes maps promoteType(*, list(*)) = list(*)
+
+  promoteType(s, TVAR(d)) = strict(PROJ(s, d)).    // bound projection
+  promoteType(s, T)       = T.
+
+rules
+
+  typeOfTypeExp : scope * TypeExp -> TYPE
+  typesOfTypeExps maps typeOfTypeExp(*, list(*)) = list(*)
+
+  typeOfTypeExp(s, TVar(x)) = TVAR(d) :- {x'} @x.ref := x',
+    TVar{x@x} in s |-> [(_, d@TVar{x'@_})].        // type var reference
+
+  typeOfTypeExp(s, ClassT(x, tes)) = CLASS(s_inst) :- {x' s_class Xs Ts Us} @x.ref := x',
+    typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, CLASS(s_class)))],    // class type
+    typesOfTypeExps(s, tes) == Ts,          // type arguments
+    ?tparamsOfClass[] in s_class == Xs,     // type parameters
+    instWith(s_class, Xs, Ts) == s_inst,    // super class type variable instantiation
+    boundsOfTParams(s_inst, Xs) == Us,      // super class type variable bounds
+    subTypes(s, Ts, Us).                    // bounds subtype validity
+
+rules
+
+  typeOfExp : scope * Exp -> TYPE
+  typesOfExps maps typeOfExp(*, list(*)) = list(*)
+
+  typeOfExp(s, Var(x)) = T :- {x' p d} @x.ref := x',
+    typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, T))].
+
+  typeOfExp(s, Fld(e, x)) = S :- {s_inst}
+    promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_inst),    // receiver type
+    PROJ(s_inst, Field{x@x}) == S.                               // field reference
+
+  typeOfExp(s, Call(e, tys, x, es)) = U :- {S s_cls x' Ts m_inst Xs s_mtype s_minst Us Ss p} @x.ref := x',
+    promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_cls),
+    typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, METHOD(Xs, s_mtype)))],
+    typesOfTypeExps(s, tys) == Ts,
+    instWith(s_mtype, Xs, Ts) == s_minst,
+    norm(scopes(p), PROJ(s_minst, MType{@-})) == MTY(U, Us),
+    typesOfExps(s, es) == Ss,
+    subTypes(s, Ss, Us).
+
+  typeOfExp(s, New(te, es)) = T :- {s_inst Ts Us}
+    strict(typeOfTypeExp(s, te)) == T@CLASS(s_inst),  // class type scope
+    strict(PROJ(s_inst, Ctor{@-})) == CTOR(Ts),       // project constructor type
+    typesOfExps(s, es) == Us,                         // argument types
+    subTypes(s, Us, Ts).
+
+  typeOfExp(s, Ascribe(e, te)) = T :- {S}
+    strict(typeOfExp(s, e)) == S,
+    strict(typeOfTypeExp(s, te)) == T,
+    subType(s, S, T).
+
+  typeOfExp(s, Cast(te, e)) = T_as :- {s_as s_act}
+    promoteType(s, strict(typeOfTypeExp(s, te))) == CLASS(s_as),    // cast type
+    promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_act),        // expression type
+    castOK(s_act, s_as).
+
+  castOK : scope * scope
+  castOK2 : list((path * scope)) * list((path * scope))
+
+  castOK(s_act, s_as) :- {p1 p2}
+    extendsQ(s_act, s_as) == p1,
+    extendsQ(s_as, s_act) == p2,
+    castOK2(p1, p2).
+
+  castOK2([_], [_]).
+  castOK2([_], []).
+  castOK2([], [_]).
+
+rules
+
+  typesEq maps typeEq(list(*), list(*))
+
+  typeEq : TYPE * TYPE
+
+  typeEq(TVAR(d), TVAR(d)).
+
+  // two class types are equal if
+  // - they are instantiations of the same class as identified by its scope
+  // - the instantiations of the type parameter of the class are equal
+
+  typeEq(CLASS(s1), CLASS(s2)) :- {p1 d1 p2 d2}
+    classScope(s1) == p1,          // sub class scope
+    classScope(s2) == p2,          // super class scope
+    classInstEq(p1, p2).
+
+  typeEq(T@PROJ(_, _), S) :- typeEq(strict(T), S).
+  typeEq(T, S@PROJ(_, _)) :- typeEq(T, strict(S)).
+
+  typeEq(METHOD(Xs1, s_mtype1), METHOD(Xs2, s_mtype2)) :- {mty1 mty2 pls}
+    sameLength(Xs1, Xs2),
+    freshPlaceholders(Xs1) == pls,
+    strict(PROJ(instWith(s_mtype1, Xs1, pls), MType{@-})) == mty1,
+    strict(PROJ(instWith(s_mtype2, Xs2, pls), MType{@-})) == mty2,
+    typeEq(mty1, mty2).
+
+  typeEq(MTY(S1, Ts1), MTY(S2, Ts2)) :-
+    typesEq(Ts1, Ts2),
+    typeEq(S1, S2).
+
+  typeEq(PL(d), PL(d)).
+
+rules // Helpers for type equality
+
+  freshPlaceholder : occurrence -> TYPE
+  freshPlaceholders maps freshPlaceholder(list(*)) = list(*)
+
+  freshPlaceholder(_) = PL(d) :- new d.
+
+
+  sameLength : list(occurrence) * list(occurrence)
+
+  sameLength([], []).
+
+  sameLength([_|Xs], [_|Ys]) :- sameLength(Xs, Ys).
+
+rules
+
+  // subType(s, S, T) : S is a subtype of T wrt scope s
+
+  subType : scope * TYPE * TYPE
+  subTypeA : scope * TYPE * TYPE
+  subTypes maps subType(*, list(*), list(*))
+
+  subType(s, S, T) :- {S' T'}
+    strict(S) == S', strict(T) == T',
+    subTypeA(s, S', T').
+
+  subTypeA(s, T@TVAR(_), T).
+
+  subTypeA(s, T@TVAR(d), U) :-
+    subType(s, PROJ(s, d), U).
+
+  subTypeA(s, CLASS(s1), CLASS(s2)) :- {p1 p2 Xs Ts Us}
+    classScope(s2) == p2,          // super class scope
+    extends(s1, dst(p2)) == p1,    // subtype instance of super type
+    classInstEq(p1, p2).
+
+rules
+
+  classScope : scope -> path // path to class corresponding to instance
+  classScope(s_inst) = p :-
+    query () filter I*
+             min I < $ and true // longest path, shadow shorter paths
+             in s_inst |-> [(p, _)].
+
+  extends    : scope * scope -> path
+  notExtends : scope * scope
+  extendsQ   : scope * scope -> list((path * scope))
+
+  extends(s, s_class) = p :- extendsQ(s, s_class) == [(p, _)].
+  notExtends(s, s_class)  :- extendsQ(s, s_class) == [].
+
+  extendsQ(s, s_class) = ps :-
+    query () filter (I|S)* and { s :- s == s_class }
+             min $ < I, $ < S
+             in s |-> ps.
+
+  classInstEq : path * path
+  classInstEq(p1, p2) :- {s_class Xs TVs Ts Us}
+    s_class@dst(p1) == dst(p2),
+    ?tparamsOfClass[] in s_class == Xs,    // type parameters of super type
+    declsToTVARs(Xs) == TVs,
+    norms(scopes(p1), TVs) == Ts,          // normalize type params w.r.t. subtype
+    norms(scopes(p2), TVs) == Us,          // normalize type params w.r.t. super type
+    typesEq(Ts, Us).                       // equal argument types
+
+
+rules // abbreviation
+
+  superClassCtorType : scope -> TYPE
+
+  superClassCtorType(s) = norm(scopes(p), T) :-
+    query typeOfDecl filter I* S I* and { d :- d == Ctor{@_} }
+                     in s |-> [(p, (_, T))].
+
+  declToTVAR : occurrence ->  TYPE
+  declsToTVARs maps declToTVAR(list(*)) = list(*)
+
+  declToTVAR(d) = TVAR(d).
+

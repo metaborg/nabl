@@ -2,8 +2,6 @@ package mb.nabl2.scopegraph.esop;
 
 import java.util.Set;
 
-import org.metaborg.util.iterators.Iterables2;
-
 import com.google.common.annotations.Beta;
 
 import io.usethesource.capsule.Map;
@@ -17,13 +15,7 @@ import mb.nabl2.scopegraph.path.IResolutionPath;
 public interface IEsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         extends INameResolution<S, L, O> {
 
-    boolean addAll(ResolutionCache<S, L, O> cache);
-
-    void resolveAll();
-
-    default void resolveAll(Iterable<? extends O> refs) {
-        Iterables2.stream(refs).forEach(this::resolve);
-    }
+    boolean addCached(ResolutionCache<S, L, O> cache);
 
     ResolutionCache<S, L, O> toCache();
 

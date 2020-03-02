@@ -1,0 +1,41 @@
+module SystemF
+
+imports
+  
+  Common
+
+context-free start-symbols
+  
+  Start
+
+context-free syntax
+  
+  Start = Exp
+
+  Exp.Num  = INT
+  Exp.Fun  = <fun (<LCID> : <TypeExp>) { <Exp> }>
+  Exp.Var  = LCID
+  Exp.App  = <<Exp> <Exp>> {left}
+  Exp.TFun = <Fun (<UCID>) { <Exp> }>
+  Exp.TApp = <<Exp> [<TypeExp>]>
+  Exp.TAS  = <<Exp> : <TypeExp>>
+  Exp.Let  = <let <ID> = <Exp> in <Exp>>
+  Exp.LetT = <type <UCID> = <TypeExp> in <Exp>>
+  Exp      = <(<Exp>)> {bracket}
+
+  TypeExp.NumType = <num>
+  TypeExp.FunType = [[TypeExp] -> [TypeExp]] {right}
+  TypeExp.AllType = [[UCID] => [TypeExp]]
+  TypeExp.VarType = UCID
+  TypeExp         = <(<TypeExp>)> {bracket}
+
+context-free priorities
+
+  Exp.TAS > Exp.App > Exp.TApp > {Exp.LetT Exp.Let},
+  
+  TypeExp.FunType > TypeExp.AllType
+  
+
+template options
+
+  ID = keyword {reject}

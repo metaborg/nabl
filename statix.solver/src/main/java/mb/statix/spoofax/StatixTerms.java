@@ -9,15 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import mb.statix.spec.RuleSet;
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -38,7 +40,7 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.arithmetic.ArithTerms;
@@ -77,6 +79,8 @@ import mb.statix.spec.Spec;
 
 public class StatixTerms {
 
+    private static final ILogger log = LoggerUtils.logger(StatixTerms.class);
+
     public static final String SCOPE_OP = "Scope";
     public static final String TERMINDEX_OP = "TermIndex";
     public static final String OCCURRENCE_OP = "Occurrence";
@@ -86,7 +90,7 @@ public class StatixTerms {
     public static final String NOID_OP = "NoId";
 
     public static IMatcher<Spec> spec() {
-        return M.tuple5(M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
+        return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
                 (t, edgeLabels, relationLabels, noRelationLabel, rules, ext) -> {
                     final IAlphabet<ITerm> labels = new FiniteAlphabet<>(
                             Iterables2.cons(noRelationLabel, Iterables.concat(relationLabels, edgeLabels)));
@@ -94,28 +98,30 @@ public class StatixTerms {
                 });
     }
 
-    public static IMatcher<ListMultimap<String, Rule>> rules() {
-        return M.listElems(M.req(rule())).map(rules -> {
-            final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.<String, Rule>builder()
-                    .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
-            rules.stream().forEach(rule -> {
-                builder.put(rule.name(), rule);
-            });
-            return builder.build();
-        });
+    public static IMatcher<RuleSet> rules() {
+        return M.listElems(M.req(rule())).map(RuleSet::of);
     }
 
     public static IMatcher<Rule> rule() {
-        return M.appl4("Rule", ruleLabel(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
-            return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
-        });
+        // @formatter:off
+        return M.cases(
+            M.appl3("Rule", ruleName(), head(), constraint(), (r, n, h, bc) -> {
+                return Rule.of(h._1(), h._2(), bc).withLabel(n);
+            }),
+            // DEPRECATED
+            M.appl4("Rule", ruleName(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
+                log.warn("Rules with explicit local variables are deprecated.");
+                return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
+            })
+        );
+        // @formatter:on
     }
 
-    public static IMatcher<String> ruleLabel() {
+    public static IMatcher<String> ruleName() {
         // @formatter:off
         return M.<String>cases(
-            M.appl0("NoLabel", (t) -> ""),
-            M.appl1("Label", M.stringValue(), (t, n) -> n)
+            M.appl0("NoName", (t) -> ""),
+            M.appl1("Name", M.stringValue(), (t, n) -> n)
         );
         // @formatter:on
     }
@@ -152,7 +158,7 @@ public class StatixTerms {
                     return new CFalse(msg.orElse(null));
                 }),
                 M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
-                    return new CInequal(t1, t2, msg.orElse(null));
+                    return new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return new CNew(ts);
@@ -165,7 +171,7 @@ public class StatixTerms {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    return new CTellRel(scope, rel, args);
+                    return new CTellRel(scope, rel, B.newTuple(args));
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
@@ -175,9 +181,6 @@ public class StatixTerms {
                 }),
                 M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
                     return new CUser(name, args, msg.orElse(null));
-                }),
-                M.term(c -> {
-                    throw new IllegalArgumentException("Unknown constraint: " + c);
                 })
             )).match(t, u);
             // @formatter:on
@@ -201,8 +204,18 @@ public class StatixTerms {
     }
 
     public static IMatcher<Rule> hoconstraint() {
-        return M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(),
-                (t, ps, vs, c) -> Rule.of("", ps, new CExists(vs, c)));
+        // @formatter:off
+        return M.cases(
+            M.appl2("LLam", M.listElems(pattern()), constraint(), (t, ps, c) -> {
+                return Rule.of("", ps, c);
+            }),
+            // DEPRECATED
+            M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(), (t, ps, vs, c) -> {
+                log.warn("Lambdas with explicit local variables are deprecated.");
+                return Rule.of("", ps, new CExists(vs, c));
+            })
+        );
+        // @formatter:on
     }
 
     public static IMatcher<Multimap<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
@@ -520,7 +533,7 @@ public class StatixTerms {
         return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
     }
 
-    private static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
+    public static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
         return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
     }
 
@@ -529,7 +542,7 @@ public class StatixTerms {
     }
 
     public static IListTerm explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries,
-            IUnifier unifier) {
+            IUniDisunifier unifier) {
         return B.newList(Iterables2.stream(entries)
                 .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
                 .collect(ImmutableList.toImmutableList()));

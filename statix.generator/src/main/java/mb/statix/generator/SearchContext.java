@@ -3,13 +3,17 @@ package mb.statix.generator;
 import java.util.Random;
 
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
+
 
 public interface SearchContext {
 
-    public Random rnd();
+    Spec spec();
 
-    public int nextNodeId();
+    Random rnd();
 
-    public void failure(SearchNodes<?> nodes);
+    int nextNodeId();
+
+    void failure(SearchNodes<?> nodes);
 
 }

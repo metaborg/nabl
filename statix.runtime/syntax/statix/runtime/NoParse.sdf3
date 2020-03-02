@@ -3,6 +3,7 @@ module statix/runtime/NoParse
 sorts
 
   Int
+  Var
 
 lexical syntax
 
@@ -10,7 +11,9 @@ lexical syntax
 
 context-free syntax
 
-  Term.Scope     = <#<String>-<String>>
+  Scope.Scope = <#<String>-<String>>
+
+  Term           = Scope
   Term.Var       = <?<String>-<String>>
   Term.NoId      = <@->
   Term.TermIndex = <@<String>-<Int>>

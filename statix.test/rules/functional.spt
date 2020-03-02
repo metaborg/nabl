@@ -132,3 +132,12 @@ rules
   f(i@_, j) = k :- i == k.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test output of functional rules does not influence match [[
+  resolve {i} f([]) == i
+  rules
+    f : list(int) -> int
+    f([]) = 1.
+    f(xs) = 0.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

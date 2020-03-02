@@ -1,0 +1,22 @@
+module class-definitions
+
+language FGJ
+
+test empty program [[
+]] analysis succeeds
+
+test single class program [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+]] analysis succeeds
+
+test multiple class program [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends Object<> {
+    B() { super(); }
+  }
+]] analysis succeeds
+

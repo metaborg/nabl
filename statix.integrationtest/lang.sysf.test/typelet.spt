@@ -1,0 +1,17 @@
+module typelet
+
+language SystemF
+
+test type let [[
+  type Int = num in 1 : Int
+]] analysis succeeds 
+
+test type let [[
+  type N2N = num -> num
+    in fun(y : num) { y } : N2N
+]] analysis succeeds  
+
+test type let [[
+  type N2N = num -> num in
+    fun(f: N2N){ f } : (N2N -> N2N)
+]] analysis succeeds 

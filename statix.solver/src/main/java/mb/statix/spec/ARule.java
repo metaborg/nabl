@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -15,15 +16,18 @@ import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.NullDebugContext;
@@ -69,10 +73,19 @@ public abstract class ARule {
         // 3. Solve constraint
         try {
             final IConstraint constraint = new CExists(args, instBody);
-            return Optional.of(Solver.entails(State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
+            return Optional
+                    .of(Solver.entails(spec, State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
         } catch(Delay d) {
             return Optional.empty();
         }
+    }
+
+    public Set<ITermVar> freeVars() {
+        return Sets.difference(Constraints.freeVars(body()), paramVars());
+    }
+
+    public Set<ITermVar> varSet() {
+        return Sets.union(Constraints.vars(body()), paramVars());
     }
 
     public Rule apply(ISubstitution.Immutable subst) {
@@ -80,11 +93,18 @@ public abstract class ARule {
         return Rule.of(name(), params(), newBody);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier) throws Delay {
+    public Rule apply(IRenaming subst) {
+        final List<Pattern> newParams =
+                params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+        final IConstraint newBody = body().apply(subst);
+        return Rule.of(name(), newParams, newBody);
+    }
+
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier) throws Delay {
         return apply(args, unifier, null);
     }
 
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUnifier.Immutable unifier,
+    public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier,
             @Nullable IConstraint cause) throws Delay {
         final ISubstitution.Transient subst;
         final Optional<ISubstitution.Immutable> matchResult =
@@ -103,9 +123,13 @@ public abstract class ARule {
             sb.append("[").append(label()).append("] ");
         }
         if(name().isEmpty()) {
-            sb.append("{ ").append(params());
+            sb.append("{ ");
         } else {
-            sb.append(name()).append("(").append(params()).append(")");
+            sb.append(name()).append("(");
+        }
+        sb.append(params().stream().map(Pattern::toString).collect(Collectors.joining(", ")));
+        if(!name().isEmpty()) {
+            sb.append(")");
         }
         sb.append(" :- ");
         sb.append(body().toString(termToString));
@@ -138,11 +162,7 @@ public abstract class ARule {
         }
 
         public Comparator<Rule> asComparator() {
-            return new Comparator<Rule>() {
-                @Override public int compare(Rule r1, Rule r2) {
-                    return LeftRightOrder.this.compare(r1, r2).orElse(0);
-                }
-            };
+            return (r1, r2) -> LeftRightOrder.this.compare(r1, r2).orElse(0);
         }
 
     }

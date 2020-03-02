@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
@@ -27,8 +27,7 @@ public class CompletenessUtil {
         constraint.match(Constraints.cases(
             onArith -> null,
             onConj -> {
-                criticalEdges(onConj.left(), spec, criticalEdge);
-                criticalEdges(onConj.right(), spec, criticalEdge);
+                Constraints.disjoin(onConj).forEach(c -> criticalEdges(c, spec, criticalEdge));
                 return null;
             },
             onEqual -> null,

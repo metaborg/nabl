@@ -1,0 +1,81 @@
+module inheritance-constructors
+
+language FGJ
+
+test inherit nullary constructor class [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends A<> {
+    B() { super(); }
+  }
+]] analysis succeeds
+
+test inherit unary constructor class [[
+  class A<> extends Object<> {
+    A(Object<> f) { super(); }
+  }
+  class B<> extends A<> {
+    B(Object<> f) { super(f); }
+  }
+]] analysis succeeds
+
+test inherit binary constructor class [[
+  class A<> extends Object<> {
+    A(Object<> f, Object<> g) { super(); }
+  }
+  class B<> extends A<> {
+    B(Object<> f) { super(f, f); }
+  }
+]] analysis succeeds
+
+test missing super argument [[
+  class A<> extends Object<> {
+    A(Object<> f, Object<> g) { super(); }
+  }
+  class B<> extends A<> {
+    B(Object<> f) { super(f); }
+  }
+]] analysis fails
+
+test call constructor with subtype argument [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends Object<> {
+      C(A<> f){ super(); }
+    }
+  in new C<>(new B<>())
+]] analysis succeeds
+
+test call constructor with supertype argument [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends Object<> {
+      C(B<> f){ super(); }
+    }
+  in new C<>(new A<>())
+]] analysis fails
+
+test call constructor with unrelated argument [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class C<> extends Object<> {
+      C(B<> f){ super(); }
+    }
+  in new C<>(new A<>())
+]] analysis fails

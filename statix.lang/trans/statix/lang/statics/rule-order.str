@@ -2,20 +2,90 @@ module statix/lang/statics/rule-order
 
 imports
 
+  libspoofax/resource/path
   libspoofax/term/origin
 
   signatures/statix/lang/-
 
-  statix/lang/statics/util
+  statix/lang/util
   statix/lang/pp
+
+  nabl2/api
 
 rules
 
-  detect-overlapping-rules: ast -> or-e*
-    with
-      head*   := <collect-om(?Rule(_, <id>, _, _), conc)> ast
-    ; o-head* := <partitions(rule-head-cmp(patterns-eq))> head*
-    ; or-e*   := <filter(overlap-errors);concat> o-head*
+  detect-overlapping-rules(|a) =
+    nabl2-get-symbolic-goals(|a)
+  ; filter(solve-pattern-constraint(|a))
+  ; concat
+
+
+  solve-pattern-constraint(|a): DistinctPatterns(rule*) -> e*
+    with c-rule* := <group-by(get-rule-constraint(|a), id)> rule*
+       ; e* := <map(Snd;distinct-patterns(|a));concat> c-rule*
+
+  distinct-patterns(|a): rule* -> e*
+    with o-rule* := <map(\ r -> (r, <filter(where(<not(raw-eq);rule-pattern-cmp(|a)> (r, <id>)))> rule*) \)> rule*
+       ; e* := <filter(distinct-errors(|a))> o-rule*
+
+  distinct-errors(|a): (rule, rule*) -> e
+    where [_|_] := rule*
+    with [head|head*] := <map(get-rule-head(|a))> [rule|rule*]
+       ; head-str := <local-heads-to-string> [head]
+       ; heads-str := <local-heads-to-string> head*
+       ; msg := $[Rule pattern equivalent to [heads-str]]
+       ; e := (head, msg)
+
+
+  solve-pattern-constraint(|a): NoDuplicatePatterns(rule*, in-rule*, origin) -> e*
+    with c-rule* := <group-by(get-rule-constraint(|a), id)> rule*
+       ; c-in-rule* := <group-by(get-rule-constraint(|a), id)> in-rule*
+       ; e* := < join( where((Fst, Fst);raw-eq)
+                     ; (Snd,Snd)
+                     )
+               ; map(no-duplicate-patterns(|a,origin))
+               ; concat
+               > (c-rule*, c-in-rule*)
+
+  no-duplicate-patterns(|a, origin): (rule*, in-rule*) -> e*
+    with dup-rule* := <map(\ r -> (r, <filter(where(<rule-pattern-cmp(|a)> (r, <id>)))> in-rule*) \)> rule*
+       ; e* := <filter(duplicate-error(|a, origin))> dup-rule*
+
+  duplicate-error(|a, origin): (rule, rule*) -> e
+    where [_|_] := rule*
+    with [head|head*] := <map(get-rule-head(|a))> [rule|rule*]
+       ; if () := origin then
+           heads-str := <imported-heads-to-string> head*
+         ; msg := $[Rule pattern is equivalent to [heads-str]]
+         ; e := (head, msg)
+         else
+           head-str := <imported-heads-to-string> [head]
+         ; heads-str := <imported-heads-to-string> head*
+         ; msg := $[Pattern of imported rule [head-str] is equivalent to [heads-str]]
+         ; e := (origin, msg)
+         end
+
+
+  local-heads-to-string: head* -> heads-str
+    with head-str* := <map(!$[`[<pp-partial-Statix-string>]' at line [<origin-line;inc;int-to-string>]])> head*
+       ; heads-str := <separate-by(|", ");concat-strings> head-str*
+
+  imported-heads-to-string: head* -> heads-str
+    with head-str* := <map(!$[`[<pp-partial-Statix-string>]' at [<origin-file;current-language-relative-source-or-include-path>]:[<origin-line;inc;int-to-string>]])> head*
+       ; heads-str := <separate-by(|", ");concat-strings> head-str*
+
+
+  get-rule-head(|a): rule -> head
+    with head := <nabl2-get-property(|a,"head")> rule
+
+  get-rule-constraint(|a): rule -> constraint
+    with constraint := <nabl2-get-property(|a,"decl")> rule
+
+rules
+
+  rule-pattern-cmp(|a) =
+    (nabl2-get-property(|a,"head"), nabl2-get-property(|a,"head"))
+  ; rule-head-cmp(patterns-eq)
 
   rule-head-cmp(s): (C(x1, p1*), C(x2, p2*)) -> <id>
     where
@@ -26,14 +96,6 @@ rules
     where
       <raw-eq> (x1, x2)
     ; <s> (Tuple(p1*), Tuple(p2*))
-
-  overlap-errors: heads -> e*
-    where
-      [_,_|_] := heads
-    with
-      head-str* := <map(!$[`[<pp-partial-Statix-string>]' at line [<origin-line;inc;int-to-string>]])> heads
-    ; heads-str := <separate-by(|", ");concat-strings> head-str*
-    ; e* := <map(\ c -> (c, $[Overlapping rules [heads-str]]) \)> heads
 
 rules
 

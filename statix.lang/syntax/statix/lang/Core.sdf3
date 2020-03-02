@@ -21,6 +21,13 @@ context-free syntax
     <{Section "\n\n"}*>
   > {longest-match}
 
+  Section.Imports = <
+    imports
+      <{Import "\n"}*>
+  >
+
+  Import.Import = ModuleId
+
   Section.Signature = <
     signature
 
@@ -33,10 +40,16 @@ context-free syntax
       <{Rule "\n\n"}*>
   > {longest-match}
 
+lexical syntax
+
+  ModuleId = "imports" | "signature" | "rules" {reject}
+
 
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
+
+context-free syntax
 
   Signature.Constraints = <
     constraints
@@ -49,21 +62,19 @@ context-free syntax
   CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleLabel><RuleHead> :- <LocalVars>
+    <RuleName><RuleHead> :-
       <Constraint>.
   >
 
-  RuleLabel.NoLabel = <>
-  RuleLabel.Label = <
+  RuleName.NoName = <>
+  RuleName.Name = <
     [<STRID>]
   >
   RuleHead.C = [[ConstraintId]([{Term ", "}*])]
 
-  LocalVars = <{<{Var " "}*>}>
-
   Constraint.C = [[ConstraintId]([{Term ", "}*])[Message]]
 
-  HoConstraint.LLam = <{ <{Term ", "}*> :- <LocalVars> <Constraint> }>
+  HoConstraint.LLam = <{ <{Term ", "}*> :- <Constraint> }>
 
 lexical syntax
 
@@ -95,6 +106,17 @@ context-free syntax
   Constraint.CInequal = [[Term] != [Term][Message]]
 
   Constraint.CTry = [try { [Constraint] }[Message]]
+
+  Constraint.CExists = [
+    {[{Var " "}*]}
+      [Constraint]
+  ]
+
+context-free priorities
+
+  // Does this give longest-match behavior? Putting longest-match on CExists
+  // seemed to break parsing of exists with conj body in parenthesis.
+  Constraint.CConj > Constraint.CExists
 
 lexical syntax
 

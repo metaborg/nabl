@@ -3,10 +3,12 @@ package mb.nabl2.terms.matching;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.ImmutableSet;
@@ -15,8 +17,9 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier.Immutable;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 class ConsPattern extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -44,7 +47,7 @@ class ConsPattern extends Pattern {
         return vars.build();
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, Immutable unifier, Eqs eqs) {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         // @formatter:off
         return M.list(listTerm -> {
             return listTerm.match(ListTerms.<Boolean>cases()
@@ -61,8 +64,16 @@ class ConsPattern extends Pattern {
         }).match(unifier.findTerm(term)).orElse(false);
     }
 
+    @Override public ConsPattern apply(IRenaming subst) {
+        return new ConsPattern(head.apply(subst), tail.apply(subst));
+    }
+    
+    @Override public ConsPattern eliminateWld(Function0<ITermVar> fresh) {
+        return new ConsPattern(head.eliminateWld(fresh), tail.eliminateWld(fresh));
+    }
+
     @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function0<ITermVar> fresh) {
+    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh) {
         return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh));
     }
 

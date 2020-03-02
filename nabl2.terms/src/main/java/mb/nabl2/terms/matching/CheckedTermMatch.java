@@ -21,8 +21,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 public class CheckedTermMatch {
 

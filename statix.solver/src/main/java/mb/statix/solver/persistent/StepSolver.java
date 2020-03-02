@@ -4,8 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,9 +26,10 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.Diseq;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -51,8 +50,8 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.IncompleteDataException;
 import mb.statix.scopegraph.reference.IncompleteEdgeException;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -80,10 +79,12 @@ import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
+import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, SolverException> {
 
+    private final Spec spec;
     private IState.Immutable state;
     private Map<ITermVar, ITermVar> existentials;
     private final List<ITermVar> updatedVars;
@@ -97,14 +98,15 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
     private final LazyDebugContext proxyDebug;
     private final IDebugContext subDebug;
 
-    public StepSolver(IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
+    public StepSolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug) {
+        this.spec = spec;
         this.state = state;
         this.existentials = null;
         this.updatedVars = Lists.newArrayList();
         this.removedEdges = Lists.newArrayList();
         this.constraints = new BaseConstraintStore(debug);
-        this.completeness = Completeness.Transient.of(state.spec());
+        this.completeness = Completeness.Transient.of(spec);
         this.isComplete = (s, l, st) -> completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         this.debug = debug;
         this.proxyDebug = new LazyDebugContext(debug);
@@ -151,7 +153,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                         if(existentials == null) {
                             existentials = result.existentials();
                         }
-                        final IUnifier.Immutable unifier = state.unifier();
+                        final IUniDisunifier.Immutable unifier = state.unifier();
 
                         // updates from unified variables
                         completeness.updateAll(result.updatedVars(), state.unifier());
@@ -246,15 +248,15 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
     }
 
     @Override public Optional<StepResult> caseArith(CArith c) throws SolverException {
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         final Optional<ITerm> term1 = c.expr1().isTerm();
         final Optional<ITerm> term2 = c.expr2().isTerm();
         try {
-            if(term1.isPresent()) {
+            if(c.op().isEquals() && term1.isPresent()) {
                 int i2 = c.expr2().eval(unifier);
                 final IConstraint eq = new CEqual(term1.get(), B.newInt(i2), c);
                 return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
-            } else if(term2.isPresent()) {
+            } else if(c.op().isEquals() && term2.isPresent()) {
                 int i1 = c.expr1().eval(unifier);
                 final IConstraint eq = new CEqual(B.newInt(i1), term2.get(), c);
                 return Optional.of(StepResult.ofNew(state, ImmutableList.of(eq)));
@@ -280,9 +282,9 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm term1 = c.term1();
         final ITerm term2 = c.term2();
         IDebugContext debug = params.debug();
-        IUnifier.Immutable unifier = state.unifier();
+        IUniDisunifier.Immutable unifier = state.unifier();
         try {
-            final Result<IUnifier.Immutable> result;
+            final IUniDisunifier.Result<IUnifier.Immutable> result;
             if((result = unifier.unify(term1, term2).orElse(null)) != null) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Unification succeeded: {}", result.result());
@@ -329,14 +331,15 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm term1 = c.term1();
         final ITerm term2 = c.term2();
         IDebugContext debug = params.debug();
-        final IUnifier.Immutable unifier = state.unifier();
-        final Result<IUnifier.Immutable> result;
-        if((result = unifier.disunify(term1, term2).orElse(null)) != null) {
+        final IUniDisunifier.Immutable unifier = state.unifier();
+        final IUniDisunifier.Result<Optional<Diseq>> result;
+        if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
             if(debug.isEnabled(Level.Info)) {
                 debug.info("Disunification succeeded: {}", result);
             }
+            final Set<ITermVar> updatedVars =
+                    result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(ImmutableSet.of());
             final IState.Immutable newState = state.withUnifier(result.unifier());
-            final Set<ITermVar> updatedVars = result.result().varSet();
             return Optional
                     .of(StepResult.of(newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of()));
         } else {
@@ -368,7 +371,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm scopeTerm = c.scopeTerm();
         final ITerm resultTerm = c.resultTerm();
 
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
             return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
         }
@@ -386,7 +389,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                     return false;
                 }
             };
-            final ConstraintQueries cq = new ConstraintQueries(state, params);
+            final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
             // @formatter:off
             final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                         .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
@@ -397,9 +400,9 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
                         .withDataComplete(isComplete)
                         .build(state.scopeGraph(), relation);
             // @formatter:on
-            final Collection<IResolutionPath<Scope, ITerm, ITerm>> paths = nameResolution.resolve(scope);
+            final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope);
             final List<ITerm> pathTerms =
-                    paths.stream().map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+                    Streams.stream(paths).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
             final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
             return Optional.of(StepResult.ofNew(state, ImmutableList.of(C)));
         } catch(IncompleteDataException e) {
@@ -426,7 +429,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm label = c.label();
         final ITerm targetTerm = c.targetTerm();
 
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         if(!unifier.isGround(sourceTerm)) {
             return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(sourceTerm)), c));
         }
@@ -449,7 +452,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm relation = c.relation();
         final ITerm datumTerm = c.datumTerm();
 
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         if(!unifier.isGround(scopeTerm)) {
             return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(scopeTerm)), c));
         }
@@ -468,7 +471,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm term = c.astTerm();
         final ITerm idTerm = c.idTerm();
 
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         if(!(unifier.isGround(term))) {
             return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(term)), c));
         }
@@ -495,7 +498,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ITerm prop = c.property();
         final ITerm value = c.value();
 
-        final IUnifier unifier = state.unifier();
+        final IUniDisunifier unifier = state.unifier();
         if(!(unifier.isGround(idTerm))) {
             return Optional.of(StepResult.ofDelay(state, Delay.ofVars(unifier.getVars(idTerm)), c));
         }
@@ -520,7 +523,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
 
     @Override public Optional<StepResult> caseTry(CTry c) throws SolverException {
         try {
-            if(Solver.entails(state, c.constraint(), isComplete, new NullDebugContext())) {
+            if(Solver.entails(spec, state, c.constraint(), isComplete, new NullDebugContext())) {
                 return Optional.of(StepResult.of(state));
             } else {
                 return Optional.empty();
@@ -538,45 +541,23 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final List<ITerm> args = c.args();
 
         final IDebugContext debug = params.debug();
-        final List<Rule> rules = Lists.newLinkedList(state.spec().rules().get(name));
-        final Log unsuccessfulLog = new Log();
-        final Iterator<Rule> it = rules.iterator();
-        final List<ApplyResult> results = Lists.newArrayList();
-        while(it.hasNext()) {
-            final Rule rule = it.next();
-            if(proxyDebug.isEnabled(Level.Info)) {
-                proxyDebug.info("Try rule {}", rule.toString());
-            }
-            final ApplyResult applyResult;
-            if((applyResult = RuleUtil.apply(state, rule, args, c).orElse(null)) == null) {
-                proxyDebug.info("Rule rejected (mismatching arguments)");
-                unsuccessfulLog.absorb(proxyDebug.clear());
-            } else {
-                results.add(applyResult);
-                if(!applyResult.guard().isPresent()) {
-                    proxyDebug.info("Rule accepted");
-                    break;
-                } else {
-                    proxyDebug.info("Rule conditionally accepted (conditional equalities)");
-                }
-            }
-        }
+
+        final List<Rule> rules = spec.rules().getRules(name);
+        final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
         if(results.isEmpty()) {
             debug.info("No rule applies");
-            unsuccessfulLog.flush(debug);
             return Optional.empty();
         } else if(results.size() == 1) {
-            final ApplyResult applyResult = results.get(0);
+            final ApplyResult applyResult = results.get(0)._2();
             proxyDebug.info("Rule accepted");
+            proxyDebug.info("| Implied equalities: {}", applyResult.diff());
             proxyDebug.commit();
-            return Optional.of(StepResult.of(applyResult.state(), applyResult.updatedVars(),
+            return Optional.of(StepResult.of(applyResult.state(), applyResult.diff().varSet(),
                     disjoin(applyResult.body()), ImmutableMap.of(), ImmutableMap.of()));
         } else {
-            final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r.guard()))
-                    .flatMap(g -> g.freeVars().stream()).collect(Collectors.toSet());
+            final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
+                    .flatMap(g -> g.varSet().stream()).collect(Collectors.toSet());
             proxyDebug.info("Rule delayed (multiple conditional matches)");
-            unsuccessfulLog.absorb(proxyDebug.clear());
-            unsuccessfulLog.flush(debug);
             return Optional.of(StepResult.ofDelay(state, Delay.ofVars(stuckVars), c));
         }
     }

@@ -5,7 +5,7 @@ imports
   libspoofax/editor/outline
 
   signatures/statix/lang/-
-  statix/lang/statics/-
+  statix/lang/-
   statix/lang/pp
   pp
 
@@ -13,6 +13,7 @@ rules
 
   editor-outline:
     (_, _, ast, path, project-path) -> outline
+    where fail
     with outline := <desugar-all;outline(|path)> ast
 
   outline(|path): ast -> [ Node("sort", sort-node*) 

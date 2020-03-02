@@ -1,0 +1,76 @@
+module statix/lang/scope-extension/constraints
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/-
+  statix/lang/statics/-
+
+  pp
+  pp/statix/lang/-
+
+rules
+
+  ext-get-barrier(|name): t -> b
+    with i := <nabl2-get-ast-index> t
+       ; b := <nabl2-copy-ast-index(|t)> ExtTerm(name, i)
+
+
+  ext-get-constraint-ref: x -> ExtRef(<nabl2-mk-occurrence(|"C")> x)
+
+  ext-get-var-ref: x -> ExtRef(<nabl2-mk-occurrence(|"Var")> x)
+
+  ext-get-var-decl: x -> ExtDecl(<nabl2-mk-occurrence(|"Var")> x)
+
+
+rules
+
+  explicate-ext-constraints(|a): c* -> c'''*
+    with (b*, c'*) := <partition(ext-explicate-barrier(|a))> c*
+       ; <ext-log(prettyprint-Statix-ExtBarriers|"barriers:")> b*
+       ; c''* := <map(try(ext-escape-constraint(|a, b*)))> c'*
+       ; c'''* := <map(topdown(try(ext-explicate-set(|a))))> c''*
+
+
+  ext-explicate-barrier(|a): ExtBarrier(b) -> s
+    with s := <nabl2-get-ast-property(|a,"scope")> b
+
+
+  ext-escape-constraint(|a, b*): ExtProvides(v, s, o) -> ExtProvidesEsc(v, s, o)
+    where <ext-var-escapes(|a, b*)> v
+
+  ext-escape-constraint(|a, b*): ExtRequires(v, s, o) -> ExtRequiresEsc(v, s, o)
+    where <ext-var-escapes(|a, b*)> v
+
+  ext-var-escapes(|a, b*): ExtVar(ExtRef(r)) -> <id>
+    with if (d, p) := <nabl2-get-resolved-name(|a)> r then
+           s* := <ext-path-scopes> p
+         else
+           s* := []
+         end
+    where [_|_] := <isect> (s*, b*)
+
+  ext-path-scopes = nabl2-get-path-scopes; init
+
+
+  // Variable occurrences have scopes as indices, which makes it difficult to
+  // construct them directly. Therefore, we construct regular (ast indexed)
+  // occurrences, but get the real declaration from the ast using the index
+  // in the initial occurrence.
+
+  ext-explicate-set(|a): ExtDecl(d) -> ExtDecl(d')
+    with i := <nabl2-get-occurrence-index> d
+       ; t := <nabl2-set-ast-index(|i)> ()
+       ; d' := <nabl2-get-ast-property(|a, "decl")> t
+
+  ext-explicate-set(|a): ExtRef(r) -> ExtDecl(d)
+    with i := <nabl2-get-occurrence-index> r
+       ; t := <nabl2-set-ast-index(|i)> ()
+       ; d := <nabl2-get-ast-property(|a, "decl")> t
+
+
+  ext-get-name: ExtRef(o) -> <nabl2-get-occurrence-name> o
+
+  ext-get-name: ExtDecl(o) -> <nabl2-get-occurrence-name> o

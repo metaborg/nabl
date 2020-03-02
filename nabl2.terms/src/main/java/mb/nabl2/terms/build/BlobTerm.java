@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMultiset;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable
+@Value.Immutable(prehash = false)
 @Serial.Version(value = 42L)
 abstract class BlobTerm extends AbstractTerm implements IBlobTerm {
 

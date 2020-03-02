@@ -5,43 +5,65 @@ imports
   libstrc
 
   libspoofax/core/language
-  
+  libspoofax/resource/path
+
   nabl2/api
 
   signatures/statix/lang/-
-  statix/lang/statics/-
+  statix/lang/analysis
   statix/lang/normalize
+
+  statix/runtime/analysis
 
 rules
 
   generate-aterm:
       (_, _, ast@Module(name, _), path, project-path) -> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
-    with if <nabl2-analysis-has-errors> a then
-           result := None()
+    with filename := <stx--module-path> name
+       ; if <nabl2-analysis-has-errors> a then
+           spec := <empty-spec> // FIXME Change generation to work as well as possible on results with errors
          else
-           ast'     := <normalize(|a)> ast;
-           ext      := <nabl2-get-custom-analysis> a;
-           spec     := <spec-ast-to-aterm(|a)> (ast', ext);
-           filename := <src-gen-file(|"statix/", ".spec.aterm")> name;
-           result   := (filename, spec)
+           spec := <generate-aterm'(|a)> ast
          end
+       ; result := (filename, spec)
+
+  generate-aterm'(|a):
+      ast@Module(_, _) -> spec
+    with ast' := <normalize(|a)> ast
+       ; CustomAnalysis(ext) := <nabl2-get-custom-analysis> a
+       ; spec     := <core-ast-to-spec-aterm(|a)> (ast', ext)
+
+rules
+
+  generate-combined-aterm = generate-aterm; \(filename, ast) -> (filename, spec) with spec := <stx--local-spec-from-spec> ast\
  
 rules
 
-  src-gen-file(|sub-dir, ext): name -> filename
-    with filename := $[[<src-gen-dir(|sub-dir)>]/[name][ext]]
+  core-ast-to-spec-aterm(|a): (ast, ext) -> spec
+    with import* := <collect-all(?Imports(<map(?Import(<id>))>));concat;strip-annos> ast
+       ; edge* := <collect-all(?Labels(<map(qualify-name(|a))>));concat;strip-annos> ast
+       ; data* := [Decl()|<collect-all(?RelDecl(<qualify-name(|a)>, _));strip-annos> ast]
+       ; rule* := <collect-all(?Rule(_, _, _);qualify-names(|a));strip-annos;eliminate-all> ast
+       ; ext' := <qualify-names(|a);strip-annos> ext
+       ; spec := FileSpec(import*, edge*, data*, EOP(), rule*, ext')
 
-  src-gen-dir(|sub-dir): _ -> dirname
-    with dirname := <language-srcgen-dir> sub-dir
+  empty-spec = !FileSpec([], [], [], EOP(), [], [])
 
-rules
+  qualify-names(|a) = bottomup(try(qualify-name(|a)))
 
-  spec-ast-to-aterm(|a): (ast, ext) -> spec
-    with edge* := <collect-all(?Labels(<id>));concat;strip-annos> ast
-       ; data* := [Decl()|<collect-all(?RelDecl(<id>, _));strip-annos> ast]
-       ; rule* := <collect-all(?Rule(_, _, _, _));strip-annos;eliminate-all> ast
-       ; spec := (edge*, data*, EOP(), rule*, ext)
+  qualify-name(|a) = C(get-qname(|a), id)
+  qualify-name(|a) = C(get-qname(|a), id, id)
+  qualify-name(|a) = Label(get-qname(|a))
+  qualify-name(|a) = Occurrence(get-qname(|a), id, id)
+  // FIXME Requires qualified sorts and constructors from the parser
+//qualify-name(|a) = SimpleSort(get-qname(|a))
+//qualify-name(|a) = Op(get-qname(|a), id)
+
+  get-qname(|a): x -> <stx--mk-qualified-name(|qname)> name
+    with d := <nabl2-get-ast-property(|a, "decl")> x
+       ; name := <nabl2-get-occurrence-name> d
+       ; qname := <nabl2-get-property(|a, "qname")> d
 
 rules
 

@@ -1,6 +1,7 @@
 package mb.statix.scopegraph.reference;
 
 import java.io.Serializable;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.usethesource.capsule.Map;
@@ -215,14 +216,20 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
         }
 
         @Override public boolean addAll(IScopeGraph<S, L, D> other) {
-            other.getEdges().forEach((key, otherScopes) -> {
+            for(Entry<? extends Entry<S, L>, ? extends Iterable<S>> entry : other.getEdges().entrySet()) {
+                final Tuple2<S, L> key = Tuple2.of(entry.getKey());
+                final Iterable<S> otherScopes = entry.getValue();
                 final ConsList<S> scopes = edges.getOrDefault(key, ConsList.nil());
-                edges.__put(Tuple2.of(key), scopes.prepend(ConsList.of(otherScopes)));
-            });
-            other.getData().forEach((key, otherDatums) -> {
+                final ConsList<S> mergedScopes = scopes.prepend(ConsList.of(otherScopes));
+                edges.__put(Tuple2.of(key), mergedScopes);
+            }
+            for(Entry<? extends Entry<S, L>, ? extends Iterable<D>> entry : other.getData().entrySet()) {
+                final Tuple2<S, L> key = Tuple2.of(entry.getKey());
+                final Iterable<D> otherDatums = entry.getValue();
                 final ConsList<D> datums = data.getOrDefault(key, ConsList.nil());
-                data.__put(Tuple2.of(key), datums.prepend(ConsList.of(otherDatums)));
-            });
+                final ConsList<D> mergedDatums = datums.prepend(ConsList.of(otherDatums));
+                data.__put(Tuple2.of(key), mergedDatums);
+            }
             return true;
         }
 

@@ -4,12 +4,33 @@ imports
 
   libstratego-gpp
 
+  statix/runtime/-
   pp/statix/runtime/-
+  signatures/statix/runtime/-
+
+signature
+  constructors
+    Analysis : ScopeGraph -> Analysis // duplicate from statix/test/Result
+
+rules
+
+  parenthesize-Statix = fail
+
+  pp-Statix-string(pp) =
+    try(parenthesize-Statix)
+    ; pp
+    ; !V([], <id>)
+    ; box2text-string(|120)
 
 rules
 
   prettyprint-Statix-Int =
     ![S(<is-int;int-to-string>)]
 
-  prettyprint-Statix-SolverResult =
-    ![S(<write-to-string>)]
+  prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
+    where <stx--is-analysis> a
+    with a' := Analysis(<stx--debug-scopegraph> a)
+
+  stx-prettyprint-term =
+    where(is-Statix-Term)
+  ; prettyprint-Statix-Term

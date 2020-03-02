@@ -1,17 +1,16 @@
 package mb.statix.generator.strategy;
 
-import java.util.stream.Stream;
-
-import org.metaborg.util.functions.Function0;
-
 import mb.statix.generator.EitherSearchState;
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import org.metaborg.util.functions.Function0;
 
-final class ConcatAlt<I extends SearchState, O1 extends SearchState, O2 extends SearchState>
+import java.util.stream.Stream;
+
+public final class ConcatAlt<I extends SearchState, O1 extends SearchState, O2 extends SearchState>
         extends SearchStrategy<I, EitherSearchState<O1, O2>> {
     private final SearchStrategy<I, O2> s2;
     private final SearchStrategy<I, O1> s1;

@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.statix.generator.SearchState;
 
-public class SearchNodes<O extends SearchState> implements SearchElement {
+public class SearchNodes<O> implements SearchElement {
 
     private final Stream<SearchNode<O>> nodes;
     private final Function0<String> desc;
@@ -53,13 +53,18 @@ public class SearchNodes<O extends SearchState> implements SearchElement {
         return new SearchNodes<>(Stream.empty(), () -> error, parent);
     }
 
-    @SafeVarargs public static <O extends SearchState> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
+    @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
             SearchNode<O>... nodes) {
-        return new SearchNodes<>(ImmutableList.copyOf(nodes).stream(), error, parent);
+        return of(parent, error, ImmutableList.copyOf(nodes).stream());
     }
 
-    public static <O extends SearchState> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
-            Stream<SearchNode<O>> nodes) {
+    public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
+            Iterable<SearchNode<O>> nodes) {
+        return of(parent, error, ImmutableList.copyOf(nodes).stream());
+    }
+
+    public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
+                                                            Stream<SearchNode<O>> nodes) {
         return new SearchNodes<>(nodes, error, parent);
     }
 

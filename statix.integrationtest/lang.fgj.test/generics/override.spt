@@ -1,0 +1,35 @@
+module generics-override
+
+language FGJ
+
+fixture [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends A<> {
+    B() { super(); }
+  }
+  [[...]]
+]]
+
+test override with same params [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <X extends Object<>> Object<> m(X a) { return new Object<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <X extends Object<>> Object<> m(X a) { return new Object<>(); }
+  }
+]] analysis succeeds
+
+test override with same params [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <X extends Object<>> Object<> m(X a) { return new Object<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <Y extends Object<>> Object<> m(Y a) { return new Object<>(); }
+  }
+]] analysis succeeds

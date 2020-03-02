@@ -129,9 +129,7 @@ test resolve with import cycle [[
 
 test import into nested module with same name [[
   resolve [[x]] via y and y in y { y { [[x]] } }
-]] 1 errors
-   error like "ambiguous"
-   resolve #1 to #2
+]] resolve #1 to #2
 
 test do not resolve with self as import [[
   resolve [[x]] via itself to [[x]] { x }

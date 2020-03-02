@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
@@ -90,6 +91,11 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
+        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+    }
+
+    @Override public CResolveQuery apply(IRenaming subst) {
         return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
                 subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
     }

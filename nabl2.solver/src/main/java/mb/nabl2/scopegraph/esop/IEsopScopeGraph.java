@@ -1,6 +1,10 @@
 package mb.nabl2.scopegraph.esop;
 
-import org.metaborg.util.functions.PartialFunction1;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.annotations.Beta;
 
@@ -9,7 +13,7 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.IScopeGraph;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
-import mb.nabl2.util.collections.IRelation3;
+import mb.nabl2.util.Tuple2;
 
 @Beta
 public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
@@ -31,18 +35,14 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
 
     boolean isOpen(S scope, L label);
 
-    IRelation3<S, L, V> incompleteDirectEdges();
+    Collection<? extends Map.Entry<Tuple2<S, L>, V>> incompleteDirectEdges();
 
-    IRelation3<S, L, V> incompleteImportEdges();
+    Collection<? extends Map.Entry<Tuple2<S, L>, V>> incompleteImportEdges();
 
     boolean isComplete();
 
     interface Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, V>
             extends IEsopScopeGraph<S, L, O, V>, IScopeGraph.Immutable<S, L, O> {
-
-        @Override IRelation3.Immutable<S, L, V> incompleteDirectEdges();
-
-        @Override IRelation3.Immutable<S, L, V> incompleteImportEdges();
 
         IEsopScopeGraph.Transient<S, L, O, V> melt();
 
@@ -57,17 +57,23 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
 
         boolean addDirectEdge(S sourceScope, L label, S targetScope);
 
-        boolean addIncompleteDirectEdge(S scope, L label, V var);
+        boolean addIncompleteDirectEdge(S scope, L label, V var, Function1<V, ? extends Iterable<? extends V>> norm);
 
         boolean addExportEdge(O decl, L label, S scope);
 
         boolean addImportEdge(S scope, L label, O ref);
 
-        boolean addIncompleteImportEdge(S scope, L label, V var);
+        boolean addIncompleteImportEdge(S scope, L label, V var, Function1<V, ? extends Iterable<? extends V>> norm);
 
-        boolean addAll(IEsopScopeGraph<S, L, O, V> other);
+        Iterable<V> incompleteVars();
 
-        boolean reduce(PartialFunction1<V, S> fs, PartialFunction1<V, O> fo);
+        boolean addAll(IEsopScopeGraph<S, L, O, V> other, Function1<V, ? extends Iterable<? extends V>> norm);
+
+        List<CriticalEdge> reduceAll(Function1<V, ? extends Iterable<? extends V>> norm, Function1<V, S> fs,
+                Function1<V, O> fo);
+
+        List<CriticalEdge> reduce(Iterable<? extends V> vs, Function1<V, ? extends Iterable<? extends V>> norm,
+                Function1<V, S> fs, Function1<V, O> fo);
 
         // -----------------------
 

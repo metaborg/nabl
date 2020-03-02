@@ -7,15 +7,19 @@ module statix/lang/statics/desugar
 imports
 
   signatures/statix/lang/-
+
+  statix/lang/util
   statix/lang/statics/-
+
+  statix/runtime/constraints
 
 rules
 
   desugar-all =
     desugar-rules;
-    desugar-rule-vars;
     desugar-decl-shorthands;
     desugar-ref-shorthands;
+    desugar-regexes;
     desugar-queries;
     desugar-lambdas;
     desugar-tuples
@@ -23,12 +27,7 @@ rules
 rules
 
   desugar-rules = bottomup(try(desugar-rule))
-  desugar-rule: AxiomRule(lbl, h) -> Rule(lbl, h, NoLocalVars(), CTrue())
-
-rules
-
-  desugar-rule-vars = bottomup(try(desugar-rule-var))
-  desugar-rule-var: NoLocalVars() -> []
+  desugar-rule: AxiomRule(lbl, h) -> Rule(lbl, h, CTrue())
 
 rules
 
@@ -37,33 +36,42 @@ rules
   desugar-decl-shorthand: c@CTellDecl(st, dt) -> CTellRel(decl, [dt], st)
     with decl := <with-origin(|c)> Decl()
 
-  desugar-decl-shorthand: c@CTellDeclWithRel(st, dt, rel, rt) -> CConj(c1, c2)
+  desugar-decl-shorthand: c@CTellDeclWithRels(st, dt, rts) -> <stx--conj(|c1)> c2*
     with decl := <with-origin(|c)> Decl();
-         c1 := <with-origin(|c)> CTellRel(decl, [dt], st);
-         c2 := <with-origin(|c)> CTellRel(rel, [dt,rt], st)
+         c1   := <with-origin(|c)> CTellRel(decl, [dt], st);
+         c2*  := <map(\ (rel, rt) -> <with-origin(|c)> CTellRel(rel, [dt, rt], st) \)> rts
+
+
 
 rules
 
   desugar-ref-shorthands = topdown(try(desugar-ref-shorthand))
 
   desugar-ref-shorthand: c@CResolveRef(rt, st, pst, msg) -> c'
-    with rel        := <with-origin(|c)> Decl();
-         match      := <with-origin(|rt)> ResolveMatch(rt);
-         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
-         filter     := <with-origin(|rt)> Filter(match, lmatch);
-         ord        := <with-origin(|rt)> ResolveLt(rt);
-         lord       := <with-origin(|rt)> LTrue();
-         min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(rel, filter, min, st, pst, msg)
+    with rel    := <with-origin(|c)> Decl();
+         match  := <with-origin(|rt)> ResolveMatch(rt);
+         lmatch := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter := <with-origin(|rt)> Filter(match, lmatch);
+         ord    := <with-origin(|rt)> ResolveLt(rt);
+         lord   := <with-origin(|rt)> LTrue();
+         min    := <with-origin(|rt)> Min(ord, lord);
+         c'     := CResolveQuery(rel, filter, min, st, pst, msg)
 
   desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst, msg) -> c'
-    with match      := <with-origin(|rt)> ResolveMatch(rt);
-         lmatch     := <with-origin(|rt)> OccurrenceMatch(rt);
-         filter     := <with-origin(|rt)> Filter(match, lmatch);
-         ord        := <with-origin(|rt)> ResolveLt(rt);
-         lord       := <with-origin(|rt)> LTrue();
-         min        := <with-origin(|rt)> Min(ord, lord);
-         c'         := CResolveQuery(rel, filter, min, st, pst, msg)
+    with match  := <with-origin(|rt)> ResolveMatch(rt);
+         lmatch := <with-origin(|rt)> OccurrenceMatch(rt);
+         filter := <with-origin(|rt)> Filter(match, lmatch);
+         ord    := <with-origin(|rt)> ResolveLt(rt);
+         lord   := <with-origin(|rt)> LTrue();
+         min    := <with-origin(|rt)> Min(ord, lord);
+         c'     := CResolveQuery(rel, filter, min, st, pst, msg)
+
+rules
+
+  desugar-regexes = bottomup(try(desugar-regex))
+
+  desugar-regex: ZeroOrOne(re) -> Or(Epsilon(), re)
+  desugar-regex: OneOrMore(re) -> Concat(re, Closure(re))
 
 rules
 
@@ -86,7 +94,7 @@ rules
 rules
 
   desugar-lambdas = topdown(try(desugar-lambda))
-  desugar-lambda: LLam(ts) -> LLam(ts, [], CTrue())
+  desugar-lambda: LLam(ts) -> LLam(ts, CTrue())
 
 rules
 

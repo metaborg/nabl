@@ -49,6 +49,10 @@ signature
       (_, snd) -> snd
     }
 
+    listHead: list(()) -> () {
+      [t|_] -> t
+    }
+
 rules
 
   init.

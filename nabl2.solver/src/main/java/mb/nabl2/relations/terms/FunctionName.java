@@ -43,6 +43,10 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
             return cases.caseNamed(getName());
         }
 
+        @Override public <T, E extends Throwable> T matchOrThrow(IFunctionName.CheckedCases<T, E> cases) throws E {
+            return cases.caseNamed(getName());
+        }
+
         // IApplTerm implementation
 
         @Override protected IApplTerm check() {
@@ -101,6 +105,10 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         // IFunctionName implementation
 
         @Override public <T> T match(IFunctionName.Cases<T> cases) {
+            return cases.caseExt(getName());
+        }
+
+        @Override public <T, E extends Throwable> T matchOrThrow(IFunctionName.CheckedCases<T, E> cases) throws E {
             return cases.caseExt(getName());
         }
 

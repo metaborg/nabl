@@ -1,17 +1,10 @@
-/.cache
-/bin
-/src-gen
-/target
+## NOTE: .gitignore of repository root also applies
+
 /.polyglot.metaborg.yaml
-
-/.classpath
-/.project
-/.settings
-
 *.constraints
 *.scope-graph
 *.name-resolution
 *.unifier
 *.symbolic
-
 *.stxresult
+META-INF/

@@ -214,3 +214,103 @@ test relations have multiset behavior [[
       resolve Var
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test resolve declaration added using occurrence short-hand notation succeeds [[
+  resolve {s}
+    new s, s -> Var{"x"@-},
+    Var{"x"@-} in s |-> [(_, _)]
+  signature
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* min $ < P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test resolve declaration added using occurrence + relation short-hand notation succeeds [[
+  resolve {s}
+    new s, s -> Var{"x"@-} with r 8,
+    Var{"x"@-} in s |-> [(_, _)]
+  signature
+    relations
+      r : occurrence -> int
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* min $ < P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test query relation added using occurrence + relation short-hand notation succeeds [[
+  resolve {s}
+    new s, s -> Var{"x"@-} with r 8,
+    r of Var{"x"@-} in s |-> [(_, (_, 8))]
+  signature
+    relations
+      r : occurrence -> int
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* min $ < P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test query relation added using occurrence + multiple relations short-hand notation succeeds [[
+  resolve {s}
+    new s, s -> Var{"x"@-} with r 8 and q "five",
+    r of Var{"x"@-} in s |-> [(_, (_, 8))],
+    q of Var{"x"@-} in s |-> [(_, (_, "five"))]
+  signature
+    relations
+      r : occurrence -> int
+      q : occurrence -> string
+    namespaces
+      Var : string
+    name-resolution
+      labels P
+      resolve Var filter P* min $ < P
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test partial order is well-behaved (1) [[
+  resolve {s}
+    new s,
+    !r[] in s,
+    query r min $ < P, $ < Q in s |-> [_]
+  signature
+    name-resolution
+      labels P Q
+    relations
+      r :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test partial order is well-behaved (2) [[
+  resolve {s}
+    new s,
+    !r[] in s,
+    query r min $ < P, $ < Q, P < Q in s |-> [_]
+  signature
+    name-resolution
+      labels P Q
+    relations
+      r :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test partial order is well-behaved (3) [[
+  resolve {s}
+    new s,
+    !r[] in s,
+    query r min $ < P, $ < Q, P < R, Q < R in s |-> [_]
+  signature
+    name-resolution
+      labels P Q R
+    relations
+      r :
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+

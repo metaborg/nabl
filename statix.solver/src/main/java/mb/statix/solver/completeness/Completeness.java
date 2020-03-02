@@ -8,7 +8,7 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.collections.MultiSet;
 import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.terms.Scope;
@@ -24,7 +24,7 @@ public abstract class Completeness implements ICompleteness {
         return incomplete().isEmpty();
     }
 
-    @Override public boolean isComplete(Scope scope, ITerm label, IUnifier unifier) {
+    @Override public boolean isComplete(Scope scope, ITerm label, IUniDisunifier unifier) {
         if(!label.isGround()) {
             throw new IllegalArgumentException("Label must be ground");
         }
@@ -33,7 +33,7 @@ public abstract class Completeness implements ICompleteness {
                 .orElse(true);
     }
 
-    protected static Optional<ITerm> getVarOrScope(ITerm scope, IUnifier unifier) {
+    protected static Optional<ITerm> getVarOrScope(ITerm scope, IUniDisunifier unifier) {
         return CompletenessUtil.scopeOrVar().match(scope, unifier);
     }
 
@@ -77,7 +77,7 @@ public abstract class Completeness implements ICompleteness {
             return incomplete;
         }
 
-        @Override public void add(IConstraint constraint, IUnifier unifier) {
+        @Override public void add(IConstraint constraint, IUniDisunifier unifier) {
             CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
                 getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                     final MultiSet.Transient<ITerm> labels =
@@ -88,7 +88,7 @@ public abstract class Completeness implements ICompleteness {
             });
         }
 
-        @Override public Set<CriticalEdge> remove(IConstraint constraint, IUnifier unifier) {
+        @Override public Set<CriticalEdge> remove(IConstraint constraint, IUniDisunifier unifier) {
             final Set.Transient<CriticalEdge> removedEdges = Set.Transient.of();
             CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
                 getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
@@ -107,7 +107,7 @@ public abstract class Completeness implements ICompleteness {
             return removedEdges.freeze();
         }
 
-        @Override public void update(ITermVar var, IUnifier unifier) {
+        @Override public void update(ITermVar var, IUniDisunifier unifier) {
             final MultiSet<ITerm> updatedLabels = incomplete.__remove(var);
             if(updatedLabels != null) {
                 getVarOrScope(var, unifier).ifPresent(scopeOrVar -> {

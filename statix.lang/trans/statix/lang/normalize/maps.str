@@ -10,6 +10,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/statics/-
+  statix/lang/util
   statix/lang/normalize/util
 
 rules
@@ -19,7 +20,7 @@ rules
   normalize-mapping-constraints(|a):
       Module(x, section*){a*} -> Module(x, section''*){a*}
     with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
-    with (section'*, maps) := <collect-map(replace-map(|a))> section*;
+    with (section'*, maps) := <collectbu-map(replace-map(|a))> section*;
          rule* := <map(map-to-rules(|a)); concat> maps;
          section''* := <conc> (section'*, <rules-to-sections> rule*)
 
@@ -37,11 +38,11 @@ rules
          base-rule := <cmap-base-rule(|ty)> (x, y, ty_lift*);
          elem-rule := <cmap-elem-rule(|ty)> (x, y, ty_lift*)
 
-  cmap-base-rule(|ty): (x, y, ty_lift*) -> Rule(NoLabel(), h, [], CTrue())
+  cmap-base-rule(|ty): (x, y, ty_lift*) -> Rule(NoName(), h, CTrue())
     with ps := <map(lift-base)> ty_lift*;
          h  := C(x, ps)
 
-  cmap-elem-rule(|ty): (x, y, ty_lift*) -> Rule(NoLabel(), h, [], CConj(call, rec))
+  cmap-elem-rule(|ty): (x, y, ty_lift*) -> Rule(NoName(), h, CConj(call, rec))
     with ps   := <lift-head-elems(|"x")> ty_lift*;
          call := C(y, <lift-call-elems(|"x")> ty_lift*, NoMessage());
          rec  := C(x, <lift-rec-elems(|"x")> ty_lift*, NoMessage());
@@ -61,12 +62,12 @@ rules
          base-rule := <fmap-base-rule(|ty, elem_outty)> (x, y, in-ty_lift*, out-ty_lift);
          elem-rule := <fmap-elem-rule(|ty, elem_outty)> (x, y, in-ty_lift*, out-ty_lift)
 
-  fmap-base-rule(|ty, elem_outty): (x, y, in-ty_lift*, out-ty_lift) -> Rule(NoLabel(), h, [], CTrue())
+  fmap-base-rule(|ty, elem_outty): (x, y, in-ty_lift*, out-ty_lift) -> Rule(NoName(), h, CTrue())
     with inps := <map(lift-base)> in-ty_lift*;
          outp := <lift-base> out-ty_lift;
          h    := <norm-set-ast-type(|ty)> F(x, inps, outp)
 
-  fmap-elem-rule(|ty, elem_outty): (x, y, in-ty_lift*, out-ty_lift) -> Rule(NoLabel(), h, [], CConj(call, rec))
+  fmap-elem-rule(|ty, elem_outty): (x, y, in-ty_lift*, out-ty_lift) -> Rule(NoName(), h, CConj(call, rec))
     with FUN(_, rec_outty) := ty;
          inps     := <lift-head-elems(|"x")> in-ty_lift*;
          outp     := <lift-elem-head(|"y")> (1, out-ty_lift);

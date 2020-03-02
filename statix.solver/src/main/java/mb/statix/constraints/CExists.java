@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -58,6 +59,10 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public CExists apply(ISubstitution.Immutable subst) {
         return new CExists(vars, constraint.apply(subst.removeAll(vars)), cause);
+    }
+
+    @Override public CExists apply(IRenaming subst) {
+        return new CExists(vars, constraint.apply(subst), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {

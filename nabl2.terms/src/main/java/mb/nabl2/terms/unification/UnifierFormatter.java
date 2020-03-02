@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.TermFormatter;
 
 public class UnifierFormatter implements TermFormatter {

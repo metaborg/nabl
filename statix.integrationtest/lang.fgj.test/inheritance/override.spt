@@ -1,0 +1,68 @@
+module inheritance-override
+
+language FGJ
+
+fixture [[
+  class A<> extends Object<> {
+    A() { super(); }
+  }
+  class B<> extends A<> {
+    B() { super(); }
+  }
+  [[...]]
+]]
+
+test override with same params [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <> Object<> m(A<> a) { return new Object<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <> Object<> m(A<> a) { return new Object<>(); }
+  }
+]] analysis succeeds
+
+test override with contravariant params [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <> Object<> m(B<> b) { return new Object<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <> Object<> m(A<> a) { return new Object<>(); }
+  }
+]] analysis fails
+
+test override with covariant params [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <> Object<> m(A<> a) { return new Object<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <> Object<> m(B<> b) { return new Object<>(); }
+  }
+]] analysis fails
+
+test override with same return [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <> A<> m() { return new A<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <> A<> m() { return new A<>(); }
+  }
+]] analysis succeeds
+
+test override with contravariant return [[
+  class T1<> extends Object<> {
+    T1() { super(); }
+    <> B<> m() { return new B<>(); }
+  }
+  class T2<> extends T1<> {
+    T2() { super(); }
+    <> A<> m() { return new A<>(); }
+  }
+]] analysis fails

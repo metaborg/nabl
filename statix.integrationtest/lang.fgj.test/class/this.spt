@@ -1,0 +1,17 @@
+module class-this
+
+language FGJ
+
+test return this [[
+  let
+    class A<> extends Object<> {
+      A() {
+        super();
+      }
+      <> A<> self() {
+        return this;
+      }
+    }
+  in new A<>().<>self():A<>
+]] analysis succeeds
+

@@ -9,6 +9,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -33,7 +34,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
@@ -89,7 +90,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ///////////////////////////////////////
 
     protected void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rulesWithEquivalentPatterns();
+        final ListMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rules().getAllEquivalentRules();
         if(!rulesWithEquivalentPatterns.isEmpty()) {
             logger.error("+--------------------------------------+");
             logger.error("| FOUND RULES WITH EQUIVALENT PATTERNS |");
@@ -116,8 +117,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected void addMessage(IMessage message, IConstraint constraint, IUnifier unifier, Collection<ITerm> errors,
-            Collection<ITerm> warnings, Collection<ITerm> notes) {
+    protected void addMessage(IMessage message, IConstraint constraint, IUniDisunifier unifier,
+            Collection<ITerm> errors, Collection<ITerm> warnings, Collection<ITerm> notes) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
@@ -133,15 +134,13 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             originTerm = B.EMPTY_TUPLE;
         }
 
-        final StringBuilder messageText = new StringBuilder();
-        messageText.append(cleanupString(message.toString(formatter)));
-        for(String c : trace) {
-            messageText.append("<br>").append("\n");
-            messageText.append("&gt;&nbsp;");
-            messageText.append(cleanupString(c));
-        }
+        // add constraint message
+        trace.addFirst(message.toString(formatter));
 
-        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText.toString()));
+        final String messageText = trace.stream().map(this::cleanupString).filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
+
+        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText));
         switch(message.kind()) {
             case ERROR:
                 errors.add(messageTerm);
@@ -156,7 +155,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     }
 
-    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUnifier unifier) {
+    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
         final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
             onArith -> Stream.empty(),
@@ -181,7 +180,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
-    private Optional<ITerm> getOriginTerm(ITerm term, IUnifier unifier) {
+    private Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
         // @formatter:off
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())

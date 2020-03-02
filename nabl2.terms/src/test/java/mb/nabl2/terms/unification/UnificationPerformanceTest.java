@@ -11,6 +11,7 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 public class UnificationPerformanceTest {
 

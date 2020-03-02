@@ -1,0 +1,21 @@
+module statix/lang/statics/module-name
+
+imports
+
+  libspoofax/resource/path
+
+  signatures/statix/lang/-
+  statix/lang/util
+
+rules
+
+  check-module-name'(|path): Module(name, _) -> (name, msg)
+    with rel-path := <current-language-relative-source-or-include-path> path;
+         rel-name := <remove-extension> rel-path
+    where <not(raw-eq)> (rel-name, name)
+    with msg := $[module [name] does not agree with relative filename [rel-name]]
+
+  check-module-ext'(|path): m@Module(_, _) -> (m, msg)
+    with ext := <get-extension> path
+    where <not(raw-eq)> (ext, "stx")
+    with msg := $[module extension [ext] should be .stx]

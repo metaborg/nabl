@@ -1,11 +1,13 @@
 package mb.nabl2.solver.messages;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
 
-import io.usethesource.capsule.Set;
+import com.google.common.collect.ImmutableList;
+
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
@@ -16,31 +18,21 @@ public abstract class Messages implements IMessages {
     protected Messages() {
     }
 
-    protected abstract Set<IMessageInfo> messages();
-
-    @Override public Set<IMessageInfo> getAll() {
-        return messages();
-    }
-
     public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final Set.Immutable<IMessageInfo> messages;
+        private final ImmutableList<IMessageInfo> messages;
 
-        private Immutable(Set.Immutable<IMessageInfo> messages) {
+        private Immutable(ImmutableList<IMessageInfo> messages) {
             this.messages = messages;
         }
 
-        @Override protected Set<IMessageInfo> messages() {
-            return messages;
-        }
-
-        @Override public Set.Immutable<IMessageInfo> getAll() {
+        @Override public List<IMessageInfo> getAll() {
             return messages;
         }
 
         @Override public Messages.Transient melt() {
-            return new Messages.Transient(messages.asTransient());
+            return new Messages.Transient(ImmutableList.<IMessageInfo>builder().addAll(messages));
         }
 
         @Override public int hashCode() {
@@ -64,58 +56,58 @@ public abstract class Messages implements IMessages {
         }
 
         public static Messages.Immutable of() {
-            return new Messages.Immutable(Set.Immutable.of());
+            return new Messages.Immutable(ImmutableList.of());
+        }
+
+        @Override public String toString() {
+            return messages.toString();
         }
 
     }
 
     public static class Transient extends Messages implements IMessages.Transient {
 
-        private final Set.Transient<IMessageInfo> messages;
+        private final ImmutableList.Builder<IMessageInfo> messages;
 
-        private Transient(Set.Transient<IMessageInfo> messages) {
+        private Transient(ImmutableList.Builder<IMessageInfo> messages) {
             this.messages = messages;
         }
 
-        @Override protected Set<IMessageInfo> messages() {
-            return messages;
-        }
-
         @Override public boolean add(IMessageInfo message) {
-            return messages.__insert(message);
+            messages.add(message);
+            return true;
         }
 
         @Override public boolean addAll(Iterable<? extends IMessageInfo> messages) {
             boolean change = false;
             for(IMessageInfo message : messages) {
-                change |= this.messages.__insert(message);
+                this.messages.add(message);
+                change |= true;
             }
             return change;
         }
 
-        @Override public boolean addAll(IMessages other) {
-            return messages.__insertAll(other.getAll());
+        @Override public boolean addAll(IMessages.Immutable other) {
+            messages.addAll(other.getAll());
+            return !other.getAll().isEmpty();
         }
 
         @Override public Messages.Immutable freeze() {
-            return new Messages.Immutable(messages.freeze());
+            return new Messages.Immutable(messages.build());
         }
 
         public static Messages.Transient of() {
-            return new Messages.Transient(Set.Transient.of());
+            return new Messages.Transient(ImmutableList.builder());
         }
 
     }
 
     public static java.util.Set<IMessageInfo> unsolvedErrors(Iterable<? extends IConstraint> constraints) {
         return Iterables2.stream(constraints).map(c -> {
-            IMessageContent content = MessageContent.builder().append("Unsolved: ").append(c.pp()).build();
-            return c.getMessageInfo().withDefaultContent(content);
+            final IMessageContent content = MessageContent.builder().append("Unsolved: ")
+                    .append(c.getMessageInfo().getContent().withDefault(c.pp())).build();
+            return c.getMessageInfo().withContent(content);
         }).collect(Collectors.toSet());
-    }
-
-    @Override public String toString() {
-        return messages().toString();
     }
 
 }

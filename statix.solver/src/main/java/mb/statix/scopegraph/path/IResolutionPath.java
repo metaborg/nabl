@@ -6,6 +6,8 @@ public interface IResolutionPath<S, L, D> extends IPath<S, L> {
 
     L getLabel();
 
+    int getIndex();
+
     D getDatum();
 
 }
