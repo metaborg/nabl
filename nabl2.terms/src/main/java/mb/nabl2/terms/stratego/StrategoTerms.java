@@ -164,7 +164,7 @@ public class StrategoTerms {
             b.put(TermIndex.class, termIndex);
         });
 
-        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(term.getAnnotations()));
+        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(term.getAnnotations().getSubterms()));
 
         return b.build();
     }

@@ -32,20 +32,12 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         return false;
     }
 
-    @Override public Iterator<IStrategoTerm> iterator() {
-        return new EmptyIterator<>();
-    }
-
     @Override public int getSubtermCount() {
         return 0;
     }
 
     @Override public IStrategoTerm getSubterm(int index) {
         throw new IndexOutOfBoundsException();
-    }
-
-    @Override public IStrategoTerm[] getAllSubterms() {
-        return new IStrategoTerm[0];
     }
 
     @Override
