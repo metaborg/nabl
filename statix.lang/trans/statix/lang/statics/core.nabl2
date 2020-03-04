@@ -4,6 +4,8 @@ imports
 
   signatures/statix/lang/-
 
+  statix/lang/statics/-
+
 signature
 
   sorts

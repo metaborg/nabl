@@ -7,6 +7,7 @@ imports
   libspoofax/sdf/pp
   libspoofax/editor/refactoring/-
   pp/statix/lang/-
+  signatures/statix/lang/-
 
   nabl2/runtime/pp
   statix/runtime/pp
