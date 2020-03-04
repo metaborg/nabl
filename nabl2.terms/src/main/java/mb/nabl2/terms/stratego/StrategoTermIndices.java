@@ -130,7 +130,7 @@ public class StrategoTermIndices {
     // indices of terms
 
     public static Optional<TermIndex> get(IStrategoTerm term) {
-        for(IStrategoTerm anno : term.getAnnotations().getSubterms()) {
+        for(IStrategoTerm anno : term.getAnnotations()) {
             Optional<TermIndex> index = match(anno);
             if(index.isPresent()) {
                 return index;
@@ -167,8 +167,7 @@ public class StrategoTermIndices {
         }
         IStrategoTerm resourceTerm = term.getSubterm(0);
         IStrategoTerm idTerm = term.getSubterm(1);
-            return Optional.empty();
-        }
+
         final TermIndex index1 = ImmutableTermIndex.of(TermUtils.toJavaString(resourceTerm), TermUtils.toJavaInt(idTerm));
         final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
         return Optional.of(index2);

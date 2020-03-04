@@ -41,6 +41,11 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
     }
 
     @Override
+    public IStrategoTerm[] getAllSubterms() {
+        return new IStrategoTerm[0];
+    }
+
+    @Override
     public List<IStrategoTerm> getSubterms() {
         return Collections.emptyList();
     }

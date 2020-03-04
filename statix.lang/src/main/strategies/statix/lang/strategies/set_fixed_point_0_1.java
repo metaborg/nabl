@@ -79,14 +79,14 @@ public class set_fixed_point_0_1 extends Strategy {
             if(!TermUtils.isList(components) || components.getSubtermCount() == 0) {
                 throw new IllegalArgumentException("Expected equations, got " + components);
             }
-            return new Union(Streams.stream(components.getSubterms()).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
+            return new Union(Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
         } else if(TermUtils.isAppl(term, "Intersection", 1)) {
             final IStrategoTerm components = term.getSubterm(0);
             if(!TermUtils.isList(components) || components.getSubtermCount() == 0) {
                 throw new IllegalArgumentException("Expected equations, got " + components);
             }
             return new Intersection(
-                    Streams.stream(components.getSubterms()).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
+                    Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
         } else {
             return new Var(term);
         }
