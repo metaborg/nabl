@@ -10,6 +10,7 @@ import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -30,16 +31,19 @@ class PatternAs extends Pattern {
     }
 
     public PatternAs(ITermVar var, Pattern pattern) {
+        super(ImmutableClassToInstanceMap.of());
         this.var = new PatternVar(var);
         this.pattern = pattern;
     }
 
     PatternAs(PatternVar var, Pattern pattern) {
+        super(ImmutableClassToInstanceMap.of());
         this.var = var;
         this.pattern = pattern;
     }
 
     PatternAs(Pattern pattern) {
+        super(ImmutableClassToInstanceMap.of());
         this.var = new PatternVar();
         this.pattern = pattern;
     }
