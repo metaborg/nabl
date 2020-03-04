@@ -4,12 +4,11 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.spoofax.interpreter.core.Tools;
-import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.util.TermUtils;
 
 public class StrategoTermIndices {
 
@@ -163,15 +162,16 @@ public class StrategoTermIndices {
     }
 
     public static Optional<TermIndex> match(IStrategoTerm term) {
-        if(!(Tools.isTermAppl(term) && Tools.hasConstructor((IStrategoAppl) term, OP, ARITY))) {
+        if(!TermUtils.isAppl(term, OP, ARITY)) {
             return Optional.empty();
         }
         IStrategoTerm resourceTerm = term.getSubterm(0);
         IStrategoTerm idTerm = term.getSubterm(1);
-        if(!(Tools.isTermString(resourceTerm) && Tools.isTermInt(idTerm))) {
+        if(!(TermUtils.isString(resourceTerm) && TermUtils.isInt(idTerm))) {
             return Optional.empty();
         }
-        final TermIndex index1 = ImmutableTermIndex.of(Tools.asJavaString(resourceTerm), Tools.asJavaInt(idTerm));
+        final TermIndex index1 =
+                ImmutableTermIndex.of(TermUtils.toJavaString(resourceTerm), TermUtils.toJavaInt(idTerm));
         final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
         return Optional.of(index2);
     }
