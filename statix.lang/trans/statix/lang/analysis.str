@@ -86,7 +86,7 @@ rules // Analysis
          <nabl2-custom-analysis-info-msg(|"Facts: ")> facts;
          <pp-TypeCs;debug> facts;
          <nabl2-custom-analysis-info-msg(|"Goals: ")> goals;
-         <pp-TypeCs;debug> goals;
+         <pp-TypeCs;debug> goals
          // TODO Reject overlapping injections (exactly the same is fine)
          //      - No two list injections
          //      - No two tuple injections with the same arity
