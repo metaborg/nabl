@@ -1,7 +1,9 @@
 package mb.nabl2.terms.stratego;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 import org.spoofax.interpreter.terms.IStrategoList;
@@ -30,10 +32,6 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         return false;
     }
 
-    @Override public Iterator<IStrategoTerm> iterator() {
-        return new EmptyIterator<>();
-    }
-
     @Override public int getSubtermCount() {
         return 0;
     }
@@ -42,8 +40,14 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         throw new IndexOutOfBoundsException();
     }
 
-    @Override public IStrategoTerm[] getAllSubterms() {
+    @Override
+    public IStrategoTerm[] getAllSubterms() {
         return new IStrategoTerm[0];
+    }
+
+    @Override
+    public List<IStrategoTerm> getSubterms() {
+        return Collections.emptyList();
     }
 
     @Override public int getTermType() {

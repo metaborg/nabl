@@ -53,7 +53,8 @@ language:
     placeholder:
       prefix: "$"
   stratego:
-    format: ctree
+    build: batch # incremental
+    format: ctree # jar
     args:
     - -la
     - stratego-lib

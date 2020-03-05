@@ -6,14 +6,20 @@ imports
 
   libspoofax/core/language
   libspoofax/resource/path
+  libspoofax/term/annotation
 
   nabl2/api
 
   signatures/statix/lang/-
+  pp/statix/lang/-
   statix/lang/analysis
   statix/lang/normalize
 
   statix/runtime/analysis
+
+signature
+  constructors
+    OfSort : SortRef -> Annotation
 
 rules
 
@@ -41,12 +47,20 @@ rules
 rules
 
   core-ast-to-spec-aterm(|a): (ast, ext) -> spec
-    with import* := <collect-all(?Imports(<map(?Import(<id>))>));concat;strip-annos> ast
-       ; edge* := <collect-all(?Labels(<map(qualify-name(|a))>));concat;strip-annos> ast
-       ; data* := [Decl()|<collect-all(?RelDecl(<qualify-name(|a)>, _));strip-annos> ast]
-       ; rule* := <collect-all(?Rule(_, _, _);qualify-names(|a));strip-annos;eliminate-all> ast
-       ; ext' := <qualify-names(|a);strip-annos> ext
+    with import* := <collect-all(?Imports(<map(?Import(<id>))>));concat;remove-term-annos> ast
+       ; edge* := <collect-all(?Labels(<map(qualify-name(|a))>));concat;remove-term-annos> ast
+       ; data* := [Decl()|<collect-all(?RelDecl(<qualify-name(|a)>, _));remove-term-annos> ast]
+       ; rule* := <collect-all(?Rule(_, _, _);qualify-names(|a));remove-term-annos;eliminate-all> ast
+       ; ext' := <qualify-names(|a);remove-term-annos> ext
        ; spec := FileSpec(import*, edge*, data*, EOP(), rule*, ext')
+
+  remove-term-annos =
+    bottomup(
+      try( (is-Statix-Var + is-Statix-Term + is-Statix-Int + is-Statix-Str)
+         ; add-annotation(|OfSort(<nabl2-get-anno-type>))
+         )
+    ; remove-annotations(not(?OfSort(_)))
+    )
 
   empty-spec = !FileSpec([], [], [], EOP(), [], [])
 

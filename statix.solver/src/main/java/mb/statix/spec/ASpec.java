@@ -2,17 +2,14 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.regexp.IAlphabet;

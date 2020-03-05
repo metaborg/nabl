@@ -2,15 +2,17 @@ module statix/api
 
 rules // analysis
 
-  stx-editor-analyze(|spec-name, init-constraint) = fail
-  stx-editor-analyze(desugar|spec-name, init-constraint) = fail
-  stx-editor-analyze(desugar|spec-name, init-constraint) = fail
+  stx-editor-analyze(         |spec-name, init-constraint) = stx-editor-analyze(id , id|spec-name, init-constraint)
+  stx-editor-analyze(pre      |spec-name, init-constraint) = stx-editor-analyze(pre, id|spec-name, init-constraint)
+  stx-editor-analyze(pre, post|spec-name, init-constraint) = fail
 
-  stx-editor-elaborate(desugar|spec-name, init-constraint) = fail
+  stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id , id|spec-name, init-constraint)
+  stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre, id|spec-name, init-constraint)
+  stx-editor-elaborate(pre, post|spec-name, init-constraint) = fail
 
-  stx-editor-analyze(|spec-name, project-constraint, file-constraint) = fail
-  stx-editor-analyze(desugar|spec-name, project-constraint, file-constraint) = fail
-  stx-editor-analyze(desugar|spec-name, init-constraint) = fail
+  stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id , id|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, id|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = fail
 
   stx-evaluate(|spec-name, constraint) = fail
 
