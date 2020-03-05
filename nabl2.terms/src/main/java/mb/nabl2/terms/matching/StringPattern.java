@@ -9,6 +9,7 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -23,7 +24,8 @@ class StringPattern extends Pattern {
 
     private final String value;
 
-    public StringPattern(String value) {
+    public StringPattern(String value, ImmutableClassToInstanceMap<Object> attachments) {
+        super(attachments);
         this.value = value;
     }
 
@@ -60,7 +62,7 @@ class StringPattern extends Pattern {
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
-        return B.newString(value);
+        return B.newString(value, getAttachments());
     }
 
     @Override public String toString() {

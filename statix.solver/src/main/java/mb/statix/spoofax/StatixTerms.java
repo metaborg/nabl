@@ -355,34 +355,34 @@ public class StatixTerms {
                 return var.map(v -> P.newAs(v, pattern)).orElseGet(() -> P.newAs(pattern));
             }),
             M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
-                return P.newAppl(op, args);
+                return P.newAppl(op, args, t.getAttachments());
             }),
             M.appl1("Tuple", M.listElems(M.req(m)), (t, args) -> {
-                return P.newTuple(args);
+                return P.newTuple(args, t.getAttachments());
             }),
             M.appl1("List", M.listElems((t, u) -> m.match(t, u)), (t, elems) -> {
-                return P.newList(elems);
+                return P.newList(elems, t.getAttachments());
             }),
             M.appl2("ListTail", M.listElems((t, u) -> m.match(t, u)), m, (t, elems, tail) -> {
-                return P.newListTail(elems, tail);
+                return P.newListTail(elems, tail, t.getAttachments());
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
-                return P.newString(string);
+                return P.newString(string, t.getAttachments());
             }),
             M.appl1("Int", M.stringValue(), (t, integer) -> {
-                return P.newInt(Integer.parseInt(integer));
+                return P.newInt(Integer.parseInt(integer), t.getAttachments());
             }),
             M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(m), positionPattern(), (t, ns, args, pos) -> {
                 List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
-                return P.newAppl(OCCURRENCE_OP, applArgs);
+                return P.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
             }),
             M.appl1(PATH_EMPTY_OP, m, (t, s) -> {
                 List<Pattern> applArgs = ImmutableList.of(s);
-                return P.newAppl(PATH_EMPTY_OP, applArgs);
+                return P.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
             }),
             M.appl3(PATH_STEP_OP, m, m, m, (t, p, l, s) -> {
                 List<Pattern> applArgs = ImmutableList.of(p, l, s);
-                return P.newAppl(PATH_STEP_OP, applArgs);
+                return P.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
             })
         ));
         // @formatter:on

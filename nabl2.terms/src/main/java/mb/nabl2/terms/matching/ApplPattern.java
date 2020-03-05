@@ -10,6 +10,7 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -26,7 +27,8 @@ class ApplPattern extends Pattern {
     private final String op;
     private final List<Pattern> args;
 
-    public ApplPattern(String op, Iterable<? extends Pattern> args) {
+    public ApplPattern(String op, Iterable<? extends Pattern> args, ImmutableClassToInstanceMap<Object> attachments) {
+        super(attachments);
         this.op = op;
         this.args = ImmutableList.copyOf(args);
     }
@@ -67,18 +69,21 @@ class ApplPattern extends Pattern {
     }
 
     @Override public Pattern rename(IRenaming.Immutable subst) {
-        return new ApplPattern(op, args.stream().map(p -> p.rename(subst)).collect(ImmutableList.toImmutableList()));
+        return new ApplPattern(op, args.stream().map(p -> p.rename(subst)).collect(ImmutableList.toImmutableList()),
+                getAttachments());
     }
 
     @Override public ApplPattern eliminateWld(Function0<ITermVar> fresh) {
         return new ApplPattern(op,
-                args.stream().map(p -> p.eliminateWld(fresh)).collect(ImmutableList.toImmutableList()));
+                args.stream().map(p -> p.eliminateWld(fresh)).collect(ImmutableList.toImmutableList()),
+                getAttachments());
     }
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
         return B.newAppl(op,
-                args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()));
+                args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()),
+                getAttachments());
     }
 
     @Override public String toString() {

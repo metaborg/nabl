@@ -75,7 +75,7 @@ public class TermPatternOrderTest {
     }
 
     @Test public void testSecondLevelDifference() {
-        Pattern p1 = P.newAppl(f, P.EMPTY_LIST);
+        Pattern p1 = P.newAppl(f, P.newNil());
         Pattern p2 = P.newAppl(f, b);
         List<Pattern> ps = Arrays.asList(p1, p2);
         List<Pattern> sps = Ordering.from(Pattern.leftRightOrdering.asComparator()).immutableSortedCopy(ps);

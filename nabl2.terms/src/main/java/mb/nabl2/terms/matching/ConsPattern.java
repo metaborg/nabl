@@ -11,6 +11,7 @@ import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.IListTerm;
@@ -27,7 +28,8 @@ class ConsPattern extends Pattern {
     private final Pattern head;
     private final Pattern tail;
 
-    public ConsPattern(Pattern head, Pattern tail) {
+    public ConsPattern(Pattern head, Pattern tail, ImmutableClassToInstanceMap<Object> attachments) {
+        super(attachments);
         this.head = head;
         this.tail = tail;
     }
@@ -65,16 +67,16 @@ class ConsPattern extends Pattern {
     }
 
     @Override public ConsPattern rename(IRenaming.Immutable subst) {
-        return new ConsPattern(head.rename(subst), tail.rename(subst));
+        return new ConsPattern(head.rename(subst), tail.rename(subst), getAttachments());
     }
     
     @Override public ConsPattern eliminateWld(Function0<ITermVar> fresh) {
-        return new ConsPattern(head.eliminateWld(fresh), tail.eliminateWld(fresh));
+        return new ConsPattern(head.eliminateWld(fresh), tail.eliminateWld(fresh), getAttachments());
     }
 
     @Override
     protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh) {
-        return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh));
+        return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh), getAttachments());
     }
 
     @Override public String toString() {

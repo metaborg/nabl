@@ -5,9 +5,10 @@ imports
   nabl2/api
 
   signatures/statix/lang/-
-  statix/lang/statics/-
   statix/lang/normalize/maps
   statix/lang/normalize/util
+  statix/lang/statics/-
+  statix/lang/util
 
   signatures/statix/test/-
 

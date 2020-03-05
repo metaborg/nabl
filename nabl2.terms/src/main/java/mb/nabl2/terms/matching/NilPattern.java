@@ -10,6 +10,7 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -22,7 +23,8 @@ import mb.nabl2.terms.unification.u.IUnifier;
 class NilPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
-    public NilPattern() {
+    public NilPattern(ImmutableClassToInstanceMap<Object> attachments) {
+        super(attachments);
     }
 
     @Override public Set<ITermVar> getVars() {
@@ -56,7 +58,7 @@ class NilPattern extends Pattern {
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
-        return B.newNil();
+        return B.newNil(getAttachments());
     }
 
     @Override public String toString() {

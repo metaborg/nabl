@@ -9,6 +9,7 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
@@ -24,6 +25,7 @@ class PatternVar extends Pattern {
     private final @Nullable ITermVar var;
 
     public PatternVar() {
+        super(ImmutableClassToInstanceMap.of());
         this.var = null;
     }
 
@@ -32,6 +34,7 @@ class PatternVar extends Pattern {
     }
 
     public PatternVar(ITermVar var) {
+        super(var != null ? var.getAttachments() : ImmutableClassToInstanceMap.of());
         if(var == null) {
             throw new IllegalArgumentException();
         }
