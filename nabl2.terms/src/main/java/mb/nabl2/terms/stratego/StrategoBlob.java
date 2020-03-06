@@ -91,4 +91,7 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         }
     }
     
+    @Override public Iterator<IStrategoTerm> iterator() {
+        return new EmptyIterator<>();
+    }
 }
