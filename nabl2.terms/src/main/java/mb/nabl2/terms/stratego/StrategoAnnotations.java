@@ -8,7 +8,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-abstract class StrategoAnnotations {
+public abstract class StrategoAnnotations {
 
     @Value.Parameter public abstract List<IStrategoTerm> getAnnotationList();
 
