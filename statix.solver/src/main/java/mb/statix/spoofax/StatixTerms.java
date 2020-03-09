@@ -171,7 +171,7 @@ public class StatixTerms {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    return new CTellRel(scope, rel, B.newTuple(args));
+                    return new CTellRel(scope, rel, B.newTuple(args, c.getAttachments()));
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
@@ -395,7 +395,7 @@ public class StatixTerms {
                 return Optional.empty();
             }),
             M.appl1("Var", M.stringValue(), (t, name) -> {
-                return Optional.of(B.newVar("", name));
+                return Optional.of(B.newVar("", name, t.getAttachments()));
             })
         );
         // @formatter:on

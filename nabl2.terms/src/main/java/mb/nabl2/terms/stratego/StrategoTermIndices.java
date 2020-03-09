@@ -8,6 +8,7 @@ import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.TermFactory;
 import org.spoofax.terms.util.TermUtils;
 
 public class StrategoTermIndices {
@@ -57,7 +58,7 @@ public class StrategoTermIndices {
         private IStrategoList index(final IStrategoList list) {
             IStrategoList result;
             if(list.isEmpty()) {
-                result = termFactory.makeList(new IStrategoTerm[0], list.getAnnotations());
+                result = termFactory.makeList(TermFactory.EMPTY_TERM_ARRAY, list.getAnnotations());
             } else {
                 result = termFactory.makeListCons(index(list.head()), index(list.tail()), list.getAnnotations());
             }
@@ -111,7 +112,7 @@ public class StrategoTermIndices {
         private IStrategoList erase(final IStrategoList list) {
             IStrategoList result;
             if(list.isEmpty()) {
-                result = termFactory.makeList(new IStrategoTerm[0], list.getAnnotations());
+                result = termFactory.makeList(TermFactory.EMPTY_TERM_ARRAY, list.getAnnotations());
             } else {
                 result = termFactory.makeListCons(erase(list.head()), erase(list.tail()), list.getAnnotations());
             }

@@ -64,7 +64,7 @@ public class RuleUtil {
      * applied, empty of empty of no rules apply, or empty if more rules applied. Rules are expected to be in matching
      * order, with the first rule that can be applied is selected if the match is unconditional, or it is the only rule
      * that can be applied.
-     * 
+     *
      * @param state
      *            Initial state
      * @param rules
@@ -73,7 +73,7 @@ public class RuleUtil {
      *            Arguments to apply the rules to
      * @param cause
      *            Cause of this rule application, null if none
-     * 
+     *
      * @return Some application result if one rule applies, some empty if no rules apply, and empty if multiple rules
      *         apply.
      */
@@ -87,7 +87,7 @@ public class RuleUtil {
      * Apply the given list of rules to the given arguments. Returns application results for rules can be applied. Rules
      * are expected to be in matching order, with rules being selected up to and including the first rule that can be
      * applied unconditional.
-     * 
+     *
      * @param state
      *            Initial state
      * @param rules
@@ -96,7 +96,7 @@ public class RuleUtil {
      *            Arguments to apply the rules to
      * @param cause
      *            Cause of this rule application, null if none
-     * 
+     *
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
     public static List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IState.Immutable state, List<Rule> rules,
@@ -152,12 +152,7 @@ public class RuleUtil {
         final IState.Transient newState = state.melt();
         final Set.Transient<ITermVar> _universalVars = Set.Transient.of();
         final Function1<Optional<ITermVar>, ITermVar> fresh = v -> {
-            final ITermVar f;
-            if(v.isPresent()) {
-                f = newState.freshVar(v.get().getName());
-            } else {
-                f = newState.freshVar("_");
-            }
+            final ITermVar f = v.map(newState::freshVar).orElseGet(newState::freshWld);
             _universalVars.__insert(f);
             return f;
         };

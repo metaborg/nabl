@@ -2,6 +2,7 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -21,6 +22,8 @@ import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
 import mb.statix.spec.Spec;
+
+import javax.annotation.Nullable;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -64,12 +67,20 @@ public abstract class AState implements IState.Immutable {
         return Set.Immutable.of();
     }
 
-    @Override public Tuple2<ITermVar, IState.Immutable> freshVar(String base) {
+    @Override public Tuple2<ITermVar, IState.Immutable> freshVar(ITermVar var) {
+        return freshVar(var.getName(), var.getAttachments());
+    }
+
+    @Override public Tuple2<ITermVar, IState.Immutable> freshWld() {
+        return freshVar("_", null);
+    }
+
+    private Tuple2<ITermVar, IState.Immutable> freshVar(String name, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
         final int i = __varCounter() + 1;
-        final String name = base.replaceAll("-", "_") + i;
-        final ITermVar var = B.newVar(resource(), name);
-        final Set.Immutable<ITermVar> vars = __vars().__insert(var);
-        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());
+        final String newName = name.replaceAll("-", "_") + i;
+        final ITermVar newVar = B.newVar(resource(), newName, attachments);
+        final Set.Immutable<ITermVar> vars = __vars().__insert(newVar);
+        return ImmutableTuple2.of(newVar, State.builder().from(this).__varCounter(i).__vars(vars).build());
     }
 
     @Override public Set.Immutable<ITermVar> vars() {

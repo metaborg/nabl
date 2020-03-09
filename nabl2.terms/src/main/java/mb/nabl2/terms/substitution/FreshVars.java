@@ -35,7 +35,7 @@ public class FreshVars {
         ITermVar fresh = B.newVar("", name);
         int i = 0;
         while(oldVars.contains(fresh) || newVars.contains(fresh)) {
-            fresh = B.newVar("", base + "-" + Integer.toString(i++));
+            fresh = B.newVar("", base + "-" + (i++));
         }
         newVars.__insert(fresh);
         return fresh;
@@ -52,7 +52,7 @@ public class FreshVars {
             ITermVar fresh = var;
             int i = 0;
             while((vars.contains(fresh) && !var.equals(fresh)) || oldVars.contains(fresh) || newVars.contains(fresh)) {
-                fresh = B.newVar(var.getResource(), base + Integer.toString(i++));
+                fresh = B.newVar(var.getResource(), base + (i++));
             }
             newVars.__insert(fresh);
             renaming.put(var, fresh);
