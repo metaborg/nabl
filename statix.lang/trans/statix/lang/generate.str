@@ -57,7 +57,7 @@ rules
   remove-term-annos =
     bottomup(try(
     	  (is-Statix-Var + is-Statix-Term + is-Statix-Int + is-Statix-Str)
-    	; add-annotation(|OfSort(<nabl2-get-anno-type; all(try(\Occurrence(_, s, _) -> s\)); strip-annos>))
+    	; add-annotation(|OfSort(<nabl2-get-anno-type; bottomup(try(\Occurrence(_, s, _) -> s\)); strip-annos>))
     ) ; remove-annotations(not(?OfSort(_))))
 
   empty-spec = !FileSpec([], [], [], EOP(), [], [])
