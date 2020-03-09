@@ -311,7 +311,7 @@ class StepSolver implements IConstraint.CheckedCases<Optional<StepResult>, Solve
         final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
         IState.Immutable newState = state;
         for(ITermVar var : c.vars()) {
-            final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var.getName());
+            final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var);
             final ITermVar freshVar = varAndState._1();
             newState = varAndState._2();
             existentialsBuilder.put(var, freshVar);

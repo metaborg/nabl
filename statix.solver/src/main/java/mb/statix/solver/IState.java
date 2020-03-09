@@ -28,7 +28,9 @@ public interface IState {
 
         IState.Immutable withResource(String resource);
 
-        Tuple2<ITermVar, IState.Immutable> freshVar(String base);
+        Tuple2<ITermVar, IState.Immutable> freshWld();
+
+        Tuple2<ITermVar, IState.Immutable> freshVar(ITermVar var);
 
         Tuple2<Scope, IState.Immutable> freshScope(String base);
 
@@ -95,9 +97,16 @@ public interface IState {
             return state.termProperties();
         }
 
-        public ITermVar freshVar(String base) {
+        public ITermVar freshVar(ITermVar var) {
             freezeTwiceShameOnYou();
-            final Tuple2<ITermVar, Immutable> result = state.freshVar(base);
+            final Tuple2<ITermVar, Immutable> result = state.freshVar(var);
+            state = result._2();
+            return result._1();
+        }
+
+        public ITermVar freshWld() {
+            freezeTwiceShameOnYou();
+            final Tuple2<ITermVar, Immutable> result = state.freshWld();
             state = result._2();
             return result._1();
         }
