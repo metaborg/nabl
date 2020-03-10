@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableMultiset;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 
+import java.util.Objects;
+
 @Value.Immutable
 @Serial.Version(value = 42L)
 abstract class StringTerm extends AbstractTerm implements IStringTerm {
@@ -31,21 +33,26 @@ abstract class StringTerm extends AbstractTerm implements IStringTerm {
     }
 
     @Override public int hashCode() {
-        return getValue().hashCode();
+        return Objects.hash(
+            getValue()
+        );
     }
 
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof IStringTerm)) {
-            return false;
-        }
-        IStringTerm that = (IStringTerm) other;
-        if(!getValue().equals(that.getValue())) {
-            return false;
-        }
-        return true;
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        return other instanceof IStringTerm
+            && equals((IStringTerm)other, false);
+    }
+
+    public boolean equals(IStringTerm that, boolean compareAttachments) {
+        if (this == that) return true;
+        if (that == null) return false;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getValue(), that.getValue())
+            && (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+        // @formatter:on
     }
 
     @Override public String toString() {

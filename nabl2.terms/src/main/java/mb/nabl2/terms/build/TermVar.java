@@ -50,24 +50,28 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
     }
 
     @Value.Lazy @Override public int hashCode() {
-        return Objects.hash(getResource(), getName());
+        return Objects.hash(
+            getResource(),
+            getName()
+        );
     }
 
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof ITermVar)) {
-            return false;
-        }
-        ITermVar that = (ITermVar) other;
-        if(!getResource().equals(that.getResource())) {
-            return false;
-        }
-        if(!getName().equals(that.getName())) {
-            return false;
-        }
-        return true;
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        return other instanceof ITermVar
+            && equals((ITermVar)other, false);
+    }
+
+    public boolean equals(ITermVar that, boolean compareAttachments) {
+        if (this == that) return true;
+        if (that == null) return false;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getResource(), that.getResource())
+            && Objects.equals(this.getName(), that.getName())
+            && (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+        // @formatter:on
     }
 
     @Override public String toString() {

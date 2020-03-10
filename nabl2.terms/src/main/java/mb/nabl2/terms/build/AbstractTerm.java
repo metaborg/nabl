@@ -14,4 +14,10 @@ public abstract class AbstractTerm implements ITerm {
         return Terms.NO_ATTACHMENTS;
     }
 
+    @Override
+    public abstract int hashCode();
+
+    @Override
+    public abstract boolean equals(Object obj);
+
 }

@@ -10,7 +10,9 @@ import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable
+import java.util.Objects;
+
+@Value.Immutable(builder = false, copy = true, prehash = false)
 @Serial.Version(value = 42L)
 abstract class NilTerm extends AbstractTerm implements INilTerm {
 
@@ -42,14 +44,20 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
         return 1;
     }
 
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof INilTerm)) {
-            return false;
-        }
-        return true;
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        return other instanceof INilTerm
+            && equals((INilTerm)other, false);
+    }
+
+    public boolean equals(INilTerm that, boolean compareAttachments) {
+        if (this == that) return true;
+        if (that == null) return false;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+        // @formatter:on
     }
 
     @Override public String toString() {
