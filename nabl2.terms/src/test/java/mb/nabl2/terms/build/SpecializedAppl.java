@@ -46,27 +46,14 @@ abstract class SpecializedAppl extends AbstractApplTerm {
         return super.hashCode();
     }
 
-    @Override
-    public boolean equals(Object other) {
-        // The super method will delegate to the correct equals() overload.
-        return super.equals(other);
-    }
-
-    @Override
-    public boolean equals(IApplTerm that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (!(that instanceof SpecializedAppl)) return super.equals(that, compareAttachments);
-        return equals((SpecializedAppl)that, compareAttachments);
-    }
-
-    public boolean equals(SpecializedAppl that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (that == null) return false;
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof SpecializedAppl)) return super.equals(other);
+        SpecializedAppl that = (SpecializedAppl)other;
         if (this.hashCode() != that.hashCode()) return false;
         // @formatter:off
         return Objects.equals(this.getFirstArg(), that.getFirstArg())
-            && Objects.equals(this.getSecondArg(), that.getSecondArg())
-            && (!compareAttachments || java.util.Objects.equals(this.getAttachments(), that.getAttachments()));
+            && Objects.equals(this.getSecondArg(), that.getSecondArg());
         // @formatter:on
     }
 

@@ -75,27 +75,14 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
         return super.hashCode();
     }
 
-    @Override
-    public boolean equals(Object other) {
-        // The super method will delegate to the correct equals() overload.
-        return super.equals(other);
-    }
-
-    @Override
-    public boolean equals(IApplTerm that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (!(that instanceof TermIndex)) return super.equals(that, compareAttachments);
-        return equals((TermIndex)that, compareAttachments);
-    }
-
-    public boolean equals(TermIndex that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (that == null) return false;
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof TermIndex)) return super.equals(other);
+        TermIndex that = (TermIndex)other;
         if (this.hashCode() != that.hashCode()) return false;
         // @formatter:off
         return Objects.equals(this.getResource(), that.getResource())
-            && Objects.equals(this.getId(), that.getId())
-            && (!compareAttachments || java.util.Objects.equals(this.getAttachments(), that.getAttachments()));
+            && Objects.equals(this.getId(), that.getId());
         // @formatter:on
     }
 

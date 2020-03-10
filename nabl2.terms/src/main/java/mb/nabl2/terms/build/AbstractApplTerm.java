@@ -50,22 +50,15 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         );
     }
 
-    @Override
-    public boolean equals(Object other) {
+    @Override public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof IApplTerm
-            && equals((IApplTerm)other, false);
-    }
-
-    public boolean equals(IApplTerm that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (that == null) return false;
+        if (!(other instanceof IApplTerm)) return false;
+        IApplTerm that = (IApplTerm)other;
         if (this.hashCode() != that.hashCode()) return false;
         // @formatter:off
         return Objects.equals(this.getOp(), that.getOp())
             && Objects.equals(this.getArity(), that.getArity())
-            && Objects.equals(this.getArgs(), that.getArgs())
-            && (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+            && Objects.equals(this.getArgs(), that.getArgs());
         // @formatter:on
     }
 

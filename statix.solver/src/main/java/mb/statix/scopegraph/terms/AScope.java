@@ -55,27 +55,14 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
         return super.hashCode();
     }
 
-    @Override
-    public boolean equals(Object other) {
-        // The super method will delegate to the correct equals() overload.
-        return super.equals(other);
-    }
-
-    @Override
-    public boolean equals(IApplTerm that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (!(that instanceof AScope)) return super.equals(that, compareAttachments);
-        return equals((AScope)that, compareAttachments);
-    }
-
-    public boolean equals(AScope that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (that == null) return false;
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof AScope)) return super.equals(other);
+        AScope that = (AScope)other;
         if (this.hashCode() != that.hashCode()) return false;
         // @formatter:off
         return Objects.equals(this.getResource(), that.getResource())
-            && Objects.equals(this.getName(), that.getName())
-            && (!compareAttachments || java.util.Objects.equals(this.getAttachments(), that.getAttachments()));
+            && Objects.equals(this.getName(), that.getName());
         // @formatter:on
     }
 

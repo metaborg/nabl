@@ -1,5 +1,6 @@
 package mb.nabl2.terms.build;
 
+import mb.nabl2.terms.ITerm;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -38,20 +39,13 @@ abstract class IntTerm extends AbstractTerm implements IIntTerm {
         );
     }
 
-    @Override
-    public boolean equals(Object other) {
+    @Override public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof IIntTerm
-            && equals((IIntTerm)other, false);
-    }
-
-    public boolean equals(IIntTerm that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (that == null) return false;
+        if (!(other instanceof IIntTerm)) return false;
+        IIntTerm that = (IIntTerm)other;
         if (this.hashCode() != that.hashCode()) return false;
         // @formatter:off
-        return Objects.equals(this.getValue(), that.getValue())
-            && (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+        return Objects.equals(this.getValue(), that.getValue());
         // @formatter:on
     }
 

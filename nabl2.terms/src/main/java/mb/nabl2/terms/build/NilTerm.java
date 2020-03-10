@@ -44,19 +44,13 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
         return 1;
     }
 
-    @Override
-    public boolean equals(Object other) {
+    @Override public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof INilTerm
-            && equals((INilTerm)other, false);
-    }
-
-    public boolean equals(INilTerm that, boolean compareAttachments) {
-        if (this == that) return true;
-        if (that == null) return false;
+        if (!(other instanceof INilTerm)) return false;
+        INilTerm that = (INilTerm)other;
         if (this.hashCode() != that.hashCode()) return false;
         // @formatter:off
-        return (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+        return true;
         // @formatter:on
     }
 
