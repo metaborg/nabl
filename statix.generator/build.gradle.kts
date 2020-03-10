@@ -5,7 +5,9 @@ plugins {
 
 dependencies {
   api(platform("org.metaborg:parent:$version"))
+  testImplementation(platform("org.metaborg:parent:$version"))
   annotationProcessor(platform("org.metaborg:parent:$version"))
+  testAnnotationProcessor(platform("org.metaborg:parent:$version"))
 
   // !! Update dependencies in pom.xml as well
   api(project(":nabl2.terms"))
@@ -23,10 +25,18 @@ dependencies {
   compileOnly("org.immutables:serial")
   compileOnly("javax.annotation:javax.annotation-api")
 
-  testCompileOnly("junit:junit")
+  // Tests
+  testImplementation("junit:junit")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.1.0")
-  testCompileOnly("ch.qos.logback:logback-classic")
+  testImplementation("ch.qos.logback:logback-classic")
   testCompileOnly("com.google.code.findbugs:jsr305")
+
+  // Test Annotation processing
+  testAnnotationProcessor("org.immutables:value")
+  testAnnotationProcessor("org.immutables:serial")
+  testCompileOnly("org.immutables:value")
+  testCompileOnly("org.immutables:serial")
+  testCompileOnly("javax.annotation:javax.annotation-api")
 
   // !! Update dependencies in pom.xml as well
 }

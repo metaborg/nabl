@@ -51,24 +51,28 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
     }
 
     @Override public int hashCode() {
-        return Objects.hash(getHead(), getTail());
+        return Objects.hash(
+            getHead(),
+            getTail()
+        );
     }
 
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof IConsTerm)) {
-            return false;
-        }
-        IConsTerm that = (IConsTerm) other;
-        if(!getHead().equals(that.getHead())) {
-            return false;
-        }
-        if(!getTail().equals(that.getTail())) {
-            return false;
-        }
-        return true;
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        return other instanceof IConsTerm
+            && equals((IConsTerm)other, false);
+    }
+
+    public boolean equals(IConsTerm that, boolean compareAttachments) {
+        if (this == that) return true;
+        if (that == null) return false;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getHead(), that.getHead())
+            && Objects.equals(this.getTail(), that.getTail())
+            && (!compareAttachments || Objects.equals(this.getAttachments(), that.getAttachments()));
+        // @formatter:on
     }
 
     @Override public String toString() {

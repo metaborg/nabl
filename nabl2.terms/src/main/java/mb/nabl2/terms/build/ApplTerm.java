@@ -40,6 +40,10 @@ abstract class ApplTerm extends AbstractApplTerm implements IApplTerm {
         return super.equals(other);
     }
 
+    @Override public boolean equals(IApplTerm that, boolean compareAttachments) {
+        return super.equals(that, compareAttachments);
+    }
+
     @Override public String toString() {
         return super.toString();
     }
