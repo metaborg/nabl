@@ -1,14 +1,14 @@
-package mb.tiger;
+package mb.nabl2.terms.stratego;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 
 /**
- * A mapping between placeholders and variables.
+ * A mapping between placeholders and term variables.
  */
 public final class PlaceholderVarMap {
 
