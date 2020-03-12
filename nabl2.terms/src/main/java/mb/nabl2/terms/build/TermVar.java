@@ -16,6 +16,10 @@ import mb.nabl2.terms.ITermVar;
 @Serial.Version(value = 42L)
 public abstract class TermVar extends AbstractTerm implements ITermVar {
 
+    @Value.Derived @Override public int getMinSize() {
+        return 0;
+    }
+
     @Value.Parameter @Override public abstract String getResource();
 
     @Value.Parameter @Override public abstract String getName();

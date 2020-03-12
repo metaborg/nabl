@@ -16,6 +16,10 @@ import java.util.Objects;
 @Serial.Version(value = 42L)
 abstract class NilTerm extends AbstractTerm implements INilTerm {
 
+    @Value.Derived @Override public int getMinSize() {
+        return 0;
+    }
+
     @Override public boolean isGround() {
         return true;
     }

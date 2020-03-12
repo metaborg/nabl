@@ -11,7 +11,10 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.TermFactory;
 import org.spoofax.terms.util.TermUtils;
 
-public class StrategoTermIndices {
+public final class StrategoTermIndices {
+
+    // Prevent instantiation.
+    private StrategoTermIndices() {}
 
     private static final String OP = "TermIndex";
     private static final int ARITY = 2;

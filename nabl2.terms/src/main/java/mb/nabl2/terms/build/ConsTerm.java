@@ -23,6 +23,10 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
 
     @Value.Parameter @Override public abstract IListTerm getTail();
 
+    @Value.Lazy @Override public int getMinSize() {
+        return 1 + getTail().getMinSize();
+    }
+
     @Value.Lazy @Override public boolean isGround() {
         return getHead().isGround() && getTail().isGround();
     }
