@@ -130,9 +130,12 @@ lexical syntax
 context-free syntax
 
   Constraint.CAstId       = <astId(<Term>, <Term>)>
-  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> := <Term>>
+  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> <AstPropertyOp> <Term>>
 
   AstProperty.Prop = AstPropertyId
+
+  AstPropertyOp.Set = ":="
+  AstPropertyOp.Add = "+="
 
   TermOrId = Var
 

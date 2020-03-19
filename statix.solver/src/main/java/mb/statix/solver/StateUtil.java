@@ -6,12 +6,14 @@ import org.metaborg.util.functions.Action1;
 
 import com.google.common.collect.ImmutableList;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.collections.IRelation3;
+import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CAstProperty.Op;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CTellEdge;
@@ -36,14 +38,26 @@ public class StateUtil {
         return constraints.build();
     }
 
-    public static List<IConstraint>
-            asConstraint(IRelation3<? extends ITerm, ? extends ITerm, ? extends ITerm> termProperties) {
+    public static List<IConstraint> asConstraint(
+            Map.Immutable<Tuple2<? extends ITerm, ? extends ITerm>, ? extends ITermProperty> termProperties) {
         final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-        termProperties.stream().forEach(idxPropTerm -> {
-            idxPropTerm.apply((idx, prop, term) -> {
-                constraints.add(new CAstProperty(idx, prop, term));
-                return null;
-            });
+        termProperties.entrySet().forEach(entry -> {
+            final Tuple2<? extends ITerm, ? extends ITerm> idxProp = entry.getKey();
+            final ITermProperty property = entry.getValue();
+            switch(property.multiplicity()) {
+                case BAG: {
+                    property.values().forEach(value -> {
+                        constraints.add(new CAstProperty(idxProp._1(), idxProp._2(), Op.ADD, value));
+                    });
+                    break;
+                }
+                case SINGLETON: {
+                    constraints.add(new CAstProperty(idxProp._1(), idxProp._2(), Op.SET, property.value()));
+                    break;
+                }
+                default:
+                    throw new IllegalStateException("Unknown multiplicity " + property.multiplicity());
+            }
         });
         return constraints.build();
     }
