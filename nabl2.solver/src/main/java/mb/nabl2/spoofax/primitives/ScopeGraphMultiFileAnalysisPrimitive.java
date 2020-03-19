@@ -1,19 +1,13 @@
 package mb.nabl2.spoofax.primitives;
 
-import mb.nabl2.config.NaBL2DebugConfig;
-import mb.nabl2.solver.solvers.CallExternal;
-import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
-import mb.nabl2.stratego.ConstraintTerms;
-import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.stratego.StrategoTerms;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+
+import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -21,8 +15,8 @@ import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.IContext;
-import org.spoofax.interpreter.core.Interpreter;
 import org.spoofax.interpreter.core.InterpreterException;
+import org.spoofax.interpreter.core.UndefinedStrategyException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.SDefT;
 import org.spoofax.interpreter.stratego.Strategy;
@@ -30,6 +24,13 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.strategoxt.HybridInterpreter;
 import org.strategoxt.lang.InteropContext;
+
+import mb.nabl2.config.NaBL2DebugConfig;
+import mb.nabl2.solver.solvers.CallExternal;
+import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
+import mb.nabl2.stratego.ConstraintTerms;
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoTerms;
 
 public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
 
@@ -69,42 +70,82 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
         final HashMap<String, SDefT> strCache = new HashMap<>();
         return (name, args) -> {
-            final IStrategoTerm prev = env.current();
-            env.setCurrent(prepareArguments(args, strategoTerms, env.getFactory()));
+            final IStrategoTerm arg = prepareArguments(args, strategoTerms, env.getFactory());
             try {
-                Callable<Boolean> evalStrategy = isEvaluate(env, strCache, name);
-                if(!evalStrategy.call()) {
+                PartialFunction1<IStrategoTerm, IStrategoTerm> evalStrategy = callStrategy(env, strCache, name);
+                final Optional<IStrategoTerm> result = evalStrategy.apply(arg);
+                return result.map(strategoTerms::fromStratego).map(ConstraintTerms::specialize);
+            } catch(Exception ex) {
+                logger.warn("External call to '{}' failed.", ex, name);
+                return Optional.empty();
+            }
+        };
+
+    }
+
+    private static PartialFunction1<IStrategoTerm, IStrategoTerm> callStrategy(IContext env,
+            HashMap<String, SDefT> strCache, String name) throws InterpreterException {
+        final String cname = name.replace('-', '_') + "_0_0";
+        if(env instanceof InteropContext) {
+            return callStrategyJar((InteropContext) env, name);
+        } else {
+            return callStrategyCtree(env, strCache, name, cname);
+        }
+    }
+
+    private static PartialFunction1<IStrategoTerm, IStrategoTerm> callStrategyJar(InteropContext context, String name) {
+        final HybridInterpreter interpreter = HybridInterpreter.getInterpreter(context.getContext());
+        return arg -> {
+            final IStrategoTerm prev = interpreter.current();
+            try {
+                interpreter.setCurrent(arg);
+                if(!interpreter.invoke(name)) {
                     return Optional.empty();
                 }
-                return Optional.ofNullable(env.current()).map(strategoTerms::fromStratego)
-                        .map(ConstraintTerms::specialize);
-            } catch(Exception ex) {
+                return Optional.of(interpreter.current());
+            } catch(UndefinedStrategyException ex) {
+                logger.warn("Cannot find strategy '{}'", name);
+                return Optional.empty();
+            } catch(InterpreterException ex) {
+                logger.warn("External call to '{}' failed.", ex, name);
+                return Optional.empty();
+            } finally {
+                interpreter.setCurrent(prev);
+            }
+        };
+    }
+
+    private static PartialFunction1<IStrategoTerm, IStrategoTerm> callStrategyCtree(IContext env,
+            HashMap<String, SDefT> strCache, String name, final String cname) throws InterpreterException {
+        final SDefT s;
+        if(strCache.containsKey(name)) {
+            s = strCache.get(name);
+        } else {
+            s = env.lookupSVar(cname);
+            if(s == null) {
+                logger.warn("Cannot find strategy '{}'", name);
+                return arg -> Optional.empty();
+            }
+            strCache.put(name, s);
+        }
+        return arg -> {
+            final IStrategoTerm prev = env.current();
+            try {
+                if(!s.evaluate(env)) {
+                    return Optional.empty();
+                }
+                return Optional.of(env.current());
+            } catch(InterpreterException ex) {
                 logger.warn("External call to '{}' failed.", ex, name);
                 return Optional.empty();
             } finally {
                 env.setCurrent(prev);
             }
         };
-
-    }
-
-    private static Callable<Boolean> isEvaluate(IContext env, HashMap<String, SDefT> strCache, String name) throws InterpreterException {
-        if(env instanceof InteropContext) {
-            InteropContext context = (InteropContext) env;
-            return () -> HybridInterpreter.getInterpreter(context.getContext()).invoke(name);
-        }
-        final SDefT s;
-        if(strCache.containsKey(name)) {
-            s = strCache.get(name);
-        } else {
-            s = env.lookupSVar(name);
-            strCache.put(name, s);
-        }
-        return () -> s.evaluate(env);
     }
 
     private static IStrategoTerm prepareArguments(Collection<? extends ITerm> args, StrategoTerms strategoTerms,
-        ITermFactory factory) {
+            ITermFactory factory) {
         if(args.size() == 1) {
             return strategoTerms.toStratego(args.iterator().next());
         }
