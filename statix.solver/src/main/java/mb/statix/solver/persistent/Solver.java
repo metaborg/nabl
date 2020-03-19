@@ -40,7 +40,6 @@ public class Solver {
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug) throws InterruptedException {
         return new GreedySolver(spec, state, constraint, isComplete, debug).solve();
-        //return new StepSolver(spec, state, constraint, isComplete, debug).solve();
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
