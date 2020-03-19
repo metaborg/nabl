@@ -40,7 +40,6 @@ public class Solver {
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug) throws InterruptedException {
         return new GreedySolver(spec, state, constraint, isComplete, debug).solve();
-        //return new StepSolver(spec, state, constraint, isComplete, debug).solve();
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
@@ -56,7 +55,8 @@ public class Solver {
             debug.info("Checking entailment of {}", toString(constraint, unifier));
         }
 
-        final SolverResult result = Solver.solve(spec, state, constraint, isComplete, debug.subContext());
+        final GreedySolver solver = new GreedySolver(spec, state, constraint, isComplete, debug);
+        final SolverResult result = solver.solve();
 
         if(result.hasErrors()) {
             // no entailment if errors

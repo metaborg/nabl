@@ -6,13 +6,21 @@ import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITermVar;
 
-public class OccursException extends Exception {
+public class RigidException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
     private final Set<ITermVar> vars;
 
-    public OccursException(Iterable<ITermVar> vars) {
+    public RigidException(ITermVar var) {
+        this(ImmutableSet.of(var));
+    }
+
+    public RigidException(ITermVar var1, ITermVar var2) {
+        this(ImmutableSet.of(var1, var2));
+    }
+
+    public RigidException(Iterable<ITermVar> vars) {
         super("occurs", null, false, false);
         this.vars = ImmutableSet.copyOf(vars);
     }
@@ -22,7 +30,7 @@ public class OccursException extends Exception {
     }
 
     @Override public String getMessage() {
-        return "Recursive " + vars;
+        return "Rigid " + vars;
     }
 
 }

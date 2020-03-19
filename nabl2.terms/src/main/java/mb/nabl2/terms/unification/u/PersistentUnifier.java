@@ -7,8 +7,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
@@ -25,6 +27,7 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
@@ -79,45 +82,53 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<Result<IUnifier.Immutable>> unify(ITerm left, ITerm right) throws OccursException {
-            return new Unify(this, left, right).apply();
+        @Override public Optional<Result<IUnifier.Immutable>> unify(ITerm left, ITerm right,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            return new Unify(this, isRigid, left, right).apply();
         }
 
-        @Override public Optional<Result<IUnifier.Immutable>>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            return new Unify(this, equalities).apply();
+        @Override public Optional<Result<IUnifier.Immutable>> unify(
+                Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            return new Unify(this, isRigid, equalities).apply();
         }
 
-        @Override public Optional<Result<IUnifier.Immutable>> unify(IUnifier other) throws OccursException {
-            return new Unify(this, other).apply();
+        @Override public Optional<Result<IUnifier.Immutable>> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            return new Unify(this, isRigid, other).apply();
         }
 
         private static class Unify extends PersistentUnifier.Transient {
 
+            private final Predicate1<ITermVar> isRigid;
+
             private final Deque<Map.Entry<ITerm, ITerm>> worklist = Lists.newLinkedList();
             private final List<ITermVar> result = Lists.newArrayList();
 
-            public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right) {
+            public Unify(PersistentUnifier.Immutable unifier, Predicate1<ITermVar> isRigid, ITerm left, ITerm right) {
                 super(unifier);
+                this.isRigid = isRigid;
                 worklist.push(ImmutableTuple2.of(left, right));
             }
 
-            public Unify(PersistentUnifier.Immutable unifier,
+            public Unify(PersistentUnifier.Immutable unifier, Predicate1<ITermVar> isRigid,
                     Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) {
                 super(unifier);
+                this.isRigid = isRigid;
                 equalities.forEach(e -> {
                     worklist.push(Tuple2.of(e));
                 });
             }
 
-            public Unify(PersistentUnifier.Immutable unifier, IUnifier other) {
+            public Unify(PersistentUnifier.Immutable unifier, Predicate1<ITermVar> isRigid, IUnifier other) {
                 super(unifier);
+                this.isRigid = isRigid;
                 other.varSet().forEach(v -> {
                     worklist.push(ImmutableTuple2.of(v, other.findTerm(v)));
                 });
             }
 
-            public Optional<Result<IUnifier.Immutable>> apply() throws OccursException {
+            public Optional<Result<IUnifier.Immutable>> apply() throws OccursException, RigidException {
                 while(!worklist.isEmpty()) {
                     final Map.Entry<ITerm, ITerm> work = worklist.pop();
                     if(!unifyTerms(work.getKey(), work.getValue())) {
@@ -137,10 +148,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 return Optional.of(new ImmutableResult<>(diffUnifier, unifier));
             }
 
-            private boolean unifyTerms(final ITerm left, final ITerm right) {
+            private boolean unifyTerms(final ITerm left, final ITerm right) throws RigidException {
                 // @formatter:off
-                return left.match(Terms.<Boolean>cases(
-                    applLeft -> right.match(Terms.<Boolean>cases()
+                return left.matchOrThrow(Terms.<Boolean, RigidException>checkedCases(
+                    applLeft -> right.matchOrThrow(Terms.<Boolean, RigidException>checkedCases()
                         .appl(applRight -> {
                             return applLeft.getArity() == applRight.getArity() &&
                                     applLeft.getOp().equals(applRight.getOp()) &&
@@ -153,7 +164,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    listLeft -> right.match(Terms.<Boolean>cases()
+                    listLeft -> right.matchOrThrow(Terms.<Boolean, RigidException>checkedCases()
                         .list(listRight -> {
                             return unifyLists(listLeft, listRight);
                         })
@@ -164,7 +175,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    stringLeft -> right.match(Terms.<Boolean>cases()
+                    stringLeft -> right.matchOrThrow(Terms.<Boolean, RigidException>checkedCases()
                         .string(stringRight -> {
                             return stringLeft.getValue().equals(stringRight.getValue());
                         })
@@ -175,7 +186,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    integerLeft -> right.match(Terms.<Boolean>cases()
+                    integerLeft -> right.matchOrThrow(Terms.<Boolean, RigidException>checkedCases()
                         .integer(integerRight -> {
                             return integerLeft.getValue() == integerRight.getValue();
                         })
@@ -186,7 +197,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    blobLeft -> right.match(Terms.<Boolean>cases()
+                    blobLeft -> right.matchOrThrow(Terms.<Boolean, RigidException>checkedCases()
                         .blob(blobRight -> {
                             return blobLeft.getValue().equals(blobRight.getValue());
                         })
@@ -197,7 +208,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    varLeft -> right.match(Terms.<Boolean>cases()
+                    varLeft -> right.matchOrThrow(Terms.<Boolean, RigidException>checkedCases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
@@ -209,10 +220,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 // @formatter:on
             }
 
-            private boolean unifyLists(final IListTerm left, final IListTerm right) {
+            private boolean unifyLists(final IListTerm left, final IListTerm right) throws RigidException {
                 // @formatter:off
-                return left.match(ListTerms.<Boolean>cases(
-                    consLeft -> right.match(ListTerms.<Boolean>cases()
+                return left.matchOrThrow(ListTerms.<Boolean, RigidException>checkedCases(
+                    consLeft -> right.matchOrThrow(ListTerms.<Boolean, RigidException>checkedCases()
                         .cons(consRight -> {
                             worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
                             worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
@@ -225,7 +236,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    nilLeft -> right.match(ListTerms.<Boolean>cases()
+                    nilLeft -> right.matchOrThrow(ListTerms.<Boolean, RigidException>checkedCases()
                         .nil(nilRight -> {
                             return true;
                         })
@@ -236,7 +247,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    varLeft -> right.match(ListTerms.<Boolean>cases()
+                    varLeft -> right.matchOrThrow(ListTerms.<Boolean, RigidException>checkedCases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
@@ -248,7 +259,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 // @formatter:on
             }
 
-            private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
+            private boolean unifyVarTerm(final ITermVar var, final ITerm term) throws RigidException {
                 final ITermVar rep = findRep(var);
                 if(term instanceof ITermVar) {
                     throw new IllegalStateException();
@@ -257,23 +268,32 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(repTerm != null) {
                     worklist.push(ImmutableTuple2.of(repTerm, term));
                 } else {
+                    if(isRigid.test(rep)) {
+                        throw new RigidException(rep);
+                    }
                     putTerm(rep, term);
                     result.add(rep);
                 }
                 return true;
             }
 
-            private boolean unifyVars(final ITermVar left, final ITermVar right) {
+            private boolean unifyVars(final ITermVar left, final ITermVar right) throws RigidException {
                 final ITermVar leftRep = findRep(left);
                 final ITermVar rightRep = findRep(right);
                 if(leftRep.equals(rightRep)) {
                     return true;
                 }
+                final boolean leftRigid = isRigid.test(leftRep);
+                final boolean rightRigid = isRigid.test(rightRep);
+                if(leftRigid && rightRigid) {
+                    throw new RigidException(leftRep, rightRep);
+                }
                 final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
                 final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
-                final boolean swap = leftRank > rightRank;
-                final ITermVar var = swap ? rightRep : leftRep; // the eliminated variable
-                final ITermVar rep = swap ? leftRep : rightRep; // the new representative
+                // by default right is the new representative
+                final boolean leftRepRightVar = leftRigid || leftRank > rightRank;
+                final ITermVar var = leftRepRightVar ? rightRep : leftRep; // the eliminated variable
+                final ITermVar rep = leftRepRightVar ? leftRep : rightRep; // the new representative
                 ranks.__put(rep, leftRank + rightRank);
                 putRep(var, rep);
                 final ITerm varTerm = removeTerm(var); // term for the eliminated var
@@ -395,7 +415,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             putRep(notRep, rep);
                         }
                     } else {
-                        final Collection<ITermVar> newReps = invReps.get(var);
+                        final Collection<ITermVar> newReps = invReps.get(var).stream().collect(Collectors.toList());
                         if(!newReps.isEmpty()) { // rep |-> var
                             rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);

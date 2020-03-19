@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,6 +26,7 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
@@ -597,6 +599,15 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
         @Override public Optional<? extends IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {
             final Optional<? extends Result<? extends Immutable>> result = unifier.unify(term1, term2);
+            return result.map(r -> {
+                unifier = r.unifier();
+                return r.result();
+            });
+        }
+
+        @Override public Optional<? extends IUnifier.Immutable> unify(ITerm term1, ITerm term2,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            final Optional<? extends Result<? extends Immutable>> result = unifier.unify(term1, term2, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
