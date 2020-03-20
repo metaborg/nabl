@@ -174,7 +174,8 @@ rules
   typeOfTypeExp : scope * TypeExp -> TYPE
   typesOfTypeExps maps typeOfTypeExp(*, list(*)) = list(*)
 
-  typeOfTypeExp(s, TVar(x)) = TVAR(d) :- {x'} @x.ref := x',
+  typeOfTypeExp(s, te@TVar(x)) = T@TVAR(d) :- {x'}
+    @x.ref := x', @te.type := strict(T),
     TVar{x@x} in s |-> [(_, d@TVar{x'@_})].        // type var reference
 
   typeOfTypeExp(s, CTE2TE(cte)) = typeOfClassTypeExp(s, cte).
@@ -184,7 +185,8 @@ rules
   typeOfClassTypeExp : scope * ClassTypeExp -> TYPE
   typesOfClassTypeExps maps typeOfClassTypeExp(*, list(*)) = list(*)
 
-  typeOfClassTypeExp(s, ClassT(x, tes)) = CLASS(s_inst) :- {x' s_class Xs Ts Us} @x.ref := x',
+  typeOfClassTypeExp(s, cte@ClassT(x, tes)) = CT@CLASS(s_inst) :- {x' s_class Xs Ts Us}
+    @x.ref := x', @cte.type := strict(CT),
     typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, CLASS(s_class)))],    // class type
     typesOfTypeExps(s, tes) == Ts,          // type arguments
     ?tparamsOfClass[] in s_class == Xs,     // type parameters
@@ -197,14 +199,17 @@ rules
   typeOfExp : scope * Exp -> TYPE
   typesOfExps maps typeOfExp(*, list(*)) = list(*)
 
-  typeOfExp(s, Var(x)) = T :- {x' p d} @x.ref := x',
+  typeOfExp(s, ee@Var(x)) = T :- {x' p d}
+    @x.ref := x', @ee.type := strict(T),
     typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, T))].
 
-  typeOfExp(s, Fld(e, x)) = S :- {s_inst}
+  typeOfExp(s, ee@Fld(e, x)) = S :- {s_inst}
+    @ee.type := strict(S),
     promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_inst),    // receiver type
     PROJ(s_inst, Field{x@x}) == S.                               // field reference
 
-  typeOfExp(s, Call(e, tys, x, es)) = U :- {S s_cls x' Ts m_inst Xs s_mtype s_minst Us Ss p} @x.ref := x',
+  typeOfExp(s, ee@Call(e, tys, x, es)) = U :- {S s_cls x' Ts m_inst Xs s_mtype s_minst Us Ss p}
+    @x.ref := x', @ee.type := strict(U),
     promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_cls),
     typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, METHOD(Xs, s_mtype)))],
     typesOfTypeExps(s, tys) == Ts,
@@ -213,20 +218,23 @@ rules
     typesOfExps(s, es) == Ss,
     subTypes(s, Ss, Us).
 
-  typeOfExp(s, New(cte, es)) = T :- {s_inst Ts Us}
+  typeOfExp(s, ee@New(cte, es)) = T :- {s_inst Ts Us}
+    @ee.type := strict(T),
     strict(typeOfClassTypeExp(s, cte)) == T@CLASS(s_inst),  // class type scope
     strict(PROJ(s_inst, Ctor{@-})) == CTOR(Ts),             // project constructor type
     typesOfExps(s, es) == Us,                               // argument types
     subTypes(s, Us, Ts).
 
-  typeOfExp(s, Ascribe(e, te)) = T :- {S}
+  typeOfExp(s, ee@Ascribe(e, te)) = T :- {S}
+    @ee.type := strict(T),
     strict(typeOfExp(s, e)) == S,
     strict(typeOfTypeExp(s, te)) == T,
     subType(s, S, T).
 
-  typeOfExp(s, Cast(te, e)) = T_as :- {s_as s_act}
-    promoteType(s, strict(typeOfTypeExp(s, te))) == CLASS(s_as),    // cast type
-    promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_act),        // expression type
+  typeOfExp(s, ee@Cast(te, e)) = T :- {s_as s_act}
+    @ee.type := strict(T),
+    promoteType(s, strict(typeOfTypeExp(s, te))) == T@CLASS(s_as),    // cast type
+    promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_act),          // expression type
     castOK(s_act, s_as).
 
   castOK : scope * scope
