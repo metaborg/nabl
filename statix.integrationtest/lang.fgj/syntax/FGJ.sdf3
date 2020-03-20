@@ -12,6 +12,8 @@ context-free syntax
 
   Start = Program
 
+context-free syntax // prog
+
   Program.Program = <<{ClassDecl "\n\n"}*>>
 
   Program.Let = <
@@ -20,17 +22,30 @@ context-free syntax
     in <Exp>
   >
 
+context-free syntax // T
+
+  TypeExp      = ClassTypeExp
+  TypeExp.TVar = ID
+
+context-free syntax // N
+
+  ClassTypeExp.ClassT = [[ID]<[{TypeExp ","}*]>]
+
+context-free syntax // L
+
   ClassDecl.ClassDecl = [
-    class [ID]<[{TVarDecl ","}*]> extends [NTypeExp] {
+    class [ID]<[{TVarDecl ","}*]> extends [ClassTypeExp] {
       [{FieldDecl "\n"}*]
       [CtorDecl]
       [{MethodDecl "\n"}*]
     }
   ]
 
-  TVarDecl.TVarDecl = [[ID] extends [NTypeExp]]
+  TVarDecl.TVarDecl = [[ID] extends [ClassTypeExp]]
 
   FieldDecl.FieldDecl = [[TypeExp] [ID];]
+
+context-free syntax // K
 
   CtorDecl.CtorDecl = [
     [ID]([{Param ", "}*]) {
@@ -40,7 +55,9 @@ context-free syntax
   ]
 
   FieldInit.FieldInit = [this.[ID] = [Exp];]
-  
+
+context-free syntax // M
+
   MethodDecl.MethodDecl = [
     <[{TVarDecl ","}*]> [TypeExp] [ID]([{Param ", "}*]) {
       return [Exp];
@@ -49,15 +66,12 @@ context-free syntax
 
   Param.Param = [[TypeExp] [ID]]
 
+context-free syntax // e
+
   Exp.Var     = ID
   Exp.Fld     = [[Exp].[ID]]
   Exp.Call    = [[Exp].<[{TypeExp ","}*]>[ID]([{Exp ", "}*])]
-  Exp.New     = [new [NTypeExp]([{Exp ", "}*])]
+  Exp.New     = [new [ClassTypeExp]([{Exp ", "}*])]
   Exp.Cast    = [([TypeExp])[Exp]]
   Exp         = [([Exp])] {bracket}
   Exp.Ascribe = [[Exp]:[TypeExp]]
-
-  NTypeExp.ClassT = [[ID]<[{TypeExp ","}*]>]
-
-  TypeExp      = NTypeExp
-  TypeExp.TVar = ID

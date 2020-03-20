@@ -8,12 +8,19 @@ signature
     Program : list(ClassDecl) -> Program                                         //       | L*
     Let     : list(ClassDecl) * Exp -> Program                                   //       | let L* in e
 
+  sorts TypeExp constructors                                                     // T :=
+    TVar   : ID -> TypeExp                                                       //    | X
+    CTE2TE : ClassTypeExp -> TypeExp                                             //    | N
+
+  sorts ClassTypeExp constructors                                                // N :=
+    ClassT : ID * list(TypeExp) -> ClassTypeExp                                  //    | C<T*>
+
   sorts ClassDecl constructors                                                   // L :=
-    ClassDecl : ID * list(TVarDecl) * /*N*/TypeExp *                             //    | class C<V*> <: N { F* K M* }
+    ClassDecl : ID * list(TVarDecl) * ClassTypeExp *                             //    | class C<V*> <: N { F* K M* }
                 list(FieldDecl) * CtorDecl * list(MethodDecl) -> ClassDecl
 
   sorts TVarDecl constructors                                                    // V :=
-    TVarDecl : ID * /*N*/TypeExp -> TVarDecl                                     //    | X <: N
+    TVarDecl : ID * ClassTypeExp -> TVarDecl                                     //    | X <: N
 
   sorts FieldDecl constructors                                                   // F :=
     FieldDecl : TypeExp * string -> FieldDecl                                    //    | T f;
@@ -35,10 +42,6 @@ signature
     Var     : ID -> Exp                                                          //    | x
     Fld     : Exp * ID -> Exp                                                    //    | e.f
     Call    : Exp * list(TypeExp) * ID * list(Exp) -> Exp                        //    | e.<T*>m(e*)
-    New     : /*N*/TypeExp * list(Exp) -> Exp                                    //    | new N(e*)
-    Cast    : TypeExp * Exp -> Exp                                               //    | (T)e
+    New     : ClassTypeExp * list(Exp) -> Exp                                    //    | new N(e*)
+    Cast    : TypeExp * Exp -> Exp                                               //    | (N)e
     Ascribe : Exp * TypeExp -> Exp                                               //    | e:T
-
-  sorts TypeExp constructors                                                     // T :=
-    ClassT : ID * list(TypeExp) -> /*N*/TypeExp                                  //    | C<T*>
-    TVar   : ID -> TypeExp                                                       //    | X

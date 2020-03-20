@@ -41,11 +41,11 @@ rules
   classOK : scope * ClassDecl
   classesOK maps classOK(*, list(*))
 
-  classOK(s, ClassDecl(x, tvars, te_super, fields, ctor, methods)) :- {s_class Xs s_super p_super}
+  classOK(s, ClassDecl(x, tvars, cte_super, fields, ctor, methods)) :- {s_class Xs s_super p_super}
     new s_class, s_class -P-> s,                  // class scope
     s -> Class{x@x} with typeOfDecl CLASS(s_class),  // class declaration and type
     classTParamsOK(s_class, tvars) == Xs,
-    typeOfTypeExp(s_class, te_super) == CLASS(s_super),
+    typeOfClassTypeExp(s_class, cte_super) == CLASS(s_super),
     s_class -S-> s_super,
     notExtends(s_super, s_class),
     fieldDeclsOK(s_class, fields),                // assumed to be distinct
@@ -63,8 +63,8 @@ rules
   fieldDeclOK : scope * FieldDecl
   fieldDeclsOK maps fieldDeclOK(*, list(*))
 
-  fieldDeclOK(s_class, FieldDecl(ty, x)) :- {T}
-    typeOfTypeExp(s_class, ty) == T,            // field type
+  fieldDeclOK(s_class, FieldDecl(te, x)) :- {T}
+    typeOfTypeExp(s_class, te) == T,            // field type
     s_class -> Field{x@x} with typeOfDecl T.    // field declaration
 
 rules
@@ -99,7 +99,7 @@ rules
 
   relation tparamsOfMethod : -> list(occurrence)
 
-  methodOK(s_class, MethodDecl(tvars, ty, x, params, e)) :- {d s_method Xs T Ts U s_mtype}
+  methodOK(s_class, MethodDecl(tvars, te, x, params, e)) :- {d s_method Xs T Ts U s_mtype}
     d == Method{x@x},                         // method declaration
     !decl[d] in s_class,
 
@@ -109,7 +109,7 @@ rules
 
     typesOfParams(s_method, params) == Ts,    // method parameters    
     methodThisOK(s_method, s_class, d),       // declare this
-    typeOfTypeExp(s_method, ty) == T,         // return type
+    typeOfTypeExp(s_method, te) == T,         // return type
     typeOfExp(s_method, e) == U,              // body type
     subType(s_method, U, T),                  // body type is subtype of return type
 
@@ -147,8 +147,8 @@ rules
   typeOfParam:  scope * Param -> TYPE
   typesOfParams maps typeOfParam(*, list(*)) = list(*)
 
-  typeOfParam(s, Param(ty, x)) = T :- {d}
-    typeOfTypeExp(s, ty) == T,          // param type
+  typeOfParam(s, Param(te, x)) = T :- {d}
+    typeOfTypeExp(s, te) == T,          // param type
     s -> Var{x@x} with typeOfDecl T.    // param declaration
 
 rules
@@ -156,8 +156,8 @@ rules
   typeOfTParam : scope * TVarDecl -> occurrence
   typesOfTParams maps typeOfTParam(*, list(*)) = list(*)
 
-  typeOfTParam(s, TVarDecl(x, ty)) = TVar{x@x} :-
-    s -> TVar{x@x} with typeOfDecl typeOfTypeExp(s, ty). // t is upper bound of type parameter
+  typeOfTParam(s, TVarDecl(x, cte)) = TVar{x@x} :-
+    s -> TVar{x@x} with typeOfDecl typeOfClassTypeExp(s, cte). // t is upper bound of type parameter
 
   boundsOfTParams: scope * list(occurrence) -> list(TYPE)
   boundsOfTParams(s, []) = [].
@@ -177,7 +177,14 @@ rules
   typeOfTypeExp(s, TVar(x)) = TVAR(d) :- {x'} @x.ref := x',
     TVar{x@x} in s |-> [(_, d@TVar{x'@_})].        // type var reference
 
-  typeOfTypeExp(s, ClassT(x, tes)) = CLASS(s_inst) :- {x' s_class Xs Ts Us} @x.ref := x',
+  typeOfTypeExp(s, CTE2TE(cte)) = typeOfClassTypeExp(s, cte).
+
+rules
+
+  typeOfClassTypeExp : scope * ClassTypeExp -> TYPE
+  typesOfClassTypeExps maps typeOfClassTypeExp(*, list(*)) = list(*)
+
+  typeOfClassTypeExp(s, ClassT(x, tes)) = CLASS(s_inst) :- {x' s_class Xs Ts Us} @x.ref := x',
     typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, CLASS(s_class)))],    // class type
     typesOfTypeExps(s, tes) == Ts,          // type arguments
     ?tparamsOfClass[] in s_class == Xs,     // type parameters
@@ -206,10 +213,10 @@ rules
     typesOfExps(s, es) == Ss,
     subTypes(s, Ss, Us).
 
-  typeOfExp(s, New(te, es)) = T :- {s_inst Ts Us}
-    strict(typeOfTypeExp(s, te)) == T@CLASS(s_inst),  // class type scope
-    strict(PROJ(s_inst, Ctor{@-})) == CTOR(Ts),       // project constructor type
-    typesOfExps(s, es) == Us,                         // argument types
+  typeOfExp(s, New(cte, es)) = T :- {s_inst Ts Us}
+    strict(typeOfClassTypeExp(s, cte)) == T@CLASS(s_inst),  // class type scope
+    strict(PROJ(s_inst, Ctor{@-})) == CTOR(Ts),             // project constructor type
+    typesOfExps(s, es) == Us,                               // argument types
     subTypes(s, Us, Ts).
 
   typeOfExp(s, Ascribe(e, te)) = T :- {S}

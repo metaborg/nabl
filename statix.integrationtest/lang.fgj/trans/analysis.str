@@ -3,7 +3,8 @@ module analysis
 imports
 
   libspoofax/core/language
-  
+  libspoofax/sdf/pp
+
   statixruntime
   statix/api
 
@@ -12,7 +13,19 @@ imports
 
 rules // Analysis
 
-  editor-analyze = stx-editor-analyze(id|"statics", "programOK")
+  editor-analyze = stx-editor-analyze(explicate-injections|"statics", "programOK")
+
+
+rules
+
+  explicate-injections =
+    explicate-injections(inj-name)
+
+  inj-name: (sort, into-sort) -> $[[sort']2[into-sort']]
+    with sort' := <camel-abbr> sort
+    with into-sort' := <camel-abbr> into-sort
+
+  camel-abbr = explode-string; filter(is-upper); implode-string
 
 rules // Editor services
   
