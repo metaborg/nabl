@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import org.spoofax.interpreter.core.IContext;
+import org.spoofax.interpreter.core.Interpreter;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.core.UndefinedStrategyException;
 import org.spoofax.interpreter.stratego.SDefT;
@@ -49,7 +50,7 @@ public class StrategyCalls {
 
     private static CallableStrategy lookupStrategyCtree(IContext env, final String name,
             @Nullable Map<String, SDefT> strCache) throws InterpreterException {
-        final String cname = name.replace('-', '_') + "_0_0";
+        final String cname = Interpreter.cify(name) + "_0_0";
         final SDefT s;
         if(strCache != null && strCache.containsKey(cname)) {
             s = strCache.get(cname);
