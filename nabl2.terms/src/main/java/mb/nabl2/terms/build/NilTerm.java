@@ -10,9 +10,15 @@ import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable
+import java.util.Objects;
+
+@Value.Immutable(builder = false, copy = true, prehash = false)
 @Serial.Version(value = 42L)
 abstract class NilTerm extends AbstractTerm implements INilTerm {
+
+    @Value.Derived @Override public int getMinSize() {
+        return 0;
+    }
 
     @Override public boolean isGround() {
         return true;
@@ -43,13 +49,13 @@ abstract class NilTerm extends AbstractTerm implements INilTerm {
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof INilTerm)) {
-            return false;
-        }
+        if (this == other) return true;
+        if (!(other instanceof INilTerm)) return false;
+        INilTerm that = (INilTerm)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
         return true;
+        // @formatter:on
     }
 
     @Override public String toString() {

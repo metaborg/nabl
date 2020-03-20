@@ -11,6 +11,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermPrinter;
 import org.spoofax.terms.AbstractSimpleTerm;
 import org.spoofax.terms.AbstractTermFactory;
+import org.spoofax.terms.TermFactory;
 import org.spoofax.terms.util.EmptyIterator;
 
 public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
@@ -42,7 +43,7 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
 
     @Override
     public IStrategoTerm[] getAllSubterms() {
-        return new IStrategoTerm[0];
+        return TermFactory.EMPTY_TERM_ARRAY;
     }
 
     @Override
@@ -90,5 +91,8 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
             return Optional.empty();
         }
     }
-    
+
+    @Override public Iterator<IStrategoTerm> iterator() {
+        return new EmptyIterator<>();
+    }
 }

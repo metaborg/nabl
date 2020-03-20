@@ -4,6 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -48,28 +49,21 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
 
     // Object implementation
 
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(other == this) {
-            return true;
-        }
-        if(!(other instanceof AScope)) {
-            return super.equals(other);
-        }
-        final AScope that = (AScope) other;
-        if(!getResource().equals(that.getResource())) {
-            return false;
-        }
-        if(!getName().equals(that.getName())) {
-            return false;
-        }
-        return true;
+    @Override public int hashCode() {
+        // We use the super-class hashcode to ensure that an AScope and an IApplTerm
+        // with the same term representation have the same hash code.
+        return super.hashCode();
     }
 
-    @Override public int hashCode() {
-        return super.hashCode();
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof AScope)) return super.equals(other);
+        AScope that = (AScope)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getResource(), that.getResource())
+            && Objects.equals(this.getName(), that.getName());
+        // @formatter:on
     }
 
     @Override public String toString() {
@@ -82,8 +76,7 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
             return diffResource;
         }
 
-        int diffName = getName().toString().compareTo(scope.getName());
-        return diffName;
+        return getName().compareTo(scope.getName());
     }
 
 }

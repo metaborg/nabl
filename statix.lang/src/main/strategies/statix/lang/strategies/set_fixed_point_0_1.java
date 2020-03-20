@@ -26,7 +26,7 @@ public class set_fixed_point_0_1 extends Strategy {
 
     private static final ILogger log = LoggerUtils.logger(set_fixed_point_0_1.class);
 
-    static final Strategy instance = new set_fixed_point_0_1();
+    public static final Strategy instance = new set_fixed_point_0_1();
 
     @Override public IStrategoTerm invoke(final Context context, final IStrategoTerm current,
             final IStrategoTerm base) {
