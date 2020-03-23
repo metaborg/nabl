@@ -12,11 +12,11 @@ rules // analysis
 
   stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id , id|spec-name, init-constraint)
   stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre, id|spec-name, init-constraint)
-  stx-editor-elaborate(pre, post|spec-name, init-constraint) = stx-editor-elaborate(pre, post|spec-name, init-constraint)
+  stx-editor-elaborate(pre, post|spec-name, init-constraint) = stx--editor-elaborate(pre, post|spec-name, init-constraint)
 
   stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id , id|spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, id|spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
@@ -89,3 +89,4 @@ rules // services
 rules // prettyprinting
 
   stx-prettyprint-term = stx--prettyprint-term
+
