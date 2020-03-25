@@ -52,9 +52,7 @@ public class StrategoTerms {
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
             blob -> new StrategoBlob(blob.getValue()),
-            var -> {
-                throw new IllegalArgumentException("Cannot convert specialized terms to Stratego: " + var);
-            }
+            var -> termFactory.makeAppl("nabl2.Var", new IStrategoTerm[] { termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()) })
         ));
         // @formatter:on
         switch(strategoTerm.getTermType()) {
