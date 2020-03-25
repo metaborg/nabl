@@ -224,8 +224,7 @@ context-free syntax
 
 context-free priorities
 
-    LabelRE.Neg
-  > LabelRE.Closure
+    { LabelRE.Neg LabelRE.Closure }
   > LabelRE.Concat
   > LabelRE.And
   > LabelRE.Or
