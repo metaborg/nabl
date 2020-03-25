@@ -3,7 +3,6 @@ package mb.nabl2.terms.stratego;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,14 +20,16 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
-import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 
 public class StrategoTerms {
+
+    public static final String CONS_OP = "str.cons";
+    public static final int CONS_ARITY = 2;
+    public static final String NIL_OP = "str.nil";
+    public static final int NIL_ARITY = 0;
 
     private final org.spoofax.interpreter.terms.ITermFactory termFactory;
 
@@ -40,28 +41,36 @@ public class StrategoTerms {
 
     public IStrategoTerm toStratego(ITerm term) {
         // @formatter:off
-        IStrategoTerm strategoTerm = term.match(Terms.cases(
+        IStrategoTerm strategoTerm = term.match(Terms.<IStrategoTerm>cases(
             appl -> {
-                List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
-                
-                fixmeHandleSpecialTerms();
-                
-                IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
-                return appl.getOp().equals(Terms.TUPLE_OP)
-                        ? termFactory.makeTuple(argArray)
-                        : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), argArray);
+                final List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
+                final int argsSize = args.size();
+                IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[argsSize]);
+                switch(appl.getOp()) {
+                    case Terms.TUPLE_OP:
+                        return termFactory.makeTuple(argArray);
+                    case CONS_OP:
+                        if(argsSize != CONS_ARITY) {
+                            throw new IllegalArgumentException("Cons requires two arguments, got " + argsSize);
+                        }
+                        return termFactory.makeListCons(args.get(0), (IStrategoList) args.get(1));
+                    case NIL_OP:
+                        if(argsSize != CONS_ARITY) {
+                            throw new IllegalArgumentException("Nil requires zero arguments, got " + argsSize);
+                        }
+                        return termFactory.makeList();
+                    default:
+                        return termFactory.makeAppl(appl.getOp(), argArray);
+                }
             },
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
             blob -> new StrategoBlob(blob.getValue()),
-            var -> {
-                throw new IllegalArgumentException("Cannot convert specialized terms to Stratego: " + var);
-            }
+            var -> termFactory.makeAppl("nabl2.Var", new IStrategoTerm[] { termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()) })
         ));
         // @formatter:on
         switch(strategoTerm.getTermType()) {
             case IStrategoTerm.BLOB:
-            case IStrategoTerm.LIST:
                 break;
             default:
                 strategoTerm = putAttachments(strategoTerm, term.getAttachments());
@@ -95,7 +104,7 @@ public class StrategoTerms {
     public ITerm fromStratego(IStrategoTerm sterm) {
         ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
         // @formatter:off
-        ITerm term = match(sterm, StrategoTerms.cases(
+        final ITerm term = match(sterm, StrategoTerms.<ITerm>cases(
             appl -> {
                 final List<ITerm> args = Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
                 return B.newAppl(appl.getConstructor().getName(), args, attachments);
@@ -104,7 +113,15 @@ public class StrategoTerms {
                 final List<ITerm> args = Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
                 return B.newTuple(args, attachments);
             },
-            this::fromStrategoList,
+            list -> {
+                if(list.isEmpty()) {
+                    return B.newAppl(NIL_OP, ImmutableList.of(), attachments);
+                } else {
+                    final ITerm head = fromStratego(list.head());
+                    final ITerm tail = fromStratego(list.tail());
+                    return B.newAppl(CONS_OP, ImmutableList.of(head, tail), attachments);
+                }
+            },
             integer -> B.newInt(integer.intValue(), attachments),
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
             string -> B.newString(string.stringValue(), attachments),

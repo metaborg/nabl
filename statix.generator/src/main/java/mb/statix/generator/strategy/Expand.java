@@ -35,19 +35,20 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 
+import javax.annotation.Nullable;
 
-final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
+
+public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState> {
 
     private final Mode mode;
     private final Function2<Rule, Long, Double> ruleWeight;
-    private final RuleSet rules;
+    @Nullable private final RuleSet rules;
 
-    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight) {
-        this(spec, mode, ruleWeight, spec.rules());
+    Expand(Mode mode, Function2<Rule, Long, Double> ruleWeight) {
+        this(mode, ruleWeight, null);
     }
 
-    Expand(Spec spec, Mode mode, Function2<Rule, Long, Double> ruleWeight, RuleSet rules) {
-        super(spec);
+    Expand(Mode mode, Function2<Rule, Long, Double> ruleWeight, @Nullable RuleSet rules) {
         this.mode = mode;
         this.ruleWeight = ruleWeight;
         this.rules = rules;
@@ -60,7 +61,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         final FocusedSearchState<CUser> input = node.output();
         final CUser predicate = input.focus();
 
-        final java.util.Map<Rule, Double> rules = getWeightedRules(predicate.name());
+        final java.util.Map<Rule, Double> rules = getWeightedRules(ctx, predicate.name());
         final List<Tuple2<Rule, ApplyResult>> results =
                 RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate);
 
@@ -88,7 +89,7 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
         switch(mode) {
             case ENUM:
                 Collections.shuffle(newNodes, ctx.rnd()); // Important!
-                nodes = newNodes.stream().map(p -> p.getKey());
+                nodes = newNodes.stream().map(Pair::getKey);
                 break;
             case RND:
                 final EnumeratedDistribution<SearchNode<SearchState>> ruleDist =
@@ -106,16 +107,17 @@ final class Expand extends SearchStrategy<FocusedSearchState<CUser>, SearchState
     /**
      * Return a map with ordered keys mapping rules to their weights.
      */
-    private java.util.Map<Rule, Double> getWeightedRules(String name) {
+    private java.util.Map<Rule, Double> getWeightedRules(SearchContext ctx, String name) {
         try {
             return cache.get(name, () -> {
-                final ImmutableSet<Rule> rs = this.rules.getOrderIndependentRules(name);
+                RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
+                final ImmutableSet<Rule> rs = rules.getOrderIndependentRules(name);
                 final java.util.Map<String, Long> rcs =
                         rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
                 // ImmutableMap iterates over keys in insertion-order
                 final ImmutableMap.Builder<Rule, Double> ruleWeights = ImmutableMap.builder();
                 rs.forEach(r -> {
-                    long count = rcs.getOrDefault(r.label(), 1l);
+                    long count = rcs.getOrDefault(r.label(), 1L);
                     double weight = ruleWeight.apply(r, count);
                     ruleWeights.put(r, weight);
                 });

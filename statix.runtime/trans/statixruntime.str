@@ -2,4 +2,5 @@ module statixruntime
 
 imports
 
+  statix/api
   statix/runtime/-

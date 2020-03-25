@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import mb.statix.spec.RuleSet;
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -47,6 +46,7 @@ import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CAstProperty.Op;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -75,6 +75,7 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
 
 public class StatixTerms {
@@ -142,8 +143,8 @@ public class StatixTerms {
                 M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
                     return new CAstId(t1, t2);
                 }),
-                M.appl3("CAstProperty", term(), label(), term(), (c, idTerm, property, valueTerm) -> {
-                    return new CAstProperty(idTerm, property, valueTerm);
+                M.appl4("CAstProperty", term(), label(), propertyOp(), term(), (c, idTerm, property, op, valueTerm) -> {
+                    return new CAstProperty(idTerm, property, op, valueTerm);
                 }),
                 M.appl2("CConj", m, m, (c, c1, c2) -> {
                     return new CConj(c1, c2);
@@ -171,7 +172,7 @@ public class StatixTerms {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    return new CTellRel(scope, rel, B.newTuple(args));
+                    return new CTellRel(scope, rel, B.newTuple(args, c.getAttachments()));
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
@@ -272,6 +273,15 @@ public class StatixTerms {
         return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> ImmutableTuple2.of(l1, l2));
     }
 
+    public static IMatcher<CAstProperty.Op> propertyOp() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("Add", t -> Op.ADD),
+            M.appl0("Set", t -> Op.SET)
+        );
+        // @formatter:on
+    }
+
     public static IMatcher<ITerm> term() {
         // @formatter:off
         return M.<ITerm>casesFix(m -> Iterables2.from(
@@ -355,34 +365,34 @@ public class StatixTerms {
                 return var.map(v -> P.newAs(v, pattern)).orElseGet(() -> P.newAs(pattern));
             }),
             M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
-                return P.newAppl(op, args);
+                return P.newAppl(op, args, t.getAttachments());
             }),
             M.appl1("Tuple", M.listElems(M.req(m)), (t, args) -> {
-                return P.newTuple(args);
+                return P.newTuple(args, t.getAttachments());
             }),
             M.appl1("List", M.listElems((t, u) -> m.match(t, u)), (t, elems) -> {
-                return P.newList(elems);
+                return P.newList(elems, t.getAttachments());
             }),
             M.appl2("ListTail", M.listElems((t, u) -> m.match(t, u)), m, (t, elems, tail) -> {
-                return P.newListTail(elems, tail);
+                return P.newListTail(elems, tail, t.getAttachments());
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
-                return P.newString(string);
+                return P.newString(string, t.getAttachments());
             }),
             M.appl1("Int", M.stringValue(), (t, integer) -> {
-                return P.newInt(Integer.parseInt(integer));
+                return P.newInt(Integer.parseInt(integer), t.getAttachments());
             }),
             M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(m), positionPattern(), (t, ns, args, pos) -> {
                 List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
-                return P.newAppl(OCCURRENCE_OP, applArgs);
+                return P.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
             }),
             M.appl1(PATH_EMPTY_OP, m, (t, s) -> {
                 List<Pattern> applArgs = ImmutableList.of(s);
-                return P.newAppl(PATH_EMPTY_OP, applArgs);
+                return P.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
             }),
             M.appl3(PATH_STEP_OP, m, m, m, (t, p, l, s) -> {
                 List<Pattern> applArgs = ImmutableList.of(p, l, s);
-                return P.newAppl(PATH_STEP_OP, applArgs);
+                return P.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
             })
         ));
         // @formatter:on
@@ -395,7 +405,7 @@ public class StatixTerms {
                 return Optional.empty();
             }),
             M.appl1("Var", M.stringValue(), (t, name) -> {
-                return Optional.of(B.newVar("", name));
+                return Optional.of(B.newVar("", name, t.getAttachments()));
             })
         );
         // @formatter:on

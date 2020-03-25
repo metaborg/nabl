@@ -32,11 +32,7 @@ import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spec.Spec;
 
-final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
-
-    public DelayStuckQueries(Spec spec) {
-        super(spec);
-    }
+public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx, SearchNode<SearchState> node) {
         final SearchState input = node.output();
@@ -44,18 +40,15 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
         final ICompleteness.Immutable completeness = input.completeness();
 
         final java.util.Map<IConstraint, Delay> delays = Maps.newHashMap();
-        input.constraints().stream().filter(c -> c instanceof CResolveQuery).map(c -> (CResolveQuery) c).forEach(q -> {
-            checkDelay(q, state, completeness).ifPresent(d -> {
-                delays.put(q, d);
-            });
-        });
+        input.constraints().stream().filter(c -> c instanceof CResolveQuery).map(c -> (CResolveQuery) c)
+                .forEach(q -> checkDelay(ctx.spec(), q, state, completeness).ifPresent(d -> delays.put(q, d)));
 
         final SearchState newState = input.delay(delays.entrySet());
         final String desc = this.toString() + "[" + delays.size() + "]";
         return SearchNodes.of(node, this::toString, new SearchNode<>(ctx.nextNodeId(), newState, node, desc));
     }
 
-    private Optional<Delay> checkDelay(CResolveQuery query, IState.Immutable state,
+    private Optional<Delay> checkDelay(Spec spec, CResolveQuery query, IState.Immutable state,
             ICompleteness.Immutable completeness) {
         final IUniDisunifier unifier = state.unifier();
 
@@ -69,7 +62,7 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways(spec).orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -80,11 +73,11 @@ final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
-        final DataWF<ITerm, CEqual> dataWF =
-                new ResolveDataWF(spec(), state, completeness, query.filter().getDataWF(), query);
+        final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
+                spec,
                 state.scopeGraph(), query.relation(),
                 labelWF, labelOrd, isComplete2,
                 dataWF, isAlways, isComplete2);

@@ -1,5 +1,6 @@
 package mb.nabl2.terms.stratego;
 
+import static mb.nabl2.terms.build.ListBuild.LB;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.stratego.ImmutableStrategoAnnotations;
 
 public class StrategoLists {
 
@@ -38,36 +40,7 @@ public class StrategoLists {
 
     // to
 
-    public IStrategoTerm toStratego(ITerm term) {
-        // @formatter:off
-        IStrategoTerm strategoTerm = term.matchOrThrow(Terms.cases(
-            appl -> {
-                List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
-                IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
-                return appl.getOp().equals(Terms.TUPLE_OP)
-                        ? termFactory.makeTuple(argArray)
-                        : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), argArray);
-            },
-            list ->  toStrategoList(list),
-            string -> termFactory.makeString(string.getValue()),
-            integer -> termFactory.makeInt(integer.getValue()),
-            blob -> new StrategoBlob(blob.getValue()),
-            var -> {
-                throw new IllegalArgumentException("Cannot convert specialized terms to Stratego: " + var);
-            }
-        ));
-        // @formatter:on
-        switch(strategoTerm.getTermType()) {
-            case IStrategoTerm.BLOB:
-            case IStrategoTerm.LIST:
-                break;
-            default:
-                strategoTerm = putAttachments(strategoTerm, term.getAttachments());
-        }
-        return strategoTerm;
-    }
-
-    private IStrategoTerm toStrategoList(IListTerm list) {
+    public IStrategoTerm toStrategoList(IListTerm list) {
         final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
         final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
         while(list != null) {
@@ -150,7 +123,7 @@ public class StrategoLists {
             list = list.tail();
         }
         attachments.add(getAttachments(list));
-        return B.newList(terms, attachments);
+        return LB.newList(terms, attachments);
     }
 
     public static ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {

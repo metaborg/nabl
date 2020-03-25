@@ -7,6 +7,9 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 
 public interface IListTerm extends ITerm {
 
+    /** Gets the minimum size of the list. This is the size of the list if the list does not contain a variable term as a tail. */
+    int getMinSize();
+
     <T> T match(Cases<T> cases);
 
     interface Cases<T> extends Function1<IListTerm, T> {

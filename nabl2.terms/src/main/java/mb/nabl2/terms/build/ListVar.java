@@ -12,6 +12,10 @@ import mb.nabl2.terms.IListVar;
 @Serial.Version(value = 42L)
 public abstract class ListVar extends AbstractTermVar implements IListVar {
 
+    @Override public int getMinSize() {
+        return 0;
+    }
+
     @Override public <T> T match(IListTerm.Cases<T> cases) {
         return cases.caseVar(this);
     }
@@ -21,5 +25,13 @@ public abstract class ListVar extends AbstractTermVar implements IListVar {
     }
 
     @Override public abstract ListVar withAttachments(ImmutableClassToInstanceMap<Object> value);
+
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override public boolean equals(Object other) {
+        return super.equals(other);
+    }
 
 }

@@ -1,13 +1,5 @@
 package mb.statix.generator.strategy;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.apache.commons.math3.distribution.EnumeratedDistribution;
-import org.apache.commons.math3.util.Pair;
-import org.metaborg.util.functions.Function1;
-
 import mb.statix.generator.FocusedSearchState;
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
@@ -17,14 +9,19 @@ import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.util.RandomGenerator;
 import mb.statix.generator.util.StreamUtil;
 import mb.statix.solver.IConstraint;
-import mb.statix.spec.Spec;
+import org.apache.commons.math3.distribution.EnumeratedDistribution;
+import org.apache.commons.math3.util.Pair;
+import org.metaborg.util.functions.Function1;
 
-final class Select<C extends IConstraint> extends SearchStrategy<SearchState, FocusedSearchState<C>> {
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public final class Select<C extends IConstraint> extends SearchStrategy<SearchState, FocusedSearchState<C>> {
     private final Class<C> cls;
     private final Function1<SearchState, Function1<C, Double>> weight;
 
-    Select(Spec spec, Class<C> cls, Function1<SearchState, Function1<C, Double>> weight) {
-        super(spec);
+    Select(Class<C> cls, Function1<SearchState, Function1<C, Double>> weight) {
         this.cls = cls;
         this.weight = weight;
     }

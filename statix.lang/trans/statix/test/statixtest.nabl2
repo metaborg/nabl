@@ -2,7 +2,9 @@ module statix/test/statixtest
 
 imports
 
-  signatures/statix/lang/-
+  signatures/statix/test/-
+
+  statix/lang/statics/-
 
 rules
 

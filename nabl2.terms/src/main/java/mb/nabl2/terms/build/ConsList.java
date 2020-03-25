@@ -3,16 +3,17 @@ package mb.nabl2.terms.build;
 import static org.metaborg.util.unit.Unit.unit;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultiset;
 
 import mb.nabl2.terms.IConsList;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 
 @Value.Immutable
@@ -31,6 +32,21 @@ abstract class ConsList extends AbstractApplTerm implements IConsList {
         return ListTerms.CONS_OP;
     }
 
+    @Value.Lazy @Override public int getMinSize() {
+        return 1 + getTail().getMinSize();
+    }
+
+    @Value.Lazy @Override public boolean isGround() {
+        return getHead().isGround() && getTail().isGround();
+    }
+
+    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+        vars.addAll(getHead().getVars());
+        vars.addAll(getTail().getVars());
+        return vars.build();
+    }
+
     @Override public List<ITerm> getArgs() {
         return ImmutableList.of(getHead(), getTail());
     }
@@ -44,24 +60,11 @@ abstract class ConsList extends AbstractApplTerm implements IConsList {
     }
 
     @Override public int hashCode() {
-        return Objects.hash(getHead(), getTail());
+        return super.hashCode();
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof IConsList)) {
-            return false;
-        }
-        IConsList that = (IConsList) other;
-        if(!getHead().equals(that.getHead())) {
-            return false;
-        }
-        if(!getTail().equals(that.getTail())) {
-            return false;
-        }
-        return true;
+        return super.equals(other);
     }
 
     @Override public String toString() {

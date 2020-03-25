@@ -3,6 +3,7 @@ package mb.statix.generator.scopegraph;
 import java.util.Optional;
 import java.util.Set;
 
+import mb.statix.spec.Spec;
 import org.metaborg.util.functions.Predicate0;
 import org.metaborg.util.functions.Predicate2;
 
@@ -19,6 +20,7 @@ import mb.statix.scopegraph.terms.path.Paths;
 
 public class NameResolution<S extends D, L, D, X> {
 
+    private final Spec spec;
     private final IScopeGraph<S, L, D> scopeGraph;
     private final L relation;
     private final Set<L> labels;
@@ -33,8 +35,9 @@ public class NameResolution<S extends D, L, D, X> {
 
     private Predicate0 select;
 
-    public NameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+    public NameResolution(Spec spec, IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
             Predicate2<S, L> isEdgeComplete, DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, L> isDataComplete) {
+        this.spec = spec;
         this.scopeGraph = scopeGraph;
         this.relation = relation;
         this.labels =
@@ -133,14 +136,14 @@ public class NameResolution<S extends D, L, D, X> {
         final Env.Builder<S, L, D, X> env = Env.builder();
         if(relation.equals(scopeGraph.getNoDataLabel())) {
             final D datum = scope;
-            final Optional<Optional<X>> x = dataWF.wf(datum);
+            final Optional<Optional<X>> x = dataWF.wf(spec, datum);
             if(x.isPresent()) {
                 env.match(Paths.resolve(path, relation, 0, datum), x.get());
             }
         } else {
             int index = 0;
             for(D datum : getData(re, path, relation)) {
-                final Optional<Optional<X>> x = dataWF.wf(datum);
+                final Optional<Optional<X>> x = dataWF.wf(spec, datum);
                 if(x.isPresent()) {
                     env.match(Paths.resolve(path, relation, index++, datum), x.get());
                 }

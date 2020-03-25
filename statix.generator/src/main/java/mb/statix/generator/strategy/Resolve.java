@@ -1,26 +1,6 @@
 package mb.statix.generator.strategy;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.generator.util.StreamUtil.flatMap;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.metaborg.util.functions.Predicate2;
-import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.optionals.Optionals;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
-import com.google.common.collect.Streams;
+import com.google.common.collect.*;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -50,17 +30,27 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
-import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
+import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
 
-final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-    private final int sizes = 2;
-    private final int subsetsPerSize = 3;
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.generator.util.StreamUtil.flatMap;
 
-    Resolve(Spec spec) {
-        super(spec);
-    }
+public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
+
+    private static final int sizes = 2;
+    private static final int subsetsPerSize = 3;
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CResolveQuery>> node) {
@@ -76,7 +66,7 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways(ctx.spec()).orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -88,11 +78,11 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
-        final DataWF<ITerm, CEqual> dataWF =
-                new ResolveDataWF(spec(), state, completeness, query.filter().getDataWF(), query);
+        final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
+                ctx.spec(),
                 state.scopeGraph(), query.relation(),
                 labelWF, labelOrd, isComplete2,
                 dataWF, isAlways, isComplete2);
@@ -134,30 +124,27 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
             final Range<Integer> resultSize = resultSize(query.resultTerm(), unifier, env.matches.size());
             final List<Integer> sizes = sizes(resultSize, ctx.rnd());
 
-            return flatMap(sizes.stream().map(size -> size - reqMatches.size()), size -> {
-                return Subsets.of(optMatches).enumerate(size, ctx.rnd()).map(entry -> {
-                    final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
-                    reqMatches.forEach(subEnvBuilder::match);
-                    entry.getKey().forEach(subEnvBuilder::match);
-                    entry.getValue().forEach(subEnvBuilder::reject);
-                    env.rejects.forEach(subEnvBuilder::reject);
-                    final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
-                    final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
-                            .collect(ImmutableList.toImmutableList());
-                    final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-                    constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                    flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(condition -> {
-                        constraints.add(condition);
-                    });
-                    flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition)).forEach(condition -> {
-                        constraints.add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
-                                condition.cause().orElse(null), condition.message().orElse(null)));
-                    });
-                    final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
-                    return new SearchNode<>(ctx.nextNodeId(), newState, node,
-                            "resolve[" + (idx + 1) + "/" + count.get() + "]");
-                });
-            });
+            return flatMap(sizes.stream().map(size -> size - reqMatches.size()),
+                    size -> Subsets.of(optMatches).enumerate(size, ctx.rnd()).map(entry -> {
+                final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
+                reqMatches.forEach(subEnvBuilder::match);
+                entry.getKey().forEach(subEnvBuilder::match);
+                entry.getValue().forEach(subEnvBuilder::reject);
+                env.rejects.forEach(subEnvBuilder::reject);
+                final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
+                final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
+                        .collect(ImmutableList.toImmutableList());
+                final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+                constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
+                flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition))
+                        .forEach(constraints::add);
+                flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition))
+                        .forEach(condition -> constraints.add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
+                        condition.cause().orElse(null), condition.message().orElse(null))));
+                final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
+                return new SearchNode<>(ctx.nextNodeId(), newState, node,
+                        "resolve[" + (idx + 1) + "/" + count.get() + "]");
+            }));
         }));
     }
 
@@ -165,27 +152,23 @@ final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, Se
         final IntStream fixedSizes = IntStream.of(0, 1, resultSize.upperEndpoint());
         final IntStream randomSizes = RandomUtil.ints(2, resultSize.upperEndpoint(), rnd).limit(sizes);
         final IntStream allSizes =
-                Streams.concat(fixedSizes, randomSizes).filter(size -> resultSize.contains(size)).limit(subsetsPerSize);
+                Streams.concat(fixedSizes, randomSizes).filter(resultSize::contains).limit(subsetsPerSize);
         // make sure there are no duplicates, of resultSize.upperEndpoint equals one of the fixed values
-        final List<Integer> subsetSizes = Lists.newArrayList(allSizes.boxed().collect(Collectors.toSet()));
+        final List<Integer> subsetSizes = allSizes.boxed().distinct().collect(Collectors.toList());
         Collections.shuffle(subsetSizes, rnd);
         return subsetSizes;
     }
 
     private Range<Integer> resultSize(ITerm result, IUniDisunifier unifier, int max) {
         // @formatter:off
-        final AtomicInteger min = new AtomicInteger(0);
-        return M.<Range<Integer>>list(ListTerms.<Range<Integer>>casesFix(
+        final int[] min = { 0 };
+        return M.list(ListTerms.<Range<Integer>>casesFix(
             (m, cons) -> {
-                min.incrementAndGet();
+                min[0]++;
                 return m.apply((IListTerm) unifier.findTerm(cons.getTail()));
             },
-            (m, nil) -> {
-                return Range.singleton(min.get());
-            },
-            (m, var) -> {
-                return Range.closed(min.get(), max);
-            }
+            (m, nil) -> Range.singleton(min[0]),
+            (m, var) -> Range.closed(min[0], max)
         )).match(result, unifier).orElse(Range.closed(0, max));
         // @formatter:on
     }

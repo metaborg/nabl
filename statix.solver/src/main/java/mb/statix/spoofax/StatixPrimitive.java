@@ -9,6 +9,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -47,6 +48,8 @@ import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
     private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
+
+    private static final int MAX_TRACE = 5;
 
     final protected int tvars;
 
@@ -116,32 +119,39 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected void addMessage(IMessage message, IConstraint constraint, IUniDisunifier unifier, Collection<ITerm> errors,
-            Collection<ITerm> warnings, Collection<ITerm> notes) {
+    protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
+            final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();
-        while(constraint != null) {
+        IConstraint current = constraint;
+        int traceCount = 0;
+        while(current != null) {
             if(originTerm == null) {
-                originTerm = findOriginArgument(constraint, unifier).orElse(null);
+                originTerm = findOriginArgument(current, unifier).orElse(null);
             }
-            trace.addLast(constraint.toString(formatter));
-            constraint = constraint.cause().orElse(null);
+            if(traceCount++ < MAX_TRACE) {
+                trace.addLast(current.toString(formatter));
+            }
+            current = current.cause().orElse(null);
         }
+        if(traceCount >= MAX_TRACE) {
+            trace.addLast("... trace truncated ...");
+        }
+        
+        // use empty origin if none was found
         if(originTerm == null) {
             originTerm = B.EMPTY_TUPLE;
         }
 
-        final StringBuilder messageText = new StringBuilder();
-        messageText.append(cleanupString(message.toString(formatter)));
-        for(String c : trace) {
-            messageText.append("<br>").append("\n");
-            messageText.append("&gt;&nbsp;");
-            messageText.append(cleanupString(c));
-        }
+        // add constraint message
+        trace.addFirst(message.toString(formatter));
 
-        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText.toString()));
+        final String messageText = trace.stream().filter(s -> !s.isEmpty()).map(s -> cleanupString(s))
+                .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
+
+        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText));
         switch(message.kind()) {
             case ERROR:
                 errors.add(messageTerm);

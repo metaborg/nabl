@@ -121,6 +121,11 @@ context-free syntax
   LabelRE.ZeroOrOne = <<LabelRE>?>
   LabelRE.OneOrMore = <<LabelRE>+>
 
+context-free priorities
+
+    { LabelRE.Neg LabelRE.Closure LabelRE.ZeroOrOne LabelRE.OneOrMore }
+  > { LabelRE.Concat LabelRE.And LabelRE.Or }
+
 
 /******************************************************************
  * Resolve & Query

@@ -4,6 +4,8 @@ imports
 
   signatures/statix/cli/-
 
+  statix/lang/statics/-
+
 rules
 
   [[ e@Eval(c) ^ (s) ]] :=

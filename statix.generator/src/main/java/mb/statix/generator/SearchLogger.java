@@ -4,23 +4,29 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.solver.IConstraint;
 
-public interface SearchLogger {
+public interface SearchLogger<I, O> {
 
-    void init(long seed, SearchStrategy<?, ?> strategy, Iterable<IConstraint> constraint);
+    void init(long seed, SearchStrategy<I, O> strategy, Iterable<IConstraint> constraint);
 
-    void success(SearchNode<SearchState> n);
+    void success(SearchNode<O> n);
 
     void failure(SearchNodes<?> nodes);
 
-    final SearchLogger NOOP = new SearchLogger() {
+    @SuppressWarnings("rawtypes")
+    SearchLogger<?, ?> NOOP = new SearchLogger() {
+        @Override
+        public void success(SearchNode n) {
 
-        @Override public void init(long seed, SearchStrategy<?, ?> strategy, Iterable<IConstraint> constraint) {
         }
 
-        @Override public void success(SearchNode<SearchState> n) {
+        @Override
+        public void failure(SearchNodes nodes) {
+
         }
 
-        @Override public void failure(SearchNodes<?> nodes) {
+        @Override
+        public void init(long seed, SearchStrategy strategy, Iterable constraint) {
+
         }
 
     };

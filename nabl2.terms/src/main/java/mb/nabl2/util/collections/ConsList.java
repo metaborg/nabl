@@ -2,10 +2,12 @@ package mb.nabl2.util.collections;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 
 public class ConsList<E> implements Iterable<E>, Serializable {
@@ -44,15 +46,17 @@ public class ConsList<E> implements Iterable<E>, Serializable {
     }
 
     public ConsList<E> prepend(ConsList<E> init) {
-        return init.append(this);
+        final Deque<E> elems = Lists.newLinkedList();
+        init.forEach(elems::push);
+        ConsList<E> list = this;
+        while(!elems.isEmpty()) {
+            list = list.prepend(elems.pop());
+        }
+        return list;
     }
 
     public ConsList<E> append(ConsList<E> tail) {
-        ConsList<E> list = tail;
-        for(E head : this) {
-            list = tail.prepend(head);
-        }
-        return list;
+        return tail.prepend(this);
     }
 
     public ConsList<E> tail() {

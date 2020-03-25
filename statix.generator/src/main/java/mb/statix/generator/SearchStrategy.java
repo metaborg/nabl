@@ -4,21 +4,16 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.spec.Spec;
 
-public abstract class SearchStrategy<I extends SearchState, O extends SearchState> {
+public abstract class SearchStrategy<I, O> {
 
     public enum Mode {
         ENUM, RND
     }
 
-    private final Spec spec;
+    public SearchStrategy() {
 
-    public SearchStrategy(Spec spec) {
-        this.spec = spec;
     }
 
-    protected Spec spec() {
-        return this.spec;
-    }
 
     public final SearchNodes<O> apply(SearchContext ctx, SearchNode<I> node) {
         return doApply(ctx, node);

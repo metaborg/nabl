@@ -142,16 +142,17 @@ rules // smart constructors for typed terms
   mk-Op(|ty): (x, ts) -> <norm-set-ast-type(|ty)> Op(x, ts)
 
   mk-Tuple: ts -> <norm-set-ast-type(|ty)> t
-    with if [t] := ts then
-           ty := <norm-get-ast-type> t
+    with if [t0] := ts then
+           ty := <norm-get-ast-type> t0
+         ; t := t0
          else
-           t := Tuple(ts);
            ty := TUPLE(<map(norm-get-ast-type)> ts)
+         ; t := Tuple(ts)
          end
 
   mk-TUPLE: tys -> ty
-    with if [ty] := tys then
-           id
+    with if [ty0] := tys then
+           ty := ty0
          else
            ty := TUPLE(tys)
          end

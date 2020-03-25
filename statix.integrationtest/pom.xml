@@ -21,6 +21,9 @@
     <module>lang.stlcrec.test</module>
     <module>lang.sysf</module>
     <module>lang.sysf.test</module>
+    <module>lang.mod</module>
+    <module>lang.mod.test</module>
+    <module>lang.mod.example</module>
   </modules>
 
 </project>

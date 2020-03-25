@@ -42,20 +42,14 @@ public abstract class AbstractTermVar extends AbstractTerm implements ITermVar {
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof ITermVar)) {
-            return false;
-        }
-        ITermVar that = (ITermVar) other;
-        if(!getResource().equals(that.getResource())) {
-            return false;
-        }
-        if(!getName().equals(that.getName())) {
-            return false;
-        }
-        return true;
+        if (this == other) return true;
+        if (!(other instanceof ITermVar)) return false;
+        ITermVar that = (ITermVar)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(getResource(), that.getResource()) &&
+               Objects.equals(getName(), that.getName());
+        // @formatter:on
     }
 
     @Override public String toString() {

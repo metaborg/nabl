@@ -2,9 +2,14 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import javax.annotation.Nullable;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
+
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -14,12 +19,11 @@ import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
+import mb.statix.solver.ITermProperty;
 import mb.statix.spec.Spec;
 
 @Value.Immutable
@@ -41,12 +45,15 @@ public abstract class AState implements IState.Immutable {
             throw new IllegalArgumentException("Cannot merge unifiers.");
         }
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
+        final Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties =
+                termProperties().__putAll(other.termProperties());
         // @formatter:off
         return State.builder().from(this)
             .__vars(vars)
             .__scopes(scopes)
             .unifier(unifier)
             .scopeGraph(scopeGraph)
+            .termProperties(termProperties)
             .build();
         // @formatter:on
     }
@@ -61,12 +68,21 @@ public abstract class AState implements IState.Immutable {
         return Set.Immutable.of();
     }
 
-    @Override public Tuple2<ITermVar, IState.Immutable> freshVar(String base) {
+    @Override public Tuple2<ITermVar, IState.Immutable> freshVar(ITermVar var) {
+        return freshVar(var.getName(), var.getAttachments());
+    }
+
+    @Override public Tuple2<ITermVar, IState.Immutable> freshWld() {
+        return freshVar("_", null);
+    }
+
+    private Tuple2<ITermVar, IState.Immutable> freshVar(String name,
+            @Nullable ImmutableClassToInstanceMap<Object> attachments) {
         final int i = __varCounter() + 1;
-        final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITermVar var = B.newVar(resource(), name);
-        final Set.Immutable<ITermVar> vars = __vars().__insert(var);
-        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());
+        final String newName = name.replaceAll("-", "_") + "-" + i;
+        final ITermVar newVar = B.newVar(resource(), newName, attachments);
+        final Set.Immutable<ITermVar> vars = __vars().__insert(newVar);
+        return ImmutableTuple2.of(newVar, State.builder().from(this).__varCounter(i).__vars(vars).build());
     }
 
     @Override public Set.Immutable<ITermVar> vars() {
@@ -101,12 +117,12 @@ public abstract class AState implements IState.Immutable {
 
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 
-    @Value.Parameter @Override public abstract IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties();
+    @Value.Parameter @Override public abstract Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
     public static State of(Spec spec) {
         return State.of(Unifiers.Immutable.of(),
                 ScopeGraph.Immutable.of(spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel()),
-                HashTrieRelation3.Immutable.of());
+                Map.Immutable.of());
     }
 
 }

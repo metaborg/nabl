@@ -68,9 +68,9 @@ public class StatixGenerate {
             long all = hits + missStats.getN();
             out.println(" " + hits + "/" + all + " " + summary(hitStats));
         });
-        final SearchLogger searchLog = new SearchLogger() {
+        final SearchLogger<SearchState, SearchState> searchLog = new SearchLogger<SearchState, SearchState>() {
 
-            @Override public void init(long seed, SearchStrategy<?, ?> strategy, Iterable<IConstraint> constraints) {
+            @Override public void init(long seed, SearchStrategy<SearchState, SearchState> strategy, Iterable<IConstraint> constraints) {
                 log.info("seed {}", seed);
                 log.info("strategy {}", strategy);
                 log.info("constraints {}", constraints);
@@ -78,21 +78,20 @@ public class StatixGenerate {
 
             @Override public void success(SearchNode<SearchState> n) {
                 progress.step('+');
-                addSize(n, hitStats);
-                logSuccess(log, Level.Debug, n, pretty::apply);
+                addSize(n.output(), hitStats);
+                logSuccess(log, Level.Debug, n, pretty);
             }
 
             @Override public void failure(SearchNodes<?> nodes) {
                 progress.step('.');
-                addSize(nodes.parent(), missStats);
-                logFailure(log, Level.Debug, nodes, pretty::apply);
+                SearchNode<?> parentNode = nodes.parent();
+                if (parentNode != null && parentNode.output() instanceof SearchState) {
+                    addSize((SearchState)parentNode.output(), missStats);
+                }
+                logFailure(log, Level.Debug, nodes, pretty);
             }
 
-            private void addSize(SearchNode<?> node, DescriptiveStatistics stats) {
-                if(node == null) {
-                    return;
-                }
-                SearchState s = node.output();
+            private void addSize(SearchState s, DescriptiveStatistics stats) {
                 s.state().unifier().size(project(VAR, s)).ifFinite(size -> {
                     stats.addValue(size.doubleValue());
                 });

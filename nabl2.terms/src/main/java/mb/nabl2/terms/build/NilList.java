@@ -12,9 +12,17 @@ import mb.nabl2.terms.INilList;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 
-@Value.Immutable
+@Value.Immutable(builder = false, copy = true, prehash = false)
 @Serial.Version(value = 42L)
 abstract class NilList extends AbstractApplTerm implements INilList {
+
+    @Value.Derived @Override public int getMinSize() {
+        return 0;
+    }
+
+    @Override public boolean isGround() {
+        return true;
+    }
 
     @Override protected NilList check() {
         return this;
@@ -37,17 +45,11 @@ abstract class NilList extends AbstractApplTerm implements INilList {
     }
 
     @Override public int hashCode() {
-        return 1;
+        return super.hashCode();
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof INilList)) {
-            return false;
-        }
-        return true;
+        return super.equals(other);
     }
 
     @Override public String toString() {

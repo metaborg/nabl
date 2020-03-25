@@ -17,16 +17,8 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
@@ -38,7 +30,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
     @Inject public STX_solve_multi_project() {
-        super(STX_solve_multi_project.class.getSimpleName(), 2);
+        super(STX_solve_multi_project.class.getSimpleName(), 3);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -59,33 +51,17 @@ public class STX_solve_multi_project extends StatixPrimitive {
         final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
         final Map<IConstraint, IMessage> messages = Maps.newHashMap(initial.messages());
         IState.Immutable state = initial.state();
-        final IRelation3.Transient<TermIndex, ITerm, ITerm> termProperties = HashTrieRelation3.Transient.of();
-        termProperties.putAll(state.termProperties());
-        IUniDisunifier.Immutable unifier = state.unifier();
-        final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph().melt();
         for(SolverResult result : results) {
-            state = state.add(result.state());
-            constraints.add(result.delayed());
-            messages.putAll(result.messages());
             try {
-                final Optional<IUniDisunifier.Result<IUnifier.Immutable>> unifyResult =
-                        unifier.unify(result.state().unifier());
-                if(!unifyResult.isPresent()) {
-                    return Optional.empty();
-                }
-                unifier = unifyResult.get().unifier();
-            } catch(OccursException e) {
+                state = state.add(result.state());
+            } catch(IllegalArgumentException e) {
                 // can this ever occur?
+                logger.error("Unexpectedely failed to merge file results.", e);
                 return Optional.empty();
             }
-            scopeGraph.addAll(result.state().scopeGraph());
-            termProperties.putAll(result.state().termProperties());
+            constraints.add(result.delayed());
+            messages.putAll(result.messages());
         }
-        // @formatter:off
-        state = state.withUnifier(unifier)
-                     .withScopeGraph(scopeGraph.freeze())
-                     .withTermProperties(termProperties.freeze());
-        // @formatter:on
 
         final SolverResult resultConfig;
         try {

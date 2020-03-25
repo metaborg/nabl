@@ -5,9 +5,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.spoofax.interpreter.core.Tools;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.util.TermUtils;
 import org.strategoxt.lang.Context;
 import org.strategoxt.lang.Strategy;
 
@@ -16,11 +16,11 @@ import com.google.common.collect.Multimap;
 
 public class group_by_2_0 extends Strategy {
 
-    static final Strategy instance = new group_by_2_0();
+    public static final Strategy instance = new group_by_2_0();
 
     @Override public IStrategoTerm invoke(Context context, IStrategoTerm current, Strategy getKey, Strategy mapValue) {
         final ITermFactory TF = context.getFactory();
-        if(!Tools.isTermList(current)) {
+        if(!TermUtils.isList(current)) {
             throw new java.lang.IllegalArgumentException("Expected list, got " + current);
         }
         final Multimap<IStrategoTerm, IStrategoTerm> groups = HashMultimap.create();

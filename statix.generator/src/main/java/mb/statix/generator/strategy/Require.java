@@ -1,27 +1,23 @@
 package mb.statix.generator.strategy;
 
-import java.util.Iterator;
-
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
-
 import com.google.common.collect.Streams;
-
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
-import mb.statix.spec.Spec;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
-final class Require<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
+import java.util.Iterator;
+
+public final class Require<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 
     private final static ILogger logger = LoggerUtils.logger(Require.class);
 
     private final SearchStrategy<I, O> s;
 
-    Require(Spec spec, SearchStrategy<I, O> s) {
-        super(spec);
+    Require(SearchStrategy<I, O> s) {
         this.s = s;
     }
 

@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -23,38 +24,49 @@ public class TermPattern {
 
     public static class P {
 
-        public final Pattern EMPTY_TUPLE = new ApplPattern(Terms.TUPLE_OP, ImmutableList.of());
-
         public Pattern newAppl(String op, Pattern... args) {
-            return newAppl(op, Arrays.asList(args));
+            return newAppl(op, Arrays.asList(args), ImmutableClassToInstanceMap.of());
         }
 
-        public Pattern newAppl(String op, Iterable<? extends Pattern> args) {
+        public Pattern newAppl(String op, Iterable<? extends Pattern> args,
+                ImmutableClassToInstanceMap<Object> attachments) {
             if(op.equals("")) {
                 throw new IllegalArgumentException();
             }
-            return new ApplPattern(op, args);
+            return new ApplPattern(op, args, attachments);
         }
 
         public Pattern newTuple(Pattern... args) {
-            return newTuple(Arrays.asList(args));
+            return newTuple(Arrays.asList(args), ImmutableClassToInstanceMap.of());
         }
 
         public Pattern newTuple(Iterable<? extends Pattern> args) {
+            return newTuple(args, ImmutableClassToInstanceMap.of());
+        }
+
+        public Pattern newTuple(Iterable<? extends Pattern> args, ImmutableClassToInstanceMap<Object> attachments) {
             final List<Pattern> argList = ImmutableList.copyOf(args);
             if(argList.size() == 1) {
                 return argList.get(0);
             } else {
-                return new ApplPattern(Terms.TUPLE_OP, argList);
+                return new ApplPattern(Terms.TUPLE_OP, argList, attachments);
             }
         }
 
         public Pattern newString(String value) {
-            return new StringPattern(value);
+            return new StringPattern(value, ImmutableClassToInstanceMap.of());
+        }
+
+        public Pattern newString(String value, ImmutableClassToInstanceMap<Object> attachments) {
+            return new StringPattern(value, attachments);
         }
 
         public Pattern newInt(int value) {
-            return new IntPattern(value);
+            return new IntPattern(value, ImmutableClassToInstanceMap.of());
+        }
+
+        public Pattern newInt(int value, ImmutableClassToInstanceMap<Object> attachments) {
+            return new IntPattern(value, attachments);
         }
 
         public Pattern newWld() {
@@ -90,10 +102,10 @@ public class TermPattern {
             return term.match(Terms.cases(
                 appl -> {
                     final List<Pattern> args = appl.getArgs().stream().map(a -> fromTerm(a, isWildcard)).collect(ImmutableList.toImmutableList());
-                    return new ApplPattern(appl.getOp(), args);
+                    return new ApplPattern(appl.getOp(), args, appl.getAttachments());
                 },
-                string -> new StringPattern(string.getValue()),
-                integer -> new IntPattern(integer.getValue()),
+                string -> new StringPattern(string.getValue(), string.getAttachments()),
+                integer -> new IntPattern(integer.getValue(), integer.getAttachments()),
                 blob -> {
                     throw new IllegalArgumentException("Cannot create blob patterns.");
                 },

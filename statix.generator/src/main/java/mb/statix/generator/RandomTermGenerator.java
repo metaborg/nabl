@@ -16,10 +16,12 @@ public class RandomTermGenerator {
     private final SearchState initState;
     private final SearchStrategy<SearchState, SearchState> strategy;
 
-    private final SearchLogger log;
+    private final SearchLogger<SearchState, SearchState> log;
+    private final Spec spec;
 
     public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy,
-            SearchLogger log) {
+            SearchLogger<SearchState, SearchState> log) {
+        this.spec = spec;
         this.initState = SearchState.of(spec, State.of(spec), ImmutableList.of(constraint));
         this.strategy = strategy;
         this.log = log;
@@ -29,22 +31,10 @@ public class RandomTermGenerator {
         final long seed = System.currentTimeMillis();
         log.init(seed, strategy, initState.constraintsAndDelays());
 
-        final AtomicInteger nodeId = new AtomicInteger();
-        final Random rnd = new Random(seed);
-        final SearchContext ctx = new SearchContext() {
-
-            @Override public Random rnd() {
-                return rnd;
-            }
-
-            @Override public int nextNodeId() {
-                return nodeId.incrementAndGet();
-            }
-
+        final SearchContext ctx = new DefaultSearchContext(spec, seed) {
             @Override public void failure(SearchNodes<?> nodes) {
                 log.failure(nodes);
             }
-
         };
         return strategy.apply(ctx, new SearchNode<>(ctx.nextNodeId(), initState, null, "init"));
     }
