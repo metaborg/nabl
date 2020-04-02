@@ -1,18 +1,17 @@
-rootProject.name = "mb.exec"
+rootProject.name = "nabl"
 
 pluginManagement {
   repositories {
-    // Get plugins from artifacts.metaborg.org, first.
-    maven("https://artifacts.metaborg.org/content/repositories/releases/")
-    maven("https://artifacts.metaborg.org/content/repositories/snapshots/")
-    // Required by several Gradle plugins (Maven central).
-    maven("https://artifacts.metaborg.org/content/repositories/central/") // Maven central mirror.
-    mavenCentral() // Maven central as backup.
-    // Get plugins from Gradle plugin portal.
-    gradlePluginPortal()
+    maven("https://artifacts.metaborg.org/content/groups/public/")
   }
 }
 
 include("nabl2.terms")
+include("nabl2.lang")
+include("nabl2.runtime")
+include("nabl2.shared")
+
 include("statix.solver")
 include("statix.generator")
+include("statix.lang")
+include("statix.runtime")

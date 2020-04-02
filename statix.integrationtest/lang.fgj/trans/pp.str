@@ -15,7 +15,7 @@ rules
     with
       ext      := <get-extension> path
     ; filename := <guarantee-extension(|$[pp.[ext]])> path
-    ; result   := <pp-debug> node
+    ; result   := <pp-FGJ-string> node
 
 rules
   
@@ -37,13 +37,6 @@ rules
     ; !V([], <id>)
     ; box2text-string(|120)  
       
-  pp-debug :
-    ast -> result
-    with
-       result := <pp-FGJ-string> ast
-    <+ <bottomup(try(not(is-string); not(is-list); not(pp-FGJ-string); debug(!"cannot pp ")))> ast
-    ;  result := ""
-
 rules
   
   construct-textual-change = construct-textual-change(pp-partial-FGJ-string, parenthesize, override-reconstruction, resugar)

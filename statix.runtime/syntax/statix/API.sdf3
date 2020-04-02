@@ -1,0 +1,7 @@
+module statix/API
+
+sorts
+
+  Stx-Scope
+  Stx-Occurrence
+

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import mb.statix.spec.RuleSet;
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -47,6 +46,7 @@ import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CAstProperty.Op;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -75,6 +75,7 @@ import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
 
 public class StatixTerms {
@@ -142,8 +143,8 @@ public class StatixTerms {
                 M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
                     return new CAstId(t1, t2);
                 }),
-                M.appl3("CAstProperty", term(), label(), term(), (c, idTerm, property, valueTerm) -> {
-                    return new CAstProperty(idTerm, property, valueTerm);
+                M.appl4("CAstProperty", term(), label(), propertyOp(), term(), (c, idTerm, property, op, valueTerm) -> {
+                    return new CAstProperty(idTerm, property, op, valueTerm);
                 }),
                 M.appl2("CConj", m, m, (c, c1, c2) -> {
                     return new CConj(c1, c2);
@@ -270,6 +271,15 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<ITerm, ITerm>> labelPair() {
         return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> ImmutableTuple2.of(l1, l2));
+    }
+
+    public static IMatcher<CAstProperty.Op> propertyOp() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("Add", t -> Op.ADD),
+            M.appl0("Set", t -> Op.SET)
+        );
+        // @formatter:on
     }
 
     public static IMatcher<ITerm> term() {

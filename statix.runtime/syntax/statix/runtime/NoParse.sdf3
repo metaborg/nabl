@@ -9,13 +9,22 @@ lexical syntax
 
   String = ~[]
 
+sorts
+
+  Position
+
 context-free syntax
 
   Scope.Scope = <#<String>-<String>>
 
+  Occurrence.Occurrence = <<String>{<{Term ", "}*> <TermIndex>}>
+
+  TermIndex.TermIndex = <@<String>-<Int>>
+  TermIndex.NoId      = <@->
+
   Term           = Scope
+  Term           = Occurrence
+  Term           = TermIndex
   Term.Var       = <?<String>-<String>>
-  Term.NoId      = <@->
-  Term.TermIndex = <@<String>-<Int>>
 
   TermOrId = Term

@@ -1,0 +1,11 @@
+module Types
+
+imports
+  
+  statix/API
+
+context-free syntax
+
+  TYPE.CLASS = Stx-Scope
+  TYPE.TVAR  = Stx-Occurrence
+

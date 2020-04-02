@@ -223,7 +223,7 @@ rules
     Build[[ t1 ^ (s) : _ ]],
     Build[[ t2 ^ (s) : AST_ID() ]].
 
-  Constraint[[ CAstProperty(t1, l, t2) ^ (s) ]] :=
+  Constraint[[ CAstProperty(t1, l, op, t2) ^ (s) ]] :=
     TermOrId(Build)[[ t1 ^ (s) : _ ]],
     Build[[ t2 ^ (s) : _ ]].
 
