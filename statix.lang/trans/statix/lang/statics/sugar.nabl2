@@ -59,11 +59,11 @@ rules
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
     Match[[ outarg ^ (s_rule) : outty ]].
 
-  Term(V)[[ COp(x, args) ^ (s) : ty ]] :=
+  Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty', ty' != PRED(_) | error "Inline notation can only be used for functional constraints.",
     intys is `in-types` of ty',
-    outty is `out-type` of ty', ?-Subtype(outty, ty),
+    outty is `out-type` of ty',
     Map1T(Term(V))[[ args ^ (s) : intys ]].
 
   HoConstraint[[ LC(x) ^ (s) : ty ]] :=
@@ -79,14 +79,14 @@ rules
 
   HoConstraint[[ LFalse() ^ (_) : PRED(_) ]].
 
-  Term(V)[[ NewOp() ^ (s) : ty ]] := ?-Subtype(SCOPE(), ty).
+  Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
 
 
 /******************************************************************
  * AST Constraints                                                *
  ******************************************************************/
 
-  Term(V)[[ AstIdOp(t) ^ (s) : ty ]] := ?-Subtype(AST_ID(), ty),
+  Term(V)[[ AstIdOp(t) ^ (s) : AST_ID() ]] :=
     Term(V)[[ t ^ (s) : _ ]].
 
 
@@ -104,10 +104,10 @@ rules
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
-  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : ty ]] :=
+  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
     RelRef[[ rel ^ (s) : ty' ]], ty' != PRED(_) | error "Use predicate notation for non-functional relations.",
     intys is `in-types` of ty',
-    outty is `out-type` of ty', ?-Subtype(outty, ty),
+    outty is `out-type` of ty',
     Map1T(Term(V))[[ ts ^ (s) : intys ]],
     Term(V)[[ st ^ (s) : SCOPE() ]].
 
@@ -168,5 +168,5 @@ rules
 
 rules
 
-  Term(V)[[ ArithOp(ae) ^ (s) : ty ]] := ?-Subtype(INT(), ty),
+  Term(V)[[ ArithOp(ae) ^ (s) : INT() ]] :=
     ArithExp(V)[[ ae ^ (s) : INT() ]].

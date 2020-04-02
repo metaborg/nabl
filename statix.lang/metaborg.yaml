@@ -54,7 +54,7 @@ language:
     placeholder:
       prefix: "$"
   stratego:
-    build: batch
+    build: incremental
     format: jar
     args:
     - -la

@@ -81,7 +81,20 @@ test pass indirectly injected constructo from simple sort [[
 ]] analysis succeeds
         
 // list injections
-        
+
+test list injection [[
+  module test
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+      B : B
+        : list(A) => B
+        : C => B
+    sorts C constructors
+        : list(A) => C
+]] analysis fails
+
 test list injection [[
   resolve {x} [x] == B()
   signature

@@ -7,23 +7,39 @@ fixture [[
   signature
     sorts A constructors
       A : A
-    //    B => A
+        : B => A
     sorts B constructors
       B : B
+    sorts C constructors
+      C : C
   [[...]]
 ]]
+
+test cyclic injection [[
+  signature
+    sorts X constructors
+      : Y => X
+    sorts Y constructors
+      : X => Y
+]] analysis fails
 
 test equating variable with variable of injected sort fails [[
   rules
     p : A * B
     p(a, b) :- a == b.
-]] // analysis fails
+]] analysis fails
 
 test equating variable with injected constructor succeeds [[
   rules
     p : A
     p(a) :- a == B().
-]] // analysis succeeds
+]] analysis succeeds
+
+test equating variable with unrealted constructor fails [[
+  rules
+    p : A
+    p(a) :- a == C().
+]] analysis fails
 
 test variable argument of injected sort fails [[
   rules
@@ -31,7 +47,7 @@ test variable argument of injected sort fails [[
     p(b) :- q(b).
   rules
     q : A
-]] // analysis fails
+]] analysis fails
 
 test constructed argument of injected sort succeeds [[
   rules
@@ -39,7 +55,7 @@ test constructed argument of injected sort succeeds [[
     p() :- q(B()).
   rules
     q : A
-]] // analysis succeeds
+]] analysis succeeds
 
 test variable argument of injected sort resulting from constructor match succeeds [[
   rules
@@ -47,7 +63,13 @@ test variable argument of injected sort resulting from constructor match succeed
     p(a@B()) :- q(a).
   rules
     q : A
-]] // analysis succeeds
+]] analysis succeeds
+
+test match on unrelated pattern fails [[
+  rules
+    p : A
+    p(C()).
+]] analysis fails
 
 test variable argument of same sort resulting from injected constructor match succeeds [[
   rules
@@ -55,7 +77,7 @@ test variable argument of same sort resulting from injected constructor match su
     p(a@B()) :- p(a).
   rules
     q : A
-]] // analysis succeeds
+]] analysis succeeds
 
 test variable resulting from injected constructor match used as both same sort and injected sort succeeds [[
   rules
@@ -63,7 +85,7 @@ test variable resulting from injected constructor match used as both same sort a
     p(a@B()) :- p(a), q(a).
   rules
     q : A
-]] // analysis succeeds
+]] analysis succeeds
 
 test variable unified with injected constructor used as injected sort ??? [[
   rules
@@ -71,7 +93,7 @@ test variable unified with injected constructor used as injected sort ??? [[
     p(a) :- a == B(), q(a).
   rules
     q : B
-]] // analysis ???
+]] analysis fails
 
 test variable used as injected sort in predicate that has concrete matches only ??? [[
   rules
@@ -80,7 +102,7 @@ test variable used as injected sort in predicate that has concrete matches only 
   rules
     q : B
     q(B()).
-]] // analysis ???
+]] analysis fails
 
 test variable used as injected sort in predicate that unifies with a constructor ??? [[
   rules
@@ -89,7 +111,7 @@ test variable used as injected sort in predicate that unifies with a constructor
   rules
     q : B
     q(b) :- b == B().
-]] // analysis ???
+]] analysis fails
 
 test variable used as injected sort in predicate that has afree rule fails [[
   rules
@@ -98,7 +120,7 @@ test variable used as injected sort in predicate that has afree rule fails [[
   rules
     q : B
     q(b).
-]] // analysis fails
+]] analysis fails
 
 test functional predicate that has concrete outputs only used as injecting sort ??? [[
   rules
@@ -107,7 +129,7 @@ test functional predicate that has concrete outputs only used as injecting sort 
   rules
     q : -> B
     q() = B().
-]] // analysis ???
+]] analysis fails
 
 test functional predicate that has free outputs used as injecting sort fails [[
   rules
@@ -116,4 +138,17 @@ test functional predicate that has free outputs used as injecting sort fails [[
   rules
     q : -> B
     q() = _.
-]] // analysis fails
+]] analysis fails
+
+test local variable unified with direct and injected constructor succeeds [[
+  rules
+    p :
+    p() :- {[[a]]} a == A(), a == B().
+]] analysis succeeds
+   run nabl2-get-ast-type on #1
+
+test local variable unified with direct and unrelated constructor fails [[
+  rules
+    p :
+    p() :- {a} a == A(), a == C().
+]] analysis fails

@@ -56,7 +56,7 @@ rules // Analysis
   nabl2-custom-analysis-final-hook'(|a):
       units -> (e*, ca)
     with nabl2-custom-analysis-info-msg(|"| solve type constraints...")
-       ; _ := <solve-type-constraints(|a)>
+       ; tc-e* := <solve-type-constraints(|a)>
        ; nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
        ; or-e* := <detect-overlapping-rules(|a)>
        ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
@@ -65,7 +65,7 @@ rules // Analysis
        ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*
        ; nabl2-custom-analysis-info-msg(|"| solve scope extensions...")
        ; (ext, ext-e*) := <solve-ext-constraints> ext-c'*
-       ; e* := [ext-e*, or-e*]
+       ; e* := [tc-e*, ext-e*, or-e*]
        ; ca := CustomAnalysis(ext)
 
   empty-custom-analysis = !([], CustomAnalysis([]))
@@ -80,18 +80,6 @@ rules // Analysis
          ; e* := [name-e*, ext-e*]
          end
  
-  solve-type-constraints(|a): _ -> ()
-    with facts := <nabl2-get-symbolic-facts(|a)>;
-         goals := <nabl2-get-symbolic-goals(|a)>;
-         <nabl2-custom-analysis-info-msg(|"Facts: ")> facts;
-         <pp-TypeCs;debug> facts;
-         <nabl2-custom-analysis-info-msg(|"Goals: ")> goals;
-         <pp-TypeCs;debug> goals
-         // TODO Reject overlapping injections (exactly the same is fine)
-         //      - No two list injections
-         //      - No two tuple injections with the same arity
-         // TODO Solve the constraints
-
   nabl2-prettyprint-hook   = prettyprint-Statix-IType
   prettyprint-Statix-IType = nabl2-prettyprint-term
 

@@ -1,0 +1,47 @@
+module statix/lang/injection
+
+imports
+
+  nabl2/shared/vars // private, for nabl2--is-var
+  nabl2/api
+
+  statix/lang/util
+
+  signatures/statix/lang/-
+
+  pp/statix/lang/-
+  statix/lang/pp
+  statix/runtime/pp
+
+rules
+
+  external solve-typec(ops|facts, goals)
+
+  typec-ops = ?("pp"       , <pp-Statix-string(prettyprint-Statix-TType)>)
+  typec-ops = ?("is-var"   , <nabl2--is-var>)
+  typec-ops = ?("decompose", <type-decompose>)
+
+rules
+
+  type-decompose: LIST(ty)   -> ("list", [ty])
+  type-decompose: TUPLE(tys) -> ($[tuple/[<int-to-string> n]], tys)
+    with n := <length> tys
+
+rules
+
+  solve-type-constraints(|a): _ -> e*
+    with facts := <nabl2-get-symbolic-facts(|a);filter(is-Statix-TypeC)>
+       ; goals := <nabl2-get-symbolic-goals(|a);filter(is-Statix-TypeC)>
+       ; <nabl2-custom-analysis-info-msg(|"Facts: ")> facts
+       ; <pp-TypeCs;debug> facts
+       ; <nabl2-custom-analysis-info-msg(|"Goals: ")> goals
+       ; <pp-TypeCs;debug> goals
+       ; f* := <map(typec-to-tuple)> facts
+       ; g* := <map(typec-to-tuple)> goals
+       ; (_, e*) := <solve-typec(typec-ops|f*, g*)>
+         // TODO Reject overlapping injections (exactly the same is fine)
+         //      - No two list injections
+         //      - No two tuple injections with the same arity
+         // TODO Solve the constraints
+
+  typec-to-tuple: Subtype(ty, ty', o) -> (ty, ty', o)

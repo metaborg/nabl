@@ -32,29 +32,29 @@ context-free syntax
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
 
+sorts
+
+  COrigin // custom prettyprint rule in statix/lang/scope-extension.str
+
 context-free syntax
 
-  TypeC.Subtype = [[TType] <: [TType]]
-  TypeC.VarNeg  = [-[TType]]
+  TypeC.Subtype = [[TType] <: [TType][COrigin]]
+//TypeC.VarNeg  = [-[TType]]
 
   TypeCs = <
     <{TypeC ",\n"}*>
   >
 
-sorts
-
-  ExtOrigin // custom prettyprint rule in statix/lang/scope-extension.str
-
 context-free syntax
 
   ExtConstraints = <| <{ExtConstraint "\n"}*>>
 
-  ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet][ExtOrigin]]
-  ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet][ExtOrigin]]
-  ExtConstraint.ExtIsCovered = [[ExtSet] is closed[ExtOrigin]]
+  ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet][COrigin]]
+  ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet][COrigin]]
+  ExtConstraint.ExtIsCovered = [[ExtSet] is closed[COrigin]]
   ExtConstraint.ExtBarrier   = [[ExtBarrier] is barrier]
-  ExtConstraint.ExtProvidesEsc  = [[ExtSet] ^! [ExtSet][ExtOrigin]]
-  ExtConstraint.ExtRequiresEsc  = [[ExtSet] ^? [ExtSet][ExtOrigin]]
+  ExtConstraint.ExtProvidesEsc  = [[ExtSet] ^! [ExtSet][COrigin]]
+  ExtConstraint.ExtRequiresEsc  = [[ExtSet] ^? [ExtSet][COrigin]]
 
 
   ExtSets = <| <{ExtSet "\n"}*>>
@@ -92,4 +92,4 @@ context-free syntax
 context-free syntax
 
   PatternConstraint.DistinctPatterns = <distinct patterns <{NaBL2Occurrence ", "}*>>
-  PatternConstraint.NoDuplicatePatterns = <patterns {<{NaBL2Occurrence ", "}*>} do not duplicate {<{NaBL2Occurrence ", "}*>} <ExtOrigin>>
+  PatternConstraint.NoDuplicatePatterns = <patterns {<{NaBL2Occurrence ", "}*>} do not duplicate {<{NaBL2Occurrence ", "}*>} <COrigin>>

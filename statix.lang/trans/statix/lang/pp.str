@@ -40,6 +40,7 @@ rules
 
 rules
 
+  pp-TypeC = pp-Statix-string(prettyprint-Statix-TypeC)
   pp-TypeCs = pp-Statix-string(prettyprint-Statix-TypeCs)
 
 rules

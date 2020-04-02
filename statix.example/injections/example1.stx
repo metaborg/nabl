@@ -1,0 +1,19 @@
+  module injections/example1
+  signature
+    sorts A constructors
+      A : A
+    sorts B constructors
+      B : B
+        : (A * A) => B
+        : list(A) => B
+//        : C => B
+//    sorts C constructors
+//        : list(C) => C
+  rules
+    p : B
+//    p((a, a)).
+//    p((A(), A())).
+  rules
+    q :
+//    q() :- {a} p((a, a)).
+//    q() :- p((A(), A())).

@@ -326,7 +326,7 @@ rules
     EdgeRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
-  Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : ty ]] := ?-Subtype(OCCURRENCE(), ty),
+  Term(V)[[ o@Occurrence(ns, ts, pos) ^ (s) : ty ]] := ?-Subtype(OCCURRENCE(), ty, o),
     Ns{ns} -> s, Ns{ns} |-> d | error $[Unresolved namespace [ns]] @ns, @ns.ref := Ns{ns}, @ns.decl := d,
     d : NS(tys),
     Map1T(Term(V))[[ ts ^ (s) : tys ]],
@@ -338,10 +338,10 @@ rules
   OccurrencePos(T)[[ WithId(t) ^ (s) : AST_ID() ]] :=
     TermOrId(T)[[ t ^ (s) : ty ]].
 
-  Term(V)[[ PathEmpty(st) ^ (s) : ty ]] := ?-Subtype(PATH(), ty),
+  Term(V)[[ p@PathEmpty(st) ^ (s) : ty ]] := ?-Subtype(PATH(), ty, p),
     Term(V)[[ st ^ (s) : SCOPE() ]].
 
-  Term(V)[[ PathStep(pt, lt, st) ^ (s) : ty ]] := ?-Subtype(PATH(), ty),
+  Term(V)[[ p@PathStep(pt, lt, st) ^ (s) : ty ]] := ?-Subtype(PATH(), ty, p),
     Term(V)[[ pt ^ (s) : PATH() ]],
     Term(V)[[ lt ^ (s) : LABEL() ]],
     Term(V)[[ st ^ (s) : SCOPE() ]].
@@ -403,15 +403,15 @@ rules
     OpSort[[ sort ^ (s) : ty ]],
     Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
+  OpDecl[[ i@InjDecl(sort', sort) ^ (s, s_syn) ]] := !-Subtype(ty', ty, i),
+    SortRef[[ sort' ^ (s) : ty' ]],
+    RealSortRef[[ sort ^ (s) : ty ]].
+
   OpSort[[ ConstOp(sort) ^ (s) : OP([], ty) ]] :=
     RealSortRef[[ sort ^ (s) : ty ]].
 
   OpSort[[ ArrowOp(args, sort) ^ (s) : OP(tys, ty) ]] :=
     Map1T(SortRef)[[ args ^ (s) : tys ]],
-    RealSortRef[[ sort ^ (s) : ty ]].
-
-  [[ InjDecl(sort', sort) ^ (s) ]] := !-Subtype(ty', ty),
-    SortRef[[ sort' ^ (s) : ty' ]],
     RealSortRef[[ sort ^ (s) : ty ]].
 
   RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
@@ -452,45 +452,45 @@ rules
 
   NonUniqueVarDecl[[ Var(x) ^ (s) : ty ]] :=
     Var{x @s} <- s, @x.decl := Var{x @s},
-    Var{x @s} : ty' !, !-VarNeg(ty'), ?-Subtype(ty', ty).
+    Var{x @s} : ty !.
 
-  NonUniqueVarDecl[[ Wld() ^ (_) : ty ]] := !-VarNeg(ty).
+  NonUniqueVarDecl[[ Wld() ^ (_) : ty ]].
 
   VarDecl[[ Var(x) ^ (s) : ty ]] :=
     Var{x} <- s, @x.decl := Var{x},
-    Var{x} : ty' !, !-VarNeg(ty'), ?-Subtype(ty', ty).
+    Var{x} : ty !.
 
-  VarDecl[[ Wld() ^ (_) : ty ]] := !-VarNeg(ty).
+  VarDecl[[ Wld() ^ (_) : ty ]].
 
   VarRef[[ Var(x) ^ (s) : ty ]] :=
     Var{x} -> s, Var{x} |-> d | error $[Unresolved variable [x]] @x, @x.ref := Var{x}, @x.decl := d,
-    d : ty', ?-Subtype(ty', ty).
+    d : ty.
 
   VarRef[[ Wld() ^ (_) : _ ]].
 
   Term(V)[[ v@Var(_) ^ (s) : ty ]] :=
     V[[ v ^ (s) : ty ]].
   Term(V)[[ Wld() ^ (_) : ty ]].
-  Term(V)[[ List(ts) ^ (s) : ty ]] :=
-    Map1t(Term(V))[[ ts ^ (s) : ty' ]], ?-Subtype(LIST(ty'), ty).
-  Term(V)[[ ListTail(ts, t) ^ (s) : ty ]] :=
-    Map1t(Term(V))[[ ts ^ (s) : ty' ]], ?-Subtype(LIST(ty'), ty),
+  Term(V)[[ l@List(ts) ^ (s) : ty ]] :=
+    Map1t(Term(V))[[ ts ^ (s) : ty' ]], ?-Subtype(LIST(ty'), ty, l).
+  Term(V)[[ lt@ListTail(ts, t) ^ (s) : ty ]] :=
+    Map1t(Term(V))[[ ts ^ (s) : ty' ]], ?-Subtype(LIST(ty'), ty, lt),
     Term(V)[[ t ^ (s) : ty ]].
-  Term(V)[[ Tuple(ts) ^ (s) : ty ]] :=
-    Map1T(Term(V))[[ ts ^ (s) : tys ]], ?-Subtype(TUPLE(tys), ty).
-  Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
+  Term(V)[[ t@Tuple(ts) ^ (s) : ty ]] :=
+    Map1T(Term(V))[[ ts ^ (s) : tys ]], ?-Subtype(TUPLE(tys), ty, t).
+  Term(V)[[ op@Op(x, args) ^ (s) : ty ]] :=
     x' is `op-name` of (x, args),
     Op{x'@x} -> s, Op{x'@x} |-> d | error $[Unresolved constructor [x']] @x, @x.ref := Op{x'@x}, @x.decl := d,
-    d : OP(tys, ty'), ?-Subtype(ty', ty),
+    d : OP(tys, ty'), ?-Subtype(ty', ty, op),
     Map1T(Term(V))[[ args ^ (s) : tys ]],
     Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
-  Term(V)[[ Str(_) ^ (_) : ty ]] := ?-Subtype(STRING(), ty).
-  Term(V)[[ Int(_) ^ (_) : ty ]] := ?-Subtype(INT(), ty).
+  Term(V)[[ s@Str(_) ^ (_) : ty ]] := ?-Subtype(STRING(), ty, s).
+  Term(V)[[ i@Int(_) ^ (_) : ty ]] := ?-Subtype(INT(), ty, i).
   Term(V)[[ As(v, t) ^ (s) : ty ]] :=
     V[[ v ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
   Term(V)[[ Ascribe(t, sort) ^ (s) : ty ]] :=
-    SortRef[[ sort ^ (s) : ty' ]], ?-Subtype(ty', ty),
+    SortRef[[ sort ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty' ]].
 
 
