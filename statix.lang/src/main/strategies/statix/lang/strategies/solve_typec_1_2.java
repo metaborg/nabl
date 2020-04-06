@@ -3,6 +3,7 @@ package statix.lang.strategies;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
@@ -13,7 +14,10 @@ import org.spoofax.terms.util.TermUtils;
 import org.strategoxt.lang.Context;
 import org.strategoxt.lang.Strategy;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.relations.IRelation;
@@ -46,10 +50,10 @@ public class solve_typec_1_2 extends Strategy {
 
         final IRelation.Immutable<IStrategoTerm> sub = buildSubtypeRelation(facts, ops, errors);
         Map.Immutable<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>> downcasts =
-                buildDowncastRelation(sub, ops, errors);
+                buildDowncastRelation(facts, sub, ops, errors);
 
-        final Map.Immutable<IStrategoTerm, IStrategoTerm> bounds =
-                solveSubtypeConstraints(sub, downcasts, goals, ops, errors);
+        final Map.Immutable<IStrategoTerm, IStrategoTerm> subst =
+                solveSubtypeConstraints2(sub, downcasts, goals, ops, errors);
 
         final IStrategoTerm[] errorTerms = errors.stream().map(m -> m.toTerm(TF)).toArray(IStrategoTerm[]::new);
 
@@ -64,6 +68,9 @@ public class solve_typec_1_2 extends Strategy {
             if(ops.isVar(entry.type1) || ops.isVar(entry.type2)) {
                 throw new java.lang.IllegalArgumentException("Expect ground types in subtype relation, got " + entry);
             }
+            if(ops.decompose(entry.type1).isPresent()) {
+                continue; // skip, decomposable types are part of the downcast relation
+            }
             try {
                 sub.add(entry.type1, entry.type2);
             } catch(SymmetryException ex) {
@@ -75,30 +82,36 @@ public class solve_typec_1_2 extends Strategy {
         return sub.freeze();
     }
 
-    private Map.Immutable<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>>
-            buildDowncastRelation(final IRelation.Immutable<IStrategoTerm> sub, Ops ops, List<Message> errors) {
-        Map.Transient<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>> downcasts = Map.Transient.of();
-        for(IStrategoTerm type : sub.entries().valueSet()) {
-            for(IStrategoTerm subtype : sub.smaller(type)) {
-                final Tuple2<String, List<IStrategoTerm>> decomp;
-                if((decomp = ops.decompose(subtype).orElse(null)) != null) {
-                    final Tuple2<IStrategoTerm, String> key = ImmutableTuple2.of(type, decomp._1());
-                    if(downcasts.containsKey(key)) {
-                        log.error("Overloaded injection of {} into {}", decomp._1(), ops.pp(type));
-                        // TODO actual error
-                    } else {
-                        downcasts.__put(key, decomp._2());
-                    }
+    private Map.Immutable<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>> buildDowncastRelation(
+            final List<Subtype> facts, final IRelation.Immutable<IStrategoTerm> sub, Ops ops, List<Message> errors) {
+        final Map.Transient<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>> downcasts = Map.Transient.of();
+        for(Subtype entry : facts) {
+            final Tuple2<String, List<IStrategoTerm>> decomp;
+            if((decomp = ops.decompose(entry.type1).orElse(null)) == null) {
+                continue; // skip, atomic types are part of the subtype relation
+            }
+            for(IStrategoTerm type2 : sub.larger(entry.type2)) {
+                final Tuple2<IStrategoTerm, String> key = ImmutableTuple2.of(type2, decomp._1());
+                if(downcasts.containsKey(key)) {
+                    log.error("Overloaded injection of {} into {}", decomp._1(), ops.pp(type2));
+                    // TODO actual error
+                } else {
+                    downcasts.__put(key, decomp._2());
                 }
             }
         }
         return downcasts.freeze();
     }
 
-    private Map.Immutable<IStrategoTerm, IStrategoTerm> solveSubtypeConstraints(IRelation.Immutable<IStrategoTerm> sub,
+    /***
+     * METHOD 1 *** Solve constraints by collecting & merging bounds. Seems to powerful for what is actually necessary.
+     */
+
+    private Map.Immutable<IStrategoTerm, IStrategoTerm> solveSubtypeConstraints1(IRelation.Immutable<IStrategoTerm> sub,
             Map.Immutable<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>> downcasts, List<Subtype> goals, Ops ops,
             List<Message> errors) {
-        final Map.Transient<IStrategoTerm, IStrategoTerm> bounds = Map.Transient.of();
+        final Map.Transient<IStrategoTerm, IStrategoTerm> lowerBounds = Map.Transient.of();
+        final Map.Transient<IStrategoTerm, IStrategoTerm> upperBounds = Map.Transient.of();
         // TODO Topologically sort constraints, so bounds for variables that appear on the lhs of constraints
         //      are found (and finished!) before those constraints are solved.
         final Deque<Subtype> worklist = Lists.newLinkedList(goals);
@@ -110,18 +123,59 @@ public class solve_typec_1_2 extends Strategy {
             if(isVar1 && isVar2) {
                 throw new IllegalArgumentException();
             } else if(isVar1) {
-                log.warn("TODO upper bound");
+                final IStrategoTerm var1 = entry.type1;
+                final IStrategoTerm type2 = entry.type2;
+                if(!upperBounds.containsKey(var1)) {
+                    upperBounds.__put(var1, type2);
+                } else {
+                    final IStrategoTerm type1 = upperBounds.get(var1);
+                    final Optional<Tuple2<String, List<IStrategoTerm>>> decomp2 = ops.decompose(type2);
+                    if(!decomp2.isPresent()) {
+                        final IStrategoTerm type;
+                        if((type = sub.greatestLowerBound(type1, type2).orElse(null)) != null) {
+                            upperBounds.__put(var1, type);
+                        } else {
+                            errors.add(entry.makeMessage(ops.pp(type1) + " incompatible with " + ops.pp(type2)));
+                        }
+                    } else {
+                        log.warn("TODO merge upper bounds {} and {}", ops.pp(upperBounds.get(var1)), ops.pp(type2));
+                    }
+                }
+                if(lowerBounds.containsKey(var1)) {
+                    worklist.push(new Subtype(lowerBounds.get(var1), upperBounds.get(var1), entry.origin));
+                }
             } else if(isVar2) {
-                log.warn("TODO lower bound");
+                final IStrategoTerm type1 = entry.type1;
+                final IStrategoTerm var2 = entry.type2;
+                if(!lowerBounds.containsKey(var2)) {
+                    lowerBounds.__put(var2, type1);
+                } else {
+                    final IStrategoTerm type2 = lowerBounds.get(var2);
+                    final Optional<Tuple2<String, List<IStrategoTerm>>> decomp1 = ops.decompose(type1);
+                    if(!decomp1.isPresent()) {
+                        final IStrategoTerm type;
+                        if((type = sub.leastUpperBound(type1, type2).orElse(null)) != null) {
+                            upperBounds.__put(var2, type);
+                        } else {
+                            errors.add(entry.makeMessage(ops.pp(type1) + " incompatible with " + ops.pp(type2)));
+                        }
+                    } else {
+                        log.warn("TODO merge lower bounds {} and {}", ops.pp(lowerBounds.get(var2)), ops.pp(type1));
+                    }
+                }
+                if(upperBounds.containsKey(var2)) {
+                    worklist.push(new Subtype(lowerBounds.get(var2), upperBounds.get(var2), entry.origin));
+                }
             } else {
-                final Optional<Tuple2<String, List<IStrategoTerm>>> decomp1 = ops.decompose(entry.type1);
-                final Optional<Tuple2<String, List<IStrategoTerm>>> decomp2 = ops.decompose(entry.type2);
+                final IStrategoTerm type1 = entry.type1;
+                final IStrategoTerm type2 = entry.type2;
+                final Optional<Tuple2<String, List<IStrategoTerm>>> decomp1 = ops.decompose(type1);
+                final Optional<Tuple2<String, List<IStrategoTerm>>> decomp2 = ops.decompose(type2);
                 if(decomp1.isPresent() && decomp2.isPresent()) {
                     final String kind1 = decomp1.get()._1();
                     final String kind2 = decomp2.get()._1();
                     if(!kind1.equals(kind2)) {
-                        errors.add(
-                                entry.makeMessage(ops.pp(entry.type1) + " incompatible with " + ops.pp(entry.type2)));
+                        errors.add(entry.makeMessage(ops.pp(type1) + " incompatible with " + ops.pp(type2)));
                     } else {
                         final List<IStrategoTerm> args1 = decomp1.get()._2();
                         final List<IStrategoTerm> args2 = decomp2.get()._2();
@@ -131,7 +185,7 @@ public class solve_typec_1_2 extends Strategy {
                     }
                 } else if(decomp1.isPresent()) {
                     final String kind1 = decomp1.get()._1();
-                    final Tuple2<IStrategoTerm, String> key2 = ImmutableTuple2.of(entry.type2, kind1);
+                    final Tuple2<IStrategoTerm, String> key2 = ImmutableTuple2.of(type2, kind1);
                     if(downcasts.containsKey(key2)) {
                         final List<IStrategoTerm> args1 = decomp1.get()._2();
                         final List<IStrategoTerm> args2 = downcasts.get(key2);
@@ -139,14 +193,13 @@ public class solve_typec_1_2 extends Strategy {
                             worklist.push(new Subtype(args1.get(i), args2.get(i), entry.origin));
                         }
                     } else {
-                        errors.add(
-                                entry.makeMessage(ops.pp(entry.type1) + " incompatible with " + ops.pp(entry.type2)));
+                        errors.add(entry.makeMessage(ops.pp(type1) + " incompatible with " + ops.pp(type2)));
                     }
                 } else if(decomp2.isPresent()) {
-                    errors.add(entry.makeMessage(ops.pp(entry.type1) + " incompatible with " + ops.pp(entry.type2)));
+                    errors.add(entry.makeMessage(ops.pp(type1) + " incompatible with " + ops.pp(type2)));
                 } else {
-                    if(!sub.contains(entry.type1, entry.type2)) {
-                        errors.add(entry.makeMessage(ops.pp(entry.type1) + " not a subtype of " + ops.pp(entry.type2)));
+                    if(!sub.contains(type1, type2)) {
+                        errors.add(entry.makeMessage(ops.pp(type1) + " not a subtype of " + ops.pp(type2)));
                     }
                 }
 
@@ -172,7 +225,120 @@ public class solve_typec_1_2 extends Strategy {
 
         }
 
-        return bounds.freeze();
+        log.info("Inferred bounds:");
+        for(IStrategoTerm var : Sets.union(lowerBounds.keySet(), upperBounds.keySet())) {
+            if(lowerBounds.containsKey(var) && upperBounds.containsKey(var)) {
+                log.info("| {} <: {} <: {}", ops.pp(lowerBounds.get(var)), ops.pp(var), ops.pp(upperBounds.get(var)));
+            } else if(lowerBounds.containsKey(var)) {
+                log.info("| {} <: {}", ops.pp(lowerBounds.get(var)), ops.pp(var));
+            } else if(upperBounds.containsKey(var)) {
+                log.info("| {} <: {}", ops.pp(var), ops.pp(upperBounds.get(var)));
+            }
+        }
+
+        return Map.Immutable.of();
+    }
+
+
+    /***
+     * METHOD 2 *** Try a more tailored approach. 1. Simplify constraints until there are no more constraints between
+     * decomposable types. ? Do we only have naked variables in RHS positions? 2. Compute glb/lub on all
+     * non-decomposable bounds. 3. ???
+     */
+
+
+    private Map.Immutable<IStrategoTerm, IStrategoTerm> solveSubtypeConstraints2(IRelation.Immutable<IStrategoTerm> sub,
+            Map.Immutable<Tuple2<IStrategoTerm, String>, List<IStrategoTerm>> downcasts, List<Subtype> goals, Ops ops,
+            List<Message> errors) {
+        final Deque<Subtype> worklist = Lists.newLinkedList();
+
+        ///////////////////////////////////////////////////////////////////////
+        // 1. Simplify decomposable types
+        ///////////////////////////////////////////////////////////////////////
+
+        final List<Subtype> simplified = Lists.newArrayList();
+        worklist.addAll(goals);
+        while(!worklist.isEmpty()) {
+            final Subtype entry = worklist.pop();
+            final IStrategoTerm type1 = entry.type1;
+            final IStrategoTerm type2 = entry.type2;
+
+            final Optional<Tuple2<String, List<IStrategoTerm>>> decomp1 = ops.decompose(type1);
+            final Optional<Tuple2<String, List<IStrategoTerm>>> decomp2 = ops.decompose(type2);
+            if(decomp1.isPresent() && decomp2.isPresent()) {
+                final String kind1 = decomp1.get()._1();
+                final String kind2 = decomp2.get()._1();
+                if(!kind1.equals(kind2)) {
+                    errors.add(entry.makeMessage(ops.pp(type1) + " incompatible with " + ops.pp(type2)));
+                } else {
+                    final List<IStrategoTerm> args1 = decomp1.get()._2();
+                    final List<IStrategoTerm> args2 = decomp2.get()._2();
+                    for(int i = 0; i < args1.size(); i++) {
+                        worklist.push(new Subtype(args1.get(i), args2.get(i), entry.origin));
+                    }
+                }
+            } else if(decomp1.isPresent() && downcasts.containsKey(ImmutableTuple2.of(type2, decomp1.get()._1()))) {
+                final List<IStrategoTerm> args1 = decomp1.get()._2();
+                final List<IStrategoTerm> args2 = downcasts.get(ImmutableTuple2.of(type2, decomp1.get()._1()));
+                for(int i = 0; i < args1.size(); i++) {
+                    worklist.push(new Subtype(args1.get(i), args2.get(i), entry.origin));
+                }
+            } else if(decomp2.isPresent() && downcasts.containsKey(ImmutableTuple2.of(type1, decomp2.get()._1()))) {
+                final List<IStrategoTerm> args1 = downcasts.get(ImmutableTuple2.of(type1, decomp2.get()._1()));
+                final List<IStrategoTerm> args2 = decomp2.get()._2();
+                for(int i = 0; i < args1.size(); i++) {
+                    worklist.push(new Subtype(args1.get(i), args2.get(i), entry.origin));
+                }
+            } else {
+                simplified.add(entry);
+            }
+        }
+
+        log.info("Phase 1: Simplified constraints");
+        for(Subtype entry : simplified) {
+            log.info("| {}", entry.toString(ops::pp));
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // 2. Collect all variable bounds
+        ///////////////////////////////////////////////////////////////////////
+
+        final Multimap<IStrategoTerm, IStrategoTerm> upperBounds = HashMultimap.create();
+        final Multimap<IStrategoTerm, IStrategoTerm> lowerBounds = HashMultimap.create();
+        worklist.addAll(simplified);
+        while(!worklist.isEmpty()) {
+            final Subtype entry = worklist.pop();
+            final IStrategoTerm type1 = entry.type1;
+            final IStrategoTerm type2 = entry.type2;
+
+            final boolean isVar1 = ops.isVar(entry.type1);
+            final boolean isVar2 = ops.isVar(entry.type2);
+            if(isVar1 && isVar2) {
+                throw new AssertionError("Constraints between variables");
+            } else if(isVar1) {
+                upperBounds.put(type1, type2);
+            } else if(isVar2) {
+                lowerBounds.put(type2, type1);
+            } else {
+                if(!sub.contains(type1, type2)) {
+                    errors.add(entry.makeMessage(ops.pp(type1) + " not a subtype of " + ops.pp(type2)));
+                }
+            }
+        }
+
+        log.info("Phase 2: Collect variable bounds");
+        for(IStrategoTerm var : upperBounds.keySet()) {
+            log.info("| {} <: {}", ops.pp(var),
+                    upperBounds.get(var).stream().map(ops::pp).collect(Collectors.toList()));
+        }
+        for(IStrategoTerm var : lowerBounds.keySet()) {
+            log.info("| {} :> {}", ops.pp(var),
+                    lowerBounds.get(var).stream().map(ops::pp).collect(Collectors.toList()));
+        }
+        // NB. Bounds lists are *not* complete, as merging bounds list can constraint some variables more
+        //     E.g., ?x <: [(?y, ?z), (A, B)], merging will some way relate ?y ~ A and ?z ~ B.
+
+        return Map.Immutable.of();
     }
 
     private List<Subtype> buildRelation(IStrategoTerm pairs) {

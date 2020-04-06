@@ -36,8 +36,8 @@ rules
        ; <pp-TypeCs;debug> facts
        ; <nabl2-custom-analysis-info-msg(|"Goals: ")> goals
        ; <pp-TypeCs;debug> goals
-       ; f* := <map(typec-to-tuple)> facts
-       ; g* := <map(typec-to-tuple)> goals
+       ; f* := <filter(typec-to-tuple)> facts
+       ; g* := <filter(typec-to-tuple)> goals
        ; (_, e*) := <solve-typec(typec-ops|f*, g*)>
          // TODO Reject overlapping injections (exactly the same is fine)
          //      - No two list injections

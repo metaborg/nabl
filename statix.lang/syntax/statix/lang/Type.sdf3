@@ -38,8 +38,8 @@ sorts
 
 context-free syntax
 
-  TypeC.Subtype = [[TType] <: [TType][COrigin]]
-//TypeC.VarNeg  = [-[TType]]
+  TypeC.Subtype  = [[TType] <: [TType][COrigin]]
+  TypeC.InferVar = [~[TType]]
 
   TypeCs = <
     <{TypeC ",\n"}*>

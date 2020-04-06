@@ -456,7 +456,7 @@ rules
 
   NonUniqueVarDecl[[ Wld() ^ (_) : ty ]].
 
-  VarDecl[[ Var(x) ^ (s) : ty ]] :=
+  VarDecl[[ Var(x) ^ (s) : ty ]] := !-InferVar(ty),
     Var{x} <- s, @x.decl := Var{x},
     Var{x} : ty !.
 

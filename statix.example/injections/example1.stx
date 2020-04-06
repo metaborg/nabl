@@ -4,16 +4,62 @@
       A : A
     sorts B constructors
       B : B
-        : (A * A) => B
-        : list(A) => B
-//        : C => B
-//    sorts C constructors
-//        : list(C) => C
+        : (A * list(A)) => B
+    sorts C constructors
+      C : C
+        : (D * list(D)) => C
+    sorts D constructors
+        : A => D
+
   rules
-    p : B
-//    p((a, a)).
-//    p((A(), A())).
+  
+    pA : A
+
   rules
-    q :
-//    q() :- {a} p((a, a)).
-//    q() :- p((A(), A())).
+
+    pB : B
+
+//    pB((a, as)).         // (?a * ?as) <: B
+
+//    pB((a, [a])).        // list(?a) <: ?as, (?a * ?as) <: B
+
+//    pB((A(), [A()])).    // list(?a') <: ?as, A <: ?a,
+                          // (?a * ?as) <: B, A <: ?a'
+
+//    pB((C(), as)).       // ERROR
+
+  rules
+  
+    pC : C
+
+  rules
+  
+    pD : D
+
+  rules
+
+    q : int
+
+    q(1) :- {a as} pB((a, as)).    // (?a * ?as) <: B
+
+    q(2) :- {a} pB((a, [a])).      // list(?a) <: ?as, (?a * ?as) <: B
+
+    q(3) :- pB((A(), [A()])).      // list(?a') <: ?as, A <: ?a,
+                                     // (?a * ?as) <: B, A <: ?a'
+
+    q(4) :- pB((C(), [A()])).      // ERROR
+
+    q(5) :- {t} pB(t), t == (A(), [A()]).
+
+    q(6) :- {t1 t2} pB((t1, t2)), (t1, t2) == (A(), [A()]).
+                                    // (?a * ?as) <: ?t, A <: ?a, list(?a') <: ?as,
+                                    // A <: ?a', (?t1 * ?t2) <: ?t, (?t1 * ?t2) <: B
+
+    q(7) :- {t1 t2} pB((t1, t2)), pC((t1, t2)).
+                                    // (?t1 * ?t2) <: B, (?t1 * ?t2) <: C
+
+//    q(8) :- {t} pB(t), pC(t), t == (_, _).
+                                    // ERROR
+
+    q(9) :- {t a as} t == B(), t == (a, as).
+                                    // (?a * ?as) <: ?t, B <: ?t
