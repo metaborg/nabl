@@ -38,6 +38,8 @@ exports:
   - "completion/statix/lang/**/*.str"
   - "pp/statix/lang/**/*.str"
   - "signatures/statix/lang/**/*.str"
+  - "pp/statix/*.str"
+  - "signatures/statix/*.str"
   ## NaBL2
 - language: Stratego-Sugar
   directory: src-gen/nabl2/collection
