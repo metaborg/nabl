@@ -50,6 +50,10 @@ syntax
 
   Term-CF.COp = ConstraintId-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
 
+lexical syntax
+
+  Keyword = "constraint" | "maps"
+
 
 /******************************************************************
  * Base Constraints                                               *
@@ -125,6 +129,10 @@ context-free priorities
     { LabelRE.Neg LabelRE.Closure LabelRE.ZeroOrOne LabelRE.OneOrMore }
   > { LabelRE.Concat LabelRE.And LabelRE.Or }
 
+lexical syntax
+
+  Keyword = "resolve" | "filter" | "with" | "and"
+
 
 /******************************************************************
  * Resolve & Query
@@ -154,7 +162,7 @@ syntax
 
 lexical syntax
 
-  Keyword = "resolveMatch" | "resolveLt"
+  Keyword = "filter" | "min" | "in" | "of" | "resolveMatch" | "resolveLt" | "occurrenceMatch"
 
 
 /******************************************************************
