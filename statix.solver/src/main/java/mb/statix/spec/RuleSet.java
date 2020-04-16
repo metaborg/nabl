@@ -1,21 +1,30 @@
 package mb.statix.spec;
 
-import com.google.common.collect.*;
-
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 
 
 /**
  * An immutable set of rules.
  */
-public final class RuleSet {
+public final class RuleSet implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /** The rules, ordered from most specific o least specific guard. */
     private final ImmutableListMultimap<String, Rule> rules;
-    /** The independent rules. If a rule name is not in this map,
-     *  an independent version of its rules has not yet been created. */
+    /**
+     * The independent rules. If a rule name is not in this map, an independent version of its rules has not yet been
+     * created.
+     */
     private final Map<String, ImmutableSet<Rule>> independentRules = new HashMap<>();
 
     /**
@@ -23,7 +32,8 @@ public final class RuleSet {
      *
      * This function will ensure the rules are correctly ordered from most specific to least specific guard.
      *
-     * @param rules the rules to put into the ruleset
+     * @param rules
+     *            the rules to put into the ruleset
      * @return the resulting ruleset
      */
     public static RuleSet of(Collection<Rule> rules) {
@@ -36,7 +46,8 @@ public final class RuleSet {
     /**
      * Initializes a new instance of the {@link RuleSet} class.
      *
-     * @param rules the multimap of rule names to rules, ordered from most specific to least specific guard
+     * @param rules
+     *            the multimap of rule names to rules, ordered from most specific to least specific guard
      */
     public RuleSet(ListMultimap<String, Rule> rules) {
         this.rules = ImmutableListMultimap.copyOf(rules);
@@ -49,7 +60,9 @@ public final class RuleSet {
      *
      * @return the map of rules
      */
-    public ImmutableListMultimap<String, Rule> getRuleMap() { return this.rules; }
+    public ImmutableListMultimap<String, Rule> getRuleMap() {
+        return this.rules;
+    }
 
     /**
      * Gets the names of all the rules in the ruleset.
@@ -76,7 +89,8 @@ public final class RuleSet {
      *
      * The rules are returned in order from most specific to least specific guard.
      *
-     * @param name the name of the rules to find
+     * @param name
+     *            the name of the rules to find
      * @return the rules with the specified name
      */
     public ImmutableList<Rule> getRules(String name) {
@@ -84,8 +98,8 @@ public final class RuleSet {
     }
 
     /**
-     * Gets a map of lists of rules, where the match order is reflected in (dis)equality constraints
-     * in the rule bodies. The resulting rules can be applied independent of the other rules in the set.
+     * Gets a map of lists of rules, where the match order is reflected in (dis)equality constraints in the rule bodies.
+     * The resulting rules can be applied independent of the other rules in the set.
      *
      * Note that compared to using applyAll, mismatches may only be discovered when the body of the returned rules is
      * evaluated, instead of during the matching process already.
@@ -99,13 +113,14 @@ public final class RuleSet {
     }
 
     /**
-     * Gets a list of rules with the specified name, where the match order is reflected in (dis)equality constraints
-     * in the rule bodies. The resulting rules can be applied independent of the other rules in the set.
+     * Gets a list of rules with the specified name, where the match order is reflected in (dis)equality constraints in
+     * the rule bodies. The resulting rules can be applied independent of the other rules in the set.
      *
      * Note that compared to using applyAll, mismatches may only be discovered when the body of the returned rules is
      * evaluated, instead of during the matching process already.
      *
-     * @param name the name of the rules to find
+     * @param name
+     *            the name of the rules to find
      * @return a list of rules that are order independent
      */
     public ImmutableSet<Rule> getOrderIndependentRules(String name) {
@@ -126,12 +141,14 @@ public final class RuleSet {
     /**
      * Gets a set of rules with equivalent patterns.
      *
-     * @param name the name of the rules to find
+     * @param name
+     *            the name of the rules to find
      * @return a set of rules with equivalent patterns
      */
     public ImmutableSet<Rule> getEquivalentRules(String name) {
         ImmutableList<Rule> rules = getRules(name);
-        return rules.stream().filter(a -> rules.stream().anyMatch(b -> !a.equals(b) && ARule.leftRightPatternOrdering.compare(a, b).map(c -> c == 0).orElse(false)))
+        return rules.stream().filter(a -> rules.stream().anyMatch(
+                b -> !a.equals(b) && ARule.leftRightPatternOrdering.compare(a, b).map(c -> c == 0).orElse(false)))
                 .collect(ImmutableSet.toImmutableSet());
     }
 
