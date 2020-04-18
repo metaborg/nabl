@@ -17,13 +17,13 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.generator.scopegraph.NameResolution;
-import mb.statix.scopegraph.reference.CriticalEdge;
-import mb.statix.scopegraph.reference.IncompleteDataException;
-import mb.statix.scopegraph.reference.IncompleteEdgeException;
+import mb.statix.scopegraph.reference.EdgeOrData;
+import mb.statix.scopegraph.reference.IncompleteException;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -70,24 +70,23 @@ public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchS
             return Optional.empty();
         }
 
-        final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
+        final Predicate2<Scope, EdgeOrData<ITerm>> isComplete =
+                (s, l) -> completeness.isComplete(s, l, state.unifier());
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
                 spec,
-                state.scopeGraph(), query.relation(),
-                labelWF, labelOrd, isComplete2,
-                dataWF, isAlways, isComplete2);
+                state.scopeGraph(),
+                labelWF, labelOrd, 
+                dataWF, isAlways, isComplete);
         // @formatter:on
 
         try {
             nameResolution.resolve(scope, () -> false);
-        } catch(IncompleteDataException e) {
-            return Optional.of(Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())));
-        } catch(IncompleteEdgeException e) {
+        } catch(IncompleteException e) {
             return Optional.of(Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())));
         } catch(ResolutionException e) {
             throw new RuntimeException("Unexpected resolution exception.", e);

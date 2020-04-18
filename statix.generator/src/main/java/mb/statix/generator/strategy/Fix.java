@@ -1,15 +1,6 @@
 package mb.statix.generator.strategy;
 
-import com.google.common.collect.Streams;
-import mb.statix.constraints.CUser;
-import mb.statix.generator.SearchContext;
-import mb.statix.generator.SearchState;
-import mb.statix.generator.SearchStrategy;
-import mb.statix.generator.nodes.SearchNode;
-import mb.statix.generator.nodes.SearchNodes;
-import mb.statix.generator.util.StreamUtil;
-import org.metaborg.util.functions.Action1;
-import org.metaborg.util.functions.Predicate1;
+import static mb.statix.generator.strategy.SearchStrategies.seq;
 
 import java.util.Deque;
 import java.util.Iterator;
@@ -18,7 +9,18 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import static mb.statix.generator.strategy.SearchStrategies.*;
+import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Predicate1;
+
+import com.google.common.collect.Streams;
+
+import mb.statix.constraints.CUser;
+import mb.statix.generator.SearchContext;
+import mb.statix.generator.SearchState;
+import mb.statix.generator.SearchStrategy;
+import mb.statix.generator.nodes.SearchNode;
+import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.generator.util.StreamUtil;
 
 
 public final class Fix extends SearchStrategy<SearchState, SearchState> {

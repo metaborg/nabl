@@ -120,9 +120,7 @@ public abstract class AState implements IState.Immutable {
     @Value.Parameter @Override public abstract Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
     public static State of(Spec spec) {
-        return State.of(Unifiers.Immutable.of(),
-                ScopeGraph.Immutable.of(spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel()),
-                Map.Immutable.of());
+        return State.of(Unifiers.Immutable.of(), ScopeGraph.Immutable.of(spec.allLabels()), Map.Immutable.of());
     }
 
 }

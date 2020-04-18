@@ -7,9 +7,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableCollection;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+
+import com.google.common.collect.ImmutableCollection;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;

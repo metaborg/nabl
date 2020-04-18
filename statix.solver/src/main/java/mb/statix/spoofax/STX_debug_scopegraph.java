@@ -7,7 +7,6 @@ import static mb.statix.spoofax.StatixTerms.explicate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
@@ -15,7 +14,6 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -45,18 +43,17 @@ public class STX_debug_scopegraph extends StatixPrimitive {
             edgeEntries.computeIfAbsent(src_lbl.getKey(), s -> Lists.newArrayList()).add(lbl_tgt);
         });
 
-        final Map<Scope, List<ITerm>> dataEntries = Maps.newHashMap(); // Scope * [Label * ITerm]
-        scopeGraph.getData().forEach((s_lbl, ds) -> {
-            final List<ITerm> ds2 = Streams.stream(ds).map(unifier::findRecursive).collect(Collectors.toList());
-            final ITerm lbl_ds = B.newTuple(s_lbl.getValue(), B.newList(explicate(ds2)));
-            dataEntries.computeIfAbsent(s_lbl.getKey(), s -> Lists.newArrayList()).add(lbl_ds);
+        final Map<Scope, ITerm> dataEntries = Maps.newHashMap(); // Scope * ITerm
+        scopeGraph.getData().forEach((s, d) -> {
+            dataEntries.put(s, explicate(unifier.findRecursive(d)));
         });
 
-        final List<ITerm> scopeEntries = Lists.newArrayList(); // [Scope * [Label * ITerm] * [Label * Scope]]
+        final List<ITerm> scopeEntries = Lists.newArrayList(); // [Scope * ITerm? * [Label * Scope]]
         for(Scope scope : state.scopes()) {
-            scopeEntries
-                    .add(B.newTuple(explicate(scope), B.newList(dataEntries.getOrDefault(scope, ImmutableList.of())),
-                            B.newList(edgeEntries.getOrDefault(scope, ImmutableList.of()))));
+            final ITerm data = Optional.ofNullable(dataEntries.get(scope)).map(d -> B.newAppl("Some", d))
+                    .orElse(B.newAppl("None"));
+            final ITerm edges = B.newList(edgeEntries.getOrDefault(scope, ImmutableList.of()));
+            scopeEntries.add(B.newTuple(explicate(scope), data, edges));
         }
 
         // @formatter:on

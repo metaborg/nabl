@@ -16,10 +16,6 @@ abstract class AResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
 
     @Value.Parameter @Override public abstract IScopePath<S, L> getPath();
 
-    @Value.Parameter @Override public abstract L getLabel();
-
-    @Value.Parameter @Override public abstract int getIndex();
-
     @Value.Parameter @Override public abstract D getDatum();
 
     @Value.Check public @Nullable AResolutionPath<S, L, D> check() {
@@ -42,9 +38,6 @@ abstract class AResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
         StringBuilder sb = new StringBuilder();
         sb.append(getPath());
         sb.append(Paths.PATH_SEPARATOR);
-        sb.append(getLabel());
-        sb.append(Paths.PATH_SEPARATOR);
-        sb.append("<").append(getIndex()).append(">");
         sb.append(getDatum());
         return sb.toString();
     }

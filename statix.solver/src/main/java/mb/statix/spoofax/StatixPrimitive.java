@@ -178,7 +178,6 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onNew -> Stream.empty(),
             onResolveQuery -> Stream.empty(),
             onTellEdge -> Stream.empty(),
-            onTellRel -> Stream.empty(),
             onTermId -> Stream.empty(),
             onTermProperty -> Stream.empty(),
             onTrue -> Stream.empty(),

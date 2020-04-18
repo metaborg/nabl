@@ -56,17 +56,13 @@ context-free syntax
   >
 
   ScopeEntry = <
-    <Scope> {
-      data {
-        <{DataEntry "\n"}*>
-      }
-      edges {
-        <{EdgeEntry "\n"}*>
-      }
+    <Scope><DataEntry> {
+      <{EdgeEntry "\n"}*>
     }
   >
 
-  DataEntry = <<RelRef> : <EntryValues>>
+  DataEntry.None =
+  DataEntry.Some = < : <Term>>
 
   EdgeEntry = <<Label> : <EntryValues>>
 

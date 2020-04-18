@@ -1,5 +1,7 @@
 package mb.statix.generator.strategy;
 
+import org.metaborg.util.functions.Predicate2;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.constraints.CEqual;
@@ -11,6 +13,7 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.generator.scopegraph.NameResolution;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -19,9 +22,9 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
-import org.metaborg.util.functions.Predicate2;
 
-public final class CanResolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
+public final class CanResolve
+        extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
 
 
     @Override protected SearchNodes<FocusedSearchState<CResolveQuery>> doApply(SearchContext ctx,
@@ -47,17 +50,18 @@ public final class CanResolve extends SearchStrategy<FocusedSearchState<CResolve
         }
 
         final ICompleteness.Immutable completeness = input.completeness();
-        final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
+        final Predicate2<Scope, EdgeOrData<ITerm>> isComplete =
+                (s, l) -> completeness.isComplete(s, l, state.unifier());
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
                 ctx.spec(),
-                state.scopeGraph(), query.relation(),
-                labelWF, labelOrd, isComplete2,
-                dataWF, isAlways, isComplete2);
+                state.scopeGraph(),
+                labelWF, labelOrd, 
+                dataWF, isAlways, isComplete);
         // @formatter:on
 
         try {

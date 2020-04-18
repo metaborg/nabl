@@ -1,20 +1,22 @@
 package mb.statix.generator.strategy;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Queues;
-import mb.statix.generator.SearchContext;
-import mb.statix.generator.SearchState;
-import mb.statix.generator.SearchStrategy;
-import mb.statix.generator.nodes.SearchNode;
-import mb.statix.generator.nodes.SearchNodes;
-import org.metaborg.util.functions.Function0;
+import static mb.statix.generator.util.StreamUtil.flatMap;
 
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import org.metaborg.util.functions.Function0;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Queues;
+
+import mb.statix.generator.SearchContext;
+import mb.statix.generator.SearchState;
+import mb.statix.generator.SearchStrategy;
+import mb.statix.generator.nodes.SearchNode;
+import mb.statix.generator.nodes.SearchNodes;
 
 public final class Seq<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
 

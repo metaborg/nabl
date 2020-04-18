@@ -41,7 +41,6 @@ public final class Constraints {
                 Function1<CNew,R> onNew,
                 Function1<CResolveQuery,R> onResolveQuery,
                 Function1<CTellEdge,R> onTellEdge,
-                Function1<CTellRel,R> onTellRel,
                 Function1<CAstId,R> onTermId,
                 Function1<CAstProperty,R> onTermProperty,
                 Function1<CTrue,R> onTrue,
@@ -86,10 +85,6 @@ public final class Constraints {
                 return onTellEdge.apply(c);
             }
 
-            @Override public R caseTellRel(CTellRel c) {
-                return onTellRel.apply(c);
-            }
-
             @Override public R caseTermId(CAstId c) {
                 return onTermId.apply(c);
             }
@@ -129,7 +124,6 @@ public final class Constraints {
         private Function1<CNew, R> onNew;
         private Function1<CResolveQuery, R> onResolveQuery;
         private Function1<CTellEdge, R> onTellEdge;
-        private Function1<CTellRel, R> onTellRel;
         private Function1<CAstId, R> onTermId;
         private Function1<CAstProperty, R> onTermProperty;
         private Function1<CTrue, R> onTrue;
@@ -178,11 +172,6 @@ public final class Constraints {
 
         public CaseBuilder<R> tellEdge(Function1<CTellEdge, R> onTellEdge) {
             this.onTellEdge = onTellEdge;
-            return this;
-        }
-
-        public CaseBuilder<R> tellRel(Function1<CTellRel, R> onTellRel) {
-            this.onTellRel = onTellRel;
             return this;
         }
 
@@ -250,10 +239,6 @@ public final class Constraints {
                     return onTellEdge != null ? onTellEdge.apply(c) : otherwise.apply(c);
                 }
 
-                @Override public R caseTellRel(CTellRel c) {
-                    return onTellRel != null ? onTellRel.apply(c) : otherwise.apply(c);
-                }
-
                 @Override public R caseTermId(CAstId c) {
                     return onTermId != null ? onTermId.apply(c) : otherwise.apply(c);
                 }
@@ -291,7 +276,6 @@ public final class Constraints {
                 CheckedFunction1<CNew, R, E> onNew,
                 CheckedFunction1<CResolveQuery, R, E> onResolveQuery,
                 CheckedFunction1<CTellEdge, R, E> onTellEdge,
-                CheckedFunction1<CTellRel, R, E> onTellRel,
                 CheckedFunction1<CAstId, R, E> onTermId,
                 CheckedFunction1<CAstProperty, R, E> onTermProperty,
                 CheckedFunction1<CTrue, R, E> onTrue,
@@ -334,10 +318,6 @@ public final class Constraints {
 
             @Override public R caseTellEdge(CTellEdge c) throws E {
                 return onTellEdge.apply(c);
-            }
-
-            @Override public R caseTellRel(CTellRel c) throws E {
-                return onTellRel.apply(c);
             }
 
             @Override public R caseTermId(CAstId c) throws E {
@@ -384,7 +364,6 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
-            c -> f.apply(c),
             c -> f.apply(recurseInLogicalScopes ? new CTry(bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null)) : c),
             c -> f.apply(c)
         );
@@ -409,7 +388,6 @@ public final class Constraints {
                 final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
                 return new CExists(c.vars(), body, c.cause().orElse(null));
             },
-            c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
@@ -449,7 +427,6 @@ public final class Constraints {
                 final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
                 return body.map(b -> new CExists(c.vars(), b, c.cause().orElse(null)));
             },
-            c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
@@ -500,7 +477,6 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
-            c -> f.apply(c),
             c -> {
                 if(recurseInLogicalScopes) {
                     return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
@@ -532,7 +508,6 @@ public final class Constraints {
             c -> { disjoin(c).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
             c -> { f.apply(c).ifPresent(ts::add); return null; },
@@ -663,7 +638,8 @@ public final class Constraints {
                 return null;
             },
             onNew -> {
-                onNew.terms().forEach(t -> t.getVars().forEach(onVar::apply));
+                onNew.scopeTerm().getVars().stream().forEach(onVar::apply);
+                onNew.datumTerm().getVars().stream().forEach(onVar::apply);
                 return null;
             },
             onResolveQuery -> {
@@ -676,11 +652,6 @@ public final class Constraints {
             onTellEdge -> {
                 onTellEdge.sourceTerm().getVars().forEach(onVar::apply);
                 onTellEdge.targetTerm().getVars().forEach(onVar::apply);
-                return null;
-            },
-            onTellRel -> {
-                onTellRel.scopeTerm().getVars().forEach(onVar::apply);
-                onTellRel.datumTerm().getVars().forEach(onVar::apply);
                 return null;
             },
             onTermId -> {
@@ -743,7 +714,8 @@ public final class Constraints {
                 return null;
             },
             onNew -> {
-                onNew.terms().forEach(t -> t.getVars().forEach(onVar::apply));
+                onNew.scopeTerm().getVars().forEach(onVar::apply);
+                onNew.datumTerm().getVars().forEach(onVar::apply);
                 return null;
             },
             onResolveQuery -> {
@@ -756,11 +728,6 @@ public final class Constraints {
             onTellEdge -> {
                 onTellEdge.sourceTerm().getVars().forEach(onVar::apply);
                 onTellEdge.targetTerm().getVars().forEach(onVar::apply);
-                return null;
-            },
-            onTellRel -> {
-                onTellRel.scopeTerm().getVars().forEach(onVar::apply);
-                onTellRel.datumTerm().getVars().forEach(onVar::apply);
                 return null;
             },
             onTermId -> {

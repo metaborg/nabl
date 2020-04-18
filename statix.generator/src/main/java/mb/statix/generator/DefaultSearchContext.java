@@ -1,10 +1,10 @@
 package mb.statix.generator;
 
-import mb.statix.generator.nodes.SearchNodes;
-import mb.statix.spec.Spec;
-
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.spec.Spec;
 
 
 /**

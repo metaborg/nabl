@@ -12,8 +12,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.Constraints;
-import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
 
@@ -22,7 +23,7 @@ public class CompletenessUtil {
     /**
      * Discover critical edges in constraint. The scopeTerm is not guaranteed to be ground or instantiated.
      */
-    static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, ITerm> criticalEdge) {
+    static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
             onArith -> null,
@@ -41,14 +42,13 @@ public class CompletenessUtil {
             },
             onFalse -> null,
             onInequal -> null,
-            onNew -> null,
-            onResolveQuery -> null,
-            onTellEdge -> {
-                criticalEdge.apply(onTellEdge.sourceTerm(), onTellEdge.label());
+            onNew -> {
+                criticalEdge.apply(onNew.scopeTerm(), EdgeOrData.data());
                 return null;
             },
-            onTellRel -> {
-                criticalEdge.apply(onTellRel.scopeTerm(), onTellRel.relation());
+            onResolveQuery -> null,
+            onTellEdge -> {
+                criticalEdge.apply(onTellEdge.sourceTerm(), EdgeOrData.edge(onTellEdge.label()));
                 return null;
             },
             onTermId -> null,
@@ -57,7 +57,7 @@ public class CompletenessUtil {
             onTry -> null,
             onUser -> {
                 spec.scopeExtensions().get(onUser.name()).stream()
-                        .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), il._2()));
+                        .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
                 return null;
             }
         ));

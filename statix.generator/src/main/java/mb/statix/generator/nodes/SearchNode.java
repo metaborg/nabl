@@ -2,9 +2,9 @@ package mb.statix.generator.nodes;
 
 import java.util.Objects;
 
-import mb.statix.generator.SearchState;
-
 import javax.annotation.Nullable;
+
+import mb.statix.generator.SearchState;
 
 
 public class SearchNode<O> implements SearchElement {

@@ -19,7 +19,7 @@ import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.CapsuleUtil;
-import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;

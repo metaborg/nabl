@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.terms.ITermVar;
-import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;

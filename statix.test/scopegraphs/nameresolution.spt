@@ -314,3 +314,27 @@ test partial order is well-behaved (3) [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
+test label order is respected [[
+  resolve {s0 s_with s_rec s_let}
+    new s0,
+    new s_with,
+        s_with -P-> s0,
+        s_with -R-> s_rec,
+    new s_rec,
+        !typeOfDecl["x", 1] in s_rec,
+    new s_let,
+        s_let -P-> s_with,
+        !typeOfDecl["x", 2] in s_let,
+    query typeOfDecl
+          filter P* R? and { "x" }
+          min $ < P, $ < R, R < P and true
+          in s_let |-> [(_, (_, 2))]
+  signature
+    namespaces
+      Var  : string
+    name-resolution
+      labels P R
+  relations
+      typeOfDecl : string -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

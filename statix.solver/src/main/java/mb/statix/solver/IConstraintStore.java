@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import mb.nabl2.terms.ITermVar;
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.solver.log.IDebugContext;
 
 public interface IConstraintStore {

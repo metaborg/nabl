@@ -5,6 +5,7 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.ConstraintContext;
@@ -35,7 +36,8 @@ public class ConstraintQueries implements IConstraintQueries {
         return new ConstraintDataWF(spec, dataWf, state, params::isComplete, params.debug());
     }
 
-    @Override public LabelOrder<ITerm> getLabelOrder(IRelation<ITerm> labelOrd) throws InterruptedException {
+    @Override public LabelOrder<ITerm> getLabelOrder(IRelation<EdgeOrData<ITerm>> labelOrd)
+            throws InterruptedException {
         return new RelationLabelOrder(labelOrd);
     }
 

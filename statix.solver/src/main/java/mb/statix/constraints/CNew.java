@@ -1,12 +1,9 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -17,21 +14,27 @@ import mb.statix.solver.IConstraint;
 public class CNew implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final List<ITerm> terms;
+    private final ITerm scopeTerm;
+    private final ITerm datumTerm;
 
     private final @Nullable IConstraint cause;
 
-    public CNew(Iterable<ITerm> terms) {
-        this(terms, null);
+    public CNew(ITerm scopeTerm, ITerm datumTerm) {
+        this(scopeTerm, datumTerm, null);
     }
 
-    public CNew(Iterable<ITerm> terms, @Nullable IConstraint cause) {
-        this.terms = ImmutableList.copyOf(terms);
+    public CNew(ITerm scopeTerm, ITerm datumTerm, @Nullable IConstraint cause) {
+        this.scopeTerm = scopeTerm;
+        this.datumTerm = datumTerm;
         this.cause = cause;
     }
 
-    public List<ITerm> terms() {
-        return terms;
+    public ITerm scopeTerm() {
+        return scopeTerm;
+    }
+
+    public ITerm datumTerm() {
+        return datumTerm;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -47,21 +50,23 @@ public class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew withCause(@Nullable IConstraint cause) {
-        return new CNew(terms, cause);
+        return new CNew(scopeTerm, datumTerm, cause);
     }
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
-        return new CNew(subst.apply(terms), cause);
+        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause);
     }
 
     @Override public CNew apply(IRenaming subst) {
-        return new CNew(subst.apply(terms), cause);
+        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("new ");
-        sb.append(termToString.format(terms, " "));
+        sb.append(termToString.format(scopeTerm));
+        sb.append(" : ");
+        sb.append(termToString.format(datumTerm));
         return sb.toString();
     }
 

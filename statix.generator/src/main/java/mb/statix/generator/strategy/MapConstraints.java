@@ -1,5 +1,7 @@
 package mb.statix.generator.strategy;
 
+import org.metaborg.util.functions.Function1;
+
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.statix.generator.SearchContext;
@@ -11,7 +13,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
-import org.metaborg.util.functions.Function1;
 
 public final class MapConstraints extends SearchStrategy<SearchState, SearchState> {
 

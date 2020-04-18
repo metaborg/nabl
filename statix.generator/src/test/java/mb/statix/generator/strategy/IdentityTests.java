@@ -1,16 +1,17 @@
 package mb.statix.generator.strategy;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+import org.junit.Test;
+
 import mb.statix.generator.DefaultSearchContext;
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.spec.Spec;
-import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
 
 
 /**

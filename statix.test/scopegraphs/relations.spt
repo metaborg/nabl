@@ -197,7 +197,28 @@ test default filter allows all paths and all data [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test ask predicate relation for existing tuple succeeds [[
+test ask predicate relation for existing data without matching succeeds [[
+  resolve {s} new s,
+    !r[1, 1] in s,
+    query r in s |-> [_]
+  signature
+    relations
+      r : int * int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test ask predicate relation for existing data without matching succeeds [[
+  resolve {s} new s,
+    !r[1, 1] in s,
+    !r[2, 3] in s,
+    query r in s |-> [_, _]
+  signature
+    relations
+      r : int * int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test ask predicate relation for specific existing tuple succeeds [[
   resolve {s} new s,
     !r[1, 1] in s, !r[1, 2] in s, !r[2, 3] in s,
     ?r[1, 2] in s

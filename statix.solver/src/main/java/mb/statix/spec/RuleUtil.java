@@ -330,7 +330,6 @@ public class RuleUtil {
                 c -> { constraints.add(c); return true; },
                 c -> { constraints.add(c); return true; },
                 c -> { constraints.add(c); return true; },
-                c -> { constraints.add(c); return true; },
                 c -> { constraints.add(c); return true; }
             ));
             // @formatter:on

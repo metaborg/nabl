@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
 
 import com.google.common.collect.ImmutableList;
@@ -44,7 +43,6 @@ import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
-import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
@@ -52,14 +50,13 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.CriticalEdge;
 import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.IncompleteDataException;
-import mb.statix.scopegraph.reference.IncompleteEdgeException;
+import mb.statix.scopegraph.reference.IncompleteException;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.ConstraintContext;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
@@ -113,7 +110,6 @@ class GreedySolver {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
         this.params = new ConstraintContext(isComplete, debug);
-
     }
 
     public GreedySolver(Spec spec, IState.Immutable state, Iterable<IConstraint> constraints,
@@ -366,22 +362,26 @@ class GreedySolver {
             }
 
             @Override public IState.Immutable caseNew(CNew c) throws InterruptedException {
-                final List<ITerm> terms = c.terms();
-
-                final List<IConstraint> newConstraints = Lists.newArrayList();
                 IState.Immutable newState = state;
-                for(ITerm t : terms) {
-                    final String base = M.var(ITermVar::getName).match(t).orElse("s");
-                    Tuple2<Scope, IState.Immutable> ss = newState.freshScope(base);
-                    newConstraints.add(new CEqual(t, ss._1(), c));
-                    newState = ss._2();
-                }
-                return success(c, newState, ImmutableList.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of(),
-                        fuel);
+
+                final ITerm scopeTerm = c.scopeTerm();
+                final String base = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
+                final Tuple2<Scope, IState.Immutable> ss = newState.freshScope(base);
+                final Scope scope = ss._1();
+                newState = ss._2();
+
+                final ITerm datumTerm = c.datumTerm();
+                final IScopeGraph.Immutable<Scope, ITerm, ITerm> newScopeGraph =
+                        state.scopeGraph().addDatum(scope, datumTerm);
+                newState = newState.withScopeGraph(newScopeGraph);
+
+                final IConstraint eq = new CEqual(scopeTerm, scope, c);
+
+                return success(c, newState, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(),
+                        ImmutableMap.of(), fuel);
             }
 
             @Override public IState.Immutable caseResolveQuery(CResolveQuery c) throws InterruptedException {
-                final ITerm relation = c.relation();
                 final IQueryFilter filter = c.filter();
                 final IQueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
@@ -395,9 +395,6 @@ class GreedySolver {
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
                 try {
-                    final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
-                        return params.isComplete(s, l, state);
-                    };
                     final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
                     // @formatter:off
                     final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
@@ -405,19 +402,16 @@ class GreedySolver {
                                 .withDataWF(cq.getDataWF(filter.getDataWF()))
                                 .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
                                 .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
-                                .withEdgeComplete(isComplete)
-                                .withDataComplete(isComplete)
-                                .build(state.scopeGraph(), relation);
+                                .withIsComplete((s, l) -> params.isComplete(s, l, state))
+                                .build(state.scopeGraph());
                     // @formatter:on
                     final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope);
                     final List<ITerm> pathTerms =
-                            Streams.stream(paths).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+                            Streams.stream(paths).map(p -> StatixTerms.explicate(p, spec.dataLabels()))
+                                    .collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                     return successNew(c, state, ImmutableList.of(C), fuel);
-                } catch(IncompleteDataException e) {
-                    params.debug().info("Query resolution delayed: {}", e.getMessage());
-                    return successDelay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.relation())), fuel);
-                } catch(IncompleteEdgeException e) {
+                } catch(IncompleteException e) {
                     params.debug().info("Query resolution delayed: {}", e.getMessage());
                     return successDelay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), fuel);
                 } catch(ResolutionDelayException e) {
@@ -452,26 +446,6 @@ class GreedySolver {
                                 "Expected target scope, got " + unifier.toString(targetTerm)));
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                         state.scopeGraph().addEdge(source, label, target);
-                return success(c, state.withScopeGraph(scopeGraph), fuel);
-            }
-
-            @Override public IState.Immutable caseTellRel(CTellRel c) throws InterruptedException {
-                final ITerm scopeTerm = c.scopeTerm();
-                final ITerm relation = c.relation();
-                final ITerm datum = c.datumTerm();
-
-                final IUniDisunifier unifier = state.unifier();
-                if(!unifier.isGround(scopeTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
-                }
-                final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
-                if(params.isClosed(scope, state)) {
-                    return fail(c, state);
-                }
-
-                final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
-                        state.scopeGraph().addDatum(scope, relation, datum);
                 return success(c, state.withScopeGraph(scopeGraph), fuel);
             }
 

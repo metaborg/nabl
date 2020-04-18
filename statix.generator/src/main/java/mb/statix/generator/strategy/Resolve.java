@@ -1,6 +1,26 @@
 package mb.statix.generator.strategy;
 
-import com.google.common.collect.*;
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.generator.util.StreamUtil.flatMap;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.optionals.Optionals;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
+import com.google.common.collect.Streams;
+
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
@@ -20,6 +40,7 @@ import mb.statix.generator.scopegraph.Match;
 import mb.statix.generator.scopegraph.NameResolution;
 import mb.statix.generator.util.RandomUtil;
 import mb.statix.generator.util.Subsets;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
@@ -30,21 +51,6 @@ import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.RegExpLabelWF;
 import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spoofax.StatixTerms;
-import org.metaborg.util.functions.Predicate2;
-import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.optionals.Optionals;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.generator.util.StreamUtil.flatMap;
 
 public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
 
@@ -74,17 +80,18 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
         }
 
         final ICompleteness.Immutable completeness = input.completeness();
-        final Predicate2<Scope, ITerm> isComplete2 = (s, l) -> completeness.isComplete(s, l, state.unifier());
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
         final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
+        final Predicate2<Scope, EdgeOrData<ITerm>> isComplete =
+                (s, l) -> completeness.isComplete(s, l, state.unifier());
 
         // @formatter:off
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
                 ctx.spec(),
-                state.scopeGraph(), query.relation(),
-                labelWF, labelOrd, isComplete2,
-                dataWF, isAlways, isComplete2);
+                state.scopeGraph(),
+                labelWF, labelOrd, 
+                dataWF, isAlways, isComplete);
         // @formatter:on
 
         final AtomicInteger count = new AtomicInteger(1);
@@ -125,25 +132,26 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
 
             return flatMap(sizes.stream().map(size -> size - reqMatches.size()),
                     size -> Subsets.of(optMatches).enumerate(size, ctx.rnd()).map(entry -> {
-                final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
-                reqMatches.forEach(subEnvBuilder::match);
-                entry.getKey().forEach(subEnvBuilder::match);
-                entry.getValue().forEach(subEnvBuilder::reject);
-                env.rejects.forEach(subEnvBuilder::reject);
-                final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
-                final List<ITerm> pathTerms = subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path))
-                        .collect(ImmutableList.toImmutableList());
-                final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
-                constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition))
-                        .forEach(constraints::add);
-                flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition))
-                        .forEach(condition -> constraints.add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
-                        condition.cause().orElse(null), condition.message().orElse(null))));
-                final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
-                return new SearchNode<>(ctx.nextNodeId(), newState, node,
-                        "resolve[" + (idx + 1) + "/" + count.get() + "]");
-            }));
+                        final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
+                        reqMatches.forEach(subEnvBuilder::match);
+                        entry.getKey().forEach(subEnvBuilder::match);
+                        entry.getValue().forEach(subEnvBuilder::reject);
+                        env.rejects.forEach(subEnvBuilder::reject);
+                        final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
+                        final List<ITerm> pathTerms =
+                                subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path, ctx.spec().dataLabels()))
+                                        .collect(ImmutableList.toImmutableList());
+                        final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+                        constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
+                        flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(constraints::add);
+                        flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition))
+                                .forEach(condition -> constraints
+                                        .add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
+                                                condition.cause().orElse(null), condition.message().orElse(null))));
+                        final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
+                        return new SearchNode<>(ctx.nextNodeId(), newState, node,
+                                "resolve[" + (idx + 1) + "/" + count.get() + "]");
+                    }));
         }));
     }
 
