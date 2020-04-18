@@ -70,9 +70,9 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return scopeGraph.freeze();
         }
 
-        @Override public ScopeGraph.Immutable<S, L, D> addDatum(S sourceScope, D datum) {
+        @Override public ScopeGraph.Immutable<S, L, D> setDatum(S sourceScope, D datum) {
             final ScopeGraph.Transient<S, L, D> scopeGraph = melt();
-            scopeGraph.addDatum(sourceScope, datum);
+            scopeGraph.setDatum(sourceScope, datum);
             return scopeGraph.freeze();
         }
 
@@ -179,8 +179,8 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return true;
         }
 
-        @Override public boolean addDatum(S scope, D datum) {
-            if(data.containsKey(scope)) {
+        @Override public boolean setDatum(S scope, D datum) {
+            if(data.containsKey(scope) && !data.get(scope).equals(datum)) {
                 throw new IllegalArgumentException("Data for scope is already set.");
             }
             data.__put(scope, datum);
@@ -196,7 +196,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
                 edges.__put(Tuple2.of(key), mergedScopes);
             }
             for(Entry<S, D> entry : other.getData().entrySet()) {
-                if(data.containsKey(entry.getKey())) {
+                if(data.containsKey(entry.getKey()) && !data.get(entry.getKey()).equals(entry.getValue())) {
                     throw new IllegalArgumentException("Data for scope is already set.");
                 }
                 data.__put(entry.getKey(), entry.getValue());

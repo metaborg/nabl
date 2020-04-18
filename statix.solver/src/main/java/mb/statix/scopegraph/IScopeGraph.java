@@ -30,7 +30,7 @@ public interface IScopeGraph<S, L, D> {
 
         Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 
-        Immutable<S, L, D> addDatum(S scope, D datum);
+        Immutable<S, L, D> setDatum(S scope, D datum);
 
         Immutable<S, L, D> addAll(IScopeGraph<S, L, D> other);
 
@@ -42,7 +42,7 @@ public interface IScopeGraph<S, L, D> {
 
         boolean addEdge(S sourceScope, L label, S targetScope);
 
-        boolean addDatum(S scope, D datum);
+        boolean setDatum(S scope, D datum);
 
         boolean addAll(IScopeGraph<S, L, D> other);
 

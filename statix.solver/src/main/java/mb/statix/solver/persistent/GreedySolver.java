@@ -372,7 +372,7 @@ class GreedySolver {
 
                 final ITerm datumTerm = c.datumTerm();
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> newScopeGraph =
-                        state.scopeGraph().addDatum(scope, datumTerm);
+                        state.scopeGraph().setDatum(scope, datumTerm);
                 newState = newState.withScopeGraph(newScopeGraph);
 
                 final IConstraint eq = new CEqual(scopeTerm, scope, c);
