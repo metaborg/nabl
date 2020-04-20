@@ -164,16 +164,18 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
         return true;
     }
 
-    public static ITerm toTerm(ScopeGraphDiff<Scope, ITerm, ITerm> diff) {
+    public static ITerm toTerm(ScopeGraphDiff<Scope, ITerm, ITerm> diff, IUnifier.Immutable current,
+            IUnifier.Immutable previous) {
         final List<ITerm> matchedScopes = diff.matchedScopes().entrySet().stream()
                 .map(e -> B.newTuple(e.getKey(), e.getValue())).collect(ImmutableList.toImmutableList());
-        final ITerm added = toTerm(diff.added());
-        final ITerm removed = toTerm(diff.removed());
-        return B.newTuple(B.newList(matchedScopes), B.newList(added), B.newList(removed));
+        final ITerm added = toTerm(diff.added(), current);
+        final ITerm removed = toTerm(diff.removed(), previous);
+        return B.newTuple(B.newList(matchedScopes), added, removed);
     }
 
-    public static ITerm toTerm(ScopeGraphDiff.Changes<Scope, ITerm, ITerm> changes) {
-        final List<ITerm> scopes = changes.scopes().entrySet().stream().map(e -> B.newTuple(e.getKey(), e.getValue()))
+    public static ITerm toTerm(ScopeGraphDiff.Changes<Scope, ITerm, ITerm> changes, IUnifier.Immutable unifier) {
+        final List<ITerm> scopes = changes.scopes().entrySet().stream()
+                .map(e -> B.newTuple(e.getKey(), unifier.findRecursive(e.getValue())))
                 .collect(ImmutableList.toImmutableList());
         final List<ITerm> edges = changes.edges().stream().map(e -> B.newTuple(e.source, e.label, e.target))
                 .collect(ImmutableList.toImmutableList());

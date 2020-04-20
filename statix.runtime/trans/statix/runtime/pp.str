@@ -27,6 +27,9 @@ rules
   prettyprint-Statix-Int =
     ![S(<is-int;int-to-string>)]
 
+  prettyprint-Statix-Stx-ATerm =
+    ![S(<strip-annos;write-to-string>)]
+
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
     where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)

@@ -2,7 +2,9 @@ module statix/runtime/NoParse
 
 sorts
 
-  Int
+  Int          // abstract, custom pretty print in statix/runtime/pp
+  Stx-ATerm    // abstract, custom pretty print in statix/runtime/pp
+
   Var
 
 lexical syntax
@@ -28,3 +30,26 @@ context-free syntax
   Term.Var       = <?<String>-<String>>
 
   TermOrId = Term
+
+context-free syntax
+
+  Stx-Diff = <
+    scope graph diff {
+      matched scopes <{Stx-MatchEntry "; "}*>
+      added {
+        <Stx-Changes>
+      }
+      removed {
+        <Stx-Changes>
+      }
+    }
+  >
+
+  Stx-Changes = <
+    scopes <{Stx-ScopeEntry "\n"}*>
+    edges  <{Stx-EdgeEntry "\n"}*>
+  >
+
+  Stx-MatchEntry = <<Scope> ~ <Scope>>
+  Stx-ScopeEntry = <<Scope> : <Stx-ATerm>>
+  Stx-EdgeEntry = [[Scope] -[Stx-ATerm]-> [Scope]]

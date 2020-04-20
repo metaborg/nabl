@@ -33,14 +33,14 @@ public class STX_diff_scopegraphs extends StatixPrimitive {
         final Tuple2<IState.Immutable, IState.Immutable> states =
                 M.tuple2(M.blobValue(SolverResult.class), M.blobValue(SolverResult.class), (t, current, previous) -> {
                     return ImmutableTuple2.of(current.state(), previous.state());
-                }).match(term).orElseThrow(() -> new IllegalArgumentException());
+                }).match(term).orElseThrow(() -> new IllegalArgumentException("Expected solver results, got " + term));
         final IState.Immutable current = states._1();
         final IState.Immutable previous = states._2();
 
         final ScopeGraphDiff<Scope, ITerm, ITerm> diff = ScopeGraphDiffer.diff(s0, current.scopeGraph(),
                 previous.scopeGraph(), new StatixDifferOps(current.unifier(), previous.unifier()));
 
-        return Optional.of(StatixDifferOps.toTerm(diff));
+        return Optional.of(StatixDifferOps.toTerm(diff, current.unifier(), previous.unifier()));
     }
 
 }
