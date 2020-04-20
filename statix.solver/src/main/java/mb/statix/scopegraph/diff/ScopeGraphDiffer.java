@@ -64,8 +64,8 @@ public class ScopeGraphDiffer<S, L, D> {
         finishDiff(previous, diffOps::getPreviousScopes, seenPreviousScopes, seenPreviousEdges,
                 matchedScopes.valueSet(), matchedEdges.valueSet(), removedScopes, removedEdges);
 
-        final ScopeGraphDiff<S, L, D> diff = new ScopeGraphDiff<>(matchedScopes.freeze(), addedScopes.freeze(),
-                removedScopes.freeze(), matchedEdges.freeze(), addedEdges.freeze(), removedEdges.freeze());
+        final ScopeGraphDiff<S, L, D> diff = new ScopeGraphDiff<>(matchedScopes.freeze(), matchedEdges.freeze(),
+                addedScopes.freeze(), addedEdges.freeze(), removedScopes.freeze(), removedEdges.freeze());
         return diff;
     }
 

@@ -1,10 +1,15 @@
 package mb.statix.scopegraph.terms;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate2;
+
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -13,6 +18,7 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.CapsuleUtil;
+import mb.statix.scopegraph.diff.ScopeGraphDiff;
 import mb.statix.scopegraph.diff.ScopeGraphDifferOps;
 
 public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
@@ -156,6 +162,22 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
             return false;
         }
         return true;
+    }
+
+    public static ITerm toTerm(ScopeGraphDiff<Scope, ITerm, ITerm> diff) {
+        final List<ITerm> matchedScopes = diff.matchedScopes().entrySet().stream()
+                .map(e -> B.newTuple(e.getKey(), e.getValue())).collect(ImmutableList.toImmutableList());
+        final ITerm added = toTerm(diff.added());
+        final ITerm removed = toTerm(diff.removed());
+        return B.newTuple(B.newList(matchedScopes), B.newList(added), B.newList(removed));
+    }
+
+    public static ITerm toTerm(ScopeGraphDiff.Changes<Scope, ITerm, ITerm> changes) {
+        final List<ITerm> scopes = changes.scopes().entrySet().stream().map(e -> B.newTuple(e.getKey(), e.getValue()))
+                .collect(ImmutableList.toImmutableList());
+        final List<ITerm> edges = changes.edges().stream().map(e -> B.newTuple(e.source, e.label, e.target))
+                .collect(ImmutableList.toImmutableList());
+        return B.newTuple(B.newList(scopes), B.newList(edges));
     }
 
 }
