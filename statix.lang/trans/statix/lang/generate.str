@@ -42,7 +42,11 @@ rules
 
 rules
 
-  generate-combined-aterm = generate-aterm; \(filename, ast) -> (filename, spec) with spec := <stx--local-spec-from-spec> ast\
+  generate-combined-aterm:
+      input@(_, _, _, path, _) -> (filename, spec)
+    with filename := <guarantee-extension(|"mergedspec.aterm")> path
+       ; (_, ast) := <generate-aterm> input
+       ; spec := <stx--local-spec-from-spec> ast
  
 rules
 
