@@ -203,7 +203,7 @@ rules
                       , <union> (data1*, data*)
                       , eop
                       , <conc> (rule1*, rule*)
-                      , <conc> (ext1*, ext*)
+                      , <union> (ext1*, ext*)
                       )
 
 rules
