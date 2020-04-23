@@ -2,10 +2,14 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
+import javax.annotation.Nullable;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
+
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -15,15 +19,12 @@ import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
+import mb.statix.solver.ITermProperty;
 import mb.statix.spec.Spec;
-
-import javax.annotation.Nullable;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -44,8 +45,8 @@ public abstract class AState implements IState.Immutable {
             throw new IllegalArgumentException("Cannot merge unifiers.");
         }
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
-        final IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties =
-                termProperties().putAll(other.termProperties());
+        final Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties =
+                termProperties().__putAll(other.termProperties());
         // @formatter:off
         return State.builder().from(this)
             .__vars(vars)
@@ -75,7 +76,8 @@ public abstract class AState implements IState.Immutable {
         return freshVar("_", null);
     }
 
-    private Tuple2<ITermVar, IState.Immutable> freshVar(String name, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
+    private Tuple2<ITermVar, IState.Immutable> freshVar(String name,
+            @Nullable ImmutableClassToInstanceMap<Object> attachments) {
         final int i = __varCounter() + 1;
         final String newName = name.replaceAll("-", "_") + i;
         final ITermVar newVar = B.newVar(resource(), newName, attachments);
@@ -115,12 +117,12 @@ public abstract class AState implements IState.Immutable {
 
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 
-    @Value.Parameter @Override public abstract IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties();
+    @Value.Parameter @Override public abstract Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
     public static State of(Spec spec) {
         return State.of(Unifiers.Immutable.of(),
                 ScopeGraph.Immutable.of(spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel()),
-                HashTrieRelation3.Immutable.of());
+                Map.Immutable.of());
     }
 
 }

@@ -21,3 +21,13 @@ test set property on term twice fails [[
   resolve {t} t == (), @t.type := (), @t.type := ()
 ]] analysis succeeds
    run evaluate-test to FAILS()
+
+test add property on term twice succeeds [[
+  resolve {t} t == (), @t.type += (), @t.type += ()
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test set and add same property on term fails [[
+  resolve {t} t == (), @t.type := (), @t.type += ()
+]] analysis succeeds
+   run evaluate-test to FAILS()

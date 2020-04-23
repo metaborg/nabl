@@ -1,0 +1,83 @@
+module syntax/regex
+
+language StatixLang
+start symbol LabelRE
+
+// basic tests
+
+test empty language [[
+  0
+]] parse succeeds
+
+test empty string [[
+  e
+]] parse succeeds
+
+test single uppercase label [[
+  P
+]] parse succeeds
+
+test single lowercase label [[
+  p
+]] parse succeeds
+
+test multiple uppercase label [[
+  LEX
+]] parse succeeds
+
+test multiple uppercase-lowercase label [[
+  ExtImp
+]] parse succeeds
+
+test closure [[
+  P*
+]] parse succeeds
+
+test one or more [[
+  P+
+]] parse succeeds
+
+test zero or one [[
+  P?
+]] parse succeeds
+
+test concat labels [[
+  P LEX
+]] parse succeeds
+
+// disambiguation
+
+test closure < concat [[
+  P LEX*
+]] parse to [[
+  P (LEX*)
+]]
+
+test nested post-fix [[
+  LEX*?+
+]] parse to [[
+  ((LEX*)?)+
+]]
+
+test not < concat [[
+  ~P Q
+]] parse to [[
+  (~P) Q
+]]
+
+test not & closure < or [[
+  ~P | Q*
+]] parse to [[
+  (~P) | (Q*)
+]]
+
+test pre-post-fix ambiguity [[
+  ~P*
+]] parse succeeds
+   warning like "amb"
+
+test and < or [[
+  ~P | Q* & LEX?
+]] parse to [[
+  (~P) | ((Q*) & LEX?)
+]]

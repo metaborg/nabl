@@ -2,10 +2,12 @@ module statix/runtime/ast
 
 imports
 
-rules
+signature
+  constructors
+    Ref  :           AstProperty
+    Prop : String -> AstProperty
 
-  stx-index-ast(|source) =
-    stx--index-ast(|source)
+rules
 
   stx--erase-ast-indices =
     prim("SG_erase_ast_indices")

@@ -1,5 +1,6 @@
 package mb.nabl2.solver;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import org.metaborg.util.iterators.Iterables2;
@@ -37,7 +38,7 @@ public abstract class ASolver {
     }
 
     protected Optional<ITerm> callExternal(String name, ITerm... args) {
-        return core.callExternal.apply(name, Iterables2.from(args));
+        return core.callExternal.apply(name, Arrays.asList(args));
     }
 
 }

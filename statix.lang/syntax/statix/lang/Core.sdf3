@@ -42,7 +42,9 @@ context-free syntax
 
 lexical syntax
 
-  ModuleId = "imports" | "signature" | "rules" {reject}
+  ModuleId = Keyword {reject}
+
+  Keyword = "module" | "imports" | "signature" | "rules"
 
 
 /******************************************************************
@@ -81,7 +83,7 @@ lexical syntax
   ConstraintId = LCID
   ConstraintId = Keyword {reject}
 
-  Keyword = "coinductive"
+  Keyword = "constraints" | "coinductive"
 
 
 /******************************************************************
@@ -130,9 +132,12 @@ lexical syntax
 context-free syntax
 
   Constraint.CAstId       = <astId(<Term>, <Term>)>
-  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> := <Term>>
+  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> <AstPropertyOp> <Term>>
 
   AstProperty.Prop = AstPropertyId
+
+  AstPropertyOp.Set = ":="
+  AstPropertyOp.Add = "+="
 
   TermOrId = Var
 
@@ -170,7 +175,7 @@ lexical syntax
   RelationId = ID
   RelationId = Keyword {reject}
 
-  Keyword = "in"
+  Keyword = "relations" | "relation" | "in"
 
 
 /******************************************************************
@@ -221,8 +226,7 @@ context-free syntax
 
 context-free priorities
 
-    LabelRE.Neg
-  > LabelRE.Closure
+    { LabelRE.Neg LabelRE.Closure }
   > LabelRE.Concat
   > LabelRE.And
   > LabelRE.Or
@@ -258,10 +262,10 @@ lexical syntax
 
   NamespaceId = UCID
 
-  Keyword = "pathMatch" | "pathLt"
+  RelationId = "e" {reject}        // ambiguous with empty regex
+  RelationId = Keyword {reject}    // ambiguous with signature keywords
 
-  RelationId = "e" {reject}                     // ambiguous with empty regex
-  RelationId = "resolve" | "labels" {reject}    // ambiguous with signature keywords
+  Keyword = "namespaces" | "name-resolution" | "labels" | "namespace"
 
 
 /******************************************************************
@@ -285,7 +289,7 @@ context-free syntax
 
 lexical syntax
 
-  Keyword = "filter" | "min" | "and"
+  Keyword = "query" | "in" | "filter" | "min" | "and"
 
 
 /******************************************************************
@@ -332,9 +336,13 @@ context-free syntax
 lexical syntax
 
   SortId = STRID
+  SortId = Keyword {reject}
   SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "astId" {reject}
 
   OpId = STRID
+  OpId = Keyword {reject}
+
+  Keyword = "sorts" | "constructors"
 
 
 /******************************************************************

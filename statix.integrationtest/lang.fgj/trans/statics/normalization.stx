@@ -141,9 +141,9 @@ rules
 
 rules
 
-  labels : path -> list(label)
-  labels(p) = labels_acc(p, []).
+  pathLabels : path -> list(label)
+  pathLabels(p) = pathLabels_acc(p, []).
 
-  labels_acc : path * list(label) -> list(label)
-  labels_acc(_PathEmpty(_), acc) = [].
-  labels_acc(_PathStep(p, l, _), acc) = labels_acc(p, [l|acc]).
+  pathLabels_acc : path * list(label) -> list(label)
+  pathLabels_acc(_PathEmpty(_), acc) = [].
+  pathLabels_acc(_PathStep(p, l, _), acc) = pathLabels_acc(p, [l|acc]).

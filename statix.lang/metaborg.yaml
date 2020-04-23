@@ -1,10 +1,11 @@
 ---
 id: org.metaborg:statix.lang:${metaborgVersion}
 name: StatixLang
+metaborgBaselineVersion: 2.3.0
 dependencies:
   compile:
-  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
-  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgBaselineVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgBaselineVersion}
   - org.metaborg:org.metaborg.meta.nabl2.lang:${metaborgVersion}
   source:
   - org.metaborg:meta.lib.spoofax:${metaborgVersion}
@@ -18,6 +19,11 @@ exports:
   includes:
   - "statix/lang/**/*.str"
   - "statix/lang/**/*.meta"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes:
+  - "signatures/statix/**/*.str"
+  - "signatures/StatixLang-*.str"
   ## SDF3
 - language: TemplateLang
   directory: syntax
@@ -35,8 +41,8 @@ exports:
   directory: src-gen
   includes:
   - "completion/statix/lang/**/*.str"
-  - "pp/statix/lang/**/*.str"
-  - "signatures/statix/lang/**/*.str"
+  - "pp/statix/**/*.str"
+  - "pp/StatixLang-*.str"
   ## NaBL2
 - language: Stratego-Sugar
   directory: src-gen/nabl2/collection
@@ -53,8 +59,8 @@ language:
     placeholder:
       prefix: "$"
   stratego:
-    build: batch # incremental
-    format: ctree # jar
+    build: batch
+    format: jar
     args:
     - -la
     - stratego-lib

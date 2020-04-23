@@ -49,6 +49,8 @@ import mb.statix.spec.Spec;
 public abstract class StatixPrimitive extends AbstractPrimitive {
     private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
 
+    private static final int MAX_TRACE = 5;
+
     final protected int tvars;
 
     public StatixPrimitive(String name) {
@@ -117,19 +119,28 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected void addMessage(IMessage message, IConstraint constraint, IUniDisunifier unifier,
-            Collection<ITerm> errors, Collection<ITerm> warnings, Collection<ITerm> notes) {
+    protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
+            final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();
-        while(constraint != null) {
+        IConstraint current = constraint;
+        int traceCount = 0;
+        while(current != null) {
             if(originTerm == null) {
-                originTerm = findOriginArgument(constraint, unifier).orElse(null);
+                originTerm = findOriginArgument(current, unifier).orElse(null);
             }
-            trace.addLast(constraint.toString(formatter));
-            constraint = constraint.cause().orElse(null);
+            if(traceCount++ < MAX_TRACE) {
+                trace.addLast(current.toString(formatter));
+            }
+            current = current.cause().orElse(null);
         }
+        if(traceCount >= MAX_TRACE) {
+            trace.addLast("... trace truncated ...");
+        }
+        
+        // use empty origin if none was found
         if(originTerm == null) {
             originTerm = B.EMPTY_TUPLE;
         }
@@ -137,7 +148,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // add constraint message
         trace.addFirst(message.toString(formatter));
 
-        final String messageText = trace.stream().map(this::cleanupString).filter(s -> !s.isEmpty())
+        final String messageText = trace.stream().filter(s -> !s.isEmpty()).map(s -> cleanupString(s))
                 .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
 
         final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText));

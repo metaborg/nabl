@@ -11,7 +11,7 @@ resolve {s result}
   s -> Fun{"f"@-} with funType INT(),
   s -> Fun{"f"@-} with funType NAT(),
   s -> Fun{"f"@-} with funType POS(),
-  resolve(s, Fun{"f"@-}, NAT()) == result
+  resolveFun(s, Fun{"f"@-}, NAT()) == result
 
 signature
 
@@ -30,9 +30,9 @@ signature
 
 rules
 
-  resolve : scope * occurrence * TYPE -> list((occurrence * TYPE))
+  resolveFun : scope * occurrence * TYPE -> list((occurrence * TYPE))
 
-  resolve(s, Fun{x@_}, T) = pots2ots(funs) :- {}
+  resolveFun(s, Fun{x@_}, T) = pots2ots(funs) :- {}
     query funType
       filter ~0 and { (Fun{y@_}, U) :- x == y, subType(T, U) }
       min and { (_, T1), (_, T2) :- subType(T1, T2) }

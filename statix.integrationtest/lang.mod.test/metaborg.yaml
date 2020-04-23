@@ -1,0 +1,12 @@
+---
+id: org.metaborg:statix.integrationtest.lang.mod.test:0.1.0-SNAPSHOT
+name: modtest
+dependencies:
+  compile:
+  - org.metaborg:statix.integrationtest.lang.mod:0.1.0-SNAPSHOT
+  - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
+runtime:
+  nabl2:
+    debug: analysis files # custom
+build:
+  useBuildSystemSpec: true

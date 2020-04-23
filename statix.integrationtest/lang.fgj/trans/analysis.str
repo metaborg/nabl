@@ -3,22 +3,48 @@ module analysis
 imports
 
   libspoofax/core/language
-  
+  libspoofax/sdf/pp
+
   statixruntime
   statix/api
 
   signatures/-
   pp/-
+  pp
 
 rules // Analysis
 
-  editor-analyze = stx-editor-analyze(id|"statics", "programOK")
+  editor-analyze = stx-editor-analyze(explicate-injections, remove-injections|"statics", "programOK")
+
+rules
+
+  explicate-injections =
+    explicate-injections(inj-name)
+
+  inj-name: (sort, into-sort) -> $[[sort']2[into-sort']]
+    with sort' := <camel-abbr> sort
+    with into-sort' := <camel-abbr> into-sort
+
+  camel-abbr = explode-string; filter(is-upper); implode-string
 
 rules // Editor services
   
   editor-resolve = stx-editor-resolve
 
-  editor-hover = stx-editor-hover
+  editor-hover:
+      (node, position, ast, path, project-path) -> lbl
+    where
+      a  := <stx-get-ast-analysis> node
+    ; ty := <stx-get-ast-property(|a,"type")> node
+    with
+      lbl := <pp-TYPE(|a) <+ strip-annos;write-to-string> ty
+
+rules
+
+  pp-TYPE(|a): CLASS(s) -> <fail> // TODO Reconstruct human representation
+
+  pp-TYPE(|a): TVAR(d) -> ty-str
+    with ty-str := <stx-get-occurrence-terms;?[<id>]> d
 
 rules // Debugging
 

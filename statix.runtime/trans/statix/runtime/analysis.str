@@ -8,6 +8,8 @@ imports
   libspoofax/core/language
   libspoofax/resource/path
 
+  signatures/statix/runtime/-
+
   statix/runtime/ast
   statix/runtime/constraints
   statix/runtime/terms
@@ -25,18 +27,9 @@ signature
 
     EOP : Label // duplicate from statix.lang
 
-rules
-
-  stx-analyze(|spec-name, init-constraint) =
-    with(warn-msg(|"Using 'stx-analyze' is deprecated, use 'stx-editor-analyze' instead."));
-  ( stx-editor-analyze(id, id|spec-name, init-constraint)
- <+ <stx-editor-analyze(id, id|spec-name, init-constraint)> (<id>, "", "")
-  )
-
 rules // single file analysis
 
-
-  stx-editor-analyze(pre, post|spec-name, init-constraint):
+  stx--editor-analyze(pre, post|spec-name, init-constraint):
       AnalyzeSingle(change*) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -54,12 +47,12 @@ rules // single file analysis
              ; file-analysis := FileAnalysis(a)
       \})> (resource-ast'*, solve-result*)
 
-  stx-editor-analyze(pre, post|spec-name, init-constraint):
+  stx--editor-analyze(pre, post|spec-name, init-constraint):
       AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
 
 rules // single file elaboration
 
-  stx-editor-elaborate(pre, post|spec-name, init-constraint):
+  stx--editor-elaborate(pre, post|spec-name, init-constraint):
       AnalyzeSingle(change*) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -80,7 +73,7 @@ rules // single file elaboration
 
 rules // multi file analysis
 
-  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
+  stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -134,7 +127,7 @@ rules // multi file analysis
       end
     ; result* := [(project-resource, project-result)|file-result*]
 
-  stx-editor-analyze(pre, post|spec-name, init-constraint):
+  stx--editor-analyze(pre, post|spec-name, init-constraint):
       AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
 
   // @param state : SolverResult
@@ -154,9 +147,6 @@ rules // multi file analysis
   stx--extract-messages = prim("STX_extract_messages")
 
 rules
-
-  stx-evaluate(|spec-name, constraint): in* -> out
-    where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
   stx--evaluate(|spec-name, constraint):
       in* -> (out, s, error*, warning*, note*)
@@ -213,7 +203,7 @@ rules
                       , <union> (data1*, data*)
                       , eop
                       , <conc> (rule1*, rule*)
-                      , <conc> (ext1*, ext*)
+                      , <union> (ext1*, ext*)
                       )
 
 rules
@@ -275,3 +265,7 @@ rules
    */
   stx--debug-scopegraph =
     prim("STX_debug_scopegraph")
+
+  stx--get-occurrence-ns: Occurrence(ns, _, _) -> ns
+
+  stx--get-occurrence-terms: Occurrence(_, ts, _) -> ts

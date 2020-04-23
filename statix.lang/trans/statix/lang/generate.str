@@ -42,7 +42,11 @@ rules
 
 rules
 
-  generate-combined-aterm = generate-aterm; \(filename, ast) -> (filename, spec) with spec := <stx--local-spec-from-spec> ast\
+  generate-combined-aterm:
+      input@(_, _, _, path, _) -> (filename, spec)
+    with filename := <guarantee-extension(|"mergedspec.aterm")> path
+       ; (_, ast) := <generate-aterm> input
+       ; spec := <stx--local-spec-from-spec> ast
  
 rules
 
@@ -51,7 +55,7 @@ rules
        ; edge* := <collect-all(?Labels(<map(qualify-name(|a))>));concat;remove-term-annos> ast
        ; data* := [Decl()|<collect-all(?RelDecl(<qualify-name(|a)>, _));remove-term-annos> ast]
        ; rule* := <collect-all(?Rule(_, _, _);qualify-names(|a));remove-term-annos;eliminate-all> ast
-       ; ext' := <qualify-names(|a);remove-term-annos> ext
+       ; ext' := <map((get-qname(|a), id, try(qualify-name(|a))));remove-term-annos> ext
        ; spec := FileSpec(import*, edge*, data*, EOP(), rule*, ext')
 
   remove-term-annos =

@@ -1,12 +1,12 @@
 package mb.statix.solver;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 
@@ -22,7 +22,7 @@ public interface IState {
 
     IScopeGraph<Scope, ITerm, ITerm> scopeGraph();
 
-    IRelation3<TermIndex, ITerm, ITerm> termProperties();
+    Map<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
     interface Immutable extends IState {
 
@@ -48,9 +48,9 @@ public interface IState {
 
         IState.Immutable withScopeGraph(IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph);
 
-        @Override IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties();
+        @Override Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
-        IState.Immutable withTermProperties(IRelation3.Immutable<TermIndex, ITerm, ITerm> termProperties);
+        IState.Immutable withTermProperties(Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties);
 
         default Transient melt() {
             return new Transient(this);
@@ -92,7 +92,7 @@ public interface IState {
             return state.scopeGraph();
         }
 
-        @Override public IRelation3<TermIndex, ITerm, ITerm> termProperties() {
+        @Override public Map<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties() {
             freezeTwiceShameOnYou();
             return state.termProperties();
         }

@@ -1,30 +1,92 @@
 module statix/api
 
+imports
+
+  statix/runtime/-
+
 rules // analysis
 
   stx-editor-analyze(         |spec-name, init-constraint) = stx-editor-analyze(id , id|spec-name, init-constraint)
   stx-editor-analyze(pre      |spec-name, init-constraint) = stx-editor-analyze(pre, id|spec-name, init-constraint)
-  stx-editor-analyze(pre, post|spec-name, init-constraint) = fail
+  stx-editor-analyze(pre, post|spec-name, init-constraint) = stx--editor-analyze(pre, post|spec-name, init-constraint)
 
   stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id , id|spec-name, init-constraint)
   stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre, id|spec-name, init-constraint)
-  stx-editor-elaborate(pre, post|spec-name, init-constraint) = fail
+  stx-editor-elaborate(pre, post|spec-name, init-constraint) = stx--editor-elaborate(pre, post|spec-name, init-constraint)
 
   stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id , id|spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, id|spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = fail
+  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
 
-  stx-evaluate(|spec-name, constraint) = fail
+  stx-evaluate(|spec-name, constraint): in* -> out
+    where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
+
 
 rules // ast
 
-  stx-index-ast(|source) = fail
+  /**
+   * @param source : String
+   *
+   * @type Term -> Term
+   */
+  stx-index-ast(|source) = stx--index-ast(|source)
+
+  /**
+   * @type Term -> Analysis
+   */
+  stx-get-ast-analysis = where(stx--get-ast-index) ; stx--get-ast-analysis
+
+  /**
+   * @param a    : Analysis
+   * @param name : String
+   *
+   * @type Term -> Term
+   */
+  stx-get-ast-property(|a, name) = stx--get-ast-property(|a, Prop(name))
+
+rules // scope graph
+
+  /**
+   * @param a   : Analysis
+   * @param lbl : String
+   *
+   * @type Scope -> [Term]
+   */
+  stx-get-scopegraph-data(|a, lbl) = <stx--get-scopegraph-data(|a)> (<id>, Label(lbl))
+
+  /**
+   * @param a   : Analysis
+   * @param lbl : String
+   *
+   * @type Scope -> [Scope]
+   */
+  stx-get-scopegraph-edges(|a, lbl) = <stx--get-scopegraph-edges(|a)> (<id>, Label(lbl))
+
+  /**
+   * Get namespace of an occurrence
+   *
+   * @type Occurrence -> String
+   */
+  stx-get-occurrence-ns = stx--get-occurrence-ns
+
+  /**
+   * Get name of an occurrence
+   *
+   * @type Occurrence -> [Term]
+   */
+  stx-get-occurrence-terms = stx--get-occurrence-terms
 
 rules // services
 
-  stx-editor-resolve = fail
-  stx-editor-hover = fail
+  /** Default resolve strategy
+   */
+  stx-editor-resolve = stx--editor-resolve
+
+  /** Default hover strategy
+   */
+  stx-editor-hover = stx--editor-hover
 
 rules // prettyprinting
 
-  stx-prettyprint-term = fail
+  stx-prettyprint-term = stx--prettyprint-term
+

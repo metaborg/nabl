@@ -31,6 +31,7 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -63,6 +64,8 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IConstraintStore;
 import mb.statix.solver.IState;
+import mb.statix.solver.ITermProperty;
+import mb.statix.solver.ITermProperty.Multiplicity;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
@@ -510,13 +513,30 @@ class GreedySolver {
                 final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
                 if(maybeIndex.isPresent()) {
                     final TermIndex index = maybeIndex.get();
-                    if(!state.termProperties().contains(index, prop)) {
-                        final IState.Immutable newState =
-                                state.withTermProperties(state.termProperties().put(index, prop, value));
-                        return success(c, newState, fuel);
-                    } else {
-                        return fail(c, state);
+                    final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);
+                    ITermProperty property;
+                    switch(c.op()) {
+                        case ADD: {
+                            property = state.termProperties().getOrDefault(key, BagTermProperty.of());
+                            if(!property.multiplicity().equals(Multiplicity.BAG)) {
+                                return fail(c, state);
+                            }
+                            property = property.addValue(value);
+                            break;
+                        }
+                        case SET: {
+                            if(state.termProperties().containsKey(key)) {
+                                return fail(c, state);
+                            }
+                            property = SingletonTermProperty.of(value);
+                            break;
+                        }
+                        default:
+                            throw new IllegalStateException("Unknown op " + c.op());
                     }
+                    final IState.Immutable newState =
+                            state.withTermProperties(state.termProperties().__put(key, property));
+                    return success(c, newState, fuel);
                 } else {
                     return fail(c, state);
                 }

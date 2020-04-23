@@ -18,19 +18,34 @@ import mb.statix.solver.IConstraint;
 public class CAstProperty implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
+    public static enum Op {
+        SET {
+            @Override public String toString() {
+                return ":=";
+            }
+        },
+        ADD {
+            @Override public String toString() {
+                return "+=";
+            }
+        }
+    }
+
     private final ITerm idTerm;
     private final ITerm property;
+    private final Op op;
     private final ITerm value;
 
     private final @Nullable IConstraint cause;
 
-    public CAstProperty(ITerm idTerm, ITerm property, ITerm value) {
-        this(idTerm, property, value, null);
+    public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value) {
+        this(idTerm, property, op, value, null);
     }
 
-    public CAstProperty(ITerm idTerm, ITerm property, ITerm value, @Nullable IConstraint cause) {
+    public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value, @Nullable IConstraint cause) {
         this.idTerm = idTerm;
         this.property = property;
+        this.op = op;
         this.value = value;
         this.cause = cause;
     }
@@ -43,6 +58,10 @@ public class CAstProperty implements IConstraint, Serializable {
         return property;
     }
 
+    public Op op() {
+        return op;
+    }
+
     public ITerm value() {
         return value;
     }
@@ -52,7 +71,7 @@ public class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty withCause(@Nullable IConstraint cause) {
-        return new CAstProperty(idTerm, property, value, cause);
+        return new CAstProperty(idTerm, property, op, value, cause);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -75,7 +94,7 @@ public class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty doSubstitute(IRenaming.Immutable localRenaming, ISubstitution.Immutable totalSubst) {
-        return new CAstProperty(totalSubst.apply(idTerm), property, totalSubst.apply(value), cause);
+        return new CAstProperty(totalSubst.apply(idTerm), property, op, totalSubst.apply(value), cause);
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -84,7 +103,7 @@ public class CAstProperty implements IConstraint, Serializable {
         sb.append(termToString.format(idTerm));
         sb.append(".");
         sb.append(property.toString());
-        sb.append(" := ");
+        sb.append(" ").append(op).append(" ");
         sb.append(termToString.format(value));
         return sb.toString();
     }
