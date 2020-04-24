@@ -1,5 +1,5 @@
 ---
-id: org.metaborg:statix.integrationtest.lang.sysf:0.1.0-SNAPSHOT
+id: org.metaborg:statix.integrationtest.lang.sysf:${metaborgVersion}
 name: SystemF
 dependencies:
   compile:
