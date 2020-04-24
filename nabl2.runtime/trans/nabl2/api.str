@@ -11,6 +11,7 @@ imports
   nabl2/shared/-
   nabl2/runtime/analysis/-
   nabl2/runtime/editor/-
+  nabl2/runtime/transform/-
 
 rules // ###### Analysis execution ######
 
@@ -396,6 +397,13 @@ rules // ###### Scope graphs ######
    * @type Occurrence -> TermIndex
    */
   nabl2-get-occurrence-index = nabl2--occurrence-index
+
+  /**
+   * Get scopes of path
+   *
+   * @type Path -> [Scope]
+   */
+  nabl2-get-path-scopes = nabl2--get-path-scopes
 
 rules // ###### Symbolic Constraints ######
   

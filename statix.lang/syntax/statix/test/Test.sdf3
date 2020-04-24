@@ -19,7 +19,7 @@ context-free start-symbols
 context-free syntax
 
   Test.Test = <
-    resolve <LocalVars>
+    resolve
       <Constraint>
 
     <{Section "\n\n"}*>

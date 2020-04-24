@@ -1,0 +1,119 @@
+module typing/injection
+
+language StatixLang
+
+fixture [[
+  module test
+  signature
+    sorts A constructors
+      A : A
+    //    B => A
+    sorts B constructors
+      B : B
+  [[...]]
+]]
+
+test equating variable with variable of injected sort fails [[
+  rules
+    p : A * B
+    p(a, b) :- a == b.
+]] // analysis fails
+
+test equating variable with injected constructor succeeds [[
+  rules
+    p : A
+    p(a) :- a == B().
+]] // analysis succeeds
+
+test variable argument of injected sort fails [[
+  rules
+    p : B
+    p(b) :- q(b).
+  rules
+    q : A
+]] // analysis fails
+
+test constructed argument of injected sort succeeds [[
+  rules
+    p :
+    p() :- q(B()).
+  rules
+    q : A
+]] // analysis succeeds
+
+test variable argument of injected sort resulting from constructor match succeeds [[
+  rules
+    p : A
+    p(a@B()) :- q(a).
+  rules
+    q : A
+]] // analysis succeeds
+
+test variable argument of same sort resulting from injected constructor match succeeds [[
+  rules
+    p : A
+    p(a@B()) :- p(a).
+  rules
+    q : A
+]] // analysis succeeds
+
+test variable resulting from injected constructor match used as both same sort and injected sort succeeds [[
+  rules
+    p : A
+    p(a@B()) :- p(a), q(a).
+  rules
+    q : A
+]] // analysis succeeds
+
+test variable unified with injected constructor used as injected sort ??? [[
+  rules
+    p : A
+    p(a) :- a == B(), q(a).
+  rules
+    q : B
+]] // analysis ???
+
+test variable used as injected sort in predicate that has concrete matches only ??? [[
+  rules
+    p : A
+    p(a) :- q(a).
+  rules
+    q : B
+    q(B()).
+]] // analysis ???
+
+test variable used as injected sort in predicate that unifies with a constructor ??? [[
+  rules
+    p : A
+    p(a) :- q(a).
+  rules
+    q : B
+    q(b) :- b == B().
+]] // analysis ???
+
+test variable used as injected sort in predicate that has afree rule fails [[
+  rules
+    p : A
+    p(a) :- q(a).
+  rules
+    q : B
+    q(b).
+]] // analysis fails
+
+test functional predicate that has concrete outputs only used as injecting sort ??? [[
+  rules
+    p : A
+    p(a) :- a == q().
+  rules
+    q : -> B
+    q() = B().
+]] // analysis ???
+
+test functional predicate that has free outputs used as injecting sort fails [[
+  rules
+    p : A
+    p(a) :- a == q().
+  rules
+    q : -> B
+    q() = _.
+]] // analysis fails

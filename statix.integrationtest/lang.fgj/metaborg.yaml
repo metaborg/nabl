@@ -1,0 +1,40 @@
+---
+id: org.metaborg:statix.integrationtest.lang.fgj:${metaborgVersion}
+name: FGJ
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  - "org.metaborg:statix.lang:${metaborgVersion}"
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+  - "org.metaborg:statix.runtime:${metaborgVersion}"
+runtime:
+  nabl2:
+    debug: analysis files # custom
+exports:
+- language: ATerm
+  directory: src-gen/statix
+language:
+  sdf:
+    pretty-print: FGJ
+    sdf2table: c
+    placeholder:
+      prefix: "$"
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc

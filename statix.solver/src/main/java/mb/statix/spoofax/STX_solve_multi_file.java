@@ -20,31 +20,36 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
+import mb.statix.spec.Spec;
 
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
     @Inject public STX_solve_multi_file() {
-        super(STX_solve_multi_file.class.getSimpleName(), 2);
+        super(STX_solve_multi_file.class.getSimpleName(), 3);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
+        final Spec spec =
+                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        reportOverlappingRules(spec);
+
+        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(1))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
-        final IDebugContext debug = getDebugContext(terms.get(1));
+        final IDebugContext debug = getDebugContext(terms.get(2));
 
         final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
                 M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> ImmutableTuple2.of(r, c));
         final Function1<Tuple2<String, IConstraint>, ITerm> solveConstraint =
-                resource_constraint -> solveConstraint(initial.state().withResource(resource_constraint._1()),
+                resource_constraint -> solveConstraint(spec, initial.state().withResource(resource_constraint._1()),
                         resource_constraint._2(), debug);
         final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
@@ -56,13 +61,13 @@ public class STX_solve_multi_file extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private ITerm solveConstraint(State state, IConstraint constraint, IDebugContext debug) {
+    private ITerm solveConstraint(Spec spec, IState.Immutable state, IConstraint constraint, IDebugContext debug) {
         final IsComplete isComplete = (s, l, st) -> {
             return !state.scopes().contains(s);
         };
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(state, constraint, isComplete, debug);
+            resultConfig = Solver.solve(spec, state, constraint, isComplete, debug);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

@@ -5,7 +5,8 @@ language
   on save : generate-aterm
 
 menus
-  
+
   menu: "Generate" (openeditor)
-    
+
     action: "Generate ATerm" = generate-aterm
+    action: "Generate Combined ATerm" = generate-combined-aterm

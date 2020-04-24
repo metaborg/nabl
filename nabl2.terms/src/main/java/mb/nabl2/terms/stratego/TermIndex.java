@@ -4,6 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.immutables.serial.Serial;
@@ -68,28 +69,21 @@ public abstract class TermIndex extends AbstractApplTerm implements ITermIndex, 
 
     // Object implementation
 
-    @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(other == this) {
-            return true;
-        }
-        if(!(other instanceof TermIndex)) {
-            return super.equals(other);
-        }
-        final TermIndex that = (TermIndex) other;
-        if(!getResource().equals(that.getResource())) {
-            return false;
-        }
-        if(getId() != that.getId()) {
-            return false;
-        }
-        return true;
+    @Override public int hashCode() {
+        // We use the super-class hashcode to ensure that a TermIndex and an IApplTerm
+        // with the same term representation have the same hash code.
+        return super.hashCode();
     }
 
-    @Override public int hashCode() {
-        return super.hashCode();
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof TermIndex)) return super.equals(other);
+        TermIndex that = (TermIndex)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getResource(), that.getResource())
+            && Objects.equals(this.getId(), that.getId());
+        // @formatter:on
     }
 
     @Override public String toString() {

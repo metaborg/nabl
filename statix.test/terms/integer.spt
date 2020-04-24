@@ -1,4 +1,4 @@
-module terms-integer
+module terms/integer
 
 language StatixLang
 

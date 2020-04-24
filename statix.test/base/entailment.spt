@@ -1,0 +1,67 @@
+module base/entailment
+
+language StatixLang
+
+test var equality entails var equality [[
+  resolve {x y} x == y, try { x == y }
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test var equality entails sub-var equality [[
+  resolve {x y} x == y, try { [x] == [y] }
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test entailment requires all parts to be equal [[
+  resolve {x y z q} x == y, try { [x, z] == [y, q] }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test var equality does not entails existential sub-var equality [[
+  resolve {x y} x == [y], try { x == [_] }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test no constraints do not entail disequality [[
+  resolve {x y} try { x != y }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test var equality does not entail disequality [[
+  resolve {x y} x == y, try { x != y }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test var disequality does not entail equality [[
+  resolve {x y} x != y, try { x == y }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test var disequality does entails disequality [[
+  resolve {x y} x != y, try { x != y }
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test entailment requires at least one part to be unequal [[
+  resolve {x y z q} x != y, try { [x, z] != [y, q] }
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+
+test rule application implies disequalities which does not entail equality [[
+  resolve {xs} c(1, xs), try { xs == [] }
+  rules
+   c : int * list(int)
+   c(0, []).
+   c(_, [_|_]).
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test rule application implies disequalities which entails disequality [[
+  resolve {xs} c(1, xs), try { xs != [] }
+  rules
+   c : int * list(int)
+   c(0, []).
+   c(_, [_|_]).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

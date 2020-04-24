@@ -8,13 +8,27 @@ imports
 
 signature
   constructors
-    CNew  : List(Term) -> Constraint
-    CTrue : Constraint
-    CConj : Constraint * Constraint -> Constraint
-    C     : String * List(Term) -> Constraint
+    CNew    : List(Term) -> Constraint
+    CTrue   : Constraint
+    CConj   : Constraint * Constraint -> Constraint
+    CExists : List(Var) * Constraint -> Constraint
+    C       : String * List(Term) * Message -> Constraint
+
+  constructors
+    NoMessage : Message
 
 rules
 
+  stx--conj: []     -> CTrue()
+  stx--conj: [C]    -> C
   stx--conj: [C|C*] -> CConj(C, <stx--conj> C*)
-  stx--conj: [C] -> C
-  stx--conj: [] -> CTrue()
+
+  stx--conj(|tl): []     -> tl
+  stx--conj(|tl): [C|C*] -> CConj(C, <stx--conj(|tl)> C*)
+
+  stx--exists: ([], c              ) -> c
+  stx--exists: (vs, CExists(vs', c)) -> CExists(vs'', c)
+    where not([] := vs)
+    with vs'' := <union(where(strip-annos;eq))> (vs', vs)
+  stx--exists: (vs, c              ) -> CExists(vs, c)
+    where not([] := vs)

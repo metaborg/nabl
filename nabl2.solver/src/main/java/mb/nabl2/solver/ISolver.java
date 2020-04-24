@@ -3,27 +3,25 @@ package mb.nabl2.solver;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.CheckedFunction1;
 
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.UnconditionalDelayExpection;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 @FunctionalInterface
-public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveResult>, InterruptedException> {
+public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, DelayException> {
 
     default void update(@SuppressWarnings("unused") Collection<ITermVar> vars) {
         // ignore by default
@@ -77,12 +75,8 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
             return Messages.Immutable.of();
         }
 
-        @Value.Default public SetMultimap<String, String> dependencies() {
-            return ImmutableSetMultimap.of();
-        }
-
         @Value.Default public IUnifier.Immutable unifierDiff() {
-            return PersistentUnifier.Immutable.of();
+            return Unifiers.Immutable.of();
         }
 
         public static SolveResult empty() {
@@ -116,11 +110,13 @@ public interface ISolver extends CheckedFunction1<IConstraint, Optional<SolveRes
     }
 
     public static ISolver defer() {
-        return c -> Optional.empty();
+        return c -> {
+            throw new UnconditionalDelayExpection();
+        };
     }
 
     public static ISolver drop() {
-        return c -> Optional.of(SolveResult.empty());
+        return c -> SolveResult.empty();
     }
 
 }

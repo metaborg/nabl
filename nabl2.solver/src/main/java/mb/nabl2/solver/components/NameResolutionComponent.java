@@ -2,14 +2,14 @@ package mb.nabl2.solver.components;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.constraints.IConstraint;
@@ -20,6 +20,7 @@ import mb.nabl2.constraints.nameresolution.CAssoc;
 import mb.nabl2.constraints.nameresolution.CDeclProperty;
 import mb.nabl2.constraints.nameresolution.CResolve;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -30,6 +31,9 @@ import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.ImmutableSolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.TypeException;
@@ -59,8 +63,8 @@ public class NameResolutionComponent extends ASolver {
 
     public SeedResult seed(NameResolutionResult solution, IMessageInfo message) throws InterruptedException {
         final java.util.Set<IConstraint> constraints = Sets.newHashSet();
-        scopeGraph.addAll(solution.scopeGraph());
-        solution.resolutionCache().ifPresent(nameResolution::addAll);
+        scopeGraph.addAll(solution.scopeGraph(), unifier()::getVars);
+        nameResolution.addCached(solution.resolutionCache());
         constraints.addAll(seed(solution.declProperties(), message).constraints());
         return SeedResult.constraints(constraints);
     }
@@ -74,18 +78,13 @@ public class NameResolutionComponent extends ASolver {
         return SeedResult.constraints(constraints);
     }
 
-    public Optional<SolveResult> solve(INameResolutionConstraint constraint) {
-        return constraint.match(INameResolutionConstraint.Cases.of(this::solve, this::solve, this::solve));
-    }
-
-    public void update() throws InterruptedException {
-        scopeGraph.reduce(this::findScope, this::findOccurrence);
-        nameResolution.resolveAll(scopeGraph.getRefs().keySet());
+    public SolveResult solve(INameResolutionConstraint constraint) throws DelayException {
+        return constraint
+                .matchOrThrow(INameResolutionConstraint.CheckedCases.of(this::solve, this::solve, this::solve));
     }
 
     public NameResolutionResult finish() {
-        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), properties.freeze())
-                .withResolutionCache(nameResolution.toCache());
+        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), nameResolution.toCache(), properties.freeze());
     }
 
     public IProperties.Immutable<Occurrence, ITerm, ITerm> finishDeclProperties() {
@@ -94,23 +93,20 @@ public class NameResolutionComponent extends ASolver {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private Optional<SolveResult> solve(CResolve r) {
+    private SolveResult solve(CResolve r) throws DelayException {
         final ITerm refTerm = r.getReference();
         if(!unifier().isGround(refTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(refTerm));
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        final Optional<java.util.Set<IResolutionPath<Scope, Label, Occurrence>>> maybePathsAndDeps =
-                nameResolution.resolve(ref);
-        if(!maybePathsAndDeps.isPresent()) {
-            return Optional.empty();
+        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths;
+        try {
+            paths = nameResolution.resolve(ref);
+        } catch(CriticalEdgeException e) {
+            throw new CriticalEdgeDelayException(e);
         }
-        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths = maybePathsAndDeps.get();
-        final List<Occurrence> declarations = Paths.resolutionPathsToDecls(paths);
-        final Multimap<String, String> deps = HashMultimap.create();
-        deps.putAll(ref.getIndex().getResource(),
-                declarations.stream().map(d -> d.getIndex().getResource()).collect(Collectors.toSet()));
+        final Set<Occurrence> declarations = Sets.newHashSet(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;
         switch(declarations.size()) {
             case 0: {
@@ -120,7 +116,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
             case 1: {
-                final Occurrence decl = declarations.get(0);
+                final Occurrence decl = Iterables.getOnlyElement(declarations);
                 result = SolveResult.constraints(ImmutableCEqual.of(r.getDeclaration(), decl, r.getMessageInfo()));
                 break;
             }
@@ -131,13 +127,13 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return Optional.of(ImmutableSolveResult.copyOf(result).withDependencies(deps));
+        return ImmutableSolveResult.copyOf(result);
     }
 
-    private Optional<SolveResult> solve(CAssoc a) {
+    private SolveResult solve(CAssoc a) throws DelayException {
         final ITerm declTerm = a.getDeclaration();
         if(!unifier().isGround(declTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(declTerm));
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
@@ -162,19 +158,19 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return Optional.of(result);
+        return result;
     }
 
-    private Optional<SolveResult> solve(CDeclProperty c) {
+    private SolveResult solve(CDeclProperty c) throws DelayException {
         final ITerm declTerm = c.getDeclaration();
         if(!unifier().isGround(declTerm)) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(declTerm));
         }
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         final SolveResult result = putProperty(decl, c.getKey(), c.getValue(), c.getMessageInfo())
                 .map(cc -> SolveResult.constraints(cc)).orElseGet(() -> SolveResult.empty());
-        return Optional.of(result);
+        return result;
     }
 
     private Optional<IConstraint> putProperty(Occurrence decl, ITerm key, ITerm value, IMessageInfo message) {
@@ -197,25 +193,13 @@ public class NameResolutionComponent extends ASolver {
         return term.getVars().stream().flatMap(var -> varDeps.get(var, unifier()).stream()).collect(Collectors.toSet());
     }
 
-    // ------------------------------------------------------------------------------------------------------//
-
-    private Optional<Scope> findScope(ITerm scopeTerm) {
-        return Optional.of(scopeTerm).filter(unifier()::isGround).map(st -> Scope.matcher().match(st, unifier())
-                .orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
-    }
-
-    private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
-        return Optional.of(occurrenceTerm).filter(unifier()::isGround).map(ot -> Occurrence.matcher()
-                .match(ot, unifier()).orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
-    }
-
     @Value.Immutable
     @Serial.Version(42l)
     public static abstract class NameResolutionResult {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-        @Value.Auxiliary public abstract Optional<IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>>
+        @Value.Parameter public abstract IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
                 resolutionCache();
 
         @Value.Parameter public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();

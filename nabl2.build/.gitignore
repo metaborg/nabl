@@ -1,6 +1,2 @@
-/.project
-/.settings
-/.classpath
-/.factorypath
-/bin
-/target
+## NOTE: .gitignore of repository root also applies
+

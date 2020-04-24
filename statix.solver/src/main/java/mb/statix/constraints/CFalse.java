@@ -6,21 +6,29 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
 public class CFalse implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable IMessage message;
 
     public CFalse() {
-        this(null);
+        this(null, null);
     }
 
-    public CFalse(@Nullable IConstraint cause) {
+    public CFalse(@Nullable IMessage message) {
+        this(null, message);
+    }
+
+    public CFalse(@Nullable IConstraint cause, @Nullable IMessage message) {
         this.cause = cause;
+        this.message = message;
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -28,7 +36,15 @@ public class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse withCause(@Nullable IConstraint cause) {
-        return new CFalse(cause);
+        return new CFalse(cause, message);
+    }
+
+    @Override public Optional<IMessage> message() {
+        return Optional.ofNullable(message);
+    }
+
+    @Override public CFalse withMessage(@Nullable IMessage message) {
+        return new CFalse(cause, message);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -40,7 +56,11 @@ public class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse apply(ISubstitution.Immutable subst) {
-        return this;
+        return new CFalse(cause, message == null ? null : message.apply(subst));
+    }
+
+    @Override public CFalse apply(IRenaming subst) {
+        return new CFalse(cause, message == null ? null : message.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

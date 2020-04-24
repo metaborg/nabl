@@ -91,7 +91,7 @@ test labels projections succeed [[
     s3 -P-> s4,
     query () min P < $ and true in s1 |-> [(p1, _)],
     query () min P < $ and true in s3 |-> [(p2, _)],
-    eq(labels(p1), labels(p2))
+    eq(pathLabels(p1), pathLabels(p2))
   signature
     name-resolution
       labels P
@@ -99,10 +99,10 @@ test labels projections succeed [[
     eq : list(label) * list(label)
     eq(i, i).
   rules
-    labels : path -> list(label)
-    labels(p) = labels_acc(p, []).
-    labels_acc : path * list(label) -> list(label)
-    labels_acc(_PathEmpty(_), acc) = [].
-    labels_acc(_PathStep(p, l, _), acc) = labels_acc(p, [l|acc]).
+    pathLabels : path -> list(label)
+    pathLabels(p) = pathLabels_acc(p, []).
+    pathLabels_acc : path * list(label) -> list(label)
+    pathLabels_acc(_PathEmpty(_), acc) = [].
+    pathLabels_acc(_PathStep(p, l, _), acc) = pathLabels_acc(p, [l|acc]).
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()

@@ -13,6 +13,7 @@ public interface ITerm {
 
     ITerm withAttachments(ImmutableClassToInstanceMap<Object> value);
 
+    boolean equals(Object other, boolean compareAttachments);
 
     <T> T match(Cases<T> cases);
 

@@ -4,6 +4,11 @@ imports
 
   statix/lang/Common
 
+template options
+
+  keyword -/- [a-zA-Z0-9\_\-\']
+
+
 /******************************************************************
  * Modules                                                        *
  ******************************************************************/
@@ -15,6 +20,13 @@ context-free syntax
 
     <{Section "\n\n"}*>
   > {longest-match}
+
+  Section.Imports = <
+    imports
+      <{Import "\n"}*>
+  >
+
+  Import.Import = ModuleId
 
   Section.Signature = <
     signature
@@ -28,9 +40,18 @@ context-free syntax
       <{Rule "\n\n"}*>
   > {longest-match}
 
+lexical syntax
+
+  ModuleId = Keyword {reject}
+
+  Keyword = "module" | "imports" | "signature" | "rules"
+
+
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
+
+context-free syntax
 
   Signature.Constraints = <
     constraints
@@ -43,26 +64,27 @@ context-free syntax
   CInd.CoinductiveC = <coinductive >
 
   Rule.Rule = <
-    <RuleHead> :- <LocalVars>
+    <RuleName><RuleHead> :-
       <Constraint>.
   >
 
-  RuleHead   = UserConstraint
+  RuleName.NoName = <>
+  RuleName.Name = <
+    [<STRID>]
+  >
+  RuleHead.C = [[ConstraintId]([{Term ", "}*])]
 
-  LocalVars = <{<{Var " "}*>}>
+  Constraint.C = [[ConstraintId]([{Term ", "}*])[Message]]
 
-  Constraint = UserConstraint
-
-  UserConstraint.C = [[ConstraintId]([{Term ", "}*])]
-
-  HoConstraint.LLam = <{ <{Term ", "}*> :- <LocalVars> <Constraint> }>
+  HoConstraint.LLam = <{ <{Term ", "}*> :- <Constraint> }>
 
 lexical syntax
 
   ConstraintId = LCID
   ConstraintId = Keyword {reject}
 
-  Keyword = "coinductive"
+  Keyword = "constraints" | "coinductive"
+
 
 /******************************************************************
  * Base Constraints                                               *
@@ -71,21 +93,36 @@ lexical syntax
 context-free syntax
 
   Constraint.CTrue  = <true>
-  Constraint.CFalse = <false>
+  Constraint.CFalse = <false<Message>>
 
   Constraint         = <(<Constraint>)> {bracket}
+
   Constraint.CConj   = <
     <Constraint>,
     <Constraint>
   > {right}
+
   Constraint.CNew    = <new <{Var " "}+>>
 
-  Constraint.CEqual   = [[Term] == [Term]]
-  Constraint.CInequal = [[Term] != [Term]]
+  Constraint.CEqual   = [[Term] == [Term][Message]]
+  Constraint.CInequal = [[Term] != [Term][Message]]
+
+  Constraint.CTry = [try { [Constraint] }[Message]]
+
+  Constraint.CExists = [
+    {[{Var " "}*]}
+      [Constraint]
+  ]
+
+context-free priorities
+
+  // Does this give longest-match behavior? Putting longest-match on CExists
+  // seemed to break parsing of exists with conj body in parenthesis.
+  Constraint.CConj > Constraint.CExists
 
 lexical syntax
 
-  Keyword = "true" | "false" | "new"
+  Keyword = "true" | "false" | "new" | "try"
 
 
 /******************************************************************
@@ -95,9 +132,12 @@ lexical syntax
 context-free syntax
 
   Constraint.CAstId       = <astId(<Term>, <Term>)>
-  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> := <Term>>
+  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> <AstPropertyOp> <Term>>
 
   AstProperty.Prop = AstPropertyId
+
+  AstPropertyOp.Set = ":="
+  AstPropertyOp.Add = "+="
 
   TermOrId = Var
 
@@ -135,7 +175,8 @@ lexical syntax
   RelationId = ID
   RelationId = Keyword {reject}
 
-  Keyword = "in"
+  Keyword = "relations" | "relation" | "in"
+
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -185,8 +226,7 @@ context-free syntax
 
 context-free priorities
 
-    LabelRE.Neg
-  > LabelRE.Closure
+    { LabelRE.Neg LabelRE.Closure }
   > LabelRE.Concat
   > LabelRE.And
   > LabelRE.Or
@@ -199,19 +239,22 @@ context-free syntax
   Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
   Path       = PathLit
 
-  OccurrencePosition.NoId = "-"
-  OccurrencePosition      = TermOrId
-
+  // little duplication to fix ambiguity between
+  // As(Var(_),Var(_)), NoId() and Var(_), WithId(Var(_))
+  OccurrenceTerms = <<{OccurrenceTerm " "}*>>
+  OccurrenceTerm  = Term
+  OccurrenceTerm  = <<Var>@<Term>> {reject}
 
 syntax
 
-  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF SpaceTerms-CF LAYOUT?-CF "@" OccurrencePosition-CF LAYOUT?-CF "}"
+  OccurrencePosition-CF.NoId   =
+  OccurrencePosition-CF.WithId = "@" TermOrId-CF
+  OccurrencePosition-CF.NoId   = "@-"
+
+  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 
   PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
-
-  Constraint-CF.CPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
-  Constraint-CF.CPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "](" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"
 
   Constraint-CF.CTellEdge = Term-CF LAYOUT?-CF "-" Label-CF "->" LAYOUT?-CF Term-CF
 
@@ -219,10 +262,11 @@ lexical syntax
 
   NamespaceId = UCID
 
-  Keyword = "pathMatch" | "pathLt"
+  RelationId = "e" {reject}        // ambiguous with empty regex
+  RelationId = Keyword {reject}    // ambiguous with signature keywords
 
-  RelationId = "e" {reject}                     // ambiguous with empty regex
-  RelationId = "resolve" | "labels" {reject}    // ambiguous with signature keywords
+  Keyword = "namespaces" | "name-resolution" | "labels" | "namespace"
+
 
 /******************************************************************
  * Resolve & Query
@@ -234,7 +278,7 @@ context-free syntax
     query [QueryTarget]
      [QueryFilter]
      [QueryMin]
-      in [Term] |-> [Term]
+      in [Term] |-> [Term][Message]
    ]
 
   QueryTarget.EOP = "()"
@@ -245,7 +289,8 @@ context-free syntax
 
 lexical syntax
 
-  Keyword = "filter" | "min" | "and"
+  Keyword = "query" | "in" | "filter" | "min" | "and"
+
 
 /******************************************************************
  * Sorts & Constructors                                           *
@@ -291,9 +336,14 @@ context-free syntax
 lexical syntax
 
   SortId = STRID
+  SortId = Keyword {reject}
   SortId = "list" | "int" | "string" | "occurrence" | "scope" | "path" | "label" | "astId" {reject}
 
   OpId = STRID
+  OpId = Keyword {reject}
+
+  Keyword = "sorts" | "constructors"
+
 
 /******************************************************************
  * Terms                                                          *
@@ -304,8 +354,11 @@ context-free syntax
   Var.Var = VARID
   Var.Wld = <_>
 
+  Int.Int = INT
+
   Term            = Var
-  Term.Int        = INT
+  Term            = Int
+  Term            = Str
   Term.List       = <[<{Term ", "}*>]>
   Term.ListTail   = <[<{Term ", "}*>|<Term>]>
   Term.Tuple0     = <( )>
@@ -325,7 +378,8 @@ context-free priorities
 syntax
 
   Term-CF.Op         = OpId-LEX "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
-  Term-CF.Str        = "\"" StrChars-LEX "\""
+
+  Str-CF.Str        = "\"" StrChars-LEX "\""
 
 lexical syntax
 
@@ -336,3 +390,76 @@ lexical syntax
 lexical restrictions
 
   StrChars -/- ~[\"]
+
+
+/******************************************************************
+ * Arithmetic                                                          *
+ ******************************************************************/
+
+syntax
+
+  Constraint-CF.CArith = ArithExp-CF LAYOUT?-CF "#" ArithOp-CF LAYOUT?-CF ArithExp-CF LAYOUT?-CF Message-CF
+
+  ArithOp-CF.Equal            = "="
+  ArithOp-CF.NotEqual         = "\\="
+  ArithOp-CF.GreaterThanEqual = ">="
+  ArithOp-CF.LessThanEqual    = "=<"
+  ArithOp-CF.GreaterThan      = ">"
+  ArithOp-CF.LessThan         = "<"
+
+context-free syntax
+
+  ArithExp     = Int
+  ArithExp     = Var
+  ArithExp.Add = <<ArithExp> + <ArithExp>> {left}
+  ArithExp.Mul = <<ArithExp> * <ArithExp>> {left}
+  ArithExp.Sub = <<ArithExp> - <ArithExp>> {left}
+  ArithExp.Min = <min(<ArithExp>, <ArithExp>)>
+  ArithExp.Max = <max(<ArithExp>, <ArithExp>)>
+  ArithExp.Mod = <<ArithExp> mod <ArithExp>> {left}
+  ArithExp.Div = <<ArithExp> div <ArithExp>> {left}
+  ArithExp     = <(<ArithExp>)> {bracket}
+
+context-free priorities
+
+    {left: ArithExp.Mul ArithExp.Div ArithExp.Mod}
+  > {left: ArithExp.Add ArithExp.Sub}
+
+
+/******************************************************************
+ * Messages                                                       *
+ ******************************************************************/
+
+context-free syntax
+
+  Message.NoMessage =
+  Message.Message   = < | <MessageKind> <MessageContent> <MessageOrigin>>
+
+  MessageKind.Error      = <error>
+  MessageKind.Warning    = <warning>
+  MessageKind.Note       = <note>
+
+syntax
+
+  MessageContent-CF.Formatted = "$[" MessageContentPart-CF* "]"
+
+  MessageOrigin-CF.NoOrigin =
+  MessageOrigin-CF.Origin   = "@" Var-CF
+
+context-free syntax
+
+  MessageContent.NoMessage =
+  MessageContent           = Str
+
+  MessageContentPart.Term = <[<Term>]>
+  MessageContentPart.Text = MessageChars
+
+lexical syntax
+
+  MessageChars = MessageChar+
+  MessageChar  = ~[\[\]\\\t\r\n]
+  MessageChar  = "\\[" | "\\]" | "\\\\"
+
+lexical restrictions
+
+  MessageChars -/- ~[\[\]]

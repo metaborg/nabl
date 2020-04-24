@@ -8,6 +8,10 @@ context-free syntax
 
   Test.PairProjectionFunction = <pair projection function>
 
+  Test.MissingFunctionCase = <missing function case>
+
+  Test.NonGroundFunctionArgument = <non-ground function argument>
+
 context-free syntax
 
   Test.SubRelationIsReflexive = <sub relation is reflexive>

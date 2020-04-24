@@ -1,7 +1,5 @@
 package mb.nabl2.solver.components;
 
-import java.util.Optional;
-
 import mb.nabl2.constraints.equality.ImmutableCEqual;
 import mb.nabl2.constraints.relations.CBuildRelation;
 import mb.nabl2.constraints.relations.CCheckRelation;
@@ -10,6 +8,9 @@ import mb.nabl2.constraints.relations.IRelationConstraint;
 import mb.nabl2.relations.IFunctionName;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.UnconditionalDelayExpection;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 
@@ -20,34 +21,34 @@ public class ExternalRelationComponent extends ASolver {
         super(core);
     }
 
-    public Optional<SolveResult> solve(IRelationConstraint constraint) {
-        return constraint.match(IRelationConstraint.Cases.of(this::solve, this::solve, this::solve));
+    public SolveResult solve(IRelationConstraint constraint) throws DelayException {
+        return constraint.matchOrThrow(IRelationConstraint.CheckedCases.of(this::solve, this::solve, this::solve));
     }
 
     // ------------------------------------------------------------------------------------------------------//
 
-    public Optional<SolveResult> solve(CBuildRelation c) {
-        return Optional.empty();
+    public SolveResult solve(CBuildRelation c) throws DelayException {
+        throw new UnconditionalDelayExpection();
     }
 
-    public Optional<SolveResult> solve(CCheckRelation c) {
-        return Optional.empty();
+    public SolveResult solve(CCheckRelation c) throws DelayException {
+        throw new UnconditionalDelayExpection();
     }
 
-    public Optional<SolveResult> solve(CEvalFunction c) {
+    public SolveResult solve(CEvalFunction c) throws DelayException {
         if(!unifier().isGround(c.getTerm())) {
-            return Optional.empty();
+            throw new VariableDelayException(unifier().getVars(c.getTerm()));
         }
         final ITerm term = unifier().findRecursive(c.getTerm());
-        return c.getFunction().match(IFunctionName.Cases.of(
+        return c.getFunction().matchOrThrow(IFunctionName.CheckedCases.of(
         // @formatter:off
             name -> {
-                return Optional.empty();
+                throw new UnconditionalDelayExpection();
             },
             extName -> {
                 return callExternal(extName, term).map(ret -> {
                     return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
-                });
+                }).orElse(SolveResult.empty());
             }
             // @formatter:on
         ));

@@ -8,6 +8,8 @@ public interface IResolutionParameters<L extends ILabel> {
 
     L getLabelD();
 
+    L getLabelR();
+
     IAlphabet<L> getLabels();
 
     IRegExp<L> getPathWf();

@@ -20,6 +20,8 @@ context-free start-symbols
 
   Start
 
+  LabelRE // for testing
+
 context-free syntax
 
   Start = Module

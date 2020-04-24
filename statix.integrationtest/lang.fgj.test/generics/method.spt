@@ -1,0 +1,204 @@
+module generics-method
+
+language FGJ
+
+test generic method parameter [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T<X extends B<>> extends Object<> {
+      T() { super(); }
+      <> B<> m(X x) {
+        return x;
+      }
+    }
+  in
+    new T<C<>>().<>m(new C<>())
+]] analysis succeeds
+
+test cannot return bound for generic return [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T<X extends B<>> extends Object<> {
+      T() { super(); }
+      <> X m(B<> b) {
+        return b;
+      }
+    }
+  in
+    new T<C<>>().<>m(new C<>())
+]] analysis fails
+
+test generic method return [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T<X extends B<>> extends Object<> {
+      X f;
+      T(X f) {
+        super();
+        this.f = f;
+      }
+      <> X m() {
+        return this.f;
+      }
+    }
+  in
+    new T<C<>>(new C<>()).<>m()
+]] analysis succeeds
+
+test generic method parameter and return [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T<X extends B<>> extends Object<> {
+      T() { super(); }
+      <> X m(X x) {
+        return x;
+      }
+    }
+  in
+    new T<C<>>().<>m(new C<>())
+]] analysis succeeds
+
+test method call [[
+  let
+    class A<X extends Object<>> extends Object<> {
+      X f;
+      A(X f) { 
+        super(); 
+        this.f = f;
+      }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class D<> extends B<> {
+      D() { super(); }
+    }
+    class C<X extends B<>> extends Object<> {
+      A<X> f;
+      C(A<X> f) { 
+        super(); 
+        this.f = f;
+      }
+      <> X getF() {
+        return this.f.f;
+      }
+    }
+  in
+    new C<B<>>(new A<B<>>(new B<>())).<>getF()
+]] analysis succeeds
+
+test access field of bound [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends Object<> {
+      A<> a;
+      B() {
+        super();
+        this.a = new A<>();
+      }
+    }
+    class C<> extends B<>  {
+      C(){ super(); }
+    }
+    class T<X extends B<>> extends Object<> {
+      X x;
+      T(X x) {
+        super();
+        this.x = x;
+      }
+      <> A<> m() {
+        return this.x.a;
+      }
+    }
+  in new T<C<>>(new C<>()).<>m()
+]] analysis succeeds
+
+test instantiate self in method parameter [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class T<X extends Object<>> extends Object<> {
+      X f;
+      T(X f) {
+        super();
+        this.f = f;
+      }
+      <> B<> m(T<B<>> t) {
+        return t.f;
+      }
+    }
+  in
+    new T<A<>>(new A<>()).<>m(new T<B<>>(new B<>())):B<>
+]] analysis succeeds
+
+test method type parameter and same type argument [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class T<> extends Object<> {
+      T() { super(); }
+      <Y extends Object<>> Y m(Y y) {
+        return y;
+      }
+    }
+  in
+    new T<>().<A<>>m(new A<>()):A<>
+]] analysis succeeds
+
+test method type parameter and sub type argument [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<>  {
+      B(){ super(); }
+    }
+    class T<> extends Object<> {
+      T() { super(); }
+      <Y extends Object<>> Y m(Y y) {
+        return y;
+      }
+    }
+  in
+    new T<>().<A<>>m(new B<>()):A<>
+]] analysis succeeds
+

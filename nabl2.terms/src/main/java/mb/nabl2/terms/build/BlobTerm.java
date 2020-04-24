@@ -1,15 +1,16 @@
 package mb.nabl2.terms.build;
 
+import mb.nabl2.terms.ITerm;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMultiset;
 
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.ITermVar;
+import java.util.Objects;
 
-@Value.Immutable
+@Value.Immutable(builder = false, copy = true, prehash = false)
 @Serial.Version(value = 42L)
 abstract class BlobTerm extends AbstractTerm implements IBlobTerm {
 
@@ -32,21 +33,19 @@ abstract class BlobTerm extends AbstractTerm implements IBlobTerm {
     }
 
     @Override public int hashCode() {
-        return Objects.hashCode(getValue());
+        return Objects.hash(
+            getValue()
+        );
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof IBlobTerm)) {
-            return false;
-        }
-        IBlobTerm that = (IBlobTerm) other;
-        if(getValue().equals(that.getValue())) {
-            return false;
-        }
-        return true;
+        if (this == other) return true;
+        if (!(other instanceof IBlobTerm)) return false;
+        IBlobTerm that = (IBlobTerm)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getValue(), that.getValue());
+        // @formatter:on
     }
 
     @Override public String toString() {

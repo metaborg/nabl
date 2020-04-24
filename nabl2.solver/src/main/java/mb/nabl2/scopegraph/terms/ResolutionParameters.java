@@ -30,6 +30,8 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
 
     @Value.Parameter @Override public abstract Label getLabelD();
 
+    @Value.Parameter @Override public abstract Label getLabelR();
+
     @Value.Parameter @Override public abstract IRegExp<Label> getPathWf();
 
     @Value.Parameter @Override public abstract IRelation.Immutable<Label> getSpecificityOrder();
@@ -43,7 +45,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
                 .flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
                     RegExpBuilder<Label> builder = new RegExpBuilder<>();
                     return matchWf(builder).match(wfTerm, unifier).<ResolutionParameters>map(
-                            wf -> ImmutableResolutionParameters.of(labels, Label.D, wf, order));
+                            wf -> ImmutableResolutionParameters.of(labels, Label.D, Label.R, wf, order));
                 })).match(term, unifier);
     }
 
@@ -92,7 +94,7 @@ public abstract class ResolutionParameters implements IResolutionParameters<Labe
         } catch(RelationException e) {
             throw new IllegalStateException(e);
         }
-        return ImmutableResolutionParameters.of(labels, Label.D, wf, order.freeze());
+        return ImmutableResolutionParameters.of(labels, Label.D, Label.R, wf, order.freeze());
     }
 
 }

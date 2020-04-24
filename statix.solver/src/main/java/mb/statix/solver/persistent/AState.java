@@ -2,62 +2,60 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Map;
+import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.IUnifier.Immutable.Result;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.PersistentUnifier;
+import mb.nabl2.terms.unification.Unifiers;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
+import mb.statix.solver.ITermProperty;
 import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
-public abstract class AState implements IState {
-
-    @Override @Value.Parameter public abstract Spec spec();
+public abstract class AState implements IState.Immutable {
 
     @Override @Value.Default public String resource() {
         return "";
     }
 
-    public State add(State other) {
+    @Override public IState.Immutable add(IState.Immutable other) {
         final Set.Immutable<ITermVar> vars = vars().union(other.vars());
         final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
-        final IUnifier.Immutable unifier;
+        final IUniDisunifier.Immutable unifier;
         try {
-            unifier = unifier().unify(other.unifier()).map(Result::unifier)
+            unifier = unifier().unify(other.unifier()).map(IUniDisunifier.Result::unifier)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot merge unifiers."));
         } catch(OccursException e) {
             throw new IllegalArgumentException("Cannot merge unifiers.");
         }
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = scopeGraph().addAll(other.scopeGraph());
+        final Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties =
+                termProperties().__putAll(other.termProperties());
         // @formatter:off
         return State.builder().from(this)
             .__vars(vars)
             .__scopes(scopes)
             .unifier(unifier)
             .scopeGraph(scopeGraph)
+            .termProperties(termProperties)
             .build();
         // @formatter:on
-    }
-
-    public State clearVarsAndScopes() {
-        return State.copyOf(this).with__vars(Set.Immutable.of()).with__scopes(Set.Immutable.of());
     }
 
     // --- variables ---
@@ -70,20 +68,21 @@ public abstract class AState implements IState {
         return Set.Immutable.of();
     }
 
-    public Tuple2<ITermVar, State> freshVar(String base) {
-        final int i = __varCounter() + 1;
-        final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITermVar var = B.newVar(resource(), name);
-        final Set.Immutable<ITermVar> vars = __vars().__insert(var);
-        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).__vars(vars).build());
+    @Override public Tuple2<ITermVar, IState.Immutable> freshVar(ITermVar var) {
+        return freshVar(var.getName(), var.getAttachments());
     }
 
-    public Tuple2<ITermVar, State> freshRigidVar(String base) {
+    @Override public Tuple2<ITermVar, IState.Immutable> freshWld() {
+        return freshVar("_", null);
+    }
+
+    private Tuple2<ITermVar, IState.Immutable> freshVar(String name,
+            @Nullable ImmutableClassToInstanceMap<Object> attachments) {
         final int i = __varCounter() + 1;
-        final String name = base.replaceAll("-", "_") + "-" + i;
-        final ITermVar var = B.newVar(resource(), name);
-        // same as freshVar, but do not add to vars
-        return ImmutableTuple2.of(var, State.builder().from(this).__varCounter(i).build());
+        final String newName = name.replaceAll("-", "_") + "-" + i;
+        final ITermVar newVar = B.newVar(resource(), newName, attachments);
+        final Set.Immutable<ITermVar> vars = __vars().__insert(newVar);
+        return ImmutableTuple2.of(newVar, State.builder().from(this).__varCounter(i).__vars(vars).build());
     }
 
     @Override public Set.Immutable<ITermVar> vars() {
@@ -100,7 +99,7 @@ public abstract class AState implements IState {
         return Set.Immutable.of();
     }
 
-    public Tuple2<Scope, State> freshScope(String base) {
+    @Override public Tuple2<Scope, IState.Immutable> freshScope(String base) {
         final int i = __scopeCounter() + 1;
         final String name = base.replaceAll("-", "_") + "-" + i;
         final Scope scope = Scope.of(resource(), name);
@@ -114,16 +113,16 @@ public abstract class AState implements IState {
 
     // --- solution ---
 
-    @Override @Value.Default public IUnifier.Immutable unifier() {
-        return PersistentUnifier.Immutable.of();
-    }
+    @Value.Parameter @Override public abstract IUniDisunifier.Immutable unifier();
 
-    @Override @Value.Default public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
-        return ScopeGraph.Immutable.of(spec().edgeLabels(), spec().relationLabels(), spec().noRelationLabel());
-    }
+    @Value.Parameter @Override public abstract IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph();
 
-    @Value.Default public Map<Tuple2<TermIndex, ITerm>, ITerm> termProperties() {
-        return ImmutableMap.of();
+    @Value.Parameter @Override public abstract Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
+
+    public static State of(Spec spec) {
+        return State.of(Unifiers.Immutable.of(),
+                ScopeGraph.Immutable.of(spec.edgeLabels(), spec.relationLabels(), spec.noRelationLabel()),
+                Map.Immutable.of());
     }
 
 }

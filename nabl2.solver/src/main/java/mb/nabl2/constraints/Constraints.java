@@ -16,7 +16,6 @@ import mb.nabl2.constraints.base.BaseConstraints;
 import mb.nabl2.constraints.base.CConj;
 import mb.nabl2.constraints.equality.EqualityConstraints;
 import mb.nabl2.constraints.nameresolution.NameResolutionConstraints;
-import mb.nabl2.constraints.poly.PolyConstraints;
 import mb.nabl2.constraints.relations.RelationConstraints;
 import mb.nabl2.constraints.scopegraph.ScopeGraphConstraints;
 import mb.nabl2.constraints.sets.SetConstraints;
@@ -47,8 +46,7 @@ public class Constraints {
             NameResolutionConstraints.matcher(),
             RelationConstraints.matcher(),
             SetConstraints.matcher(),
-            SymbolicConstraints.matcher(),
-            PolyConstraints.matcher()
+            SymbolicConstraints.matcher()
         ));
         // @formatter:on
     }
@@ -67,8 +65,7 @@ public class Constraints {
             NameResolutionConstraints::build,
             RelationConstraints::build,
             SetConstraints::build,
-            SymbolicConstraints::build,
-            PolyConstraints::build
+            SymbolicConstraints::build
             // @formatter:on
         ));
     }
@@ -93,8 +90,7 @@ public class Constraints {
             c -> NameResolutionConstraints.substitute(c, subst),
             c -> RelationConstraints.substitute(c, subst),
             c -> SetConstraints.substitute(c, subst),
-            c -> SymbolicConstraints.substitute(c, subst),
-            c -> PolyConstraints.substitute(c, subst)
+            c -> SymbolicConstraints.substitute(c, subst)
             // @formatter:on
         ));
     }
@@ -109,8 +105,7 @@ public class Constraints {
             c -> NameResolutionConstraints.transform(c, map),
             c -> RelationConstraints.transform(c, map),
             c -> SetConstraints.transform(c, map),
-            c -> SymbolicConstraints.transform(c, map),
-            c -> PolyConstraints.transform(c, map)
+            c -> SymbolicConstraints.transform(c, map)
             // @formatter:on
         ));
     }

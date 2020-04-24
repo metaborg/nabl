@@ -5,8 +5,10 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CConj;
@@ -15,13 +17,13 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CPathLt;
-import mb.statix.constraints.CPathMatch;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
+import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.messages.IMessage;
 
 public interface IConstraint {
 
@@ -29,15 +31,27 @@ public interface IConstraint {
 
     IConstraint withCause(IConstraint cause);
 
+    default Optional<IMessage> message() {
+        return Optional.empty();
+    }
+
+    default IConstraint withMessage(IMessage msg) {
+        return this;
+    }
+
     <R> R match(Cases<R> cases);
 
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
     IConstraint apply(ISubstitution.Immutable subst);
 
+    IConstraint apply(IRenaming subst);
+
     String toString(TermFormatter termToString);
 
     interface Cases<R> extends Function1<IConstraint, R> {
+
+        R caseArith(CArith c);
 
         R caseConj(CConj c);
 
@@ -51,10 +65,6 @@ public interface IConstraint {
 
         R caseNew(CNew c);
 
-        R casePathLt(CPathLt c);
-
-        R casePathMatch(CPathMatch c);
-
         R caseResolveQuery(CResolveQuery c);
 
         R caseTellEdge(CTellEdge c);
@@ -67,6 +77,8 @@ public interface IConstraint {
 
         R caseTrue(CTrue c);
 
+        R caseTry(CTry c);
+
         R caseUser(CUser c);
 
         @Override default R apply(IConstraint c) {
@@ -76,6 +88,8 @@ public interface IConstraint {
     }
 
     interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
+
+        R caseArith(CArith c) throws E;
 
         R caseConj(CConj c) throws E;
 
@@ -89,10 +103,6 @@ public interface IConstraint {
 
         R caseNew(CNew c) throws E;
 
-        R casePathLt(CPathLt c) throws E;
-
-        R casePathMatch(CPathMatch c) throws E;
-
         R caseResolveQuery(CResolveQuery c) throws E;
 
         R caseTellEdge(CTellEdge c) throws E;
@@ -104,6 +114,8 @@ public interface IConstraint {
         R caseTermProperty(CAstProperty c) throws E;
 
         R caseTrue(CTrue c) throws E;
+
+        R caseTry(CTry c) throws E;
 
         R caseUser(CUser c) throws E;
 

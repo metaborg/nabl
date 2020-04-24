@@ -1,0 +1,112 @@
+module generics-class
+
+language FGJ
+
+test single parameter generic class [[
+  let
+    class A<X extends Object<>> extends Object<> {
+      A() { super(); }
+    }
+  in
+    new A<Object<>>()
+]] analysis succeeds
+
+test multiple parameter generic class [[
+  let
+    class A<X extends Object<>, Y extends Object<>> extends Object<> {
+      A() { super(); }
+    }
+  in
+    new A<Object<>, Object<>>()
+]] analysis succeeds
+
+test instantiate bounded type parameter with same type [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class C<X extends A<>> extends Object<> {
+      C() { super(); }
+    }
+  in
+    new C<A<>>()
+]] analysis succeeds
+
+test instantiate bounded type parameter with sub type [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<X extends A<>> extends Object<> {
+      C() { super(); }
+    }
+  in
+    new C<B<>>()
+]] analysis succeeds
+
+test instantiate bounded type parameter with super type [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<X extends B<>> extends Object<> {
+      C() { super(); }
+    }
+  in
+    new C<A<>>()
+]] analysis fails
+
+test instantiate bounded type parameter with unrelated type [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class C<X extends A<>> extends Object<> {
+      C() { super(); }
+    }
+  in
+    new C<B<>>()
+]] analysis fails
+
+test subclass refines type parameter [[
+  let
+    class A<> extends Object<>  {
+      A(){ super(); }
+    }
+    class B<> extends A<> {
+      B() { super(); }
+    }
+    class C<> extends B<> {
+      C() { super(); }
+    }
+    class T1<X extends A<>> extends Object<> {
+      T1() { super(); }
+    }
+    class T2<Y extends B<>> extends T1<Y> {
+      T2() { super(); }
+    }
+  in new T2<C<>>()
+]] analysis succeeds
+
+test recursive type bound [[
+  let
+    class A<X extends Object<>> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends A<B<>> {
+      B() { super(); }
+    }
+    class T<X extends A<X>> extends Object<> {
+      T() { super(); }
+    }
+  in new T<B<>>()
+]] analysis succeeds

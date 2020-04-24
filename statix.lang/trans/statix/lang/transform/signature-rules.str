@@ -1,0 +1,58 @@
+module statix/lang/transform/signature-rules
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+  signatures/statix/test/-
+  statix/lang/util
+  statix/lang/normalize/util
+  statix/lang/statics/rule-order
+
+rules
+
+  add-signature-rules(|a) =
+    ?ast
+  ; nabl2-custom-analysis-info-msg(|"Add signature rules...")
+  ; <add-signature-rules> ast
+
+  add-signature-rules: Module(x, section*) -> Module(x, <conc> (section*, [Rules(r*)]))
+    with r* := <collect-all(mk-signature-rules); concat> section*
+
+  add-signature-rules: Test(c, section*) -> Test(c, <conc> (section*, [Rules(r*)]))
+    with r* := <collect-all(mk-signature-rules); concat> section*
+
+  mk-signature-rules: SortAlias(x, sort) -> r*
+    with r* := [
+           CDeriveMap(<sig-list-rule-name> x, <sig-rule-name> x, [ListLift()])
+         , CDecl(InductiveC(), <sig-rule-name> x, SimpleType([SimpleSort(x)]))
+         , Rule(NoName(), C(<sig-rule-name> x, [Var("x")]), <sort-sig-pred> (sort, [Var("x")]))
+         ]
+
+  mk-signature-rules: SortDecl(x) -> r*
+    with r* := [
+           CDeriveMap(<sig-list-rule-name> x, <sig-rule-name> x, [ListLift()])
+         , CDecl(InductiveC(), <sig-rule-name> x, SimpleType([SimpleSort(x)]))
+         ]
+
+  mk-signature-rules: OpDecl(x, ConstOp(sort)) -> [r]
+    with r := Rule(NoName(), C(<sort-sig-name> sort, [Op(x, [])]), CTrue())
+
+  mk-signature-rules: OpDecl(x, ArrowOp(sort*, sort)) -> [r]
+    with sort-var* := <map-with-index(\ (i, sort) -> (sort, [Var($[x[<int-to-string> i]])]) \)> sort*
+       ; var* := <map(Snd;Hd)> sort-var*
+       ; c* := <filter(sort-sig-pred);list-to-conj> sort-var*
+       ; r := Rule(NoName(), C(<sort-sig-name> sort, [Op(x, var*)]), c*)
+
+  sort-sig-name: SimpleSort(x)  -> <sig-rule-name> x
+  sort-sig-name: ListSort(sort) -> $[[<sort-sig-name> sort]s]
+  sort-sig-name: IntSort()      -> <sig-rule-name> "_int"
+  sort-sig-name: StringSort()   -> <sig-rule-name> "_string"
+  sort-sig-name: ScopeSort()    -> <sig-rule-name> "_scope"
+  sort-sig-name: PathSort()     -> <sig-rule-name> "_path"
+
+  sort-sig-pred: (sort, ts) -> C(<sort-sig-name> sort, ts)
+
+  sig-rule-name: x -> $[gen_is[x]]
+  sig-list-rule-name: x -> $[gen_is[x]s]

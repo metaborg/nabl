@@ -4,6 +4,8 @@ imports
 
   signatures/statix/lang/-
 
+  statix/lang/statics/-
+
 signature
 
   sorts
@@ -19,35 +21,46 @@ signature
 
   namespaces
     C      // constraint
+    Rule   // rule
     Rel    // data label
     Edge   // edge label
     Mod    // module
+    This   // current module
     Ns     // namespace
     NsQ    // namespace query
     Op     // term constructor
-    Rule   // constraint rule
     Sort   // sort
 
   name resolution
     labels
-      P // lexical parent
-      I // module import
+      P  // lexical parent
+      I  // module interface (qualified, non-transitively imported)
+      S  // module syntax (unqualified, transitively imported)
+      LS // local module syntax
     well-formedness
-      P* I?
+      P* (I? | LS? S*)
     order
       D < P,
-      I < P
+      // module interface
+      D < I,
+      I < P,
+      // module syntax
+      D < S,
+      LS < S
 
 rules
 
   init ^ (s) :=
     new s,
+
+    // check duplicates
+    distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
   
     // sugar
 
     Rel{Decl()} <- s,
     Rel{Decl()} : PRED([OCCURRENCE()]),
-    Rel{Decl()}.ast := Decl().
+    Rel{Decl()}.qname := "".
 
 
 /******************************************************************
@@ -55,112 +68,161 @@ rules
  ******************************************************************/
 
   [[ m@Module(x, sections) ^ (s) ]] :=
-    new s', s' -P-> s, @m.scope := s',
-    Mod{x} <- s, Mod{x} =I=> s',
-    distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
-    Sections[[ sections ^ (s') ]].
+    // define module
+    new s_mod, s_mod -P-> s, @m.scope := s_mod,
+    Mod{x} <- s, Mod{x} =I=> s_mod,
+    // syntax part of the interface
+    new s_syn, s_mod -LS-> s_syn,
+    Mod{x} =S=> s_syn,
+    // define the current module
+    Mod{x}.qname := x,
+    This{()} <- s_mod, This{()}.qname := x !!,
+    // check sections
+    Sections[[ sections ^ (s_mod, s_syn, s) ]].
 
-  Sections[[ sections ^ (s') ]] :=
-    Map1[[ sections ^ (s') ]],
-    distinct/name D(s')/C    | error $[Duplicate constraint [NAME]] @NAMES,
-    distinct/name D(s')/Rel  | error $[Duplicate relation [NAME]] @NAMES,
-    distinct/name D(s')/Edge | error $[Duplicate edge [NAME]] @NAMES,
-    distinct/name D(s')/Ns   | error $[Duplicate namespace [NAME]] @NAMES,
-    distinct/name D(s')/NsQ  | error $[Duplicate namespace query [NAME]] @NAMES,
-    distinct/name D(s')/Op   | error $[Duplicate constructor [NAME]] @NAMES,
-    distinct/name D(s')/Sort | error $[Duplicate sort [NAME]] @NAMES,
-    (D(s')/Rel isect/name D(s')/Edge) subseteq 0 | error $[Relation and edge label with same name [NAME]] @NAMES.
+  Sections[[ sections ^ (s, s_syn, s_outer) ]] :=
+    Map3(Section)[[ sections ^ (s, s_syn, s_outer) ]],
 
-  [[ Signature(sigs) ^ (s) ]] :=
-    Map1[[ sigs ^ (s) ]].
+    // duplicate checks for all non-transitively scoped identifiers
+    distinct/name D(s)/C                     | error $[Duplicate constraint [NAME]] @NAMES,
+    distinct/name D(s)/Ns                    | error $[Duplicate namespace [NAME]] @NAMES,
+    distinct/name D(s)/NsQ                   | error $[Duplicate resolution policy for namespace [NAME]] @NAMES,
+    distinct/name (D(s)/Rel union D(s)/Edge) | error $[Duplicate label/relation [NAME]] @NAMES,
+    (D(s)/C                     lsect/name (W(s)/C                     minus D(s)/C                    )) subseteq 0 | warning $[Shadows imported constraint [NAME]] @NAMES,
+    (D(s)/Ns                    lsect/name (W(s)/Ns                    minus D(s)/Ns                   )) subseteq 0 | warning $[Shadows imported namespace [NAME]] @NAMES,
+    (D(s)/NsQ                   lsect/name (W(s)/NsQ                   minus D(s)/NsQ                  )) subseteq 0 | warning $[Shadows imported resolution policy for namespace [NAME]] @NAMES,
+    ((D(s)/Rel union D(s)/Edge) lsect/name ((W(s)/Rel union W(s)/Edge) minus (D(s)/Rel union D(s)/Edge))) subseteq 0 | warning $[Shadows imported edge label / relation [NAME]] @NAMES,
 
-  [[ Rules(rs) ^ (s) ]] :=
-    Map1[[ rs ^ (s) ]].
+    // duplicate checks for transitively scoped sorts and constructors
+    distinct/name D(s_syn)/Op   | error $[Duplicate constructor [NAME]] @NAMES,
+    distinct/name D(s_syn)/Sort | error $[Duplicate sort [NAME]] @NAMES,
+    ?- DistinctPatterns(localRules),
+        localRules is set D(s_syn)/Rule,
+    (D(s_syn)/Sort lsect/name (W(s)/Sort minus D(s_syn)/Sort)) subseteq 0 | error $[Duplicate of imported sort [NAME]] @NAMES,
+    (D(s_syn)/Op   lsect/name (W(s)/Op   minus D(s_syn)/Op  )) subseteq 0 | error $[Duplicate of imported constructor [NAME]] @NAMES,
+    ?- NoDuplicatePatterns(localRules, importedRules, ()),
+        importedRules is set (W(s)/Rule minus D(s_syn)/Rule).
+
+  Section[[ Imports(imports) ^ (s, s_syn, s_outer) ]] :=
+    Map3(Import)[[ imports ^ (s_outer, s, s_syn) ]].
+
+  Import[[ Import(x) ^ (s, s_mod, s_syn) ]] :=
+    Mod{x} -> s, Mod{x} |-> d | error $[Unresolved import module [x]] @x, @x.ref := Mod{x}, @x.decl := d,
+    Mod{x} <=I= s_mod, d ?=I=> s_mod',
+    (V(s_mod')/C                          lsect/name (V(s_mod)/C                         minus (D(s_mod)/C                         union V(s_mod')/C                         ))) subseteq 0 | error $[Duplicate imported constraints [NAME]] @x,
+    (V(s_mod')/Ns                         lsect/name (V(s_mod)/Ns                        minus (D(s_mod)/Ns                        union V(s_mod')/Ns                        ))) subseteq 0 | error $[Duplicate imported namespaces [NAME]] @x,
+    (V(s_mod')/NsQ                        lsect/name (V(s_mod)/NsQ                       minus (D(s_mod)/NsQ                       union V(s_mod')/NsQ                       ))) subseteq 0 | error $[Duplicate imported resolution policies for [NAME]] @x,
+    ((V(s_mod')/Rel union V(s_mod')/Edge) lsect/name ((V(s_mod)/Rel union V(s_mod)/Edge) minus ((D(s_mod)/Rel union D(s_mod)/Edge) union (V(s_mod')/Rel union V(s_mod')/Edge)))) subseteq 0 | error $[Duplicate imported edge labels / relations [NAME]] @x,
+    Mod{x} <=S= s_syn, d ?=S=> s_syn',
+    (V(s_syn')/Sort lsect/name (V(s_syn)/Sort minus (D(s_syn)/Sort union V(s_syn')/Sort))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x,
+    (V(s_syn')/Op   lsect/name (V(s_syn)/Op   minus (D(s_syn)/Op   union V(s_syn')/Op  ))) subseteq 0 | error $[Duplicate imported constructor [NAME]] @x,
+    ?- NoDuplicatePatterns(importedRules, otherImportedRules, x),
+        importedRules is set W(s_syn')/Rule,
+        otherImportedRules is set (W(s_syn)/Rule minus (D(s_syn)/Rule union W(s_syn')/Rule)).
+
+  Section[[ Signature(sigs) ^ (s, s_syn, _) ]] :=
+    Map2(Signature)[[ sigs ^ (s, s_syn) ]].
+
+  Section[[ Rules(rs) ^ (s, s_syn, _) ]] :=
+    Map2(DeclOrRule)[[ rs ^ (s, s_syn) ]].
 
 
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
 
-  [[ Constraints(cs) ^ (s) ]] :=
-    Map1[[ cs ^ (s) ]].
+  Signature[[ Constraints(cs) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ cs ^ (s, s_syn) ]].
 
-  [[ CDecl(ind, x, type) ^ (s) ]] :=
-    [[ ind ]],
-    [[ type ^ (s) : ty ]],
+  DeclOrRule[[ CDecl(ind, x, type) ^ (s, s_syn) ]] :=
+    Ind[[ ind ]],
+    Type[[ type ^ (s) : ty ]],
+
     C{x} <- s, @x.decl := C{x},
     C{x} : ty !!,
     C{x}.ind := ind !!,
-    C{x}.kind := DeclaredC() !!.
+    C{x}.kind := DeclaredC() !!,
+    This{()} -> s, This{()} |-> d_this, d_this.qname := qname, C{x}.qname := qname.
 
-  [[ InductiveC() ]].
-  [[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
+  Ind[[ InductiveC() ]].
+  Ind[[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
-  [[ r@Rule(h, bvs, body) ^ (s) ]] :=
-    Rule{x} <- s,
-    new s_rule, s_rule -P-> s,
-    distinct/name D(s_rule)/Var | error $[Duplicate local variable [NAME]] @NAMES,
-    RuleHead[[ h ^ (s_rule, s_body, x) : _ ]],
-    new s_body, s_body -P-> s_rule,
-    distinct/name D(s_body)/Var | error $[Duplicate body variable [NAME]] @NAMES,
-    (D(s_body) lsect/name D(s_rule)) subseteq 0 | error $[Shadowing local variable [NAME]] @NAMES,
-    Map1T(VarDecl)[[ bvs ^ (s_body) : _ ]],
-    [[ body ^ (s_body) ]].
+  DeclOrRule[[ r@Rule(_, h, body) ^ (s, s_syn) ]] :=
+    new s_rule, s_rule -P-> s, @r.scope := s_rule,
+    distinct/name D(s_rule)/Var | error $[Duplicate variable [NAME]] @NAMES,
+    RuleHead[[ h ^ (s_rule, s_syn) : _ ]],
+    Constraint[[ body ^ (s_rule) ]].
 
-  RuleHead[[ C(x, args) ^ (s_rule, s_body, y) : ty ]] := x == y,
-    C{x} -> s_rule, C{x} |-> d, @x.decl := d,
+  RuleHead[[ h@C(x, args) ^ (s_rule, s_syn) : ty ]] :=
+    C{x} -> s_rule, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d.kind := DeclaredC() | error "Rules can only be defined for declared constraints.",
+    Rule{x} <- s_syn, Rule{x}.decl := d, Rule{x}.head := h,
     d : ty, ty != FUN(_, _) | error "Use `c(...) = ... | ...` for functional constraints." @x,
     tys is `in-types` of ty,
     Map1T(Match)[[ args ^ (s_rule) : tys ]].
 
-  [[ C(x, args) ^ (s) ]] :=
-    C{x} -> s, C{x} |-> d, @x.decl := d,
+  Constraint[[ C(x, args, msg) ^ (s) ]] :=
+    C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty, ty != FUN(_, _) | error "Use inline notation for functional constraints.",
     tys is `in-types` of ty,
-    Map1T(Build)[[ args ^ (s) : tys ]].
+    Map1T(Build)[[ args ^ (s) : tys ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ LLam(ps, vs, c) ^ (s) : PRED(tys) ]] :=
-    new s', s' -P-> s,
+  HoConstraint[[ l@LLam(ps, c) ^ (s) : PRED(tys) ]] :=
+    new s', s' -P-> s, @l.scope := s',
     Map1T(Match)[[ ps ^ (s') : tys ]],
-    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
-    [[ c ^ (s') ]].
+    (D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+    Constraint[[ c ^ (s') ]].
 
 
 /******************************************************************
  * Base Constraints                                               *
  ******************************************************************/
 
-  [[ CTrue() ^ (_) ]].
+  Constraint[[ CTrue() ^ (_) ]].
 
-  [[ CFalse() ^ (_) ]].
+  Constraint[[ CFalse(msg) ^ (s) ]] :=
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ CConj(c1, c2) ^ (s) ]] :=
-    [[ c1 ^ (s) ]],
-    [[ c2 ^ (s) ]].
+  Constraint[[ CConj(c1, c2) ^ (s) ]] :=
+    Constraint[[ c1 ^ (s) ]],
+    Constraint[[ c2 ^ (s) ]].
 
-  [[ CNew(vs) ^ (s) ]] :=
+  Constraint[[ CNew(vs) ^ (s) ]] :=
     Map1t(VarRef)[[ vs ^ (s) : SCOPE() ]].
 
-  [[ CEqual(t1, t2) ^ (s) ]] :=
+  Constraint[[ CEqual(t1, t2, msg) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
-    Build[[ t2 ^ (s) : ty ]].
+    Build[[ t2 ^ (s) : ty ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ CInequal(t1, t2) ^ (s) ]] :=
+  Constraint[[ CInequal(t1, t2, msg) ^ (s) ]] :=
     Build[[ t1 ^ (s) : ty ]],
-    Build[[ t2 ^ (s) : ty ]].
+    Build[[ t2 ^ (s) : ty ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
+  Constraint[[ e@CExists(vs, c) ^ (s) ]] :=
+    new s', s' -P-> s,
+    Map1T(VarDecl)[[ vs ^ (s') : _ ]],
+    distinct/name D(s')/Var | error $[Duplicate variable [NAME]] @NAMES,
+    (D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
+    Constraint[[ c ^ (s') ]].
+
+  Constraint[[ t@CTry(c, msg) ^ (s) ]] :=
+    new s', s' -P-> s, @t.scope := s',
+    Constraint[[ c ^ (s') ]],
+    Message(TryKind)[[ msg ^ (s) ]].
 
 /******************************************************************
  * AST Constraints                                                *
  ******************************************************************/
 
 
-  [[ CAstId(t1, t2) ^ (s) ]] :=
+  Constraint[[ CAstId(t1, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : _ ]],
     Build[[ t2 ^ (s) : AST_ID() ]].
 
-  [[ CAstProperty(t1, l, t2) ^ (s) ]] :=
+  Constraint[[ CAstProperty(t1, l, op, t2) ^ (s) ]] :=
     TermOrId(Build)[[ t1 ^ (s) : _ ]],
     Build[[ t2 ^ (s) : _ ]].
 
@@ -172,24 +234,25 @@ rules
  * Relations                                                      *
  ******************************************************************/
 
-  [[ Relations(rdecls) ^ (s) ]] :=
-    Map1[[ rdecls ^ (s) ]].
+  Signature[[ Relations(rdecls) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ rdecls ^ (s, s_syn) ]].
 
-  [[ RelDecl(rel, type) ^ (s) ]] :=
-    [[ type ^ (s) : ty ]],
+  DeclOrRule[[ RelDecl(rel, type) ^ (s, s_syn) ]] :=
+    Type[[ type ^ (s) : ty ]],
     RelDecl[[ rel ^ (s) : ty ]].
 
   RelDecl[[ r@Label(x) ^ (s) : ty ]] :=
     Rel{x} <- s, @x.decl := Rel{x},
-    Rel{x} : ty !.
+    Rel{x} : ty !,
+    Rel{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   RelRef[[ l@Label(x) ^ (s) : ty ]] :=
-    Rel{x} -> s, Rel{x} |-> d, @l.decl := d,
+    Rel{x} -> s, Rel{x} |-> d | error $[Unresolved relation [x]] @x, @l.ref := Rel{x}, @x.decl := d,
     d : ty.
 
   RelRef[[ l@EOP() ^ (s) : PRED([SCOPE()]) ]].
 
-  [[ CTellRel(rel, ts, st) ^ (s) ]] :=
+  Constraint[[ CTellRel(rel, ts, st) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]],
     tys is `inout-types` of ty,
     Map1T(Build)[[ ts ^ (s): tys ]],
@@ -200,38 +263,31 @@ rules
  * Scope Graph                                                    *
  ******************************************************************/
 
-  [[ Namespaces(nss) ^ (s) ]] :=
-    Map1[[ nss ^ (s) ]].
+  Signature[[ Namespaces(nss) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ nss ^ (s, s_syn) ]].
 
-  [[ NsDecl(x, sorts) ^ (s) ]] :=
+  DeclOrRule[[ NsDecl(x, sorts) ^ (s, s_syn) ]] :=
     Ns{x} <- s, @x.decl := Ns{x},
     Map1T(SortRef)[[ sorts ^ (s) : tys ]],
-    Ns{x} : NS(tys) !.
+    Ns{x} : NS(tys) !,
+    Ns{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  [[ NameResolution(params) ^ (s) ]] :=
-    Map1[[ params ^ (s) ]].
+  Signature[[ NameResolution(params) ^ (s, s_syn) ]] :=
+    Map2(DeclOrRule)[[ params ^ (s, s_syn) ]].
 
-  [[ Labels(lbls) ^ (s) ]] :=
+  DeclOrRule[[ Labels(lbls) ^ (s, s_syn) ]] :=
     Map1(EdgeDecl)[[ lbls ^ (s) ]].
 
   EdgeDecl[[ l@Label(x) ^ (s) ]] :=
-    Edge{x} <- s, @x.decl := Edge{x}.
+    Edge{x} <- s, @x.decl := Edge{x},
+    Edge{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
 
   EdgeRef[[ l@Label(x) ^ (s) ]] :=
-    Edge{x} -> s, Edge{x} |-> d, @l.decl := d.
+    Edge{x} -> s, Edge{x} |-> d | error $[Unresolved edge label [x]] @x, @l.ref := Edge{x}, @x.decl := d.
 
   EdgeRef[[ l@EOP() ^ (s) ]].
 
-
-  [[ CPathMatch(re, p) ^ (s) ]] :=
-    LabelRE[[ re ^ (s) ]],
-    Build[[ p ^ (s) : LIST(LABEL()) ]].
-
-  [[ CPathLt(ord, p1, p2) ^ (s) ]] :=
-    Build[[ p1 ^ (s) : LABEL() ]],
-    Build[[ p2 ^ (s) : LABEL() ]],
-    LabelOrd[[ ord ^ (s) ]].
 
   LabelPair[[ LabelPair(lbl1, lbl2) ^ (s) ]] :=
     EdgeRef[[ lbl1 ^ (s) ]],
@@ -264,20 +320,21 @@ rules
     LabelRE[[ re2 ^ (s) ]].
 
 
-  [[ CTellEdge(t1, lbl, t2) ^ (s) ]] :=
+  Constraint[[ CTellEdge(t1, lbl, t2) ^ (s) ]] :=
     Build[[ t1 ^ (s) : SCOPE() ]],
     EdgeRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
   Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
-    Ns{ns} -> s, Ns{ns} |-> d, @ns.decl := d,
+    Ns{ns} -> s, Ns{ns} |-> d | error $[Unresolved namespace [ns]] @ns, @ns.ref := Ns{ns}, @ns.decl := d,
     d : NS(tys),
     Map1T(Term(V))[[ ts ^ (s) : tys ]],
-    OccurrencePos(Term(V))[[ pos ^ (s) : _ ]].
+    OccurrencePos(Term(V))[[ pos ^ (s) : _ ]],
+    Ns{ns}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   // only call this with a wildcard for ty
   OccurrencePos(T)[[ NoId() ^ (s) : AST_ID() ]].
-  OccurrencePos(T)[[ t ^ (s) : ty ]] :=
+  OccurrencePos(T)[[ WithId(t) ^ (s) : AST_ID() ]] :=
     TermOrId(T)[[ t ^ (s) : ty ]].
 
   Term(V)[[ PathEmpty(st) ^ (s) : PATH() ]] :=
@@ -293,22 +350,23 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  [[ CResolveQuery(rel, filter, min, st, pst) ^ (s) ]] :=
+  Constraint[[ CResolveQuery(rel, filter, min, st, pst, msg) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]],
     inty is `in-type` of ty,
-    [[ filter ^ (s, PRED([inty])) ]],
-    [[ min ^ (s, PRED([inty, inty])) ]],
+    Filter[[ filter ^ (s, PRED([inty])) ]],
+    Min[[ min ^ (s, PRED([inty, inty])) ]],
     Build[[ st ^ (s) : SCOPE() ]],
     inoutty is `inout-type` of ty,
-    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]].
+    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
 
-  [[ Filter(re, lt) ^ (s, lty) ]] :=
+  Filter[[ Filter(re, lt) ^ (s, lty) ]] :=
     LabelRE[[ re ^ (s) ]],
-    [[ lt ^ (s) : lty ]].
+    HoConstraint[[ lt ^ (s) : lty ]].
 
-  [[ Min(ord, lt) ^ (s, lty) ]] :=
+  Min[[ Min(ord, lt) ^ (s, lty) ]] :=
     LabelOrd[[ ord ^ (s) ]],
-    [[ lt ^ (s) : lty ]].
+    HoConstraint[[ lt ^ (s) : lty ]].
 
   LabelOrd[[ [] ^ (s) ]].
   LabelOrd[[ prs@[_|_] ^ (s) ]] :=
@@ -318,28 +376,31 @@ rules
  * Sorts & Constructors                                           *
  ******************************************************************/
 
-  [[ Sorts(sorts) ^ (s) ]] :=
-    Map1(SortDecl)[[ sorts ^ (s) ]].
+  Signature[[ Sorts(sorts) ^ (s, s_syn) ]] :=
+    Map2(SortDecl)[[ sorts ^ (s, s_syn) ]].
 
-  SortDecl[[ SortDecl(x) ^ (s) ]] :=
-    Sort{x} <- s, @x.decl := Sort{x},
+  SortDecl[[ SortDecl(x) ^ (s, s_syn) ]] :=
+    Sort{x} <- s_syn, @x.decl := Sort{x},
     Sort{x} : SORT(Sort{x}) !!,
-    Sort{x}.kind := SimpleSort().
+    Sort{x}.kind := SimpleSort(),
+    Sort{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  SortDecl[[ SortAlias(x, sort) ^ (s) ]] :=
-    Sort{x} <- s, @x.decl := Sort{x},
+  SortDecl[[ SortAlias(x, sort) ^ (s, s_syn) ]] :=
+    Sort{x} <- s_syn, @x.decl := Sort{x},
     Sort{x} : ty !!,
     Sort{x}.kind := SortAlias(),
-    SortRef[[ sort ^ (s) : ty ]].
+    SortRef[[ sort ^ (s) : ty ]],
+    Sort{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  [[ Constructors(ctors) ^ (s) ]] :=
-    Map1[[ ctors ^ (s) ]].
+  Signature[[ Constructors(ctors) ^ (s, s_syn) ]] :=
+    Map2(OpDecl)[[ ctors ^ (s, s_syn) ]].
 
-  [[ OpDecl(x, sort) ^ (s) ]] :=
+  OpDecl[[ OpDecl(x, sort) ^ (s, s_syn) ]] :=
     x' is `op-name` of (x, sort),
-    Op{x'@x} <- s, @x.decl := Op{x'@x},
+    Op{x'@x} <- s_syn, @x.decl := Op{x'@x},
     Op{x'@x} : ty !!,
-    OpSort[[ sort ^ (s) : ty ]].
+    OpSort[[ sort ^ (s) : ty ]],
+    Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   OpSort[[ ConstOp(sort) ^ (s) : OP([], ty) ]] :=
     RealSortRef[[ sort ^ (s) : ty ]].
@@ -349,9 +410,10 @@ rules
     RealSortRef[[ sort ^ (s) : ty ]].
 
   RealSortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
-    Sort{x} -> s, Sort{x} |-> d, @x.decl := d,
+    Sort{x} -> s, Sort{x} |-> d | error $[Unresolved sort [x]] @x, @x.ref := Sort{x}, @x.decl := d,
     d : ty !,
-    d.kind := k, k != SortAlias() | error $[Cannot refer to alias [d]].
+    d.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := this_qname,
+    d.kind := k, k != SortAlias() | error $[Cannot define constructors for sort alias [d]].
 
   SortRef[[ IntSort() ^ (_) : INT() ]].
   SortRef[[ StringSort() ^ (_) : STRING() ]].
@@ -365,10 +427,11 @@ rules
   SortRef[[ ListSort(sort) ^ (s) : LIST(ty) ]] :=
     SortRef[[ sort ^ (s) : ty ]].
   SortRef[[ SimpleSort(x) ^ (s) : ty ]] :=
-    Sort{x} -> s, Sort{x} |-> d, @x.decl := d,
-    d : ty.
+    Sort{x} -> s, Sort{x} |-> d | error $[Unresolved sort [x]] @x, @x.ref := Sort{x}, @x.decl := d,
+    d : ty,
+    Sort{x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
-  [[ SimpleType(sorts) ^ (s) : PRED(intys) ]] :=
+  Type[[ SimpleType(sorts) ^ (s) : PRED(intys) ]] :=
     Map1T(SortRef)[[ sorts ^ (s) : intys ]].
 
 
@@ -395,7 +458,7 @@ rules
   VarDecl[[ Wld() ^ (_) : _ ]].
 
   VarRef[[ Var(x) ^ (s) : ty ]] :=
-    Var{x} -> s, Var{x} |-> d, @x.decl := d,
+    Var{x} -> s, Var{x} |-> d | error $[Unresolved variable [x]] @x, @x.ref := Var{x}, @x.decl := d,
     d : ty.
 
   VarRef[[ Wld() ^ (_) : _ ]].
@@ -412,9 +475,10 @@ rules
     Map1T(Term(V))[[ ts ^ (s) : tys ]].
   Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
     x' is `op-name` of (x, args),
-    Op{x'@x} -> s, Op{x'@x} |-> d, @x.decl := d,
+    Op{x'@x} -> s, Op{x'@x} |-> d | error $[Unresolved constructor [x']] @x, @x.ref := Op{x'@x}, @x.decl := d,
     d : OP(tys, ty),
-    Map1T(Term(V))[[ args ^ (s) : tys ]].
+    Map1T(Term(V))[[ args ^ (s) : tys ]],
+    Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
   Term(V)[[ Str(_) ^ (_) : STRING() ]].
   Term(V)[[ Int(_) ^ (_) : INT() ]].
   Term(V)[[ As(v, t) ^ (s) : ty ]] :=
@@ -423,6 +487,101 @@ rules
   Term(V)[[ Ascribe(t, sort) ^ (s) : ty ]] :=
     SortRef[[ sort ^ (s) : ty ]],
     Term(V)[[ t ^ (s) : ty ]].
+
+
+/******************************************************************
+ * Arithmetic                                                     *
+ ******************************************************************/
+
+rules
+
+  Constraint[[ CArith(ae1, op, ae2, msg) ^ (s) ]] :=
+    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
+    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
+    Message(ErrorKind)[[ msg ^ (s) ]].
+
+
+  ArithExp(V)[[ e@Int(_) ^ (s) : INT() ]] :=
+    Term(V)[[ e ^ (s) : INT() ]].
+
+  ArithExp(V)[[ e@Wld() ^ (s) : INT() ]] :=
+    V[[ e ^ (s) : INT() ]].
+
+  ArithExp(V)[[ e@Var(_) ^ (s) : INT() ]] :=
+    V[[ e ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Add(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Mul(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Sub(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Min(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Max(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Mod(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+  ArithExp(V)[[ Div(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+
+
+/******************************************************************
+ * Messages                                                       *
+ ******************************************************************/
+
+  Message(K)[[ NoMessage() ^ (s) ]].
+
+  Message(K)[[ Message(kind, content, origin) ^ (s) ]] :=
+    K[[ kind ]],
+    MessageContent[[ content ^ (s) ]],
+    MessageOrigin[[ origin ^ (s) ]].
+
+
+  MessageContent[[ Str(_) ^ (s) ]].
+
+  MessageContent[[ Formatted(parts) ^ (s) ]] :=
+    Map1(MessageContentPart)[[ parts ^ (s) ]].
+
+
+  MessageContentPart[[ Text(_) ^ (s) ]].
+
+  MessageContentPart[[ Term(t) ^ (s) ]] :=
+    Build[[ t ^ (s) : _ ]].
+
+
+  MessageOrigin[[ NoOrigin() ^ (s) ]].
+
+  MessageOrigin[[ Origin(t) ^ (s) ]] :=
+    Build[[ t ^ (s) : _ ]].
+
+
+  ErrorKind[[ Error() ]].
+  ErrorKind[[ Warning() ]] := false | error "Use 'try' for warnings.".
+  ErrorKind[[ Note() ]] := false | error "Use 'try' for notes.".
+
+
+  TryKind[[ Error() ]].
+  TryKind[[ Warning() ]].
+  TryKind[[ Note() ]].
+
+
+/******************************************************************
+ * Util                                                           *
+ ******************************************************************/
 
 rules
 

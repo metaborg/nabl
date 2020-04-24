@@ -1,5 +1,6 @@
 package mb.nabl2.terms.build;
 
+import mb.nabl2.terms.ITerm;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -7,6 +8,8 @@ import com.google.common.collect.ImmutableMultiset;
 
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
+
+import java.util.Objects;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -31,21 +34,19 @@ abstract class StringTerm extends AbstractTerm implements IStringTerm {
     }
 
     @Override public int hashCode() {
-        return getValue().hashCode();
+        return Objects.hash(
+            getValue()
+        );
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof IStringTerm)) {
-            return false;
-        }
-        IStringTerm that = (IStringTerm) other;
-        if(!getValue().equals(that.getValue())) {
-            return false;
-        }
-        return true;
+        if (this == other) return true;
+        if (!(other instanceof IStringTerm)) return false;
+        IStringTerm that = (IStringTerm)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getValue(), that.getValue());
+        // @formatter:on
     }
 
     @Override public String toString() {

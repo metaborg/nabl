@@ -6,8 +6,11 @@ imports
   Analysis
   Generate
   Evaluate
+  Colorer
 
 language
 
   extensions : stx, stxtest
-  provider   : target/metaborg/stratego.ctree
+
+  provider : target/metaborg/stratego.jar
+  provider : target/metaborg/stratego-javastrat.jar

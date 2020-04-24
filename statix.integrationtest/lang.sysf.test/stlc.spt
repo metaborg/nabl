@@ -1,0 +1,47 @@
+module stlc
+
+language SystemF
+
+test number [[
+  20: num
+]] analysis succeeds 
+
+test free variable [[
+  x
+]] analysis fails
+
+test function literal [[
+  (fun(x: num) { x }) : (num -> num)  
+]] analysis succeeds
+
+test function application [[
+  (fun(x: num) { x } 4) : num 
+]] analysis succeeds
+
+test let [[
+  (let x = 1 in x ) : num
+]] analysis succeeds 
+
+test let is not recursive [[
+  let x = x in x
+]] analysis fails 
+
+test let [[
+  let add = fun(x : num) { fun(y : num) { x } } in
+  let add1 = add 1 in
+    add1 2
+]] analysis succeeds   
+
+test let [[
+(
+  let add = fun(x : num) { fun(y : num) { x } } in
+  let id  = fun(f : num -> num){ fun(x : num) { f x } } in
+    id (add 1) 2 
+): num
+]] analysis succeeds 
+
+test function composition [[
+  fun(f : num -> num){ fun(g : num -> num) { fun(x: num) { g (f x) } } }
+  : (num -> num) -> (num -> num) -> num -> num
+]] analysis succeeds
+

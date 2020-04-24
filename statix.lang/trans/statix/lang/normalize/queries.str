@@ -32,9 +32,8 @@ rules
   normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _)){a*} -> lam{a*}
     with NS(tys) := <norm-get-ast-decl-type(|a)> ns;
          us := <mk-fresh-Vars(|"u")> tys;
-         w := <mk-Wld(|AST_ID())>;
-         d := <mk-Occurrence>(ns, us, <mk-Wld(|AST_ID())>);
-         lam := <mk-LLam>([d], [], CEqual(<mk-Tuple>(us), <mk-Tuple>(ts)))
+         d := <mk-Occurrence>(ns, us, WithId(<mk-Wld(|AST_ID())>));
+         lam := <mk-LLam>([d], CEqual(<mk-Tuple>(us), <mk-Tuple>(ts), NoMessage()))
 
 rules
 
@@ -49,13 +48,13 @@ rules
     )
 
 
-  normalize-query: CAskRel(rel, ts, st) -> c
+  normalize-query: CAskRel(rel, ts, st, msg) -> c
     with PRED(tys) := <norm-get-ast-type> rel
        ; c := <ask-rel-query(|tys, [])> (rel, st, ts, [])
 
 
   normalize-query-ops =
-    normalize-in-rules(replace-functional-relop,id,functional-relop-to-c)
+    normalize-scoped(replace-functional-relop,id,id,functional-relop-to-c)
 
   replace-functional-relop: t@AskRelOp(rel, in_ts, st){a*} -> out_v{a*}
     with ty := <norm-get-ast-type> t
@@ -68,16 +67,16 @@ rules
 
   ask-rel-query(|intys, outty): (rel, st, in_ts, out_ts) -> c
     with us       := <mk-fresh-Vars(|"u")> intys;
-         eq       := CEqual(<mk-Tuple>(us), <mk-Tuple>(in_ts));
+         eq       := CEqual(<mk-Tuple>(us), <mk-Tuple>(in_ts), NoMessage());
          in_v     := <mk-Tuple>(us);
-         match    := <mk-LLam>([in_v], [], eq);
+         match    := <mk-LLam>([in_v], eq);
          filter   := Filter(Epsilon(), match)
 
     with in_wlds  := <mk-Wlds> intys;
          in_wld   := <mk-Tuple>(in_wlds);
-         ord      := <mk-LLam>([in_wld, in_wld], [], CFalse());
+         ord      := <mk-LLam>([in_wld, in_wld], CFalse(NoMessage()));
          min      := Min([], ord)
     with t        := <conc;mk-Tuple>(in_wlds, out_ts);
          pt       := <mk-Tuple>([<mk-Wld(|PATH())>, t]);
          pts      := <mk-List>([pt])
-    with c        := CResolveQuery(rel, filter, min, st, pts)
+    with c        := CResolveQuery(rel, filter, min, st, pts, NoMessage())

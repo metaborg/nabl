@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.metaborg.util.Ref;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.constraints.IConstraint;
@@ -16,14 +17,15 @@ import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.ImmutableSeedResult;
 import mb.nabl2.solver.ImmutableSolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.unification.UnificationMessages;
 
 public class EqualityComponent extends ASolver {
@@ -52,8 +54,8 @@ public class EqualityComponent extends ASolver {
         return ImmutableSeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
     }
 
-    public Optional<SolveResult> solve(IEqualityConstraint constraint) {
-        return constraint.match(IEqualityConstraint.Cases.of(this::solve, this::solve));
+    public SolveResult solve(IEqualityConstraint constraint) throws VariableDelayException {
+        return constraint.matchOrThrow(IEqualityConstraint.CheckedCases.of(this::solve, this::solve));
     }
 
     public IUnifier.Immutable finish() {
@@ -62,7 +64,7 @@ public class EqualityComponent extends ASolver {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    private Optional<SolveResult> solve(CEqual constraint) {
+    private SolveResult solve(CEqual constraint) {
         final ITerm left = constraint.getLeft();
         final ITerm right = constraint.getRight();
         final IUnifier.Transient unifier = this.unifier.get().melt();
@@ -74,36 +76,29 @@ public class EqualityComponent extends ASolver {
         if(unifyResult != null) {
             final SolveResult solveResult = ImmutableSolveResult.builder().unifierDiff(unifyResult).build();
             this.unifier.set(unifier.freeze());
-            return Optional.of(solveResult);
+            return solveResult;
         } else {
             final MessageContent content = UnificationMessages.getError(left, right);
             final IMessageInfo message = (constraint.getMessageInfo().withDefaultContent(content));
             final SolveResult solveResult = SolveResult.messages(message);
-            return Optional.of(solveResult);
+            return solveResult;
         }
     }
 
-    private Optional<SolveResult> solve(CInequal constraint) {
+    private SolveResult solve(CInequal constraint) throws VariableDelayException {
         final ITerm left = constraint.getLeft();
         final ITerm right = constraint.getRight();
-        // @formatter:off
-        return unifier().areEqual(left, right).match(
-            result -> {
-                if(result) {
-                    MessageContent content = MessageContent.builder().append(constraint.getLeft().toString())
-                            .append(" and ").append(constraint.getRight().toString())
-                            .append(" must be inequal, but are not.").build();
-                    IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
-                    return Optional.of(SolveResult.messages(message));
-                } else {
-                    return Optional.of(SolveResult.empty());
-                }
-            },
-            var -> {
-                return Optional.empty();
-            }
-        );
-        // @formatter:on
+        Optional<? extends IUnifier.Immutable> result = unifier().diff(left, right);
+        if(!result.isPresent()) {
+            return SolveResult.empty();
+        } else if(result.get().isEmpty()) {
+            MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
+                    .append(constraint.getRight().toString()).append(" must be inequal, but are not.").build();
+            IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
+            return SolveResult.messages(message);
+        } else {
+            throw new VariableDelayException(Iterables.concat(unifier().getVars(left), unifier().getVars(right)));
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------//

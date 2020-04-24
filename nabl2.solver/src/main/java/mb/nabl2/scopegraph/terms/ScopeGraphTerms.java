@@ -14,7 +14,8 @@ import com.google.common.collect.Lists;
 import mb.nabl2.constraints.namebinding.DeclProperties;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.collections.IProperties;
 
 public final class ScopeGraphTerms {
@@ -56,7 +57,8 @@ public final class ScopeGraphTerms {
 
         List<ITerm> directEdges = Stream
                 .concat(scopeGraph.getDirectEdges().get(scope).stream(),
-                        scopeGraph.incompleteDirectEdges().get(scope).stream())
+                        scopeGraph.incompleteDirectEdges().stream().filter(e -> e.getKey()._1().equals(scope))
+                                .map(e -> ImmutableTuple2.of(e.getKey()._2(), e.getValue())))
                 .map(this::buildDirectEdge).collect(Collectors.toList());
         if(!directEdges.isEmpty()) {
             parts.add(B.newAppl("DirectEdges", (ITerm) B.newList(directEdges)));
@@ -64,7 +66,8 @@ public final class ScopeGraphTerms {
 
         List<ITerm> importEdges = Stream
                 .concat(scopeGraph.getImportEdges().get(scope).stream(),
-                        scopeGraph.incompleteImportEdges().get(scope).stream())
+                        scopeGraph.incompleteImportEdges().stream().filter(e -> e.getKey()._1().equals(scope))
+                                .map(e -> ImmutableTuple2.of(e.getKey()._2(), e.getValue())))
                 .map(this::buildImportEdge).collect(Collectors.toList());
         if(!importEdges.isEmpty()) {
             parts.add(B.newAppl("ImportEdges", (ITerm) B.newList(importEdges)));

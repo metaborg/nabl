@@ -6,7 +6,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.PSequence;
+import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 
@@ -18,13 +18,15 @@ abstract class AResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
 
     @Value.Parameter @Override public abstract L getLabel();
 
+    @Value.Parameter @Override public abstract int getIndex();
+
     @Value.Parameter @Override public abstract D getDatum();
 
     @Value.Check public @Nullable AResolutionPath<S, L, D> check() {
         return this;
     }
 
-    @Value.Lazy @Override public PSequence<S> scopes() {
+    @Value.Lazy @Override public ConsList<S> scopes() {
         return getPath().scopes();
     }
 
@@ -32,7 +34,7 @@ abstract class AResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
         return getPath().scopeSet();
     }
 
-    @Value.Lazy @Override public PSequence<L> labels() {
+    @Value.Lazy @Override public ConsList<L> labels() {
         return getPath().labels();
     }
 
@@ -42,6 +44,7 @@ abstract class AResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
         sb.append(Paths.PATH_SEPARATOR);
         sb.append(getLabel());
         sb.append(Paths.PATH_SEPARATOR);
+        sb.append("<").append(getIndex()).append(">");
         sb.append(getDatum());
         return sb.toString();
     }

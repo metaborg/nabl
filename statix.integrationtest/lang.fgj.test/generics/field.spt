@@ -1,0 +1,73 @@
+module generics-field
+
+language FGJ
+
+test single parameter generic class [[
+  let
+    class A<X extends Object<>> extends Object<> {
+      X f;
+      A(X f) { 
+        super(); 
+        this.f = f;
+      }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class C<X extends B<>> extends Object<> {
+      X f;
+      C(X f) { 
+        super(); 
+        this.f = f;
+      }
+    }
+  in
+    new C<B<>>(new B<>())
+]] analysis succeeds
+
+test single parameter generic class [[
+  let
+    class A<X extends Object<>> extends Object<> {
+      X f;
+      A(X f) { 
+        super(); 
+        this.f = f;
+      }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class C<X extends B<>> extends Object<> {
+      X f;
+      C(X f) { 
+        super(); 
+        this.f = f;
+      }
+    }
+  in
+    new C<B<>>(new A<B<>>(new B<>()).f)
+]] analysis succeeds
+
+test instantiate self in field type [[
+  let
+    class A<> extends Object<> {
+      A() { super(); }
+    }
+    class B<> extends Object<> {
+      B() { super(); }
+    }
+    class T<X extends Object<>> extends Object<> {
+      X f1;
+      T<A<>> f2;
+      T(X f1) {
+        super();
+        this.f1 = f1;
+        this.f2 = new T<A<>>(new A<>());
+      }
+      <> A<> m() {
+        return this.f2.f1;
+      }
+    }
+  in
+    new T<B<>>(new B<>()).<>m():A<>
+]] analysis succeeds

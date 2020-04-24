@@ -10,6 +10,12 @@ rules
     1 is projectFirst of (1,2),
     2 is projectSecond of (1,2).
 
+  [[ MissingFunctionCase() ^ () ]] :=
+    _ is listHead of [] | error "Function failed".
+
+  [[ NonGroundFunctionArgument() ^ () ]] :=
+    _ is listHead of _ | error "Function failed".
+
 rules
 
   [[ SubRelationIsReflexive() ^ () ]] :=

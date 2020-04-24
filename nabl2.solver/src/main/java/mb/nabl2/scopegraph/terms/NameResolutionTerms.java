@@ -6,9 +6,9 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.INameResolution;
 import mb.nabl2.scopegraph.IScopeGraph;
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.terms.ITerm;
@@ -31,8 +31,13 @@ public final class NameResolutionTerms {
     }
 
     private ITerm buildRef(Occurrence ref) {
-        final List<ITerm> paths = nameResolution.resolve(ref).orElseGet(() -> Set.Immutable.of()).stream()
-                .map(this::buildPath).collect(ImmutableList.toImmutableList());
+        List<ITerm> paths;
+        try {
+            paths = nameResolution.resolve(ref).stream().map(this::buildPath).collect(ImmutableList.toImmutableList());
+
+        } catch(CriticalEdgeException e) {
+            paths = ImmutableList.of();
+        }
         final ITerm result;
         if(paths.isEmpty()) {
             result = B.newAppl("NoResolution");

@@ -136,13 +136,13 @@ test guard equalities on terms succeeds [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test free variable not unified by guard [[
+test single rule is selected even for free variable [[
   resolve {x} c(x)
   rules
     c : int
     c(0).
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to SUCCEEDS()
 
 test head matches are retained in body [[
   resolve c([5])
@@ -210,6 +210,43 @@ rules
   c([]).
 ]] analysis succeeds
    run evaluate-test to FAILS()
+
+test matching rule is selected based on single concrete argument [[
+  resolve {x} c(1, x)
+  rules
+    c : int * int
+    c(0, 0).
+    c(1, 1).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test matching rule is selected based on two concrete argument [[
+  resolve {x} c(1, x, 3)
+  rules
+    c : int * int * int
+    c(1, 1, 2).
+    c(1, 2, 3).
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test inferred equalities during matching are properly used in body [[
+  resolve {s} c(s), d(s)
+  rules
+    c : list(scope)
+    c([s]) :- new s.
+    d : list(scope)
+    d([s]) :- query () in s |-> [_].
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test multiple occurrences of variables in a non-linear patterns require equal arguments [[
+  resolve {s} c(s, s)
+  rules
+    c : int * int
+    c(x, x) :- true.
+    c(x, y) :- false.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
 
 test number of stuck constraints is non-deterministic [[
 resolve {xs ys}

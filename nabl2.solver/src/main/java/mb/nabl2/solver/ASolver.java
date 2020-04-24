@@ -1,12 +1,13 @@
 package mb.nabl2.solver;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.time.AggregateTimer;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 public abstract class ASolver {
 
@@ -37,7 +38,7 @@ public abstract class ASolver {
     }
 
     protected Optional<ITerm> callExternal(String name, ITerm... args) {
-        return core.callExternal.apply(name, Iterables2.from(args));
+        return core.callExternal.apply(name, Arrays.asList(args));
     }
 
 }

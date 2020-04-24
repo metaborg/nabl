@@ -9,6 +9,7 @@ template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
+
 /******************************************************************
  * User Constraints                                               *
  ******************************************************************/
@@ -36,12 +37,10 @@ context-free syntax
   // rule shorthands
 
   Rule.AxiomRule = <
-    <RuleHead>.
+    <RuleName><RuleHead>.
   >
 
   RuleHead.F = [[ConstraintId]([{Term ", "}*]) = [Term]]
-
-  LocalVars.NoLocalVars = <>
 
   HoConstraint.LLam = <{ <{Term ", "}+> }>
 
@@ -50,6 +49,11 @@ context-free syntax
 syntax
 
   Term-CF.COp = ConstraintId-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"
+
+lexical syntax
+
+  Keyword = "constraint" | "maps"
+
 
 /******************************************************************
  * Base Constraints                                               *
@@ -71,6 +75,7 @@ lexical syntax
 
   AstPropertyId = "ref" {reject}
 
+
 /******************************************************************
  * Relations                                                      *
  ******************************************************************/
@@ -83,7 +88,7 @@ syntax
 
   // short-hand for querying relations
 
-  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
+  Constraint-CF.CAskRel  = "?" RelRef-CF "[" CommaTerms-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF LAYOUT?-CF Message-CF
 
   Term-CF.AskRelOp = "?" RelRef-CF "[" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF "]" LAYOUT?-CF "in" LAYOUT?-CF Term-CF
 
@@ -91,6 +96,7 @@ lexical syntax
 
   RelationId = "decl" {reject}
   RelationId = "ref" {reject}
+
 
 /******************************************************************
  * Scope Graph                                                    *
@@ -110,16 +116,23 @@ context-free syntax
   NamespaceMin.NamespaceMin   = < min <LabelPairs>>
   NamespaceMin.NoNamespaceMin = 
 
-  Constraint.CTellDecl        = [[Term] -> [Occurrence]]
-  Constraint.CTellDeclWithRel = [[Term] -> [Occurrence] with [RelRef] [Term]]
+  Constraint.CTellDecl         = [[Term] -> [Occurrence]]
+  Constraint.CTellDeclWithRels = [[Term] -> [Occurrence] with [{RelData " and "}+]]
 
-//LabelRE = <<LabelRE>?>
-//LabelRE = <<LabelRE>+>
+  RelData = [[RelRef] [Term]]
 
-syntax
+  LabelRE.ZeroOrOne = <<LabelRE>?>
+  LabelRE.OneOrMore = <<LabelRE>+>
 
-  HoConstraint-CF.LPathMatch  = "pathMatch" "[" LAYOUT?-CF LabelRE-CF LAYOUT?-CF "]"
-  HoConstraint-CF.LPathLt     = "pathLt" "[" LAYOUT?-CF LabelOrd-CF LAYOUT?-CF "]"
+context-free priorities
+
+    { LabelRE.Neg LabelRE.Closure LabelRE.ZeroOrOne LabelRE.OneOrMore }
+  > { LabelRE.Concat LabelRE.And LabelRE.Or }
+
+lexical syntax
+
+  Keyword = "resolve" | "filter" | "with" | "and"
+
 
 /******************************************************************
  * Resolve & Query
@@ -136,8 +149,8 @@ context-free syntax
   QueryMin.NoMin =
   QueryMin.Min   = < min <LabelOrd>>
 
-  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term]]
-  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term]]
+  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term][Message]]
+  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term][Message]]
 
 syntax
 
@@ -149,7 +162,8 @@ syntax
 
 lexical syntax
 
-  Keyword = "resolveMatch" | "resolveLt"
+  Keyword = "filter" | "min" | "in" | "of" | "resolveMatch" | "resolveLt" | "occurrenceMatch"
+
 
 /******************************************************************
  * Sorts & Constructors                                           *
@@ -159,6 +173,16 @@ context-free syntax
 
   Type.FunType    = [[{SortRef " * "}*] -> [SortRef]]
 
+
 /******************************************************************
  * Terms                                                          *
  ******************************************************************/
+
+
+/******************************************************************
+ * Arithmetic                                                          *
+ ******************************************************************/
+
+syntax
+
+  Term-CF.ArithOp = "#" "(" LAYOUT?-CF ArithExp-CF LAYOUT?-CF ")"

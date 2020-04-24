@@ -1,11 +1,12 @@
 package mb.nabl2.spoofax.primitives;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -18,10 +19,12 @@ import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.SDefT;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.interpreter.terms.ITermFactory;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
+import mb.nabl2.spoofax.primitives.StrategyCalls.CallableStrategy;
 import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
@@ -61,28 +64,37 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     protected abstract Optional<? extends ITerm> call(ITerm currentTerm, List<ITerm> argTerms,
             SemiIncrementalMultiFileSolver solver, ICancel cancel, IProgress progress) throws InterpreterException;
 
-    private static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
+    static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
+        final HashMap<String, SDefT> strCache = new HashMap<>();
         return (name, args) -> {
-            final IStrategoTerm[] sargs = Iterables2.stream(args).map(strategoTerms::toStratego)
-                    .collect(Collectors.toList()).toArray(new IStrategoTerm[0]);
-            final IStrategoTerm sarg = sargs.length == 1 ? sargs[0] : env.getFactory().makeTuple(sargs);
-            final IStrategoTerm prev = env.current();
+            final IStrategoTerm arg = prepareArguments(args, strategoTerms, env.getFactory());
             try {
-                env.setCurrent(sarg);
-                final SDefT s = env.lookupSVar(name.replace("-", "_") + "_0_0");
-                if(!s.evaluate(env)) {
-                    return Optional.empty();
-                }
-                return Optional.ofNullable(env.current()).map(strategoTerms::fromStratego)
-                        .map(ConstraintTerms::specialize);
+                final CallableStrategy strategy = StrategyCalls.lookup(env, name, strCache);
+                final Optional<IStrategoTerm> result = strategy.call(arg);
+                return result.map(strategoTerms::fromStratego).map(ConstraintTerms::specialize);
             } catch(Exception ex) {
                 logger.warn("External call to '{}' failed.", ex, name);
                 return Optional.empty();
-            } finally {
-                env.setCurrent(prev);
             }
         };
 
+    }
+
+    private static IStrategoTerm prepareArguments(Collection<? extends ITerm> args, StrategoTerms strategoTerms,
+            ITermFactory factory) {
+        if(args.size() == 1) {
+            return strategoTerms.toStratego(args.iterator().next());
+        }
+        final IStrategoTerm[] argTerms;
+        {
+            argTerms = new IStrategoTerm[args.size()];
+            int i = 0;
+            for(ITerm arg : args) {
+                argTerms[i] = strategoTerms.toStratego(arg);
+                i++;
+            }
+        }
+        return factory.makeTuple(argTerms);
     }
 
 }

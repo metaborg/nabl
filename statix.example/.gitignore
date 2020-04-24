@@ -1,13 +1,9 @@
-/target
-/src-gen
-/.classpath
-/.project
-/.settings
+## NOTE: .gitignore of repository root also applies
 
 /.polyglot.metaborg.yaml
-
 *.constraints
 *.scope-graph
 *.name-resolution
 *.unifier
 *.stxresult
+META-INF/

@@ -1,0 +1,14 @@
+module statics/types
+
+signature
+
+  sorts TYPE constructors
+    TVAR   : occurrence -> TYPE
+    CLASS  : scope -> TYPE
+    CTOR   : list(TYPE) -> TYPE
+    METHOD : list(occurrence) * scope -> TYPE
+    MTY    : TYPE * list(TYPE) -> TYPE
+
+    PROJ   : scope * occurrence -> TYPE // delayed projection
+
+    PL     : scope -> TYPE // Placeholder for variables (used for type equality)

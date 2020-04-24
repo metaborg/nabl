@@ -99,9 +99,13 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
         @Override public ISubstitution.Immutable compose(ISubstitution.Immutable other) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
-            CapsuleUtil.replace(subst, (v, t) -> other.apply(t));
+            CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
             other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
             return new PersistentSubstitution.Immutable(subst.freeze());
+        }
+
+        @Override public ISubstitution.Immutable compose(ITermVar var, ITerm term) {
+            return compose(PersistentSubstitution.Immutable.of(var, term));
         }
 
         @Override public ISubstitution.Transient melt() {
@@ -147,8 +151,12 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         @Override public void compose(ISubstitution.Immutable other) {
-            CapsuleUtil.replace(subst, (v, t) -> other.apply(t));
+            CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
             other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+        }
+
+        @Override public void compose(ITermVar var, ITerm term) {
+            compose(PersistentSubstitution.Immutable.of(var, term));
         }
 
         @Override public ISubstitution.Immutable freeze() {

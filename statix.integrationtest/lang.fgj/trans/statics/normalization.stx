@@ -1,0 +1,149 @@
+module statics/normalization
+
+imports
+
+  statics/types
+  statics/name-resolution
+
+//////////////////////////////////
+// SUBSTITUTION & NORMALIZATION //
+//////////////////////////////////
+
+rules // forces normalization of a postponed projection
+
+  strict : TYPE -> TYPE
+
+  strict(PROJ(s, d)) = strictA(s, d).
+
+  strict(T) = T.
+
+
+  strictA : scope * occurrence -> TYPE
+
+  strictA(s, Field{x@i}) = T :- {p d S}
+    typeOfDecl of Field{x@i} in s |-> [(p, (d, S))],
+    norm(scopes(p), S) == T.
+
+  strictA(s, MType{@i}) = T :- {p d S}
+    typeOfDecl of MType{@i} in s |-> [(p, (d, S))],
+    norm(scopes(p), S) == T.
+
+  strictA(s, Ctor{@i}) = T :- {p d S}
+    typeOfDecl of Ctor{@i} in s |-> [(p, (d, S))],
+    norm(scopes(p), S) == T.
+
+  strictA(s, TVar{x@i}) = T :- {p d S}
+    typeOfDecl of TVar{x@i} in s |-> [(p, (d, S))],
+    norm(scopes(p), S) == T.
+
+
+rules // normalize types
+
+  norm: list(scope) * TYPE -> TYPE
+  norms maps norm(*, list(*)) = list(*)
+
+  norm([], T) = T.
+  norm(ss@[_|_], T) = normR(reverseScopes(ss), T).
+
+  normR: list(scope) * TYPE ->  TYPE
+  normsR maps normR(*, list(*)) = list(*)
+
+  normR([], T) = T.
+
+  normR([s|ss], METHOD(Ys, s_mtype)) = T :- {ps Xs Ts}
+    query subst filter e in s |-> ps,
+    unzipPDTs(ps) == (Xs, Ts),
+    normR(ss, METHOD(Ys, instWith(s_mtype, Xs, Ts))) == T.
+
+  normR(ss@[_|_], MTY(T, Ts)) = MTY(normR(ss, T), normsR(ss, Ts)).
+
+  normR([s|ss], TVAR(d_tvar)) = normVar(s, ss, d_tvar).
+
+  normR(ss@[_|_], S@PROJ(_, _)) = normR(ss, strict(S)).
+
+  normR([s|ss], CLASS(s1)) = T :- {ps Xs Ts}
+    query subst filter e in s |-> ps,
+    unzipPDTs(ps) == (Xs, Ts),
+    normR(ss, CLASS(instWith(s1, Xs, Ts))) == T.
+
+  normR(ss@[_|_], CTOR(Ts)) = CTOR(normsR(ss, Ts)).
+
+  normVar  : scope * list(scope) * occurrence ->  TYPE
+  normVar2 : scope * list(scope) * occurrence * list(TYPE) ->  TYPE
+
+  normVar(s, ss, d_tvar) = U :- {Ts}
+    hasSubst(s, d_tvar) == Ts, normVar2(s, ss, d_tvar, Ts) == U.
+
+  normVar2(s, ss, d_tvar, [T]) = normR(ss, T).
+  normVar2(s, ss, d_tvar, [])  = normR(ss, TVAR(d_tvar)).
+
+rules // reverse list of scopes
+
+  reverseScopes: list(scope) -> list(scope)
+  reverseScopes(ss) = reverseScopesR(ss, []).
+
+  reverseScopesR: list(scope) * list(scope) -> list(scope)
+  reverseScopesR([], ss)      = ss.
+  reverseScopesR([s|ss], ss') = reverseScopesR(ss, [s|ss']).
+
+rules // unzip path+declaration+type pairs
+
+  unzipPDTs: list((path * (occurrence * TYPE))) -> (list(occurrence) * list(TYPE))
+
+  unzipPDTs([])                 = ([], []).
+  unzipPDTs([(_, (X, T))|PDTs]) = ([X|Xs], [T|Ts]) :-
+    unzipPDTs(PDTs) == (Xs, Ts).
+
+rules
+
+  relation subst : occurrence -> TYPE
+
+  instWith : scope * list(occurrence) * list(TYPE) -> scope
+  instWith(s, [], []) = s.
+  instWith(s, Xs@[_|_], Ts@[_|_]) = s_inst :-
+    new s_inst, s_inst -I-> s, instWithA(s_inst, Xs, Ts).
+
+  instWithA: scope * list(occurrence) * list(TYPE)
+  instWithA(_, [],     []).
+  instWithA(s, [X|Xs], [T|Ts]) :- !subst[X, T] in s, instWithA(s, Xs, Ts).
+
+rules // substitution
+
+  hasSubst: scope * occurrence -> list(TYPE)
+
+  hasSubst(s, d) = substValues(ps) :-
+    query subst filter e and { d' :- d' == d } in s |-> ps.
+
+  substValue  : (path * (occurrence * TYPE)) -> TYPE
+  substValues maps substValue(list(*)) = list(*)
+  substValue((_, (_, T))) = T' :- T == T'.
+
+rules
+
+  src : path -> scope
+  src(_PathEmpty(s)) = s.
+  src(_PathStep(p, _, _)) = src(p).
+
+rules
+
+  dst : path -> scope
+  dst(_PathEmpty(s)) = s.
+  dst(_PathStep(_, _, s)) = s.
+
+rules
+
+  scopes : path -> list(scope)
+  scopes(p) = scopes_acc(p, []).
+
+  scopes_acc : path * list(scope) -> list(scope)
+  scopes_acc(_PathEmpty(s), acc) = [s|acc].
+  scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
+
+rules
+
+  pathLabels : path -> list(label)
+  pathLabels(p) = pathLabels_acc(p, []).
+
+  pathLabels_acc : path * list(label) -> list(label)
+  pathLabels_acc(_PathEmpty(_), acc) = [].
+  pathLabels_acc(_PathStep(p, l, _), acc) = pathLabels_acc(p, [l|acc]).

@@ -1,17 +1,19 @@
 package mb.statix.spec;
 
-import java.util.Collection;
+import static mb.nabl2.terms.build.TermBuild.B;
+
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.regexp.IAlphabet;
+import mb.nabl2.regexp.impl.FiniteAlphabet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
 
@@ -19,22 +21,7 @@ import mb.nabl2.util.Tuple2;
 @Serial.Version(value = 42L)
 public abstract class ASpec {
 
-    @Value.Parameter public abstract ListMultimap<String, Rule> rules();
-
-    public ListMultimap<String, Rule> overlappingRules() {
-        final ImmutableListMultimap.Builder<String, Rule> overlappingRules = ImmutableListMultimap.builder();
-        rules().asMap().forEach((name, rules) -> {
-            overlappingRules.putAll(name, overlappingRules(rules));
-        });
-        return overlappingRules.build();
-    }
-
-    private Collection<Rule> overlappingRules(Collection<Rule> rules) {
-        return rules.stream()
-                .filter(r1 -> rules.stream()
-                        .anyMatch(r2 -> !r1.equals(r2) && ARule.leftRightPatternOrdering.compare(r1, r2) == 0))
-                .collect(ImmutableList.toImmutableList());
-    }
+    @Value.Parameter public abstract RuleSet rules();
 
     @Value.Parameter public abstract Set<ITerm> edgeLabels();
 
@@ -44,6 +31,11 @@ public abstract class ASpec {
 
     @Value.Parameter public abstract IAlphabet<ITerm> labels();
 
-    @Value.Parameter public abstract Multimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
+    @Value.Parameter public abstract SetMultimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
+
+    public static Spec of() {
+        return Spec.of(new RuleSet(ImmutableListMultimap.of()), ImmutableSet.of(), ImmutableSet.of(), B.EMPTY_TUPLE,
+                new FiniteAlphabet<>(), ImmutableSetMultimap.of());
+    }
 
 }

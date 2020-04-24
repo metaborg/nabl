@@ -23,6 +23,10 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
 
     @Value.Parameter @Override public abstract IListTerm getTail();
 
+    @Value.Lazy @Override public int getMinSize() {
+        return 1 + getTail().getMinSize();
+    }
+
     @Value.Lazy @Override public boolean isGround() {
         return getHead().isGround() && getTail().isGround();
     }
@@ -51,24 +55,21 @@ abstract class ConsTerm extends AbstractTerm implements IConsTerm {
     }
 
     @Override public int hashCode() {
-        return Objects.hash(getHead(), getTail());
+        return Objects.hash(
+            getHead(),
+            getTail()
+        );
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof IConsTerm)) {
-            return false;
-        }
-        IConsTerm that = (IConsTerm) other;
-        if(!getHead().equals(that.getHead())) {
-            return false;
-        }
-        if(!getTail().equals(that.getTail())) {
-            return false;
-        }
-        return true;
+        if (this == other) return true;
+        if (!(other instanceof IConsTerm)) return false;
+        IConsTerm that = (IConsTerm)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getHead(), that.getHead())
+            && Objects.equals(this.getTail(), that.getTail());
+        // @formatter:on
     }
 
     @Override public String toString() {

@@ -1,0 +1,11 @@
+---
+id: org.metaborg:statix.integrationtest.lang.mod.example:${metaborgVersion}
+name: modexample
+dependencies:
+  compile:
+  - org.metaborg:statix.integrationtest.lang.mod:${metaborgVersion}
+runtime:
+  nabl2:
+    debug: analysis files # custom
+build:
+  useBuildSystemSpec: true

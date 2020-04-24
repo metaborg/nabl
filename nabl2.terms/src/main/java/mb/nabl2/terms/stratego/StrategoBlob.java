@@ -1,7 +1,9 @@
 package mb.nabl2.terms.stratego;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 import org.spoofax.interpreter.terms.IStrategoList;
@@ -9,6 +11,7 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermPrinter;
 import org.spoofax.terms.AbstractSimpleTerm;
 import org.spoofax.terms.AbstractTermFactory;
+import org.spoofax.terms.TermFactory;
 import org.spoofax.terms.util.EmptyIterator;
 
 public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
@@ -30,10 +33,6 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         return false;
     }
 
-    @Override public Iterator<IStrategoTerm> iterator() {
-        return new EmptyIterator<>();
-    }
-
     @Override public int getSubtermCount() {
         return 0;
     }
@@ -42,16 +41,18 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         throw new IndexOutOfBoundsException();
     }
 
-    @Override public IStrategoTerm[] getAllSubterms() {
-        return new IStrategoTerm[0];
+    @Override
+    public IStrategoTerm[] getAllSubterms() {
+        return TermFactory.EMPTY_TERM_ARRAY;
+    }
+
+    @Override
+    public List<IStrategoTerm> getSubterms() {
+        return Collections.emptyList();
     }
 
     @Override public int getTermType() {
         return IStrategoTerm.BLOB;
-    }
-
-    @Override public int getStorageType() {
-        return IStrategoTerm.IMMUTABLE;
     }
 
     @SuppressWarnings("deprecation") @Override public IStrategoList getAnnotations() {
@@ -90,5 +91,8 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
             return Optional.empty();
         }
     }
-    
+
+    @Override public Iterator<IStrategoTerm> iterator() {
+        return new EmptyIterator<>();
+    }
 }

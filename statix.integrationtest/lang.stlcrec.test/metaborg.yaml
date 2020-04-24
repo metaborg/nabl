@@ -1,0 +1,12 @@
+---
+id: org.metaborg:statix.integrationtest.lang.stlcrec.test:${metaborgVersion}
+name: STLCrecTest
+dependencies:
+  compile:
+  - org.metaborg:statix.integrationtest.lang.stlcrec:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
+runtime:
+  nabl2:
+    debug: analysis files # custom
+build:
+  useBuildSystemSpec: true

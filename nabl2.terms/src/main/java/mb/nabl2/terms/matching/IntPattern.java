@@ -1,21 +1,31 @@
 package mb.nabl2.terms.matching;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
+import java.util.Optional;
 import java.util.Set;
 
+import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
+
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.u.IUnifier;
 
 class IntPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
     private final int value;
 
-    public IntPattern(int value) {
+    public IntPattern(int value, ImmutableClassToInstanceMap<Object> attachments) {
+        super(attachments);
         this.value = value;
     }
 
@@ -27,18 +37,32 @@ class IntPattern extends Pattern {
         return ImmutableSet.of();
     }
 
-    @Override protected MaybeNotInstantiatedBool matchTerm(ITerm term, Transient subst, IUnifier unifier) {
+    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         // @formatter:off
-        return unifier.findTerm(term).match(Terms.<MaybeNotInstantiatedBool>cases()
+        return unifier.findTerm(term).match(Terms.<Boolean>cases()
             .integer(intTerm -> {
-                return MaybeNotInstantiatedBool.ofResult(intTerm.getValue() == value);
+                return intTerm.getValue() == value;
             }).var(v -> {
-                return MaybeNotInstantiatedBool.ofNotInstantiated(v);
+                eqs.add(v, this);
+                return true;
             }).otherwise(t -> {
-                return MaybeNotInstantiatedBool.ofResult(false);
+                return false;
             })
         );
         // @formatter:on
+    }
+
+    @Override public IntPattern apply(IRenaming subst) {
+        return this;
+    }
+
+    @Override public Pattern eliminateWld(Function0<ITermVar> fresh) {
+        return this;
+    }
+
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
+        return B.newInt(value, getAttachments());
     }
 
     @Override public String toString() {

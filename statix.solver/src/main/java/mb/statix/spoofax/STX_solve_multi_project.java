@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.log.ILogger;
@@ -12,78 +13,67 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.terms.unification.IUnifier;
-import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.Constraints;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
+import mb.statix.spec.Spec;
 
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
     @Inject public STX_solve_multi_project() {
-        super(STX_solve_multi_project.class.getSimpleName(), 2);
+        super(STX_solve_multi_project.class.getSimpleName(), 3);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(0))
+        final Spec spec =
+                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+        reportOverlappingRules(spec);
+
+        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(1))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
-        final IDebugContext debug = getDebugContext(terms.get(1));
+        final IDebugContext debug = getDebugContext(terms.get(2));
 
         final List<SolverResult> results = M.listElems(M.blobValue(SolverResult.class)).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
 
         final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
-        final List<IConstraint> errors = new ArrayList<>(initial.errors());
-        State state = initial.state();
-        final ImmutableMap.Builder<Tuple2<TermIndex, ITerm>, ITerm> termProperties = ImmutableMap.builder();
-        termProperties.putAll(state.termProperties());
-        final IUnifier.Transient unifier = state.unifier().melt();
-        final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph().melt();
+        final Map<IConstraint, IMessage> messages = Maps.newHashMap(initial.messages());
+        IState.Immutable state = initial.state();
         for(SolverResult result : results) {
-            state = state.add(result.state());
-            constraints.add(result.delayed());
-            errors.addAll(result.errors());
             try {
-                unifier.unify(result.state().unifier());
-            } catch(OccursException e) {
+                state = state.add(result.state());
+            } catch(IllegalArgumentException e) {
                 // can this ever occur?
+                logger.error("Unexpectedely failed to merge file results.", e);
                 return Optional.empty();
             }
-            scopeGraph.addAll(result.state().scopeGraph());
-            termProperties.putAll(result.state().termProperties());
+            constraints.add(result.delayed());
+            messages.putAll(result.messages());
         }
-        // @formatter:off
-        state = state.withUnifier(unifier.freeze())
-                     .withScopeGraph(scopeGraph.freeze())
-                     .withTermProperties(termProperties.build());
-        // @formatter:on
 
         final SolverResult resultConfig;
         try {
             final double t0 = System.currentTimeMillis();
-            resultConfig = Solver.solve(state, Constraints.conjoin(constraints), (s, l, st) -> true, debug);
+            resultConfig = Solver.solve(spec, state, Constraints.conjoin(constraints), (s, l, st) -> true, debug);
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Project analyzed in {} s", (dt / 1_000d));
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
-        errors.addAll(resultConfig.errors());
-        final ITerm resultTerm = B.newBlob(resultConfig.withErrors(errors));
+        messages.putAll(resultConfig.messages());
+        final ITerm resultTerm = B.newBlob(resultConfig.withMessages(messages));
         return Optional.of(resultTerm);
     }
 

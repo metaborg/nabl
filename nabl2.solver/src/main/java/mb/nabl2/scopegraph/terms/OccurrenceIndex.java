@@ -4,6 +4,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.Multiset;
@@ -75,6 +76,15 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.equals(other);
     }
 
+    @Override public boolean equals(Object other, boolean compareAttachments) {
+        if (this == other) return true;
+        if (!(other instanceof ITerm)) return false;
+        // @formatter:off
+        return equals(other)
+            && (!compareAttachments || Objects.equals(this.getAttachments(), ((ITerm)other).getAttachments()));
+        // @formatter:on
+    }
+
     @Override public int hashCode() {
         return term.hashCode();
     }
@@ -94,7 +104,7 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         // @formatter:on
 
     }
-    
+
     public static OccurrenceIndex of(TermIndex i) {
         return new OccurrenceIndex(i.getResource(), i);
     }

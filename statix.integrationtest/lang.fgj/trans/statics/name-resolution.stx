@@ -1,0 +1,33 @@
+module statics/name-resolution
+
+imports
+
+  statics/types
+
+signature
+
+  namespaces
+    Var        : string
+    TVar       : string
+    Field      : string
+    Method     : string
+    MType      :
+    Ctor       :
+    Class      : string
+
+  relations
+    typeOfDecl     : occurrence -> TYPE
+    tparamsOfClass : -> list(occurrence)
+
+  name-resolution
+    labels P    // lexical parent
+           S    // super class
+           I    // instantiation
+
+    resolve Class  filter I*P*   min $ < P, $ < I
+    resolve TVar   filter I*P*   min $ < P, $ < I
+    resolve Var    filter I*P*   min $ < P, $ < I
+    resolve Ctor   filter I*     min $ < I, $ < S
+    resolve MType  filter I*     min $ < I, $ < S
+    resolve Field  filter (I|S)* min $ < I, $ < S
+    resolve Method filter (I|S)* min $ < I, $ < S

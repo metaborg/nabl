@@ -16,6 +16,10 @@ import mb.nabl2.terms.ITermVar;
 @Serial.Version(value = 42L)
 public abstract class TermVar extends AbstractTerm implements ITermVar {
 
+    @Value.Derived @Override public int getMinSize() {
+        return 0;
+    }
+
     @Value.Parameter @Override public abstract String getResource();
 
     @Value.Parameter @Override public abstract String getName();
@@ -50,24 +54,21 @@ public abstract class TermVar extends AbstractTerm implements ITermVar {
     }
 
     @Value.Lazy @Override public int hashCode() {
-        return Objects.hash(getResource(), getName());
+        return Objects.hash(
+            getResource(),
+            getName()
+        );
     }
 
     @Override public boolean equals(Object other) {
-        if(other == null) {
-            return false;
-        }
-        if(!(other instanceof ITermVar)) {
-            return false;
-        }
-        ITermVar that = (ITermVar) other;
-        if(!getResource().equals(that.getResource())) {
-            return false;
-        }
-        if(!getName().equals(that.getName())) {
-            return false;
-        }
-        return true;
+        if (this == other) return true;
+        if (!(other instanceof ITermVar)) return false;
+        ITermVar that = (ITermVar)other;
+        if (this.hashCode() != that.hashCode()) return false;
+        // @formatter:off
+        return Objects.equals(this.getResource(), that.getResource())
+            && Objects.equals(this.getName(), that.getName());
+        // @formatter:on
     }
 
     @Override public String toString() {

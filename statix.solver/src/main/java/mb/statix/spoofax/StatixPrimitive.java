@@ -5,12 +5,15 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
+
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
@@ -24,13 +27,17 @@ import org.spoofax.interpreter.terms.ITermFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
-import mb.nabl2.terms.unification.IUnifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
+import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
@@ -41,6 +48,8 @@ import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
     private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
+
+    private static final int MAX_TRACE = 5;
 
     final protected int tvars;
 
@@ -83,18 +92,18 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ///////////////////////////////////////
 
     protected void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> overlappingRules = spec.overlappingRules();
-        if(!overlappingRules.isEmpty()) {
-            logger.error("+-------------------------+");
-            logger.error("| FOUND OVERLAPPING RULES |");
-            logger.error("+-------------------------+");
-            for(Map.Entry<String, Collection<Rule>> entry : overlappingRules.asMap().entrySet()) {
+        final ListMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rules().getAllEquivalentRules();
+        if(!rulesWithEquivalentPatterns.isEmpty()) {
+            logger.error("+--------------------------------------+");
+            logger.error("| FOUND RULES WITH EQUIVALENT PATTERNS |");
+            logger.error("+--------------------------------------+");
+            for(Map.Entry<String, Collection<Rule>> entry : rulesWithEquivalentPatterns.asMap().entrySet()) {
                 logger.error("| Overlapping rules for: {}", entry.getKey());
                 for(Rule rule : entry.getValue()) {
                     logger.error("| * {}", rule);
                 }
             }
-            logger.error("+-------------------------+");
+            logger.error("+--------------------------------------+");
         }
     }
 
@@ -110,59 +119,89 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
 
-    protected ITerm makeMessage(String prefix, IConstraint constraint, IUnifier unifier) {
-        final ITerm astTerm = findClosestASTTerm(constraint, unifier);
-        final StringBuilder message = new StringBuilder();
-        message.append(prefix).append(": ").append(constraint.toString(Solver.shallowTermFormatter(unifier)))
-                .append("\n");
-        formatTrace(constraint, unifier, message);
-        return B.newTuple(makeOriginTerm(astTerm), B.newString(message.toString()));
+    protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
+            final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
+        final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
+
+        ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
+        final Deque<String> trace = Lists.newLinkedList();
+        IConstraint current = constraint;
+        int traceCount = 0;
+        while(current != null) {
+            if(originTerm == null) {
+                originTerm = findOriginArgument(current, unifier).orElse(null);
+            }
+            if(traceCount++ < MAX_TRACE) {
+                trace.addLast(current.toString(formatter));
+            }
+            current = current.cause().orElse(null);
+        }
+        if(traceCount >= MAX_TRACE) {
+            trace.addLast("... trace truncated ...");
+        }
+        
+        // use empty origin if none was found
+        if(originTerm == null) {
+            originTerm = B.EMPTY_TUPLE;
+        }
+
+        // add constraint message
+        trace.addFirst(message.toString(formatter));
+
+        final String messageText = trace.stream().filter(s -> !s.isEmpty()).map(s -> cleanupString(s))
+                .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
+
+        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText));
+        switch(message.kind()) {
+            case ERROR:
+                errors.add(messageTerm);
+                break;
+            case WARNING:
+                warnings.add(messageTerm);
+                break;
+            case NOTE:
+                notes.add(messageTerm);
+                break;
+        }
+
     }
 
-    private ITerm findClosestASTTerm(IConstraint constraint, IUnifier unifier) {
+    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
         final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
+            onArith -> Stream.empty(),
             onConj -> Stream.empty(),
             onEqual -> Stream.empty(),
             onExists -> Stream.empty(),
             onFalse -> Stream.empty(),
             onInequal -> Stream.empty(),
             onNew -> Stream.empty(),
-            onPathLt -> Stream.empty(),
-            onPathMatch -> Stream.empty(),
             onResolveQuery -> Stream.empty(),
             onTellEdge -> Stream.empty(),
             onTellRel -> Stream.empty(),
             onTermId -> Stream.empty(),
             onTermProperty -> Stream.empty(),
             onTrue -> Stream.empty(),
+            onTry -> Stream.empty(),
             onUser -> onUser.args().stream()
         );
-        return terms.apply(constraint).map(unifier::findTerm)
-                .filter(t -> TermIndex.get(t).isPresent())
-                .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
-                .findAny()
-                .orElseGet(() -> {
-                    return constraint.cause().map(cause -> findClosestASTTerm(cause, unifier)).orElse(B.EMPTY_TUPLE);
-                });
+        return terms.apply(constraint)
+                .flatMap(t -> Streams.stream(getOriginTerm(t, unifier)))
+                .findFirst();
         // @formatter:on
     }
 
-    private ITerm makeOriginTerm(ITerm term) {
-        return B.EMPTY_TUPLE.withAttachments(term.getAttachments());
+    private Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
+        // @formatter:off
+        return Optional.of(unifier.findTerm(term))
+            .filter(t -> TermIndex.get(t).isPresent())
+            .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
+            .map(t -> B.EMPTY_TUPLE.withAttachments(t.getAttachments()));
+        // @formatter:on
     }
 
-    private static void formatTrace(@Nullable IConstraint constraint, IUnifier unifier, StringBuilder sb) {
-        while(constraint != null) {
-            sb.append("<br>");
-            sb.append("&gt;&nbsp;");
-            String c = constraint.toString(Solver.shallowTermFormatter(unifier));
-            c = c.replaceAll("&", "&amp;");
-            c = c.replaceAll("<", "&lt;");
-            c = c.replaceAll(">", "&gt;");
-            sb.append(c);
-            constraint = constraint.cause().orElse(null);
-        }
+    private String cleanupString(String string) {
+        return string.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     }
 
 }

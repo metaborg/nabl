@@ -1,0 +1,54 @@
+module systemf
+
+language SystemF
+
+test function literal polymorphic [[
+  Fun (X) { fun(x:X) { x } } : (A => A -> A)   
+]] analysis succeeds 
+
+test type application [[
+  (Fun (X) { fun(x:X) { x } } [num]) : (num -> num) 
+]] analysis succeeds 
+
+test type and function application [[
+  (Fun (X) { fun(x:X) { x } } [num] 42) : num
+]] analysis succeeds 
+
+test identity function polymorphic [[
+  (Fun (X) { fun(x:X) { x } } [num] 42) : num
+]] analysis succeeds 
+
+test function composition [[ 
+  Fun(A) { Fun(B) { Fun(C) { 
+    fun(f : A -> B){ fun(g : B -> C) { fun(x: A) { g (f x) } } }
+  } } } 
+  : A => B => C => (A -> B) -> (B -> C) -> A -> C
+]] analysis succeeds
+
+test function composition [[
+  Fun(A) { Fun(B) { Fun(C) { 
+    fun(f : A -> B){ fun(g : B -> C) { fun(x: A) { g (f x) } } }
+  } } } [num] [num] [num]
+  : (num -> num) -> (num -> num) -> num -> num
+]] analysis succeeds
+
+
+test church booleans [[
+  type B = A => A -> A -> A in
+  let t = Fun(A){ fun(x: A){ fun(y: A){ x } } } in
+  let f = Fun(A){ fun(x: A){ fun(y: A){ y } } } in
+  let if = Fun(A){ fun(x: B){ fun(y: A){ fun(z: A){ x[A] y z } } } } in
+    if[B] t f t
+]] analysis succeeds 
+
+test shadowing type substitution [[
+  let f = Fun(A) { fun(x : A => A -> A) { 42 } } in
+  let g = fun(y : (B => B -> B) -> num) { 42 } in
+    g (f [num])
+]] analysis succeeds
+
+test escaping forall [[
+  let f = Fun(A) { Fun(B) { fun(f : A -> B -> num) { 0 } } } in
+  let g = fun(g : B => (num -> B -> num) -> num) { 1 } in
+    g (f [num])
+]] analysis succeeds

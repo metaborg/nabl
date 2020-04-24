@@ -1,0 +1,117 @@
+module overlapping-rules/linear-patterns
+
+signature
+  sorts S constructors
+    F : int -> S
+    G : S
+    H : S * S -> S
+
+rules
+
+  // p01 No general case
+  p01 : list(int)
+  p01([_]).
+
+rules
+
+  // p02 Top-level general case
+  p02 : list(int)
+  p02([]).
+  p02(xs). // p02(xs@[_|_]).
+
+rules
+
+  // p03 Nested case
+  p03 : list(int)
+  p03([_]).
+  p03([_|xs]). // p03([_|xs@[_|_]]).
+
+rules
+
+  p06 : list(int) * list(int)
+  p06([], ys).
+  p06(xs, []). // p06(xs@[_|_], []).
+  p06(xs, ys). // p06(xs@[_|_], [_|_]).
+
+rules
+
+  p07 : S
+  p07(x).
+  
+rules
+
+  p08 : S
+  p08(F(_)).
+  p08(G()).
+
+rules
+
+  p10 : S
+  p10(H(G(), _)).
+  p10(H(_, _)). // p10(H(F(_), _))
+                // p10(H(H(_, _), _))
+
+rules
+
+  p11 : S * S
+  p11(F(_), G()).
+  p11(G(), x).
+
+rules
+
+  p12 : S * S
+  p12(F(_), x).
+  p12(G(), x).
+
+rules
+
+  p18 : S
+  p18(F(_)).
+  p18(x@G()).
+
+rules
+
+  p19 : S
+  p19(H(G(), _)).
+  p19(x). // p19(x@F(_)).
+          // p19(x@G()).
+          // p19(x@H(F(_), _)).
+          // p19(x@H(H(_, _), _)).
+
+rules
+
+  p20 : list(int)
+  p20([_]).
+  p20(xs). // p20(xs@[]).
+           // p20(xs@[_,_|_]).
+
+rules
+
+  p21 : string
+  p21("x").
+  p21("y").
+  p21("z").
+//p21(_). // not supported
+
+rules
+
+  p22 : int
+  p22(1).
+  p22(2).
+  p22(4).
+//p22(_). // not supported
+
+rules
+
+  p23 : S * S
+  p23(G(), G()).
+  p23(G(), _).
+  p23(_, G()).
+  p23(_, _).
+
+rules
+
+  p24 : S * S
+  p24(G(), G()).
+  p24(G(), _).
+  p24(_, _).
