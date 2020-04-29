@@ -110,7 +110,7 @@ context-free syntax
 context-free syntax
 
   NaBL2-AnalysisResult.AstProperties = <
-    term properties {
+    ast properties {
       <{NaBL2-AstPropertyEntry "\n"}*>
     }
   >

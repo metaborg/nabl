@@ -10,10 +10,10 @@ import mb.nabl2.solver.ISolution;
 import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.terms.ITerm;
 
-public class SG_debug_term_properties extends AnalysisPrimitive {
+public class SG_debug_ast_properties extends AnalysisPrimitive {
 
-    public SG_debug_term_properties() {
-        super(SG_debug_term_properties.class.getSimpleName());
+    public SG_debug_ast_properties() {
+        super(SG_debug_ast_properties.class.getSimpleName());
     }
 
     @Override protected Optional<? extends ITerm> call(IResult result, ITerm term, List<ITerm> terms)
