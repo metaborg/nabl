@@ -10,6 +10,7 @@ menus
     action: "Debug file name resolution"      = nabl2--debug-file-name-resolution (realtime)
     action: "Debug file unifier"              = nabl2--debug-file-unifier (realtime)
     action: "Debug file symbolic constraints" = nabl2--debug-file-symbolic-constraints
+    action: "Debug file term properties"      = nabl2--debug-file-term-properties
 
     separator
 
@@ -18,4 +19,4 @@ menus
     action: "Debug project scope graph (DOT)"    = nabl2--debug-project-scope-graph-dot (realtime)
     action: "Debug project name resolution"      = nabl2--debug-project-name-resolution (realtime)
     action: "Debug project unifier"              = nabl2--debug-project-unifier (realtime)
-    action: "Debug project symbolic constraints" = nabl2--debug-project-symbolic-constraints
+    action: "Debug project term properties"      = nabl2--debug-project-term-properties

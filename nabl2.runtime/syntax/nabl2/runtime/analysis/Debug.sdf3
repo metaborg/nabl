@@ -5,7 +5,10 @@ imports
   nabl2/shared/common/CTerms
   nabl2/shared/common/ScopeGraph
   nabl2/shared/common/Resolution
+  nabl2/shared/constraints/AST
   nabl2/shared/constraints/Base
+
+  nabl2/runtime/common/AST
 
 context-free syntax
 
@@ -103,3 +106,13 @@ context-free syntax
       <{NaBL2-CTerm "\n"}*>
     }
   >
+
+context-free syntax
+
+  NaBL2-AnalysisResult.AstProperties = <
+    term properties {
+      <{NaBL2-AstPropertyEntry "\n"}*>
+    }
+  >
+
+  NaBL2-AstPropertyEntry = <<NaBL2-TermIndex>.<NaBL2-AstProperty> := <NaBL2-CTerm>>
