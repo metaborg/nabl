@@ -8,7 +8,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.Multiset;
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -69,6 +73,14 @@ public class CUser implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseUser(this);
+    }
+
+    @Override public Multiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+        for (ITerm a : args) {
+            vars.addAll(a.getVars());
+        }
+        return vars.build();
     }
 
     @Override public CUser apply(ISubstitution.Immutable subst) {

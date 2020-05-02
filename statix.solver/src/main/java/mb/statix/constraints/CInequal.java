@@ -7,8 +7,10 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.Multiset;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -78,6 +80,13 @@ public class CInequal implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseInequal(this);
+    }
+
+    @Override public Multiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+        vars.addAll(term1.getVars());
+        vars.addAll(term2.getVars());
+        return vars.build();
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {
