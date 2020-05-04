@@ -24,13 +24,17 @@ rules
 
 rules
 
-  prettyprint-Statix-Int =
-    ![S(<is-int;int-to-string>)]
+  prettyprint-Statix-INT =
+    where(is-int)
+  ; ![S(<int-to-string>)]
+
+  prettyprint-Statix-STRING =
+    where(is-string)
+  ; ![S(<id>)]
 
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
     where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)
 
   stx--prettyprint-term =
-    where(is-Statix-Term)
-  ; prettyprint-Statix-Term
+    prettyprint-Statix-Stx-ATerm
