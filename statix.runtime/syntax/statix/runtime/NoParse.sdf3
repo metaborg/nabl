@@ -21,6 +21,10 @@ context-free syntax
 
   TermIndex.TermIndex = <@<String>-<Int>>
   TermIndex.NoId      = <@->
+  TermIndex.WithId    = <@<TermOrId>>    // doesn't occur at runtime, but pretty-printing
+                                         // in statix.lang sometimes uses the Occurrence
+                                         // rule above, instead of the one from statix.lang,
+                                         // and then this case is missing
 
   Term           = Scope
   Term           = Occurrence
