@@ -5,8 +5,10 @@ imports
   libstratego-gpp
 
   statix/runtime/-
-  pp/statix/runtime/-
+
   signatures/statix/runtime/-
+
+  pp/statix/runtime/-
 
 signature
   constructors
@@ -24,11 +26,11 @@ rules
 
 rules
 
-  prettyprint-Statix-INT =
+  prettyprint-Statix-Stx-INT =
     where(is-int)
   ; ![S(<int-to-string>)]
 
-  prettyprint-Statix-STRING =
+  prettyprint-Statix-Stx-STRING =
     where(is-string)
   ; ![S(<id>)]
 

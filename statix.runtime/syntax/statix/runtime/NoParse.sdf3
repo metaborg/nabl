@@ -1,16 +1,11 @@
 module statix/runtime/NoParse
 
-sorts
+imports
 
-  Stx-INT
-  Stx-STRING
+  statix/API
+
 
 context-free syntax
-
-  Stx-ATerm   = Stx-Var
-  Stx-ATerm   = Stx-Scope
-  Stx-ATerm   = Stx-Occurrence
-  Stx-ATerm   = Stx-TermIndex
 
   Stx-Occurrence.Occurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-OccurrencePosition>}>
 
@@ -22,3 +17,12 @@ context-free syntax
   Stx-TermIndex.TermIndex = <@<Stx-STRING>-<Stx-INT>>
 
   Stx-Var.Var = <?<Stx-STRING>-<Stx-STRING>>
+
+
+context-free syntax
+
+  Stx-ATerm   = Stx-Var
+  Stx-ATerm   = Stx-Scope
+  Stx-ATerm   = Stx-Occurrence
+  Stx-ATerm   = Stx-TermIndex
+

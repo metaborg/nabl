@@ -7,7 +7,7 @@ imports
   statix/lang/Core
   statix/lang/Sugar
   statix/lang/Deprecated
-  statix/runtime/NoParse
+  statix/API
 
 template options
 

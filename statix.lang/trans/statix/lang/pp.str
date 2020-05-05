@@ -6,8 +6,14 @@ imports
   libstratego-gpp
   libspoofax/sdf/pp
   libspoofax/editor/refactoring/-
-  pp/statix/lang/-
+
+  signatures/statix/cli/-
   signatures/statix/lang/-
+  signatures/statix/test/-
+
+  pp/statix/cli/-
+  pp/statix/lang/-
+  pp/statix/test/-
 
   nabl2/runtime/pp
   statix/runtime/pp
