@@ -115,6 +115,7 @@ public class BaseMultiFileSolver extends BaseSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            setSolver.finish();
 
             final IMessages.Transient messages = initial.messages().melt();
             messages.addAll(solveResult.messages());
