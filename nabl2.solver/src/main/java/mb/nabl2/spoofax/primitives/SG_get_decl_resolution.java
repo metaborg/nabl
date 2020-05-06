@@ -2,9 +2,9 @@ package mb.nabl2.spoofax.primitives;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -33,7 +33,7 @@ public class SG_get_decl_resolution extends AnalysisPrimitive {
             List<ITerm> entries = Lists.newArrayList();
             for(Occurrence ref : solution.scopeGraph().getAllRefs()) {
                 try {
-                    Set<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
                     paths.stream().filter(path -> path.getDeclaration().equals(decl))
                             .map(p -> B.newTuple(ref, Paths.toTerm(p))).forEach(entries::add);
                 } catch(CriticalEdgeException e) {

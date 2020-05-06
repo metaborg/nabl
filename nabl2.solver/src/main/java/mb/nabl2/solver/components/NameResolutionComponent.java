@@ -1,5 +1,6 @@
 package mb.nabl2.solver.components;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -96,7 +97,7 @@ public class NameResolutionComponent extends ASolver {
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths;
+        final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
             paths = nameResolution.resolve(ref);
         } catch(CriticalEdgeException e) {

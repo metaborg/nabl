@@ -2,9 +2,9 @@ package mb.nabl2.spoofax.primitives;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -29,7 +29,7 @@ public class SG_get_ref_resolution extends AnalysisPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term, solution.unifier()).<ITerm>flatMap(ref -> {
             try {
-                final Set<IResolutionPath<Scope, Label, Occurrence>> paths = solution.nameResolution().resolve(ref);
+                final Collection<IResolutionPath<Scope, Label, Occurrence>> paths = solution.nameResolution().resolve(ref);
                 List<ITerm> pathTerms = Lists.newArrayListWithExpectedSize(paths.size());
                 for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
                     pathTerms.add(B.newTuple(path.getDeclaration(), Paths.toTerm(path)));

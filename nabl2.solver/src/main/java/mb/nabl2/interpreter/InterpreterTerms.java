@@ -2,9 +2,9 @@ package mb.nabl2.interpreter;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -83,7 +83,7 @@ public class InterpreterTerms {
         final Map<ITerm, ITerm> entries = Maps.newHashMap();
         for(Occurrence ref : refs) {
             try {
-                Set<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
                 if(paths.size() == 1) {
                     IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
                     ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));

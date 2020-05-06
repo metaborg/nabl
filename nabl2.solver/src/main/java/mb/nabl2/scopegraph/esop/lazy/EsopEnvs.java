@@ -1,6 +1,8 @@
 package mb.nabl2.scopegraph.esop.lazy;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -13,7 +15,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
@@ -22,6 +23,7 @@ import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.path.Paths;
+import mb.nabl2.util.CapsuleUtil;
 
 // TODO: Support garbage collection of sub-envs
 // * lambda's must be separate classes not to capture arguments
@@ -44,7 +46,7 @@ public class EsopEnvs {
                 return env;
             }
 
-            @Override public Immutable<P> get() throws CriticalEdgeException {
+            @Override public Collection<P> get() throws CriticalEdgeException {
                 return env().get();
             }
 
@@ -77,7 +79,7 @@ public class EsopEnvs {
                 return env;
             }
 
-            @Override public Immutable<P> get() throws CriticalEdgeException {
+            @Override public Collection<P> get() throws CriticalEdgeException {
                 return env().get();
             }
 
@@ -97,9 +99,9 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private Set.Immutable<P> _paths = Set.Immutable.<P>of().__insertAll(Sets.newHashSet(paths));
+            private Collection<P> _paths = CapsuleUtil.toSet(paths);
 
-            @Override public Immutable<P> get() {
+            @Override public Collection<P> get() {
                 return _paths;
             }
 
@@ -116,21 +118,27 @@ public class EsopEnvs {
             private static final long serialVersionUID = 42L;
 
             private final Deque<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(Arrays.asList(envs));
-            private final Set.Transient<Object> _shadowed = Set.Transient.of();
+            private final Collection<Object> _shadowed = Sets.newHashSet();
             private final Set.Transient<P> _paths = Set.Transient.of();
             private Set.Immutable<P> paths = null;
 
-            private Immutable<P> env() throws CriticalEdgeException {
+            private Collection<P> env() throws CriticalEdgeException {
                 if(paths != null) {
                     return paths;
                 }
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
                     IEsopEnv<S, L, O, P> env = it.next();
-                    Immutable<P> pts = env.get();
+                    Collection<P> pts = env.get();
                     // be careful not to self-shadow, therefore first add paths, then add shadow tokens
-                    pts.stream().filter(p -> !_shadowed.contains(filter.matchToken(p))).forEach(_paths::__insert);
-                    pts.stream().map(p -> filter.matchToken(p)).forEach(_shadowed::__insert);
+                    for(P p : pts) {
+                        if(!_shadowed.contains(filter.matchToken(p))) {
+                            _paths.__insert(p);
+                        }
+                    }
+                    for(P p : pts) {
+                        _shadowed.add(filter.matchToken(p));
+                    }
                     it.remove();
                     if(filter.shortCircuit() && !_paths.isEmpty()) {
                         break;
@@ -140,7 +148,7 @@ public class EsopEnvs {
                 return paths;
             }
 
-            @Override public Immutable<P> get() throws CriticalEdgeException {
+            @Override public Collection<P> get() throws CriticalEdgeException {
                 return env();
             }
 
@@ -168,7 +176,7 @@ public class EsopEnvs {
             private final Set.Transient<P> _paths = Set.Transient.of();
             private Set.Immutable<P> paths = null;
 
-            private Immutable<P> env() throws CriticalEdgeException {
+            private Collection<P> env() throws CriticalEdgeException {
                 if(paths != null) {
                     return paths;
                 }
@@ -177,8 +185,10 @@ public class EsopEnvs {
                 while(it.hasNext()) {
                     final IEsopEnv<S, L, O, P> env = it.next();
                     try {
-                        Immutable<P> pts = env.get();
-                        _paths.__insertAll(pts);
+                        Collection<P> pts = env.get();
+                        for(P p : pts) {
+                            _paths.__insert(p);
+                        }
                         it.remove();
                     } catch(CriticalEdgeException e) {
                         es.add(e);
@@ -191,7 +201,7 @@ public class EsopEnvs {
                 return paths;
             }
 
-            @Override public Immutable<P> get() throws CriticalEdgeException {
+            @Override public Collection<P> get() throws CriticalEdgeException {
                 return env();
             }
 
@@ -216,8 +226,8 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            @Override public Immutable<P> get() {
-                return Set.Immutable.of();
+            @Override public Collection<P> get() {
+                return Collections.emptyList();
             }
 
             @Override public String toString() {
