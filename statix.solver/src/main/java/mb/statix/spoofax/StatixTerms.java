@@ -327,7 +327,7 @@ public class StatixTerms {
         // @formatter:off
         return M.cases(
             M.appl0(NOID_OP),
-            M.appl1(WITHID_OP, term(), (t, p) -> p)
+            M.appl1(WITHID_OP, varTerm(), (t, v) -> v)
         );
         // @formatter:on
     }
@@ -489,7 +489,7 @@ public class StatixTerms {
                         final ITerm ns = appl.getArgs().get(0);
                         final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = explicatePosition(appl.getArgs().get(2));
+                        final ITerm pos = B.newAppl(WITHID_OP, explicate(appl.getArgs().get(2)));
                         return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
                     }
                     default: {
@@ -504,15 +504,6 @@ public class StatixTerms {
             blob -> B.newString(blob.toString()),
             var -> explicate(var)
         )).withAttachments(term.getAttachments());
-        // @formatter:on
-    }
-
-    private static ITerm explicatePosition(ITerm term) {
-        // @formatter:off
-        return M.cases(
-            M.appl0(NOID_OP),
-            M.appl1(WITHID_OP, M.term(), (t, p) -> explicate(t))
-        ).match(term).orElseThrow(() -> new IllegalArgumentException());
         // @formatter:on
     }
 
