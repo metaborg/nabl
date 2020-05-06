@@ -35,7 +35,6 @@ import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
 import mb.nabl2.scopegraph.terms.path.Paths;
-import mb.nabl2.util.Tuple2;
 
 public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution<S, L, O> {
@@ -105,7 +104,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         } else {
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = pendingResolution.computeIfAbsent(ref,
                     r -> resolveEnv(io.usethesource.capsule.Set.Immutable.of(), ref));
-            Set<IResolutionPath<S, L, O>> result = env.get()._1();
+            Set<IResolutionPath<S, L, O>> result = env.get();
             resolution.put(ref, result);
             pendingResolution.remove(ref);
             return result;
@@ -138,7 +137,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         } else {
             final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                     pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
-            Set<IDeclPath<S, L, O>> result = env.get()._1();
+            Set<IDeclPath<S, L, O>> result = env.get();
             ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
             result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
             final Set<O> decls = declsBuilder.build();
@@ -154,7 +153,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         } else {
             final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                     pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
-            Set<IDeclPath<S, L, O>> result = env.get()._1();
+            Set<IDeclPath<S, L, O>> result = env.get();
             ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
             result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
             final Set<O> decls = declsBuilder.build();
@@ -184,7 +183,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if(re.isEmpty()) {
             return EsopEnvs.empty();
         } else {
-            return EsopEnvs.trace(path.getTarget().getResource(), env_L(labels, seenImports, lt, re, path, filter));
+            return env_L(labels, seenImports, lt, re, path, filter);
         }
     }
 
@@ -247,15 +246,15 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = resolveEnv(seenImports, ref);
             envs.add(EsopEnvs
                     .guarded((CheckedFunction0<IEsopEnv<S, L, O, P>, CriticalEdgeException> & Serializable) () -> {
-                        Tuple2<Immutable<IResolutionPath<S, L, O>>, Immutable<String>> paths = env.get();
+                        Immutable<IResolutionPath<S, L, O>> paths = env.get();
                         List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
-                        for(IResolutionPath<S, L, O> importPath : paths._1()) {
+                        for(IResolutionPath<S, L, O> importPath : paths) {
                             for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
                                 Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
                                         .map(getter::apply).ifPresent(importEnvs::add);
                             }
                         }
-                        return EsopEnvs.trace(EsopEnvs.union(importEnvs), paths._2());
+                        return EsopEnvs.union(importEnvs);
                     }));
 
         }

@@ -22,8 +22,6 @@ import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.path.Paths;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.Tuple2;
 
 // TODO: Support garbage collection of sub-envs
 // * lambda's must be separate classes not to capture arguments
@@ -46,7 +44,7 @@ public class EsopEnvs {
                 return env;
             }
 
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() throws CriticalEdgeException {
+            @Override public Immutable<P> get() throws CriticalEdgeException {
                 return env().get();
             }
 
@@ -79,7 +77,7 @@ public class EsopEnvs {
                 return env;
             }
 
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() throws CriticalEdgeException {
+            @Override public Immutable<P> get() throws CriticalEdgeException {
                 return env().get();
             }
 
@@ -101,8 +99,8 @@ public class EsopEnvs {
 
             private Set.Immutable<P> _paths = Set.Immutable.<P>of().__insertAll(Sets.newHashSet(paths));
 
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() {
-                return ImmutableTuple2.of(_paths, Set.Immutable.of());
+            @Override public Immutable<P> get() {
+                return _paths;
             }
 
             @Override public String toString() {
@@ -120,33 +118,29 @@ public class EsopEnvs {
             private final Deque<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(Arrays.asList(envs));
             private final Set.Transient<Object> _shadowed = Set.Transient.of();
             private final Set.Transient<P> _paths = Set.Transient.of();
-            private final Set.Transient<String> _trace = Set.Transient.of();
             private Set.Immutable<P> paths = null;
-            private Set.Immutable<String> trace = null;
 
-            private Tuple2<Immutable<P>, Immutable<String>> env() throws CriticalEdgeException {
+            private Immutable<P> env() throws CriticalEdgeException {
                 if(paths != null) {
-                    return ImmutableTuple2.of(paths, trace);
+                    return paths;
                 }
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
                     IEsopEnv<S, L, O, P> env = it.next();
-                    Tuple2<Immutable<P>, Immutable<String>> pts = env.get();
+                    Immutable<P> pts = env.get();
                     // be careful not to self-shadow, therefore first add paths, then add shadow tokens
-                    pts._1().stream().filter(p -> !_shadowed.contains(filter.matchToken(p))).forEach(_paths::__insert);
-                    pts._1().stream().map(p -> filter.matchToken(p)).forEach(_shadowed::__insert);
-                    _trace.__insertAll(pts._2());
+                    pts.stream().filter(p -> !_shadowed.contains(filter.matchToken(p))).forEach(_paths::__insert);
+                    pts.stream().map(p -> filter.matchToken(p)).forEach(_shadowed::__insert);
                     it.remove();
                     if(filter.shortCircuit() && !_paths.isEmpty()) {
                         break;
                     }
                 }
                 paths = _paths.freeze();
-                trace = _trace.freeze();
-                return ImmutableTuple2.of(paths, trace);
+                return paths;
             }
 
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() throws CriticalEdgeException {
+            @Override public Immutable<P> get() throws CriticalEdgeException {
                 return env();
             }
 
@@ -172,22 +166,19 @@ public class EsopEnvs {
 
             private final java.util.LinkedList<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(envs);
             private final Set.Transient<P> _paths = Set.Transient.of();
-            private final Set.Transient<String> _trace = Set.Transient.of();
             private Set.Immutable<P> paths = null;
-            private Set.Immutable<String> trace = null;
 
-            private Tuple2<Immutable<P>, Immutable<String>> env() throws CriticalEdgeException {
+            private Immutable<P> env() throws CriticalEdgeException {
                 if(paths != null) {
-                    return ImmutableTuple2.of(paths, trace);
+                    return paths;
                 }
                 List<CriticalEdgeException> es = Lists.newArrayList();
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
                     final IEsopEnv<S, L, O, P> env = it.next();
                     try {
-                        Tuple2<Immutable<P>, Immutable<String>> pts = env.get();
-                        _paths.__insertAll(pts._1());
-                        _trace.__insertAll(pts._2());
+                        Immutable<P> pts = env.get();
+                        _paths.__insertAll(pts);
                         it.remove();
                     } catch(CriticalEdgeException e) {
                         es.add(e);
@@ -197,11 +188,10 @@ public class EsopEnvs {
                     throw CriticalEdgeException.of(es);
                 }
                 paths = _paths.freeze();
-                trace = _trace.freeze();
-                return ImmutableTuple2.of(paths, trace);
+                return paths;
             }
 
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() throws CriticalEdgeException {
+            @Override public Immutable<P> get() throws CriticalEdgeException {
                 return env();
             }
 
@@ -220,49 +210,14 @@ public class EsopEnvs {
         };
     }
 
-    // trace environment
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
-            IEsopEnv<S, L, O, P> trace(String step, IEsopEnv<S, L, O, P> env) {
-        return new IEsopEnv<S, L, O, P>() {
-            private static final long serialVersionUID = 42L;
-
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() throws CriticalEdgeException {
-                Tuple2<Immutable<P>, Immutable<String>> pts = env.get();
-                return ImmutableTuple2.of(pts._1(), pts._2().__insert(step));
-            }
-
-            @Override public String toString() {
-                return step + " @ " + env.toString();
-            }
-
-        };
-    }
-
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
-            IEsopEnv<S, L, O, P> trace(IEsopEnv<S, L, O, P> env, Immutable<String> steps) {
-        return new IEsopEnv<S, L, O, P>() {
-            private static final long serialVersionUID = 42L;
-
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() throws CriticalEdgeException {
-                Tuple2<Immutable<P>, Immutable<String>> pts = env.get();
-                return ImmutableTuple2.of(pts._1(), pts._2().__insertAll(steps));
-            }
-
-            @Override public String toString() {
-                return steps + " @ " + env.toString();
-            }
-
-        };
-    }
-
     // empty environment
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
             IEsopEnv<S, L, O, P> empty() {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            @Override public Tuple2<Immutable<P>, Immutable<String>> get() {
-                return ImmutableTuple2.of(Set.Immutable.of(), Set.Immutable.of());
+            @Override public Immutable<P> get() {
+                return Set.Immutable.of();
             }
 
             @Override public String toString() {
