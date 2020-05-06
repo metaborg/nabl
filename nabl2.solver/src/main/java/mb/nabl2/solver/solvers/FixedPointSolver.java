@@ -14,6 +14,8 @@ import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.Lists;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.solver.ISolver;
@@ -31,8 +33,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IndexedBag;
 import mb.nabl2.util.collections.IndexedBag.RemovalPolicy;
-import rx.Observable;
-import rx.subjects.PublishSubject;
 
 public class FixedPointSolver {
 
