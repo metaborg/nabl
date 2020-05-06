@@ -489,7 +489,7 @@ public class StatixTerms {
                         final ITerm ns = appl.getArgs().get(0);
                         final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = B.newAppl(WITHID_OP, explicate(appl.getArgs().get(2)));
+                        final ITerm pos = explicatePosition(appl.getArgs().get(2));
                         return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
                     }
                     default: {
@@ -568,6 +568,10 @@ public class StatixTerms {
             pathTerm = B.newAppl(PATH_STEP_OP, pathTerm, step.getLabel(), step.getTarget());
         }
         return pathTerm;
+    }
+
+    private static ITerm explicatePosition(ITerm pos) {
+        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explicate(pos)));
     }
 
 }
