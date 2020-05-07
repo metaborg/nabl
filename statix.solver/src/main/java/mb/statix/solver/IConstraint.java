@@ -2,12 +2,12 @@ package mb.statix.solver;
 
 import java.util.Optional;
 
-import com.google.common.collect.Multiset;
-import io.usethesource.capsule.Set;
-import mb.nabl2.terms.ITermVar;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
+import com.google.common.collect.Multiset;
+
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;

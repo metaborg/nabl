@@ -7,10 +7,9 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
-import io.usethesource.capsule.Set;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
