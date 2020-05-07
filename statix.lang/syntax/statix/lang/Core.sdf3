@@ -251,7 +251,7 @@ syntax
   OccurrencePosition-CF.WithId = "@" TermOrTermIndex-CF
   OccurrencePosition-CF.NoId   = "@-"
 
-  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
+  OccurrenceLit-CF.StxOccurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 
   PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"

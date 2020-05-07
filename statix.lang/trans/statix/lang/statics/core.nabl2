@@ -325,7 +325,7 @@ rules
     EdgeRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
-  Term(V)[[ Occurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
+  Term(V)[[ StxOccurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
     Ns{ns} -> s, Ns{ns} |-> d | error $[Unresolved namespace [ns]] @ns, @ns.ref := Ns{ns}, @ns.decl := d,
     d : NS(tys),
     Map1T(Term(V))[[ ts ^ (s) : tys ]],

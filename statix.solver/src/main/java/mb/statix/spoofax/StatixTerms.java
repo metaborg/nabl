@@ -84,7 +84,7 @@ public class StatixTerms {
 
     public static final String SCOPE_OP = "Scope";
     public static final String TERMINDEX_OP = "TermIndex";
-    public static final String OCCURRENCE_OP = "Occurrence";
+    public static final String OCCURRENCE_OP = "StxOccurrence";
     public static final String PATH_EMPTY_OP = "PathEmpty";
     public static final String PATH_STEP_OP = "PathStep";
     public static final String WITHID_OP = "WithId";

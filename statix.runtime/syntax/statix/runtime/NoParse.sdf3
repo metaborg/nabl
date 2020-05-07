@@ -7,7 +7,7 @@ imports
 
 context-free syntax
 
-  Stx-Occurrence.Occurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-OccurrencePosition>}>
+  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-OccurrencePosition>}>
 
   Stx-OccurrencePosition      = Stx-TermIndex
   Stx-OccurrencePosition.NoId = <@->

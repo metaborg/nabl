@@ -266,6 +266,6 @@ rules
   stx--debug-scopegraph =
     prim("STX_debug_scopegraph")
 
-  stx--get-occurrence-ns: Occurrence(ns, _, _) -> ns
+  stx--get-occurrence-ns: StxOccurrence(ns, _, _) -> ns
 
-  stx--get-occurrence-terms: Occurrence(_, ts, _) -> ts
+  stx--get-occurrence-terms: StxOccurrence(_, ts, _) -> ts
