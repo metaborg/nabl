@@ -120,7 +120,7 @@ public class EsopEnvs {
             private final Deque<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(Arrays.asList(envs));
             private final Collection<Object> _shadowed = Sets.newHashSet();
             private final Set.Transient<P> _paths = Set.Transient.of();
-            private Set.Immutable<P> paths = null;
+            private Collection<P> paths = null;
 
             private Collection<P> env() throws CriticalEdgeException {
                 if(paths != null) {
@@ -174,7 +174,7 @@ public class EsopEnvs {
 
             private final java.util.LinkedList<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(envs);
             private final Set.Transient<P> _paths = Set.Transient.of();
-            private Set.Immutable<P> paths = null;
+            private Collection<P> paths = null;
 
             private Collection<P> env() throws CriticalEdgeException {
                 if(paths != null) {
