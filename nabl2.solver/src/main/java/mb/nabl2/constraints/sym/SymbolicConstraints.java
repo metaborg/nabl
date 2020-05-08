@@ -19,10 +19,10 @@ public final class SymbolicConstraints {
         return M.<ISymbolicConstraint>cases(
         // @formatter:off
             M.appl2(C_FACT, M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, fact, origin) -> {
-                return ImmutableCFact.of(fact, origin);
+                return CFact.of(fact, origin);
             }),
             M.appl2(C_GOAL, M.term(), MessageInfo.matcherOnlyOriginTerm(), (c, goal, origin) -> {
-                return ImmutableCGoal.of(goal, origin);
+                return CGoal.of(goal, origin);
             })
             // @formatter:on
         );
@@ -40,10 +40,10 @@ public final class SymbolicConstraints {
     public static ISymbolicConstraint substitute(ISymbolicConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
-            fact -> ImmutableCFact.of(
+            fact -> CFact.of(
                         subst.apply(fact.getFact()),
                         fact.getMessageInfo().apply(subst::apply)),
-            goal ->  ImmutableCGoal.of(
+            goal ->  CGoal.of(
                         subst.apply(goal.getGoal()),
                         goal.getMessageInfo().apply(subst::apply))
         ));
@@ -53,10 +53,10 @@ public final class SymbolicConstraints {
     public static ISymbolicConstraint transform(ISymbolicConstraint constraint, Function1<ITerm, ITerm> map) {
         // @formatter:off
         return constraint.match(ISymbolicConstraint.Cases.<ISymbolicConstraint>of(
-            fact -> ImmutableCFact.of(
+            fact -> CFact.of(
                         map.apply(fact.getFact()),
                         fact.getMessageInfo().apply(map::apply)),
-            goal ->  ImmutableCGoal.of(
+            goal ->  CGoal.of(
                         map.apply(goal.getGoal()),
                         goal.getMessageInfo().apply(map::apply))
         ));

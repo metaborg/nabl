@@ -19,15 +19,13 @@ import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.exceptions.SolverException;
-import mb.nabl2.solver.solvers.BaseSolver.BaseSolution;
-import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
-import mb.nabl2.solver.solvers.ImmutableBaseSolution;
+import mb.nabl2.solver.solvers.BaseSolution;
+import mb.nabl2.solver.solvers.GraphSolution;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.analysis.IResult;
-import mb.nabl2.spoofax.analysis.ImmutableMultiUnitResult;
 import mb.nabl2.spoofax.analysis.MultiInitialResult;
+import mb.nabl2.spoofax.analysis.MultiUnitResult;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
@@ -43,7 +41,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
             SemiIncrementalMultiFileSolver solver, ICancel cancel, IProgress progress) throws InterpreterException {
         final Tuple2<MultiInitialResult, IConstraint> input =
                 M.tuple2(M.blobValue(MultiInitialResult.class), Constraints.matchConstraintOrList(), (t, ir, C) -> {
-                    return ImmutableTuple2.of(ir, C);
+                    return Tuple2.of(ir, C);
                 }).match(currentTerm)
                         .orElseThrow(() -> new InterpreterException("Current term is not (InitialResult, C)."));
         final MultiInitialResult initialResult = input._1();
@@ -53,7 +51,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
 
         final ISolution solution;
         try {
-            BaseSolution baseSolution = ImmutableBaseSolution.of(initialResult.solution().config(), constraints,
+            BaseSolution baseSolution = BaseSolution.of(initialResult.solution().config(), constraints,
                     initialResult.solution().unifier());
             GraphSolution preSolution = solver.solveGraph(baseSolution, unitFresh::fresh, cancel, progress);
             solution = solver.solveIntra(preSolution, initialResult.globalVars(), initialResult.globalScopes(),
@@ -62,7 +60,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
             throw new InterpreterException(ex);
         }
 
-        final IResult result = ImmutableMultiUnitResult.of(constraints, solution, Optional.empty(), unitFresh.freeze());
+        final IResult result = MultiUnitResult.of(constraints, solution, Optional.empty(), unitFresh.freeze());
         return Optional.of(B.newBlob(result));
     }
 

@@ -1,6 +1,7 @@
 // @formatter:off
 @Value.Style(
-    typeAbstract = { "*" },
+    typeAbstract = { "A*" },
+    typeImmutable = "*",
     get = { "is*", "get*" },
     with = "with*",
     defaults = @Value.Immutable(builder = false, copy = true),

@@ -9,7 +9,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -189,7 +189,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     private final Map<Tuple2<Set.Immutable<L>, L>, Set.Immutable<L>> smallerCache = Maps.newHashMap();
 
     private Set.Immutable<L> smaller(Set.Immutable<L> L, L l1) throws ResolutionException, InterruptedException {
-        Tuple2<Set.Immutable<L>, L> key = ImmutableTuple2.of(L, l1);
+        Tuple2<Set.Immutable<L>, L> key = Tuple2.of(L, l1);
         Set.Immutable<L> smaller;
         if(null == (smaller = smallerCache.get(key))) {
             smallerCache.put(key, (smaller = computeSmaller(L, l1)));

@@ -17,8 +17,8 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
-import mb.nabl2.constraints.messages.ImmutableMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
+import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.constraints.messages.MessageKind;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
@@ -27,12 +27,11 @@ import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.analysis.Actions;
 import mb.nabl2.spoofax.analysis.IResult;
-import mb.nabl2.spoofax.analysis.ImmutableMultiFinalResult;
+import mb.nabl2.spoofax.analysis.MultiFinalResult;
 import mb.nabl2.spoofax.analysis.MultiInitialResult;
 import mb.nabl2.spoofax.analysis.MultiUnitResult;
 import mb.nabl2.stratego.MessageTerms;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
@@ -48,7 +47,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
             SemiIncrementalMultiFileSolver solver, ICancel cancel, IProgress progress) throws InterpreterException {
         final Tuple2<MultiInitialResult, List<MultiUnitResult>> input = M.tuple2(M.blobValue(MultiInitialResult.class),
                 M.listElems(M.blobValue(MultiUnitResult.class)), (t, ir, urs) -> {
-                    return ImmutableTuple2.of(ir, urs);
+                    return Tuple2.of(ir, urs);
                 }).match(currentTerm)
                 .orElseThrow(() -> new InterpreterException("Current term is not (InitialResult, [UnitResult])."));
         final MultiInitialResult initialResult = input._1();
@@ -63,7 +62,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
         try {
             final Function1<String, String> fresh = globalFresh::fresh;
             final IMessageInfo defaultMessage =
-                    ImmutableMessageInfo.of(MessageKind.ERROR, MessageContent.of(), Actions.sourceTerm(""));
+                    MessageInfo.of(MessageKind.ERROR, MessageContent.of(), Actions.sourceTerm(""));
             ISolution preSolution =
                     solver.solveInter(initialSolution, unitSolutions, defaultMessage, fresh, cancel, progress);
             solution = preSolution;
@@ -74,7 +73,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
         final List<IConstraint> constraints = Stream.concat(initialResult.constraints().stream(),
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());
         final IResult result =
-                ImmutableMultiFinalResult.of(constraints, solution, Optional.empty(), globalFresh.freeze());
+                MultiFinalResult.of(constraints, solution, Optional.empty(), globalFresh.freeze());
         final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();
         final ITerm errors = MessageTerms.toTerms(messages.getErrors(), solution.unifier());
         final ITerm warnings = MessageTerms.toTerms(messages.getWarnings(), solution.unifier());

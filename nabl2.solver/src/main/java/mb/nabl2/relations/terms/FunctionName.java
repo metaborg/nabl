@@ -11,7 +11,6 @@ import org.immutables.value.Value;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.relations.IFunctionName;
-import mb.nabl2.relations.terms.RelationName.NamedRelation;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
@@ -31,7 +30,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class NamedFunction extends FunctionName {
+    static abstract class ANamedFunction extends FunctionName {
 
         private static final String OP = "Function";
 
@@ -49,7 +48,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
 
         // IApplTerm implementation
 
-        @Override protected IApplTerm check() {
+        @Override protected ANamedFunction check() {
             return this;
         }
 
@@ -62,7 +61,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         }
 
         public static IMatcher<NamedFunction> matcher() {
-            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ImmutableNamedFunction.of(name)));
+            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> NamedFunction.of(name)));
         }
 
         // Object implementation
@@ -96,7 +95,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class ExtFunction extends FunctionName {
+    static abstract class AExtFunction extends FunctionName {
 
         private static final String OP = "ExtFunction";
 
@@ -114,7 +113,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
 
         // IApplTerm implementation
 
-        @Override protected IApplTerm check() {
+        @Override protected AExtFunction check() {
             return this;
         }
 
@@ -127,7 +126,7 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         }
 
         public static IMatcher<ExtFunction> matcher() {
-            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ImmutableExtFunction.of(name)));
+            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ExtFunction.of(name)));
         }
 
         // Object implementation
@@ -164,8 +163,8 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
         return M.preserveAttachments(M.cases(
             NamedFunction.matcher(),
             ExtFunction.matcher(),
-            M.appl1("Lub", NamedRelation.matcher(), (t, r) -> ImmutableNamedFunction.of(RelationFunctions.LUB.of(r.getName()))),
-            M.appl1("Glb", NamedRelation.matcher(), (t, r) -> ImmutableNamedFunction.of(RelationFunctions.GLB.of(r.getName())))
+            M.appl1("Lub", NamedRelation.matcher(), (t, r) -> NamedFunction.of(RelationFunctions.LUB.of(r.getName()))),
+            M.appl1("Glb", NamedRelation.matcher(), (t, r) -> NamedFunction.of(RelationFunctions.GLB.of(r.getName())))
         ));
         // @formatter:on
     }

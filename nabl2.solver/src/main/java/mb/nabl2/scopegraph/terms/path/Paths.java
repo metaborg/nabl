@@ -31,43 +31,43 @@ public final class Paths {
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> IStep<S, L, O> direct(S source, L label,
             S target) {
-        return ImmutableEStep.of(source, label, target);
+        return EStep.of(source, label, target);
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> IStep<S, L, O> named(S source, L label,
             IResolutionPath<S, L, O> importPath, S target) {
-        return ImmutableNStep.of(source, label, importPath, target);
+        return NStep.of(source, label, importPath, target);
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> IScopePath<S, L, O> empty(S scope) {
-        return ImmutableEmptyScopePath.of(scope);
+        return EmptyScopePath.of(scope);
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> IDeclPath<S, L, O>
             decl(IScopePath<S, L, O> path, O decl) {
-        return ImmutableDeclPath.of(path, decl);
+        return DeclPath.of(path, decl);
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IScopePath<S, L, O>>
             append(IScopePath<S, L, O> left, IScopePath<S, L, O> right) {
-        return Optional.ofNullable(ImmutableComposedScopePath.of(left, right));
+        return Optional.ofNullable(ComposedScopePath.of(left, right));
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IDeclPath<S, L, O>>
             append(IScopePath<S, L, O> left, IDeclPath<S, L, O> right) {
-        return Optional.ofNullable(ImmutableComposedScopePath.of(left, right.getPath()))
-                .map(p -> ImmutableDeclPath.of(p, right.getDeclaration()));
+        return Optional.ofNullable(ComposedScopePath.of(left, right.getPath()))
+                .map(p -> DeclPath.of(p, right.getDeclaration()));
     }
 
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>>
             resolve(O reference, IScopePath<S, L, O> path, O declaration) {
-        return Optional.ofNullable(ImmutableResolutionPath.of(reference, path, declaration));
+        return Optional.ofNullable(ResolutionPath.of(reference, path, declaration));
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>>
             resolve(O reference, IDeclPath<S, L, O> path) {
-        return Optional.ofNullable(ImmutableResolutionPath.of(reference, path.getPath(), path.getDeclaration()));
+        return Optional.ofNullable(ResolutionPath.of(reference, path.getPath(), path.getDeclaration()));
     }
 
     // -------------------------------------------

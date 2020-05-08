@@ -1,11 +1,12 @@
 package mb.nabl2.terms.stratego;
 
+import java.util.HashMap;
+
+import javax.annotation.Nullable;
+
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
-
-import javax.annotation.Nullable;
-import java.util.HashMap;
 
 /**
  * A mapping between placeholders and term variables.

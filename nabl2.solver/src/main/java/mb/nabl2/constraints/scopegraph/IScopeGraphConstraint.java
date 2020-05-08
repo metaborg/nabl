@@ -17,7 +17,7 @@ public interface IScopeGraphConstraint extends IConstraint {
 
         T caseDirectEdge(CGDirectEdge directEdge);
 
-        T caseAssoc(CGExportEdge assoc);
+        T caseExport(CGExportEdge assoc);
 
         T caseImport(CGImportEdge importEdge);
 
@@ -44,7 +44,7 @@ public interface IScopeGraphConstraint extends IConstraint {
                     return onDirectEdge.apply(directEdge);
                 }
 
-                @Override public T caseAssoc(CGExportEdge exportEdge) {
+                @Override public T caseExport(CGExportEdge exportEdge) {
                     return onExportEdge.apply(exportEdge);
                 }
 
@@ -67,7 +67,7 @@ public interface IScopeGraphConstraint extends IConstraint {
 
         T caseDirectEdge(CGDirectEdge directEdge) throws E;
 
-        T caseAssoc(CGExportEdge assoc) throws E;
+        T caseExport(CGExportEdge assoc) throws E;
 
         T caseImport(CGImportEdge importEdge) throws E;
 
@@ -94,7 +94,7 @@ public interface IScopeGraphConstraint extends IConstraint {
                     return onDirectEdge.apply(directEdge);
                 }
 
-                @Override public T caseAssoc(CGExportEdge exportEdge) throws E {
+                @Override public T caseExport(CGExportEdge exportEdge) throws E {
                     return onExportEdge.apply(exportEdge);
                 }
 

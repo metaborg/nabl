@@ -8,19 +8,17 @@ import org.junit.Test;
 
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.path.IScopePath;
-import mb.nabl2.scopegraph.terms.ImmutableLabel;
-import mb.nabl2.scopegraph.terms.ImmutableScope;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Scope;
 
 public class PathsTest {
 
-    Label l = ImmutableLabel.P;
+    Label l = Label.P;
 
-    Scope s1 = ImmutableScope.of("", "1");
-    Scope s2 = ImmutableScope.of("", "2");
-    Scope s3 = ImmutableScope.of("", "3");
-    Scope s4 = ImmutableScope.of("", "4");
+    Scope s1 = Scope.of("", "1");
+    Scope s2 = Scope.of("", "2");
+    Scope s3 = Scope.of("", "3");
+    Scope s4 = Scope.of("", "4");
 
     IScopePath<Scope, Label, IOccurrence> st12 = Paths.direct(s1, l, s2);
     IScopePath<Scope, Label, IOccurrence> st21 = Paths.direct(s2, l, s1);

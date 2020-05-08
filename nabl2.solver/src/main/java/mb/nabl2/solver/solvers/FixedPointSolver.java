@@ -19,8 +19,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.solver.ISolver;
-import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolveResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.InterruptedDelayException;
@@ -137,7 +136,7 @@ public class FixedPointSolver {
         unsolved.addAll(criticalEdgeDelays.values());
         unsolved.addAll(relationDelays.values());
 
-        return ImmutableSolveResult.builder()
+        return SolveResult.builder()
         // @formatter:off
                 .messages(messages.freeze())
                 .constraints(unsolved)

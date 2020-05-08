@@ -4,11 +4,11 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.sym.ISymbolicConstraint;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.symbolic.ISymbolicConstraints;
-import mb.nabl2.symbolic.ImmutableSymbolicConstraints;
+import mb.nabl2.symbolic.SymbolicConstraints;
 import mb.nabl2.terms.ITerm;
 
 public class SymbolicComponent extends ASolver {
@@ -40,7 +40,7 @@ public class SymbolicComponent extends ASolver {
     }
 
     public ISymbolicConstraints finish() {
-        return ImmutableSymbolicConstraints.of(facts.freeze(), goals.freeze());
+        return SymbolicConstraints.of(facts.freeze(), goals.freeze());
     }
 
 }

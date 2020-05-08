@@ -4,7 +4,6 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.solver.solvers.CallExternal;
-import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 public class SolverCore {

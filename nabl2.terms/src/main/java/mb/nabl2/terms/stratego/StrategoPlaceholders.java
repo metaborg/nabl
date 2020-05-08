@@ -1,6 +1,17 @@
 package mb.nabl2.terms.stratego;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.spoofax.interpreter.terms.IStrategoAppl;
+import org.spoofax.interpreter.terms.IStrategoConstructor;
+import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.terms.util.TermUtils;
+
 import com.google.common.collect.ImmutableClassToInstanceMap;
+
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -8,14 +19,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.TermBuild;
-import org.spoofax.interpreter.terms.IStrategoAppl;
-import org.spoofax.interpreter.terms.IStrategoConstructor;
-import org.spoofax.interpreter.terms.IStrategoTerm;
-import org.spoofax.terms.util.TermUtils;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Functions for working with Stratego placeholders.
@@ -157,7 +160,7 @@ public final class StrategoPlaceholders {
      * @return the placeholder term; or {@code null} when not found
      */
     private static @Nullable ITerm getPlaceholderFromAttachments(ImmutableClassToInstanceMap<Object> attachments) {
-        @Nullable StrategoAnnotations annotations = (StrategoAnnotations)attachments.get(StrategoAnnotations.class);
+        @Nullable AStrategoAnnotations annotations = (AStrategoAnnotations)attachments.get(AStrategoAnnotations.class);
         if (annotations == null) return null;
         return getPlaceholderFromAnnotations(annotations.getAnnotationList());
     }

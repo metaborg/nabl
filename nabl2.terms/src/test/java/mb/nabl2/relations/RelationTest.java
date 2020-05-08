@@ -7,9 +7,9 @@ import org.junit.Test;
 
 import com.google.common.collect.Iterables;
 
-import mb.nabl2.relations.RelationDescription.Reflexivity;
-import mb.nabl2.relations.RelationDescription.Symmetry;
-import mb.nabl2.relations.RelationDescription.Transitivity;
+import mb.nabl2.relations.ARelationDescription.Reflexivity;
+import mb.nabl2.relations.ARelationDescription.Symmetry;
+import mb.nabl2.relations.ARelationDescription.Transitivity;
 import mb.nabl2.relations.impl.Relation;
 
 public class RelationTest {
@@ -17,44 +17,44 @@ public class RelationTest {
     // reflexivity
 
     @Test public void testReflexive_AddRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.REFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.REFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 1);
         assertTrue(r.contains(1, 1));
     }
 
     @Test public void testReflexive_ContainsImplicitRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.REFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.REFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         assertTrue(r.contains(1, 1));
     }
 
     @Test public void testReflexive_ImplicitLargerRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.REFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.REFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         assertTrue(Iterables.contains(r.larger(1), 1));
     }
 
     @Test public void testReflexive_ImplicitSmallerRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.REFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.REFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         assertTrue(Iterables.contains(r.smaller(1), 1));
     }
 
     @Test(expected = ReflexivityException.class) public void testIrreflexive_ReflThrows() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.IRREFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.IRREFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 1);
     }
 
     @Test public void testIrreflexive_ReflFalse() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.IRREFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.IRREFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         assertFalse(r.contains(1, 1));
     }
 
     @Test public void testIrreflexive_ExtendNoRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription.of(Reflexivity.IRREFLEXIVE,
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.IRREFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);
@@ -63,20 +63,20 @@ public class RelationTest {
     }
 
     @Test public void testNonreflexive_Refl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 1);
         assertTrue(r.contains(1, 1));
     }
 
     @Test public void testNonreflexive_NoImplicitRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         assertFalse(r.contains(1, 1));
     }
 
     @Test public void testNonreflexive_NonRefl() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         assertTrue(r.contains(1, 2));
@@ -85,7 +85,7 @@ public class RelationTest {
     // symmetry
 
     @Test public void testSymmetric_ExplicitSym() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         r.add(2, 1);
@@ -94,7 +94,7 @@ public class RelationTest {
     }
 
     @Test public void testSymmetric_ImplicitSym() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         assertTrue(r.contains(1, 2));
@@ -102,7 +102,7 @@ public class RelationTest {
     }
 
     @Test public void testAntisymmetric_Antisym() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.ANTI_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);
@@ -110,21 +110,21 @@ public class RelationTest {
     }
 
     @Test(expected = SymmetryException.class) public void testAntisymmetric_Sym() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.ANTI_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         r.add(2, 1);
     }
 
     @Test public void testNonsymmetric_Nonsym() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         assertTrue(r.contains(1, 2));
     }
 
     @Test public void testNonsymmetric_Sym() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
         r.add(1, 2);
         r.add(2, 1);
@@ -135,7 +135,7 @@ public class RelationTest {
     // transitiviy
 
     @Test public void testTransitive_Trans() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);
@@ -143,7 +143,7 @@ public class RelationTest {
     }
 
     @Test public void testTransitive_TransReverse() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.TRANSITIVE));
         r.add(2, 3);
         r.add(1, 2);
@@ -151,7 +151,7 @@ public class RelationTest {
     }
 
     @Test(expected = TransitivityException.class) public void testTransitive_TransThrows() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.NON_SYMMETRIC, Transitivity.ANTI_TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);
@@ -159,7 +159,7 @@ public class RelationTest {
     }
 
     @Test public void testTransitiveSymmetric_Trans() throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.SYMMETRIC, Transitivity.TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);
@@ -169,7 +169,7 @@ public class RelationTest {
 
     @Test(expected = TransitivityException.class) public void testTransitiveSymmetric_TransThrows()
             throws RelationException {
-        IRelation.Transient<Integer> r = Relation.Transient.of(ImmutableRelationDescription
+        IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription
                 .of(Reflexivity.NON_REFLEXIVE, Symmetry.SYMMETRIC, Transitivity.ANTI_TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);

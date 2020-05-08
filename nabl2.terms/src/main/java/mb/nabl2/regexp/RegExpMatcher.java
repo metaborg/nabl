@@ -34,6 +34,10 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         this.isNullable = isNullable;
     }
 
+    @Override public IRegExp<S> regexp() {
+        return state;
+    }
+
     @Override public RegExpMatcher<S> match(S symbol) {
         final Map<S, IRegExp<S>> transitions = stateTransitions.get(state);
         IRegExp<S> newState = transitions.getOrDefault(symbol, defaultTransitions.get(state));

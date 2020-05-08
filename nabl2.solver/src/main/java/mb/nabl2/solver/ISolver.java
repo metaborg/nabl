@@ -11,7 +11,6 @@ import org.metaborg.util.functions.CheckedFunction1;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
-import mb.nabl2.solver.ISolver.SolveResult;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.UnconditionalDelayExpection;
 import mb.nabl2.solver.messages.IMessages;
@@ -29,7 +28,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
 
     @Value.Immutable(builder = true)
     @Serial.Version(42l)
-    public static abstract class SeedResult {
+    public static abstract class ASeedResult {
 
         @Value.Default public Set<IConstraint> constraints() {
             return Collections.emptySet();
@@ -40,7 +39,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         }
 
         public static SeedResult empty() {
-            return ImmutableSeedResult.builder().build();
+            return SeedResult.builder().build();
         }
 
         public static SeedResult messages(IMessageInfo... messages) {
@@ -50,7 +49,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         public static SeedResult messages(Iterable<? extends IMessageInfo> messages) {
             Messages.Transient msgs = Messages.Transient.of();
             msgs.addAll(messages);
-            return ImmutableSeedResult.builder().messages(msgs.freeze()).build();
+            return SeedResult.builder().messages(msgs.freeze()).build();
         }
 
         public static SeedResult constraints(IConstraint... constraints) {
@@ -58,14 +57,14 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         }
 
         public static SeedResult constraints(Iterable<? extends IConstraint> constraints) {
-            return ImmutableSeedResult.builder().constraints(constraints).build();
+            return SeedResult.builder().constraints(constraints).build();
         }
 
     }
 
     @Value.Immutable(builder = true)
     @Serial.Version(42l)
-    public static abstract class SolveResult {
+    public static abstract class ASolveResult {
 
         @Value.Default public Set<IConstraint> constraints() {
             return Collections.emptySet();
@@ -80,7 +79,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         }
 
         public static SolveResult empty() {
-            return ImmutableSolveResult.builder().build();
+            return SolveResult.builder().build();
         }
 
         public static SolveResult messages(IMessageInfo... messages) {
@@ -90,7 +89,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         public static SolveResult messages(Iterable<? extends IMessageInfo> messages) {
             Messages.Transient msgs = Messages.Transient.of();
             msgs.addAll(messages);
-            return ImmutableSolveResult.builder().messages(msgs.freeze()).build();
+            return SolveResult.builder().messages(msgs.freeze()).build();
         }
 
         public static SolveResult constraints(IConstraint... constraints) {
@@ -98,7 +97,7 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         }
 
         public static SolveResult constraints(Iterable<? extends IConstraint> constraints) {
-            return ImmutableSolveResult.builder().constraints(constraints).build();
+            return SolveResult.builder().constraints(constraints).build();
         }
 
     }

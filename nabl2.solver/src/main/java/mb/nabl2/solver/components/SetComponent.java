@@ -18,10 +18,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
-import mb.nabl2.constraints.equality.ImmutableCEqual;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
-import mb.nabl2.constraints.messages.ImmutableMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
+import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.constraints.sets.CDistinct;
 import mb.nabl2.constraints.sets.CEvalSet;
 import mb.nabl2.constraints.sets.CSubsetEq;
@@ -31,11 +31,11 @@ import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.sets.SetEvaluator;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SolveResult;
+import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
-import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.Transform.T;
@@ -147,7 +147,7 @@ public class SetComponent extends ASolver {
         }
         List<ITerm> elements = set.stream().map(i -> i.getValue()).collect(Collectors.toList());
         return SolveResult.constraints(
-                ImmutableCEqual.of(constraint.getResult(), B.newList(elements), constraint.getMessageInfo()));
+                CEqual.of(constraint.getResult(), B.newList(elements), constraint.getMessageInfo()));
 
     }
 
@@ -156,12 +156,12 @@ public class SetComponent extends ASolver {
         if(nameOrigin && !elements.isEmpty()) {
             return elements.stream().<IMessageInfo>map(e -> {
                 Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> e.getName()).match(t, unifier()));
-                return ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f), e.getPosition());
+                return MessageInfo.of(template.getKind(), template.getContent().apply(f), e.getPosition());
             }).collect(Collectors.toList());
         } else {
             ITerm es = B.newList(elements.stream().map(e -> e.getName()).collect(Collectors.toList()));
             Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> es).match(t, unifier()));
-            return Iterables2.singleton(ImmutableMessageInfo.of(template.getKind(), template.getContent().apply(f),
+            return Iterables2.singleton(MessageInfo.of(template.getKind(), template.getContent().apply(f),
                     template.getOriginTerm()));
         }
     }

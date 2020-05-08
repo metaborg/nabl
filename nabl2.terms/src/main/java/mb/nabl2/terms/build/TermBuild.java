@@ -41,7 +41,7 @@ public class TermBuild {
 
         public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IApplTerm term = ImmutableApplTerm.of(op, args);
+            final IApplTerm term = ApplTerm.of(op, args);
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
@@ -116,7 +116,7 @@ public class TermBuild {
         }
 
         public INilTerm newNil(@Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final INilTerm term = ImmutableNilTerm.of();
+            final INilTerm term = NilTerm.of();
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
@@ -125,7 +125,7 @@ public class TermBuild {
         }
 
         public IConsTerm newCons(ITerm head, IListTerm tail, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IConsTerm term = ImmutableConsTerm.of(head, tail);
+            final IConsTerm term = ConsTerm.of(head, tail);
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
@@ -134,7 +134,7 @@ public class TermBuild {
         }
 
         public IStringTerm newString(String value, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IStringTerm term = ImmutableStringTerm.of(value);
+            final IStringTerm term = StringTerm.of(value);
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
@@ -143,7 +143,7 @@ public class TermBuild {
         }
 
         public IIntTerm newInt(int value, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IIntTerm term = ImmutableIntTerm.of(value);
+            final IIntTerm term = IntTerm.of(value);
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
@@ -153,7 +153,7 @@ public class TermBuild {
         }
 
         public IBlobTerm newBlob(Object value, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IBlobTerm term = ImmutableBlobTerm.of(value);
+            final IBlobTerm term = BlobTerm.of(value);
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 
@@ -162,7 +162,7 @@ public class TermBuild {
         }
 
         public ITermVar newVar(String resource, String name, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final ITermVar term = ImmutableTermVar.of(resource, name);
+            final ITermVar term = TermVar.of(resource, name);
             return attachments != null ? term.withAttachments(attachments) : term;
         }
 

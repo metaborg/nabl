@@ -21,8 +21,8 @@ import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.components.AstComponent;
@@ -94,7 +94,7 @@ public class BaseSolver {
             scopeGraphReducer.updateAll();
             final SolveResult solveResult = solver.solve(initial.constraints(), unifier);
 
-            return ImmutableGraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
+            return GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
                     equalitySolver.finish(), solveResult.messages(), solveResult.constraints());
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
@@ -111,7 +111,7 @@ public class BaseSolver {
 
     @Value.Immutable
     @Serial.Version(42l)
-    public static abstract class BaseSolution {
+    public static abstract class ABaseSolution {
 
         @Value.Parameter public abstract SolverConfig config();
 
@@ -123,7 +123,7 @@ public class BaseSolver {
 
     @Value.Immutable
     @Serial.Version(42l)
-    public static abstract class GraphSolution {
+    public static abstract class AGraphSolution {
 
         @Value.Parameter public abstract SolverConfig config();
 

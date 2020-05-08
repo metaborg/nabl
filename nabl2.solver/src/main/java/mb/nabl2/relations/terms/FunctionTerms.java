@@ -12,13 +12,11 @@ import org.metaborg.util.functions.PartialFunction1;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import mb.nabl2.relations.terms.FunctionName.NamedFunction;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public class FunctionTerms {
@@ -35,7 +33,7 @@ public class FunctionTerms {
 
     private static IMatcher<Tuple2<String, Eval>> function() {
         return M.tuple2(NamedFunction.matcher(), M.listElems(functionCase()), (t, name, cases) -> {
-            return ImmutableTuple2.of(name.getName(), new Eval(cases));
+            return Tuple2.of(name.getName(), new Eval(cases));
         });
     }
 
@@ -44,7 +42,7 @@ public class FunctionTerms {
             if(!pattern.getVars().containsAll(term.getVars())) {
                 throw new IllegalStateException("Function case is not closed.");
             }
-            return ImmutableTuple2.of(TermPattern.P.fromTerm(pattern), term);
+            return Tuple2.of(TermPattern.P.fromTerm(pattern), term);
         });
     }
 

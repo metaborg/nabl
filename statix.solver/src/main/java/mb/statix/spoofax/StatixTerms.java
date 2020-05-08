@@ -40,7 +40,7 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
@@ -129,7 +129,7 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
         return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
-            return ImmutableTuple2.of(name, patterns);
+            return Tuple2.of(name, patterns);
         });
     }
 
@@ -229,7 +229,7 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<String, Tuple2<Integer, ITerm>>> scopeExtension() {
         return M.tuple3(M.stringValue(), M.integerValue(), M.term(),
-                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i - 1, lbl)));
+                (t, c, i, lbl) -> Tuple2.of(c, Tuple2.of(i - 1, lbl)));
     }
 
     public static IMatcher<List<ITerm>> labels() {
@@ -270,7 +270,7 @@ public class StatixTerms {
     }
 
     public static IMatcher<Tuple2<ITerm, ITerm>> labelPair() {
-        return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> ImmutableTuple2.of(l1, l2));
+        return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> Tuple2.of(l1, l2));
     }
 
     public static IMatcher<CAstProperty.Op> propertyOp() {

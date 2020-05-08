@@ -17,7 +17,7 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -47,7 +47,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
         final IDebugContext debug = getDebugContext(terms.get(2));
 
         final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
-                M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> ImmutableTuple2.of(r, c));
+                M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> Tuple2.of(r, c));
         final Function1<Tuple2<String, IConstraint>, ITerm> solveConstraint =
                 resource_constraint -> solveConstraint(spec, initial.state().withResource(resource_constraint._1()),
                         resource_constraint._2(), debug);

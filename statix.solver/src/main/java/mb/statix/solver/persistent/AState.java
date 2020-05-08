@@ -17,7 +17,7 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
@@ -82,7 +82,7 @@ public abstract class AState implements IState.Immutable {
         final String newName = name.replaceAll("-", "_") + "-" + i;
         final ITermVar newVar = B.newVar(resource(), newName, attachments);
         final Set.Immutable<ITermVar> vars = __vars().__insert(newVar);
-        return ImmutableTuple2.of(newVar, State.builder().from(this).__varCounter(i).__vars(vars).build());
+        return Tuple2.of(newVar, State.builder().from(this).__varCounter(i).__vars(vars).build());
     }
 
     @Override public Set.Immutable<ITermVar> vars() {
@@ -104,7 +104,7 @@ public abstract class AState implements IState.Immutable {
         final String name = base.replaceAll("-", "_") + "-" + i;
         final Scope scope = Scope.of(resource(), name);
         final Set.Immutable<Scope> scopes = __scopes().__insert(scope);
-        return ImmutableTuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());
+        return Tuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());
     }
 
     @Override public Set.Immutable<Scope> scopes() {

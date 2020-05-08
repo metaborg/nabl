@@ -22,17 +22,15 @@ import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.exceptions.SolverException;
-import mb.nabl2.solver.solvers.BaseSolver.BaseSolution;
-import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
-import mb.nabl2.solver.solvers.ImmutableBaseSolution;
+import mb.nabl2.solver.solvers.BaseSolution;
+import mb.nabl2.solver.solvers.GraphSolution;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.analysis.IResult;
-import mb.nabl2.spoofax.analysis.ImmutableMultiInitialResult;
+import mb.nabl2.spoofax.analysis.MultiInitialResult;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.Unifiers;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
@@ -50,7 +48,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
                 .orElseThrow(() -> new InterpreterException("Term argument is not a solver config."));
         final Tuple2<ITerm, IConstraint> input =
                 M.tuple2(M.term(), Constraints.matchConstraintOrList(), (t, params, C) -> {
-                    return ImmutableTuple2.of(params, C);
+                    return Tuple2.of(params, C);
                 }).match(currentTerm).orElseThrow(() -> new InterpreterException("Current term is not (params, C)."));
         final ITerm params = input._1();
         final List<IConstraint> constraints = ImmutableList.of(input._2());
@@ -61,7 +59,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final ISolution solution;
         try {
             BaseSolution baseSolution =
-                    ImmutableBaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of());
+                    BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of());
             GraphSolution preSolution = solver.solveGraph(baseSolution, globalFresh::fresh, cancel, progress);
             solution = solver.solveIntra(preSolution, globalVars, null, globalFresh::fresh, cancel, progress);
         } catch(InterruptedException | SolverException ex) {
@@ -71,7 +69,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final Collection<Scope> globalScopes =
                 T.collecttd(t -> Scope.matcher().match(t, solution.unifier())).apply(params);
 
-        final IResult result = ImmutableMultiInitialResult.of(constraints, solution, Optional.empty(), globalVars,
+        final IResult result = MultiInitialResult.of(constraints, solution, Optional.empty(), globalVars,
                 globalScopes, globalFresh.freeze());
         return Optional.of(B.newBlob(result));
     }

@@ -23,11 +23,11 @@ import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.exceptions.SolverException;
 import mb.nabl2.solver.messages.IMessages;
-import mb.nabl2.solver.solvers.BaseSolver.GraphSolution;
-import mb.nabl2.solver.solvers.ImmutableBaseSolution;
+import mb.nabl2.solver.solvers.BaseSolution;
+import mb.nabl2.solver.solvers.GraphSolution;
 import mb.nabl2.solver.solvers.SingleFileSolver;
 import mb.nabl2.spoofax.analysis.IResult;
-import mb.nabl2.spoofax.analysis.ImmutableSingleUnitResult;
+import mb.nabl2.spoofax.analysis.SingleUnitResult;
 import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.stratego.MessageTerms;
 import mb.nabl2.terms.ITerm;
@@ -64,7 +64,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final ISolution solution;
         try {
             GraphSolution graphSolution = solver.solveGraph(
-                    ImmutableBaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
+                    BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
                     cancel, progress);
             ISolution constraintSolution = solver.solve(graphSolution, fresh::fresh, cancel, progress);
             solution = constraintSolution;
@@ -72,7 +72,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
             throw new InterpreterException(ex);
         }
 
-        final IResult result = ImmutableSingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
+        final IResult result = SingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
         final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();
         final IStrategoTerm errors =
                 strategoTerms.toStratego(MessageTerms.toTerms(messages.getErrors(), solution.unifier()));

@@ -74,22 +74,22 @@ public class HashcodeAndEqualsTest {
     }
 
     @Test public void testSpecializedEqual() {
-        ITerm t1 = ImmutableSpecializedAppl.of("Hello, world!", 42);
-        ITerm t2 = ImmutableSpecializedAppl.of("Hello, world!", 42);
+        ITerm t1 = SpecializedAppl.of("Hello, world!", 42);
+        ITerm t2 = SpecializedAppl.of("Hello, world!", 42);
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSpecializedAndGenericEqual() {
-        ITerm t1 = ImmutableSpecializedAppl.of("Hello, world!", 42);
-        ITerm t2 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
+        ITerm t1 = SpecializedAppl.of("Hello, world!", 42);
+        ITerm t2 = B.newAppl(ASpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testGenericAndSpecializedEqual() {
-        ITerm t1 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
-        ITerm t2 = ImmutableSpecializedAppl.of("Hello, world!", 42);
+        ITerm t1 = B.newAppl(ASpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
+        ITerm t2 = SpecializedAppl.of("Hello, world!", 42);
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
@@ -113,42 +113,42 @@ public class HashcodeAndEqualsTest {
     }
 
     @Test public void testGenericApplEqualAfterSerialization() throws Exception {
-        ITerm t1 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
+        ITerm t1 = B.newAppl(ASpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         ITerm t2 = deserialize(serialize(t1));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSpecializedApplEqualAfterSerialization() throws Exception {
-        ITerm t1 = ImmutableSpecializedAppl.of("Hello, world!", 42);
+        ITerm t1 = SpecializedAppl.of("Hello, world!", 42);
         ITerm t2 = deserialize(serialize(t1));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSpecializedApplEqualsGenericAfterSerialization() throws Exception {
-        ITerm t1 = deserialize(serialize(ImmutableSpecializedAppl.of("Hello, world!", 42)));
-        ITerm t2 = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
+        ITerm t1 = deserialize(serialize(SpecializedAppl.of("Hello, world!", 42)));
+        ITerm t2 = B.newAppl(ASpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testGenericApplEqualsSepcializedAfterSerialization() throws Exception {
-        ITerm t1 = deserialize(serialize(B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42))));
-        ITerm t2 = ImmutableSpecializedAppl.of("Hello, world!", 42);
+        ITerm t1 = deserialize(serialize(B.newAppl(ASpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42))));
+        ITerm t2 = SpecializedAppl.of("Hello, world!", 42);
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSerializeGeneric() throws Exception {
-        ITerm t = B.newAppl(SpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
+        ITerm t = B.newAppl(ASpecializedAppl.OP, B.newString("Hello, world!"), B.newInt(42));
         byte[] b1 = serialize(t);
         byte[] b2 = serialize(deserialize(b1));
         assertTrue(Arrays.equals(b1, b2));
     }
 
     @Test public void testSerializeSpecialized() throws Exception {
-        ITerm t = ImmutableSpecializedAppl.of("Hello, world!", 42);
+        ITerm t = SpecializedAppl.of("Hello, world!", 42);
         byte[] b1 = serialize(t);
         byte[] b2 = serialize(deserialize(b1));
         assertTrue(Arrays.equals(b1, b2));

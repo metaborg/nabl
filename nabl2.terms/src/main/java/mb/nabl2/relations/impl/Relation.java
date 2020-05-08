@@ -10,12 +10,12 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.relations.ARelationDescription.Reflexivity;
+import mb.nabl2.relations.ARelationDescription.Symmetry;
+import mb.nabl2.relations.ARelationDescription.Transitivity;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.ReflexivityException;
 import mb.nabl2.relations.RelationDescription;
-import mb.nabl2.relations.RelationDescription.Reflexivity;
-import mb.nabl2.relations.RelationDescription.Symmetry;
-import mb.nabl2.relations.RelationDescription.Transitivity;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.SymmetryException;
 import mb.nabl2.relations.TransitivityException;

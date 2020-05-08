@@ -44,7 +44,7 @@ import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CConj;
@@ -121,7 +121,7 @@ public class RuleUtil {
                 // we require exactly one, but found multiple
                 return Optional.empty();
             }
-            results.add(ImmutableTuple2.of(rule, applyResult));
+            results.add(Tuple2.of(rule, applyResult));
 
             // stop or add guard to state for next rule
             final Tuple3<Set<ITermVar>, ITerm, ITerm> guard;
@@ -197,7 +197,7 @@ public class RuleUtil {
     public static List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Collection<Rule> rules,
             List<? extends ITerm> args, @Nullable IConstraint cause) {
         return rules.stream().flatMap(
-                rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> ImmutableTuple2.of(rule, result)))
+                rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> Tuple2.of(rule, result)))
                 .collect(ImmutableList.toImmutableList());
     }
 

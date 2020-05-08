@@ -22,14 +22,14 @@ import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
-import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolution;
+import mb.nabl2.solver.Solution;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.components.BaseComponent;
 import mb.nabl2.solver.components.EqualityComponent;
 import mb.nabl2.solver.components.NameResolutionComponent;
-import mb.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
+import mb.nabl2.solver.components.NameResolutionResult;
 import mb.nabl2.solver.components.NameSetsComponent;
 import mb.nabl2.solver.components.RelationComponent;
 import mb.nabl2.solver.components.SetComponent;
@@ -122,7 +122,7 @@ public class SingleFileSolver extends BaseSolver {
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             setSolver.finish();
 
-            return ImmutableSolution
+            return Solution
                     .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                             nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                             messages.freeze(), solveResult.constraints())

@@ -7,7 +7,6 @@ import org.metaborg.util.functions.Function2;
 
 import com.google.common.annotations.Beta;
 
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public interface IFunction<K, V> {
@@ -29,7 +28,7 @@ public interface IFunction<K, V> {
     Optional<V> get(K key);
 
     @Beta default java.util.stream.Stream<Tuple2<K, V>> stream() {
-        return this.stream(ImmutableTuple2::of);
+        return this.stream(Tuple2::of);
     }
 
     @Beta default <R> java.util.stream.Stream<R> stream(final Function2<K, V, R> converter) {
