@@ -1,6 +1,7 @@
 package mb.nabl2.scopegraph.esop.lazy;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +18,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Map;
-import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.relations.IRelation;
@@ -35,7 +35,6 @@ import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
 import mb.nabl2.scopegraph.terms.path.Paths;
-import mb.nabl2.util.Tuple2;
 
 public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution<S, L, O> {
@@ -49,9 +48,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final IRelation<L> noOrder;
     private final Predicate2<S, L> isEdgeClosed;
 
-    private final Map.Transient<O, Set<IResolutionPath<S, L, O>>> resolution;
-    private final Map.Transient<S, Set<O>> visibility;
-    private final Map.Transient<S, Set<O>> reachability;
+    private final Map.Transient<O, Collection<IResolutionPath<S, L, O>>> resolution;
+    private final Map.Transient<S, Collection<O>> visibility;
+    private final Map.Transient<S, Collection<O>> reachability;
 
     private final java.util.Map<O, IEsopEnv<S, L, O, IResolutionPath<S, L, O>>> pendingResolution;
     private final java.util.Map<S, IEsopEnv<S, L, O, IDeclPath<S, L, O>>> pendingVisibility;
@@ -59,8 +58,8 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     private final java.util.Map<IRelation<L>, EnvL<S, L, O>> stagedEnv_L;
 
     public EsopNameResolution(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
-            Predicate2<S, L> isEdgeClosed, Map.Transient<O, Set<IResolutionPath<S, L, O>>> resolution,
-            Map.Transient<S, Set<O>> visibility, Map.Transient<S, Set<O>> reachability) {
+            Predicate2<S, L> isEdgeClosed, Map.Transient<O, Collection<IResolutionPath<S, L, O>>> resolution,
+            Map.Transient<S, Collection<O>> visibility, Map.Transient<S, Collection<O>> reachability) {
 
         this.scopeGraph = scopeGraph;
         this.labels = ImmutableSet.copyOf(params.getLabels());
@@ -99,24 +98,24 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return Collections.unmodifiableSet(resolution.keySet());
     }
 
-    @Override public Set<IResolutionPath<S, L, O>> resolve(O ref) throws CriticalEdgeException {
+    @Override public Collection<IResolutionPath<S, L, O>> resolve(O ref) throws CriticalEdgeException {
         if(resolution.containsKey(ref)) {
             return resolution.get(ref);
         } else {
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = pendingResolution.computeIfAbsent(ref,
                     r -> resolveEnv(io.usethesource.capsule.Set.Immutable.of(), ref));
-            Set<IResolutionPath<S, L, O>> result = env.get()._1();
+            Collection<IResolutionPath<S, L, O>> result = env.get();
             resolution.put(ref, result);
             pendingResolution.remove(ref);
             return result;
         }
     }
 
-    @Override public Set<Map.Entry<O, Set<IResolutionPath<S, L, O>>>> resolutionEntries() {
+    @Override public Set<Map.Entry<O, Collection<IResolutionPath<S, L, O>>>> resolutionEntries() {
         return Collections.unmodifiableSet(resolution.entrySet());
     }
 
-    @Override public Set<O> decls(S scope) throws CriticalEdgeException {
+    @Override public Collection<O> decls(S scope) throws CriticalEdgeException {
         if(!isEdgeClosed.test(scope, labelD)) {
             throw new CriticalEdgeException(scope, labelD);
         } else {
@@ -124,7 +123,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }
     }
 
-    @Override public Set<O> refs(S scope) throws CriticalEdgeException {
+    @Override public Collection<O> refs(S scope) throws CriticalEdgeException {
         if(!isEdgeClosed.test(scope, labelR)) {
             throw new CriticalEdgeException(scope, labelR);
         } else {
@@ -132,32 +131,32 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }
     }
 
-    @Override public Set<O> visible(S scope) throws CriticalEdgeException {
+    @Override public Collection<O> visible(S scope) throws CriticalEdgeException {
         if(visibility.containsKey(scope)) {
             return visibility.get(scope);
         } else {
             final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                     pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
-            Set<IDeclPath<S, L, O>> result = env.get()._1();
+            Collection<IDeclPath<S, L, O>> result = env.get();
             ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
             result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
-            final Set<O> decls = declsBuilder.build();
+            final Collection<O> decls = declsBuilder.build();
             visibility.put(scope, decls);
             pendingVisibility.remove(scope);
             return decls;
         }
     }
 
-    @Override public Set<O> reachable(S scope) throws CriticalEdgeException {
+    @Override public Collection<O> reachable(S scope) throws CriticalEdgeException {
         if(reachability.containsKey(scope)) {
             return reachability.get(scope);
         } else {
             final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                     pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
-            Set<IDeclPath<S, L, O>> result = env.get()._1();
+            Collection<IDeclPath<S, L, O>> result = env.get();
             ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
             result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
-            final Set<O> decls = declsBuilder.build();
+            final Collection<O> decls = declsBuilder.build();
             reachability.put(scope, decls);
             pendingReachability.remove(scope);
             return decls;
@@ -184,7 +183,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         if(re.isEmpty()) {
             return EsopEnvs.empty();
         } else {
-            return EsopEnvs.trace(path.getTarget().getResource(), env_L(labels, seenImports, lt, re, path, filter));
+            return env_L(labels, seenImports, lt, re, path, filter);
         }
     }
 
@@ -247,15 +246,15 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = resolveEnv(seenImports, ref);
             envs.add(EsopEnvs
                     .guarded((CheckedFunction0<IEsopEnv<S, L, O, P>, CriticalEdgeException> & Serializable) () -> {
-                        Tuple2<Immutable<IResolutionPath<S, L, O>>, Immutable<String>> paths = env.get();
+                        Collection<IResolutionPath<S, L, O>> paths = env.get();
                         List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
-                        for(IResolutionPath<S, L, O> importPath : paths._1()) {
+                        for(IResolutionPath<S, L, O> importPath : paths) {
                             for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
                                 Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
                                         .map(getter::apply).ifPresent(importEnvs::add);
                             }
                         }
-                        return EsopEnvs.trace(EsopEnvs.union(importEnvs), paths._2());
+                        return EsopEnvs.union(importEnvs);
                     }));
 
         }
@@ -342,26 +341,26 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
         private static final long serialVersionUID = 42L;
 
-        private final Map.Immutable<O, Set<IResolutionPath<S, L, O>>> resolutionCache;
-        private final Map.Immutable<S, Set<O>> visibilityCache;
-        private final Map.Immutable<S, Set<O>> reachabilityCache;
+        private final Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionCache;
+        private final Map.Immutable<S, Collection<O>> visibilityCache;
+        private final Map.Immutable<S, Collection<O>> reachabilityCache;
 
-        private ResolutionCache(Map.Immutable<O, Set<IResolutionPath<S, L, O>>> resolutionCache,
-                Map.Immutable<S, Set<O>> visibilityCache, Map.Immutable<S, Set<O>> reachabilityCache) {
+        private ResolutionCache(Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionCache,
+                Map.Immutable<S, Collection<O>> visibilityCache, Map.Immutable<S, Collection<O>> reachabilityCache) {
             this.resolutionCache = resolutionCache;
             this.visibilityCache = visibilityCache;
             this.reachabilityCache = reachabilityCache;
         }
 
-        @Override public Map.Immutable<O, Set<IResolutionPath<S, L, O>>> resolutionEntries() {
+        @Override public Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionEntries() {
             return resolutionCache;
         }
 
-        @Override public Map.Immutable<S, Set<O>> visibilityEntries() {
+        @Override public Map.Immutable<S, Collection<O>> visibilityEntries() {
             return visibilityCache;
         }
 
-        @Override public Map.Immutable<S, Set<O>> reachabilityEntries() {
+        @Override public Map.Immutable<S, Collection<O>> reachabilityEntries() {
             return reachabilityCache;
         }
 

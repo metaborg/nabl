@@ -136,11 +136,11 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  LabelRE[[ t@ResolveMatch(r@Occurrence(ns, _, _)) ^ (s) ]] :=
+  LabelRE[[ t@ResolveMatch(r@StxOccurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
     NsQ{ns} -> s, NsQ{ns} |-> d | error $[Unresolved resolution policy for namespace [ns]] @ns, @t.ref := NsQ{ns}, @t.decl := d.
 
-  LabelOrd[[ t@ResolveLt(r@Occurrence(ns, _, _)) ^ (s) ]] :=
+  LabelOrd[[ t@ResolveLt(r@StxOccurrence(ns, _, _)) ^ (s) ]] :=
     Build[[ r ^ (s) : OCCURRENCE() ]],
     NsQ{ns} -> s, NsQ{ns} |-> d | error $[Unresolved resolution policy for namespace [ns]] @ns, @t.ref := NsQ{ns}, @t.decl := d.
 

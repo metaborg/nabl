@@ -6,8 +6,10 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.Multiset;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -55,6 +57,13 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseExists(this);
+    }
+
+    @Override public Multiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+        vars.addAll(this.vars);
+        vars.addAll(constraint.getVars());
+        return vars.build();
     }
 
     @Override public CExists apply(ISubstitution.Immutable subst) {

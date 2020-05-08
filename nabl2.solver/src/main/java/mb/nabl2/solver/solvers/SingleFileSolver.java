@@ -120,6 +120,7 @@ public class SingleFileSolver extends BaseSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            setSolver.finish();
 
             return ImmutableSolution
                     .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),

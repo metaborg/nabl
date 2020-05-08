@@ -1,9 +1,9 @@
 package mb.nabl2.solver.components;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -31,14 +31,13 @@ import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.ISolver.SeedResult;
 import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
-import mb.nabl2.solver.exceptions.DelayException;
-import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.ImmutableSolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.TypeException;
+import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
+import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.collection.VarMultimap;
 import mb.nabl2.util.collections.IProperties;
 
 public class NameResolutionComponent extends ASolver {
@@ -46,7 +45,6 @@ public class NameResolutionComponent extends ASolver {
     private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
     private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
     private final IProperties.Transient<Occurrence, ITerm, ITerm> properties;
-    private final VarMultimap<Occurrence> varDeps;
 
     public NameResolutionComponent(SolverCore core,
             IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph,
@@ -56,7 +54,6 @@ public class NameResolutionComponent extends ASolver {
         this.scopeGraph = scopeGraph;
         this.nameResolution = nameResolution;
         this.properties = initial;
-        this.varDeps = new VarMultimap<>();
     }
 
     // ------------------------------------------------------------------------------------------------------//
@@ -100,7 +97,7 @@ public class NameResolutionComponent extends ASolver {
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
-        final java.util.Set<IResolutionPath<Scope, Label, Occurrence>> paths;
+        final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
             paths = nameResolution.resolve(ref);
         } catch(CriticalEdgeException e) {
@@ -177,7 +174,6 @@ public class NameResolutionComponent extends ASolver {
         Optional<ITerm> prev = properties.getValue(decl, key);
         if(!prev.isPresent()) {
             properties.putValue(decl, key, value);
-            value.getVars().elementSet().stream().forEach(var -> varDeps.put(var, decl, unifier()));
             return Optional.empty();
         } else {
             return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
@@ -187,10 +183,6 @@ public class NameResolutionComponent extends ASolver {
 
     public Optional<ITerm> getProperty(Occurrence decl, ITerm key) {
         return properties.getValue(decl, key);
-    }
-
-    public java.util.Set<Occurrence> getDeps(ITerm term) {
-        return term.getVars().stream().flatMap(var -> varDeps.get(var, unifier()).stream()).collect(Collectors.toSet());
     }
 
     @Value.Immutable

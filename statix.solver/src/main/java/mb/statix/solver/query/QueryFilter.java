@@ -2,10 +2,13 @@ package mb.statix.solver.query;
 
 import java.io.Serializable;
 
+import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.Multiset;
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -32,6 +35,12 @@ public class QueryFilter implements IQueryFilter, Serializable {
 
     @Override public Rule getDataWF() {
         return dataWf;
+    }
+
+    @Override public Multiset<ITermVar> getVars() {
+        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+        vars.addAll(dataWf.varSet());
+        return vars.build();
     }
 
     @Override public IQueryFilter apply(ISubstitution.Immutable subst) {

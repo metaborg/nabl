@@ -2,6 +2,9 @@ module statix/API
 
 sorts
 
-  Stx-Scope
-  Stx-Occurrence
+  Stx-INT
+  Stx-STRING
 
+  Stx-Occurrence
+  Stx-Scope
+  Stx-TermIndex

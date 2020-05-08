@@ -2,7 +2,7 @@ package mb.nabl2.solver.components;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.Set;
+import java.util.Collection;
 
 import com.google.common.collect.Sets;
 
@@ -31,19 +31,19 @@ public class NameSetsComponent extends ASolver {
         // @formatter:off
         return M.<ISetProducer<ITerm>>cases(
             M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
-                Set<Occurrence> decls = NameSetsComponent.this.nameResolution.decls(scope);
+                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.decls(scope);
                 return makeSet(decls, ns);
             }),
             M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
-                Set<Occurrence> refs = NameSetsComponent.this.nameResolution.refs(scope);
+                Collection<Occurrence> refs = NameSetsComponent.this.nameResolution.refs(scope);
                 return makeSet(refs, ns);
             }),
             M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
-                Set<Occurrence> decls = NameSetsComponent.this.nameResolution.visible(scope);
+                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.visible(scope);
                 return makeSet(decls, ns);
             }),
             M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
-                Set<Occurrence> decls = NameSetsComponent.this.nameResolution.reachable(scope);
+                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.reachable(scope);
                 return makeSet(decls, ns);
             })
         );

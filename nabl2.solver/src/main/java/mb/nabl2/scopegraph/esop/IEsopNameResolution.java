@@ -1,6 +1,6 @@
 package mb.nabl2.scopegraph.esop;
 
-import java.util.Set;
+import java.util.Collection;
 
 import com.google.common.annotations.Beta;
 
@@ -21,11 +21,11 @@ public interface IEsopNameResolution<S extends IScope, L extends ILabel, O exten
 
     interface ResolutionCache<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-        Map.Immutable<O, Set<IResolutionPath<S, L, O>>> resolutionEntries();
+        Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionEntries();
 
-        Map.Immutable<S, Set<O>> visibilityEntries();
+        Map.Immutable<S, Collection<O>> visibilityEntries();
 
-        Map.Immutable<S, Set<O>> reachabilityEntries();
+        Map.Immutable<S, Collection<O>> reachabilityEntries();
 
     }
 

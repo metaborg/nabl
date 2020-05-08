@@ -132,14 +132,14 @@ lexical syntax
 context-free syntax
 
   Constraint.CAstId       = <astId(<Term>, <Term>)>
-  Constraint.CAstProperty = <@<TermOrId>.<AstProperty> <AstPropertyOp> <Term>>
+  Constraint.CAstProperty = <@<TermOrTermIndex>.<AstProperty> <AstPropertyOp> <Term>>
 
   AstProperty.Prop = AstPropertyId
 
   AstPropertyOp.Set = ":="
   AstPropertyOp.Add = "+="
 
-  TermOrId = Var
+  TermOrTermIndex = Var
 
 lexical syntax
 
@@ -248,10 +248,10 @@ context-free syntax
 syntax
 
   OccurrencePosition-CF.NoId   =
-  OccurrencePosition-CF.WithId = "@" TermOrId-CF
+  OccurrencePosition-CF.WithId = "@" TermOrTermIndex-CF
   OccurrencePosition-CF.NoId   = "@-"
 
-  OccurrenceLit-CF.Occurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
+  OccurrenceLit-CF.StxOccurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 
   PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"

@@ -1,30 +1,28 @@
 module statix/runtime/NoParse
 
-sorts
+imports
 
-  Int
-  Var
+  statix/API
 
-lexical syntax
-
-  String = ~[]
-
-sorts
-
-  Position
 
 context-free syntax
 
-  Scope.Scope = <#<String>-<String>>
+  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-OccurrencePosition>}>
 
-  Occurrence.Occurrence = <<String>{<{Term ", "}*> <TermIndex>}>
+  Stx-OccurrencePosition      = Stx-TermIndex
+  Stx-OccurrencePosition.NoId = <@->
 
-  TermIndex.TermIndex = <@<String>-<Int>>
-  TermIndex.NoId      = <@->
+  Stx-Scope.Scope = <#<Stx-STRING>-<Stx-STRING>>
 
-  Term           = Scope
-  Term           = Occurrence
-  Term           = TermIndex
-  Term.Var       = <?<String>-<String>>
+  Stx-TermIndex.TermIndex = <@<Stx-STRING>-<Stx-INT>>
 
-  TermOrId = Term
+  Stx-Var.Var = <?<Stx-STRING>-<Stx-STRING>>
+
+
+context-free syntax
+
+  Stx-ATerm   = Stx-Var
+  Stx-ATerm   = Stx-Scope
+  Stx-ATerm   = Stx-Occurrence
+  Stx-ATerm   = Stx-TermIndex
+
