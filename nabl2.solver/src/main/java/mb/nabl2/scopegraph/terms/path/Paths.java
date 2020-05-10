@@ -97,11 +97,13 @@ public final class Paths {
     // -------------------------------------------
 
 
-    public static List<Occurrence> declPathsToDecls(Iterable<IDeclPath<Scope, Label, Occurrence>> paths) {
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> List<O>
+            declPathsToDecls(Iterable<IDeclPath<S, L, O>> paths) {
         return Iterables2.stream(paths).map(IDeclPath::getDeclaration).collect(Collectors.toList());
     }
 
-    public static List<Occurrence> resolutionPathsToDecls(Iterable<IResolutionPath<Scope, Label, Occurrence>> paths) {
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> List<O>
+            resolutionPathsToDecls(Iterable<IResolutionPath<S, L, O>> paths) {
         return Iterables2.stream(paths).map(IResolutionPath::getDeclaration).collect(Collectors.toList());
     }
 
