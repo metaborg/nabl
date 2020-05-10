@@ -3,8 +3,11 @@ package mb.nabl2.spoofax.primitives;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -13,6 +16,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.time.AggregateTimer;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.constraints.IConstraint;
@@ -20,6 +24,11 @@ import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.constraints.messages.MessageKind;
+import mb.nabl2.scopegraph.esop.bottomup.BUNameResolution;
+import mb.nabl2.scopegraph.path.IResolutionPath;
+import mb.nabl2.scopegraph.terms.Label;
+import mb.nabl2.scopegraph.terms.Occurrence;
+import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.exceptions.SolverException;
@@ -70,10 +79,54 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
             throw new InterpreterException(ex);
         }
 
+        {
+            logger.info("resolving with bottom-up resolution");
+            AggregateTimer timer = new AggregateTimer(false);
+            try {
+                final BUNameResolution<Scope, Label, Occurrence> nameResolution =
+                        BUNameResolution.of(solution.scopeGraph(), solution.config().getResolutionParams());
+                timer.start();
+                logger.info("verifying {} resolve entries", solution.nameResolutionCache().resolutionEntries().size());
+                for(Entry<Occurrence, Collection<IResolutionPath<Scope, Label, Occurrence>>> entry : solution
+                        .nameResolutionCache().resolutionEntries().entrySet()) {
+                    final Collection<IResolutionPath<Scope, Label, Occurrence>> result =
+                            nameResolution.resolve(entry.getKey());
+                    if(result.size() != entry.getValue().size()) {
+                        logger.warn("resolve {}, got {}, expected {}", entry.getKey(), result.size(),
+                                entry.getValue().size());
+                    }
+                }
+                logger.info("verifying {} visible entries", solution.nameResolutionCache().visibilityEntries().size());
+                for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().visibilityEntries()
+                        .entrySet()) {
+                    final Collection<Occurrence> result = nameResolution.visible(entry.getKey());
+                    if(result.size() != entry.getValue().size()) {
+                        logger.warn("visible {}, got {}, expected {}", entry.getKey(), result.size(),
+                                entry.getValue().size());
+                    }
+                }
+                logger.info("verifying {} reachable entries",
+                        solution.nameResolutionCache().reachabilityEntries().size());
+                for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().reachabilityEntries()
+                        .entrySet()) {
+                    final Collection<Occurrence> result = nameResolution.reachable(entry.getKey());
+                    if(result.size() != entry.getValue().size()) {
+                        logger.warn("reachable {}, got {}, expected {}", entry.getKey(), result.size(),
+                                entry.getValue().size());
+                    }
+                }
+            } catch(Exception e) {
+                logger.error("bottom-up resolution failed", e);
+            } finally {
+                timer.stop();
+            }
+            logger.info("bottom-up resolution took {} s",
+                    TimeUnit.SECONDS.convert(timer.total(), TimeUnit.NANOSECONDS));
+        }
+
         final List<IConstraint> constraints = Stream.concat(initialResult.constraints().stream(),
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());
-        final IResult result =
-                MultiFinalResult.of(constraints, solution, Optional.empty(), globalFresh.freeze());
+        final IResult result = MultiFinalResult.of(constraints, solution, Optional.empty(), globalFresh.freeze());
         final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();
         final ITerm errors = MessageTerms.toTerms(messages.getErrors(), solution.unifier());
         final ITerm warnings = MessageTerms.toTerms(messages.getWarnings(), solution.unifier());
