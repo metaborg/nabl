@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function3;
 
@@ -16,6 +15,7 @@ import com.google.common.collect.Streams;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
@@ -177,15 +177,16 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
             @Override void call() {
                 initEnv(env);
-                paths.forEach(p -> envPaths.__put(env, p));
+                paths.forEach(p -> envPaths.__insert(env, p));
                 for(RefKey ref : backrefs.get(env)) {
                     final Collection<IResolutionPath<S, L, O>> refPaths = paths.stream()
-                            .flatMap(p -> Streams.stream(Paths.resolve(ref.ref, p))).collect(Collectors.toList());
+                            .flatMap(p -> Streams.stream(Paths.resolve(ref.ref, p))).collect(CapsuleCollectors.toSet());
                     worklist.push(new RefTask(ref, refPaths));
                 }
                 for(Tuple2<EnvKey, IStep<S, L, O>> env2 : backedges.get(env)) {
-                    final Collection<IDeclPath<S, L, O>> env2Paths = paths.stream()
-                            .flatMap(p -> Streams.stream(Paths.append(env2._2(), p))).collect(Collectors.toList());
+                    final Collection<IDeclPath<S, L, O>> env2Paths =
+                            paths.stream().flatMap(p -> Streams.stream(Paths.append(env2._2(), p)))
+                                    .collect(CapsuleCollectors.toSet());
                     worklist.push(new EnvTask(env2._1(), env2Paths));
                 }
             }
@@ -204,7 +205,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
             @Override void call() {
                 initRef(ref);
-                paths.forEach(p -> refPaths.__put(ref, p));
+                paths.forEach(p -> refPaths.__insert(ref, p));
                 for(Tuple3<EnvKey, L, IRegExpMatcher<L>> entry : backimports.get(ref)) {
                     for(IResolutionPath<S, L, O> p : paths) {
                         for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry._2())) {
@@ -225,7 +226,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             initedEnvs.__insert(env);
             if(env.wf.isAccepting()) {
                 final Collection<IDeclPath<S, L, O>> declPaths = scopeGraph.getDecls().inverse().get(env.scope).stream()
-                        .map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d)).collect(Collectors.toList());
+                        .map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d)).collect(CapsuleCollectors.toSet());
                 worklist.push(new EnvTask(env, declPaths));
             }
             for(L l : labels) {
@@ -262,19 +263,19 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             backedges.__insert(srcEnv, Tuple2.of(dstEnv, st));
             final Collection<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).stream().flatMap(p -> {
                 return Streams.stream(Paths.append(st, p));
-            }).collect(Collectors.toList());
+            }).collect(CapsuleCollectors.toSet());
             worklist.push(new EnvTask(dstEnv, paths));
         }
 
         private void addBackImport(RefKey srcRef, L l, IRegExpMatcher<L> wf, EnvKey dstEnv) {
-            backimports.__put(srcRef, Tuple3.of(dstEnv, l, wf));
+            backimports.__insert(srcRef, Tuple3.of(dstEnv, l, wf));
             final Collection<IDeclPath<S, L, O>> paths = refPaths.get(srcRef).stream().flatMap(p -> {
                 return scopeGraph.getExportEdges().get(p.getDeclaration(), l).stream()
                         .flatMap(ss -> envPaths.get(new EnvKey(ss, wf)).stream()).flatMap(pp -> {
                             return Streams.stream(
                                     Paths.append(Paths.named(dstEnv.scope, l, p, pp.getPath().getSource()), pp));
                         });
-            }).collect(Collectors.toList());
+            }).collect(CapsuleCollectors.toSet());
             worklist.push(new EnvTask(dstEnv, paths));
         }
 
@@ -282,7 +283,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             backrefs.__insert(srcEnv, dstRef);
             final Collection<IResolutionPath<S, L, O>> paths = envPaths.get(srcEnv).stream().flatMap(p -> {
                 return Streams.stream(Paths.resolve(dstRef.ref, p));
-            }).collect(Collectors.toList());
+            }).collect(CapsuleCollectors.toSet());
             worklist.push(new RefTask(dstRef, paths));
         }
 
