@@ -1,13 +1,13 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.io.Serializable;
+import java.text.spi.DecimalFormatSymbolsProvider;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.Objects;
 
-import org.metaborg.util.functions.Function3;
+import org.metaborg.util.functions.Function2;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
@@ -30,7 +30,6 @@ import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
-import mb.nabl2.scopegraph.path.IScopePath;
 import mb.nabl2.scopegraph.path.IStep;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -45,19 +44,18 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final Iterable<L> labels;
-    private final L labelD;
     private final IRegExpMatcher<L> wf;
-    private final IRelation<L> order;
-    private final IRelation<L> noOrder;
+    private final BUComparator<S, L, O> reachableOrder;
+    private final BUComparator<S, L, O> visibleOrder;
 
     public BUNameResolution(IEsopScopeGraph<S, L, O, ?> scopeGraph, Iterable<L> labels, L labelD, IRegExp<L> wf,
             IRelation<L> order) {
         this.scopeGraph = scopeGraph;
         this.labels = labels;
-        this.labelD = labelD;
         this.wf = RegExpMatcher.create(wf);
-        this.order = order;
-        this.noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
+        final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
+        this.reachableOrder = new BUComparator<>(labelD, noOrder, order);
+        this.visibleOrder = new BUComparator<>(labelD, order, order);
     }
 
     public static BUNameResolution<Scope, Label, Occurrence> of(IEsopScopeGraph<Scope, Label, Occurrence, ?> scopeGraph,
@@ -114,7 +112,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         if(paths == null) {
             final RefKey key = new RefKey(ref);
             new Compute(key).call();
-            resolved.__put(ref, paths = filter(refPaths.get(key), order, this::compare));
+            resolved.__put(ref, paths = filter(refPaths.get(key), visibleOrder::compare));
         }
         return paths;
     }
@@ -124,7 +122,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         if(paths == null) {
             final EnvKey key = new EnvKey(scope, wf);
             new Compute(key).call();
-            visible.__put(scope, paths = filter(envPaths.get(key), order, this::compare));
+            visible.__put(scope, paths = filter(envPaths.get(key), visibleOrder::compare));
         }
         return paths;
     }
@@ -134,7 +132,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         if(paths == null) {
             final EnvKey key = new EnvKey(scope, wf);
             new Compute(key).call();
-            reachable.__put(scope, paths = filter(envPaths.get(key), noOrder, this::compare));
+            reachable.__put(scope, paths = filter(envPaths.get(key), reachableOrder::compare));
         }
         return paths;
     }
@@ -181,13 +179,17 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 for(RefKey ref : backrefs.get(env)) {
                     final Collection<IResolutionPath<S, L, O>> refPaths = paths.stream()
                             .flatMap(p -> Streams.stream(Paths.resolve(ref.ref, p))).collect(CapsuleCollectors.toSet());
-                    worklist.push(new RefTask(ref, refPaths));
+                    if(!refPaths.isEmpty()) {
+                        worklist.push(new RefTask(ref, refPaths));
+                    }
                 }
                 for(Tuple2<EnvKey, IStep<S, L, O>> env2 : backedges.get(env)) {
                     final Collection<IDeclPath<S, L, O>> env2Paths =
                             paths.stream().flatMap(p -> Streams.stream(Paths.append(env2._2(), p)))
                                     .collect(CapsuleCollectors.toSet());
-                    worklist.push(new EnvTask(env2._1(), env2Paths));
+                    if(!env2Paths.isEmpty()) {
+                        worklist.push(new EnvTask(env2._1(), env2Paths));
+                    }
                 }
             }
 
@@ -227,7 +229,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             if(env.wf.isAccepting()) {
                 final Collection<IDeclPath<S, L, O>> declPaths = scopeGraph.getDecls().inverse().get(env.scope).stream()
                         .map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d)).collect(CapsuleCollectors.toSet());
-                worklist.push(new EnvTask(env, declPaths));
+                if(!declPaths.isEmpty()) {
+                    worklist.push(new EnvTask(env, declPaths));
+                }
             }
             for(L l : labels) {
                 IRegExpMatcher<L> wf2 = wf.match(l);
@@ -264,7 +268,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Collection<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).stream().flatMap(p -> {
                 return Streams.stream(Paths.append(st, p));
             }).collect(CapsuleCollectors.toSet());
-            worklist.push(new EnvTask(dstEnv, paths));
+            if(!paths.isEmpty()) {
+                worklist.push(new EnvTask(dstEnv, paths));
+            }
         }
 
         private void addBackImport(RefKey srcRef, L l, IRegExpMatcher<L> wf, EnvKey dstEnv) {
@@ -276,7 +282,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                                     Paths.append(Paths.named(dstEnv.scope, l, p, pp.getPath().getSource()), pp));
                         });
             }).collect(CapsuleCollectors.toSet());
-            worklist.push(new EnvTask(dstEnv, paths));
+            if(!paths.isEmpty()) {
+                worklist.push(new EnvTask(dstEnv, paths));
+            }
         }
 
         private void addBackRef(EnvKey srcEnv, RefKey dstRef) {
@@ -284,17 +292,18 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Collection<IResolutionPath<S, L, O>> paths = envPaths.get(srcEnv).stream().flatMap(p -> {
                 return Streams.stream(Paths.resolve(dstRef.ref, p));
             }).collect(CapsuleCollectors.toSet());
-            worklist.push(new RefTask(dstRef, paths));
+            if(!envPaths.isEmpty()) {
+                worklist.push(new RefTask(dstRef, paths));
+            }
         }
 
     }
 
-    private <P extends IPath<S, L, O>> Collection<P> filter(Collection<P> paths, IRelation<L> order,
-            Function3<P, P, IRelation<L>, Integer> compare) {
+    private <P extends IPath<S, L, O>> Collection<P> filter(Collection<P> paths, Function2<P, P, Integer> compare) {
         final Set.Transient<P> filteredPaths = Set.Transient.of();
         NEXT: for(P path : paths) {
             for(P filteredPath : filteredPaths) {
-                final Integer result = compare.apply(path, filteredPath, order);
+                final Integer result = compare.apply(path, filteredPath);
                 if(result != null) {
                     // paths are comparable
                     if(result < 0) {
@@ -311,89 +320,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             filteredPaths.__insert(path);
         }
         return filteredPaths.freeze();
-    }
-
-    private Integer compare(IResolutionPath<S, L, O> path1, IResolutionPath<S, L, O> path2, IRelation<L> order) {
-        if(!path1.getDeclaration().getSpacedName().equals(path2.getDeclaration().getSpacedName())) {
-            return 0;
-        }
-        return compare(path1.getPath(), path2.getPath(), order);
-    }
-
-    private Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2, IRelation<L> order) {
-        if(!path1.getDeclaration().getSpacedName().equals(path2.getDeclaration().getSpacedName())) {
-            return 0;
-        }
-        return compare(path1.getPath(), path2.getPath(), order);
-    }
-
-    private Integer compare(IScopePath<S, L, O> path1, IScopePath<S, L, O> path2, IRelation<L> order) {
-        Integer result = 0;
-        final Iterator<IStep<S, L, O>> it1 = path1.iterator();
-        final Iterator<IStep<S, L, O>> it2 = path2.iterator();
-        while(it1.hasNext() && it2.hasNext()) {
-            result = compare(it1.next(), it2.next(), order);
-            if(result == null || result != 0) {
-                return result;
-            }
-        }
-        if(it1.hasNext()) {
-            return order.contains(it1.next().getLabel(), labelD) ? -1 : 0;
-        } else if(it2.hasNext()) {
-            return order.contains(labelD, it2.next().getLabel()) ? 0 : 1;
-        } else {
-            return result;
-        }
-    }
-
-    private Integer compare(IStep<S, L, O> step1, IStep<S, L, O> step2, IRelation<L> order) {
-        if(!step1.getSource().equals(step2.getSource())) {
-            // steps with different sources are incomparable
-            return null;
-        }
-        if(!step1.getLabel().equals(step2.getLabel())) {
-            // compare by labels
-            if(order.contains(step1.getLabel(), step2.getLabel())) {
-                // 1 < 2
-                return -1;
-            } else if(order.contains(step2.getLabel(), step1.getLabel())) {
-                // 2 < 1
-                return 1;
-            } else {
-                // steps are incomparable
-                return null;
-            }
-        }
-        if(!step1.getTarget().equals(step2.getTarget())) {
-            // steps with same labels but different targets are incomparable
-            return null;
-        }
-        // at this point, the two steps have the same source, target, and label
-        final IResolutionPath<S, L, O> path1 = importPath(step1);
-        final IResolutionPath<S, L, O> path2 = importPath(step2);
-        if(path1 == null && path2 == null) {
-            // the steps are equal
-            return 0;
-        } else if(path1 != null && path2 != null) {
-            // both steps are imports, compare import paths
-            return compare(path1, path2, this.order /* import paths are always ordered by visibility */);
-        } else {
-            // steps are incomparable
-            return null;
-        }
-    }
-
-    private IResolutionPath<S, L, O> importPath(IStep<S, L, O> step) {
-        return step.match(new IStep.ICases<S, L, O, IResolutionPath<S, L, O>>() {
-            @Override public IResolutionPath<S, L, O> caseE(S source, L label, S target) {
-                return null;
-            }
-
-            @Override public IResolutionPath<S, L, O> caseN(S source, L label, IResolutionPath<S, L, O> importPath,
-                    S target) {
-                return importPath;
-            }
-        });
     }
 
     private class RefKey implements Serializable {

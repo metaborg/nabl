@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.scopegraph.esop.bottomup.BUVerifier;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
@@ -71,6 +72,8 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         } catch(InterruptedException | SolverException ex) {
             throw new InterpreterException(ex);
         }
+
+        BUVerifier.verify(solution);
 
         final IResult result = SingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
         final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();
