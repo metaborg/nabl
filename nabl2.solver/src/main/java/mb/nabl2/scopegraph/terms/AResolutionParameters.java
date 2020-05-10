@@ -39,11 +39,11 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
         Preconditions.checkArgument(getLabels().contains(getLabelD()));
     }
 
-    public static IMatcher<AResolutionParameters> matcher() {
+    public static IMatcher<ResolutionParameters> matcher() {
         return (term, unifier) -> IMatcher
                 .flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
                     RegExpBuilder<Label> builder = new RegExpBuilder<>();
-                    return matchWf(builder).match(wfTerm, unifier).<AResolutionParameters>map(
+                    return matchWf(builder).match(wfTerm, unifier).<ResolutionParameters>map(
                             wf -> ResolutionParameters.of(labels, Label.D, Label.R, wf, order));
                 })).match(term, unifier);
     }
@@ -81,7 +81,7 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
         ));
     }
 
-    public static AResolutionParameters getDefault() {
+    public static ResolutionParameters getDefault() {
         IAlphabet<Label> labels = new FiniteAlphabet<>(Label.D, Label.P, Label.I);
         RegExpBuilder<Label> R = new RegExpBuilder<>();
         IRegExp<Label> wf = R.concat(R.closure(R.symbol(Label.P)), R.closure(R.symbol(Label.I)));
