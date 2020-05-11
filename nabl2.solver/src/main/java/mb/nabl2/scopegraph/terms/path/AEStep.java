@@ -54,16 +54,16 @@ abstract class AEStep<S extends IScope, L extends ILabel, O extends IOccurrence>
         return cases.caseE(getSource(), getLabel(), getTarget());
     }
 
-    @Override public String toString(boolean includeTo, boolean includeFrom) {
+    @Override public String toString(boolean includeSource, boolean includeTarget) {
         StringBuilder sb = new StringBuilder();
-        if(includeFrom) {
+        if(includeSource) {
             sb.append(getSource());
             sb.append(Paths.PATH_SEPERATOR);
         }
         sb.append("E(");
         sb.append(getLabel());
         sb.append(")");
-        if(includeTo) {
+        if(includeTarget) {
             sb.append(Paths.PATH_SEPERATOR);
             sb.append(getTarget());
         }

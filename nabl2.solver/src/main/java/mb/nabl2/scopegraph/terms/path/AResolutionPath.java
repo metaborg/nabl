@@ -55,11 +55,13 @@ abstract class AResolutionPath<S extends IScope, L extends ILabel, O extends IOc
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getReference());
+        sb.append(Paths.PATH_SEPERATOR);
         sb.append("R");
         sb.append(Paths.PATH_SEPERATOR);
         sb.append(getPath());
         sb.append(Paths.PATH_SEPERATOR);
         sb.append("D");
+        sb.append(Paths.PATH_SEPERATOR);
         sb.append(getDeclaration());
         return sb.toString();
     }

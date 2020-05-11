@@ -59,18 +59,18 @@ abstract class ANStep<S extends IScope, L extends ILabel, O extends IOccurrence>
 
     @Value.Lazy @Override public abstract int hashCode();
 
-    @Override public String toString(boolean includeTo, boolean includeFrom) {
+    @Override public String toString(boolean includeSource, boolean includeTarget) {
         StringBuilder sb = new StringBuilder();
-        if(includeFrom) {
+        if(includeSource) {
             sb.append(getSource());
             sb.append(Paths.PATH_SEPERATOR);
         }
         sb.append("N(");
         sb.append(getLabel());
-        sb.append(",");
+        sb.append(", ");
         sb.append(getImportPath());
         sb.append(")");
-        if(includeTo) {
+        if(includeTarget) {
             sb.append(Paths.PATH_SEPERATOR);
             sb.append(getTarget());
         }

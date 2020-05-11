@@ -44,6 +44,7 @@ abstract class ADeclPath<S extends IScope, L extends ILabel, O extends IOccurren
         sb.append(getPath());
         sb.append(Paths.PATH_SEPERATOR);
         sb.append("D");
+        sb.append(Paths.PATH_SEPERATOR);
         sb.append(getDeclaration());
         return sb.toString();
     }
