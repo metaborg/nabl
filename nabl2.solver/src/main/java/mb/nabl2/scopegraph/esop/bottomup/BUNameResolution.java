@@ -1,13 +1,13 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.io.Serializable;
-import java.text.spi.DecimalFormatSymbolsProvider;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.Objects;
 
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
@@ -41,6 +41,8 @@ import mb.nabl2.util.Tuple3;
 
 public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements INameResolution<S, L, O> {
+
+    private static final ILogger logger = LoggerUtils.logger(BUNameResolution.class);
 
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final Iterable<L> labels;
@@ -142,11 +144,11 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         private final Deque<Task> worklist = Queues.newArrayDeque();
 
         public Compute(RefKey ref) {
-            worklist.add(new RefTask(ref, Collections.emptySet()));
+            initRef(ref);
         }
 
         public Compute(EnvKey env) {
-            worklist.add(new EnvTask(env, Collections.emptySet()));
+            initEnv(env);
         }
 
         public void call() {
@@ -174,22 +176,21 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             }
 
             @Override void call() {
+                if(paths.isEmpty()) {
+                    return;
+                }
                 initEnv(env);
                 paths.forEach(p -> envPaths.__insert(env, p));
                 for(RefKey ref : backrefs.get(env)) {
                     final Collection<IResolutionPath<S, L, O>> refPaths = paths.stream()
                             .flatMap(p -> Streams.stream(Paths.resolve(ref.ref, p))).collect(CapsuleCollectors.toSet());
-                    if(!refPaths.isEmpty()) {
-                        worklist.push(new RefTask(ref, refPaths));
-                    }
+                    worklist.push(new RefTask(ref, refPaths));
                 }
                 for(Tuple2<EnvKey, IStep<S, L, O>> env2 : backedges.get(env)) {
                     final Collection<IDeclPath<S, L, O>> env2Paths =
                             paths.stream().flatMap(p -> Streams.stream(Paths.append(env2._2(), p)))
                                     .collect(CapsuleCollectors.toSet());
-                    if(!env2Paths.isEmpty()) {
-                        worklist.push(new EnvTask(env2._1(), env2Paths));
-                    }
+                    worklist.push(new EnvTask(env2._1(), env2Paths));
                 }
             }
 
@@ -229,12 +230,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             if(env.wf.isAccepting()) {
                 final Collection<IDeclPath<S, L, O>> declPaths = scopeGraph.getDecls().inverse().get(env.scope).stream()
                         .map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d)).collect(CapsuleCollectors.toSet());
-                if(!declPaths.isEmpty()) {
-                    worklist.push(new EnvTask(env, declPaths));
-                }
+                worklist.push(new EnvTask(env, declPaths));
             }
             for(L l : labels) {
-                IRegExpMatcher<L> wf2 = wf.match(l);
+                IRegExpMatcher<L> wf2 = env.wf.match(l);
                 if(wf2.isEmpty()) {
                     continue;
                 }
@@ -268,9 +267,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Collection<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).stream().flatMap(p -> {
                 return Streams.stream(Paths.append(st, p));
             }).collect(CapsuleCollectors.toSet());
-            if(!paths.isEmpty()) {
-                worklist.push(new EnvTask(dstEnv, paths));
-            }
+            worklist.push(new EnvTask(dstEnv, paths));
         }
 
         private void addBackImport(RefKey srcRef, L l, IRegExpMatcher<L> wf, EnvKey dstEnv) {
@@ -282,9 +279,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                                     Paths.append(Paths.named(dstEnv.scope, l, p, pp.getPath().getSource()), pp));
                         });
             }).collect(CapsuleCollectors.toSet());
-            if(!paths.isEmpty()) {
-                worklist.push(new EnvTask(dstEnv, paths));
-            }
+            worklist.push(new EnvTask(dstEnv, paths));
         }
 
         private void addBackRef(EnvKey srcEnv, RefKey dstRef) {
@@ -292,14 +287,13 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Collection<IResolutionPath<S, L, O>> paths = envPaths.get(srcEnv).stream().flatMap(p -> {
                 return Streams.stream(Paths.resolve(dstRef.ref, p));
             }).collect(CapsuleCollectors.toSet());
-            if(!envPaths.isEmpty()) {
-                worklist.push(new RefTask(dstRef, paths));
-            }
+            worklist.push(new RefTask(dstRef, paths));
         }
 
     }
 
     private <P extends IPath<S, L, O>> Collection<P> filter(Collection<P> paths, Function2<P, P, Integer> compare) {
+        logger.info("filter {} paths", paths.size());
         final Set.Transient<P> filteredPaths = Set.Transient.of();
         NEXT: for(P path : paths) {
             for(P filteredPath : filteredPaths) {
@@ -361,6 +355,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         public EnvKey(S scope, IRegExpMatcher<L> wf) {
             this.scope = scope;
             this.wf = wf;
+            if(wf.isEmpty()) {
+                throw new AssertionError();
+            }
         }
 
         @Override public int hashCode() {
