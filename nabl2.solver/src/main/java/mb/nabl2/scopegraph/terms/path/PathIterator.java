@@ -1,12 +1,7 @@
 package mb.nabl2.scopegraph.terms.path;
 
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
-import org.spoofax.terms.util.NotImplementedException;
-
-import com.google.common.collect.Queues;
 
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
@@ -18,10 +13,10 @@ public class PathIterator<S extends IScope, L extends ILabel, O extends IOccurre
         implements Iterator<IStep<S, L, O>> {
 
     private IStep<S, L, O> next;
-    private Deque<IScopePath<S, L, O>> stack = Queues.newArrayDeque();
+    private IScopePath<S, L, O> path;
 
     public PathIterator(IScopePath<S, L, O> path) {
-        stack.push(path);
+        this.path = path;
     }
 
     @Override public boolean hasNext() {
@@ -34,32 +29,33 @@ public class PathIterator<S extends IScope, L extends ILabel, O extends IOccurre
         if(next == null) {
             throw new NoSuchElementException();
         }
-        IStep<S, L, O> step = next;
+        IStep<S, L, O> result = next;
         next = null;
-        return step;
+        return result;
     }
 
     private void findNext() {
-        while(next == null && !stack.isEmpty()) {
-            findNext(stack.pop());
+        if(next != null) {
+            return;
         }
-    }
-
-    private boolean findNext(IScopePath<S, L, O> nexts) {
-        if(nexts instanceof EStep || nexts instanceof NStep) {
-            next = (IStep<S, L, O>) nexts;
-            return true;
-        } else if(nexts instanceof EmptyScopePath) {
-            return false;
-        } else if(nexts instanceof ComposedScopePath) {
-            final ComposedScopePath<S, L, O> comp = (ComposedScopePath<S, L, O>) nexts;
-            stack.push(comp.getRight());
-            if(!findNext(comp.getLeft())) {
-                return findNext(stack.pop()); // this should be comp.right!
-            }
-            return true;
+        final IScopePath<S, L, O> p;
+        if(path instanceof EmptyScopePath) {
+            p = null;
+            path = null;
+        } else if(path instanceof ComposedScopePath) {
+            final ComposedScopePath<S, L, O> q = (ComposedScopePath<S, L, O>) path;
+            p = q.getLeft();
+            path = q.getRight();
         } else {
-            throw new NotImplementedException("Missing case for " + nexts.getClass());
+            p = path;
+            path = null;
+        }
+        if(p == null) {
+            return;
+        } else if(!(p instanceof IStep)) {
+            throw new IllegalStateException();
+        } else {
+            next = (IStep<S, L, O>) p;
         }
     }
 

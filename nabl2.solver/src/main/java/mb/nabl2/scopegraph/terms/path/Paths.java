@@ -50,15 +50,24 @@ public final class Paths {
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IScopePath<S, L, O>>
             append(IScopePath<S, L, O> left, IScopePath<S, L, O> right) {
-        return Optional.ofNullable(ComposedScopePath.of(left, right));
+        if(left instanceof EmptyScopePath) {
+            final EmptyScopePath<S, L, O> empty = (EmptyScopePath<S, L, O>) left;
+            return empty.getScope().equals(right.getSource()) ? Optional.of(right) : Optional.empty();
+        } else if(right instanceof EmptyScopePath) {
+            final EmptyScopePath<S, L, O> empty = (EmptyScopePath<S, L, O>) right;
+            return left.getTarget().equals(empty.getScope()) ? Optional.of(left) : Optional.empty();
+        } else if(left instanceof ComposedScopePath) {
+            final ComposedScopePath<S, L, O> inner = (ComposedScopePath<S, L, O>) left;
+            return append(inner.getRight(), right).flatMap(r -> append(inner.getLeft(), r));
+        } else {
+            return Optional.ofNullable(ComposedScopePath.of(left, right));
+        }
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IDeclPath<S, L, O>>
             append(IScopePath<S, L, O> left, IDeclPath<S, L, O> right) {
-        return Optional.ofNullable(ComposedScopePath.of(left, right.getPath()))
-                .map(p -> DeclPath.of(p, right.getDeclaration()));
+        return append(left, right.getPath()).map(p -> DeclPath.of(p, right.getDeclaration()));
     }
-
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>>
             resolve(O reference, IScopePath<S, L, O> path, O declaration) {
