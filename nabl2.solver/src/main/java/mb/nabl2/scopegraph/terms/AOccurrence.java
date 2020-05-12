@@ -34,7 +34,7 @@ public abstract class AOccurrence extends AbstractApplTerm implements IOccurrenc
         return TermOrigin.get(getName()).map(o -> getName()).orElseGet(this::getIndex);
     }
 
-    @Value.Lazy @Override public ASpacedName getSpacedName() {
+    @Value.Lazy @Override public SpacedName getSpacedName() {
         return SpacedName.of(getNamespace(), getName());
     }
 

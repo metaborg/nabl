@@ -1,12 +1,8 @@
 package mb.nabl2.scopegraph.terms.path;
 
-import java.util.Iterator;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.Iterators;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.ILabel;
@@ -44,10 +40,6 @@ abstract class AEStep<S extends IScope, L extends ILabel, O extends IOccurrence>
 
     @Value.Lazy @Override public ConsList<L> getLabels() {
         return ConsList.of(getLabel());
-    }
-
-    @Override public Iterator<IStep<S, L, O>> iterator() {
-        return Iterators.singletonIterator(this);
     }
 
     @Override public <T> T match(IStep.ICases<S, L, O, T> cases) {

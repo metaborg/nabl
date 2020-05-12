@@ -1,7 +1,5 @@
 package mb.nabl2.scopegraph.terms.path;
 
-import java.util.Iterator;
-
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
@@ -17,7 +15,6 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
-import mb.nabl2.scopegraph.path.IStep;
 import mb.nabl2.util.collections.ConsList;
 
 @Value.Immutable
@@ -67,10 +64,6 @@ abstract class AComposedScopePath<S extends IScope, L extends ILabel, O extends 
 
     @Value.Lazy @Override public ConsList<L> getLabels() {
         return getLeft().getLabels().append(getRight().getLabels());
-    }
-
-    @Override public Iterator<IStep<S, L, O>> iterator() {
-        return Iterators.concat(getLeft().iterator(), getRight().iterator());
     }
 
     @Value.Lazy @Override public int hashCode() {

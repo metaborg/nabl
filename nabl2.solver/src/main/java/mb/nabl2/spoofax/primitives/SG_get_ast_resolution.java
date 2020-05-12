@@ -29,15 +29,20 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
         return TermIndex.get(term).flatMap(index -> {
             final Collection<Occurrence> refs = solution.astRefs().get(OccurrenceIndex.of(index));
             final ImmutableList.Builder<ITerm> entriesBuilder = ImmutableList.builder();
-            for(Occurrence ref : refs) {
-                try {
-                    final List<Occurrence> decls = Paths.resolutionPathsToDecls(solution.nameResolution().resolve(ref));
-                    decls.stream().forEach(decl -> {
-                        entriesBuilder.add(B.newTuple(ref, decl.getName()));
-                    });
-                } catch(CriticalEdgeException e) {
-                    // ignore
+            try {
+                for(Occurrence ref : refs) {
+                    try {
+                        final List<Occurrence> decls =
+                                Paths.resolutionPathsToDecls(solution.nameResolution().resolve(ref));
+                        decls.stream().forEach(decl -> {
+                            entriesBuilder.add(B.newTuple(ref, decl.getName()));
+                        });
+                    } catch(CriticalEdgeException e) {
+                        // ignore
+                    }
                 }
+            } catch(InterruptedException e) {
+                return Optional.empty();
             }
             final List<ITerm> entries = entriesBuilder.build();
             if(entries.isEmpty()) {

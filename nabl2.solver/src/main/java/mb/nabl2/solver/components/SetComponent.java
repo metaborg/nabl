@@ -35,6 +35,7 @@ import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
 import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.InterruptedDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -79,6 +80,8 @@ public class SetComponent extends ASolver {
             rightSet = maybeRightSet.get().apply();
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(InterruptedException e) {
+            throw new InterruptedDelayException(e);
         }
         Multimap<Object, IElement<ITerm>> leftProj = SetEvaluator.project(leftSet, constraint.getProjection());
         Multimap<Object, IElement<ITerm>> rightProj = SetEvaluator.project(rightSet, constraint.getProjection());
@@ -110,6 +113,8 @@ public class SetComponent extends ASolver {
             set = maybeSet.get().apply();
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(InterruptedException e) {
+            throw new InterruptedDelayException(e);
         }
         Multimap<Object, IElement<ITerm>> proj = SetEvaluator.project(set, constraint.getProjection());
         List<IElement<ITerm>> duplicates = Lists.newArrayList();
@@ -144,10 +149,12 @@ public class SetComponent extends ASolver {
             set = maybeSet.get().apply();
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(InterruptedException e) {
+            throw new InterruptedDelayException(e);
         }
         List<ITerm> elements = set.stream().map(i -> i.getValue()).collect(Collectors.toList());
-        return SolveResult.constraints(
-                CEqual.of(constraint.getResult(), B.newList(elements), constraint.getMessageInfo()));
+        return SolveResult
+                .constraints(CEqual.of(constraint.getResult(), B.newList(elements), constraint.getMessageInfo()));
 
     }
 
@@ -161,8 +168,8 @@ public class SetComponent extends ASolver {
         } else {
             ITerm es = B.newList(elements.stream().map(e -> e.getName()).collect(Collectors.toList()));
             Function1<ITerm, ITerm> f = T.sometd(t -> M.appl0(NAME_OP, a -> es).match(t, unifier()));
-            return Iterables2.singleton(MessageInfo.of(template.getKind(), template.getContent().apply(f),
-                    template.getOriginTerm()));
+            return Iterables2.singleton(
+                    MessageInfo.of(template.getKind(), template.getContent().apply(f), template.getOriginTerm()));
         }
     }
 

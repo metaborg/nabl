@@ -1,8 +1,5 @@
 package mb.nabl2.scopegraph.terms.path;
 
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
@@ -15,7 +12,6 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
-import mb.nabl2.scopegraph.path.IStep;
 import mb.nabl2.util.collections.ConsList;
 
 @Value.Immutable
@@ -51,10 +47,6 @@ abstract class AEmptyScopePath<S extends IScope, L extends ILabel, O extends IOc
 
     @Value.Lazy @Override public ConsList<L> getLabels() {
         return ConsList.of();
-    }
-
-    @Override public Iterator<IStep<S, L, O>> iterator() {
-        return Collections.emptyIterator();
     }
 
     @Override public int hashCode() {

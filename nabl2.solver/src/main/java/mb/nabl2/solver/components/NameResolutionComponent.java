@@ -35,6 +35,7 @@ import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.TypeException;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
 import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.InterruptedDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IProperties;
@@ -99,6 +100,8 @@ public class NameResolutionComponent extends ASolver {
         final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
             paths = nameResolution.resolve(ref);
+        } catch(InterruptedException e) {
+            throw new InterruptedDelayException(e);
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
         }
