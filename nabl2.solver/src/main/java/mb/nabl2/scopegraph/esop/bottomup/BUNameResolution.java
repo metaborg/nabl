@@ -291,16 +291,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 throw new AssertionError();
             }
             backimports.__insert(srcRef, Tuple3.of(dstEnv, l, wf));
-            final Set.Immutable<IDeclPath<S, L, O>> paths = refPaths.get(srcRef).pathSet().stream().flatMap(p -> {
-                return scopeGraph.getExportEdges().get(p.getDeclaration(), l).stream().flatMap(ss -> {
-                    final EnvKey env2 = new EnvKey(dstEnv.kind, ss, wf);
-                    initEnv(env2);
-                    return envPaths.get(env2).pathSet().stream();
-                }).flatMap(pp -> {
-                    return Streams.stream(Paths.append(Paths.named(dstEnv.scope, l, p, pp.getPath().getSource()), pp));
+            refPaths.get(srcRef).pathSet().stream().forEach(p -> {
+                scopeGraph.getExportEdges().get(p.getDeclaration(), l).forEach(ss -> {
+                    final EnvKey srcEnv = new EnvKey(dstEnv.kind, ss, wf);
+                    final IStep<S, L, O> st = Paths.named(dstEnv.scope, l, p, srcEnv.scope);
+                    initEnv(srcEnv);
+                    addBackEdge(srcEnv, st, dstEnv);
                 });
-            }).collect(CapsuleCollectors.toSet());
-            worklist.push(new EnvTask(dstEnv, paths));
+            });
         }
 
         private void addBackRef(EnvKey srcEnv, RefKey dstRef) {
