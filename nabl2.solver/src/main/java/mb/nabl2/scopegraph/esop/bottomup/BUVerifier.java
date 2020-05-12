@@ -1,11 +1,16 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.log.LoggingOutputStream;
 import org.metaborg.util.time.AggregateTimer;
 
 import io.usethesource.capsule.Set;
@@ -33,7 +38,7 @@ public class BUVerifier {
                 final Collection<IResolutionPath<Scope, Label, Occurrence>> result =
                         nameResolution.resolve(entry.getKey());
                 timer.stop();
-                verifyEquals("resolve", entry.getValue(), result);
+                verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
             }
             logger.info("verifying {} visible entries", solution.nameResolutionCache().visibilityEntries().size());
             for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().visibilityEntries()
@@ -41,7 +46,7 @@ public class BUVerifier {
                 timer.start();
                 final Collection<Occurrence> result = nameResolution.visible(entry.getKey());
                 timer.stop();
-                verifyEquals("visible", entry.getValue(), result);
+                verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
             }
             logger.info("verifying {} reachable entries", solution.nameResolutionCache().reachabilityEntries().size());
             for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().reachabilityEntries()
@@ -49,7 +54,7 @@ public class BUVerifier {
                 timer.start();
                 final Collection<Occurrence> result = nameResolution.reachable(entry.getKey());
                 timer.stop();
-                verifyEquals("reachable", entry.getValue(), result);
+                verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
             }
             logger.info("bottom-up resolution took {} s",
                     (double) timer.total() / (double) TimeUnit.NANOSECONDS.convert(1l, TimeUnit.SECONDS));
@@ -58,17 +63,26 @@ public class BUVerifier {
         }
     }
 
-    private static <E> void verifyEquals(String tag, Collection<E> expected, Collection<E> actual) {
+    private static <E> void verifyEquals(String tag, Collection<E> expected, Collection<E> actual,
+            BUNameResolution<Scope, Label, Occurrence> bu) {
         final Set.Immutable<E> expectedSet = CapsuleUtil.toSet(expected);
         final Set.Immutable<E> actualSet = CapsuleUtil.toSet(actual);
-//        logger.info("[{}] matched {}", tag, Set.Immutable.intersect(expectedSet, actualSet).size());
         final Set.Immutable<E> missing = Set.Immutable.subtract(expectedSet, actualSet);
-        if(!missing.isEmpty()) {
-            logger.error("[{}] missing {}", tag, missing);
-        }
         final Set.Immutable<E> extra = Set.Immutable.subtract(actualSet, expectedSet);
+        if(!missing.isEmpty() || !extra.isEmpty()) {
+            try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
+                bu.write(out);
+            } catch(IllegalArgumentException | IOException e) {
+                logger.error("Failed to write bu");
+            }
+            final Set.Immutable<E> matched = Set.Immutable.intersect(actualSet, expectedSet);
+            logger.info("[{}] {} matched {}", tag, matched.size(), matched);
+        }
+        if(!missing.isEmpty()) {
+            logger.error("[{}] {} missing {}", tag, missing.size(), missing);
+        }
         if(!extra.isEmpty()) {
-            logger.error("[{}] extra {}", tag, extra);
+            logger.error("[{}] {} extra {}", tag, extra.size(), extra);
         }
     }
 

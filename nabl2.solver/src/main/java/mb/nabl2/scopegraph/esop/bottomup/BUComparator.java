@@ -64,32 +64,47 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
     }
 
     private Integer compare(IStep<S, L, O> step1, IStep<S, L, O> step2, IRelation<L> order) {
-        if(!step1.getSource().equals(step2.getSource())) {
-            // steps with different sources are unordered
-            return null;
-        }
-        final Integer lc = compare(step1.getLabel(), step2.getLabel(), order);
-        if(lc == null || lc != 0) {
-            return lc;
-        }
-        // at this point, source and label are equal
-        if(!step1.getTarget().equals(step2.getTarget())) {
-            // steps with same labels but different targets are unordered
-            return null;
-        }
-        // at this point, the two steps have the same source, label, and target
-        final IResolutionPath<S, L, O> path1 = importPath(step1);
-        final IResolutionPath<S, L, O> path2 = importPath(step2);
-        if(path1 == null && path2 == null) {
-            // direct steps, the steps are equal
-            return 0;
-        } else if(path1 != null && path2 != null) {
-            // both steps are imports, compare import paths
-            return compare(path1, path2, importOrder);
-        } else {
-            // steps are unordered
-            return null;
-        }
+        // @formatter:off
+        return step1.match(new IStep.ICases<S, L, O, Integer>() {
+            @Override public Integer caseE(S source1, L l1, S target1) {
+                return step2.match(new IStep.ICases<S, L, O, Integer>() {
+                    @Override public Integer caseE(S source2, L l2, S target2) {
+                        if(!source1.equals(source2)) { return null; }
+                        final Integer lc = compare(l1, l2, order);
+                        if(lc == null || lc != 0) { return lc; }
+                        if(!target1.equals(target2)) { return null; }
+                        return 0;
+                    }
+                    @Override public Integer caseN(S source2, L l2, IResolutionPath<S, L, O> import2, S target2) {
+                        if(!source1.equals(source2)) { return null; }
+                        final Integer lc = compare(l1, l2, order);
+                        if(lc == null || lc != 0) { return lc; }
+                        return null;
+                    }
+                });
+            }
+            @Override public Integer caseN(S source1, L l1, IResolutionPath<S, L, O> import1, S target1) {
+                return step2.match(new IStep.ICases<S, L, O, Integer>() {
+                    @Override public Integer caseE(S source2, L l2, S target2) {
+                        if(!source1.equals(source2)) { return null; }
+                        final Integer lc = compare(l1, l2, order);
+                        if(lc == null || lc != 0) { return lc; }
+                        return null;
+                    }
+                    @Override public Integer caseN(S source2, L l2, IResolutionPath<S, L, O> import2, S target2) {
+                        if(!source1.equals(source2)) { return null; }
+                        final Integer lc = compare(l1, l2, order);
+                        if(lc == null || lc != 0) { return lc; }
+                        if(!import1.getReference().equals(import2.getReference())) { return null; }
+                        final Integer ic = compare(import1, import2, importOrder);
+                        if(ic == null || ic != 0) { return ic; }
+                        if(!target1.equals(target2)) { return null; }
+                        return 0;
+                    }
+                });
+            }
+        });
+        // @formatter:on
     }
 
     private Integer compare(L l1, L l2, IRelation<L> order) {
@@ -103,19 +118,5 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
             return null;
         }
     }
-
-    private IResolutionPath<S, L, O> importPath(IStep<S, L, O> step) {
-        return step.match(new IStep.ICases<S, L, O, IResolutionPath<S, L, O>>() {
-            @Override public IResolutionPath<S, L, O> caseE(S source, L label, S target) {
-                return null;
-            }
-
-            @Override public IResolutionPath<S, L, O> caseN(S source, L label, IResolutionPath<S, L, O> importPath,
-                    S target) {
-                return importPath;
-            }
-        });
-    }
-
 
 }
