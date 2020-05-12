@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -102,8 +104,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         return Paths.declPathsToDecls(reachableEnv(scope));
     }
 
-    @Override public Collection<? extends Map.Entry<O, ? extends Collection<IResolutionPath<S, L, O>>>>
-            resolutionEntries() {
+    @Override public Collection<Map.Entry<O, Collection<IResolutionPath<S, L, O>>>> resolutionEntries() {
         return resolved.entrySet();
     }
 
@@ -180,30 +181,29 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
         private class EnvTask extends Task {
 
-            public final EnvKey env;
-            public final Set.Immutable<IDeclPath<S, L, O>> newPaths;
+            private final EnvKey env;
+            private final BUChanges<S, L, O, IDeclPath<S, L, O>> changes;
 
-            public EnvTask(EnvKey env, Set.Immutable<IDeclPath<S, L, O>> paths) {
+            public EnvTask(EnvKey env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes) {
                 this.env = env;
-                this.newPaths = paths;
+                this.changes = changes;
             }
 
             @Override void call() throws InterruptedException {
-                if(newPaths.isEmpty()) {
+                if(changes.isEmpty()) {
                     return;
                 }
                 initEnv(env);
-                final Set.Immutable<IDeclPath<S, L, O>> addedPaths = envPaths.get(env).addAll(newPaths);
+                final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = envPaths.get(env).apply(changes);
                 for(RefKey ref : backrefs.get(env)) {
-                    final Set.Immutable<IResolutionPath<S, L, O>> refPaths = addedPaths.stream()
-                            .flatMap(p -> Streams.stream(Paths.resolve(ref.ref, p))).collect(CapsuleCollectors.toSet());
-                    worklist.push(new RefTask(ref, refPaths));
+                    final BUChanges<S, L, O, IResolutionPath<S, L, O>> refChanges =
+                            newChanges.flatMap(p -> ofOpt(Paths.resolve(ref.ref, p)));
+                    addTask(new RefTask(ref, refChanges));
                 }
-                for(Tuple2<EnvKey, IStep<S, L, O>> env2 : backedges.get(env)) {
-                    final Set.Immutable<IDeclPath<S, L, O>> env2Paths =
-                            addedPaths.stream().flatMap(p -> Streams.stream(Paths.append(env2._2(), p)))
-                                    .collect(CapsuleCollectors.toSet());
-                    worklist.push(new EnvTask(env2._1(), env2Paths));
+                for(Tuple2<EnvKey, IStep<S, L, O>> dstEnv : backedges.get(env)) {
+                    final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
+                            newChanges.flatMap(p -> ofOpt(Paths.append(dstEnv._2(), p)));
+                    addTask(new EnvTask(dstEnv._1(), envChanges));
                 }
             }
 
@@ -212,22 +212,29 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         private class RefTask extends Task {
 
             private final RefKey ref;
-            private final Set.Immutable<IResolutionPath<S, L, O>> newPaths;
+            private final BUChanges<S, L, O, IResolutionPath<S, L, O>> changes;
 
-            public RefTask(RefKey ref, Set.Immutable<IResolutionPath<S, L, O>> paths) {
+            public RefTask(RefKey ref, BUChanges<S, L, O, IResolutionPath<S, L, O>> changes) {
                 this.ref = ref;
-                this.newPaths = paths;
+                this.changes = changes;
             }
 
             @Override void call() throws InterruptedException {
                 initRef(ref);
-                final Set.Immutable<IResolutionPath<S, L, O>> addedPaths = refPaths.get(ref).addAll(newPaths);
+                final BUChanges<S, L, O, IResolutionPath<S, L, O>> newChanges = refPaths.get(ref).apply(changes);
                 for(Tuple3<EnvKey, L, IRegExpMatcher<L>> entry : backimports.get(ref)) {
-                    for(IResolutionPath<S, L, O> p : addedPaths) {
+                    for(IResolutionPath<S, L, O> p : newChanges.added()) {
                         for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry._2())) {
                             final EnvKey env = new EnvKey(ref.kind, s, entry._3());
                             initEnv(env);
                             addBackEdge(env, Paths.named(entry._1().scope, entry._2(), p, env.scope), entry._1());
+                        }
+                    }
+                    for(IResolutionPath<S, L, O> p : newChanges.removed()) {
+                        for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry._2())) {
+                            final EnvKey env = new EnvKey(ref.kind, s, entry._3());
+                            initEnv(env); // necessary?
+                            removeBackEdge(env, Paths.named(entry._1().scope, entry._2(), p, env.scope), entry._1());
                         }
                     }
                 }
@@ -245,7 +252,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 final Set.Immutable<IDeclPath<S, L, O>> declPaths = scopeGraph.getDecls().inverse().get(env.scope)
                         .stream().map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d))
                         .collect(CapsuleCollectors.toSet());
-                worklist.push(new EnvTask(env, declPaths));
+                addTask(new EnvTask(env, new BUChanges<>(declPaths, Set.Immutable.of())));
             }
             for(L l : labels) {
                 IRegExpMatcher<L> wf2 = env.wf.match(l);
@@ -253,14 +260,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                     continue;
                 }
                 for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
-                    final EnvKey env2 = new EnvKey(env.kind, scope, wf2);
-                    initEnv(env2);
-                    addBackEdge(env2, Paths.direct(env.scope, l, env2.scope), env);
+                    final EnvKey srcEnv = new EnvKey(env.kind, scope, wf2);
+                    initEnv(srcEnv);
+                    addBackEdge(srcEnv, Paths.direct(env.scope, l, srcEnv.scope), env);
                 }
                 for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
-                    final RefKey ref2 = new RefKey(Kind.IMPORT, ref);
-                    initRef(ref2);
-                    addBackImport(ref2, l, wf2, env);
+                    final RefKey srcRef = new RefKey(Kind.IMPORT, ref);
+                    initRef(srcRef);
+                    addBackImport(srcRef, l, wf2, env);
                 }
             }
         }
@@ -279,11 +286,23 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         private void addBackEdge(EnvKey srcEnv, IStep<S, L, O> st, EnvKey dstEnv) {
-            backedges.__insert(srcEnv, Tuple2.of(dstEnv, st));
+            if(!backedges.__insert(srcEnv, Tuple2.of(dstEnv, st))) {
+                return;
+            }
             final Set.Immutable<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
-                return Streams.stream(Paths.append(st, p));
+                return ofOpt(Paths.append(st, p));
             }).collect(CapsuleCollectors.toSet());
-            worklist.push(new EnvTask(dstEnv, paths));
+            addTask(new EnvTask(dstEnv, new BUChanges<>(paths, Set.Immutable.of())));
+        }
+
+        private void removeBackEdge(EnvKey srcEnv, IStep<S, L, O> st, EnvKey dstEnv) {
+            if(!backedges.__remove(srcEnv, Tuple2.of(dstEnv, st))) {
+                return;
+            }
+            final Set.Immutable<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
+                return ofOpt(Paths.append(st, p));
+            }).collect(CapsuleCollectors.toSet());
+            addTask(new EnvTask(dstEnv, new BUChanges<>(Set.Immutable.of(), paths)));
         }
 
         private void addBackImport(RefKey srcRef, L l, IRegExpMatcher<L> wf, EnvKey dstEnv) {
@@ -304,9 +323,13 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         private void addBackRef(EnvKey srcEnv, RefKey dstRef) {
             backrefs.__insert(srcEnv, dstRef);
             final Set.Immutable<IResolutionPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
-                return Streams.stream(Paths.resolve(dstRef.ref, p));
+                return ofOpt(Paths.resolve(dstRef.ref, p));
             }).collect(CapsuleCollectors.toSet());
-            worklist.push(new RefTask(dstRef, paths));
+            addTask(new RefTask(dstRef, new BUChanges<>(paths, Set.Immutable.of())));
+        }
+
+        private void addTask(Task t) {
+            worklist.addLast(t);
         }
 
     }
@@ -412,6 +435,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             out.write(prefix + "| - " + env + ":\n");
             paths.write(prefix + "|   | ", out);
         }
+    }
+
+    private static <X> Stream<X> ofOpt(Optional<X> xOrNull) {
+        return Streams.stream(xOrNull);
     }
 
 }

@@ -2,7 +2,6 @@ package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Collection;
 
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
@@ -40,18 +39,28 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
         return env.get(name);
     }
 
-    public Set.Immutable<P> addAll(Collection<P> paths) throws InterruptedException {
+    public BUChanges<S, L, O, P> apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
         //        logger.info("adding {} paths to {} names, {} paths env", paths.size(), env.keySet().size(), env.values().size());
         final Set.Transient<P> added = Set.Transient.of();
-        for(P path : paths) {
-            if(add(path)) {
-                added.__insert(path);
-            }
+        final Set.Transient<P> removed = Set.Transient.of();
+        for(P path : changes.removed()) {
+            remove(path, removed);
         }
-        return added.freeze();
+        for(P path : changes.added()) {
+            add(path, added, removed);
+        }
+        return new BUChanges<>(added.freeze(), removed.freeze());
     }
 
-    public boolean add(P newPath) throws InterruptedException {
+    private void remove(P oldPath, Set.Transient<P> removed) throws InterruptedException {
+        final SpacedName name = oldPath.getDeclaration().getSpacedName();
+        //        logger.info("removing path from {} env", env.get(name).size());
+        if(env.__remove(name, oldPath)) {
+            removed.__insert(oldPath);
+        }
+    }
+
+    private void add(P newPath, Set.Transient<P> added, Set.Transient<P> removed) throws InterruptedException {
         final SpacedName name = newPath.getDeclaration().getSpacedName();
         //        logger.info("adding path to {} env", env.get(name).size());
         for(P path : env.get(name)) {
@@ -64,24 +73,30 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
                 if(result < 0) {
                     // the candidate is smaller than an earlier selected path
                     env.__remove(name, path);
+                    removed.__insert(path);
                 }
                 if(result > 0) {
                     // the candidate is larger than an earlier selected path
-                    return false;
+                    return;
                 }
             }
         }
         // there are no smaller selected paths
-        return env.__insert(name, newPath);
+        if(env.__insert(name, newPath)) {
+            added.__insert(newPath);
+        }
     }
 
     public void write(String prefix, Writer out) throws IOException {
+        out.append(prefix + env.keySet().size() + " names, " + env.size() + " paths\n");
+        /*
         for(SpacedName name : env.keySet()) {
-            out.append(prefix + name + ":\n");
+            out.append(prefix + name + ": " + env.get(name).size() + "\n");
             for(P path : env.get(name)) {
                 out.append(prefix + " - " + path + "\n");
             }
         }
+        */
     }
 
 }

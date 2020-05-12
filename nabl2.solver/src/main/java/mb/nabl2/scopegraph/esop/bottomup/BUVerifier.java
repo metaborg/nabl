@@ -56,6 +56,11 @@ public class BUVerifier {
                 timer.stop();
                 verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
             }
+//            try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
+//                nameResolution.write(out);
+//            } catch(IllegalArgumentException | IOException e) {
+//                logger.error("Failed to write name resolution");
+//            }
             logger.info("bottom-up resolution took {} s",
                     (double) timer.total() / (double) TimeUnit.NANOSECONDS.convert(1l, TimeUnit.SECONDS));
         } catch(Exception e) {
@@ -70,11 +75,13 @@ public class BUVerifier {
         final Set.Immutable<E> missing = Set.Immutable.subtract(expectedSet, actualSet);
         final Set.Immutable<E> extra = Set.Immutable.subtract(actualSet, expectedSet);
         if(!missing.isEmpty() || !extra.isEmpty()) {
+            /*
             try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
                 bu.write(out);
             } catch(IllegalArgumentException | IOException e) {
                 logger.error("Failed to write bu");
             }
+            */
             final Set.Immutable<E> matched = Set.Immutable.intersect(actualSet, expectedSet);
             logger.info("[{}] {} matched {}", tag, matched.size(), matched);
         }

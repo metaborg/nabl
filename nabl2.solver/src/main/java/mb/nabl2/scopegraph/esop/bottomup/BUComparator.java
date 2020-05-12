@@ -27,31 +27,33 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
         if(topOrder.isEmpty() && importOrder.isEmpty()) {
             return path1.equals(path2) ? 0 : null;
         }
-        return compare(path1, path2, topOrder);
+        return compare(path1, path2, topOrder, true);
     }
 
-    private Integer compare(IResolutionPath<S, L, O> path1, IResolutionPath<S, L, O> path2, IRelation<L> order) {
+    private Integer compare(IResolutionPath<S, L, O> path1, IResolutionPath<S, L, O> path2, IRelation<L> order,
+            boolean firstOnly) {
         if(!path1.getReference().equals(path2.getReference())) {
             return null;
         }
-        return compare(path1.getPath(), path2.getPath(), order);
+        return compare(path1.getPath(), path2.getPath(), order, firstOnly);
     }
 
     public Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2) {
         if(topOrder.isEmpty() && importOrder.isEmpty()) {
             return path1.equals(path2) ? 0 : null;
         }
-        return compare(path1, path2, topOrder);
+        return compare(path1, path2, topOrder, true);
     }
 
-    private Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2, IRelation<L> order) {
+    private Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2, IRelation<L> order, boolean firstOnly) {
         if(!path1.getDeclaration().getSpacedName().equals(path2.getDeclaration().getSpacedName())) {
             return null;
         }
-        return compare(path1.getPath(), path2.getPath(), order);
+        return compare(path1.getPath(), path2.getPath(), order, firstOnly);
     }
 
-    private Integer compare(IScopePath<S, L, O> path1, IScopePath<S, L, O> path2, IRelation<L> order) {
+    private Integer compare(IScopePath<S, L, O> path1, IScopePath<S, L, O> path2, IRelation<L> order,
+            boolean firstOnly) {
         if(!path1.getSource().equals(path2.getSource())) {
             // paths with different sources are unordered
             return null;
@@ -60,7 +62,7 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
         final Iterator<IStep<S, L, O>> it2 = path2.iterator();
         while(it1.hasNext() && it2.hasNext()) {
             final Integer result = compare(it1.next(), it2.next(), order);
-            if(result == null || result != 0) {
+            if(firstOnly || result == null || result != 0) {
                 return result;
             }
         }
@@ -70,6 +72,9 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
     }
 
     private Integer compare(IStep<S, L, O> step1, IStep<S, L, O> step2, IRelation<L> order) {
+        if(step1.equals(step2)) {
+            return 0;
+        }
         // @formatter:off
         return step1.match(new IStep.ICases<S, L, O, Integer>() {
             @Override public Integer caseE(S source1, L l1, S target1) {
@@ -102,7 +107,7 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
                         final Integer lc = compare(l1, l2, order);
                         if(lc == null || lc != 0) { return lc; }
                         if(!import1.getReference().equals(import2.getReference())) { return null; }
-                        final Integer ic = compare(import1, import2, importOrder);
+                        final Integer ic = compare(import1, import2, importOrder, false);
                         if(ic == null || ic != 0) { return ic; }
                         if(!target1.equals(target2)) { return null; }
                         return 0;
