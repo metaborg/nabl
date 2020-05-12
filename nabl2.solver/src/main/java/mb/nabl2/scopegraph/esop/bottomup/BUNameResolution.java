@@ -19,7 +19,6 @@ import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
@@ -42,6 +41,10 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.collections.HashTrieRelation2;
+import mb.nabl2.util.collections.HashTrieRelation3;
+import mb.nabl2.util.collections.IRelation2;
+import mb.nabl2.util.collections.IRelation3;
 
 public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements INameResolution<S, L, O> {
@@ -115,10 +118,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private Map.Transient<EnvKey, BUEnv<S, L, O, IDeclPath<S, L, O>>> envPaths = Map.Transient.of();
     private Map.Transient<RefKey, BUEnv<S, L, O, IResolutionPath<S, L, O>>> refPaths = Map.Transient.of();
 
-    private SetMultimap.Transient<EnvKey, Tuple2<EnvKey, IStep<S, L, O>>> backedges = SetMultimap.Transient.of();
-    private SetMultimap.Transient<RefKey, Tuple3<EnvKey, L, IRegExpMatcher<L>>> backimports =
-            SetMultimap.Transient.of();
-    private SetMultimap.Transient<EnvKey, RefKey> backrefs = SetMultimap.Transient.of();
+    private IRelation3.Transient<EnvKey, IStep<S, L, O>, EnvKey> backedges = HashTrieRelation3.Transient.of();
+    private IRelation3.Transient<RefKey, Tuple2<L, IRegExpMatcher<L>>, EnvKey> backimports =
+            HashTrieRelation3.Transient.of();
+    private IRelation2.Transient<EnvKey, RefKey> backrefs = HashTrieRelation2.Transient.of();
 
     private final Set.Transient<EnvKey> initedEnvs = Set.Transient.of();
     private final Set.Transient<RefKey> initedRes = Set.Transient.of();
@@ -165,83 +168,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             initEnv(env);
         }
 
-        public void call() throws InterruptedException {
-
-            while(!worklist.isEmpty()) {
-                worklist.pop().call();
-            }
-
-        }
-
-        abstract class Task {
-
-            abstract void call() throws InterruptedException;
-
-        }
-
-        private class EnvTask extends Task {
-
-            private final EnvKey env;
-            private final BUChanges<S, L, O, IDeclPath<S, L, O>> changes;
-
-            public EnvTask(EnvKey env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes) {
-                this.env = env;
-                this.changes = changes;
-            }
-
-            @Override void call() throws InterruptedException {
-                if(changes.isEmpty()) {
-                    return;
-                }
-                initEnv(env);
-                final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = envPaths.get(env).apply(changes);
-                for(RefKey ref : backrefs.get(env)) {
-                    final BUChanges<S, L, O, IResolutionPath<S, L, O>> refChanges =
-                            newChanges.flatMap(p -> ofOpt(Paths.resolve(ref.ref, p)));
-                    addTask(new RefTask(ref, refChanges));
-                }
-                for(Tuple2<EnvKey, IStep<S, L, O>> dstEnv : backedges.get(env)) {
-                    final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
-                            newChanges.flatMap(p -> ofOpt(Paths.append(dstEnv._2(), p)));
-                    addTask(new EnvTask(dstEnv._1(), envChanges));
-                }
-            }
-
-        }
-
-        private class RefTask extends Task {
-
-            private final RefKey ref;
-            private final BUChanges<S, L, O, IResolutionPath<S, L, O>> changes;
-
-            public RefTask(RefKey ref, BUChanges<S, L, O, IResolutionPath<S, L, O>> changes) {
-                this.ref = ref;
-                this.changes = changes;
-            }
-
-            @Override void call() throws InterruptedException {
-                initRef(ref);
-                final BUChanges<S, L, O, IResolutionPath<S, L, O>> newChanges = refPaths.get(ref).apply(changes);
-                for(Tuple3<EnvKey, L, IRegExpMatcher<L>> entry : backimports.get(ref)) {
-                    for(IResolutionPath<S, L, O> p : newChanges.added()) {
-                        for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry._2())) {
-                            final EnvKey env = new EnvKey(ref.kind, s, entry._3());
-                            initEnv(env);
-                            addBackEdge(env, Paths.named(entry._1().scope, entry._2(), p, env.scope), entry._1());
-                        }
-                    }
-                    for(IResolutionPath<S, L, O> p : newChanges.removed()) {
-                        for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry._2())) {
-                            final EnvKey env = new EnvKey(ref.kind, s, entry._3());
-                            initEnv(env); // necessary?
-                            removeBackEdge(env, Paths.named(entry._1().scope, entry._2(), p, env.scope), entry._1());
-                        }
-                    }
-                }
-            }
-
-        }
-
         private void initEnv(EnvKey env) {
             if(initedEnvs.contains(env)) {
                 return;
@@ -285,8 +211,87 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             });
         }
 
+        public void call() throws InterruptedException {
+
+            while(!worklist.isEmpty()) {
+                worklist.pop().call();
+            }
+
+        }
+
+        abstract class Task {
+
+            abstract void call() throws InterruptedException;
+
+        }
+
+        private class EnvTask extends Task {
+
+            private final EnvKey env;
+            private final BUChanges<S, L, O, IDeclPath<S, L, O>> changes;
+
+            public EnvTask(EnvKey env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes) {
+                this.env = env;
+                this.changes = changes;
+            }
+
+            @Override void call() throws InterruptedException {
+                if(changes.isEmpty()) {
+                    return;
+                }
+                initEnv(env);
+                final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = envPaths.get(env).apply(changes);
+                for(RefKey ref : backrefs.get(env)) {
+                    final BUChanges<S, L, O, IResolutionPath<S, L, O>> refChanges =
+                            newChanges.flatMap(p -> ofOpt(Paths.resolve(ref.ref, p)));
+                    addTask(new RefTask(ref, refChanges));
+                }
+                for(Entry<IStep<S, L, O>, EnvKey> dstEnv : backedges.get(env)) {
+                    final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
+                            newChanges.flatMap(p -> ofOpt(Paths.append(dstEnv.getKey(), p)));
+                    addTask(new EnvTask(dstEnv.getValue(), envChanges));
+                }
+            }
+
+        }
+
+        private class RefTask extends Task {
+
+            private final RefKey ref;
+            private final BUChanges<S, L, O, IResolutionPath<S, L, O>> changes;
+
+            public RefTask(RefKey ref, BUChanges<S, L, O, IResolutionPath<S, L, O>> changes) {
+                this.ref = ref;
+                this.changes = changes;
+            }
+
+            @Override void call() throws InterruptedException {
+                initRef(ref);
+                final BUChanges<S, L, O, IResolutionPath<S, L, O>> newChanges = refPaths.get(ref).apply(changes);
+                for(Entry<Tuple2<L, IRegExpMatcher<L>>, EnvKey> entry : backimports.get(ref)) {
+                    for(IResolutionPath<S, L, O> p : newChanges.added()) {
+                        for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry.getKey()._1())) {
+                            final EnvKey env = new EnvKey(ref.kind, s, entry.getKey()._2());
+                            initEnv(env);
+                            addBackEdge(env, Paths.named(entry.getValue().scope, entry.getKey()._1(), p, env.scope),
+                                    entry.getValue());
+                        }
+                    }
+                    for(IResolutionPath<S, L, O> p : newChanges.removed()) {
+                        for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry.getKey()._1())) {
+                            final EnvKey env = new EnvKey(ref.kind, s, entry.getKey()._2());
+                            initEnv(env); // necessary?
+                            removeBackEdge(env, Paths.named(entry.getValue().scope, entry.getKey()._1(), p, env.scope),
+                                    entry.getValue());
+                        }
+                    }
+                }
+            }
+
+        }
+
         private void addBackEdge(EnvKey srcEnv, IStep<S, L, O> st, EnvKey dstEnv) {
-            if(!backedges.__insert(srcEnv, Tuple2.of(dstEnv, st))) {
+            if(!backedges.put(srcEnv, st, dstEnv)) {
                 return;
             }
             final Set.Immutable<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
@@ -296,7 +301,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         private void removeBackEdge(EnvKey srcEnv, IStep<S, L, O> st, EnvKey dstEnv) {
-            if(!backedges.__remove(srcEnv, Tuple2.of(dstEnv, st))) {
+            if(!backedges.remove(srcEnv, st, dstEnv)) {
                 return;
             }
             final Set.Immutable<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
@@ -309,7 +314,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             if(!srcRef.kind.equals(Kind.IMPORT)) {
                 throw new AssertionError();
             }
-            backimports.__insert(srcRef, Tuple3.of(dstEnv, l, wf));
+            backimports.put(srcRef, Tuple2.of(l, wf), dstEnv);
             refPaths.get(srcRef).pathSet().stream().forEach(p -> {
                 scopeGraph.getExportEdges().get(p.getDeclaration(), l).forEach(ss -> {
                     final EnvKey srcEnv = new EnvKey(dstEnv.kind, ss, wf);
@@ -321,7 +326,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         private void addBackRef(EnvKey srcEnv, RefKey dstRef) {
-            backrefs.__insert(srcEnv, dstRef);
+            backrefs.put(srcEnv, dstRef);
             final Set.Immutable<IResolutionPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
                 return ofOpt(Paths.resolve(dstRef.ref, p));
             }).collect(CapsuleCollectors.toSet());
@@ -414,14 +419,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             out.write(prefix + "| - " + backref.getValue() + " -< " + backref.getKey() + "\n");
         }
         out.write(prefix + "| back edges:\n");
-        for(Entry<EnvKey, Tuple2<EnvKey, IStep<S, L, O>>> backedge : backedges.entrySet()) {
-            out.write(prefix + "| - " + backedge.getValue()._1() + " -" + backedge.getValue()._2() + "-< "
-                    + backedge.getKey() + "\n");
+        for(Tuple3<EnvKey, IStep<S, L, O>, EnvKey> backedge : (Iterable<Tuple3<EnvKey, IStep<S, L, O>, EnvKey>>) backedges
+                .stream()::iterator) {
+            out.write(prefix + "| - " + backedge._3() + " -" + backedge._2() + "-< " + backedge._1() + "\n");
         }
         out.write(prefix + "| back imports:\n");
-        for(Entry<RefKey, Tuple3<EnvKey, L, IRegExpMatcher<L>>> backimport : backimports.entrySet()) {
-            out.write(prefix + "| - " + backimport.getValue()._1() + " =" + backimport.getValue()._2() + "=< "
-                    + backimport.getKey() + "\n");
+        for(Tuple3<RefKey, Tuple2<L, IRegExpMatcher<L>>, EnvKey> backimport : (Iterable<Tuple3<RefKey, Tuple2<L, IRegExpMatcher<L>>, EnvKey>>) backimports
+                .stream()::iterator) {
+            out.write(prefix + "| - " + backimport._3() + " =" + backimport._2()._1() + "=< " + backimport._1() + "\n");
         }
         out.write(prefix + "| ref paths:\n");
         for(RefKey ref : initedRes) {
