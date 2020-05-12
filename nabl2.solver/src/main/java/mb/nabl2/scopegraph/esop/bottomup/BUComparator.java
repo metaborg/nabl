@@ -24,6 +24,9 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
     }
 
     public Integer compare(IResolutionPath<S, L, O> path1, IResolutionPath<S, L, O> path2) {
+        if(topOrder.isEmpty() && importOrder.isEmpty()) {
+            return path1.equals(path2) ? 0 : null;
+        }
         return compare(path1, path2, topOrder);
     }
 
@@ -35,6 +38,9 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
     }
 
     public Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2) {
+        if(topOrder.isEmpty() && importOrder.isEmpty()) {
+            return path1.equals(path2) ? 0 : null;
+        }
         return compare(path1, path2, topOrder);
     }
 

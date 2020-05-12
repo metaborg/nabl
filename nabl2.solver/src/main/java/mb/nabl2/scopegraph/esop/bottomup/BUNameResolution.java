@@ -11,6 +11,7 @@ import java.util.Objects;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
 
@@ -45,11 +46,16 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     private static final ILogger logger = LoggerUtils.logger(BUNameResolution.class);
 
+    private static enum Kind {
+        VISIBLE, // top-level and import paths are ordered
+        REACHABLE, // top-level paths are unordered, import paths are ordered
+        IMPORT // top-level and import paths are unordered
+    }
+
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final Iterable<L> labels;
     private final IRegExpMatcher<L> wf;
-    private final BUComparator<S, L, O> reachableOrder;
-    private final BUComparator<S, L, O> visibleOrder;
+    private final ImmutableMap<Kind, BUComparator<S, L, O>> orders;
 
     public BUNameResolution(IEsopScopeGraph<S, L, O, ?> scopeGraph, Iterable<L> labels, L labelD, IRegExp<L> wf,
             IRelation<L> order) {
@@ -57,8 +63,13 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         this.labels = labels;
         this.wf = RegExpMatcher.create(wf);
         final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
-        this.reachableOrder = new BUComparator<>(labelD, noOrder, order);
-        this.visibleOrder = new BUComparator<>(labelD, order, order);
+        // @formatter:off
+        this.orders = ImmutableMap.of(
+            Kind.VISIBLE,   new BUComparator<>(labelD, order, order),
+            Kind.REACHABLE, new BUComparator<>(labelD, noOrder, order),
+            Kind.IMPORT,    new BUComparator<>(labelD, noOrder, noOrder)
+        );
+        // @formatter:on
     }
 
     public static BUNameResolution<Scope, Label, Occurrence> of(IEsopScopeGraph<Scope, Label, Occurrence, ?> scopeGraph,
@@ -114,7 +125,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private Collection<IResolutionPath<S, L, O>> resolveEnv(O ref) throws InterruptedException {
         Collection<IResolutionPath<S, L, O>> paths = resolved.get(ref);
         if(paths == null) {
-            final RefKey key = new RefKey(ref);
+            final RefKey key = new RefKey(Kind.VISIBLE, ref);
             new Compute(key).call();
             resolved.__put(ref, paths = refPaths.get(key).pathSet());
         }
@@ -124,11 +135,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private Collection<IDeclPath<S, L, O>> visibleEnv(S scope) throws InterruptedException {
         Collection<IDeclPath<S, L, O>> paths = visible.get(scope);
         if(paths == null) {
-            final EnvKey key = new EnvKey(scope, wf);
+            final EnvKey key = new EnvKey(Kind.VISIBLE, scope, wf);
             new Compute(key).call();
-            BUEnv<S, L, O, IDeclPath<S, L, O>> env = new BUEnv<>(visibleOrder::compare);
-            env.addAll(envPaths.get(key).pathSet());
-            visible.__put(scope, paths = env.pathSet());
+            visible.__put(scope, paths = envPaths.get(key).pathSet());
         }
         return paths;
     }
@@ -136,7 +145,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private Collection<IDeclPath<S, L, O>> reachableEnv(S scope) throws InterruptedException {
         Collection<IDeclPath<S, L, O>> paths = reachable.get(scope);
         if(paths == null) {
-            final EnvKey key = new EnvKey(scope, wf);
+            final EnvKey key = new EnvKey(Kind.REACHABLE, scope, wf);
             new Compute(key).call();
             reachable.__put(scope, paths = envPaths.get(key).pathSet());
         }
@@ -216,7 +225,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 for(Tuple3<EnvKey, L, IRegExpMatcher<L>> entry : backimports.get(ref)) {
                     for(IResolutionPath<S, L, O> p : addedPaths) {
                         for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry._2())) {
-                            final EnvKey env = new EnvKey(s, entry._3());
+                            final EnvKey env = new EnvKey(ref.kind, s, entry._3());
                             initEnv(env);
                             addBackEdge(env, Paths.named(entry._1().scope, entry._2(), p, env.scope), entry._1());
                         }
@@ -231,7 +240,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 return;
             }
             initedEnvs.__insert(env);
-            envPaths.__put(env, new BUEnv<>(reachableOrder::compare));
+            envPaths.__put(env, new BUEnv<>(orders.get(env.kind)::compare));
             if(env.wf.isAccepting()) {
                 final Set.Immutable<IDeclPath<S, L, O>> declPaths = scopeGraph.getDecls().inverse().get(env.scope)
                         .stream().map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d))
@@ -244,12 +253,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                     continue;
                 }
                 for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
-                    final EnvKey env2 = new EnvKey(scope, wf2);
+                    final EnvKey env2 = new EnvKey(env.kind, scope, wf2);
                     initEnv(env2);
                     addBackEdge(env2, Paths.direct(env.scope, l, env2.scope), env);
                 }
                 for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
-                    final RefKey ref2 = new RefKey(ref);
+                    final RefKey ref2 = new RefKey(Kind.IMPORT, ref);
                     initRef(ref2);
                     addBackImport(ref2, l, wf2, env);
                 }
@@ -261,9 +270,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 return;
             }
             initedRes.__insert(ref);
-            refPaths.__put(ref, new BUEnv<>(visibleOrder::compare));
+            refPaths.__put(ref, new BUEnv<>(orders.get(ref.kind)::compare));
             scopeGraph.getRefs().get(ref.ref).ifPresent(s -> {
-                final EnvKey env = new EnvKey(s, wf);
+                final EnvKey env = new EnvKey(ref.kind, s, wf);
                 initEnv(env);
                 addBackRef(env, ref);
             });
@@ -278,10 +287,13 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         private void addBackImport(RefKey srcRef, L l, IRegExpMatcher<L> wf, EnvKey dstEnv) {
+            if(!srcRef.kind.equals(Kind.IMPORT)) {
+                throw new AssertionError();
+            }
             backimports.__insert(srcRef, Tuple3.of(dstEnv, l, wf));
             final Set.Immutable<IDeclPath<S, L, O>> paths = refPaths.get(srcRef).pathSet().stream().flatMap(p -> {
                 return scopeGraph.getExportEdges().get(p.getDeclaration(), l).stream().flatMap(ss -> {
-                    final EnvKey env2 = new EnvKey(ss, wf);
+                    final EnvKey env2 = new EnvKey(dstEnv.kind, ss, wf);
                     initEnv(env2);
                     return envPaths.get(env2).pathSet().stream();
                 }).flatMap(pp -> {
@@ -304,14 +316,16 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private class RefKey implements Serializable {
         private static final long serialVersionUID = 1L;
 
+        public final Kind kind;
         public final O ref;
 
-        public RefKey(O ref) {
+        public RefKey(Kind kind, O ref) {
+            this.kind = kind;
             this.ref = ref;
         }
 
         @Override public int hashCode() {
-            return Objects.hash(ref);
+            return Objects.hash(kind, ref);
         }
 
         @Override public boolean equals(Object obj) {
@@ -322,11 +336,11 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             if(getClass() != obj.getClass())
                 return false;
             @SuppressWarnings("unchecked") RefKey other = (RefKey) obj;
-            return ref.equals(other.ref);
+            return kind.equals(other.kind) && ref.equals(other.ref);
         }
 
         @Override public String toString() {
-            return ref.toString();
+            return kind.name() + "/" + ref.toString();
         }
 
     }
@@ -334,10 +348,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private class EnvKey implements Serializable {
         private static final long serialVersionUID = 1L;
 
+        public final Kind kind;
         public final S scope;
         public final IRegExpMatcher<L> wf;
 
-        public EnvKey(S scope, IRegExpMatcher<L> wf) {
+        public EnvKey(Kind kind, S scope, IRegExpMatcher<L> wf) {
+            this.kind = kind;
             this.scope = scope;
             this.wf = wf;
             if(wf.isEmpty()) {
@@ -346,7 +362,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         @Override public int hashCode() {
-            return Objects.hash(scope, wf.regexp());
+            return Objects.hash(kind, scope, wf.regexp());
         }
 
         @Override public boolean equals(Object obj) {
@@ -357,11 +373,11 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             if(getClass() != obj.getClass())
                 return false;
             @SuppressWarnings("unchecked") EnvKey other = (EnvKey) obj;
-            return scope.equals(other.scope) && wf.regexp().equals(other.wf.regexp());
+            return kind.equals(other.kind) && scope.equals(other.scope) && wf.regexp().equals(other.wf.regexp());
         }
 
         @Override public String toString() {
-            return scope.toString() + "/" + wf.regexp().toString();
+            return kind.toString() + "/" + scope.toString() + "/" + wf.regexp().toString();
         }
 
     }
@@ -387,14 +403,16 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                     + backimport.getKey() + "\n");
         }
         out.write(prefix + "| ref paths:\n");
-        for(Entry<RefKey, BUEnv<S, L, O, IResolutionPath<S, L, O>>> refPath : refPaths.entrySet()) {
-            out.write(prefix + "| - " + refPath.getKey() + ":\n");
-            refPath.getValue().write(prefix + "|   | ", out);
+        for(RefKey ref : initedRes) {
+            final BUEnv<S, L, O, IResolutionPath<S, L, O>> paths = refPaths.get(ref);
+            out.write(prefix + "| - " + ref + ":\n");
+            paths.write(prefix + "|   | ", out);
         }
         out.write("| env paths:\n");
-        for(Entry<EnvKey, BUEnv<S, L, O, IDeclPath<S, L, O>>> envPath : envPaths.entrySet()) {
-            out.write(prefix + "| - " + envPath.getKey() + ":\n");
-            envPath.getValue().write(prefix + "|   | ", out);
+        for(EnvKey env : initedEnvs) {
+            final BUEnv<S, L, O, IDeclPath<S, L, O>> paths = envPaths.get(env);
+            out.write(prefix + "| - " + env + ":\n");
+            paths.write(prefix + "|   | ", out);
         }
     }
 

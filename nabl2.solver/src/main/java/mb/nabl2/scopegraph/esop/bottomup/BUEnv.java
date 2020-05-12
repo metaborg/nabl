@@ -72,8 +72,7 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
             }
         }
         // there are no smaller selected paths
-        env.__insert(name, newPath);
-        return true;
+        return env.__insert(name, newPath);
     }
 
     public void write(String prefix, Writer out) throws IOException {
