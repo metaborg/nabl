@@ -1,7 +1,6 @@
 package mb.nabl2.solver;
 
 import java.util.Map;
-import java.util.Optional;
 
 import com.google.common.collect.Multimap;
 

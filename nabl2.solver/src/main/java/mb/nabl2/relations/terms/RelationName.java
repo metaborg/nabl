@@ -20,7 +20,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class NamedRelation extends RelationName {
+    static abstract class ANamedRelation extends RelationName {
 
         private static final String OP0 = "DefaultRelation";
         private static final String OP1 = "Relation";
@@ -39,7 +39,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
         // IApplTerm implementation
 
-        @Override protected IApplTerm check() {
+        @Override protected ANamedRelation check() {
             return this;
         }
 
@@ -54,8 +54,8 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         public static IMatcher<NamedRelation> matcher() {
             // @formatter:off
             return M.preserveAttachments(M.cases(
-                M.appl0(OP0, (t) -> ImmutableNamedRelation.of("")),
-                M.appl1(OP1, M.stringValue(), (t, name) -> ImmutableNamedRelation.of(name))
+                M.appl0(OP0, (t) -> NamedRelation.of("")),
+                M.appl1(OP1, M.stringValue(), (t, name) -> NamedRelation.of(name))
             ));
             // @formatter:on
         }
@@ -91,7 +91,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class ExtRelation extends RelationName {
+    static abstract class AExtRelation extends RelationName {
 
         private static final String OP = "ExtRelation";
 
@@ -109,7 +109,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
 
         // IApplTerm implementation
 
-        @Override protected IApplTerm check() {
+        @Override protected AExtRelation check() {
             return this;
         }
 
@@ -122,7 +122,7 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
         }
 
         public static IMatcher<ExtRelation> matcher() {
-            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ImmutableExtRelation.of(name)));
+            return M.preserveAttachments(M.appl1(OP, M.stringValue(), (t, name) -> ExtRelation.of(name)));
         }
 
         // Object implementation

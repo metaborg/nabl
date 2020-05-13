@@ -5,11 +5,11 @@ import java.util.Optional;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.ast.CAstProperty;
 import mb.nabl2.constraints.ast.IAstConstraint;
-import mb.nabl2.constraints.equality.ImmutableCEqual;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
@@ -49,7 +49,7 @@ public class AstComponent extends ASolver {
             properties.putValue(index, key, value);
             return Optional.empty();
         } else {
-            return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
+            return Optional.of(CEqual.of(value, prev.get(), message));
         }
     }
 

@@ -6,6 +6,8 @@ imports
   statix/lang/Core
   statix/lang/Sugar
 
+  statix/API
+
 template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
@@ -20,4 +22,8 @@ context-free syntax // desugared terms
 
 context-free syntax // runtime terms
 
-  Term = Label // for printing labels in paths
+  Term = Label
+  Term = Stx-Scope
+  Term = Stx-TermIndex
+
+  TermOrTermIndex = Stx-TermIndex

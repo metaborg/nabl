@@ -19,10 +19,10 @@ public final class EqualityConstraints {
         return M.<IEqualityConstraint>cases(
         // @formatter:off
             M.appl3(C_EQUAL, M.term(), M.term(), MessageInfo.matcher(), (c, term1, term2, origin) -> {
-                return ImmutableCEqual.of(term1, term2, origin);
+                return CEqual.of(term1, term2, origin);
             }),
             M.appl3(C_INEQUAL, M.term(), M.term(), MessageInfo.matcher(), (c, term1, term2, origin) -> {
-                return ImmutableCInequal.of(term1, term2, origin);
+                return CInequal.of(term1, term2, origin);
             })
             // @formatter:on
         );
@@ -40,11 +40,11 @@ public final class EqualityConstraints {
     public static IEqualityConstraint substitute(IEqualityConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(IEqualityConstraint.Cases.<IEqualityConstraint>of(
-            eq -> ImmutableCEqual.of(
+            eq -> CEqual.of(
                     subst.apply(eq.getLeft()),
                     subst.apply(eq.getRight()),
                     eq.getMessageInfo().apply(subst::apply)),
-            ineq -> ImmutableCInequal.of(
+            ineq -> CInequal.of(
                     subst.apply(ineq.getLeft()),
                     subst.apply(ineq.getRight()),
                     ineq.getMessageInfo().apply(subst::apply))
@@ -55,11 +55,11 @@ public final class EqualityConstraints {
     public static IEqualityConstraint transform(IEqualityConstraint constraint, Function1<ITerm, ITerm> map) {
         // @formatter:off
         return constraint.match(IEqualityConstraint.Cases.<IEqualityConstraint>of(
-            eq -> ImmutableCEqual.of(
+            eq -> CEqual.of(
                     map.apply(eq.getLeft()),
                     map.apply(eq.getRight()),
                     eq.getMessageInfo().apply(map::apply)),
-            ineq -> ImmutableCInequal.of(
+            ineq -> CInequal.of(
                     map.apply(ineq.getLeft()),
                     map.apply(ineq.getRight()),
                     ineq.getMessageInfo().apply(map::apply))

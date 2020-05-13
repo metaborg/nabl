@@ -15,7 +15,7 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.persistent.SolverResult;
@@ -34,7 +34,7 @@ public class STX_get_ast_property extends StatixPrimitive {
         final Optional<TermIndex> maybeIndex = TermIndex.get(term);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
-            final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);
+            final Tuple2<TermIndex, ITerm> key = Tuple2.of(index, prop);
             if(!analysis.state().termProperties().containsKey(key)) {
                 return Optional.empty();
             }

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.IScopeGraph;
@@ -21,7 +21,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
     @Override public abstract Map<Tuple2<S, L>, ConsList<S>> getEdges();
 
     @Override public Iterable<S> getEdges(S scope, L label) {
-        return getEdges().getOrDefault(ImmutableTuple2.of(scope, label), ConsList.nil());
+        return getEdges().getOrDefault(Tuple2.of(scope, label), ConsList.nil());
     }
 
     @Override public abstract Map<S, D> getData();
@@ -173,7 +173,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
         // ------------------------------------------------------------
 
         @Override public boolean addEdge(S sourceScope, L label, S targetScope) {
-            final Tuple2<S, L> key = ImmutableTuple2.of(sourceScope, label);
+            final Tuple2<S, L> key = Tuple2.of(sourceScope, label);
             final ConsList<S> scopes = edges.getOrDefault(key, ConsList.nil());
             edges.__put(key, scopes.prepend(targetScope));
             return true;

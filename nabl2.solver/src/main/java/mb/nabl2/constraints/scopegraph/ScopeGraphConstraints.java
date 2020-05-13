@@ -24,23 +24,23 @@ public final class ScopeGraphConstraints {
         // @formatter:off
             M.appl3(CG_DECL, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, decl, scope, origin) -> {
-                        return ImmutableCGDecl.of(scope, decl, origin);
+                        return CGDecl.of(scope, decl, origin);
                     }),
             M.appl3(CG_REF, M.term(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, ref, scope, origin) -> {
-                        return ImmutableCGRef.of(ref, scope, origin);
+                        return CGRef.of(ref, scope, origin);
                     }),
             M.appl4(CG_DIRECT_EDGE, M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, scope1, label, scope2, origin) -> {
-                        return ImmutableCGDirectEdge.of(scope1, label, scope2, origin);
+                        return CGDirectEdge.of(scope1, label, scope2, origin);
                     }),
             M.appl4(CG_EXPORT_EDGE, M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, decl, label, scope, origin) -> {
-                        return ImmutableCGExportEdge.of(decl, label, scope, origin);
+                        return CGExportEdge.of(decl, label, scope, origin);
                     }),
             M.appl4(CG_IMPORT_EDGE, M.term(), Label.matcher(), M.term(), MessageInfo.matcherOnlyOriginTerm(),
                     (c, ref, label, scope, origin) -> {
-                        return ImmutableCGImportEdge.of(scope, label, ref, origin);
+                        return CGImportEdge.of(scope, label, ref, origin);
                     })
             // @formatter:on
         );
@@ -66,25 +66,25 @@ public final class ScopeGraphConstraints {
     public static IScopeGraphConstraint substitute(IScopeGraphConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
-            decl -> ImmutableCGDecl.of(
+            decl -> CGDecl.of(
                         subst.apply(decl.getScope()),
                         subst.apply(decl.getDeclaration()),
                         decl.getMessageInfo().apply(subst::apply)),
-            ref -> ImmutableCGRef.of(
+            ref -> CGRef.of(
                         subst.apply(ref.getReference()),
                         subst.apply(ref.getScope()),
                         ref.getMessageInfo().apply(subst::apply)),
-            edge -> ImmutableCGDirectEdge.of(
+            edge -> CGDirectEdge.of(
                         subst.apply(edge.getSourceScope()),
                         edge.getLabel(),
                         subst.apply(edge.getTargetScope()),
                         edge.getMessageInfo().apply(subst::apply)),
-            exp -> ImmutableCGExportEdge.of(
+            exp -> CGExportEdge.of(
                         subst.apply(exp.getDeclaration()),
                         exp.getLabel(),
                         subst.apply(exp.getScope()),
                         exp.getMessageInfo().apply(subst::apply)),
-            imp -> ImmutableCGImportEdge.of(
+            imp -> CGImportEdge.of(
                         subst.apply(imp.getScope()),
                         imp.getLabel(),
                         subst.apply(imp.getReference()),
@@ -96,25 +96,25 @@ public final class ScopeGraphConstraints {
     public static IScopeGraphConstraint transform(IScopeGraphConstraint constraint, Function1<ITerm, ITerm> map) {
         // @formatter:off
         return constraint.match(IScopeGraphConstraint.Cases.<IScopeGraphConstraint>of(
-            decl -> ImmutableCGDecl.of(
+            decl -> CGDecl.of(
                         map.apply(decl.getScope()),
                         map.apply(decl.getDeclaration()),
                         decl.getMessageInfo().apply(map::apply)),
-            ref -> ImmutableCGRef.of(
+            ref -> CGRef.of(
                         map.apply(ref.getReference()),
                         map.apply(ref.getScope()),
                         ref.getMessageInfo().apply(map::apply)),
-            edge -> ImmutableCGDirectEdge.of(
+            edge -> CGDirectEdge.of(
                         map.apply(edge.getSourceScope()),
                         edge.getLabel(),
                         map.apply(edge.getTargetScope()),
                         edge.getMessageInfo().apply(map::apply)),
-            exp -> ImmutableCGExportEdge.of(
+            exp -> CGExportEdge.of(
                         map.apply(exp.getDeclaration()),
                         exp.getLabel(),
                         map.apply(exp.getScope()),
                         exp.getMessageInfo().apply(map::apply)),
-            imp -> ImmutableCGImportEdge.of(
+            imp -> CGImportEdge.of(
                         map.apply(imp.getScope()),
                         imp.getLabel(),
                         map.apply(imp.getReference()),

@@ -2,9 +2,9 @@ package mb.nabl2.relations.terms;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import mb.nabl2.relations.RelationDescription.Reflexivity;
-import mb.nabl2.relations.RelationDescription.Symmetry;
-import mb.nabl2.relations.RelationDescription.Transitivity;
+import mb.nabl2.relations.ARelationDescription.Reflexivity;
+import mb.nabl2.relations.ARelationDescription.Symmetry;
+import mb.nabl2.relations.ARelationDescription.Transitivity;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class RelationOptions {

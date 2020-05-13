@@ -41,7 +41,7 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
@@ -87,7 +87,7 @@ public class StatixTerms {
 
     public static final String SCOPE_OP = "Scope";
     public static final String TERMINDEX_OP = "TermIndex";
-    public static final String OCCURRENCE_OP = "Occurrence";
+    public static final String OCCURRENCE_OP = "StxOccurrence";
     public static final String PATH_EMPTY_OP = "PathEmpty";
     public static final String PATH_STEP_OP = "PathStep";
     public static final String WITHID_OP = "WithId";
@@ -132,7 +132,7 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<String, List<Pattern>>> head() {
         return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
-            return ImmutableTuple2.of(name, patterns);
+            return Tuple2.of(name, patterns);
         });
     }
 
@@ -271,7 +271,7 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<String, Tuple2<Integer, ITerm>>> scopeExtension() {
         return M.tuple3(M.stringValue(), M.integerValue(), M.term(),
-                (t, c, i, lbl) -> ImmutableTuple2.of(c, ImmutableTuple2.of(i - 1, lbl)));
+                (t, c, i, lbl) -> Tuple2.of(c, Tuple2.of(i - 1, lbl)));
     }
 
     public static IMatcher<List<ITerm>> labels() {
@@ -316,7 +316,7 @@ public class StatixTerms {
         return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> {
             final EdgeOrData<ITerm> _l1 = isEOP(l1) ? EdgeOrData.data() : EdgeOrData.edge(l1);
             final EdgeOrData<ITerm> _l2 = isEOP(l2) ? EdgeOrData.data() : EdgeOrData.edge(l2);
-            return ImmutableTuple2.of(_l1, _l2);
+            return Tuple2.of(_l1, _l2);
         });
     }
 
@@ -536,7 +536,7 @@ public class StatixTerms {
                         final ITerm ns = appl.getArgs().get(0);
                         final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = B.newAppl(WITHID_OP, explicate(appl.getArgs().get(2)));
+                        final ITerm pos = explicatePosition(appl.getArgs().get(2));
                         return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
                     }
                     default: {
@@ -624,6 +624,10 @@ public class StatixTerms {
             throw new IllegalArgumentException("Encountered a relation label in the middle of path.");
         }
         return pathTerm;
+    }
+
+    private static ITerm explicatePosition(ITerm pos) {
+        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explicate(pos)));
     }
 
 }

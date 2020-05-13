@@ -10,7 +10,6 @@ import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -178,7 +177,7 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
 
     private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        Tuple2<Set.Immutable<EdgeOrData<L>>, EdgeOrData<L>> key = ImmutableTuple2.of(L, l1);
+        Tuple2<Set.Immutable<EdgeOrData<L>>, EdgeOrData<L>> key = Tuple2.of(L, l1);
         Set.Immutable<EdgeOrData<L>> smaller;
         if(null == (smaller = smallerCache.get(key))) {
             smallerCache.put(key, (smaller = computeSmaller(L, l1)));

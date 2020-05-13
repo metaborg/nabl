@@ -1,9 +1,9 @@
 ---
-id: org.metaborg:statix.integrationtest.lang.mod.test:0.1.0-SNAPSHOT
+id: org.metaborg:statix.integrationtest.lang.mod.test:${metaborgVersion}
 name: modtest
 dependencies:
   compile:
-  - org.metaborg:statix.integrationtest.lang.mod:0.1.0-SNAPSHOT
+  - org.metaborg:statix.integrationtest.lang.mod:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 runtime:
   nabl2:

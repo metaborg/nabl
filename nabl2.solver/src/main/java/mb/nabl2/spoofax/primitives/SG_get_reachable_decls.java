@@ -23,7 +23,7 @@ public class SG_get_reachable_decls extends AnalysisPrimitive {
         return Scope.matcher().match(term, solution.unifier()).<ITerm>flatMap(scope -> {
             try {
                 return Optional.of(B.newList(solution.nameResolution().reachable(scope)));
-            } catch(CriticalEdgeException e) {
+            } catch(CriticalEdgeException | InterruptedException e) {
                 return Optional.empty();
             }
         });

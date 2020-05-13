@@ -20,9 +20,7 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.esop.ImmutableCriticalEdge;
 import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieFunction;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -97,7 +95,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         }
 
         @Override public boolean isOpen(S scope, L label) {
-            final Tuple2<S, L> key = ImmutableTuple2.of(scope, label);
+            final Tuple2<S, L> key = Tuple2.of(scope, label);
             return incompleteDirectEdges.containsKey(key) || incompleteImportEdges.containsKey(key);
         }
 
@@ -209,18 +207,18 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             this.importEdges = importEdges;
             this.incompleteDirectEdges = new IndexedBagMultimap<>(RemovalPolicy.ALL);
             incompleteDirectEdges.entrySet().forEach(e -> {
-                this.incompleteDirectEdges.put(ImmutableTuple2.of(e.getKey()._1(), e.getKey()._2()), e.getValue(),
+                this.incompleteDirectEdges.put(Tuple2.of(e.getKey()._1(), e.getKey()._2()), e.getValue(),
                         Iterables2.singleton(e.getValue()));
             });
             this.incompleteImportEdges = new IndexedBagMultimap<>(RemovalPolicy.ALL);
             incompleteImportEdges.entrySet().forEach(e -> {
-                this.incompleteImportEdges.put(ImmutableTuple2.of(e.getKey()._1(), e.getKey()._2()), e.getValue(),
+                this.incompleteImportEdges.put(Tuple2.of(e.getKey()._1(), e.getKey()._2()), e.getValue(),
                         Iterables2.singleton(e.getValue()));
             });
         }
 
         @Override public boolean isOpen(S scope, L label) {
-            final Tuple2<S, L> key = ImmutableTuple2.of(scope, label);
+            final Tuple2<S, L> key = Tuple2.of(scope, label);
             return incompleteDirectEdges.containsKey(key) || incompleteImportEdges.containsKey(key);
         }
 
@@ -274,7 +272,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         @Override public boolean addIncompleteDirectEdge(S scope, L label, V var,
                 Function1<V, ? extends Iterable<? extends V>> norm) {
-            incompleteDirectEdges.put(ImmutableTuple2.of(scope, label), var, norm.apply(var));
+            incompleteDirectEdges.put(Tuple2.of(scope, label), var, norm.apply(var));
             return true;
         }
 
@@ -284,7 +282,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         @Override public boolean addIncompleteImportEdge(S scope, L label, V var,
                 Function1<V, ? extends Iterable<? extends V>> norm) {
-            incompleteImportEdges.put(ImmutableTuple2.of(scope, label), var, norm.apply(var));
+            incompleteImportEdges.put(Tuple2.of(scope, label), var, norm.apply(var));
             return true;
         }
 
@@ -337,7 +335,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                     S s = slv.getKey()._1();
                     L l = slv.getKey()._2();
                     add.test(s, l, x);
-                    reduced.add(ImmutableCriticalEdge.of(s, l));
+                    reduced.add(CriticalEdge.of(s, l));
                 }
             }
         }

@@ -7,8 +7,6 @@ imports
   libspoofax/editor/refactoring/-
 
   pp/-
-  pp/statix/lang/-
-  pp/statix/test/-
   statix/lang/pp
 
 rules

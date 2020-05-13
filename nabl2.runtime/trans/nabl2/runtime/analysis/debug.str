@@ -21,5 +21,8 @@ rules
   nabl2--debug-symbolic-constraints(|a) =
     prim("SG_debug_symbolic_constraints", a)
 
+  nabl2--debug-ast-properties(|a) =
+    prim("SG_debug_ast_properties", a)
+
   nabl2--focus-term(|resource) =
     prim("SG_focus_term", resource)

@@ -1,9 +1,9 @@
 ---
-id: org.metaborg:statix.integrationtest.lang.sysf.test:0.1.0-SNAPSHOT
+id: org.metaborg:statix.integrationtest.lang.sysf.test:${metaborgVersion}
 name: SystemFTest
 dependencies:
   compile:
-  - org.metaborg:statix.integrationtest.lang.sysf:0.1.0-SNAPSHOT
+  - org.metaborg:statix.integrationtest.lang.sysf:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 build:
   useBuildSystemSpec: true

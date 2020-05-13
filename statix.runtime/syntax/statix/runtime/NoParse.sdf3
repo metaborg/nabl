@@ -1,35 +1,31 @@
 module statix/runtime/NoParse
 
-sorts
+imports
 
-  Int          // abstract, custom pretty print in statix/runtime/pp
-  Stx-ATerm    // abstract, custom pretty print in statix/runtime/pp
+  statix/API
 
-  Var
-
-lexical syntax
-
-  String = ~[]
-
-sorts
-
-  Position
 
 context-free syntax
 
-  Scope.Scope = <#<String>-<String>>
+  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-OccurrencePosition>}>
 
-  Occurrence.Occurrence = <<String>{<{Term ", "}*> <TermIndex>}>
+  Stx-OccurrencePosition      = Stx-TermIndex
+  Stx-OccurrencePosition.NoId = <@->
 
-  TermIndex.TermIndex = <@<String>-<Int>>
-  TermIndex.NoId      = <@->
+  Stx-Scope.Scope = <#<Stx-STRING>-<Stx-STRING>>
 
-  Term           = Scope
-  Term           = Occurrence
-  Term           = TermIndex
-  Term.Var       = <?<String>-<String>>
+  Stx-TermIndex.TermIndex = <@<Stx-STRING>-<Stx-INT>>
 
-  TermOrId = Term
+  Stx-Var.Var = <?<Stx-STRING>-<Stx-STRING>>
+
+
+context-free syntax
+
+  Stx-ATerm   = Stx-Var
+  Stx-ATerm   = Stx-Scope
+  Stx-ATerm   = Stx-Occurrence
+  Stx-ATerm   = Stx-TermIndex
+
 
 context-free syntax
 
@@ -50,6 +46,6 @@ context-free syntax
     edges  <{Stx-EdgeEntry "\n"}*>
   >
 
-  Stx-MatchEntry = <<Scope> ~ <Scope>>
-  Stx-ScopeEntry = <<Scope> : <Stx-ATerm>>
-  Stx-EdgeEntry = [[Scope] -[Stx-ATerm]-> [Scope]]
+  Stx-MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
+  Stx-ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
+  Stx-EdgeEntry = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]

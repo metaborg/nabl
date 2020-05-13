@@ -30,7 +30,7 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -487,7 +487,7 @@ class GreedySolver {
                 final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
                 if(maybeIndex.isPresent()) {
                     final TermIndex index = maybeIndex.get();
-                    final Tuple2<TermIndex, ITerm> key = ImmutableTuple2.of(index, prop);
+                    final Tuple2<TermIndex, ITerm> key = Tuple2.of(index, prop);
                     ITermProperty property;
                     switch(c.op()) {
                         case ADD: {

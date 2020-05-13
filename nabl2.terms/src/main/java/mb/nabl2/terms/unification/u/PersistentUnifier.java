@@ -26,7 +26,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public abstract class PersistentUnifier extends BaseUnifier implements IUnifier, Serializable {
@@ -99,7 +98,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right) {
                 super(unifier);
-                worklist.push(ImmutableTuple2.of(left, right));
+                worklist.push(Tuple2.of(left, right));
             }
 
             public Unify(PersistentUnifier.Immutable unifier,
@@ -113,7 +112,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             public Unify(PersistentUnifier.Immutable unifier, IUnifier other) {
                 super(unifier);
                 other.varSet().forEach(v -> {
-                    worklist.push(ImmutableTuple2.of(v, other.findTerm(v)));
+                    worklist.push(Tuple2.of(v, other.findTerm(v)));
                 });
             }
 
@@ -214,8 +213,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 return left.match(ListTerms.<Boolean>cases(
                     consLeft -> right.match(ListTerms.<Boolean>cases()
                         .cons(consRight -> {
-                            worklist.push(ImmutableTuple2.of(consLeft.getHead(), consRight.getHead()));
-                            worklist.push(ImmutableTuple2.of(consLeft.getTail(), consRight.getTail()));
+                            worklist.push(Tuple2.of(consLeft.getHead(), consRight.getHead()));
+                            worklist.push(Tuple2.of(consLeft.getTail(), consRight.getTail()));
                             return true;
                         })
                         .var(varRight -> {
@@ -255,7 +254,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 }
                 final ITerm repTerm = getTerm(rep); // term for the representative
                 if(repTerm != null) {
-                    worklist.push(ImmutableTuple2.of(repTerm, term));
+                    worklist.push(Tuple2.of(repTerm, term));
                 } else {
                     putTerm(rep, term);
                     result.add(rep);
@@ -280,7 +279,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(varTerm != null) {
                     final ITerm repTerm = getTerm(rep); // term for the representative
                     if(repTerm != null) {
-                        worklist.push(ImmutableTuple2.of(varTerm, repTerm));
+                        worklist.push(Tuple2.of(varTerm, repTerm));
                         // don't add to result
                     } else {
                         putTerm(rep, varTerm);
@@ -299,7 +298,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                     if(!itRight.hasNext()) {
                         return false;
                     }
-                    worklist.push(ImmutableTuple2.of(itLeft.next(), itRight.next()));
+                    worklist.push(Tuple2.of(itLeft.next(), itRight.next()));
                 }
                 if(itRight.hasNext()) {
                     return false;

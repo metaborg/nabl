@@ -22,13 +22,13 @@ public final class RelationConstraints {
         return M.<IRelationConstraint>cases(
         // @formatter:off
             M.appl4(C_BUILD_REL, M.term(), RelationName.matcher(), M.term(), MessageInfo.matcher(), (c, term1, rel, term2, origin) -> {
-                return ImmutableCBuildRelation.of(term1, rel, term2, origin);
+                return CBuildRelation.of(term1, rel, term2, origin);
             }),
             M.appl4(C_CHECK_REL, M.term(), RelationName.matcher(), M.term(), MessageInfo.matcher(), (c, term1, rel, term2, origin) -> {
-                return ImmutableCCheckRelation.of(term1, rel, term2, origin);
+                return CCheckRelation.of(term1, rel, term2, origin);
             }),
             M.appl4(C_EVAL, M.term(), FunctionName.matcher(), M.term(), MessageInfo.matcher(), (c, result, fun, term, origin) -> {
-                return ImmutableCEvalFunction.of(result, fun, term, origin);
+                return CEvalFunction.of(result, fun, term, origin);
             })
             // @formatter:on
         );
@@ -50,17 +50,17 @@ public final class RelationConstraints {
     public static IRelationConstraint substitute(IRelationConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(IRelationConstraint.Cases.<IRelationConstraint>of(
-            build -> ImmutableCBuildRelation.of(
+            build -> CBuildRelation.of(
                         subst.apply(build.getLeft()),
                         build.getRelation(),
                         subst.apply(build.getRight()),
                         build.getMessageInfo().apply(subst::apply)),
-            check -> ImmutableCCheckRelation.of(
+            check -> CCheckRelation.of(
                         subst.apply(check.getLeft()),
                         check.getRelation(),
                         subst.apply(check.getRight()),
                         check.getMessageInfo().apply(subst::apply)),
-            eval -> ImmutableCEvalFunction.of(
+            eval -> CEvalFunction.of(
                         subst.apply(eval.getResult()),
                         eval.getFunction(),
                         subst.apply(eval.getTerm()),
@@ -72,17 +72,17 @@ public final class RelationConstraints {
     public static IRelationConstraint transform(IRelationConstraint constraint, Function1<ITerm, ITerm> map) {
         // @formatter:off
         return constraint.match(IRelationConstraint.Cases.<IRelationConstraint>of(
-            build -> ImmutableCBuildRelation.of(
+            build -> CBuildRelation.of(
                         map.apply(build.getLeft()),
                         build.getRelation(),
                         map.apply(build.getRight()),
                         build.getMessageInfo().apply(map::apply)),
-            check -> ImmutableCCheckRelation.of(
+            check -> CCheckRelation.of(
                         map.apply(check.getLeft()),
                         check.getRelation(),
                         map.apply(check.getRight()),
                         check.getMessageInfo().apply(map::apply)),
-            eval -> ImmutableCEvalFunction.of(
+            eval -> CEvalFunction.of(
                         map.apply(eval.getResult()),
                         eval.getFunction(),
                         map.apply(eval.getTerm()),

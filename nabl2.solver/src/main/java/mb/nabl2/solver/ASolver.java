@@ -3,7 +3,6 @@ package mb.nabl2.solver;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.time.AggregateTimer;
 
 import mb.nabl2.terms.ITerm;

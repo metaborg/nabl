@@ -1,6 +1,7 @@
 package mb.statix.solver.completeness;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -62,6 +63,18 @@ public abstract class Completeness implements ICompleteness {
             return new Completeness.Immutable(spec, Map.Immutable.of());
         }
 
+        @Override public boolean equals(Object o) {
+            if(this == o) return true;
+            if(o == null || getClass() != o.getClass()) return false;
+            Completeness.Immutable immutable = (Completeness.Immutable)o;
+            return spec.equals(immutable.spec) &&
+                incomplete.equals(immutable.incomplete);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(spec, incomplete);
+        }
     }
 
     public static class Transient extends Completeness implements ICompleteness.Transient {

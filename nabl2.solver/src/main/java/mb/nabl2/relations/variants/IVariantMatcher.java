@@ -6,11 +6,11 @@ import java.util.Optional;
 
 public interface IVariantMatcher<T> {
 
-    Optional<List<Arg<T>>> match(T t);
+    Optional<List<IArg<T>>> match(T t);
 
     T build(Collection<? extends T> ts);
 
-    interface Arg<T> {
+    interface IArg<T> {
 
         IVariance getVariance();
 

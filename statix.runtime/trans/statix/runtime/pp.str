@@ -5,8 +5,10 @@ imports
   libstratego-gpp
 
   statix/runtime/-
-  pp/statix/runtime/-
+
   signatures/statix/runtime/-
+
+  pp/statix/runtime/-
 
 signature
   constructors
@@ -24,8 +26,13 @@ rules
 
 rules
 
-  prettyprint-Statix-Int =
-    ![S(<is-int;int-to-string>)]
+  prettyprint-Statix-Stx-INT =
+    where(is-int)
+  ; ![S(<int-to-string>)]
+
+  prettyprint-Statix-Stx-STRING =
+    where(is-string)
+  ; ![S(<id>)]
 
   prettyprint-Statix-Stx-ATerm =
     ![S(<strip-annos;write-to-string>)]
@@ -35,5 +42,4 @@ rules
     with a' := Analysis(<stx--debug-scopegraph> a)
 
   stx--prettyprint-term =
-    where(is-Statix-Term)
-  ; prettyprint-Statix-Term
+    prettyprint-Statix-Stx-ATerm

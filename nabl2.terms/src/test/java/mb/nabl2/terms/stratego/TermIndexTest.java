@@ -17,21 +17,21 @@ import mb.nabl2.terms.ITerm;
 public class TermIndexTest {
 
     @Test public void testEqualAfterSerialization1() throws Exception {
-        ITerm t1 = ImmutableTermIndex.of("Hello, world!", 42);
+        ITerm t1 = TermIndex.of("Hello, world!", 42);
         ITerm t2 = deserialize(serialize(t1));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testEqualAfterSerialization2() throws Exception {
-        ITerm t1 = ImmutableTermIndex.of("Hello, world!", 42);
-        ITerm t2 = deserialize(serialize(ImmutableTermIndex.of("Hello, world!", 42)));
+        ITerm t1 = TermIndex.of("Hello, world!", 42);
+        ITerm t2 = deserialize(serialize(TermIndex.of("Hello, world!", 42)));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testSerializeSpecialized() throws Exception {
-        ITerm t = ImmutableTermIndex.of("Hello, world!", 42);
+        ITerm t = TermIndex.of("Hello, world!", 42);
         byte[] b1 = serialize(t);
         byte[] b2 = serialize(deserialize(b1));
         assertTrue(Arrays.equals(b1, b2));

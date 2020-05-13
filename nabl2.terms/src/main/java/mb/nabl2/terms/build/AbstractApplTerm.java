@@ -42,19 +42,25 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return cases.caseAppl(this);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(
-            getOp(),
-            getArity(),
-            getArgs()
-        );
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getOp(), getArity(), getArgs());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof IApplTerm)) return false;
-        IApplTerm that = (IApplTerm)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof IApplTerm))
+            return false;
+        IApplTerm that = (IApplTerm) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return Objects.equals(this.getOp(), that.getOp())
             && Objects.equals(this.getArity(), that.getArity())

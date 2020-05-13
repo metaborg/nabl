@@ -19,7 +19,7 @@ public final class AstConstraints {
         return M.<IAstConstraint>cases(
         // @formatter:off
             M.appl3(C_AST_PROPERTY, TermIndex.matcher(), M.term(), M.term(), (c, index, key, value) -> {
-                return ImmutableCAstProperty.of(index, key, value, MessageInfo.of(index));
+                return CAstProperty.of(index, key, value, MessageInfo.of(index));
             })
             // @formatter:on
         );
@@ -37,7 +37,7 @@ public final class AstConstraints {
     public static IAstConstraint substitute(IAstConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(IAstConstraint.Cases.<IAstConstraint>of(
-            prop -> ImmutableCAstProperty.of(
+            prop -> CAstProperty.of(
                         prop.getIndex(),
                         prop.getKey(),
                         subst.apply(prop.getValue()),
@@ -49,7 +49,7 @@ public final class AstConstraints {
     public static IAstConstraint transform(IAstConstraint constraint, Function1<ITerm, ITerm> map) {
         // @formatter:off
         return constraint.match(IAstConstraint.Cases.<IAstConstraint>of(
-            prop -> ImmutableCAstProperty.of(
+            prop -> CAstProperty.of(
                         prop.getIndex(),
                         prop.getKey(),
                         map.apply(prop.getValue()),

@@ -29,7 +29,7 @@ rules
   normalize-resolve(|a): t@ResolveLt(_){a*} -> ord{a*}
     with ord := <norm-get-ast-decl-property(|a, "ord")> t
 
-  normalize-resolve(|a): OccurrenceMatch(Occurrence(ns, ts, _)){a*} -> lam{a*}
+  normalize-resolve(|a): OccurrenceMatch(StxOccurrence(ns, ts, _)){a*} -> lam{a*}
     with NS(tys) := <norm-get-ast-decl-type(|a)> ns;
          us := <mk-fresh-Vars(|"u")> tys;
          d := <mk-Occurrence>(ns, us, WithId(<mk-Wld(|AST_ID())>));

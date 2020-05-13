@@ -25,16 +25,15 @@ import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
-import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolution;
+import mb.nabl2.solver.Solution;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverConfig;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.components.AstComponent;
 import mb.nabl2.solver.components.BaseComponent;
 import mb.nabl2.solver.components.EqualityComponent;
-import mb.nabl2.solver.components.ImmutableNameResolutionResult;
 import mb.nabl2.solver.components.NameResolutionComponent;
-import mb.nabl2.solver.components.NameResolutionComponent.NameResolutionResult;
+import mb.nabl2.solver.components.NameResolutionResult;
 import mb.nabl2.solver.components.NameSetsComponent;
 import mb.nabl2.solver.components.RelationComponent;
 import mb.nabl2.solver.components.SetComponent;
@@ -120,7 +119,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             for(ISolution unitSolution : unitSolutions) {
                 seed(astSolver.seed(unitSolution.astProperties(), message), messages, constraints);
                 seed(equalitySolver.seed(unitSolution.unifier(), message), messages, constraints);
-                final NameResolutionResult nameResult = ImmutableNameResolutionResult.of(unitSolution.scopeGraph(),
+                final NameResolutionResult nameResult = NameResolutionResult.of(unitSolution.scopeGraph(),
                         unitSolution.nameResolutionCache(), unitSolution.declProperties());
                 seed(nameResolutionSolver.seed(nameResult, message), messages, constraints);
                 seed(relationSolver.seed(unitSolution.relations(), message), messages, constraints);
@@ -141,8 +140,9 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             IUnifier.Immutable unifierResult = equalitySolver.finish();
             Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
+            setSolver.finish();
 
-            return ImmutableSolution.of(config, astResult, nameResolutionResult.scopeGraph(),
+            return Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                     messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());

@@ -176,7 +176,7 @@ rules // smart constructors for typed terms
 
   mk-As(|ty): (v, t) -> <norm-set-ast-type(|ty)> As(v, t)
 
-  mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> Occurrence(ns, us, p)
+  mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> StxOccurrence(ns, us, p)
 
 rules
 
