@@ -17,4 +17,9 @@ rules
     ; r := <stx--get-ast-property(|a,Ref())> node
 
   stx--editor-hover:
-      (node, position, ast, path, project-path) -> <fail>
+      (node, position, ast, path, project-path) -> lbl
+    where
+      a  := <stx-get-ast-analysis> node
+    ; ty := <stx-get-ast-property(|a,"type")> node
+    with
+      lbl := <strip-annos; write-to-string> ty
