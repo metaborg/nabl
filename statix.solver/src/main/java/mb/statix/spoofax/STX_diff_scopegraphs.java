@@ -9,7 +9,6 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.diff.ScopeGraphDiff;
 import mb.statix.scopegraph.diff.ScopeGraphDiffer;
@@ -32,7 +31,7 @@ public class STX_diff_scopegraphs extends StatixPrimitive {
 
         final Tuple2<IState.Immutable, IState.Immutable> states =
                 M.tuple2(M.blobValue(SolverResult.class), M.blobValue(SolverResult.class), (t, current, previous) -> {
-                    return ImmutableTuple2.of(current.state(), previous.state());
+                    return Tuple2.of(current.state(), previous.state());
                 }).match(term).orElseThrow(() -> new IllegalArgumentException("Expected solver results, got " + term));
         final IState.Immutable current = states._1();
         final IState.Immutable previous = states._2();

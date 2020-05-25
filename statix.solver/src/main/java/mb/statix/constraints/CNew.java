@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -58,9 +59,8 @@ public class CNew implements IConstraint, Serializable {
 
     @Override public Multiset<ITermVar> getVars() {
         final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        for (ITerm t : terms) {
-            vars.addAll(t.getVars());
-        }
+        vars.addAll(scopeTerm.getVars());
+        vars.addAll(datumTerm.getVars());
         return vars.build();
     }
 
