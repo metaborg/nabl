@@ -6,6 +6,7 @@ import java.util.Set;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITermVar;
@@ -16,7 +17,9 @@ import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -52,6 +55,11 @@ public abstract class ASolverResult {
 
     public IConstraint delayed() {
         return Constraints.conjoin(delays().keySet());
+    }
+
+    public static SolverResult of(Spec spec) {
+        return SolverResult.of(State.of(spec), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
+                ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of(spec));
     }
 
 }

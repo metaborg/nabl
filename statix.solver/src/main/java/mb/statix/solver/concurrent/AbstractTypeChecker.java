@@ -5,6 +5,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 
@@ -23,49 +26,63 @@ import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.StartAnswer;
 import mb.statix.solver.concurrent.messages.Suspend;
 
-public abstract class AbstractTypeChecker<S, L, D> implements ClientMessage.Cases<S, L, D> {
+public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.Cases<S, L, D> {
+
+    private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 
     // local state
 
-    private enum State {
-        INIT, ACTIVE, WAITING, DONE, DEADLOCKED
-    }
+    private final String resource;
 
     private final BlockingQueue<ClientMessage<S, L, D>> inbox = Queues.newLinkedBlockingDeque();
 
     private final Coordinator<S, L, D> coordinator;
-    private final CompletableFuture<Object> pendingResult = new CompletableFuture<>();
+    private final CompletableFuture<R> pendingResult = new CompletableFuture<>();
     private State state;
 
-    private long lastMessageId = 0;
+    private int clock = 0;
+    private int lastMessageId = 0;
 
     private final Map<Long, CompletableFuture<S>> pendingScopes = Maps.newHashMap();
     private final Map<Long, CompletableFuture<Set.Immutable<Object>>> pendingAnswers = Maps.newHashMap();
 
     public AbstractTypeChecker(String resource, Coordinator<S, L, D> coordinator) {
+        this.resource = resource;
         this.coordinator = coordinator;
-        this.state = State.INIT;
-        coordinator.register(resource, this);
+        setState(State.INIT);
+        coordinator.register(this);
     }
 
-    public CompletableFuture<Object> run(ExecutorService executor) {
+    public String resource() {
+        return resource;
+    }
+
+    private void setState(State state) {
+        logger.info("client {} is in state {}", this, state);
+        this.state = state;
+    }
+
+    public CompletableFuture<R> run(ExecutorService executor) {
         executor.submit(() -> {
             try {
                 run();
-            } catch(InterruptedException e) {
+            } catch(Throwable e) {
                 pendingResult.completeExceptionally(e);
             }
         });
         return pendingResult;
     }
 
-    final void post(ClientMessage<S, L, D> message) {
+    final void receive(ClientMessage<S, L, D> message) {
+        logger.info("client {} received {}", this, message);
         inbox.add(message);
     }
 
-    final long post(CoordinatorMessage<S, L, D> message) {
-        final long messageId = ++lastMessageId;
-        coordinator.post(message.withId(messageId));
+    private final long post(CoordinatorMessage<S, L, D> message) {
+        final int messageId = ++lastMessageId;
+        message = message.withClient(this).withClock(clock).withId(messageId);
+        logger.info("post {} to coordinator", message);
+        coordinator.receive(message);
         return messageId;
     }
 
@@ -74,25 +91,28 @@ public abstract class AbstractTypeChecker<S, L, D> implements ClientMessage.Case
     final void run() throws InterruptedException {
         while(!inState(State.DONE, State.DEADLOCKED)) {
             if(inbox.isEmpty()) {
-                state = State.WAITING;
-                post(Suspend.of(this));
+                logger.info("client {} suspended", this);
+                post(Suspend.<S, L, D>builder().build());
             }
             final ClientMessage<S, L, D> message = inbox.take();
+            clock += 1; // increase count of messages received from coordinator
+            logger.info("client {} processing {}", this, message);
             message.match(this);
         }
+        logger.info("client {} finished.", this);
     }
 
     @Override public final void on(Start<S, L, D> message) throws InterruptedException {
         if(!inState(State.INIT)) {
             throw new IllegalStateException("Expected state INIT, got " + state.toString());
         }
+        start(message.root());
     }
 
     @Override public final void on(ScopeAnswer<S, L, D> message) throws InterruptedException {
-        if(!inState(State.ACTIVE, State.WAITING)) {
+        if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state WAITING, got " + state.toString());
         }
-        state = State.ACTIVE;
         if(!pendingScopes.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
@@ -100,10 +120,9 @@ public abstract class AbstractTypeChecker<S, L, D> implements ClientMessage.Case
     }
 
     @Override public final void on(QueryAnswer<S, L, D> message) throws InterruptedException {
-        if(!inState(State.ACTIVE, State.WAITING)) {
+        if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state WAITING, got " + state.toString());
         }
-        state = State.ACTIVE;
         if(!pendingAnswers.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
@@ -111,10 +130,11 @@ public abstract class AbstractTypeChecker<S, L, D> implements ClientMessage.Case
     }
 
     @Override public final void on(DeadLock<S, L, D> message) throws InterruptedException {
-        if(!inState(State.ACTIVE, State.WAITING)) {
+        if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state WAITING, got " + state.toString());
         }
-        state = State.DEADLOCKED;
+        setState(State.DEADLOCKED);
+        pendingResult.completeExceptionally(new Exception("deadlocked"));
         fail();
     }
 
@@ -141,15 +161,15 @@ public abstract class AbstractTypeChecker<S, L, D> implements ClientMessage.Case
         if(!inState(State.INIT)) {
             throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
         }
-        state = State.ACTIVE;
-        coordinator.post(StartAnswer.of(this, labels));
+        setState(State.ACTIVE);
+        post(StartAnswer.of(labels));
     }
 
     public final CompletableFuture<S> freshScope(D datum, java.util.Set<L> labels) {
         if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
         }
-        final long messageId = post(FreshScope.of(this, datum, labels));
+        final long messageId = post(FreshScope.of(datum, labels));
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
         pendingScopes.put(messageId, pendingScope);
         return pendingScope;
@@ -159,34 +179,37 @@ public abstract class AbstractTypeChecker<S, L, D> implements ClientMessage.Case
         if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
         }
-        post(AddEdge.of(this, source, label, target));
+        post(AddEdge.of(source, label, target));
     }
 
     public final void closeEdge(S source, L label) {
         if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
         }
-        post(CloseEdge.of(this, source, label));
+        post(CloseEdge.of(source, label));
     }
 
     public final CompletableFuture<Set.Immutable<Object>> query(S scope) {
         if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
         }
-        final long messageId = post(Query.of(this, scope));
+        final long messageId = post(Query.of(scope));
         final CompletableFuture<Set.Immutable<Object>> pendingAnswer = new CompletableFuture<>();
         pendingAnswers.put(messageId, pendingAnswer);
         return pendingAnswer;
     }
 
-    public final void done(Object result) {
+    public final void done(R result) {
         if(!inState(State.ACTIVE)) {
             throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
         }
-        post(Done.of(this));
-        state = State.DONE;
+        setState(State.DONE);
+        post(Done.<S, L, D>builder().build());
         pendingResult.complete(result);
     }
 
+    @Override public String toString() {
+        return "TypeChecker[" + resource + "]";
+    }
 
 }

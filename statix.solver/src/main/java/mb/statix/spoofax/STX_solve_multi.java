@@ -5,9 +5,9 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -17,7 +17,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
@@ -30,13 +29,14 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.concurrent.Coordinator;
 import mb.statix.solver.concurrent.StatixTypeChecker;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi.class);
 
     @Inject public STX_solve_multi() {
-        super(STX_solve_multi.class.getSimpleName(), 3);
+        super(STX_solve_multi.class.getSimpleName(), 2);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -53,13 +53,14 @@ public class STX_solve_multi extends StatixPrimitive {
         final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
 
+        final Scope root = Scope.of("", "0");
         final ExecutorService executor = Executors.newCachedThreadPool();
         final Function2<String, Integer, Scope> newScope = (resource, n) -> Scope.of(resource, n.toString());
-        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(newScope);
+        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, newScope);
 
         final double t0 = System.currentTimeMillis();
 
-        final Map<String, CompletableFuture<Object>> fileSolvers = Maps.newHashMap();
+        final Map<String, CompletableFuture<SolverResult>> fileSolvers = Maps.newHashMap();
         for(Tuple2<String, IConstraint> resource_constraint : constraints) {
             final String resource = resource_constraint._1();
             final StatixTypeChecker fileSolver =
@@ -68,19 +69,26 @@ public class STX_solve_multi extends StatixPrimitive {
         }
         final CompletableFuture<Object> solveResult = solver.run(executor);
 
+        final List<ITerm> results = Lists.newArrayList();
         try {
             final List<CompletableFuture<?>> pendingResults = Lists.newArrayList(fileSolvers.values());
             pendingResults.add(solveResult);
             CompletableFuture.allOf(pendingResults.toArray(new CompletableFuture<?>[pendingResults.size()])).get();
-        } catch(InterruptedException | ExecutionException e) {
-            throw new InterpreterException(e);
+
+            final double dt = System.currentTimeMillis() - t0;
+            logger.info("Files analyzed in {} s", (dt / 1_000d));
+
+            // TODO Collect and combine results
+            for(Entry<String, CompletableFuture<SolverResult>> entry : fileSolvers.entrySet()) {
+                results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(entry.getValue().get())));
+            }
+
+        } catch(Throwable e) {
+            executor.shutdownNow();
+            logger.error("Async solving failed.", e);
+            throw new InterpreterException("Async solving failed.", e);
         }
 
-        final double dt = System.currentTimeMillis() - t0;
-        logger.info("Files analyzed in {} s", (dt / 1_000d));
-
-        // TODO Collect and combine results
-        final List<ITerm> results = ImmutableList.of();
         return Optional.of(B.newList(results));
     }
 

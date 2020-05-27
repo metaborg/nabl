@@ -129,16 +129,12 @@ public abstract class HashTrieFunction<K, V> implements IFunction<K, V> {
         }
 
         @Override public boolean put(K key, V value) {
-            if(fwd.containsKey(key)) {
-                if(value.equals(fwd.get(key))) {
-                    return false;
-                } else {
-                    throw new IllegalArgumentException("Already in domain.");
-                }
+            final V oldValue = fwd.__put(key, value);
+            if(oldValue != null) {
+                bwd.__remove(oldValue, key);
             }
-            fwd.__put(key, value);
             bwd.__insert(value, key);
-            return true;
+            return oldValue == null || !oldValue.equals(value);
         }
 
         @Override public boolean putAll(IFunction<K, V> other) {
@@ -147,12 +143,11 @@ public abstract class HashTrieFunction<K, V> implements IFunction<K, V> {
         }
 
         @Override public boolean remove(K key) {
-            V value = fwd.__remove(key);
-            if(value != null) {
-                bwd.__remove(value, key);
-                return true;
+            V oldValue = fwd.__remove(key);
+            if(oldValue != null) {
+                bwd.__remove(oldValue, key);
             }
-            return false;
+            return oldValue != null;
         }
 
         @Override public HashTrieInverseFunction.Transient<V, K> inverse() {

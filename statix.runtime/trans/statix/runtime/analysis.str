@@ -22,6 +22,9 @@ signature
     ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
     FileAnalysis    : Constraint -> AnalysisResult
 
+    ProjectAnalysisNew : Constraint * Analysis -> AnalysisResult
+    FileAnalysisNew    : Constraint * Analysis -> AnalysisResult
+
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Solution : List(Var, Term) * SolverResult -> Solution
@@ -71,6 +74,77 @@ rules // single file elaboration
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
              ; file-analysis := FileAnalysis(a)
       \})> (resource-ast'*, solve-result*)
+
+rules // multi file analysis (new)
+
+  stx--editor-analyze-new(pre, post|spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), file-change*) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; level := <stx--log-level>
+       ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
+       ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
+       ; global-scope := Scope("", "0") // also hardcoded in STX_solve_multi
+    with
+      //
+      // 1. Build project task
+      //
+      switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
+        case ?Cached(ProjectAnalysisNew(project-C, _)):
+          project-ast := ()
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+    ; project-task := (project-resource, project-C)
+      //
+      // 2. Build file tasks
+      //
+    ; changed-file-ast*  := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> file-change*
+    ; changed-file-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> changed-file-ast*
+    ; changed-file-task* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> changed-file-ast'*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysisNew(file-C, _))) -> (resource, file-C) \)> file-change*
+    ; file-task* := [changed-file-task*, cached-file-task*]
+      //
+      // 3. Solve all tasks
+      //
+    ; task*          := [project-task, file-task*]
+    ; changed-ast*   := [(project-resource, project-ast), changed-file-ast'*]
+    ; analysis*      := <stx--solve-multi-new(|spec, level)> task*
+    ; project-result := < stx--mk-result(|changed-ast*, task*, analysis*)
+                        ; \ (resource, C, result) -> (resource, ProjectAnalysisNew(C, result)) \
+                        > project-change
+    ; file-result*   := <map( stx--mk-result(|changed-ast*, task*, analysis*)
+                            ; \ (resource, C, result) -> (resource, FileAnalysisNew(C, result)) \
+                            )> file-change*
+    ; result* := [project-result|file-result*]
+      //
+      // 4. Compute scope graph diff
+      //
+    ; if Cached(ProjectAnalysisNew(_, project-analysis')) := project-change then
+        project-analysis := <lookup> (project-resource, analysis*)
+      ; diff := <stx--diff-scopegraphs(|global-scope)> (project-analysis, project-analysis')
+      ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+      end
+
+  // @param spec  : Spec
+  // @param level : LogLevel
+  // @type [(String, Constraint)] -> [(String, SolverResult)]
+  stx--solve-multi-new(|spec, level) =
+    prim("STX_solve_multi", spec, level)
+
+  stx--mk-result(|changed-ast*, task*, analysis*): (resource, change) -> (resource, C, result)
+    with C := <lookup> (resource, task*)
+       ; analysis := <lookup>(resource, analysis*)
+       ; (error*, warning*, note*) := <stx--extract-messages;stx--delays-as-errors> analysis
+       ; switch !change
+           case ?Added(_) + ?Changed(_, _):
+             ast    := <lookup> (resource, changed-ast*)
+           ; result := Full(ast, analysis, error*, warning*, note*)
+           case ?Cached(_):
+             result := Update(analysis, error*, warning*, note*)
+         end
+
 
 rules // multi file analysis
 

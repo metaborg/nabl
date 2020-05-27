@@ -1,18 +1,30 @@
 package mb.statix.solver.concurrent.messages;
 
+import javax.annotation.Nullable;
+
 import org.immutables.value.Value;
 
 import mb.statix.solver.concurrent.AbstractTypeChecker;
 
 public abstract class CoordinatorMessage<S, L, D> {
 
-    @Value.Parameter public abstract AbstractTypeChecker<S, L, D> client();
+    @Value.Default public @Nullable AbstractTypeChecker<S, L, D, ?> client() {
+        return null;
+    }
 
-    @Value.Default public long id() {
+    @Value.Default public int clock() {
         return 0;
     }
 
-    public abstract CoordinatorMessage<S, L, D> withId(long id);
+    @Value.Default public int id() {
+        return 0;
+    }
+
+    public abstract CoordinatorMessage<S, L, D> withClient(AbstractTypeChecker<S, L, D, ?> client);
+
+    public abstract CoordinatorMessage<S, L, D> withClock(int clock);
+
+    public abstract CoordinatorMessage<S, L, D> withId(int id);
 
     public abstract void match(Cases<S, L, D> cases) throws InterruptedException;
 
