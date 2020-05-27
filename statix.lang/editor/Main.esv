@@ -13,4 +13,3 @@ language
   extensions : stx, stxtest
 
   provider : target/metaborg/stratego.jar
-  provider : target/metaborg/stratego-javastrat.jar
