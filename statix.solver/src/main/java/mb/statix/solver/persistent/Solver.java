@@ -120,11 +120,11 @@ public class Solver {
         }
     }
 
-    static String toString(IConstraint constraint, IUniDisunifier.Immutable unifier) {
+    public static String toString(IConstraint constraint, IUniDisunifier.Immutable unifier) {
         return constraint.toString(Solver.shallowTermFormatter(unifier));
     }
 
-    static String toString(Iterable<IConstraint> constraints, IUniDisunifier.Immutable unifier) {
+    public static String toString(Iterable<IConstraint> constraints, IUniDisunifier.Immutable unifier) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
         for(IConstraint constraint : constraints) {

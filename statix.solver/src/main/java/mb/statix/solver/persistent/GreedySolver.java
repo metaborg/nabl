@@ -31,7 +31,6 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;

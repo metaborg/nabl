@@ -111,11 +111,11 @@ rules // multi file analysis (new)
     ; task*          := [project-task, file-task*]
     ; changed-ast*   := [(project-resource, project-ast), changed-file-ast'*]
     ; analysis*      := <stx--solve-multi-new(|spec, level)> task*
-    ; project-result := < stx--mk-result(|changed-ast*, task*, analysis*)
-                        ; \ (resource, C, result) -> (resource, ProjectAnalysisNew(C, result)) \
-                        > project-change
-    ; file-result*   := <map( stx--mk-result(|changed-ast*, task*, analysis*)
-                            ; \ (resource, C, result) -> (resource, FileAnalysisNew(C, result)) \
+    ; project-result := < stx--mk-result(\ (C, a) -> ProjectAnalysisNew(C, a) \|changed-ast*, task*, analysis*)
+                        ; \ (resource, result) -> (resource, result) \
+                        > (project-resource, project-change)
+    ; file-result*   := <map( stx--mk-result(\ (C, a) -> FileAnalysisNew(C, a) \|changed-ast*, task*, analysis*)
+                            ; \ (resource, result) -> (resource, result) \
                             )> file-change*
     ; result* := [project-result|file-result*]
       //
@@ -133,10 +133,11 @@ rules // multi file analysis (new)
   stx--solve-multi-new(|spec, level) =
     prim("STX_solve_multi", spec, level)
 
-  stx--mk-result(|changed-ast*, task*, analysis*): (resource, change) -> (resource, C, result)
+  stx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
     with C := <lookup> (resource, task*)
-       ; analysis := <lookup>(resource, analysis*)
-       ; (error*, warning*, note*) := <stx--extract-messages;stx--delays-as-errors> analysis
+       ; state := <lookup> (resource, state*)
+       ; analysis := <mk-analysis> (state, C)
+       ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages> state
        ; switch !change
            case ?Added(_) + ?Changed(_, _):
              ast    := <lookup> (resource, changed-ast*)

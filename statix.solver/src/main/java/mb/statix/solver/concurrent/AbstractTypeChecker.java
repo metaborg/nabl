@@ -1,5 +1,6 @@
 package mb.statix.solver.concurrent;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -53,8 +54,12 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         coordinator.register(this);
     }
 
-    public String resource() {
+    public final String resource() {
         return resource;
+    }
+
+    protected final int pending() {
+        return pendingScopes.size() + pendingAnswers.size();
     }
 
     private void setState(State state) {
@@ -62,7 +67,7 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         this.state = state;
     }
 
-    public CompletableFuture<R> run(ExecutorService executor) {
+    public final CompletableFuture<R> run(ExecutorService executor) {
         executor.submit(() -> {
             try {
                 run();
@@ -99,20 +104,18 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
             logger.info("client {} processing {}", this, message);
             message.match(this);
         }
+        // TODO if deadlocked, absorb all other messages?
         logger.info("client {} finished.", this);
     }
 
     @Override public final void on(Start<S, L, D> message) throws InterruptedException {
-        if(!inState(State.INIT)) {
-            throw new IllegalStateException("Expected state INIT, got " + state.toString());
-        }
+        assertState(State.INIT);
         start(message.root());
+        assertState(State.ACTIVE, State.DONE, State.DEADLOCKED);
     }
 
     @Override public final void on(ScopeAnswer<S, L, D> message) throws InterruptedException {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state WAITING, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         if(!pendingScopes.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
@@ -120,9 +123,7 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
     }
 
     @Override public final void on(QueryAnswer<S, L, D> message) throws InterruptedException {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state WAITING, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         if(!pendingAnswers.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
@@ -130,10 +131,9 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
     }
 
     @Override public final void on(DeadLock<S, L, D> message) throws InterruptedException {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state WAITING, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         setState(State.DEADLOCKED);
+        // TODO Cleanup???
         pendingResult.completeExceptionally(new Exception("deadlocked"));
         fail();
     }
@@ -147,28 +147,29 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         return false;
     }
 
+    private void assertState(State... states) {
+        if(!inState(states)) {
+            throw new IllegalStateException("Expected state " + Arrays.toString(states) + ", got " + state.toString());
+        }
+    }
 
     // required interface, implemented by client
 
-    public abstract void start(S root);
+    public abstract void start(S root) throws InterruptedException;
 
-    public abstract void fail();
+    public abstract void fail() throws InterruptedException;
 
 
     // provided interface, called by client
 
     public final void started(Set.Immutable<L> labels) {
-        if(!inState(State.INIT)) {
-            throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
-        }
+        assertState(State.INIT);
         setState(State.ACTIVE);
         post(StartAnswer.of(labels));
     }
 
     public final CompletableFuture<S> freshScope(D datum, java.util.Set<L> labels) {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         final long messageId = post(FreshScope.of(datum, labels));
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
         pendingScopes.put(messageId, pendingScope);
@@ -176,23 +177,17 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
     }
 
     public final void addEdge(S source, L label, S target) {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         post(AddEdge.of(source, label, target));
     }
 
     public final void closeEdge(S source, L label) {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         post(CloseEdge.of(source, label));
     }
 
     public final CompletableFuture<Set.Immutable<Object>> query(S scope) {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         final long messageId = post(Query.of(scope));
         final CompletableFuture<Set.Immutable<Object>> pendingAnswer = new CompletableFuture<>();
         pendingAnswers.put(messageId, pendingAnswer);
@@ -200,9 +195,7 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
     }
 
     public final void done(R result) {
-        if(!inState(State.ACTIVE)) {
-            throw new IllegalStateException("Expected state ACTIVE, got " + state.toString());
-        }
+        assertState(State.ACTIVE);
         setState(State.DONE);
         post(Done.<S, L, D>builder().build());
         pendingResult.complete(result);
