@@ -1,5 +1,7 @@
 package mb.statix.solver.concurrent.messages;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
@@ -51,7 +53,7 @@ public abstract class CoordinatorMessage<S, L, D> {
     @Value.Immutable
     public static abstract class ARootEdges<S, L, D> extends CoordinatorMessage<S, L, D> {
 
-        @Value.Parameter public abstract java.util.Set<L> labels();
+        @Value.Parameter public abstract List<L> labels();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((RootEdges<S, L, D>) this);
@@ -64,7 +66,7 @@ public abstract class CoordinatorMessage<S, L, D> {
 
         @Value.Parameter public abstract D datum();
 
-        @Value.Parameter public abstract java.util.Set<L> labels();
+        @Value.Parameter public abstract List<L> labels();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((FreshScope<S, L, D>) this);

@@ -1,6 +1,7 @@
 package mb.statix.solver.concurrent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.Collection;
@@ -105,14 +106,23 @@ public class StatixSolver {
     public CompletableFuture<SolverResult> solve(Scope root) {
         try {
             scopeGraph.openRootEdges(openEdges(root));
-            run();
+            fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
         }
         return result;
     }
 
-    private void run() throws InterruptedException {
+    private <R> void solveK(K<R> k, R r) {
+        try {
+            k.k(state, r, MAX_DEPTH);
+            fixedpoint();
+        } catch(Throwable e) {
+            result.completeExceptionally(e);
+        }
+    }
+
+    private void fixedpoint() throws InterruptedException {
         if(result.isDone()) {
             throw new IllegalStateException("Cannot run when already completed.");
         }
@@ -210,6 +220,12 @@ public class StatixSolver {
             throws InterruptedException {
         return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c), ImmutableMap.of(),
                 fuel);
+    }
+
+    private <R> IState.Immutable successFuture(IConstraint c, IState.Immutable newState, CompletableFuture<R> future,
+            K<R> k, int fuel) throws InterruptedException {
+        future.thenAccept(r -> solveK(k, r));
+        return success(c, newState, fuel);
     }
 
     private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
@@ -344,26 +360,16 @@ public class StatixSolver {
             }
 
             @Override public IState.Immutable caseNew(CNew c) throws InterruptedException {
-                return fail(c, state);
-                /*
-                IState.Immutable newState = state;
-                
                 final ITerm scopeTerm = c.scopeTerm();
-                final String base = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
-                final Tuple2<Scope, IState.Immutable> ss = newState.freshScope(base);
-                final Scope scope = ss._1();
-                newState = ss._2();
-                
                 final ITerm datumTerm = c.datumTerm();
-                final IScopeGraph.Immutable<Scope, ITerm, ITerm> newScopeGraph =
-                        state.scopeGraph().setDatum(scope, datumTerm);
-                newState = newState.withScopeGraph(newScopeGraph);
-                
-                final IConstraint eq = new CEqual(scopeTerm, scope, c);
-                
-                return success(c, newState, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(),
-                        ImmutableMap.of(), fuel);
-                */
+                final String base = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
+                List<ITerm> labels = openEdges(scopeTerm);
+                final CompletableFuture<Scope> futureScope = scopeGraph.freshScope(datumTerm, labels);
+                final K<Scope> k = (state, scope, fuel) -> {
+                    final IConstraint eq = new CEqual(scopeTerm, scope, c);
+                    return successNew(constraint, state, ImmutableList.of(eq), fuel);
+                };
+                return successFuture(c, state, futureScope, k, fuel);
             }
 
             @Override public IState.Immutable caseResolveQuery(CResolveQuery c) throws InterruptedException {
@@ -412,12 +418,9 @@ public class StatixSolver {
             }
 
             @Override public IState.Immutable caseTellEdge(CTellEdge c) throws InterruptedException {
-                return fail(c, state);
-                /*
                 final ITerm sourceTerm = c.sourceTerm();
                 final ITerm label = c.label();
                 final ITerm targetTerm = c.targetTerm();
-                
                 final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(sourceTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)), fuel);
@@ -428,16 +431,11 @@ public class StatixSolver {
                 final Scope source =
                         AScope.matcher().match(sourceTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected source scope, got " + unifier.toString(sourceTerm)));
-                if(params.isClosed(source, state)) {
-                    return fail(c, state);
-                }
                 final Scope target =
                         AScope.matcher().match(targetTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected target scope, got " + unifier.toString(targetTerm)));
-                final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
-                        state.scopeGraph().addEdge(source, label, target);
-                return success(c, state.withScopeGraph(scopeGraph), fuel);
-                */
+                scopeGraph.addEdge(source, label, target);
+                return success(c, state, fuel);
             }
 
             @Override public IState.Immutable caseTermId(CAstId c) throws InterruptedException {
@@ -565,6 +563,13 @@ public class StatixSolver {
 
     @Override public String toString() {
         return "StatixSolver";
+    }
+
+    @FunctionalInterface
+    private interface K<R> {
+
+        IState.Immutable k(IState.Immutable state, R result, int fuel) throws InterruptedException;
+
     }
 
 }
