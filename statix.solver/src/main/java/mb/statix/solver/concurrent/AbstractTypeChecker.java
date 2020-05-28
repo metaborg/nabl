@@ -27,7 +27,7 @@ import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.StartAnswer;
 import mb.statix.solver.concurrent.messages.Suspend;
 
-public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.Cases<S, L, D> {
+public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.Cases<S, L, D>, IScopeGraph<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 
