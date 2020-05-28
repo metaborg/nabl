@@ -19,15 +19,17 @@ import mb.statix.solver.concurrent.messages.CloseEdge;
 import mb.statix.solver.concurrent.messages.CoordinatorMessage;
 import mb.statix.solver.concurrent.messages.DeadLock;
 import mb.statix.solver.concurrent.messages.Done;
+import mb.statix.solver.concurrent.messages.Failed;
 import mb.statix.solver.concurrent.messages.FreshScope;
 import mb.statix.solver.concurrent.messages.Query;
 import mb.statix.solver.concurrent.messages.QueryAnswer;
+import mb.statix.solver.concurrent.messages.RootEdges;
 import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.Start;
-import mb.statix.solver.concurrent.messages.StartAnswer;
 import mb.statix.solver.concurrent.messages.Suspend;
 
-public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.Cases<S, L, D>, IScopeGraph<S, L, D> {
+public abstract class AbstractTypeChecker<S, L, D, R>
+        implements ClientMessage.Cases<S, L, D>, IScopeGraphFacade<S, L, D>, ITypeChecker<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 
@@ -58,9 +60,11 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         return resource;
     }
 
-    protected final int pending() {
-        return pendingScopes.size() + pendingAnswers.size();
-    }
+    // required interface, implemented by client
+
+    @Override public abstract void run(S root) throws InterruptedException;
+
+    // misc
 
     private void setState(State state) {
         logger.info("client {} is in state {}", this, state);
@@ -110,7 +114,7 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
 
     @Override public final void on(Start<S, L, D> message) throws InterruptedException {
         assertState(State.INIT);
-        start(message.root());
+        run(message.root());
         assertState(State.ACTIVE, State.DONE, State.DEADLOCKED);
     }
 
@@ -133,9 +137,7 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
     @Override public final void on(DeadLock<S, L, D> message) throws InterruptedException {
         assertState(State.ACTIVE);
         setState(State.DEADLOCKED);
-        // TODO Cleanup???
-        pendingResult.completeExceptionally(new Exception("deadlocked"));
-        fail();
+        pendingAnswers.get(message.requestId()).completeExceptionally(new DeadLockedException());
     }
 
     private boolean inState(State... states) {
@@ -153,22 +155,15 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         }
     }
 
-    // required interface, implemented by client
+    // provided interface for scope graphs, called by client
 
-    public abstract void start(S root) throws InterruptedException;
-
-    public abstract void fail() throws InterruptedException;
-
-
-    // provided interface, called by client
-
-    public final void started(Set.Immutable<L> labels) {
+    @Override public void openRootEdges(Iterable<L> labels) {
         assertState(State.INIT);
         setState(State.ACTIVE);
-        post(StartAnswer.of(labels));
+        post(RootEdges.of(labels));
     }
 
-    public final CompletableFuture<S> freshScope(D datum, java.util.Set<L> labels) {
+    @Override public CompletableFuture<S> freshScope(D datum, Iterable<L> labels) {
         assertState(State.ACTIVE);
         final long messageId = post(FreshScope.of(datum, labels));
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
@@ -176,17 +171,17 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         return pendingScope;
     }
 
-    public final void addEdge(S source, L label, S target) {
+    @Override public final void addEdge(S source, L label, S target) {
         assertState(State.ACTIVE);
         post(AddEdge.of(source, label, target));
     }
 
-    public final void closeEdge(S source, L label) {
+    @Override public final void closeEdge(S source, L label) {
         assertState(State.ACTIVE);
         post(CloseEdge.of(source, label));
     }
 
-    public final CompletableFuture<Set.Immutable<Object>> query(S scope) {
+    @Override public final CompletableFuture<Set.Immutable<Object>> query(S scope) {
         assertState(State.ACTIVE);
         final long messageId = post(Query.of(scope));
         final CompletableFuture<Set.Immutable<Object>> pendingAnswer = new CompletableFuture<>();
@@ -194,12 +189,22 @@ public abstract class AbstractTypeChecker<S, L, D, R> implements ClientMessage.C
         return pendingAnswer;
     }
 
+    // provided interface for process, called by client
+
     public final void done(R result) {
         assertState(State.ACTIVE);
         setState(State.DONE);
         post(Done.<S, L, D>builder().build());
         pendingResult.complete(result);
     }
+
+    public final void failed(Throwable e) {
+        assertState(State.ACTIVE);
+        setState(State.FAILED);
+        post(Failed.<S, L, D>builder().build());
+        pendingResult.completeExceptionally(e);
+    }
+
 
     @Override public String toString() {
         return "TypeChecker[" + resource + "]";

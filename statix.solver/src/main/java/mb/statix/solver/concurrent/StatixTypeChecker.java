@@ -17,12 +17,14 @@ public class StatixTypeChecker extends AbstractTypeChecker<Scope, ITerm, ITerm, 
         this.solver = new StatixSolver(spec, constraint, debug, this);
     }
 
-    @Override public void start(Scope root) throws InterruptedException {
-        started(io.usethesource.capsule.Set.Immutable.of());
-        solver.solve().thenAccept(this::done);
-    }
-
-    @Override public void fail() {
+    @Override public void run(Scope root) throws InterruptedException {
+        solver.solve(root).whenComplete((result, ex) -> {
+            if(ex != null) {
+                failed(ex);
+            } else {
+                done(result);
+            }
+        });
     }
 
     @Override public String toString() {

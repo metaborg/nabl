@@ -26,6 +26,11 @@ public abstract class Completeness implements ICompleteness {
         return incomplete().isEmpty();
     }
 
+    @Override public MultiSet<EdgeOrData<ITerm>> get(ITerm varOrScope, IUniDisunifier unifier) {
+        return getVarOrScope(varOrScope, unifier).map(vOrS -> (MultiSet<EdgeOrData<ITerm>>) incomplete().get(vOrS))
+                .orElse(MultiSet.Immutable.of());
+    }
+
     @Override public boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUniDisunifier unifier) {
         if(!label.match(() -> true, lbl -> lbl.isGround())) {
             throw new IllegalArgumentException("Label must be ground");
@@ -64,15 +69,15 @@ public abstract class Completeness implements ICompleteness {
         }
 
         @Override public boolean equals(Object o) {
-            if(this == o) return true;
-            if(o == null || getClass() != o.getClass()) return false;
-            Completeness.Immutable immutable = (Completeness.Immutable)o;
-            return spec.equals(immutable.spec) &&
-                incomplete.equals(immutable.incomplete);
+            if(this == o)
+                return true;
+            if(o == null || getClass() != o.getClass())
+                return false;
+            Completeness.Immutable immutable = (Completeness.Immutable) o;
+            return spec.equals(immutable.spec) && incomplete.equals(immutable.incomplete);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(spec, incomplete);
         }
     }

@@ -30,7 +30,7 @@ public abstract class CoordinatorMessage<S, L, D> {
 
     public interface Cases<S, L, D> {
 
-        void on(StartAnswer<S, L, D> message) throws InterruptedException;
+        void on(RootEdges<S, L, D> message) throws InterruptedException;
 
         void on(FreshScope<S, L, D> message) throws InterruptedException;
 
@@ -44,15 +44,17 @@ public abstract class CoordinatorMessage<S, L, D> {
 
         void on(Done<S, L, D> message) throws InterruptedException;
 
+        void on(Failed<S, L, D> message) throws InterruptedException;
+
     }
 
     @Value.Immutable
-    public static abstract class AStartAnswer<S, L, D> extends CoordinatorMessage<S, L, D> {
+    public static abstract class ARootEdges<S, L, D> extends CoordinatorMessage<S, L, D> {
 
         @Value.Parameter public abstract java.util.Set<L> labels();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
-            cases.on((StartAnswer<S, L, D>) this);
+            cases.on((RootEdges<S, L, D>) this);
         }
 
     }
@@ -123,6 +125,17 @@ public abstract class CoordinatorMessage<S, L, D> {
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((Done<S, L, D>) this);
+        }
+
+    }
+
+    @Value.Immutable
+    public static abstract class AFailed<S, L, D> extends CoordinatorMessage<S, L, D> {
+
+        @Value.Parameter public abstract Throwable cause();
+
+        @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
+            cases.on((Failed<S, L, D>) this);
         }
 
     }

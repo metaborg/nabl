@@ -9,11 +9,10 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.IScopeGraph;
 
-public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L, D> {
+public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
     protected ScopeGraph() {
     }
@@ -32,7 +31,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
 
     // ------------------------------------
 
-    public static class Immutable<S extends D, L, D> extends ScopeGraph<S, L, D>
+    public static class Immutable<S, L, D> extends ScopeGraph<S, L, D>
             implements IScopeGraph.Immutable<S, L, D>, Serializable {
         private static final long serialVersionUID = 42L;
 
@@ -111,8 +110,8 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return true;
         }
 
-        public static <S extends D, L, D> ScopeGraph.Immutable<S, L, D> of(Iterable<L> edgeLabels) {
-            return new ScopeGraph.Immutable<>(CapsuleUtil.toSet(edgeLabels), Map.Immutable.of(), Map.Immutable.of());
+        public static <S, L, D> ScopeGraph.Immutable<S, L, D> of(Iterable<L> edgeLabels) {
+            return new ScopeGraph.Immutable<>(Set.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
         }
 
         // ------------------------------------------------------------
@@ -141,7 +140,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
 
     }
 
-    public static class Transient<S extends D, L, D> extends ScopeGraph<S, L, D>
+    public static class Transient<S, L, D> extends ScopeGraph<S, L, D>
             implements IScopeGraph.Transient<S, L, D> {
 
         private final Set.Immutable<L> edgeLabels;
@@ -210,7 +209,7 @@ public abstract class ScopeGraph<S extends D, L, D> implements IScopeGraph<S, L,
             return new ScopeGraph.Immutable<>(edgeLabels, edges.freeze(), data.freeze());
         }
 
-        public static <S extends D, L, D> ScopeGraph.Transient<S, L, D> of(Iterable<L> edgeLabels) {
+        public static <S, L, D> ScopeGraph.Transient<S, L, D> of(Iterable<L> edgeLabels) {
             return new ScopeGraph.Transient<>(CapsuleUtil.toSet(edgeLabels), Map.Transient.of(), Map.Transient.of());
         }
 

@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.metaborg.util.log.Level;
 
@@ -77,9 +78,10 @@ public class StatixSolver {
     private final Spec spec;
     private final IConstraintStore constraints;
     private final IDebugContext debug;
-    private final IScopeGraph<Scope, ITerm, ITerm> scopeGraph;
+    private final IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph;
 
     private IState.Immutable state;
+    private final ICompleteness.Transient completeness;
     private Map<ITermVar, ITermVar> existentials = null;
     private final List<ITermVar> updatedVars = Lists.newArrayList();
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
@@ -87,18 +89,22 @@ public class StatixSolver {
     private final CompletableFuture<SolverResult> result = new CompletableFuture<>();
     private int pending = 0;
 
+
     public StatixSolver(Spec spec, IConstraint constraint, IDebugContext debug,
-            IScopeGraph<Scope, ITerm, ITerm> scopeGraph) {
+            IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph) {
         this.spec = spec;
         this.constraints = new BaseConstraintStore(debug);
         this.constraints.add(constraint);
         this.debug = debug;
         this.scopeGraph = scopeGraph;
         this.state = mb.statix.solver.persistent.State.of(spec);
+        this.completeness = Completeness.Transient.of(spec);
+        completeness.add(constraint, state.unifier());
     }
 
-    public CompletableFuture<SolverResult> solve() {
+    public CompletableFuture<SolverResult> solve(Scope root) {
         try {
+            scopeGraph.openRootEdges(openEdges(root));
             run();
         } catch(Throwable e) {
             result.completeExceptionally(e);
@@ -549,6 +555,12 @@ public class StatixSolver {
 
         });
 
+    }
+
+    private List<ITerm> openEdges(ITerm varOrScope) {
+        return Streams.stream(completeness.get(varOrScope, state.unifier())).<ITerm>flatMap(eod -> {
+            return eod.match(() -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
+        }).collect(Collectors.toList());
     }
 
     @Override public String toString() {

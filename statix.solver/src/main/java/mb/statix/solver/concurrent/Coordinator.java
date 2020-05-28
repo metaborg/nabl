@@ -1,6 +1,5 @@
 package mb.statix.solver.concurrent;
 
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -16,16 +15,19 @@ import com.google.common.collect.Queues;
 import mb.nabl2.util.collections.HashTrieFunction;
 import mb.nabl2.util.collections.IFunction;
 import mb.nabl2.util.collections.MultiSet;
+import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.solver.concurrent.messages.AddEdge;
 import mb.statix.solver.concurrent.messages.ClientMessage;
 import mb.statix.solver.concurrent.messages.CloseEdge;
 import mb.statix.solver.concurrent.messages.CoordinatorMessage;
 import mb.statix.solver.concurrent.messages.Done;
+import mb.statix.solver.concurrent.messages.Failed;
 import mb.statix.solver.concurrent.messages.FreshScope;
 import mb.statix.solver.concurrent.messages.Query;
+import mb.statix.solver.concurrent.messages.RootEdges;
 import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.Start;
-import mb.statix.solver.concurrent.messages.StartAnswer;
 import mb.statix.solver.concurrent.messages.Suspend;
 
 public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
@@ -34,10 +36,12 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private final Function2<String, Integer, S> newScope;
     private final S root;
+    private final IScopeGraph.Transient<S, L, D> scopeGraph;
 
-    public Coordinator(S root, Function2<String, Integer, S> fresh) {
+    public Coordinator(S root, Iterable<L> edgeLabels, Function2<String, Integer, S> fresh) {
         this.newScope = fresh;
         this.root = root;
+        this.scopeGraph = ScopeGraph.Transient.<S, L, D>of(edgeLabels);
     }
 
     private final CompletableFuture<Object> pendingResult = new CompletableFuture<>();
@@ -49,6 +53,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private final BlockingQueue<CoordinatorMessage<S, L, D>> inbox = Queues.newLinkedBlockingDeque();
     private final MultiSet.Transient<AbstractTypeChecker<S, L, D, ?>> clocks = MultiSet.Transient.of(); // number of messages send to clients
+
 
     void register(AbstractTypeChecker<S, L, D, ?> client) {
         if(client.resource().isEmpty()) {
@@ -74,8 +79,8 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     }
 
     private boolean hasRunningClients() {
-        Set<AbstractTypeChecker<S, L, D, ?>> initClients = states.inverse().get(State.INIT);
-        Set<AbstractTypeChecker<S, L, D, ?>> activeClients = states.inverse().get(State.ACTIVE);
+        java.util.Set<AbstractTypeChecker<S, L, D, ?>> initClients = states.inverse().get(State.INIT);
+        java.util.Set<AbstractTypeChecker<S, L, D, ?>> activeClients = states.inverse().get(State.ACTIVE);
         return !initClients.isEmpty() || !activeClients.isEmpty();
     }
 
@@ -108,7 +113,8 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         }
     }
 
-    @Override public void on(StartAnswer<S, L, D> message) throws InterruptedException {
+    @Override public void on(RootEdges<S, L, D> message) throws InterruptedException {
+        logger.info("client {} open root edges {}", message.client(), message.labels());
         // TODO add open edges
         setState(message.client(), State.ACTIVE);
     }
@@ -116,15 +122,21 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     @Override public void on(FreshScope<S, L, D> message) throws InterruptedException {
         final String resource = clients.inverse().get(message.client());
         final S scope = newScope.apply(resource, scopeCounters.add(resource));
+        logger.info("client {} fresh scope {} -> {} with open edges {}", message.client(), scope, message.datum(),
+                message.labels());
+        scopeGraph.setDatum(scope, message.datum());
         post(message.client(), ScopeAnswer.of(message.id(), scope));
     }
 
     @Override public void on(AddEdge<S, L, D> message) throws InterruptedException {
-        // TODO add edge
+        logger.info("client {} add edge {} -{}-> {}", message.client(), message.source(), message.label(),
+                message.target());
+        scopeGraph.addEdge(message.source(), message.label(), message.target());
     }
 
     @Override public void on(CloseEdge<S, L, D> message) throws InterruptedException {
-        // TODO close edge
+        logger.info("client {} close edge {} ~> {}", message.client(), message.source(), message.label());
+        // TODO remove open edge
     }
 
     @Override public void on(Query<S, L, D> message) throws InterruptedException {
@@ -142,6 +154,10 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     @Override public void on(Done<S, L, D> message) throws InterruptedException {
         setState(message.client(), State.DONE);
+    }
+
+    @Override public void on(Failed<S, L, D> message) throws InterruptedException {
+        setState(message.client(), State.FAILED);
     }
 
     @Override public String toString() {

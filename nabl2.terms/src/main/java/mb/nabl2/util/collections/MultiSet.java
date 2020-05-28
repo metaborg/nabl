@@ -1,13 +1,12 @@
 package mb.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.stream.Collectors;
-
-import org.metaborg.util.functions.Action2;
 
 import io.usethesource.capsule.Map;
 
-public abstract class MultiSet<E> {
+public abstract class MultiSet<E> implements Iterable<E> {
 
     protected abstract Map<E, Integer> elements();
 
@@ -31,8 +30,8 @@ public abstract class MultiSet<E> {
         return elements().keySet();
     }
 
-    public void forEach(Action2<E, Integer> f) {
-        elements().entrySet().forEach(e -> f.apply(e.getKey(), e.getValue()));
+    @Override public Iterator<E> iterator() {
+        return new MultiSetIterator();
     }
 
     public static class Immutable<E> extends MultiSet<E> implements Serializable {
@@ -219,6 +218,28 @@ public abstract class MultiSet<E> {
     @Override public String toString() {
         return elements().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
                 .collect(Collectors.joining(", ", "{", "}"));
+    }
+
+    private class MultiSetIterator implements Iterator<E> {
+
+        private Iterator<Map.Entry<E, Integer>> it = elements().entryIterator();
+        private E next;
+        private int count;
+
+        @Override public boolean hasNext() {
+            return (next != null && count > 0) || it.hasNext();
+        }
+
+        @Override public E next() {
+            if(next == null || count <= 0) {
+                final Map.Entry<E, Integer> entry = it.next();
+                next = entry.getKey();
+                count = entry.getValue();
+            }
+            count -= 1;
+            return next;
+        }
+
     }
 
 }
