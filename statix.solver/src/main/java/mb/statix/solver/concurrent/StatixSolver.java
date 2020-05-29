@@ -33,6 +33,8 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.collections.HashTrieRelation2;
+import mb.nabl2.util.collections.IRelation2;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
@@ -49,8 +51,14 @@ import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
+import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.DataLeq;
+import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.LabelOrder;
+import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -66,11 +74,15 @@ import mb.statix.solver.persistent.BagTermProperty;
 import mb.statix.solver.persistent.SingletonTermProperty;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.query.ConstraintQueries;
+import mb.statix.solver.query.IQueryFilter;
+import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
+import mb.statix.spoofax.StatixTerms;
 
 public class StatixSolver {
 
@@ -91,21 +103,21 @@ public class StatixSolver {
     private int pending = 0;
 
 
-    public StatixSolver(Spec spec, IConstraint constraint, IDebugContext debug,
+    public StatixSolver(String resource, IConstraint constraint, Spec spec, IDebugContext debug,
             IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph) {
         this.spec = spec;
         this.constraints = new BaseConstraintStore(debug);
         this.constraints.add(constraint);
         this.debug = debug;
         this.scopeGraph = scopeGraph;
-        this.state = mb.statix.solver.persistent.State.of(spec);
+        this.state = mb.statix.solver.persistent.State.of(spec).withResource(resource);
         this.completeness = Completeness.Transient.of(spec);
         completeness.add(constraint, state.unifier());
     }
 
     public CompletableFuture<SolverResult> solve(Scope root) {
         try {
-            scopeGraph.openRootEdges(openEdges(root));
+            scopeGraph.openRootEdges(root, getOpenEdges(root));
             fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
@@ -135,6 +147,7 @@ public class StatixSolver {
 
         // invariant: there should be no remaining active constraints
         if(constraints.activeSize() > 0) {
+            debug.warn("Fixed point finished with remaining constraints");
             throw new IllegalStateException(
                     "Expected no remaining active constraints, but got " + constraints.activeSize());
         }
@@ -178,11 +191,14 @@ public class StatixSolver {
         final IUniDisunifier.Immutable unifier = state.unifier();
 
         // updates from unified variables
+        releaseDelayedCloses(updatedVars, unifier);
+        completeness.updateAll(updatedVars, unifier);
         constraints.activateFromVars(updatedVars, debug);
         this.updatedVars.addAll(updatedVars);
 
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
+        completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
         if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
             subDebug.info("Simplified to:");
             for(IConstraint newConstraint : newConstraints) {
@@ -192,12 +208,15 @@ public class StatixSolver {
 
         // add delayed constraints
         delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
+        completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
         if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
             subDebug.info("Delayed:");
             for(IConstraint delayedConstraint : delayedConstraints.values()) {
                 subDebug.info(" * {}", Solver.toString(delayedConstraint, unifier));
             }
         }
+
+        removeCompleteness(constraint, unifier);
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
@@ -224,13 +243,25 @@ public class StatixSolver {
 
     private <R> IState.Immutable successFuture(IConstraint c, IState.Immutable newState, CompletableFuture<R> future,
             K<R> k, int fuel) throws InterruptedException {
-        future.thenAccept(r -> solveK(k, r));
+        pending += 1;
+        future.thenAccept(r -> {
+            pending -= 1;
+            solveK(k, r);
+        });
         return success(c, newState, fuel);
     }
 
     private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
         failed.put(constraint, MessageUtil.findClosestMessage(constraint));
+        removeCompleteness(constraint, state.unifier());
         return state;
+    }
+
+    private void removeCompleteness(IConstraint constraint, IUniDisunifier unifier) {
+        final Set<CriticalEdge> removedEdges = completeness.remove(constraint, unifier);
+        for(CriticalEdge criticalEdge : removedEdges) {
+            closeEdge(criticalEdge, state.unifier());
+        }
     }
 
     private IState.Immutable queue(IConstraint constraint, IState.Immutable state) {
@@ -362,22 +393,20 @@ public class StatixSolver {
             @Override public IState.Immutable caseNew(CNew c) throws InterruptedException {
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm datumTerm = c.datumTerm();
-                final String base = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
-                List<ITerm> labels = openEdges(scopeTerm);
-                final CompletableFuture<Scope> futureScope = scopeGraph.freshScope(datumTerm, labels);
+                final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
+                List<ITerm> labels = getOpenEdges(scopeTerm);
+                final CompletableFuture<Scope> futureScope = scopeGraph.freshScope(name, datumTerm, labels);
                 final K<Scope> k = (state, scope, fuel) -> {
                     final IConstraint eq = new CEqual(scopeTerm, scope, c);
-                    return successNew(constraint, state, ImmutableList.of(eq), fuel);
+                    return successNew(c, state, ImmutableList.of(eq), fuel);
                 };
                 return successFuture(c, state, futureScope, k, fuel);
             }
 
             @Override public IState.Immutable caseResolveQuery(CResolveQuery c) throws InterruptedException {
-                return fail(c, state);
-                /*
+                final ITerm scopeTerm = c.scopeTerm();
                 final IQueryFilter filter = c.filter();
                 final IQueryMin min = c.min();
-                final ITerm scopeTerm = c.scopeTerm();
                 final ITerm resultTerm = c.resultTerm();
 
                 final IUniDisunifier unifier = state.unifier();
@@ -387,34 +416,23 @@ public class StatixSolver {
                 final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
-                try {
-                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
-                    // @formatter:off
-                    final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
-                                .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
-                                .withDataWF(cq.getDataWF(filter.getDataWF()))
-                                .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
-                                .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
-                                .withIsComplete((s, l) -> params.isComplete(s, l, state))
-                                .build(state.scopeGraph());
-                    // @formatter:on
-                    final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope);
-                    final List<ITerm> pathTerms =
-                            Streams.stream(paths).map(p -> StatixTerms.explicate(p, spec.dataLabels()))
-                                    .collect(ImmutableList.toImmutableList());
+                // FIXME Is this completeness going to be correct? Why is it both there and in the name resolution?
+                final ConstraintContext params = new ConstraintContext((s, l, st) -> true, debug);
+                final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
+                final LabelWF<ITerm> labelWF = cq.getLabelWF(filter.getLabelWF());
+                final DataWF<ITerm> dataWF = cq.getDataWF(filter.getDataWF());
+                final LabelOrder<ITerm> labelOrder = cq.getLabelOrder(min.getLabelOrder());
+                final DataLeq<ITerm> dataEquiv = cq.getDataEquiv(min.getDataEquiv());
+
+                final CompletableFuture<Set<IResolutionPath<Scope, ITerm, ITerm>>> future =
+                        scopeGraph.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
+                final K<Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (state, paths, fuel) -> {
+                    final List<ITerm> pathTerms = paths.stream().map(p -> StatixTerms.explicate(p, spec.dataLabels()))
+                            .collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                     return successNew(c, state, ImmutableList.of(C), fuel);
-                } catch(IncompleteException e) {
-                    params.debug().info("Query resolution delayed: {}", e.getMessage());
-                    return successDelay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), fuel);
-                } catch(ResolutionDelayException e) {
-                    params.debug().info("Query resolution delayed: {}", e.getMessage());
-                    return successDelay(c, state, e.getCause(), fuel);
-                } catch(ResolutionException e) {
-                    params.debug().info("Query resolution failed: {}", e.getMessage());
-                    return fail(c, state);
-                }
-                */
+                };
+                return successFuture(c, state, future, k, fuel);
             }
 
             @Override public IState.Immutable caseTellEdge(CTellEdge c) throws InterruptedException {
@@ -511,6 +529,7 @@ public class StatixSolver {
 
             @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
                 return fail(c, state);
+                // TODO
                 /*
                 try {
                     if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext())) {
@@ -555,10 +574,47 @@ public class StatixSolver {
 
     }
 
-    private List<ITerm> openEdges(ITerm varOrScope) {
+    private List<ITerm> getOpenEdges(ITerm varOrScope) {
         return Streams.stream(completeness.get(varOrScope, state.unifier())).<ITerm>flatMap(eod -> {
             return eod.match(() -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
         }).collect(Collectors.toList());
+    }
+
+    private final IRelation2.Transient<ITermVar, CriticalEdge> delayedCloses = HashTrieRelation2.Transient.of();
+
+    private void releaseDelayedCloses(Iterable<ITermVar> updatedVars, IUnifier unifier) {
+        for(ITermVar var : updatedVars) {
+            Set<CriticalEdge> removedEdges = delayedCloses.removeKey(var);
+            Set<ITermVar> newVars = unifier.getVars(var);
+            if(newVars.isEmpty()) {
+                for(CriticalEdge criticalEdge : removedEdges) {
+                    if(!delayedCloses.containsValue(criticalEdge)) {
+                        closeEdge(criticalEdge, unifier);
+                    }
+                }
+            } else {
+                for(ITermVar newVar : newVars) {
+                    delayedCloses.putAll(newVar, removedEdges);
+                }
+            }
+        }
+    }
+
+    private void closeEdge(CriticalEdge criticalEdge, IUnifier unifier) {
+        criticalEdge.edgeOrData().match(() -> {
+            // ignore data labels, they are always closed
+            return null;
+        }, label -> {
+            final Scope scope;
+            if((scope = Scope.matcher().match(criticalEdge.scope(), unifier).orElse(null)) == null) {
+                for(ITermVar var : unifier.getVars(criticalEdge.scope())) {
+                    delayedCloses.put(var, criticalEdge);
+                }
+            } else {
+                scopeGraph.closeEdge(scope, label);
+            }
+            return null;
+        });
     }
 
     @Override public String toString() {

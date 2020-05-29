@@ -34,10 +34,20 @@ public abstract class MultiSetMap<K, V> {
             return entries;
         }
 
-        public void put(K key, V value) {
+        /**
+         * Add an entry to the map, return the new count.
+         */
+        public int put(K key, V value) {
             final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
-            values.add(value);
+            final int n = values.add(value);
             entries.__put(key, values.freeze());
+            return n;
+        }
+
+        public void putAll(K key, Iterable<V> values) {
+            for(V value : values) {
+                put(key, value);
+            }
         }
 
         public MultiSet.Immutable<V> removeKey(K key) {
@@ -48,6 +58,9 @@ public abstract class MultiSetMap<K, V> {
             }
         }
 
+        /**
+         * Remove an entry from the map, return the new count.
+         */
         public int remove(K key, V value) {
             final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
             final int n = values.remove(value);

@@ -1,8 +1,10 @@
 package mb.statix.solver.concurrent.messages;
 
+import java.util.Set;
+
 import org.immutables.value.Value;
 
-import io.usethesource.capsule.Set;
+import mb.statix.scopegraph.path.IResolutionPath;
 
 public abstract class ClientMessage<S, L, D> {
 
@@ -49,7 +51,7 @@ public abstract class ClientMessage<S, L, D> {
 
         @Value.Parameter public abstract long requestId();
 
-        @Value.Parameter public abstract Set.Immutable<Object> paths();
+        @Value.Parameter public abstract Set<IResolutionPath<S, L, D>> paths();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((QueryAnswer<S, L, D>) this);

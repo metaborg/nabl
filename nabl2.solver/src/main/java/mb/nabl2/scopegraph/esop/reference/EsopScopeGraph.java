@@ -259,11 +259,11 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         // ------------------------------------------------------------
 
         @Override public boolean addDecl(S scope, O decl) {
-            return decls.put(decl, scope);
+            return decls.put(decl, scope) == null;
         }
 
         @Override public boolean addRef(O ref, S scope) {
-            return refs.put(ref, scope);
+            return refs.put(ref, scope) == null;
         }
 
         @Override public boolean addDirectEdge(S sourceScope, L label, S targetScope) {

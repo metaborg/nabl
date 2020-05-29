@@ -4,6 +4,5 @@ enum State {
     INIT, //
     ACTIVE, //
     DONE, //
-    DEADLOCKED, //
     FAILED //
 }

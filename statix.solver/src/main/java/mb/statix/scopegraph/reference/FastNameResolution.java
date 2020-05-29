@@ -17,7 +17,7 @@ import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.terms.path.Paths;
 
-public class FastNameResolution<S extends D, L, D> implements INameResolution<S, L, D> {
+public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
 
     private final IScopeGraph<S, L, D> scopeGraph;
 
@@ -200,11 +200,11 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     // builder                                                               //
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S extends D, L, D> Builder<S, L, D> builder() {
+    public static <S, L, D> Builder<S, L, D> builder() {
         return new Builder<>();
     }
 
-    public static class Builder<S extends D, L, D> implements INameResolution.Builder<S, L, D> {
+    public static class Builder<S, L, D> implements INameResolution.Builder<S, L, D> {
 
         private LabelWF<L> labelWF = LabelWF.ANY();
         private LabelOrder<L> labelOrder = LabelOrder.NONE();

@@ -14,7 +14,7 @@ public class StatixTypeChecker extends AbstractTypeChecker<Scope, ITerm, ITerm, 
     public StatixTypeChecker(String resource, Coordinator<Scope, ITerm, ITerm> coordinator, Spec spec,
             IConstraint constraint, IDebugContext debug) {
         super(resource, coordinator);
-        this.solver = new StatixSolver(spec, constraint, debug, this);
+        this.solver = new StatixSolver(resource, constraint, spec, debug, this);
     }
 
     @Override public void run(Scope root) throws InterruptedException {

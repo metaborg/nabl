@@ -9,10 +9,16 @@ import java.util.concurrent.ExecutorService;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Queues;
 
-import io.usethesource.capsule.Set;
+import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.DataLeq;
+import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.LabelOrder;
+import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.concurrent.messages.AddEdge;
 import mb.statix.solver.concurrent.messages.ClientMessage;
 import mb.statix.solver.concurrent.messages.CloseEdge;
@@ -38,16 +44,17 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     private final String resource;
 
     private final BlockingQueue<ClientMessage<S, L, D>> inbox = Queues.newLinkedBlockingDeque();
+    private int clock = 0;
+    private int lastMessageId = 0;
 
     private final Coordinator<S, L, D> coordinator;
     private final CompletableFuture<R> pendingResult = new CompletableFuture<>();
     private State state;
 
-    private int clock = 0;
-    private int lastMessageId = 0;
-
     private final Map<Long, CompletableFuture<S>> pendingScopes = Maps.newHashMap();
-    private final Map<Long, CompletableFuture<Set.Immutable<Object>>> pendingAnswers = Maps.newHashMap();
+    private final Map<Long, CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>>> pendingQueries =
+            Maps.newHashMap();
+    private final Multimap<S, L> openEdges = HashMultimap.create();
 
     public AbstractTypeChecker(String resource, Coordinator<S, L, D> coordinator) {
         this.resource = resource;
@@ -76,7 +83,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
             try {
                 run();
             } catch(Throwable e) {
-                pendingResult.completeExceptionally(e);
+                failed(e);
             }
         });
         return pendingResult;
@@ -98,9 +105,10 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     // message handling
 
     final void run() throws InterruptedException {
-        while(!inState(State.DONE, State.DEADLOCKED)) {
+        while(inState(State.INIT, State.ACTIVE)) {
             if(inbox.isEmpty()) {
-                logger.info("client {} suspended", this);
+                logger.info("client {} suspended: pending {} scopes, {} queries", this, pendingScopes.size(),
+                        pendingQueries.size());
                 post(Suspend.<S, L, D>builder().build());
             }
             final ClientMessage<S, L, D> message = inbox.take();
@@ -108,18 +116,19 @@ public abstract class AbstractTypeChecker<S, L, D, R>
             logger.info("client {} processing {}", this, message);
             message.match(this);
         }
-        // TODO if deadlocked, absorb all other messages?
-        logger.info("client {} finished.", this);
+        // TODO if failed, absorb all other messages?
+        logger.info("client {} finished: pending {} scopes, {} queries", this, pendingScopes.size(),
+                pendingQueries.size());
     }
 
     @Override public final void on(Start<S, L, D> message) throws InterruptedException {
-        assertState(State.INIT);
+        assertInState(State.INIT);
         run(message.root());
-        assertState(State.ACTIVE, State.DONE, State.DEADLOCKED);
+        assertInState(State.ACTIVE, State.DONE, State.FAILED);
     }
 
     @Override public final void on(ScopeAnswer<S, L, D> message) throws InterruptedException {
-        assertState(State.ACTIVE);
+        assertInState(State.ACTIVE);
         if(!pendingScopes.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
@@ -127,17 +136,19 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     }
 
     @Override public final void on(QueryAnswer<S, L, D> message) throws InterruptedException {
-        assertState(State.ACTIVE);
-        if(!pendingAnswers.containsKey(message.requestId())) {
+        assertInState(State.ACTIVE);
+        if(!pendingQueries.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
-        pendingAnswers.remove(message.requestId()).complete(message.paths());
+        pendingQueries.remove(message.requestId()).complete(message.paths());
     }
 
     @Override public final void on(DeadLock<S, L, D> message) throws InterruptedException {
-        assertState(State.ACTIVE);
-        setState(State.DEADLOCKED);
-        pendingAnswers.get(message.requestId()).completeExceptionally(new DeadLockedException());
+        assertInState(State.ACTIVE);
+        if(!pendingQueries.containsKey(message.requestId())) {
+            throw new IllegalStateException("Missing pending answer for query " + message.requestId());
+        }
+        pendingQueries.remove(message.requestId()).completeExceptionally(new DeadLockedException());
     }
 
     private boolean inState(State... states) {
@@ -149,57 +160,71 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         return false;
     }
 
-    private void assertState(State... states) {
+    private void assertInState(State... states) {
         if(!inState(states)) {
             throw new IllegalStateException("Expected state " + Arrays.toString(states) + ", got " + state.toString());
         }
     }
 
+    private void assertEdgeOpen(S source, L label) {
+        if(!openEdges.containsEntry(source, label)) {
+            throw new IllegalArgumentException("Edge " + source + "/" + label + " is not open.");
+        }
+    }
+
+
     // provided interface for scope graphs, called by client
 
-    @Override public void openRootEdges(Iterable<L> labels) {
-        assertState(State.INIT);
+    @Override public void openRootEdges(S root, Iterable<L> labels) {
+        assertInState(State.INIT);
         setState(State.ACTIVE);
+        openEdges.putAll(root, labels);
         post(RootEdges.of(labels));
     }
 
-    @Override public CompletableFuture<S> freshScope(D datum, Iterable<L> labels) {
-        assertState(State.ACTIVE);
-        final long messageId = post(FreshScope.of(datum, labels));
+    @Override public CompletableFuture<S> freshScope(String name, D datum, Iterable<L> labels) {
+        assertInState(State.ACTIVE);
+        final long messageId = post(FreshScope.of(name, datum, labels));
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
         pendingScopes.put(messageId, pendingScope);
-        return pendingScope;
+        return pendingScope.whenComplete((scope, ex) -> {
+            openEdges.putAll(scope, labels);
+        });
     }
 
     @Override public final void addEdge(S source, L label, S target) {
-        assertState(State.ACTIVE);
+        assertInState(State.ACTIVE);
+        assertEdgeOpen(source, label);
         post(AddEdge.of(source, label, target));
     }
 
     @Override public final void closeEdge(S source, L label) {
-        assertState(State.ACTIVE);
+        assertInState(State.ACTIVE);
+        assertEdgeOpen(source, label);
         post(CloseEdge.of(source, label));
     }
 
-    @Override public final CompletableFuture<Set.Immutable<Object>> query(S scope) {
-        assertState(State.ACTIVE);
-        final long messageId = post(Query.of(scope));
-        final CompletableFuture<Set.Immutable<Object>> pendingAnswer = new CompletableFuture<>();
-        pendingAnswers.put(messageId, pendingAnswer);
+    @Override public final CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
+            DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+        assertInState(State.ACTIVE);
+        final long messageId = post(Query.of(scope, labelWF, dataWF, labelOrder, dataEquiv));
+        final CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>> pendingAnswer = new CompletableFuture<>();
+        pendingQueries.put(messageId, pendingAnswer);
         return pendingAnswer;
     }
 
     // provided interface for process, called by client
 
     public final void done(R result) {
-        assertState(State.ACTIVE);
+        logger.info("client {} done with {}", this, result);
+        assertInState(State.ACTIVE);
         setState(State.DONE);
         post(Done.<S, L, D>builder().build());
         pendingResult.complete(result);
     }
 
     public final void failed(Throwable e) {
-        assertState(State.ACTIVE);
+        logger.info("client {} failed with {}", this, e.getMessage());
         setState(State.FAILED);
         post(Failed.<S, L, D>builder().build());
         pendingResult.completeExceptionally(e);

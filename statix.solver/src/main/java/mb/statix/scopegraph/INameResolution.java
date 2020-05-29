@@ -10,11 +10,11 @@ import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 
-public interface INameResolution<S extends D, L, D> {
+public interface INameResolution<S, L, D> {
 
     Env<S, L, D> resolve(S scope) throws ResolutionException, InterruptedException;
 
-    interface Builder<S extends D, L, D> {
+    interface Builder<S, L, D> {
 
         Builder<S, L, D> withLabelWF(LabelWF<L> labelWF);
 

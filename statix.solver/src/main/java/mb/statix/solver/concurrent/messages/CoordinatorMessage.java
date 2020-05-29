@@ -1,11 +1,15 @@
 package mb.statix.solver.concurrent.messages;
 
-import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
+import mb.statix.scopegraph.reference.DataLeq;
+import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.LabelOrder;
+import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.concurrent.AbstractTypeChecker;
 
 public abstract class CoordinatorMessage<S, L, D> {
@@ -53,7 +57,7 @@ public abstract class CoordinatorMessage<S, L, D> {
     @Value.Immutable
     public static abstract class ARootEdges<S, L, D> extends CoordinatorMessage<S, L, D> {
 
-        @Value.Parameter public abstract List<L> labels();
+        @Value.Parameter public abstract Set<L> labels();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((RootEdges<S, L, D>) this);
@@ -64,9 +68,11 @@ public abstract class CoordinatorMessage<S, L, D> {
     @Value.Immutable
     public static abstract class AFreshScope<S, L, D> extends CoordinatorMessage<S, L, D> {
 
+        @Value.Parameter public abstract String name();
+
         @Value.Parameter public abstract D datum();
 
-        @Value.Parameter public abstract List<L> labels();
+        @Value.Parameter public abstract Set<L> labels();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((FreshScope<S, L, D>) this);
@@ -106,6 +112,15 @@ public abstract class CoordinatorMessage<S, L, D> {
     public static abstract class AQuery<S, L, D> extends CoordinatorMessage<S, L, D> {
 
         @Value.Parameter public abstract S scope();
+
+        @Value.Parameter public abstract LabelWF<L> labelWF();
+
+        @Value.Parameter public abstract DataWF<D> dataWF();
+
+        @Value.Parameter public abstract LabelOrder<L> labelOrder();
+
+        @Value.Parameter public abstract DataLeq<D> dataEquiv();
+
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((Query<S, L, D>) this);

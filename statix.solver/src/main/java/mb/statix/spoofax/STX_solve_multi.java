@@ -29,6 +29,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.concurrent.Coordinator;
 import mb.statix.solver.concurrent.StatixTypeChecker;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
@@ -46,7 +47,7 @@ public class STX_solve_multi extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final IDebugContext debug = getDebugContext(terms.get(1));
+        final IDebugContext debug = new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
 
         final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
                 M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> Tuple2.of(r, c));
@@ -55,7 +56,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final Scope root = Scope.of("", "0");
         final ExecutorService executor = Executors.newCachedThreadPool();
-        final Function2<String, Integer, Scope> newScope = (resource, n) -> Scope.of(resource, n.toString());
+        final Function2<String, String, Scope> newScope = (resource, name) -> Scope.of(resource, name);
         final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.edgeLabels(), newScope);
 
         final double t0 = System.currentTimeMillis();
