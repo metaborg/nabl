@@ -1,25 +1,53 @@
 package mb.nabl2.util.collections;
 
+import java.util.stream.Collectors;
+
 import io.usethesource.capsule.Map;
 
 public abstract class MultiSetMap<K, V> {
 
-    protected abstract Map<K, MultiSet.Immutable<V>> entries();
+    protected abstract Map<K, MultiSet.Immutable<V>> toMap();
 
     public boolean isEmpty() {
-        return entries().isEmpty();
+        return toMap().isEmpty();
     }
 
     public boolean containsKey(K key) {
-        return entries().containsKey(key);
+        return toMap().containsKey(key);
     }
 
     public boolean contains(K key, V value) {
-        return entries().getOrDefault(key, MultiSet.Immutable.of()).contains(value);
+        return toMap().getOrDefault(key, MultiSet.Immutable.of()).contains(value);
     }
 
     public int count(K key, V value) {
-        return entries().getOrDefault(key, MultiSet.Immutable.of()).count(value);
+        return toMap().getOrDefault(key, MultiSet.Immutable.of()).count(value);
+    }
+
+    public MultiSet.Immutable<V> get(K key) {
+        return toMap().get(key);
+    }
+
+    public static class Immutable<K, V> extends MultiSetMap<K, V> {
+
+        private final Map.Immutable<K, MultiSet.Immutable<V>> entries;
+
+        private Immutable(Map.Immutable<K, MultiSet.Immutable<V>> entries) {
+            this.entries = entries;
+        }
+
+        @Override public Map.Immutable<K, MultiSet.Immutable<V>> toMap() {
+            return entries;
+        }
+
+        public MultiSetMap.Transient<K, V> melt() {
+            return new Transient<>(entries.asTransient());
+        }
+
+        public static <K, V> MultiSetMap.Immutable<K, V> of() {
+            return new Immutable<>(Map.Immutable.of());
+        }
+
     }
 
     public static class Transient<K, V> extends MultiSetMap<K, V> {
@@ -30,7 +58,7 @@ public abstract class MultiSetMap<K, V> {
             this.entries = entries;
         }
 
-        @Override public Map.Transient<K, MultiSet.Immutable<V>> entries() {
+        @Override public Map.Transient<K, MultiSet.Immutable<V>> toMap() {
             return entries;
         }
 
@@ -72,9 +100,19 @@ public abstract class MultiSetMap<K, V> {
             return n;
         }
 
+        public Immutable<K, V> freeze() {
+            return new Immutable<>(entries.freeze());
+        }
+
         public static <K, V> MultiSetMap.Transient<K, V> of() {
             return new Transient<>(Map.Transient.of());
         }
+
+    }
+
+    @Override public String toString() {
+        return toMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
+                .collect(Collectors.joining(", ", "{", "}"));
 
     }
 
