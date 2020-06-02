@@ -18,6 +18,10 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -113,6 +117,24 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         final @Nullable Level level = levelString.equalsIgnoreCase("None") ? null : Level.parse(levelString);
         final IDebugContext debug = level != null ? new LoggerDebugContext(logger, level) : new NullDebugContext();
         return debug;
+    }
+
+    protected IProgress getProgress(ITerm progressTerm) throws InterpreterException {
+        // @formatter:off
+        return M.cases(
+            M.tuple0(t -> new NullProgress()),
+            M.blobValue(IProgress.class)
+        ).match(progressTerm).orElseThrow(() -> new InterpreterException("Expected progress."));
+        // @formatter:on
+    }
+
+    protected ICancel getCancel(ITerm cancelTerm) throws InterpreterException {
+        // @formatter:off
+        return M.cases(
+            M.tuple0(t -> new NullCancel()),
+            M.blobValue(ICancel.class)
+        ).match(cancelTerm).orElseThrow(() -> new InterpreterException("Expected cancel."));
+        // @formatter:on
     }
 
     ////////////////////////////////////////////////

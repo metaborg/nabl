@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.Sets;
 
@@ -33,29 +35,33 @@ public class Solver {
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IDebugContext debug) throws InterruptedException {
-        return solve(spec, state, constraint, (s, l, st) -> true, debug);
+            final IDebugContext debug, IProgress progress, ICancel cancel) throws InterruptedException {
+        return solve(spec, state, constraint, (s, l, st) -> true, debug, progress, cancel);
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IsComplete isComplete, final IDebugContext debug) throws InterruptedException {
-        return new GreedySolver(spec, state, constraint, isComplete, debug).solve();
+            final IsComplete isComplete, final IDebugContext debug, IProgress progress, final ICancel cancel)
+            throws InterruptedException {
+        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel).solve();
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
-            final ICompleteness.Immutable completeness, final IDebugContext debug) throws InterruptedException {
-        return new GreedySolver(spec, state, constraints, delays, completeness, debug).solve();
+            final ICompleteness.Immutable completeness, final IDebugContext debug, IProgress progress, ICancel cancel)
+            throws InterruptedException {
+        return new GreedySolver(spec, state, constraints, delays, completeness, debug, progress, cancel).solve();
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final IConstraint constraint,
-            final IsComplete isComplete, final IDebugContext debug) throws Delay, InterruptedException {
+            final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
+            throws Delay, InterruptedException {
         final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Info)) {
             debug.info("Checking entailment of {}", toString(constraint, unifier));
         }
 
-        final SolverResult result = Solver.solve(spec, state, constraint, isComplete, debug.subContext());
+        final SolverResult result =
+                Solver.solve(spec, state, constraint, isComplete, debug.subContext(), progress, cancel);
 
         if(result.hasErrors()) {
             // no entailment if errors

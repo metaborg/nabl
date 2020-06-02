@@ -9,6 +9,8 @@ import java.util.Optional;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -17,7 +19,6 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple2;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -31,7 +32,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
     @Inject public STX_solve_multi_file() {
-        super(STX_solve_multi_file.class.getSimpleName(), 3);
+        super(STX_solve_multi_file.class.getSimpleName(), 5);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -45,12 +46,15 @@ public class STX_solve_multi_file extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final IDebugContext debug = getDebugContext(terms.get(2));
+        final IProgress progress = getProgress(terms.get(3));
+        final ICancel cancel = getCancel(terms.get(4));
+
 
         final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
                 M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> Tuple2.of(r, c));
         final Function1<Tuple2<String, IConstraint>, ITerm> solveConstraint =
                 resource_constraint -> solveConstraint(spec, initial.state().withResource(resource_constraint._1()),
-                        resource_constraint._2(), debug);
+                        resource_constraint._2(), debug, progress, cancel);
         final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
         final double t0 = System.currentTimeMillis();
@@ -61,13 +65,14 @@ public class STX_solve_multi_file extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private ITerm solveConstraint(Spec spec, IState.Immutable state, IConstraint constraint, IDebugContext debug) {
+    private ITerm solveConstraint(Spec spec, IState.Immutable state, IConstraint constraint, IDebugContext debug,
+            IProgress progress, ICancel cancel) {
         final IsComplete isComplete = (s, l, st) -> {
             return !state.scopes().contains(s);
         };
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(spec, state, constraint, isComplete, debug);
+            resultConfig = Solver.solve(spec, state, constraint, isComplete, debug, progress, cancel);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

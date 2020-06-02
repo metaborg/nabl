@@ -30,7 +30,7 @@ signature
 rules // single file analysis
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
-      AnalyzeSingle(change*) -> AnalysisResult(result*)
+      AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
        ; c-name := <stx--mk-qualified-name(|spec-name)> init-constraint
@@ -38,7 +38,7 @@ rules // single file analysis
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; C* := <map(\ (resource, ast') -> C(c-name, [<stx--explode> ast'], NoMessage()) \)> resource-ast'*
-    ; solve-result* := <stx--solve-constraint(|spec, level)> C*
+    ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
     ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(_, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
@@ -48,12 +48,12 @@ rules // single file analysis
       \})> (resource-ast'*, solve-result*)
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
-      AnalyzeMulti(_, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
+      AnalyzeMulti(_, _, _, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
 
 rules // single file elaboration
 
   stx--editor-elaborate(pre, post|spec-name, init-constraint):
-      AnalyzeSingle(change*) -> AnalysisResult(result*)
+      AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
        ; c-name := <stx--mk-qualified-name(|spec-name)> init-constraint
@@ -62,7 +62,7 @@ rules // single file elaboration
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; V := Var("out")
     ; C* := <map(\ (resource, ast') -> <stx--exists>([V], C(c-name, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
-    ; solve-result* := <stx--solve-constraint(|spec, level)> C*
+    ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
     ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(subst, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
@@ -74,7 +74,7 @@ rules // single file elaboration
 rules // multi file analysis
 
   stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
-      AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
+      AnalyzeMulti((project-resource, project-change), change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
        ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
@@ -87,13 +87,13 @@ rules // multi file analysis
           //
           global-scope-var := Var("s")
         ; Solution(global-scope-subst, global-scope-state) :=
-              <stx--solve-constraint(|spec, level)> <stx--exists>([global-scope-var], CNew([global-scope-var]))
+              <stx--solve-constraint(|spec, level, progress, cancel)> <stx--exists>([global-scope-var], CNew([global-scope-var]))
         ; global-scope := <lookup> (global-scope-var, global-scope-subst)
           //
           // 2. partially solve project constraint
           //
         ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
-        ; [initial-project-state] := <stx--solve-multi-file(|spec, global-scope-state, level)> [(project-resource, project-C)]
+        ; [initial-project-state] := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> [(project-resource, project-C)]
         case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
           id
         otherwise:
@@ -105,7 +105,7 @@ rules // multi file analysis
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
-    ; file-state* := <stx--solve-multi-file(|spec, global-scope-state, level)> file-C*
+    ; file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
     ; file-result* := <zip({ file-state', ast'', file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast'', file-analysis, [], [], []))
@@ -116,7 +116,7 @@ rules // multi file analysis
       // 4. Combine and solve all partial solution
       //
     ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
-    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level)> [file-state*, cached-state*]
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [file-state*, cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
     ; switch !project-change
@@ -128,17 +128,17 @@ rules // multi file analysis
     ; result* := [(project-resource, project-result)|file-result*]
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
-      AnalyzeSingle(_) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
+      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
 
   // @param state : SolverResult
   // @param level : LogLevel
   // @type [(String, Constraint)] -> [SolverResult]
-  stx--solve-multi-file(|spec, state, level) = prim("STX_solve_multi_file", spec, state, level)
+  stx--solve-multi-file(|spec, state, level, progress, cancel) = prim("STX_solve_multi_file", spec, state, level, progress, cancel)
 
   // @param state : SolverResult
   // @param level : LogLevel
   // @type [SolverResult] -> SolverResult
-  stx--solve-multi-project(|spec, state, level) = prim("STX_solve_multi_project", spec, state, level)
+  stx--solve-multi-project(|spec, state, level, progress, cancel) = prim("STX_solve_multi_project", spec, state, level, progress, cancel)
 
   // @type SolverResult -> SolverResult
   stx--delays-as-errors = prim("STX_delays_as_errors")
@@ -156,7 +156,7 @@ rules
        ; V     := Var("out")
        ; C     := <stx--exists>([V], C(c-name, [T*, V], NoMessage()))
        ; level := <stx--log-level>
-       ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level)> C
+       ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level, (), ())> C
        ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
        ; out := <substitute(stx--is-var);stx--implode> (subst, V)
 
@@ -221,7 +221,10 @@ rules
 rules
 
   // solve-constraint(|Spec, LogLevel) : ([Var], Constraint) -> Solution
-  stx--solve-constraint(|spec, level) = prim("STX_solve_constraint", spec, level)
+  stx--solve-constraint(|spec, level) = stx--solve-constraint(|spec, level, (), ())
+
+  // solve-constraint(|Spec, LogLevel, Progress, Cancel) : ([Var], Constraint) -> Solution
+  stx--solve-constraint(|spec, level, progress, cancel) = prim("STX_solve_constraint", spec, level, progress, cancel)
 
 rules
 

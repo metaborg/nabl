@@ -1,5 +1,8 @@
 package mb.statix.generator.strategy;
 
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
+
 import mb.statix.constraints.Constraints;
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
@@ -17,7 +20,7 @@ public final class Infer extends SearchStrategy<SearchState, SearchState> {
         final SolverResult resultConfig;
         try {
             resultConfig = Solver.solve(ctx.spec(), state.state(), state.constraints(), state.delays(),
-                    state.completeness(), new NullDebugContext());
+                    state.completeness(), new NullDebugContext(), new NullProgress(), new NullCancel());
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

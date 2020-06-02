@@ -10,6 +10,8 @@ import java.util.Optional;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -30,7 +32,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
     @Inject public STX_solve_multi_project() {
-        super(STX_solve_multi_project.class.getSimpleName(), 3);
+        super(STX_solve_multi_project.class.getSimpleName(), 5);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -44,6 +46,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final IDebugContext debug = getDebugContext(terms.get(2));
+        final IProgress progress = getProgress(terms.get(3));
+        final ICancel cancel = getCancel(terms.get(4));
 
         final List<SolverResult> results = M.listElems(M.blobValue(SolverResult.class)).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
@@ -66,7 +70,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
         final SolverResult resultConfig;
         try {
             final double t0 = System.currentTimeMillis();
-            resultConfig = Solver.solve(spec, state, Constraints.conjoin(constraints), (s, l, st) -> true, debug);
+            resultConfig = Solver.solve(spec, state, Constraints.conjoin(constraints), (s, l, st) -> true, debug,
+                    progress, cancel);
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Project analyzed in {} s", (dt / 1_000d));
         } catch(InterruptedException e) {

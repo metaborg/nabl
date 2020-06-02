@@ -3,6 +3,8 @@ package mb.statix.solver.persistent.query;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import org.metaborg.util.log.Level;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableList;
 
@@ -27,13 +29,18 @@ class ConstraintDataWF implements DataWF<ITerm> {
     private final IState.Immutable state;
     private final IsComplete isComplete;
     private final IDebugContext debug;
+    private final IProgress progress;
+    private final ICancel cancel;
 
-    public ConstraintDataWF(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete, IDebugContext debug) {
+    public ConstraintDataWF(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete,
+            IDebugContext debug, IProgress progress, ICancel cancel) {
         this.spec = spec;
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
         this.debug = debug;
+        this.progress = progress;
+        this.cancel = cancel;
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
@@ -43,7 +50,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
             if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, result, isComplete, debug)) {
+            if(Solver.entails(spec, state, result, isComplete, debug, progress.subProgress(1), cancel)) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
