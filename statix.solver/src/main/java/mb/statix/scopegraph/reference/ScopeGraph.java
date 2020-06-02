@@ -111,7 +111,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
         }
 
         public static <S, L, D> ScopeGraph.Immutable<S, L, D> of(Iterable<L> edgeLabels) {
-            return new ScopeGraph.Immutable<>(Set.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+            return new ScopeGraph.Immutable<>(CapsuleUtil.toSet(edgeLabels), Map.Immutable.of(), Map.Immutable.of());
         }
 
         // ------------------------------------------------------------
@@ -140,8 +140,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
     }
 
-    public static class Transient<S, L, D> extends ScopeGraph<S, L, D>
-            implements IScopeGraph.Transient<S, L, D> {
+    public static class Transient<S, L, D> extends ScopeGraph<S, L, D> implements IScopeGraph.Transient<S, L, D> {
 
         private final Set.Immutable<L> edgeLabels;
 
