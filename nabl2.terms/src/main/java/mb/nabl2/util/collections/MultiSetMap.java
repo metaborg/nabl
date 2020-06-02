@@ -6,6 +6,9 @@ import io.usethesource.capsule.Map;
 
 public abstract class MultiSetMap<K, V> {
 
+    // INVARIANT toMap()/entries never contains empty MultiSet values
+    //           Thus, if there is an entry for a key, there is at least one value as well.
+    
     protected abstract Map<K, MultiSet.Immutable<V>> toMap();
 
     public boolean isEmpty() {
@@ -17,15 +20,15 @@ public abstract class MultiSetMap<K, V> {
     }
 
     public boolean contains(K key, V value) {
-        return toMap().getOrDefault(key, MultiSet.Immutable.of()).contains(value);
+        return get(key).contains(value);
     }
 
     public int count(K key, V value) {
-        return toMap().getOrDefault(key, MultiSet.Immutable.of()).count(value);
+        return get(key).count(value);
     }
 
     public MultiSet.Immutable<V> get(K key) {
-        return toMap().get(key);
+        return toMap().getOrDefault(key, MultiSet.Immutable.of());
     }
 
     public static class Immutable<K, V> extends MultiSetMap<K, V> {
