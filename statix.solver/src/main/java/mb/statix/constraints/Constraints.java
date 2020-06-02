@@ -13,6 +13,7 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.optionals.Optionals;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -500,24 +501,24 @@ public final class Constraints {
         };
     }
 
-    private static <T> List<T> collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
+    private static <T> void collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
             ImmutableList.Builder<T> ts, boolean recurseInLogicalScopes) {
         // @formatter:off
-        return constraint.match(cases(
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { disjoin(c).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; },
-            c -> { if(recurseInLogicalScopes) { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); } return null; },
-            c -> { f.apply(c).ifPresent(ts::add); return null; }
+        constraint.match(cases(
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { disjoin(c).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
+            c -> { if(recurseInLogicalScopes) { disjoin(c.constraint()).forEach(cc -> collectBase(cc, f, ts, recurseInLogicalScopes)); } return Unit.unit; },
+            c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; }
         ));
         // @formatter:on
     }
@@ -590,10 +591,10 @@ public final class Constraints {
                 //           care throughout the solver code.
                 worklist.push(conj.left().withCause(conj.cause().orElse(conj.left().cause().orElse(null))));
                 worklist.push(conj.right().withCause(conj.cause().orElse(conj.right().cause().orElse(null))));
-                return null;
+                return Unit.unit;
             }).otherwise(c -> {
                 action.apply(c);
-                return null;
+                return Unit.unit;
             }));
         }
     }
@@ -610,16 +611,16 @@ public final class Constraints {
             onArith -> {
                 onArith.expr1().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
                 onArith.expr2().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
-                return null;
+                return Unit.unit;
             },
             onConj -> {
                 Constraints.disjoin(onConj).forEach(c -> freeVars(c, onVar));
-                return null;
+                return Unit.unit;
             },
             onEqual -> {
                 onEqual.term1().getVars().forEach(onVar::apply);
                 onEqual.term2().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onExists -> {
                 freeVars(onExists.constraint(), v -> {
@@ -627,51 +628,51 @@ public final class Constraints {
                         onVar.apply(v);
                     }
                 });
-                return null;
+                return Unit.unit;
             },
             onFalse -> {
-                return null;
+                return Unit.unit;
             },
             onInequal -> {
                 onInequal.term1().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
                 onInequal.term2().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onNew -> {
                 onNew.scopeTerm().getVars().stream().forEach(onVar::apply);
                 onNew.datumTerm().getVars().stream().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onResolveQuery -> {
                 onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
                 RuleUtil.freeVars(onResolveQuery.filter().getDataWF(), onVar);
                 RuleUtil.freeVars(onResolveQuery.min().getDataEquiv(), onVar);
                 onResolveQuery.resultTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTellEdge -> {
                 onTellEdge.sourceTerm().getVars().forEach(onVar::apply);
                 onTellEdge.targetTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTermId -> {
                 onTermId.astTerm().getVars().forEach(onVar::apply);
                 onTermId.idTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTermProperty -> {
                 onTermProperty.idTerm().getVars().forEach(onVar::apply);
                 onTermProperty.value().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTrue -> null,
             onTry -> {
                 freeVars(onTry.constraint(), onVar);
-                return null;
+                return Unit.unit;
             },
             onUser -> {
                 onUser.args().forEach(t -> t.getVars().forEach(onVar::apply));
-                return null;
+                return Unit.unit;
             }
         ));
         // @formatter:on
@@ -690,64 +691,64 @@ public final class Constraints {
             onArith -> {
                 onArith.expr1().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
                 onArith.expr2().isTerm().ifPresent(t -> t.getVars().forEach(onVar::apply));
-                return null;
+                return Unit.unit;
             },
             onConj -> {
                 Constraints.disjoin(onConj).forEach(c -> vars(c, onVar));
-                return null;
+                return Unit.unit;
             },
             onEqual -> {
                 onEqual.term1().getVars().forEach(onVar::apply);
                 onEqual.term2().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onExists -> {
                 vars(onExists.constraint(), onVar);
-                return null;
+                return Unit.unit;
             },
             onFalse -> {
-                return null;
+                return Unit.unit;
             },
             onInequal -> {
                 onInequal.term1().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
                 onInequal.term2().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onNew -> {
                 onNew.scopeTerm().getVars().forEach(onVar::apply);
                 onNew.datumTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onResolveQuery -> {
                 onResolveQuery.scopeTerm().getVars().forEach(onVar::apply);
                 RuleUtil.vars(onResolveQuery.filter().getDataWF(), onVar);
                 RuleUtil.vars(onResolveQuery.min().getDataEquiv(), onVar);
                 onResolveQuery.resultTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTellEdge -> {
                 onTellEdge.sourceTerm().getVars().forEach(onVar::apply);
                 onTellEdge.targetTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTermId -> {
                 onTermId.astTerm().getVars().forEach(onVar::apply);
                 onTermId.idTerm().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTermProperty -> {
                 onTermProperty.idTerm().getVars().forEach(onVar::apply);
                 onTermProperty.value().getVars().forEach(onVar::apply);
-                return null;
+                return Unit.unit;
             },
             onTrue -> null,
             onTry -> {
                 vars(onTry.constraint(), onVar);
-                return null;
+                return Unit.unit;
             },
             onUser -> {
                 onUser.args().forEach(t -> t.getVars().forEach(onVar::apply));
-                return null;
+                return Unit.unit;
             }
         ));
         // @formatter:on

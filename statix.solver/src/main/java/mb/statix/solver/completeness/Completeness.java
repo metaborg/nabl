@@ -31,15 +31,16 @@ public abstract class Completeness implements ICompleteness {
 
     @Override public boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUniDisunifier unifier) {
         if(!label.match(() -> true, lbl -> lbl.isGround())) {
-            throw new IllegalArgumentException("Label must be ground");
+            throw new IllegalArgumentException("Label must be ground, got " + label);
         }
         final ITerm scopeOrVar = getVarOrScope(scope, unifier);
         return !(incomplete().containsKey(scopeOrVar) && incomplete().get(scopeOrVar).count(label) > 0);
     }
 
-    protected static ITerm getVarOrScope(ITerm scope, IUniDisunifier unifier) {
-        return CompletenessUtil.scopeOrVar().match(scope, unifier).orElseThrow(() -> {
-            return new IllegalStateException("Completeness only supports atomic variables or atomic scopes.");
+    protected static ITerm getVarOrScope(ITerm scopeOrVar, IUniDisunifier unifier) {
+        return CompletenessUtil.scopeOrVar().match(scopeOrVar, unifier).orElseThrow(() -> {
+            return new IllegalStateException("Completeness only supports atomic variables or atomic scopes, got "
+                    + unifier.toString(scopeOrVar));
         });
     }
 

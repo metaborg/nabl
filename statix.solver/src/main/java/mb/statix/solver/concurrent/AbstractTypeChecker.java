@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -35,7 +36,7 @@ import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
 
 public abstract class AbstractTypeChecker<S, L, D, R>
-        implements ClientMessage.Cases<S, L, D>, IScopeGraphFacade<S, L, D>, ITypeChecker<S, L, D> {
+        implements ClientMessage.Cases<S, L, D>, IScopeGraphFacade<S, L, D>, ITypeChecker<S, L, D, R> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 
@@ -69,7 +70,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     // required interface, implemented by client
 
-    @Override public abstract void run(S root) throws InterruptedException;
+    @Override public abstract CompletableFuture<R> run(S root) throws InterruptedException;
 
     // misc
 
@@ -123,7 +124,14 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     @Override public final void on(Start<S, L, D> message) throws InterruptedException {
         assertInState(State.INIT);
-        run(message.root());
+        run(message.root()).handle((r, ex) -> {
+            if(ex != null) {
+                failed(ex);
+            } else {
+                done(r);
+            }
+            return Unit.unit;
+        });
         assertInState(State.ACTIVE, State.DONE, State.FAILED);
     }
 
@@ -215,7 +223,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     // provided interface for process, called by client
 
-    public final void done(R result) {
+    private final void done(R result) {
         logger.info("client {} done with {}", this, result);
         assertInState(State.ACTIVE);
         setState(State.DONE);
@@ -223,7 +231,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         pendingResult.complete(result);
     }
 
-    public final void failed(Throwable e) {
+    private final void failed(Throwable e) {
         logger.info("client {} failed with {}", this, e.getMessage());
         setState(State.FAILED);
         post(Failed.<S, L, D>builder().build());

@@ -1,7 +1,9 @@
 package mb.statix.solver.concurrent;
 
-public interface ITypeChecker<S, L, D> {
+import java.util.concurrent.CompletableFuture;
 
-    void run(S root) throws InterruptedException;
+public interface ITypeChecker<S, L, D, R> {
+
+    CompletableFuture<R> run(S root) throws InterruptedException;
 
 }

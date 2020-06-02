@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -56,6 +57,7 @@ import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.terms.AScope;
@@ -189,28 +191,34 @@ public class StatixSolver {
         final IUniDisunifier.Immutable unifier = state.unifier();
 
         // updates from unified variables
-        releaseDelayedCloses(updatedVars, unifier);
-        completeness.updateAll(updatedVars, unifier);
-        constraints.activateFromVars(updatedVars, debug);
-        this.updatedVars.addAll(updatedVars);
+        if(!updatedVars.isEmpty()) {
+            releaseDelayedCloses(updatedVars, unifier);
+            completeness.updateAll(updatedVars, unifier);
+            constraints.activateFromVars(updatedVars, debug);
+            this.updatedVars.addAll(updatedVars);
+        }
 
         // add new constraints
-        // no constraints::addAll, instead recurse immediately below
-        completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
-        if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
-            subDebug.info("Simplified to:");
-            for(IConstraint newConstraint : newConstraints) {
-                subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
+        if(!newConstraints.isEmpty()) {
+            // no constraints::addAll, instead recurse immediately below
+            completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
+            if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
+                subDebug.info("Simplified to:");
+                for(IConstraint newConstraint : newConstraints) {
+                    subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
+                }
             }
         }
 
         // add delayed constraints
-        delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
-        completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
-        if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
-            subDebug.info("Delayed:");
-            for(IConstraint delayedConstraint : delayedConstraints.values()) {
-                subDebug.info(" * {}", Solver.toString(delayedConstraint, unifier));
+        if(!delayedConstraints.isEmpty()) {
+            delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
+            completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
+            if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
+                subDebug.info("Delayed:");
+                for(IConstraint delayedConstraint : delayedConstraints.values()) {
+                    subDebug.info(" * {}", Solver.toString(delayedConstraint, unifier));
+                }
             }
         }
 
@@ -393,6 +401,7 @@ public class StatixSolver {
                 final ITerm datumTerm = c.datumTerm();
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
                 List<ITerm> labels = getOpenEdges(scopeTerm);
+
                 final CompletableFuture<Scope> futureScope = scopeGraph.freshScope(name, datumTerm, labels);
                 final K<Scope> k = (state, scope, fuel) -> {
                     final IConstraint eq = new CEqual(scopeTerm, scope, c);
@@ -573,7 +582,12 @@ public class StatixSolver {
     }
 
     private List<ITerm> getOpenEdges(ITerm varOrScope) {
-        return Streams.stream(completeness.get(varOrScope, state.unifier())).<ITerm>flatMap(eod -> {
+        // we must include queued edge closes here, to ensure we registered the open
+        // edge when the close is released
+        final Stream<EdgeOrData<ITerm>> openEdges = Streams.stream(completeness.get(varOrScope, state.unifier()));
+        final Stream<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope)
+                .map(var -> delayedCloses.get(var).stream().map(CriticalEdge::edgeOrData)).orElse(Stream.empty());
+        return Streams.concat(openEdges, queuedEdges).<ITerm>flatMap(eod -> {
             return eod.match(() -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
         }).collect(Collectors.toList());
     }
@@ -599,20 +613,31 @@ public class StatixSolver {
     }
 
     private void closeEdge(CriticalEdge criticalEdge, IUnifier unifier) {
-        criticalEdge.edgeOrData().match(() -> {
-            // ignore data labels, they are always closed
-            return null;
-        }, label -> {
-            final Scope scope;
-            if((scope = Scope.matcher().match(criticalEdge.scope(), unifier).orElse(null)) == null) {
-                for(ITermVar var : unifier.getVars(criticalEdge.scope())) {
-                    delayedCloses.put(var, criticalEdge);
-                }
-            } else {
-                scopeGraph.closeEdge(scope, label);
+        debug.info("client {} close edge {}/{}", this, unifier.toString(criticalEdge.scope()),
+                criticalEdge.edgeOrData());
+        // @formatter:off
+        criticalEdge.edgeOrData().match(
+            () -> {
+                // ignore data labels, they are always closed
+                return Unit.unit;
+            },
+            label -> {
+                return M.cases(
+                    Scope.matcher().map(scope -> {
+                        scopeGraph.closeEdge(scope, label);
+                        return Unit.unit;
+                    }),
+                    M.var(var -> {
+                        delayedCloses.put(var, criticalEdge);
+                        return Unit.unit;
+                    }),
+                    M.term(t -> {
+                        throw new IllegalStateException("Can only close atomic scopes or atomic variables, got " + unifier.toString(criticalEdge.scope()));
+                    })
+                ).match(criticalEdge.scope(), unifier);
             }
-            return null;
-        });
+        );
+        // @formatter:on
     }
 
     @Override public String toString() {

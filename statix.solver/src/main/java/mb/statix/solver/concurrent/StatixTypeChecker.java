@@ -1,5 +1,7 @@
 package mb.statix.solver.concurrent;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
@@ -20,14 +22,8 @@ public class StatixTypeChecker extends AbstractTypeChecker<Scope, ITerm, ITerm, 
         this.solver = new StatixSolver(resource, constraint, spec, debug, progress, cancel, this);
     }
 
-    @Override public void run(Scope root) throws InterruptedException {
-        solver.solve(root).whenComplete((result, ex) -> {
-            if(ex != null) {
-                failed(ex);
-            } else {
-                done(result);
-            }
-        });
+    @Override public CompletableFuture<SolverResult> run(Scope root) throws InterruptedException {
+        return solver.solve(root);
     }
 
     @Override public String toString() {

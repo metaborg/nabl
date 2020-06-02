@@ -3,6 +3,7 @@ package mb.statix.solver;
 import java.util.List;
 
 import org.metaborg.util.functions.Action1;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 
@@ -43,7 +44,7 @@ public class StateUtil {
         diseqs.forEach(diseq -> {
             diseq.toTuple().apply((us, left, right) -> {
                 add.apply(new CInequal(us, left, right));
-                return null;
+                return Unit.unit;
             });
         });
     }

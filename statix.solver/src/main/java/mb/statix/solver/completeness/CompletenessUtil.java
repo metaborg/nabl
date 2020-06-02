@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 
@@ -26,39 +27,39 @@ public class CompletenessUtil {
     static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
         // @formatter:off
         constraint.match(Constraints.cases(
-            onArith -> null,
+            onArith -> Unit.unit,
             onConj -> {
                 Constraints.disjoin(onConj).forEach(c -> criticalEdges(c, spec, criticalEdge));
-                return null;
+                return Unit.unit;
             },
-            onEqual -> null,
+            onEqual -> Unit.unit,
             onExists -> {
                 criticalEdges(onExists.constraint(), spec, (s, l) -> {
                     if(!onExists.vars().contains(s)) {
                         criticalEdge.apply(s, l);
                     }
                 });
-                return null;
+                return Unit.unit;
             },
-            onFalse -> null,
-            onInequal -> null,
+            onFalse -> Unit.unit,
+            onInequal -> Unit.unit,
             onNew -> {
                 criticalEdge.apply(onNew.scopeTerm(), EdgeOrData.data());
-                return null;
+                return Unit.unit;
             },
-            onResolveQuery -> null,
+            onResolveQuery -> Unit.unit,
             onTellEdge -> {
                 criticalEdge.apply(onTellEdge.sourceTerm(), EdgeOrData.edge(onTellEdge.label()));
-                return null;
+                return Unit.unit;
             },
-            onTermId -> null,
-            onTermProperty -> null,
-            onTrue -> null,
-            onTry -> null,
+            onTermId -> Unit.unit,
+            onTermProperty -> Unit.unit,
+            onTrue -> Unit.unit,
+            onTry -> Unit.unit,
             onUser -> {
                 spec.scopeExtensions().get(onUser.name()).stream()
                         .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
-                return null;
+                return Unit.unit;
             }
         ));
         // @formatter:on
