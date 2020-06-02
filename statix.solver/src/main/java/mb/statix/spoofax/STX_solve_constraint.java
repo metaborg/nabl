@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -25,7 +27,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_constraint extends StatixPrimitive {
 
     @Inject public STX_solve_constraint() {
-        super(STX_solve_constraint.class.getSimpleName(), 2);
+        super(STX_solve_constraint.class.getSimpleName(), 4);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -37,8 +39,11 @@ public class STX_solve_constraint extends StatixPrimitive {
         reportOverlappingRules(spec);
 
         final IDebugContext debug = getDebugContext(terms.get(1));
+        final IProgress progress = getProgress(terms.get(2));
+        final ICancel cancel = getCancel(terms.get(3));
 
-        final Function1<IConstraint, ITerm> solveConstraint = constraint -> solveConstraint(spec, constraint, debug);
+        final Function1<IConstraint, ITerm> solveConstraint =
+                constraint -> solveConstraint(spec, constraint, debug, progress, cancel);
         // @formatter:off
         return M.cases(
             StatixTerms.constraint().map(solveConstraint::apply),
@@ -49,12 +54,13 @@ public class STX_solve_constraint extends StatixPrimitive {
         // @formatter:on
     }
 
-    private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug) {
+    private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
+            ICancel cancel) {
         final IState.Immutable state = State.of(spec);
 
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(spec, state, constraint, debug);
+            resultConfig = Solver.solve(spec, state, constraint, debug, progress, cancel);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

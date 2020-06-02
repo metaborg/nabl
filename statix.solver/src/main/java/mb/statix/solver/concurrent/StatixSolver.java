@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.log.Level;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -91,6 +93,8 @@ public class StatixSolver {
     private final Spec spec;
     private final IConstraintStore constraints;
     private final IDebugContext debug;
+    private final IProgress progress;
+    private final ICancel cancel;
     private final IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph;
 
     private IState.Immutable state;
@@ -103,12 +107,14 @@ public class StatixSolver {
     private int pending = 0;
 
 
-    public StatixSolver(String resource, IConstraint constraint, Spec spec, IDebugContext debug,
-            IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph) {
+    public StatixSolver(String resource, IConstraint constraint, Spec spec, IDebugContext debug, IProgress progress,
+            ICancel cancel, IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph) {
         this.spec = spec;
         this.constraints = new BaseConstraintStore(debug);
         this.constraints.add(constraint);
         this.debug = debug;
+        this.progress = progress;
+        this.cancel = cancel;
         this.scopeGraph = scopeGraph;
         this.state = mb.statix.solver.persistent.State.of(spec).withResource(resource);
         this.completeness = Completeness.Transient.of(spec);
@@ -142,7 +148,7 @@ public class StatixSolver {
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
-            state = step(state, constraint);
+            state = k(state, constraint, MAX_DEPTH);
         }
 
         // invariant: there should be no remaining active constraints
@@ -172,14 +178,6 @@ public class StatixSolver {
                 SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness);
         return result;
     }
-
-    private IState.Immutable step(IState.Immutable state, IConstraint constraint) throws InterruptedException {
-        if(Thread.interrupted()) {
-            throw new InterruptedException();
-        }
-        return k(state, constraint, MAX_DEPTH);
-    }
-
 
     private IState.Immutable success(IConstraint constraint, IState.Immutable state, Collection<ITermVar> updatedVars,
             Collection<IConstraint> newConstraints, Map<Delay, IConstraint> delayedConstraints,
@@ -271,7 +269,7 @@ public class StatixSolver {
 
     private IState.Immutable k(IState.Immutable state, IConstraint constraint, int fuel) throws InterruptedException {
         // stop if thread is interrupted
-        if(Thread.interrupted()) {
+        if(cancel.cancelled() || Thread.interrupted()) {
             throw new InterruptedException();
         }
 
@@ -418,7 +416,7 @@ public class StatixSolver {
 
                 // FIXME Is this completeness going to be correct? Why is it both there and in the name resolution?
                 final ConstraintContext params = new ConstraintContext((s, l, st) -> true, debug);
-                final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
+                final ConstraintQueries cq = new ConstraintQueries(spec, state, params, progress, cancel);
                 final LabelWF<ITerm> labelWF = cq.getLabelWF(filter.getLabelWF());
                 final DataWF<ITerm> dataWF = cq.getDataWF(filter.getDataWF());
                 final LabelOrder<ITerm> labelOrder = cq.getLabelOrder(min.getLabelOrder());

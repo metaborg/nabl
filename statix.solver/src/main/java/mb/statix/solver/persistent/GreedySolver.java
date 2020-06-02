@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.log.Level;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -91,13 +93,16 @@ class GreedySolver {
     private final IState.Immutable initialState;
     private final ConstraintContext params;
 
+    private final IProgress progress;
+    private final ICancel cancel;
+
     private Map<ITermVar, ITermVar> existentials = null;
     private final List<ITermVar> updatedVars = Lists.newArrayList();
     private final List<CriticalEdge> removedEdges = Lists.newArrayList();
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
     public GreedySolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
-            IDebugContext debug) {
+            IDebugContext debug, IProgress progress, ICancel cancel) {
         this.spec = spec;
         this.initialState = state;
         this.debug = debug;
@@ -109,10 +114,13 @@ class GreedySolver {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
         this.params = new ConstraintContext(isComplete, debug);
+        this.progress = progress;
+        this.cancel = cancel;
     }
 
     public GreedySolver(Spec spec, IState.Immutable state, Iterable<IConstraint> constraints,
-            Map<IConstraint, Delay> delays, ICompleteness.Immutable completeness, IDebugContext debug) {
+            Map<IConstraint, Delay> delays, ICompleteness.Immutable completeness, IDebugContext debug,
+            IProgress progress, ICancel cancel) {
         this.spec = spec;
         this.initialState = state;
         this.debug = debug;
@@ -125,6 +133,8 @@ class GreedySolver {
             return this.completeness.isComplete(s, l, st.unifier());
         };
         this.params = new ConstraintContext(isComplete, debug);
+        this.progress = progress;
+        this.cancel = cancel;
     }
 
     public SolverResult solve() throws InterruptedException {
@@ -134,7 +144,7 @@ class GreedySolver {
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
-            state = step(state, constraint);
+            state = k(state, constraint, MAX_DEPTH);
         }
 
         // invariant: there should be no remaining active constraints
@@ -152,14 +162,6 @@ class GreedySolver {
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
         return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze());
     }
-
-    private IState.Immutable step(IState.Immutable state, IConstraint constraint) throws InterruptedException {
-        if(Thread.interrupted()) {
-            throw new InterruptedException();
-        }
-        return k(state, constraint, MAX_DEPTH);
-    }
-
 
     private IState.Immutable success(IConstraint constraint, IState.Immutable state, Collection<ITermVar> updatedVars,
             Collection<IConstraint> newConstraints, Map<Delay, IConstraint> delayedConstraints,
@@ -239,7 +241,7 @@ class GreedySolver {
 
     private IState.Immutable k(IState.Immutable state, IConstraint constraint, int fuel) throws InterruptedException {
         // stop if thread is interrupted
-        if(Thread.interrupted()) {
+        if(cancel.cancelled() || Thread.interrupted()) {
             throw new InterruptedException();
         }
 
@@ -394,7 +396,7 @@ class GreedySolver {
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
                 try {
-                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params);
+                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params, progress, cancel);
                     // @formatter:off
                     final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                                 .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
@@ -521,7 +523,8 @@ class GreedySolver {
 
             @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
                 try {
-                    if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext())) {
+                    if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext(),
+                            progress.subProgress(1), cancel)) {
                         return success(c, state, fuel);
                     } else {
                         return fail(c, state);

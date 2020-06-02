@@ -13,6 +13,8 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -73,8 +75,8 @@ public abstract class ARule {
         // 3. Solve constraint
         try {
             final IConstraint constraint = new CExists(args, instBody);
-            return Optional
-                    .of(Solver.entails(spec, State.of(spec), constraint, (s, l, st) -> true, new NullDebugContext()));
+            return Optional.of(Solver.entails(spec, State.of(spec), constraint, (s, l, st) -> true,
+                    new NullDebugContext(), new NullProgress(), new NullCancel()));
         } catch(Delay d) {
             return Optional.empty();
         }

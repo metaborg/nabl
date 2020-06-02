@@ -107,7 +107,7 @@ signature
 rules
 
   constraint-analysis-compat(analyze):
-      AnalyzeSingle(change*) -> AnalysisResult(result*)
+      AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
     with
       ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; unit-result* := <map({ ?(resource, ast)
@@ -120,7 +120,7 @@ rules
     ; result* := unit-result*
 
   constraint-analysis-compat(analyze):
-      AnalyzeMulti((project-resource, project-change), change*) -> AnalysisResult(result*)
+      AnalyzeMulti((project-resource, project-change), change*, progress, cancel) -> AnalysisResult(result*)
     with
       switch !project-change
         case ?Added(_) + ?Changed(_, _):

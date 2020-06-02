@@ -14,6 +14,8 @@ import java.util.concurrent.Executors;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -37,7 +39,7 @@ public class STX_solve_multi extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi.class);
 
     @Inject public STX_solve_multi() {
-        super(STX_solve_multi.class.getSimpleName(), 2);
+        super(STX_solve_multi.class.getSimpleName(), 4);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
@@ -48,6 +50,8 @@ public class STX_solve_multi extends StatixPrimitive {
         reportOverlappingRules(spec);
 
         final IDebugContext debug = new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
+        final IProgress progress = getProgress(terms.get(2));
+        final ICancel cancel = getCancel(terms.get(3));
 
         final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
                 M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> Tuple2.of(r, c));
@@ -65,7 +69,7 @@ public class STX_solve_multi extends StatixPrimitive {
         for(Tuple2<String, IConstraint> resource_constraint : constraints) {
             final String resource = resource_constraint._1();
             final StatixTypeChecker fileSolver =
-                    new StatixTypeChecker(resource, solver, spec, resource_constraint._2(), debug);
+                    new StatixTypeChecker(resource, solver, spec, resource_constraint._2(), debug, progress, cancel);
             fileSolvers.put(resource, fileSolver.run(executor));
         }
         final CompletableFuture<Object> solveResult = solver.run(executor);

@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -37,8 +39,7 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
     private final Rule dataWf;
     private final IConstraint cause;
 
-    public ResolveDataWF(IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf,
-            IConstraint cause) {
+    public ResolveDataWF(IState.Immutable state, ICompleteness.Immutable completeness, Rule dataWf, IConstraint cause) {
         this.state = state;
         this.completeness = completeness;
         this.dataWf = dataWf;
@@ -65,8 +66,9 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      kept in sync
 
         // solve rule constraint
-        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
-                Map.Immutable.of(), completeness.freeze(), new NullDebugContext());
+        final SolverResult result =
+                Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
+                        completeness.freeze(), new NullDebugContext(), new NullProgress(), new NullCancel());
         if(result.hasErrors()) {
             return Optional.empty();
         }

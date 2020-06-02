@@ -1,6 +1,8 @@
 package mb.statix.solver.persistent.query;
 
 import org.metaborg.util.log.Level;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableList;
 
@@ -25,15 +27,19 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
     private final IState.Immutable state;
     private final IsComplete isComplete;
     private final IDebugContext debug;
+    private final IProgress progress;
+    private final ICancel cancel;
     private volatile Boolean alwaysTrue;
 
     public ConstraintDataLeq(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete,
-            IDebugContext debug) {
+            IDebugContext debug, IProgress progress, ICancel cancel) {
         this.spec = spec;
         this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
         this.debug = debug;
+        this.progress = progress;
+        this.cancel = cancel;
     }
 
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
@@ -43,7 +49,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
             if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, result, isComplete, debug)) {
+            if(Solver.entails(spec, state, result, isComplete, debug, progress.subProgress(1), cancel)) {
                 if(debug.isEnabled(Level.Info)) {
                     debug.info("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
