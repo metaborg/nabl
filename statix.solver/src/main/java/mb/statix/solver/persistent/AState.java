@@ -18,7 +18,6 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
