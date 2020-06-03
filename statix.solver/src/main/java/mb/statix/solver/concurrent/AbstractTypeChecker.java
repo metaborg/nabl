@@ -51,6 +51,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     private final Coordinator<S, L, D> coordinator;
     private final CompletableFuture<R> pendingResult = new CompletableFuture<>();
     private State state;
+    private boolean waiting;
 
     private final Map<Long, CompletableFuture<S>> pendingScopes = Maps.newHashMap();
     private final Map<Long, CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>>> pendingQueries =
@@ -61,6 +62,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         this.resource = resource;
         this.coordinator = coordinator;
         setState(State.INIT);
+        this.waiting = false;
         coordinator.register(this);
     }
 
@@ -108,11 +110,16 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     final void run() throws InterruptedException {
         while(inState(State.INIT, State.ACTIVE)) {
             if(inbox.isEmpty()) {
-                logger.info("client {} suspended: pending {} scopes, {} queries", this, pendingScopes.size(),
-                        pendingQueries.size());
+                logger.info("client {} suspended: pending {} scopes, {} queries, {} open edges", this,
+                        pendingScopes.size(), pendingQueries.size(), openEdges.size());
+                logger.info("client {} open edges: {}", this, openEdges);
                 post(Suspend.<S, L, D>builder().build());
+                waiting = true;
             }
             final ClientMessage<S, L, D> message = inbox.take();
+            if(waiting) {
+                waiting = false;
+            }
             clock += 1; // increase count of messages received from coordinator
             logger.info("client {} processing {}", this, message);
             message.match(this);
@@ -209,6 +216,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     @Override public final void closeEdge(S source, L label) {
         assertInState(State.ACTIVE);
         assertEdgeOpen(source, label);
+        openEdges.remove(source, label);
         post(CloseEdge.of(source, label));
     }
 

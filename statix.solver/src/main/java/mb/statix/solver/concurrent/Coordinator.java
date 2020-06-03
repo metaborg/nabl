@@ -15,7 +15,10 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieFunction;
 import mb.nabl2.util.collections.HashTrieRelation2;
@@ -52,13 +55,15 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     private static final ILogger logger = LoggerUtils.logger(Coordinator.class);
 
     private final Function2<String, String, S> newScope;
-    private final S root;
+    private final S rootScope;
+    private final SetMultimap.Transient<AbstractTypeChecker<S, L, D, ?>, S> unitScopes;
     private final IScopeGraph.Transient<S, L, D> scopeGraph;
     private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
 
     public Coordinator(S root, Iterable<L> edgeLabels, Function2<String, String, S> fresh) {
         this.newScope = fresh;
-        this.root = root;
+        this.rootScope = root;
+        this.unitScopes = SetMultimap.Transient.of();
         this.scopeGraph = ScopeGraph.Transient.<S, L, D>of(edgeLabels);
         this.openEdges = MultiSetMap.Transient.of();
     }
@@ -69,6 +74,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     private final MultiSetMap.Transient<String, String> scopeCounters = MultiSetMap.Transient.of();
 
     private final IFunction.Transient<AbstractTypeChecker<S, L, D, ?>, State> states = HashTrieFunction.Transient.of();
+    private final Set<AbstractTypeChecker<S, L, D, ?>> waiting = Sets.newHashSet();
 
     private final BlockingQueue<CoordinatorMessage<S, L, D>> inbox = Queues.newLinkedBlockingDeque();
     private final MultiSet.Transient<AbstractTypeChecker<S, L, D, ?>> clocks = MultiSet.Transient.of(); // number of messages send to clients
@@ -131,7 +137,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     private void initClients() throws InterruptedException {
         for(AbstractTypeChecker<S, L, D, ?> client : clients.values()) {
             setState(client, State.INIT);
-            post(client, Start.of(root));
+            post(client, Start.of(rootScope));
         }
     }
 
@@ -192,25 +198,27 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private void post(AbstractTypeChecker<S, L, D, ?> client, ClientMessage<S, L, D> message) {
         logger.info("post {} to client {}", message, client);
+        waiting.remove(client);
         clocks.add(client);
         client.receive(message);
     }
 
     @Override public void on(RootEdges<S, L, D> message) throws InterruptedException {
         logger.info("client {} open root edges {}", message.client(), message.labels());
-        openEdges.putAll(root, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
+        openEdges.putAll(rootScope, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
         setState(message.client(), State.ACTIVE);
     }
 
     @Override public void on(FreshScope<S, L, D> message) throws InterruptedException {
-        final String resource = clients.inverse().get(message.client());
+        final String resource = message.client().resource();
         final String name = message.name().replace("-", "_");
         final int n = scopeCounters.put(resource, name);
         final S scope = newScope.apply(resource, name + "-" + n);
         logger.info("client {} fresh scope {} -> {} with open edges {}", message.client(), scope, message.datum(),
                 message.labels());
+        unitScopes.__insert(message.client(), scope);
         scopeGraph.setDatum(scope, message.datum());
-        openEdges.putAll(root, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
+        openEdges.putAll(rootScope, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
         post(message.client(), ScopeAnswer.of(message.id(), scope));
     }
 
@@ -238,8 +246,23 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             // we have sent messages since
             return;
         }
-        logger.info("client {} suspended", message.client());
+        final long unitDelays = delays.stream().filter(q -> q._2().client().equals(message.client())).count();
+        final Set<EdgeOrData<L>> unitEdges = unitScopes.get(message.client()).stream()
+                .flatMap(s -> Streams.stream(openEdges.get(s))).collect(Collectors.toSet());
+        logger.info("client {} suspended: pending {} queries, {} open edges", message.client(), unitDelays,
+                unitEdges.size());
+        logger.info("client {} open edges: {}", message.client(), unitEdges);
+        waiting.add(message.client());
         // deadlock detection
+        if(states.inverse().get(State.INIT).isEmpty()
+                && states.inverse().get(State.ACTIVE).stream().allMatch(waiting::contains)) {
+            logger.info("DEADLOCK: no init clients, and all active clients are waiting");
+            for(Tuple2<S, EdgeOrData<L>> key : delays.keySet()) {
+                for(Query<S, L, D> query : delays.removeKey(key)) {
+                    post(query.client(), DeadLock.of(query.id()));
+                }
+            }
+        }
     }
 
     @Override public void on(Done<S, L, D> message) throws InterruptedException {
@@ -248,6 +271,17 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     @Override public void on(Failed<S, L, D> message) throws InterruptedException {
         setState(message.client(), State.FAILED);
+        // clean up pending queries
+        Set<Query<S, L, D>> queries = Sets.newHashSet();
+        for(S scope : unitScopes.get(message.client().resource())) {
+            for(EdgeOrData<L> edge : openEdges.removeKey(scope)) {
+                queries.addAll(delays.get(Tuple2.of(scope, edge)));
+            }
+        }
+        for(Query<S, L, D> query : queries) {
+            delays.removeValue(query);
+            post(query.client(), DeadLock.of(query.id()));
+        }
     }
 
 

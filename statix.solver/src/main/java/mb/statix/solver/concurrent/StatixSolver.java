@@ -133,9 +133,9 @@ public class StatixSolver {
         return result;
     }
 
-    private <R> void solveK(K<R> k, R r) {
+    private <R> void solveK(K<R> k, R r, Throwable ex) {
         try {
-            k.k(state, r, MAX_DEPTH);
+            k.k(r, ex, MAX_DEPTH);
             fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
@@ -150,7 +150,7 @@ public class StatixSolver {
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
-            state = k(state, constraint, MAX_DEPTH);
+            k(constraint, MAX_DEPTH);
         }
 
         // invariant: there should be no remaining active constraints
@@ -181,9 +181,11 @@ public class StatixSolver {
         return result;
     }
 
-    private IState.Immutable success(IConstraint constraint, IState.Immutable state, Collection<ITermVar> updatedVars,
+    private Unit success(IConstraint constraint, IState.Immutable newState, Collection<ITermVar> updatedVars,
             Collection<IConstraint> newConstraints, Map<Delay, IConstraint> delayedConstraints,
             Map<ITermVar, ITermVar> existentials, int fuel) throws InterruptedException {
+        state = newState;
+
         final IDebugContext subDebug = debug.subContext();
         if(this.existentials == null) {
             this.existentials = existentials;
@@ -226,41 +228,42 @@ public class StatixSolver {
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
-            state = k(state, newConstraint, fuel - 1);
+            k(newConstraint, fuel - 1);
         }
 
-        return state;
+        return Unit.unit;
     }
 
-    private IState.Immutable success(IConstraint c, IState.Immutable newState, int fuel) throws InterruptedException {
+    private Unit success(IConstraint c, IState.Immutable newState, int fuel) throws InterruptedException {
         return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(), fuel);
     }
 
-    private IState.Immutable successNew(IConstraint c, IState.Immutable newState,
-            Collection<IConstraint> newConstraints, int fuel) throws InterruptedException {
+    private Unit successNew(IConstraint c, IState.Immutable newState, Collection<IConstraint> newConstraints, int fuel)
+            throws InterruptedException {
         return success(c, newState, ImmutableSet.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of(), fuel);
     }
 
-    private IState.Immutable successDelay(IConstraint c, IState.Immutable newState, Delay delay, int fuel)
+    private Unit successDelay(IConstraint c, IState.Immutable newState, Delay delay, int fuel)
             throws InterruptedException {
         return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c), ImmutableMap.of(),
                 fuel);
     }
 
-    private <R> IState.Immutable successFuture(IConstraint c, IState.Immutable newState, CompletableFuture<R> future,
-            K<R> k, int fuel) throws InterruptedException {
+    private <R> Unit successFuture(IConstraint c, IState.Immutable newState, CompletableFuture<R> future, K<R> k,
+            int fuel) throws InterruptedException {
         pending += 1;
-        future.thenAccept(r -> {
+        future.handle((r, ex) -> {
             pending -= 1;
-            solveK(k, r);
+            solveK(k, r, ex);
+            return Unit.unit;
         });
-        return success(c, newState, fuel);
+        return success(c, state, fuel);
     }
 
-    private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
+    private Unit fail(IConstraint constraint) {
         failed.put(constraint, MessageUtil.findClosestMessage(constraint));
         removeCompleteness(constraint, state.unifier());
-        return state;
+        return Unit.unit;
     }
 
     private void removeCompleteness(IConstraint constraint, IUniDisunifier unifier) {
@@ -270,12 +273,12 @@ public class StatixSolver {
         }
     }
 
-    private IState.Immutable queue(IConstraint constraint, IState.Immutable state) {
+    private Unit queue(IConstraint constraint) {
         constraints.add(constraint);
-        return state;
+        return Unit.unit;
     }
 
-    private IState.Immutable k(IState.Immutable state, IConstraint constraint, int fuel) throws InterruptedException {
+    private Unit k(IConstraint constraint, int fuel) throws InterruptedException {
         // stop if thread is interrupted
         if(cancel.cancelled() || Thread.interrupted()) {
             throw new InterruptedException();
@@ -283,7 +286,7 @@ public class StatixSolver {
 
         // stop recursion if we run out of fuel
         if(fuel <= 0) {
-            return queue(constraint, state);
+            return queue(constraint);
         }
 
         if(debug.isEnabled(Level.Info)) {
@@ -291,9 +294,9 @@ public class StatixSolver {
         }
 
         // solve
-        return constraint.matchOrThrow(new IConstraint.CheckedCases<IState.Immutable, InterruptedException>() {
+        return constraint.matchOrThrow(new IConstraint.CheckedCases<Unit, InterruptedException>() {
 
-            @Override public IState.Immutable caseArith(CArith c) throws InterruptedException {
+            @Override public Unit caseArith(CArith c) throws InterruptedException {
                 final IUniDisunifier unifier = state.unifier();
                 final Optional<ITerm> term1 = c.expr1().isTerm();
                 final Optional<ITerm> term2 = c.expr2().isTerm();
@@ -312,7 +315,7 @@ public class StatixSolver {
                         if(c.op().test(i1, i2)) {
                             return success(c, state, fuel);
                         } else {
-                            return fail(c, state);
+                            return fail(c);
                         }
                     }
                 } catch(Delay d) {
@@ -320,12 +323,12 @@ public class StatixSolver {
                 }
             }
 
-            @Override public IState.Immutable caseConj(CConj c) throws InterruptedException {
+            @Override public Unit caseConj(CConj c) throws InterruptedException {
                 final List<IConstraint> newConstraints = disjoin(c);
                 return successNew(c, state, newConstraints, fuel);
             }
 
-            @Override public IState.Immutable caseEqual(CEqual c) throws InterruptedException {
+            @Override public Unit caseEqual(CEqual c) throws InterruptedException {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 IUniDisunifier.Immutable unifier = state.unifier();
@@ -344,17 +347,17 @@ public class StatixSolver {
                             debug.info("Unification failed: {} != {}", unifier.toString(term1),
                                     unifier.toString(term2));
                         }
-                        return fail(c, state);
+                        return fail(c);
                     }
                 } catch(OccursException e) {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
                     }
-                    return fail(c, state);
+                    return fail(c);
                 }
             }
 
-            @Override public IState.Immutable caseExists(CExists c) throws InterruptedException {
+            @Override public Unit caseExists(CExists c) throws InterruptedException {
                 final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
                 IState.Immutable newState = state;
                 for(ITermVar var : c.vars()) {
@@ -370,11 +373,11 @@ public class StatixSolver {
                         fuel);
             }
 
-            @Override public IState.Immutable caseFalse(CFalse c) {
-                return fail(c, state);
+            @Override public Unit caseFalse(CFalse c) {
+                return fail(c);
             }
 
-            @Override public IState.Immutable caseInequal(CInequal c) throws InterruptedException {
+            @Override public Unit caseInequal(CInequal c) throws InterruptedException {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 final IUniDisunifier.Immutable unifier = state.unifier();
@@ -392,25 +395,28 @@ public class StatixSolver {
                     if(debug.isEnabled(Level.Info)) {
                         debug.info("Disunification failed");
                     }
-                    return fail(c, state);
+                    return fail(c);
                 }
             }
 
-            @Override public IState.Immutable caseNew(CNew c) throws InterruptedException {
+            @Override public Unit caseNew(CNew c) throws InterruptedException {
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm datumTerm = c.datumTerm();
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
                 List<ITerm> labels = getOpenEdges(scopeTerm);
 
                 final CompletableFuture<Scope> futureScope = scopeGraph.freshScope(name, datumTerm, labels);
-                final K<Scope> k = (state, scope, fuel) -> {
+                final K<Scope> k = (scope, ex, fuel) -> {
+                    if(ex != null) {
+                        return fail(c);
+                    }
                     final IConstraint eq = new CEqual(scopeTerm, scope, c);
                     return successNew(c, state, ImmutableList.of(eq), fuel);
                 };
                 return successFuture(c, state, futureScope, k, fuel);
             }
 
-            @Override public IState.Immutable caseResolveQuery(CResolveQuery c) throws InterruptedException {
+            @Override public Unit caseResolveQuery(CResolveQuery c) throws InterruptedException {
                 final ITerm scopeTerm = c.scopeTerm();
                 final IQueryFilter filter = c.filter();
                 final IQueryMin min = c.min();
@@ -433,7 +439,10 @@ public class StatixSolver {
 
                 final CompletableFuture<Set<IResolutionPath<Scope, ITerm, ITerm>>> future =
                         scopeGraph.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
-                final K<Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (state, paths, fuel) -> {
+                final K<Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel) -> {
+                    if(ex != null) {
+                        return fail(c);
+                    }
                     final List<ITerm> pathTerms = paths.stream().map(p -> StatixTerms.explicate(p, spec.dataLabels()))
                             .collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
@@ -442,7 +451,7 @@ public class StatixSolver {
                 return successFuture(c, state, future, k, fuel);
             }
 
-            @Override public IState.Immutable caseTellEdge(CTellEdge c) throws InterruptedException {
+            @Override public Unit caseTellEdge(CTellEdge c) throws InterruptedException {
                 final ITerm sourceTerm = c.sourceTerm();
                 final ITerm label = c.label();
                 final ITerm targetTerm = c.targetTerm();
@@ -463,7 +472,7 @@ public class StatixSolver {
                 return success(c, state, fuel);
             }
 
-            @Override public IState.Immutable caseTermId(CAstId c) throws InterruptedException {
+            @Override public Unit caseTermId(CAstId c) throws InterruptedException {
                 final ITerm term = c.astTerm();
                 final ITerm idTerm = c.idTerm();
 
@@ -484,12 +493,12 @@ public class StatixSolver {
                         eq = new CEqual(idTerm, indexTerm);
                         return successNew(c, state, ImmutableList.of(eq), fuel);
                     } else {
-                        return fail(c, state);
+                        return fail(c);
                     }
                 }
             }
 
-            @Override public IState.Immutable caseTermProperty(CAstProperty c) throws InterruptedException {
+            @Override public Unit caseTermProperty(CAstProperty c) throws InterruptedException {
                 final ITerm idTerm = c.idTerm();
                 final ITerm prop = c.property();
                 final ITerm value = c.value();
@@ -507,14 +516,14 @@ public class StatixSolver {
                         case ADD: {
                             property = state.termProperties().getOrDefault(key, BagTermProperty.of());
                             if(!property.multiplicity().equals(Multiplicity.BAG)) {
-                                return fail(c, state);
+                                return fail(c);
                             }
                             property = property.addValue(value);
                             break;
                         }
                         case SET: {
                             if(state.termProperties().containsKey(key)) {
-                                return fail(c, state);
+                                return fail(c);
                             }
                             property = SingletonTermProperty.of(value);
                             break;
@@ -526,16 +535,16 @@ public class StatixSolver {
                             state.withTermProperties(state.termProperties().__put(key, property));
                     return success(c, newState, fuel);
                 } else {
-                    return fail(c, state);
+                    return fail(c);
                 }
             }
 
-            @Override public IState.Immutable caseTrue(CTrue c) throws InterruptedException {
+            @Override public Unit caseTrue(CTrue c) throws InterruptedException {
                 return success(c, state, fuel);
             }
 
-            @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
-                return fail(c, state);
+            @Override public Unit caseTry(CTry c) throws InterruptedException {
+                return fail(c);
                 // TODO
                 /*
                 try {
@@ -551,7 +560,7 @@ public class StatixSolver {
                 */
             }
 
-            @Override public IState.Immutable caseUser(CUser c) throws InterruptedException {
+            @Override public Unit caseUser(CUser c) throws InterruptedException {
                 final String name = c.name();
                 final List<ITerm> args = c.args();
 
@@ -561,7 +570,7 @@ public class StatixSolver {
                 final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
                 if(results.isEmpty()) {
                     debug.info("No rule applies");
-                    return fail(c, state);
+                    return fail(c);
                 } else if(results.size() == 1) {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.info("Rule accepted");
@@ -647,7 +656,7 @@ public class StatixSolver {
     @FunctionalInterface
     private interface K<R> {
 
-        IState.Immutable k(IState.Immutable state, R result, int fuel) throws InterruptedException;
+        Unit k(R result, Throwable ex, int fuel) throws InterruptedException;
 
     }
 
