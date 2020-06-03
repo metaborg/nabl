@@ -1,5 +1,6 @@
 package mb.nabl2.util.collections;
 
+import java.io.Serializable;
 import java.util.stream.Collectors;
 
 import io.usethesource.capsule.Map;
@@ -8,7 +9,7 @@ public abstract class MultiSetMap<K, V> {
 
     // INVARIANT toMap()/entries never contains empty MultiSet values
     //           Thus, if there is an entry for a key, there is at least one value as well.
-    
+
     protected abstract Map<K, MultiSet.Immutable<V>> toMap();
 
     public boolean isEmpty() {
@@ -31,7 +32,9 @@ public abstract class MultiSetMap<K, V> {
         return toMap().getOrDefault(key, MultiSet.Immutable.of());
     }
 
-    public static class Immutable<K, V> extends MultiSetMap<K, V> {
+    public static class Immutable<K, V> extends MultiSetMap<K, V> implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private final Map.Immutable<K, MultiSet.Immutable<V>> entries;
 
