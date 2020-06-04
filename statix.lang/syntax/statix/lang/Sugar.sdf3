@@ -67,13 +67,14 @@ context-free syntax
   Term.NewOp   = "new"
   Term.AstIdOp = <astId(<Term>)>
 
-  AstProperty.Ref = "ref"
+  AstProperty.Ref  = "ref"
+  AstProperty.Type = "type"
 
 lexical syntax
 
   VARID = "new" {reject}
 
-  AstPropertyId = "ref" {reject}
+  AstPropertyId = "ref" | "type" {reject}
 
 
 /******************************************************************
