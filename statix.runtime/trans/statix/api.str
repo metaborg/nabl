@@ -84,7 +84,9 @@ rules // services
 
   /** Default hover strategy
    */
-  stx-editor-hover = stx--editor-hover
+  stx-editor-hover = stx--editor-hover(strip-annos; write-to-string | "type")
+  stx-editor-hover(|prop) = stx--editor-hover(strip-annos; write-to-string | prop)
+  stx-editor-hover(pp | prop) = stx--editor-hover(pp | prop)
 
 rules // prettyprinting
 
