@@ -18,10 +18,18 @@ public interface IDebugContext {
 
     void info(String fmt, Object... args);
 
+    void info(String fmt, Throwable t, Object... args);
+
     void warn(String fmt, Object... args);
+
+    void warn(String fmt, Throwable t, Object... args);
 
     void error(String fmt, Object... args);
 
+    void error(String fmt, Throwable t, Object... args);
+
     void log(Level level, String fmt, Object... args);
+
+    void log(Level level, String fmt, Throwable t, Object... args);
 
 }

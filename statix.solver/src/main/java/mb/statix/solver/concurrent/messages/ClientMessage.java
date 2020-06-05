@@ -18,7 +18,7 @@ public abstract class ClientMessage<S, L, D> {
 
         void on(QueryAnswer<S, L, D> message) throws InterruptedException;
 
-        void on(DeadLock<S, L, D> message) throws InterruptedException;
+        void on(QueryFailed<S, L, D> message) throws InterruptedException;
 
     }
 
@@ -60,12 +60,14 @@ public abstract class ClientMessage<S, L, D> {
     }
 
     @Value.Immutable
-    public static abstract class ADeadLock<S, L, D> extends ClientMessage<S, L, D> {
+    public static abstract class AQueryFailed<S, L, D> extends ClientMessage<S, L, D> {
 
         @Value.Parameter public abstract long requestId();
 
+        @Value.Parameter public abstract Throwable cause();
+
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
-            cases.on((DeadLock<S, L, D>) this);
+            cases.on((QueryFailed<S, L, D>) this);
         }
 
     }

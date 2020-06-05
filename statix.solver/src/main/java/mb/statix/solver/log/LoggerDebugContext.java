@@ -47,9 +47,21 @@ public class LoggerDebugContext implements IDebugContext {
         }
     }
 
+    @Override public void info(String fmt, Throwable t, Object... args) {
+        if(isEnabled(Level.Info)) {
+            logger.info(prefix() + fmt, t, args);
+        }
+    }
+
     @Override public void warn(String fmt, Object... args) {
         if(isEnabled(Level.Warn)) {
             logger.warn(prefix() + fmt, args);
+        }
+    }
+
+    @Override public void warn(String fmt, Throwable t, Object... args) {
+        if(isEnabled(Level.Warn)) {
+            logger.warn(prefix() + fmt, t, args);
         }
     }
 
@@ -59,9 +71,21 @@ public class LoggerDebugContext implements IDebugContext {
         }
     }
 
+    @Override public void error(String fmt, Throwable t, Object... args) {
+        if(isEnabled(Level.Error)) {
+            logger.error(prefix() + fmt, t, args);
+        }
+    }
+
     @Override public void log(Level level, String fmt, Object... args) {
         if(isEnabled(level)) {
             logger.log(level, prefix() + fmt, args);
+        }
+    }
+
+    @Override public void log(Level level, String fmt, Throwable t, Object... args) {
+        if(isEnabled(level)) {
+            logger.log(level, prefix() + fmt, t, args);
         }
     }
 

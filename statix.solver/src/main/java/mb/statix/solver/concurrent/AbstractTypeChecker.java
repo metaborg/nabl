@@ -24,12 +24,12 @@ import mb.statix.solver.concurrent.messages.AddEdge;
 import mb.statix.solver.concurrent.messages.ClientMessage;
 import mb.statix.solver.concurrent.messages.CloseEdge;
 import mb.statix.solver.concurrent.messages.CoordinatorMessage;
-import mb.statix.solver.concurrent.messages.DeadLock;
 import mb.statix.solver.concurrent.messages.Done;
 import mb.statix.solver.concurrent.messages.Failed;
 import mb.statix.solver.concurrent.messages.FreshScope;
 import mb.statix.solver.concurrent.messages.Query;
 import mb.statix.solver.concurrent.messages.QueryAnswer;
+import mb.statix.solver.concurrent.messages.QueryFailed;
 import mb.statix.solver.concurrent.messages.RootEdges;
 import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.Start;
@@ -158,12 +158,12 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         pendingQueries.remove(message.requestId()).complete(message.paths());
     }
 
-    @Override public final void on(DeadLock<S, L, D> message) throws InterruptedException {
+    @Override public final void on(QueryFailed<S, L, D> message) throws InterruptedException {
         assertInState(State.ACTIVE);
         if(!pendingQueries.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
-        pendingQueries.remove(message.requestId()).completeExceptionally(new DeadLockedException());
+        pendingQueries.remove(message.requestId()).completeExceptionally(message.cause());
     }
 
     private boolean inState(State... states) {
@@ -243,6 +243,8 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         logger.info("client {} failed with {}", this, e.getMessage());
         setState(State.FAILED);
         post(Failed.<S, L, D>builder().build());
+        pendingQueries.clear();
+        pendingScopes.clear();
         pendingResult.completeExceptionally(e);
     }
 

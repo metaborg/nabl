@@ -38,17 +38,16 @@ import mb.statix.solver.concurrent.messages.AddEdge;
 import mb.statix.solver.concurrent.messages.ClientMessage;
 import mb.statix.solver.concurrent.messages.CloseEdge;
 import mb.statix.solver.concurrent.messages.CoordinatorMessage;
-import mb.statix.solver.concurrent.messages.DeadLock;
 import mb.statix.solver.concurrent.messages.Done;
 import mb.statix.solver.concurrent.messages.Failed;
 import mb.statix.solver.concurrent.messages.FreshScope;
 import mb.statix.solver.concurrent.messages.Query;
 import mb.statix.solver.concurrent.messages.QueryAnswer;
+import mb.statix.solver.concurrent.messages.QueryFailed;
 import mb.statix.solver.concurrent.messages.RootEdges;
 import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
-import mb.statix.solver.query.ResolutionDelayException;
 
 public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
@@ -158,7 +157,9 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
                         .withDataWF(query.dataWF())
                         .withLabelOrder(query.labelOrder())
                         .withDataEquiv(query.dataEquiv())
-                        .withIsComplete((s, l) -> !openEdges.contains(s, l))
+                        .withIsComplete((s, l) -> {
+                            return !openEdges.contains(s, l);
+                        })
                         .build(scopeGraph);
             // @formatter:on
             final Env<S, L, D> paths = nameResolution.resolve(query.scope());
@@ -168,12 +169,9 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             final EdgeOrData<L> label = e.<L>label();
             logger.info("delay query on edge {}/{}", scope, label);
             delays.put(Tuple2.of(scope, label), query);
-        } catch(ResolutionDelayException e) {
-            logger.warn("treating unhandleable exception as deadlock.", e);
-            post(query.client(), DeadLock.of(query.id()));
         } catch(ResolutionException e) {
-            logger.warn("treating unhandleable exception as deadlock.", e);
-            post(query.client(), DeadLock.of(query.id()));
+            logger.warn("forwarding resolution exception.", e);
+            post(query.client(), QueryFailed.of(query.id(), e));
         }
     }
 
@@ -218,7 +216,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
                 message.labels());
         unitScopes.__insert(message.client(), scope);
         scopeGraph.setDatum(scope, message.datum());
-        openEdges.putAll(rootScope, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
+        openEdges.putAll(scope, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
         post(message.client(), ScopeAnswer.of(message.id(), scope));
     }
 
@@ -259,7 +257,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             logger.info("DEADLOCK: no init clients, and all active clients are waiting");
             for(Tuple2<S, EdgeOrData<L>> key : delays.keySet()) {
                 for(Query<S, L, D> query : delays.removeKey(key)) {
-                    post(query.client(), DeadLock.of(query.id()));
+                    post(query.client(), QueryFailed.of(query.id(), new DeadLockedException("deadlock")));
                 }
             }
         }
@@ -280,7 +278,6 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         }
         for(Query<S, L, D> query : queries) {
             delays.removeValue(query);
-            post(query.client(), DeadLock.of(query.id()));
         }
     }
 
