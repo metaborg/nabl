@@ -6,16 +6,16 @@ imports
 
 rules // analysis
 
-  stx-editor-analyze(         |spec-name, init-constraint) = stx-editor-analyze(id , id|spec-name, init-constraint)
-  stx-editor-analyze(pre      |spec-name, init-constraint) = stx-editor-analyze(pre, id|spec-name, init-constraint)
+  stx-editor-analyze(         |spec-name, init-constraint) = stx-editor-analyze(id  ,   id|spec-name, init-constraint)
+  stx-editor-analyze(pre      |spec-name, init-constraint) = stx-editor-analyze(pre ,   id|spec-name, init-constraint)
   stx-editor-analyze(pre, post|spec-name, init-constraint) = stx--editor-analyze(pre, post|spec-name, init-constraint)
 
-  stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id , id|spec-name, init-constraint)
-  stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre, id|spec-name, init-constraint)
+  stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id  ,   id|spec-name, init-constraint)
+  stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre ,   id|spec-name, init-constraint)
   stx-editor-elaborate(pre, post|spec-name, init-constraint) = stx--editor-elaborate(pre, post|spec-name, init-constraint)
 
-  stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id , id|spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, id|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id  ,   id|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre ,   id|spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
 
   stx-evaluate(|spec-name, constraint): in* -> out
@@ -43,6 +43,13 @@ rules // ast
    * @type Term -> Term
    */
   stx-get-ast-property(|a, name) = stx--get-ast-property(|a, Prop(name))
+
+  /**
+   * @param a    : Analysis
+   *
+   * @type Term -> Term
+   */
+  stx-get-ast-type(|a) = stx--get-ast-property(|a, Type())
 
 rules // scope graph
 
@@ -78,13 +85,19 @@ rules // scope graph
 
 rules // services
 
-  /** Default resolve strategy
+  /**
+   * Default resolve strategy
    */
   stx-editor-resolve = stx--editor-resolve
 
-  /** Default hover strategy
+  /**
+   * Default hover strategy for types and named properties
    */
-  stx-editor-hover = stx--editor-hover
+  stx-editor-hover          = stx-editor-hover(strip-annos;write-to-string)
+  stx-editor-hover(pp)      = stx--editor-hover(pp|Type())
+
+  stx-editor-hover(|name)   = stx-editor-hover(strip-annos;write-to-string|name)
+  stx-editor-hover(pp|name) = stx--editor-hover(pp|Prop(name))
 
 rules // prettyprinting
 
