@@ -116,28 +116,6 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
         // ------------------------------------------------------------
 
-        @Override public String toString() {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            final AtomicBoolean first = new AtomicBoolean(true);
-            edges.forEach((key, targetScope) -> {
-                sb.append(first.getAndSet(false) ? " " : ", ");
-                sb.append(key._1());
-                sb.append(" -");
-                sb.append(key._2());
-                sb.append("-> ");
-                sb.append(targetScope);
-            });
-            data.forEach((key, datum) -> {
-                sb.append(first.getAndSet(false) ? " " : ", ");
-                sb.append(key);
-                sb.append(" : ");
-                sb.append(datum);
-            });
-            sb.append(first.get() ? "}" : " }");
-            return sb.toString();
-        }
-
     }
 
     public static class Transient<S, L, D> extends ScopeGraph<S, L, D> implements IScopeGraph.Transient<S, L, D> {
@@ -212,6 +190,28 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             return new ScopeGraph.Transient<>(CapsuleUtil.toSet(edgeLabels), Map.Transient.of(), Map.Transient.of());
         }
 
+    }
+
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        final AtomicBoolean first = new AtomicBoolean(true);
+        getEdges().forEach((key, targetScope) -> {
+            sb.append(first.getAndSet(false) ? " " : ", ");
+            sb.append(key._1());
+            sb.append(" -");
+            sb.append(key._2());
+            sb.append("-> ");
+            sb.append(targetScope);
+        });
+        getData().forEach((key, datum) -> {
+            sb.append(first.getAndSet(false) ? " " : ", ");
+            sb.append(key);
+            sb.append(" : ");
+            sb.append(datum);
+        });
+        sb.append(first.get() ? "}" : " }");
+        return sb.toString();
     }
 
 }
