@@ -61,7 +61,7 @@ public class STX_solve_multi extends StatixPrimitive {
         final Scope root = Scope.of("", "0");
         final ExecutorService executor = Executors.newCachedThreadPool();
         final Function2<String, String, Scope> newScope = (resource, name) -> Scope.of(resource, name);
-        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.edgeLabels(), newScope);
+        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.allLabels(), newScope);
 
         final double t0 = System.currentTimeMillis();
 
