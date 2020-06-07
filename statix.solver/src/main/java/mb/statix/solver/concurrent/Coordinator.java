@@ -251,20 +251,12 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
                 unitEdges.size());
         logger.info("client {} open edges: {}", message.client(), unitEdges);
         waiting.add(message.client());
-        // deadlock detection
-        if(states.inverse().get(State.INIT).isEmpty()
-                && states.inverse().get(State.ACTIVE).stream().allMatch(waiting::contains)) {
-            logger.info("DEADLOCK: no init clients, and all active clients are waiting");
-            for(Tuple2<S, EdgeOrData<L>> key : delays.keySet()) {
-                for(Query<S, L, D> query : delays.removeKey(key)) {
-                    post(query.client(), QueryFailed.of(query.id(), new DeadLockedException("deadlock")));
-                }
-            }
-        }
+        detectDeadLock();
     }
 
     @Override public void on(Done<S, L, D> message) throws InterruptedException {
         setState(message.client(), State.DONE);
+        detectDeadLock();
     }
 
     @Override public void on(Failed<S, L, D> message) throws InterruptedException {
@@ -279,8 +271,20 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         for(Query<S, L, D> query : queries) {
             delays.removeValue(query);
         }
+        detectDeadLock();
     }
 
+    private void detectDeadLock() {
+        if(states.inverse().get(State.INIT).isEmpty()
+                && states.inverse().get(State.ACTIVE).stream().allMatch(waiting::contains)) {
+            logger.info("DEADLOCK: no init clients, and all active clients are waiting");
+            for(Tuple2<S, EdgeOrData<L>> key : delays.keySet()) {
+                for(Query<S, L, D> query : delays.removeKey(key)) {
+                    post(query.client(), QueryFailed.of(query.id(), new DeadLockedException("deadlock")));
+                }
+            }
+        }
+    }
 
     @Override public String toString() {
         return "Coordinator";
