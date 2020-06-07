@@ -7,6 +7,7 @@ import static mb.statix.constraints.Constraints.disjoin;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -106,7 +107,7 @@ public class StatixSolver {
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
     private final CompletableFuture<SolverResult> result = new CompletableFuture<>();
-    private int pending = 0;
+    private int pendingScopeGraph = 0;
 
 
     public StatixSolver(String resource, IConstraint constraint, Spec spec, IDebugContext debug, IProgress progress,
@@ -164,7 +165,7 @@ public class StatixSolver {
                     "Expected no remaining active constraints, but got " + constraints.activeSize());
         }
 
-        if(pending == 0) {
+        if(pendingScopeGraph == 0) {
             result.complete(finish());
         }
     }
@@ -173,8 +174,8 @@ public class StatixSolver {
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         debug.info("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
-        for(Delay delayedConstraint : delayed.values()) {
-            debug.info(" * {}", delayedConstraint.toString());
+        for(Entry<IConstraint, Delay> entry : delayed.entrySet()) {
+            debug.info(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
         }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
@@ -203,7 +204,6 @@ public class StatixSolver {
         // updates from unified variables
         if(!updatedVars.isEmpty()) {
             releaseDelayedCloses(updatedVars);
-            releaseVarDelays(updatedVars, fuel);
             completeness.updateAll(updatedVars, unifier);
             constraints.activateFromVars(updatedVars, debug);
             this.updatedVars.addAll(updatedVars);
@@ -252,17 +252,34 @@ public class StatixSolver {
         return success(c, newState, ImmutableSet.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of(), fuel);
     }
 
-    private Unit successDelay(IConstraint c, IState.Immutable newState, Delay delay, int fuel)
-            throws InterruptedException {
-        return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c), ImmutableMap.of(),
-                fuel);
+    private Unit delay(IConstraint c, IState.Immutable newState, Delay delay, int fuel) throws InterruptedException {
+        if(!delay.criticalEdges().isEmpty()) {
+            // FIXME
+            debug.error("FIXME: query {} failed on critical edges {}", c.toString(state.unifier()::toString),
+                    delay.criticalEdges());
+            return fail(c);
+        } else {
+            final Set.Immutable<ITermVar> vars = delay.vars().stream().flatMap(v -> state.unifier().getVars(v).stream())
+                    .collect(CapsuleCollectors.toSet());
+            final Set.Immutable<ITermVar> foreignVars = Set.Immutable.subtract(vars, state.vars());
+            if(!foreignVars.isEmpty()) {
+                // FIXME
+                debug.error("FIXME: query {} failed on foreign vars {}", c.toString(state.unifier()::toString),
+                        foreignVars);
+                return fail(c);
+            } else {
+                debug.info("query {} delayed on vars {}", c.toString(state.unifier()::toString), vars);
+                return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c),
+                        ImmutableMap.of(), fuel);
+            }
+        }
     }
 
     private <R> Unit successFuture(IConstraint c, IState.Immutable newState, CompletableFuture<R> future, K<R> k,
             int fuel) throws InterruptedException {
-        pending += 1;
+        pendingScopeGraph += 1;
         future.handle((r, ex) -> {
-            pending -= 1;
+            pendingScopeGraph -= 1;
             solveK(k, r, ex);
             return Unit.unit;
         });
@@ -332,7 +349,7 @@ public class StatixSolver {
                         }
                     }
                 } catch(Delay d) {
-                    return successDelay(c, state, d, fuel);
+                    return delay(c, state, d, fuel);
                 }
             }
 
@@ -437,7 +454,7 @@ public class StatixSolver {
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
                 }
                 final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
@@ -458,31 +475,7 @@ public class StatixSolver {
                             throw ex;
                         } catch(ResolutionDelayException rde) {
                             final Delay delay = rde.getCause();
-                            if(!delay.criticalEdges().isEmpty()) {
-                                // FIXME
-                                debug.error("FIXME: query {} failed on critical edges {}",
-                                        c.toString(state.unifier()::toString), delay.criticalEdges());
-                                return fail(c);
-                            } else {
-                                final Set.Immutable<ITermVar> vars =
-                                        delay.vars().stream().flatMap(v -> state.unifier().getVars(v).stream())
-                                                .collect(CapsuleCollectors.toSet());
-                                final Set.Immutable<ITermVar> foreignVars = Set.Immutable.subtract(vars, state.vars());
-                                if(!foreignVars.isEmpty()) {
-                                    // FIXME
-                                    debug.error("FIXME: query {} failed on foreign vars {}",
-                                            c.toString(state.unifier()::toString), foreignVars);
-                                    return fail(c);
-                                } else {
-                                    // FIXME
-                                    debug.error("FIXME: query {} delayed on vars {}",
-                                            c.toString(state.unifier()::toString), vars);
-                                    final K<Void> k2 = (vd, ex2, fuel2) -> {
-                                        return k(c, fuel2);
-                                    };
-                                    return successDelayVars(c, state, vars, k2, fuel);
-                                }
-                            }
+                            return delay(c, state, delay, fuel);
                         } catch(DeadLockedException dle) {
                             debug.error("query {} deadlocked", c.toString(state.unifier()::toString));
                             return fail(c);
@@ -507,10 +500,10 @@ public class StatixSolver {
                 final ITerm targetTerm = c.targetTerm();
                 final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(sourceTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)), fuel);
                 }
                 if(!unifier.isGround(targetTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(targetTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(targetTerm)), fuel);
                 }
                 final Scope source =
                         AScope.matcher().match(sourceTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
@@ -528,7 +521,7 @@ public class StatixSolver {
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!(unifier.isGround(term))) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(term)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(term)), fuel);
                 }
                 final CEqual eq;
                 final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
@@ -555,7 +548,7 @@ public class StatixSolver {
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!(unifier.isGround(idTerm))) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(idTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(idTerm)), fuel);
                 }
                 final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
                 if(maybeIndex.isPresent()) {
@@ -632,35 +625,12 @@ public class StatixSolver {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.varSet().stream()).collect(CapsuleCollectors.toSet());
                     proxyDebug.info("Rule delayed (multiple conditional matches)");
-                    return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
+                    return delay(c, state, Delay.ofVars(stuckVars), fuel);
                 }
             }
 
         });
 
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Delayed continuations
-    ///////////////////////////////////////////////////////////////////////////
-
-    private final VarIndexedCollection<K<Void>> delayedKs = new VarIndexedCollection<>();
-
-    private Unit successDelayVars(IConstraint c, IState.Immutable state, Iterable<ITermVar> delayVars, K<Void> k,
-            int fuel) throws InterruptedException {
-        if(delayedKs.put(k, delayVars, state.unifier())) {
-            pending += 1;
-            return success(c, state, fuel);
-        } else {
-            return k.k(null, null, fuel);
-        }
-    }
-
-    private void releaseVarDelays(Iterable<ITermVar> updatedVars, int fuel) throws InterruptedException {
-        for(K<Void> K : delayedKs.update(updatedVars, state.unifier())) {
-            pending -= 1;
-            K.k(null, null, fuel);
-        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
