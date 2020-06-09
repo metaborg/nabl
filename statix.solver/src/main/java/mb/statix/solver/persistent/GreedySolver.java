@@ -15,6 +15,7 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.RateLimitedCancel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -86,6 +87,7 @@ import mb.statix.spoofax.StatixTerms;
 
 class GreedySolver {
 
+    private static final int CANCEL_RATE = 42;
     private static final int MAX_DEPTH = 32;
 
     // set-up
@@ -118,7 +120,7 @@ class GreedySolver {
         };
         this.params = new ConstraintContext(isComplete, debug);
         this.progress = progress;
-        this.cancel = cancel;
+        this.cancel = new RateLimitedCancel(cancel, CANCEL_RATE);
 
     }
 
@@ -138,7 +140,7 @@ class GreedySolver {
         };
         this.params = new ConstraintContext(isComplete, debug);
         this.progress = progress;
-        this.cancel = cancel;
+        this.cancel = new RateLimitedCancel(cancel, CANCEL_RATE);
     }
 
     public SolverResult solve() throws InterruptedException {
@@ -148,10 +150,6 @@ class GreedySolver {
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
-            // stop if thread is interrupted
-            if(cancel.cancelled() || Thread.interrupted()) {
-                throw new InterruptedException();
-            }
             state = k(state, constraint, MAX_DEPTH);
         }
 
@@ -248,6 +246,8 @@ class GreedySolver {
     }
 
     private IState.Immutable k(IState.Immutable state, IConstraint constraint, int fuel) throws InterruptedException {
+        cancel.throwIfCancelled();
+
         // stop recursion if we run out of fuel
         if(fuel <= 0) {
             return queue(constraint, state);
@@ -391,8 +391,11 @@ class GreedySolver {
                 if(!unifier.isGround(scopeTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
                 }
-                final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
+                final Scope scope;
+                if((scope = AScope.matcher().match(scopeTerm, unifier).orElse(null)) == null) {
+                    debug.error("Expected scope, got {}", unifier.toString(scopeTerm));
+                    fail(constraint, state);
+                }
 
                 try {
                     final Predicate2<Scope, ITerm> isComplete = (s, l) -> {
@@ -409,7 +412,7 @@ class GreedySolver {
                                 .withDataComplete(isComplete)
                                 .build(state.scopeGraph(), relation);
                     // @formatter:on
-                    final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope);
+                    final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope, cancel);
                     final List<ITerm> pathTerms =
                             Streams.stream(paths).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
@@ -441,15 +444,19 @@ class GreedySolver {
                 if(!unifier.isGround(targetTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(targetTerm)), fuel);
                 }
-                final Scope source =
-                        AScope.matcher().match(sourceTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
-                                "Expected source scope, got " + unifier.toString(sourceTerm)));
+                final Scope source;
+                if((source = AScope.matcher().match(sourceTerm, unifier).orElse(null)) == null) {
+                    debug.error("Expected source scope, got {}", unifier.toString(sourceTerm));
+                    return fail(c, state);
+                }
                 if(params.isClosed(source, state)) {
                     return fail(c, state);
                 }
-                final Scope target =
-                        AScope.matcher().match(targetTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
-                                "Expected target scope, got " + unifier.toString(targetTerm)));
+                final Scope target;
+                if((target = AScope.matcher().match(targetTerm, unifier).orElse(null)) == null) {
+                    debug.error("Expected target scope, got {}", unifier.toString(targetTerm));
+                    return fail(c, state);
+                }
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                         state.scopeGraph().addEdge(source, label, target);
                 return success(c, state.withScopeGraph(scopeGraph), fuel);
@@ -464,8 +471,11 @@ class GreedySolver {
                 if(!unifier.isGround(scopeTerm)) {
                     return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
                 }
-                final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
-                        () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
+                final Scope scope;
+                if((scope = AScope.matcher().match(scopeTerm, unifier).orElse(null)) == null) {
+                    debug.error("Expected scope , got {}", unifier.toString(scopeTerm));
+                    return fail(c, state);
+                }
                 if(params.isClosed(scope, state)) {
                     return fail(c, state);
                 }

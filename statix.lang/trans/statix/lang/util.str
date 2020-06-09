@@ -69,42 +69,52 @@ rules
 
 rules
 
-  // collectbu-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
+  // replacebu(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
   // apply bottomup and collect the substitutions that were done
 
-  collectbu-map(s) = collectbu-map(s, id)
+  replacebu(s) = replacebu(s, id)
 
-  collectbu-map(s, guard): t -> (t'', maps)
+  replacebu(s, guard): t -> (t'', maps)
     where where(guard); c#(ts){a*} := t
-    with (ts', tsmaps) := <map(collectbu-map(s, guard)); unzip; (id, concat)> ts;
+    with (ts', tsmaps) := <map(replacebu(s, guard)); unzip; (id, concat)> ts;
          t' := <with-origin(|t)> c#(ts'){a*};
          (t'', tmaps) := <keep-origin(s) < !(<id>, [(t', <id>)]) + !(<id>, [])> t';
          maps := <conc> (tmaps, tsmaps)
 
-  collectbu-map(s, guard): t{a*} -> (t{a*}, [])
+  replacebu(s, guard): t{a*} -> (t{a*}, [])
     where not(guard) + not(c#(_) := t)
 
-  // collectom-map(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
+  // replaceom(s: a -> b, guard: a -> a) : x -> (x, [(a * b)])
   // apply outermost and collect the substitutions that were done
 
-  collectom-map(s) = collectom-map(s, id)
+  replaceom(s) = replaceom(s, id)
 
-  collectom-map(s, guard): t -> (t', maps)
+  replaceom(s, guard): t -> (t', maps)
     where where(guard); c#(ts){a*} := t
     with if t' := <keep-origin(s)> t then
            maps := [(t, t')]
          else
-           (ts', maps) := <map(collectom-map(s, guard)); unzip; (id, concat)> ts
+           (ts', maps) := <map(replaceom(s, guard)); unzip; (id, concat)> ts
          ; t' := <with-origin(|t)> c#(ts'){a*}
          end
 
-  collectom-map(s, guard): t{a*} -> (t{a*}, [])
+  replaceom(s, guard): t{a*} -> (t{a*}, [])
     where not(guard) + not(c#(_) := t)
 
-  // collect-map(s: a -> a) : [a] -> ([a], [(a * a)])
+  // replaceconcat(s: a -> [a]) : [a] -> ([a], [(a * [a])])
   // apply to a list and collect the substitutions that were done
 
-  collect-map(s): ts -> (ts', maps)
+  replaceconcat(s): ts -> (ts', maps)
+    where is-list
+    with (ts', maps) := < map({ p, ps': ?p ; ( ps' := <s> p < !(ps', [(p, ps')]) + !([p], [])) })
+                        ; unzip
+                        ; (concat, concat)
+                        > ts
+
+  // replace(s: a -> a) : [a] -> ([a], [(a * a)])
+  // apply to a list and collect the substitutions that were done
+
+  replace(s): ts -> (ts', maps)
     where is-list
     with (ts', maps) := < map({ p, p': ?p ; ( p' := <s> p < !(p', [(p, p')]) + !(p, [])) })
                         ; unzip
