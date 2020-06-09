@@ -2,6 +2,8 @@ package mb.nabl2.util.collections;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.usethesource.capsule.Map;
@@ -24,6 +26,10 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
     public boolean contains(E e) {
         return elements().containsKey(e);
+    }
+
+    public Set<Entry<E, Integer>> entrySet() {
+        return elements().entrySet();
     }
 
     public java.util.Set<E> elementSet() {
