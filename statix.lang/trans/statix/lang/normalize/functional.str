@@ -18,22 +18,23 @@ rules
   // normalize functional constraints to predicate constraints
 
   normalize-functional-constraints =
-    nabl2-custom-analysis-info-msg(|"| Normalize functional constraints...");
-    bottomup(
-      try(normalize-functional-cdecl)
-    ; try(normalize-functional-head)
-    ; try(normalize-functional-cops)
-    )
+    nabl2-custom-analysis-info-msg(|"| Normalize functional constraints...")
+  ; normalize-in-sections(normalize-functional-cdecl)
+  ; normalize-in-sections(normalize-functional-head)
+  ; bottomup(try(normalize-functional-cops))
 
 
   normalize-functional-cdecl:
-      CDecl(ind, x, t) -> CDecl(ind, x, t')
+      CDecl(ind, x, t){a*} -> decl*
     where FunType(_, _) := t
-    with ty' := <norm-get-ast-type;fun-to-pred-type> t;
-         t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
+    with ty'   := <norm-get-ast-type;fun-to-pred-type> t;
+         t'    := <fun-to-pred-type;norm-set-ast-type(|ty')> t;
+         decl* := [CDecl(ind, x, t'){a*}]
+      <+ decl* := []
+
 
   normalize-functional-head:
-      Rule(lbl, h, body){a*} -> Rule(lbl, h', body'){a*}
+      Rule(lbl, h, body){a*} -> rule*
     where F(x, in_ts, out_t) := h
     with ty@FUN(_, out_ty) := <norm-get-ast-type> h;
          out_v := <mk-fresh-Var(|out_ty)>("out");
@@ -41,7 +42,10 @@ rules
          ty' := <fun-to-pred-type> ty;
          h' := <norm-set-ast-type(|ty')> C(x, ts);
          out_vs := <raw-diff> (<all-vars> out_t, <all-vars> in_ts);
-         body' := <mk-CExists>(out_vs, CConj(CEqual(out_v, out_t, NoMessage()), body))
+         body' := <mk-CExists>(out_vs, CConj(CEqual(out_v, out_t, NoMessage()), body));
+         rule* := [Rule(lbl, h', body'){a*}]
+      <+ rule* := []
+
 
   normalize-functional-cops =
     normalize-scoped(replace-functional-cop,id,id,functional-cop-to-c)
@@ -49,6 +53,7 @@ rules
   replace-functional-cop: t@COp(x, in_ts){a*} -> out_v{a*}
     with ty := <norm-get-ast-type> t
        ; out_v := <mk-fresh-Var(|ty)>(x)
+      <+ out_v := <mk-fresh-Var>(x)
 
   functional-cop-to-c: (COp(x, in_ts), out_v) -> C(x, ts, NoMessage())
     with ts := <conc> (in_ts, [out_v])

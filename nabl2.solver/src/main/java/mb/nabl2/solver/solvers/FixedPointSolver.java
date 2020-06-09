@@ -11,6 +11,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.RateLimitedCancel;
 
 import com.google.common.collect.Lists;
 
@@ -45,7 +46,7 @@ public class FixedPointSolver {
     private final ISolver component;
 
     public FixedPointSolver(ICancel cancel, IProgress progress, ISolver component) {
-        this.cancel = cancel;
+        this.cancel = new RateLimitedCancel(cancel, 42);
         this.progress = progress;
         this.component = component;
         this.stepSubject = PublishSubject.create();
@@ -128,8 +129,8 @@ public class FixedPointSolver {
             }
         } while(progress);
 
-      //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
-      //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
+        //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
+        //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
 
         unsolved.addAll(constraints);
         unsolved.addAll(variableDelays.values());

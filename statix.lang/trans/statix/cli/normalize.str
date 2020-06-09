@@ -9,13 +9,11 @@ imports
 
   signatures/statix/cli/-
 
-rules // maps
-
-  normalize-mapping-constraints(|a):
-    Eval(body){a*} -> Eval(body){a*}
-
 rules // util
+
+  normalize-in-sections(replace):
+    Eval(body){a*} -> Eval(body){a*}
 
   normalize-scoped(replace,add-vars,to-c):
       Eval(body){a*} -> Eval(<mk-CExists>(bvs', body')){a*}
-    with (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body
+    with (body', bvs') := <replace-in-constraints(replace, add-vars, to-c)> body
