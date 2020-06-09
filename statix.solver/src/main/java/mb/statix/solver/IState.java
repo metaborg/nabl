@@ -118,6 +118,11 @@ public interface IState {
             return result._1();
         }
 
+        public void add(IState.Immutable other) {
+            freezeTwiceShameOnYou();
+            state = state.add(other);
+        }
+
         public Immutable freeze() {
             freezeTwiceShameOnYou();
             frozen = true;

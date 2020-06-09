@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.Function2;
+import org.immutables.value.Value;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -16,7 +16,6 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.Tuple2;
@@ -28,6 +27,7 @@ import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.FastNameResolution;
@@ -46,6 +46,7 @@ import mb.statix.solver.concurrent.messages.QueryAnswer;
 import mb.statix.solver.concurrent.messages.QueryFailed;
 import mb.statix.solver.concurrent.messages.RootEdges;
 import mb.statix.solver.concurrent.messages.ScopeAnswer;
+import mb.statix.solver.concurrent.messages.SetDatum;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
 
@@ -53,21 +54,21 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(Coordinator.class);
 
-    private final Function2<String, String, S> newScope;
+    private final ScopeImpl<S> scopeImpl;
     private final S rootScope;
     private final SetMultimap.Transient<AbstractTypeChecker<S, L, D, ?>, S> unitScopes;
     private final IScopeGraph.Transient<S, L, D> scopeGraph;
     private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
 
-    public Coordinator(S root, Iterable<L> edgeLabels, Function2<String, String, S> fresh) {
-        this.newScope = fresh;
+    public Coordinator(S root, Iterable<L> edgeLabels, ScopeImpl<S> scopeImpl) {
+        this.scopeImpl = scopeImpl;
         this.rootScope = root;
         this.unitScopes = SetMultimap.Transient.of();
         this.scopeGraph = ScopeGraph.Transient.<S, L, D>of(edgeLabels);
         this.openEdges = MultiSetMap.Transient.of();
     }
 
-    private final CompletableFuture<Object> pendingResult = new CompletableFuture<>();
+    private final CompletableFuture<CoordinatorResult<S, L, D>> pendingResult = new CompletableFuture<>();
 
     private final BiMap<String, AbstractTypeChecker<S, L, D, ?>> clients = HashBiMap.create();
     private final MultiSetMap.Transient<String, String> scopeCounters = MultiSetMap.Transient.of();
@@ -111,7 +112,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         return !initClients.isEmpty() || !activeClients.isEmpty();
     }
 
-    public CompletableFuture<Object> run(ExecutorService executorService) {
+    public CompletableFuture<CoordinatorResult<S, L, D>> run(ExecutorService executorService) {
         executorService.submit(() -> {
             try {
                 run();
@@ -130,7 +131,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             message.match(this);
         }
         logger.info("coordinator finished.");
-        pendingResult.complete(new Object());
+        pendingResult.complete(CoordinatorResult.of(scopeGraph.freeze()));
     }
 
     private void initClients() throws InterruptedException {
@@ -158,6 +159,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
                         .withLabelOrder(query.labelOrder())
                         .withDataEquiv(query.dataEquiv())
                         .withIsComplete((s, l) -> {
+                            l = fixEdgeOrData(query.client(), s, l);
                             return !openEdges.contains(s, l);
                         })
                         .build(scopeGraph);
@@ -166,13 +168,26 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             post(query.client(), QueryAnswer.of(query.id(), paths));
         } catch(IncompleteException e) {
             final S scope = e.scope();
-            final EdgeOrData<L> label = e.<L>label();
+            final EdgeOrData<L> label = fixEdgeOrData(query.client(), scope, e.<L>label());
             logger.info("delay query on edge {}/{}", scope, label);
             delays.put(Tuple2.of(scope, label), query);
         } catch(ResolutionException e) {
             logger.warn("forwarding resolution exception.", e);
             post(query.client(), QueryFailed.of(query.id(), e));
         }
+    }
+
+    private EdgeOrData<L> fixEdgeOrData(AbstractTypeChecker<S, L, D, ?> client, S scope, EdgeOrData<L> edgeOrData) {
+        // @formatter:off
+        return edgeOrData.match(
+            acc -> {
+                return client.resource().equals(scopeImpl.resource(scope)) ? edgeOrData : EdgeOrData.data(Access.EXTERNAL);
+            },
+            lbl -> {
+                return edgeOrData;
+            }
+        );
+        // @formatter:on
     }
 
     private void releaseDelays(S source, EdgeOrData<L> label) throws InterruptedException {
@@ -211,13 +226,24 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         final String resource = message.client().resource();
         final String name = message.name().replace("-", "_");
         final int n = scopeCounters.put(resource, name);
-        final S scope = newScope.apply(resource, name + "-" + n);
-        logger.info("client {} fresh scope {} -> {} with open edges {}", message.client(), scope, message.datum(),
-                message.labels());
+        final S scope = scopeImpl.make(resource, name + "-" + n);
+        logger.info("client {} fresh scope {} -> {} with open edges {}, data {}", message.client(), scope,
+                message.labels(), message.accesses());
         unitScopes.__insert(message.client(), scope);
-        scopeGraph.setDatum(scope, message.datum());
         openEdges.putAll(scope, message.labels().stream().map(EdgeOrData::edge).collect(Collectors.toSet()));
+        openEdges.putAll(scope, message.accesses().stream().map(EdgeOrData::<L>data).collect(Collectors.toSet()));
         post(message.client(), ScopeAnswer.of(message.id(), scope));
+    }
+
+    @Override public void on(SetDatum<S, L, D> message) throws InterruptedException {
+        logger.info("client {} set datum {} : {} {}", message.client(), message.scope(), message.datum(),
+                message.access());
+        scopeGraph.setDatum(message.scope(), message.datum());
+        final int n = openEdges.remove(message.scope(), EdgeOrData.data(message.access()));
+        if(n == 0) {
+            logger.info("datum {}/{} closed", message.scope(), message.access());
+            releaseDelays(message.scope(), EdgeOrData.data(message.access()));
+        }
     }
 
     @Override public void on(AddEdge<S, L, D> message) throws InterruptedException {
@@ -245,8 +271,9 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             return;
         }
         final long unitDelays = delays.stream().filter(q -> q._2().client().equals(message.client())).count();
-        final Set<EdgeOrData<L>> unitEdges = unitScopes.get(message.client()).stream()
-                .flatMap(s -> Streams.stream(openEdges.get(s))).collect(Collectors.toSet());
+        final Set<Tuple2<S, EdgeOrData<L>>> unitEdges = unitScopes.get(message.client()).stream()
+                .flatMap(s -> openEdges.get(s).elementSet().stream().map(l -> Tuple2.of(s, l)))
+                .collect(Collectors.toSet());
         logger.info("client {} suspended: pending {} queries, {} open edges", message.client(), unitDelays,
                 unitEdges.size());
         logger.info("client {} open edges: {}", message.client(), unitEdges);
@@ -288,6 +315,13 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     @Override public String toString() {
         return "Coordinator";
+    }
+
+    @Value.Immutable
+    public static abstract class ACoordinatorResult<S, L, D> {
+
+        @Value.Parameter public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
+
     }
 
 }

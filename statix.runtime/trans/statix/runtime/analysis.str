@@ -136,7 +136,7 @@ rules // multi file analysis (new)
   stx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
     with C := <lookup> (resource, task*)
        ; state := <lookup> (resource, state*)
-       ; analysis := <mk-analysis> (state, C)
+       ; analysis := <mk-analysis> (C, state)
        ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages> state
        ; switch !change
            case ?Added(_) + ?Changed(_, _):

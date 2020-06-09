@@ -34,7 +34,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
     public NameResolution(IScopeGraph<S, L, D> scopeGraph, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
             DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.scopeGraph = scopeGraph;
-        this.dataLabel = EdgeOrData.data();
+        this.dataLabel = EdgeOrData.data(Access.INTERNAL);
         this.allLabels = Streams.concat(Stream.of(dataLabel), scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge))
                 .collect(Collectors.toSet());
         this.labelWF = labelWF;
@@ -111,7 +111,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
-        return l.matchInResolution(() -> env_data(re, path), lbl -> env_edges(lbl, re, path));
+        return l.matchInResolution(acc -> env_data(re, path), lbl -> env_edges(lbl, re, path));
     }
 
     private Env<S, L, D> env_data(LabelWF<L> re, IScopePath<S, L> path)

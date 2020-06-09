@@ -30,7 +30,7 @@ public abstract class Completeness implements ICompleteness {
     }
 
     @Override public boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUniDisunifier unifier) {
-        if(!label.match(() -> true, lbl -> lbl.isGround())) {
+        if(!label.match(acc -> true, lbl -> lbl.isGround())) {
             throw new IllegalArgumentException("Label must be ground, got " + label);
         }
         final ITerm scopeOrVar = getVarOrScope(scope, unifier);

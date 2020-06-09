@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -29,6 +28,8 @@ import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.concurrent.Coordinator;
+import mb.statix.solver.concurrent.CoordinatorResult;
+import mb.statix.solver.concurrent.ScopeImpl;
 import mb.statix.solver.concurrent.StatixTypeChecker;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
@@ -60,8 +61,13 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final Scope root = Scope.of("", "0");
         final ExecutorService executor = Executors.newCachedThreadPool();
-        final Function2<String, String, Scope> newScope = (resource, name) -> Scope.of(resource, name);
-        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.allLabels(), newScope);
+        final ScopeImpl<Scope> scopeImpl = new ScopeImpl<Scope>() {
+            // @formatter:off
+            @Override public Scope make(String resource, String name) { return Scope.of(resource, name); }
+            @Override public String resource(Scope scope) { return scope.getResource(); }
+            // @formatter:on
+        };
+        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.allLabels(), scopeImpl);
 
         final double t0 = System.currentTimeMillis();
 
@@ -72,7 +78,7 @@ public class STX_solve_multi extends StatixPrimitive {
                     new StatixTypeChecker(resource, solver, spec, resource_constraint._2(), debug, progress, cancel);
             fileSolvers.put(resource, fileSolver.run(executor));
         }
-        final CompletableFuture<Object> solveResult = solver.run(executor);
+        final CompletableFuture<CoordinatorResult<Scope, ITerm, ITerm>> solveResult = solver.run(executor);
 
         final List<ITerm> results = Lists.newArrayList();
         try {
@@ -80,14 +86,17 @@ public class STX_solve_multi extends StatixPrimitive {
             pendingResults.add(solveResult);
             CompletableFuture.allOf(pendingResults.toArray(new CompletableFuture<?>[pendingResults.size()])).get();
 
+            final CoordinatorResult<Scope, ITerm, ITerm> coordinatorResult = solveResult.get();
+
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Files analyzed in {} s", (dt / 1_000d));
 
-            // TODO Collect and combine results
             for(Entry<String, CompletableFuture<SolverResult>> entry : fileSolvers.entrySet()) {
-                results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(entry.getValue().get())));
+                final SolverResult fileResult = entry.getValue().get();
+                final SolverResult updatedFileResult =
+                        fileResult.withState(fileResult.state().withScopeGraph(coordinatorResult.scopeGraph()));
+                results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(updatedFileResult)));
             }
-
         } catch(Throwable e) {
             executor.shutdownNow();
             logger.error("Async solving failed.", e);

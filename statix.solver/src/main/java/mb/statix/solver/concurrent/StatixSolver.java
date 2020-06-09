@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.functions.CheckedAction0;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -55,6 +56,7 @@ import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -203,7 +205,7 @@ public class StatixSolver {
 
         // updates from unified variables
         if(!updatedVars.isEmpty()) {
-            releaseDelayedCloses(updatedVars);
+            releaseDelayedActions(updatedVars);
             completeness.updateAll(updatedVars, unifier);
             constraints.activateFromVars(updatedVars, debug);
             this.updatedVars.addAll(updatedVars);
@@ -233,7 +235,7 @@ public class StatixSolver {
             }
         }
 
-        removeCompleteness(constraint, unifier);
+        removeCompleteness(constraint);
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
@@ -254,7 +256,7 @@ public class StatixSolver {
 
     private Unit delay(IConstraint c, IState.Immutable newState, Delay delay, int fuel) throws InterruptedException {
         if(!delay.criticalEdges().isEmpty()) {
-            // FIXME
+            // FIXME This case should not happen anymore
             debug.error("FIXME: query {} failed on critical edges {}", c.toString(state.unifier()::toString),
                     delay.criticalEdges());
             return fail(c);
@@ -263,7 +265,7 @@ public class StatixSolver {
                     .collect(CapsuleCollectors.toSet());
             final Set.Immutable<ITermVar> foreignVars = Set.Immutable.subtract(vars, state.vars());
             if(!foreignVars.isEmpty()) {
-                // FIXME
+                // FIXME This case should not happen, but better way of handling foreign variables is necessary
                 debug.error("FIXME: query {} failed on foreign vars {}", c.toString(state.unifier()::toString),
                         foreignVars);
                 return fail(c);
@@ -286,16 +288,16 @@ public class StatixSolver {
         return success(c, state, fuel);
     }
 
-    private Unit fail(IConstraint constraint) {
+    private Unit fail(IConstraint constraint) throws InterruptedException {
         failed.put(constraint, MessageUtil.findClosestMessage(constraint));
-        removeCompleteness(constraint, state.unifier());
+        removeCompleteness(constraint);
         return Unit.unit;
     }
 
-    private void removeCompleteness(IConstraint constraint, IUniDisunifier unifier) {
-        final java.util.Set<CriticalEdge> removedEdges = completeness.remove(constraint, unifier);
+    private void removeCompleteness(IConstraint constraint) throws InterruptedException {
+        final java.util.Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
         for(CriticalEdge criticalEdge : removedEdges) {
-            closeEdge(criticalEdge, state.unifier());
+            closeEdge(criticalEdge);
         }
     }
 
@@ -403,7 +405,7 @@ public class StatixSolver {
                         fuel);
             }
 
-            @Override public Unit caseFalse(CFalse c) {
+            @Override public Unit caseFalse(CFalse c) throws InterruptedException {
                 return fail(c);
             }
 
@@ -433,13 +435,18 @@ public class StatixSolver {
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm datumTerm = c.datumTerm();
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
-                List<ITerm> labels = getOpenEdges(scopeTerm);
+                final List<ITerm> labels = getOpenEdges(scopeTerm);
 
-                final CompletableFuture<Scope> futureScope = scopeGraph.freshScope(name, datumTerm, labels);
+                final CompletableFuture<Scope> futureScope =
+                        scopeGraph.freshScope(name, labels, ImmutableList.of(Access.INTERNAL, Access.EXTERNAL));
                 final K<Scope> k = (scope, ex, fuel) -> {
                     if(ex != null) {
                         return fail(c);
                     }
+                    scopeGraph.setDatum(scope, datumTerm, Access.INTERNAL);
+                    delayAction(() -> {
+                        scopeGraph.setDatum(scope, state.unifier().findRecursive(datumTerm), Access.EXTERNAL);
+                    }, state.unifier().getVars(datumTerm));
                     final IConstraint eq = new CEqual(scopeTerm, scope, c);
                     return successNew(c, state, ImmutableList.of(eq), fuel);
                 };
@@ -588,7 +595,7 @@ public class StatixSolver {
 
             @Override public Unit caseTry(CTry c) throws InterruptedException {
                 return fail(c);
-                // TODO
+                // TODO Implement try/entailment that supports queries
                 /*
                 try {
                     if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext())) {
@@ -637,43 +644,41 @@ public class StatixSolver {
     // Open edges & delayed closes
     ///////////////////////////////////////////////////////////////////////////
 
+    private Set.Transient<CriticalEdge> delayedCloses = Set.Transient.of();
+
     private List<ITerm> getOpenEdges(ITerm varOrScope) {
         // we must include queued edge closes here, to ensure we registered the open
         // edge when the close is released
         final Stream<EdgeOrData<ITerm>> openEdges = Streams.stream(completeness.get(varOrScope, state.unifier()));
-        final Stream<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope)
-                .map(var -> delayedCloses.get(var).stream().map(e -> e.value().edgeOrData())).orElse(Stream.empty());
+        final Stream<EdgeOrData<ITerm>> queuedEdges = M
+                .var().match(varOrScope).map(var -> delayedCloses.stream()
+                        .filter(e -> state.unifier().findRecursive(var).equals(varOrScope)).map(e -> e.edgeOrData()))
+                .orElse(Stream.<EdgeOrData<ITerm>>empty());
         return Streams.concat(openEdges, queuedEdges).<ITerm>flatMap(eod -> {
-            return eod.match(() -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
+            return eod.match(acc -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
         }).collect(Collectors.toList());
     }
 
-    private final VarIndexedCollection<CriticalEdge> delayedCloses = new VarIndexedCollection<>();
-
-    private void releaseDelayedCloses(Iterable<ITermVar> updatedVars) {
-        java.util.Set<CriticalEdge> removedEdges = delayedCloses.update(updatedVars, state.unifier());
-        for(CriticalEdge criticalEdge : removedEdges) {
-            closeGroundEdge(criticalEdge, state.unifier());
-        }
+    private void closeEdge(CriticalEdge criticalEdge) throws InterruptedException {
+        debug.info("client {} close edge {}/{}", this, state.unifier().toString(criticalEdge.scope()),
+                criticalEdge.edgeOrData());
+        delayedCloses.__insert(criticalEdge);
+        delayAction(() -> {
+            delayedCloses.__remove(criticalEdge);
+            closeGroundEdge(criticalEdge);
+        }, state.unifier().getVars(criticalEdge.scope()));
     }
 
-    private void closeEdge(CriticalEdge criticalEdge, IUnifier unifier) {
-        debug.info("client {} close edge {}/{}", this, unifier.toString(criticalEdge.scope()),
+    private void closeGroundEdge(CriticalEdge criticalEdge) {
+        debug.info("client {} close edge {}/{}", this, state.unifier().toString(criticalEdge.scope()),
                 criticalEdge.edgeOrData());
-        if(!delayedCloses.put(criticalEdge, unifier.getVars(criticalEdge.scope()), unifier)) {
-            closeGroundEdge(criticalEdge, unifier);
-        }
-    }
-
-    private void closeGroundEdge(CriticalEdge criticalEdge, IUnifier unifier) {
-        debug.info("client {} close edge {}/{}", this, unifier.toString(criticalEdge.scope()),
-                criticalEdge.edgeOrData());
-        final Scope scope = Scope.matcher().match(criticalEdge.scope(), unifier).orElseThrow(
-                () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(criticalEdge.scope())));
+        final Scope scope = Scope.matcher().match(criticalEdge.scope(), state.unifier())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Expected scope, got " + state.unifier().toString(criticalEdge.scope())));
         // @formatter:off
         criticalEdge.edgeOrData().match(
-            () -> {
-                // ignore data labels, they are always closed
+            acc -> {
+                // ignore data labels, they are managed separately
                 return Unit.unit;
             },
             label -> {
@@ -683,6 +688,27 @@ public class StatixSolver {
         );
         // @formatter:on
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Delayed actions
+    ///////////////////////////////////////////////////////////////////////////
+
+    private final VarIndexedCollection<CheckedAction0<InterruptedException>> delayedActions =
+            new VarIndexedCollection<>();
+
+    private void delayAction(CheckedAction0<InterruptedException> action, Iterable<ITermVar> vars)
+            throws InterruptedException {
+        if(!delayedActions.put(action, vars, state.unifier())) {
+            action.apply();
+        }
+    }
+
+    private void releaseDelayedActions(Iterable<ITermVar> updatedVars) throws InterruptedException {
+        for(CheckedAction0<InterruptedException> action : delayedActions.update(updatedVars, state.unifier())) {
+            action.apply();
+        }
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////
     // toString

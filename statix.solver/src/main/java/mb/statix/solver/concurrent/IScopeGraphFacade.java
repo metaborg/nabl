@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelOrder;
@@ -13,7 +14,9 @@ public interface IScopeGraphFacade<S, L, D> {
 
     void openRootEdges(S root, Iterable<L> labels);
 
-    CompletableFuture<S> freshScope(String name, D datum, Iterable<L> labels);
+    CompletableFuture<S> freshScope(String name, Iterable<L> labels, Iterable<Access> data);
+
+    void setDatum(S scope, D datum, Access access);
 
     void addEdge(S source, L label, S target);
 

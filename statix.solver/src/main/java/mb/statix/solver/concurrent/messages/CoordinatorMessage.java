@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
+import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelOrder;
@@ -40,6 +41,8 @@ public abstract class CoordinatorMessage<S, L, D> {
 
         void on(FreshScope<S, L, D> message) throws InterruptedException;
 
+        void on(SetDatum<S, L, D> message) throws InterruptedException;
+
         void on(AddEdge<S, L, D> message) throws InterruptedException;
 
         void on(CloseEdge<S, L, D> message) throws InterruptedException;
@@ -70,15 +73,31 @@ public abstract class CoordinatorMessage<S, L, D> {
 
         @Value.Parameter public abstract String name();
 
-        @Value.Parameter public abstract D datum();
-
         @Value.Parameter public abstract Set<L> labels();
+
+        @Value.Parameter public abstract Set<Access> accesses();
 
         @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
             cases.on((FreshScope<S, L, D>) this);
         }
 
     }
+
+    @Value.Immutable
+    public static abstract class ASetDatum<S, L, D> extends CoordinatorMessage<S, L, D> {
+
+        @Value.Parameter public abstract S scope();
+
+        @Value.Parameter public abstract D datum();
+
+        @Value.Parameter public abstract Access access();
+
+        @Override public void match(Cases<S, L, D> cases) throws InterruptedException {
+            cases.on((SetDatum<S, L, D>) this);
+        }
+
+    }
+
 
     @Value.Immutable
     public static abstract class AAddEdge<S, L, D> extends CoordinatorMessage<S, L, D> {

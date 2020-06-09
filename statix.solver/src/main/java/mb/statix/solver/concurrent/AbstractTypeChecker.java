@@ -1,23 +1,29 @@
 package mb.statix.solver.concurrent;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Queues;
+import com.google.common.collect.Streams;
 
 import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.solver.concurrent.messages.AddEdge;
@@ -32,6 +38,7 @@ import mb.statix.solver.concurrent.messages.QueryAnswer;
 import mb.statix.solver.concurrent.messages.QueryFailed;
 import mb.statix.solver.concurrent.messages.RootEdges;
 import mb.statix.solver.concurrent.messages.ScopeAnswer;
+import mb.statix.solver.concurrent.messages.SetDatum;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
 
@@ -56,7 +63,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     private final Map<Long, CompletableFuture<S>> pendingScopes = Maps.newHashMap();
     private final Map<Long, CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>>> pendingQueries =
             Maps.newHashMap();
-    private final Multimap<S, L> openEdges = HashMultimap.create();
+    private final Multimap<S, EdgeOrData<L>> openEdges = HashMultimap.create();
 
     public AbstractTypeChecker(String resource, Coordinator<S, L, D> coordinator) {
         this.resource = resource;
@@ -112,7 +119,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
             if(inbox.isEmpty()) {
                 logger.info("client {} suspended: pending {} scopes, {} queries, {} open edges", this,
                         pendingScopes.size(), pendingQueries.size(), openEdges.size());
-                logger.info("client {} open edges: {}", this, openEdges);
+                logger.info("client {} open edges: {}", this, openEdges.entries());
                 post(Suspend.<S, L, D>builder().build());
                 waiting = true;
             }
@@ -181,9 +188,15 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         }
     }
 
-    private void assertEdgeOpen(S source, L label) {
-        if(!openEdges.containsEntry(source, label)) {
-            throw new IllegalArgumentException("Edge " + source + "/" + label + " is not open.");
+    private void assertOpen(S source, EdgeOrData<L> edgeOrDatum) {
+        if(!openEdges.containsEntry(source, edgeOrDatum)) {
+            throw new IllegalArgumentException("Edge or datum " + source + "/" + edgeOrDatum + " is not open.");
+        }
+    }
+
+    private void assertClosed(S source, EdgeOrData<L> edgeOrDatum) {
+        if(openEdges.containsEntry(source, edgeOrDatum)) {
+            throw new IllegalArgumentException("Edge or datum " + source + "/" + edgeOrDatum + " is not closed.");
         }
     }
 
@@ -193,30 +206,41 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     @Override public void openRootEdges(S root, Iterable<L> labels) {
         assertInState(State.INIT);
         setState(State.ACTIVE);
-        openEdges.putAll(root, labels);
+        openEdges.putAll(root, edges(labels));
         post(RootEdges.of(labels));
     }
 
-    @Override public CompletableFuture<S> freshScope(String name, D datum, Iterable<L> labels) {
+    @Override public CompletableFuture<S> freshScope(String name, Iterable<L> labels, Iterable<Access> accesses) {
         assertInState(State.ACTIVE);
-        final long messageId = post(FreshScope.of(name, datum, labels));
+        final Iterable<EdgeOrData<L>> edgesAndData = Iterables.concat(edges(labels), data(accesses));
+        final long messageId = post(FreshScope.of(name, labels, accesses));
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
         pendingScopes.put(messageId, pendingScope);
         return pendingScope.whenComplete((scope, ex) -> {
-            openEdges.putAll(scope, labels);
+            openEdges.putAll(scope, edgesAndData);
         });
+    }
+
+    @Override public void setDatum(S scope, D datum, Access access) {
+        assertInState(State.ACTIVE);
+        if(access.equals(Access.EXTERNAL)) {
+            assertClosed(scope, EdgeOrData.data(Access.INTERNAL));
+        }
+        assertOpen(scope, EdgeOrData.data(access));
+        openEdges.remove(scope, EdgeOrData.data(access));
+        post(SetDatum.of(scope, datum, access));
     }
 
     @Override public final void addEdge(S source, L label, S target) {
         assertInState(State.ACTIVE);
-        assertEdgeOpen(source, label);
+        assertOpen(source, EdgeOrData.edge(label));
         post(AddEdge.of(source, label, target));
     }
 
     @Override public final void closeEdge(S source, L label) {
         assertInState(State.ACTIVE);
-        assertEdgeOpen(source, label);
-        openEdges.remove(source, label);
+        assertOpen(source, EdgeOrData.edge(label));
+        openEdges.remove(source, EdgeOrData.edge(label));
         post(CloseEdge.of(source, label));
     }
 
@@ -246,6 +270,15 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         pendingQueries.clear();
         pendingScopes.clear();
         pendingResult.completeExceptionally(e);
+    }
+
+
+    private List<EdgeOrData<L>> edges(Iterable<L> labels) {
+        return Streams.stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
+    }
+
+    private List<EdgeOrData<L>> data(Iterable<Access> access) {
+        return Streams.stream(access).map(EdgeOrData::<L>data).collect(Collectors.toList());
     }
 
 
