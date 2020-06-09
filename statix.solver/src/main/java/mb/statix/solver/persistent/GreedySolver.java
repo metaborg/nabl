@@ -148,6 +148,10 @@ class GreedySolver {
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
+            // stop if thread is interrupted
+            if(cancel.cancelled() || Thread.interrupted()) {
+                throw new InterruptedException();
+            }
             state = k(state, constraint, MAX_DEPTH);
         }
 
@@ -244,11 +248,6 @@ class GreedySolver {
     }
 
     private IState.Immutable k(IState.Immutable state, IConstraint constraint, int fuel) throws InterruptedException {
-        // stop if thread is interrupted
-        if(cancel.cancelled() || Thread.interrupted()) {
-            throw new InterruptedException();
-        }
-
         // stop recursion if we run out of fuel
         if(fuel <= 0) {
             return queue(constraint, state);
