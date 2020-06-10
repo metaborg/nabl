@@ -18,10 +18,11 @@ rules
 
 strategies
 
-  stx--editor-hover(pp|prop):
+  stx--editor-hover(pp|prefix,prop):
       (node, position, ast, path, project-path) -> label
     where
       a       := <stx--get-ast-analysis> node
     ; propval := <stx--get-ast-property(|a, prop)> node
     with
-      label := <pp> propval
+      propstr := <pp> propval
+    ; label   := $[[prefix][propstr]]
