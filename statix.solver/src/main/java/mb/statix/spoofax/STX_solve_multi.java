@@ -67,7 +67,7 @@ public class STX_solve_multi extends StatixPrimitive {
             @Override public String resource(Scope scope) { return scope.getResource(); }
             // @formatter:on
         };
-        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.allLabels(), scopeImpl);
+        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.allLabels(), scopeImpl, cancel);
 
         final double t0 = System.currentTimeMillis();
 

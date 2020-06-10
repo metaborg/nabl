@@ -27,12 +27,11 @@ rules
       (_, _, ast@Module(name, _), path, project-path) -> result
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
     with filename := <stx--module-path> name
-       ; if <nabl2-analysis-has-errors> a then
-           spec := <empty-spec> // FIXME Change generation to work as well as possible on results with errors
+       ; if spec := <generate-aterm'(|a)> ast then
+           result := (filename, spec)
          else
-           spec := <generate-aterm'(|a)> ast
+           result := (filename, <empty-spec>)
          end
-       ; result := (filename, spec)
 
   generate-aterm'(|a):
       ast@Module(_, _) -> spec
@@ -77,9 +76,9 @@ rules
 //qualify-name(|a) = Op(get-qname(|a), id)
 
   get-qname(|a): x -> <stx--mk-qualified-name(|qname)> name
-    with d := <nabl2-get-ast-property(|a, "decl")> x
-       ; name := <nabl2-get-occurrence-name> d
-       ; qname := <nabl2-get-property(|a, "qname")> d
+    where d := <nabl2-get-ast-property(|a, "decl")> x
+        ; name := <nabl2-get-occurrence-name> d
+        ; qname := <nabl2-get-property(|a, "qname")> d
 
 rules
 

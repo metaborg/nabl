@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 import org.immutables.value.Value;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.RateLimitedCancel;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -60,12 +62,15 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     private final IScopeGraph.Transient<S, L, D> scopeGraph;
     private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
 
-    public Coordinator(S root, Iterable<L> edgeLabels, ScopeImpl<S> scopeImpl) {
+    final ICancel cancel;
+    
+    public Coordinator(S root, Iterable<L> edgeLabels, ScopeImpl<S> scopeImpl, ICancel cancel) {
         this.scopeImpl = scopeImpl;
         this.rootScope = root;
         this.unitScopes = SetMultimap.Transient.of();
         this.scopeGraph = ScopeGraph.Transient.<S, L, D>of(edgeLabels);
         this.openEdges = MultiSetMap.Transient.of();
+        this.cancel = new RateLimitedCancel(cancel, 42);
     }
 
     private final CompletableFuture<CoordinatorResult<S, L, D>> pendingResult = new CompletableFuture<>();
@@ -164,7 +169,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
                         })
                         .build(scopeGraph);
             // @formatter:on
-            final Env<S, L, D> paths = nameResolution.resolve(query.scope());
+            final Env<S, L, D> paths = nameResolution.resolve(query.scope(), cancel);
             post(query.client(), QueryAnswer.of(query.id(), paths));
         } catch(IncompleteException e) {
             final S scope = e.scope();

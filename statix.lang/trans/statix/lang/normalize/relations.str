@@ -20,52 +20,55 @@ rules
 
   normalize-functional-relations =
     nabl2-custom-analysis-info-msg(|"| Normalize functional relations...");
-    bottomup(
-      try(normalize-functional-reldecl)
-    ; try(normalize-functional-query)
-    )
+    normalize-in-sections(normalize-functional-reldecl);
+    bottomup(try(normalize-functional-query))
 
 
   normalize-functional-reldecl:
-      RelDecl(x, t) -> RelDecl(x, t')
+      RelDecl(x, t){a*} -> decl*
     where FunType(_, _) := t
-    with ty' := <norm-get-ast-type;fun-to-pred-type> t;
-         t' := <fun-to-pred-type;norm-set-ast-type(|ty')> t
+    with ty'   := <norm-get-ast-type;fun-to-pred-type> t;
+         t'    := <fun-to-pred-type;norm-set-ast-type(|ty')> t;
+         decl* := [RelDecl(x, t'){a*}]
+      <+ decl* := []
 
   normalize-functional-query:
-      CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts, msg)
-      -> CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts, msg)
+      c@CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts, msg) -> c' 
     where ty@FUN(in_tys, out_ty) := <norm-get-ast-type> rel
-    with ty' := <fun-to-pred-type> ty;
-         rel' := <norm-set-ast-type(|ty')> rel;
-         lwf' := <normalize-functional-wf(|in_tys,out_ty)> lwf;
-         lord' := <normalize-functional-ord(|in_tys,out_ty)> lord
+    with ty'   := <fun-to-pred-type> ty;
+         rel'  := <norm-set-ast-type(|ty')> rel;
+         lwf'  := <normalize-functional-wf(|in_tys,out_ty)> lwf;
+         lord' := <normalize-functional-ord(|in_tys,out_ty)> lord;
+         c'    := CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts, msg)
+      <+ c' := <fail-C>
 
   normalize-functional-wf(|in_tys,out_ty): LLam([p], c) -> wf
    with (p', vs, c*) := <normalize-functional-pattern(|in_tys,out_ty)> p;
         c' := <mk-CExists>(vs, <list-to-conj(|c)> c*);
         wf := <mk-LLam>([p'], c')
+     <+ wf := <empty-LabelRE>
 
   normalize-functional-ord(|in_tys,out_ty): LLam([p1, p2], c) -> ord
    with (p1', vs1, c1*) := <normalize-functional-pattern(|in_tys,out_ty)> p1;
         (p2', vs2, c2*) := <normalize-functional-pattern(|in_tys,out_ty)> p2;
-        vs := <conc> (vs1, vs2);
-        c' := <mk-CExists>(vs, <conc;list-to-conj(|c)> (c1*, c2*));
+        vs  := <conc> (vs1, vs2);
+        c'  := <mk-CExists>(vs, <conc;list-to-conj(|c)> (c1*, c2*));
         ord := <mk-LLam>([p1', p2'], c')
+     <+ ord := <empty-LabelOrd>
 
 
   normalize-functional-pattern(|in_tys,out_ty): p -> (p', vs, c*)
-    with wld := <mk-Wld(|out_ty)>;
-         if in_ps := <match-terms(|in_tys)> p then
-           p' := <conc;mk-Tuple>(in_ps, [wld]);
-           vs := [];
-           c* := []
-         else
-           us := <mk-fresh-Vars(|"u")> in_tys;
-           p' := <conc;mk-Tuple>(us, [wld]);
-           vs := <all-vars> p;
-           c* := [CEqual(<mk-Tuple>(us), p, NoMessage())]
-         end
+    where wld := <mk-Wld(|out_ty)>;
+          if in_ps := <match-terms(|in_tys)> p then
+            p' := <conc;mk-Tuple>(in_ps, [wld]);
+            vs := [];
+            c* := []
+          else
+            us := <mk-fresh-Vars(|"u")> in_tys;
+            p' := <conc;mk-Tuple>(us, [wld]);
+            vs := <all-vars> p;
+            c* := [CEqual(<mk-Tuple>(us), p, NoMessage())]
+          end
 
   match-terms(|tys): t -> ts
     where if [_] := tys then

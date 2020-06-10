@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -45,30 +46,29 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         this.isComplete = isComplete;
     }
 
-    @Override public Env<S, L, D> resolve(S scope) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope), Env.empty());
+    @Override public Env<S, L, D> resolve(S scope, ICancel cancel) throws ResolutionException, InterruptedException {
+        return env(labelWF, Paths.empty(scope), Env.empty(), cancel);
     }
 
-    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
-            throws ResolutionException, InterruptedException {
-        return env_L(allLabels, re, path, specifics);
+    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics,
+            ICancel cancel) throws ResolutionException, InterruptedException {
+        return env_L(allLabels, re, path, specifics, cancel);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
     private Env<S, L, D> env_L(Set.Immutable<EdgeOrData<L>> L, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
-        if(Thread.interrupted()) {
-            throw new InterruptedException();
-        }
+            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+            throws ResolutionException, InterruptedException {
+        cancel.throwIfCancelled();
         final Env.Builder<S, L, D> env = Env.builder();
         final Set.Immutable<EdgeOrData<L>> max_L = max(L);
         for(EdgeOrData<L> l : max_L) {
             final Set.Immutable<EdgeOrData<L>> smaller = smaller(L, l);
-            final Env<S, L, D> env1 = env_L(smaller, re, path, specifics);
+            final Env<S, L, D> env1 = env_L(smaller, re, path, specifics, cancel);
             env.addAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final Env<S, L, D> env2 = env_l(l, re, path, Iterables.concat(specifics, env1));
+                final Env<S, L, D> env2 = env_l(l, re, path, Iterables.concat(specifics, env1), cancel);
                 env.addAll(env2);
             }
         }
@@ -76,8 +76,10 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     }
 
     private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
-        return l.matchInResolution(acc -> env_data(re, path, specifics), lbl -> env_edges(lbl, re, path, specifics));
+            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+            throws ResolutionException, InterruptedException {
+        return l.matchInResolution(acc -> env_data(re, path, specifics),
+                lbl -> env_edges(lbl, re, path, specifics, cancel));
     }
 
     private Env<S, L, D> env_data(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
@@ -96,7 +98,8 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     }
 
     private Env<S, L, D> env_edges(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics) throws ResolutionException, InterruptedException {
+            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+            throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
             return Env.empty();
@@ -111,7 +114,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re, p.get(), specifics));
+                env.addAll(env(re, p.get(), specifics, cancel));
             }
         }
         return env.build();

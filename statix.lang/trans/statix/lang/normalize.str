@@ -24,3 +24,11 @@ rules
   normalize-add-anno-types(|a) =
     nabl2-custom-analysis-info-msg(|"| Annotating AST...");
     nabl2-add-anno-types(|a)
+
+rules // util
+
+  // replace : a -> [a]
+
+  normalize-in-sections(replace):
+      Module(x, section*){a*} -> Module(x, section'*){a*}
+    where (section'*, _) := <replaceconcat-in-sections(replace)> section*

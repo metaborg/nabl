@@ -40,7 +40,7 @@ rules
 
   norm-get-ast-type =
     nabl2-get-anno-type
- <+ fatal-err(|"Missing AST type")
+ <+ fail-warn-msg(|"Missing AST type")
 
   norm-set-ast-type(|ty) =
     nabl2-set-anno-type(|ty)
@@ -50,13 +50,17 @@ rules
 
   norm-get-ast-property(|a,prop) =
     not(nabl2-get-ast-index)
-  < fatal-err(|"Missing AST index")
+  < fail-warn-msg(|"Missing AST index")
   + nabl2-get-ast-property(|a,prop)
+  ; nabl2--is-ground
+ <+ fail-warn(|"Property is not ground")
 
   norm-get-ast-decl(|a) =
     not(nabl2-get-ast-index)
-  < fatal-err(|"Missing AST index")
+  < fail-warn-msg(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
+  ; nabl2--is-ground
+ <+ fail-warn(|"Property is not ground")
 
   norm-get-ast-decl-type(|a) =
     norm-get-ast-decl(|a)
@@ -64,12 +68,76 @@ rules
 
   norm-get-ast-decl-property(|a,prop) =
     not(nabl2-get-ast-index)
-  < fatal-err(|"Missing AST index")
+  < fail-warn-msg(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
   ; nabl2-get-property(|a,prop)
+  ; nabl2--is-ground
+ <+ fail-warn(|"Property is not ground")
 
   norm-preserve-ast-type(s) =
     nabl2-preserve-anno-type(s)
+
+  fail-warn-msg(|msg) =
+    warn-msg(|msg)
+  ; fail
+
+  fail-warn(|msg) =
+    warn(|msg)
+  ; fail
+
+rules
+
+  // replace : old:Term -> new:[Term]
+
+  normalize-in-sections(replace) = fail
+
+
+  replaceconcat-in-sections(replace) =
+    map(replaceconcat-in-section(replace) <+ fatal-err(|"Missing case for section "))
+  ; unzip
+  ; (id, concat)
+
+  replaceconcat-in-section(replace):
+      Imports(imp*) -> (Imports(imp'*), maps)
+    with (imp'*, maps) := <replaceconcat(replace)> imp*
+
+  replaceconcat-in-section(replace):
+      Signature(sig*) -> (Signature(sig'*), maps)
+    with (sig'*, maps) := <replaceconcat-in-signatures(replace)> sig*
+
+  replaceconcat-in-section(replace):
+      Rules(rule*) -> (Rules(rule'*), maps)
+    with (rule'*, maps) := <replaceconcat(replace)> rule*
+
+
+  replaceconcat-in-signatures(replace) =
+    map(replaceconcat-in-signature(replace) <+ fatal-err(|"Missing case for signature "))
+  ; unzip
+  ; (id, concat)
+
+  replaceconcat-in-signature(replace):
+      Constraints(cdecl*) -> (Constraints(cdecl'*), maps)
+    with (cdecl'*, maps) := <replaceconcat(replace)> cdecl*
+
+  replaceconcat-in-signature(replace):
+      Relations(reldecl*) -> (Relations(reldecl'*), maps)
+    with (reldecl'*, maps) := <replaceconcat(replace)> reldecl*
+
+  replaceconcat-in-signature(replace):
+      Namespaces(nsdecl*) -> (Namespaces(nsdecl'*), maps)
+    with (nsdecl'*, maps) := <replaceconcat(replace)> nsdecl*
+
+  replaceconcat-in-signature(replace):
+      NameResolution(param*) -> (NameResolution(param'*), maps)
+    with (param'*, maps) := <replaceconcat(replace)> param*
+
+  replaceconcat-in-signature(replace):
+      Sorts(sortdecl*) -> (Sorts(sortdecl'*), maps)
+    with (sortdecl'*, maps) := <replaceconcat(replace)> sortdecl*
+
+  replaceconcat-in-signature(replace):
+      Constructors(opdecl*) -> (Constructors(opdecl'*), maps)
+    with (opdecl'*, maps) := <replaceconcat(replace)> opdecl*
 
 
 rules
@@ -79,41 +147,41 @@ rules
 
   normalize-scoped(replace,in-head,add-vars,to-c):
       Rule(lbl, head, body){a*} -> Rule(lbl, head', <mk-CExists>(bvs'', body'')){a*}
-    with (head', hmaps) := <in-head < collectom-map(replace) + !(<id>, [])> head;
+    with (head', hmaps) := <in-head < replaceom(replace) + !(<id>, [])> head;
          // variables in the removed terms which are not in the new head
          hvs := <raw-diff> (<map(Fst);all-vars> hmaps, <all-vars> head');
          body' := <filter(to-c);list-to-conj(|body)> hmaps;
-         (body'', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body';
+         (body'', bvs') := <replace-in-constraints(replace, add-vars, to-c)> body';
          bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end; raw-make-set> hvs
 
   normalize-scoped(replace,in-head,add-vars,to-c):
       LLam(ts, body){a*} -> LLam(ts', <mk-CExists>(bvs'', body'')){a*}
-    with (ts', tmaps) := <in-head < collectom-map(replace) + !(<id>, [])> ts;
+    with (ts', tmaps) := <in-head < replaceom(replace) + !(<id>, [])> ts;
          // variables in the removed terms which are not in the new head
          tvs := <raw-diff> (<map(Fst);all-vars> tmaps, <all-vars> ts');
          body'  := <filter(to-c);list-to-conj(|body)> tmaps;
-         (body'', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body';
+         (body'', bvs') := <replace-in-constraints(replace, add-vars, to-c)> body';
          bvs'' := <if add-vars then <conc> (bvs', <id>) else !bvs' end; raw-make-set> tvs
 
 
-  collect-map-in-constraints(replace,add-vars,to-c): CExists(vs, c) -> (c'', [])
-    with (c', vs') := <collect-map-in-constraints(replace,add-vars,to-c)> c
+  replace-in-constraints(replace,add-vars,to-c): CExists(vs, c) -> (c'', [])
+    with (c', vs') := <replace-in-constraints(replace,add-vars,to-c)> c
        ; vs'' := <if add-vars then <conc> (vs, <id>) else !vs end; raw-make-set> vs'
        ; c'' := <mk-CExists>(vs'', c')
 
-  collect-map-in-constraints(replace,add-vars,to-c): CConj(c1, c2) -> (c'', vs'')
-    with (c1', vs1') := <collect-map-in-constraints(replace,add-vars,to-c)> c1
-       ; (c2', vs2') := <collect-map-in-constraints(replace,add-vars,to-c)> c2
+  replace-in-constraints(replace,add-vars,to-c): CConj(c1, c2) -> (c'', vs'')
+    with (c1', vs1') := <replace-in-constraints(replace,add-vars,to-c)> c1
+       ; (c2', vs2') := <replace-in-constraints(replace,add-vars,to-c)> c2
        ; c'' := CConj(c1', c2')
        ; vs'' := <conc> (vs1', vs2')
 
-  collect-map-in-constraints(replace,add-vars,to-c): CTry(c, msg) -> (CTry(c'', msg), [])
-    with (c', vs') := <collect-map-in-constraints(replace,add-vars,to-c)> c
+  replace-in-constraints(replace,add-vars,to-c): CTry(c, msg) -> (CTry(c'', msg), [])
+    with (c', vs') := <replace-in-constraints(replace,add-vars,to-c)> c
        ; vs'' := <if add-vars then id else ![] end; raw-make-set> vs'
        ; c'' := <mk-CExists>(vs'', c')
 
-  collect-map-in-constraints(replace,add-vars,to-c): c -> (c'', vs'')
-    with (c', maps) := <collectbu-map(replace, not-a-scope)> c
+  replace-in-constraints(replace,add-vars,to-c): c -> (c'', vs'')
+    with (c', maps) := <replacebu(replace, not-a-scope)> c
        ; c'' := <filter(to-c);list-to-conj(|c')> maps
          // variables in the new term that were not already in the old one
        ; vs'' := <raw-diff> (<map(Snd);all-vars> maps, <all-vars> c)
@@ -131,11 +199,15 @@ rules // smart constructors for typed terms
 
   mk-Wlds = map(\ ty -> <mk-Wld(|ty)> \)
 
+  mk-fresh-Var = newname; mk-Var
+
   mk-fresh-Var(|ty) = newname; mk-Var(|ty)
 
   mk-fresh-Vars(|x) = map(\ ty -> <mk-fresh-Var(|ty)> x \)
 
   mk-Var(|ty): x -> <norm-set-ast-type(|ty)> Var(x)
+
+  mk-Var: x -> Var(x)
 
   mk-seq-Vars(|x) = map-with-index(\ (i, ty) -> <mk-Var(|ty)> $[[x][<int-to-string> i]] \)
 
@@ -161,13 +233,13 @@ rules // smart constructors for typed terms
 
   mk-List: ts -> <norm-set-ast-type(|ty)> List(ts)
     with tys := <map(norm-get-ast-type)> ts;
-         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         (<map(?ty')> tys <+ fail-warn-msg(|"List types do not agree"));
          ty := LIST(ty')
 
   mk-ListTail: (ts, t) -> <norm-set-ast-type(|ty)> ListTail(ts, t)
     with tys := <map(norm-get-ast-type)> ts;
          LIST(ty') := <norm-get-ast-type> t;
-         (<map(?ty')> tys <+ fatal-err(|"List types do not agree"));
+         (<map(?ty')> tys <+ fail-warn-msg(|"List types do not agree"));
          ty := LIST(ty')
 
   mk-LLam: (ps, c) -> <norm-set-ast-type(|ty)> LLam(ps, c)
@@ -177,6 +249,16 @@ rules // smart constructors for typed terms
   mk-As(|ty): (v, t) -> <norm-set-ast-type(|ty)> As(v, t)
 
   mk-Occurrence: (ns, us, p) -> <norm-set-ast-type(|OCCURRENCE())> StxOccurrence(ns, us, p)
+
+rules
+
+  fail-LLam = !LLam([], <fail-C>)
+
+  fail-C = !CFalse(Message(Error(), Str("Statix spec had errors"), NoOrigin()))
+
+  empty-LabelRE = !Empty()
+  
+  empty-LabelOrd = ![]
 
 rules
 

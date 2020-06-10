@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
@@ -44,28 +45,27 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         this.isComplete = isComplete;
     }
 
-    @Override public Env<S, L, D> resolve(S scope) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope));
+    @Override public Env<S, L, D> resolve(S scope, ICancel cancel) throws ResolutionException, InterruptedException {
+        return env(labelWF, Paths.empty(scope), cancel);
     }
 
-    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path) throws ResolutionException, InterruptedException {
-        return env_L(allLabels, re, path);
+    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
+            throws ResolutionException, InterruptedException {
+        return env_L(allLabels, re, path, cancel);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Env<S, L, D> env_L(Set<EdgeOrData<L>> L, LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_L(Set<EdgeOrData<L>> L, LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
-        if(Thread.interrupted()) {
-            throw new InterruptedException();
-        }
+        cancel.throwIfCancelled();
         final Env.Builder<S, L, D> env = Env.builder();
         final Set<EdgeOrData<L>> max_L = max(L);
         for(EdgeOrData<L> l : max_L) {
-            final Env<S, L, D> env1 = env_L(smaller(L, l), re, path);
+            final Env<S, L, D> env1 = env_L(smaller(L, l), re, path, cancel);
             env.addAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final Env<S, L, D> env2 = env_l(l, re, path);
+                final Env<S, L, D> env2 = env_l(l, re, path, cancel);
                 env.addAll(minus(env2, env1));
             }
         }
@@ -109,9 +109,9 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return env.build();
     }
 
-    private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
-        return l.matchInResolution(acc -> env_data(re, path), lbl -> env_edges(lbl, re, path));
+        return l.matchInResolution(acc -> env_data(re, path), lbl -> env_edges(lbl, re, path, cancel));
     }
 
     private Env<S, L, D> env_data(LabelWF<L> re, IScopePath<S, L> path)
@@ -129,7 +129,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return Env.of(Paths.resolve(path, datum));
     }
 
-    private Env<S, L, D> env_edges(L l, LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_edges(L l, LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
@@ -145,7 +145,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re, p.get()));
+                env.addAll(env(re, p.get(), cancel));
             }
         }
         return env.build();
