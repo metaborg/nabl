@@ -32,7 +32,7 @@ public abstract class AnalysisPrimitive extends NaBL2Primitive {
         final ITerm analysisTerm = terms.get(0);
         final List<ITerm> otherTerms = terms.stream().skip(1).collect(Collectors.toList());
         final IResult result = M.blobValue(IResult.class).match(analysisTerm)
-                .orElseThrow(() -> new IllegalArgumentException("Not a valid analysis term."));
+                .orElseThrow(() -> new IllegalArgumentException("Not a valid analysis term: " + analysisTerm));
         return call(result, term, otherTerms);
     }
 

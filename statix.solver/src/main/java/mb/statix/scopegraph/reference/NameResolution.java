@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -42,28 +43,27 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         this.isDataComplete = isDataComplete;
     }
 
-    @Override public Env<S, L, D> resolve(S scope) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope));
+    @Override public Env<S, L, D> resolve(S scope, ICancel cancel) throws ResolutionException, InterruptedException {
+        return env(labelWF, Paths.empty(scope), cancel);
     }
 
-    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path) throws ResolutionException, InterruptedException {
-        return env_L(labels, re, path);
+    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
+            throws ResolutionException, InterruptedException {
+        return env_L(labels, re, path, cancel);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Env<S, L, D> env_L(Set<L> L, LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_L(Set<L> L, LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
-        if(Thread.interrupted()) {
-            throw new InterruptedException();
-        }
+        cancel.throwIfCancelled();
         final Env.Builder<S, L, D> envBuilder = Env.builder();
         final Set<L> max_L = max(L);
         for(L l : max_L) {
-            final Env<S, L, D> env1 = env_L(smaller(L, l), re, path);
+            final Env<S, L, D> env1 = env_L(smaller(L, l), re, path, cancel);
             envBuilder.addAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final Env<S, L, D> env2 = env_l(l, re, path);
+                final Env<S, L, D> env2 = env_l(l, re, path, cancel);
                 envBuilder.addAll(minus(env2, env1));
             }
         }
@@ -106,18 +106,18 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return env.build();
     }
 
-    private Env<S, L, D> env_l(L l, LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_l(L l, LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
         if(scopeGraph.getEdgeLabels().contains(l)) {
-            return env_nonEOP(l, re, path);
+            return env_nonEOP(l, re, path, cancel);
         } else if(scopeGraph.getNoDataLabel().equals(l)) {
-            return env_EOP(re, path);
+            return env_EOP(re, path, cancel);
         } else {
             throw new IllegalStateException("Encountered unknown label " + l);
         }
     }
 
-    private Env<S, L, D> env_EOP(LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_EOP(LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
             return Env.of();
@@ -143,7 +143,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return env.build();
     }
 
-    private Env<S, L, D> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path)
+    private Env<S, L, D> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
@@ -158,7 +158,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         for(S nextScope : getEdges(re, path, l)) {
             final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
             if(p.isPresent()) {
-                env.addAll(env(re, p.get()));
+                env.addAll(env(re, p.get(), cancel));
             }
         }
         return env.build();

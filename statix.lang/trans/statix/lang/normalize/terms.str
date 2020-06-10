@@ -32,7 +32,7 @@ rules
   normalize-ast-ids = CAstProperty(normalize-term-or-id, id, id, id)
 
   normalize-term-or-id: t -> t'
-    with ty := <norm-get-ast-type> t
+    where ty := <norm-get-ast-type> t
     where <not(?AST_ID() + ?SCOPE() + nabl2--is-var + nabl2--is-wld)> ty
     with t' := <norm-set-ast-type(|AST_ID())> AstIdOp(t)
 
@@ -40,8 +40,9 @@ rules
 rules
 
   replace-pattern: t@Wld() -> v
-    with ty := <norm-get-ast-type> t
-       ; v := <mk-fresh-Var(|ty)>("wld")
+    where ty := <norm-get-ast-type> t
+        ; v := <mk-fresh-Var(|ty)>("wld")
+       <+ v := <mk-fresh-Var>("wld")
 
   pattern-to-c: (Wld(), _) -> <fail>
 
@@ -58,6 +59,7 @@ rules
   replace-term: t@NewOp() -> v
     with ty := <norm-get-ast-type> t
        ; v := <mk-fresh-Var(|ty)>("new")
+      <+ v := <mk-fresh-Var>("new")
 
   term-to-c: (NewOp(), v) -> CNew([v])
 
@@ -65,6 +67,7 @@ rules
   replace-term: t@AstIdOp(_) -> v
     with ty := <norm-get-ast-type> t
        ; v := <mk-fresh-Var(|ty)>("astId")
+      <+ v := <mk-fresh-Var>("astId")
 
   term-to-c: (AstIdOp(t), v) -> CAstId(t, v)
 
@@ -72,5 +75,6 @@ rules
   replace-term: t@ArithOp(ae) -> v
     with ty := <norm-get-ast-type> t
        ; v := <mk-fresh-Var(|ty)>("n")
+      <+ v := <mk-fresh-Var>("n")
 
   term-to-c: (ArithOp(ae), v) -> CArith(v, Equal(), ae, NoMessage())

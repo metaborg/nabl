@@ -1,0 +1,16 @@
+module issues
+
+language StatixLang
+
+test unexpected non-termination with singe-match optimistic unfolding [[
+  // Non-termination occurs if `ruleWithoutBaseCase` is unfolded
+  // before `xs == []` is seen. This optimistically introduces `xs == [x1|xs1]`
+  // and continues unfolding. After the first unfolding, processing `xs == []`
+  // does not even stop the recursion, because it leaves `xs1` unconstrained.
+  resolve {xs}
+    ruleWithoutBaseCase(xs), xs == []
+  rules
+    ruleWithoutBaseCase : list(int)
+    ruleWithoutBaseCase([x|xs]) :- ruleWithoutBaseCase(xs).
+]] analysis succeeds
+// run evaluate-test to SUCCEEDS()

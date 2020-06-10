@@ -1,6 +1,7 @@
 package mb.statix.scopegraph;
 
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.task.ICancel;
 
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
@@ -11,7 +12,7 @@ import mb.statix.scopegraph.reference.ResolutionException;
 
 public interface INameResolution<S extends D, L, D> {
 
-    Env<S, L, D> resolve(S scope) throws ResolutionException, InterruptedException;
+    Env<S, L, D> resolve(S scope, ICancel cancel) throws ResolutionException, InterruptedException;
 
     interface Builder<S extends D, L, D> {
 

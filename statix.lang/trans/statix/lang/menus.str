@@ -63,8 +63,7 @@ rules // Normalization
          result   := <rename-module(|"normalized");pp-Statix-string> ast
 
   get-normalized-ast: (_, _, ast, path, project-path) -> ast'
-    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
-          <not(nabl2-analysis-has-errors)> a
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
     with ast' := <normalize(|a)> ast
 
 rules // Explicit signature rules
