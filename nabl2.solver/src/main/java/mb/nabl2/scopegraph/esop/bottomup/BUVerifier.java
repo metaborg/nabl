@@ -1,16 +1,11 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
-import org.metaborg.util.log.LoggingOutputStream;
 import org.metaborg.util.time.AggregateTimer;
 
 import io.usethesource.capsule.Set;
@@ -29,8 +24,8 @@ public class BUVerifier {
         try {
             logger.info("resolving with bottom-up resolution");
             AggregateTimer timer = new AggregateTimer(false);
-            final BUNameResolution<Scope, Label, Occurrence> nameResolution =
-                    BUNameResolution.of(solution.scopeGraph(), solution.config().getResolutionParams());
+            final BUNameResolution<Scope, Label, Occurrence> nameResolution = BUNameResolution.of(solution.scopeGraph(),
+                    solution.config().getResolutionParams(), (s, l) -> false);
             logger.info("verifying {} resolve entries", solution.nameResolutionCache().resolutionEntries().size());
             for(Entry<Occurrence, Collection<IResolutionPath<Scope, Label, Occurrence>>> entry : solution
                     .nameResolutionCache().resolutionEntries().entrySet()) {
@@ -56,11 +51,11 @@ public class BUVerifier {
                 timer.stop();
                 verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
             }
-//            try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
-//                nameResolution.write(out);
-//            } catch(IllegalArgumentException | IOException e) {
-//                logger.error("Failed to write name resolution");
-//            }
+            //            try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
+            //                nameResolution.write(out);
+            //            } catch(IllegalArgumentException | IOException e) {
+            //                logger.error("Failed to write name resolution");
+            //            }
             logger.info("bottom-up resolution took {} s",
                     (double) timer.total() / (double) TimeUnit.NANOSECONDS.convert(1l, TimeUnit.SECONDS));
         } catch(Exception e) {

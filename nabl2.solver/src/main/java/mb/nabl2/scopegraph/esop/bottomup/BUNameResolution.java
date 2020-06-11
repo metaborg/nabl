@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -32,6 +33,7 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IDeclPath;
+import mb.nabl2.scopegraph.path.IOpenPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IStep;
 import mb.nabl2.scopegraph.terms.Label;
@@ -53,34 +55,36 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     private static enum Kind {
         VISIBLE, // top-level and import paths are ordered
-        REACHABLE, // top-level paths are unordered, import paths are ordered
-        IMPORT // top-level and import paths are unordered
+        REACHABLE // top-level paths are unordered, import paths are ordered
     }
 
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
-    private final Iterable<L> labels;
+    private final L dataLabel;
+    private final Iterable<L> edgeLabels;
     private final IRegExpMatcher<L> wf;
     private final ImmutableMap<Kind, BUComparator<S, L, O>> orders;
+    private final Predicate2<S, L> isOpen;
 
-    public BUNameResolution(IEsopScopeGraph<S, L, O, ?> scopeGraph, Iterable<L> labels, L labelD, IRegExp<L> wf,
-            IRelation<L> order) {
+    public BUNameResolution(IEsopScopeGraph<S, L, O, ?> scopeGraph, Iterable<L> edgeLabels, L dataLabel, IRegExp<L> wf,
+            IRelation<L> order, Predicate2<S, L> isOpen) {
         this.scopeGraph = scopeGraph;
-        this.labels = labels;
+        this.edgeLabels = edgeLabels;
+        this.dataLabel = dataLabel;
         this.wf = RegExpMatcher.create(wf);
         final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         // @formatter:off
         this.orders = ImmutableMap.of(
-            Kind.VISIBLE,   new BUComparator<>(labelD, order, order),
-            Kind.REACHABLE, new BUComparator<>(labelD, noOrder, order),
-            Kind.IMPORT,    new BUComparator<>(labelD, noOrder, noOrder)
+            Kind.VISIBLE,   new BUComparator<>(dataLabel, order, order),
+            Kind.REACHABLE, new BUComparator<>(dataLabel, noOrder, order)
         );
         // @formatter:on
+        this.isOpen = isOpen;
     }
 
     public static BUNameResolution<Scope, Label, Occurrence> of(IEsopScopeGraph<Scope, Label, Occurrence, ?> scopeGraph,
-            ResolutionParameters params) {
+            ResolutionParameters params, Predicate2<Scope, Label> isOpen) {
         return new BUNameResolution<>(scopeGraph, params.getLabels(), params.getLabelD(), params.getPathWf(),
-                params.getSpecificityOrder());
+                params.getSpecificityOrder(), isOpen);
     }
 
     @Override public java.util.Set<O> getResolvedRefs() {
@@ -174,28 +178,41 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             }
             initedEnvs.__insert(env);
             envPaths.__put(env, new BUEnv<>(orders.get(env.kind)::compare));
+            final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
+            final Set.Transient<IOpenPath<S, L, O>> openPaths = Set.Transient.of();
             if(env.wf.isAccepting()) {
-                final Set.Immutable<IDeclPath<S, L, O>> declPaths = scopeGraph.getDecls().inverse().get(env.scope)
-                        .stream().map(d -> Paths.decl(Paths.<S, L, O>empty(env.scope), d))
-                        .collect(CapsuleCollectors.toSet());
-                addTask(new EnvTask(env, new BUChanges<>(declPaths, Set.Immutable.of())));
+                if(isOpen.test(env.scope, dataLabel)) {
+
+                } else {
+                    for(O d : scopeGraph.getDecls().inverse().get(env.scope)) {
+                        declPaths.__insert(Paths.decl(Paths.<S, L, O>empty(env.scope), d));
+                    }
+                }
+            } else {
+                openPaths.__insert(Paths.open(Paths.<S, L, O>empty(env.scope), dataLabel));
             }
-            for(L l : labels) {
+            for(L l : edgeLabels) {
                 IRegExpMatcher<L> wf2 = env.wf.match(l);
                 if(wf2.isEmpty()) {
                     continue;
                 }
-                for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
-                    final EnvKey srcEnv = new EnvKey(env.kind, scope, wf2);
-                    initEnv(srcEnv);
-                    addBackEdge(srcEnv, Paths.direct(env.scope, l, srcEnv.scope), env);
-                }
-                for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
-                    final RefKey srcRef = new RefKey(Kind.IMPORT, ref);
-                    initRef(srcRef);
-                    addBackImport(srcRef, l, wf2, env);
+                if(isOpen.test(env.scope, l)) {
+                    openPaths.__insert(Paths.open(Paths.<S, L, O>empty(env.scope), l));
+                } else {
+                    for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
+                        final EnvKey srcEnv = new EnvKey(env.kind, scope, wf2);
+                        initEnv(srcEnv);
+                        addBackEdge(srcEnv, Paths.direct(env.scope, l, srcEnv.scope), env);
+                    }
+                    for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
+                        final RefKey srcRef = new RefKey(Kind.VISIBLE, ref);
+                        initRef(srcRef);
+                        addBackImport(srcRef, l, wf2, env);
+                    }
                 }
             }
+            addTask(new EnvTask(env,
+                    new BUChanges<>(declPaths.freeze(), Set.Immutable.of(), openPaths.freeze(), Set.Immutable.of())));
         }
 
         private void initRef(RefKey ref) {
@@ -243,12 +260,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = envPaths.get(env).apply(changes);
                 for(RefKey ref : backrefs.get(env)) {
                     final BUChanges<S, L, O, IResolutionPath<S, L, O>> refChanges =
-                            newChanges.flatMap(p -> ofOpt(Paths.resolve(ref.ref, p)));
+                            newChanges.flatMap(p -> ofOpt(Paths.resolve(ref.ref, p)), Stream::of);
                     addTask(new RefTask(ref, refChanges));
                 }
                 for(Entry<IStep<S, L, O>, EnvKey> dstEnv : backedges.get(env)) {
-                    final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
-                            newChanges.flatMap(p -> ofOpt(Paths.append(dstEnv.getKey(), p)));
+                    final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges.flatMap(
+                            p -> ofOpt(Paths.append(dstEnv.getKey(), p)), p -> ofOpt(Paths.append(dstEnv.getKey(), p)));
                     addTask(new EnvTask(dstEnv.getValue(), envChanges));
                 }
             }
@@ -269,7 +286,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 initRef(ref);
                 final BUChanges<S, L, O, IResolutionPath<S, L, O>> newChanges = refPaths.get(ref).apply(changes);
                 for(Entry<Tuple2<L, IRegExpMatcher<L>>, EnvKey> entry : backimports.get(ref)) {
-                    for(IResolutionPath<S, L, O> p : newChanges.added()) {
+                    for(IResolutionPath<S, L, O> p : newChanges.addedPaths()) {
                         for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry.getKey()._1())) {
                             final EnvKey env = new EnvKey(ref.kind, s, entry.getKey()._2());
                             initEnv(env);
@@ -277,7 +294,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                                     entry.getValue());
                         }
                     }
-                    for(IResolutionPath<S, L, O> p : newChanges.removed()) {
+                    for(IResolutionPath<S, L, O> p : newChanges.removedPaths()) {
                         for(S s : scopeGraph.getExportEdges().get(p.getDeclaration(), entry.getKey()._1())) {
                             final EnvKey env = new EnvKey(ref.kind, s, entry.getKey()._2());
                             initEnv(env); // necessary?
@@ -297,7 +314,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Set.Immutable<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
                 return ofOpt(Paths.append(st, p));
             }).collect(CapsuleCollectors.toSet());
-            addTask(new EnvTask(dstEnv, new BUChanges<>(paths, Set.Immutable.of())));
+            final Set.Immutable<IOpenPath<S, L, O>> open = envPaths.get(srcEnv).openSet().stream().flatMap(p -> {
+                return ofOpt(Paths.append(st, p));
+            }).collect(CapsuleCollectors.toSet());
+            addTask(new EnvTask(dstEnv, new BUChanges<>(paths, Set.Immutable.of(), open, Set.Immutable.of())));
         }
 
         private void removeBackEdge(EnvKey srcEnv, IStep<S, L, O> st, EnvKey dstEnv) {
@@ -307,14 +327,18 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Set.Immutable<IDeclPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
                 return ofOpt(Paths.append(st, p));
             }).collect(CapsuleCollectors.toSet());
-            addTask(new EnvTask(dstEnv, new BUChanges<>(Set.Immutable.of(), paths)));
+            final Set.Immutable<IOpenPath<S, L, O>> open = envPaths.get(srcEnv).openSet().stream().flatMap(p -> {
+                return ofOpt(Paths.append(st, p));
+            }).collect(CapsuleCollectors.toSet());
+            addTask(new EnvTask(dstEnv, new BUChanges<>(Set.Immutable.of(), paths, Set.Immutable.of(), open)));
         }
 
         private void addBackImport(RefKey srcRef, L l, IRegExpMatcher<L> wf, EnvKey dstEnv) {
-            if(!srcRef.kind.equals(Kind.IMPORT)) {
+            if(!srcRef.kind.equals(Kind.VISIBLE)) {
                 throw new AssertionError();
             }
             backimports.put(srcRef, Tuple2.of(l, wf), dstEnv);
+            // FIXME This is not safe when there are open edges!
             refPaths.get(srcRef).pathSet().stream().forEach(p -> {
                 scopeGraph.getExportEdges().get(p.getDeclaration(), l).forEach(ss -> {
                     final EnvKey srcEnv = new EnvKey(dstEnv.kind, ss, wf);
@@ -330,7 +354,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             final Set.Immutable<IResolutionPath<S, L, O>> paths = envPaths.get(srcEnv).pathSet().stream().flatMap(p -> {
                 return ofOpt(Paths.resolve(dstRef.ref, p));
             }).collect(CapsuleCollectors.toSet());
-            addTask(new RefTask(dstRef, new BUChanges<>(paths, Set.Immutable.of())));
+            final Set.Immutable<IOpenPath<S, L, O>> open =
+                    envPaths.get(srcEnv).openSet().stream().collect(CapsuleCollectors.toSet());
+            addTask(new RefTask(dstRef, new BUChanges<>(paths, Set.Immutable.of(), open, Set.Immutable.of())));
         }
 
         private void addTask(Task t) {

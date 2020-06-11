@@ -5,39 +5,60 @@ import java.util.stream.Stream;
 import org.metaborg.util.functions.Function1;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
+import mb.nabl2.scopegraph.path.IOpenPath;
 
 public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
-    private final Set.Immutable<P> added;
-    private final Set.Immutable<P> removed;
+    private final Set.Immutable<P> addedPaths;
+    private final Set.Immutable<P> removedPaths;
 
-    BUChanges(Immutable<P> added, Immutable<P> removed) {
-        this.added = added;
-        this.removed = removed;
+    private final Set.Immutable<IOpenPath<S, L, O>> addedOpen;
+    private final Set.Immutable<IOpenPath<S, L, O>> removedOpen;
+
+    BUChanges(Set.Immutable<P> addedPaths, Set.Immutable<P> removedPaths, Set.Immutable<IOpenPath<S, L, O>> addedOpen,
+            Set.Immutable<IOpenPath<S, L, O>> removedOpen) {
+        this.addedPaths = addedPaths;
+        this.removedPaths = removedPaths;
+        this.addedOpen = addedOpen;
+        this.removedOpen = removedOpen;
     }
 
     public boolean isEmpty() {
-        return added.isEmpty() && removed.isEmpty();
+        return addedPaths.isEmpty() && removedPaths.isEmpty();
     }
 
-    public Set.Immutable<P> added() {
-        return added;
+    public Set.Immutable<P> addedPaths() {
+        return addedPaths;
     }
 
-    public Set.Immutable<P> removed() {
-        return removed;
+    public Set.Immutable<P> removedPaths() {
+        return removedPaths;
     }
 
-    public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q> flatMap(Function1<P, Stream<Q>> mapper) {
-        Set.Immutable<Q> mappedAdded = added.stream().flatMap(mapper::apply).collect(CapsuleCollectors.toSet());
-        Set.Immutable<Q> mappedRemoved = removed.stream().flatMap(mapper::apply).collect(CapsuleCollectors.toSet());
-        return new BUChanges<>(mappedAdded, mappedRemoved);
+    public Set.Immutable<IOpenPath<S, L, O>> addedOpen() {
+        return addedOpen;
+    }
+
+    public Set.Immutable<IOpenPath<S, L, O>> removedOpen() {
+        return removedOpen;
+    }
+
+    public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q> flatMap(Function1<P, Stream<Q>> pathMapper,
+            Function1<IOpenPath<S, L, O>, Stream<IOpenPath<S, L, O>>> openMapper) {
+        final Set.Immutable<Q> mappedAddedPaths =
+                addedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
+        final Set.Immutable<Q> mappedRemovedPaths =
+                removedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
+        final Set.Immutable<IOpenPath<S, L, O>> mappedAddedOpen =
+                addedOpen.stream().flatMap(openMapper::apply).collect(CapsuleCollectors.toSet());
+        final Set.Immutable<IOpenPath<S, L, O>> mappedRemovedOpen =
+                removedOpen.stream().flatMap(openMapper::apply).collect(CapsuleCollectors.toSet());
+        return new BUChanges<>(mappedAddedPaths, mappedRemovedPaths, mappedAddedOpen, mappedRemovedOpen);
     }
 
 }
