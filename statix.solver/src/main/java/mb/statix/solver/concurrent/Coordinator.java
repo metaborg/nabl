@@ -3,7 +3,6 @@ package mb.statix.solver.concurrent;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -51,6 +50,8 @@ import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.SetDatum;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
+import mb.statix.solver.concurrent.util.CompletableFuture;
+import mb.statix.solver.concurrent.util.IFuture;
 
 public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
@@ -63,7 +64,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
 
     final ICancel cancel;
-    
+
     public Coordinator(S root, Iterable<L> edgeLabels, ScopeImpl<S> scopeImpl, ICancel cancel) {
         this.scopeImpl = scopeImpl;
         this.rootScope = root;
@@ -117,7 +118,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         return !initClients.isEmpty() || !activeClients.isEmpty();
     }
 
-    public CompletableFuture<CoordinatorResult<S, L, D>> run(ExecutorService executorService) {
+    public IFuture<CoordinatorResult<S, L, D>> run(ExecutorService executorService) {
         executorService.submit(() -> {
             try {
                 run();
@@ -307,7 +308,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     }
 
     private void detectDeadLock() {
-        if(states.inverse().get(State.INIT).isEmpty()
+        if(states.inverse().get(State.INIT).isEmpty() && !states.inverse().get(State.ACTIVE).isEmpty()
                 && states.inverse().get(State.ACTIVE).stream().allMatch(waiting::contains)) {
             logger.info("DEADLOCK: no init clients, and all active clients are waiting");
             for(Tuple2<S, EdgeOrData<L>> key : delays.keySet()) {

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,6 +74,8 @@ import mb.statix.solver.ITermProperty;
 import mb.statix.solver.ITermProperty.Multiplicity;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.concurrent.util.CompletableFuture;
+import mb.statix.solver.concurrent.util.IFuture;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.persistent.BagTermProperty;
@@ -103,17 +105,24 @@ public class StatixSolver {
     private final IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph;
 
     private IState.Immutable state;
-    private final ICompleteness.Transient completeness;
+    private ICompleteness.Immutable completeness;
     private Map<ITermVar, ITermVar> existentials = null;
     private final List<ITermVar> updatedVars = Lists.newArrayList();
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
-    private final CompletableFuture<SolverResult> result = new CompletableFuture<>();
-    private int pendingScopeGraph = 0;
+    private final AtomicInteger ephemeralActiveConstraints = new AtomicInteger(0);
+    private final CompletableFuture<SolverResult> result;
 
 
     public StatixSolver(String resource, IConstraint constraint, Spec spec, IDebugContext debug, IProgress progress,
             ICancel cancel, IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph) {
+        this(constraint, spec, mb.statix.solver.persistent.State.of(spec).withResource(resource),
+                Completeness.Immutable.of(spec), debug, progress, cancel, scopeGraph);
+    }
+
+    public StatixSolver(IConstraint constraint, Spec spec, IState.Immutable state, ICompleteness.Immutable completeness,
+            IDebugContext debug, IProgress progress, ICancel cancel,
+            IScopeGraphFacade<Scope, ITerm, ITerm> scopeGraph) {
         this.spec = spec;
         this.constraints = new BaseConstraintStore(debug);
         this.constraints.add(constraint);
@@ -121,16 +130,18 @@ public class StatixSolver {
         this.progress = progress;
         this.cancel = cancel;
         this.scopeGraph = scopeGraph;
-        this.state = mb.statix.solver.persistent.State.of(spec).withResource(resource);
-        this.completeness = Completeness.Transient.of(spec);
-        completeness.add(constraint, state.unifier());
+        this.state = state;
+        final ICompleteness.Transient _completeness = completeness.melt();
+        _completeness.add(constraint, this.state.unifier());
+        this.completeness = _completeness.freeze();
+        this.result = new CompletableFuture<>();
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // driver
     ///////////////////////////////////////////////////////////////////////////
 
-    public CompletableFuture<SolverResult> solve(Scope root) {
+    public IFuture<SolverResult> solve(Scope root) {
         try {
             scopeGraph.openRootEdges(root, getOpenEdges(root));
             fixedpoint();
@@ -140,23 +151,43 @@ public class StatixSolver {
         return result;
     }
 
+    public IFuture<SolverResult> entail() {
+        try {
+            fixedpoint();
+        } catch(Throwable e) {
+            result.completeExceptionally(e);
+        }
+        return result;
+    }
+
     private <R> void solveK(K<R> k, R r, Throwable ex) {
+        // FIXME This can be called immediately for entailment, if the try is not delayed
+        //       on queries. In that case, fixedpoint is called within another fixedpoint
+        //       context. This seems confusing at best, and likely error-prone.
+        //       The mechanism should be more similar to other delays, but now delayed on
+        //       a future. This delay cannot be serialized, if there are future-delayed
+        //       constraints left at the end, there was a programming error.
+        //       Many new constraints are hidden, because they are part of the call
+        //       stack and never added to the constraint store. Therefore, the nested
+        //       fixed point sees no remaining constraints in the store, and
+        //       concludes we are done. And then the original fixedpoint continues, actually
+        //       solves many constraints, but the result is lost.
+        debug.info("Solving continuation");
         try {
             k.k(r, ex, MAX_DEPTH);
             fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
         }
+        debug.info("Solved continuation");
     }
 
     private void fixedpoint() throws InterruptedException {
-        if(result.isDone()) {
-            throw new IllegalStateException("Cannot run when already completed.");
-        }
         debug.info("Solving constraints");
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
+            ephemeralActiveConstraints.incrementAndGet();
             k(constraint, MAX_DEPTH);
         }
 
@@ -167,12 +198,17 @@ public class StatixSolver {
                     "Expected no remaining active constraints, but got " + constraints.activeSize());
         }
 
-        if(pendingScopeGraph == 0) {
-            result.complete(finish());
+        debug.info("Has ephermeral: {}, pending: {}, done: {}", ephemeralActiveConstraints.get(),
+                scopeGraph.hasPending(), result.isDone());
+        if(ephemeralActiveConstraints.get() == 0 && !scopeGraph.hasPending() && !result.isDone()) {
+            debug.info("Finished.");
+            result.complete(finishSolve());
+        } else {
+            debug.info("Not finished.");
         }
     }
 
-    public SolverResult finish() {
+    private SolverResult finishSolve() {
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         debug.info("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
@@ -206,7 +242,9 @@ public class StatixSolver {
         // updates from unified variables
         if(!updatedVars.isEmpty()) {
             releaseDelayedActions(updatedVars);
-            completeness.updateAll(updatedVars, unifier);
+            final ICompleteness.Transient _completeness = completeness.melt();
+            _completeness.updateAll(updatedVars, unifier);
+            this.completeness = _completeness.freeze();
             constraints.activateFromVars(updatedVars, debug);
             this.updatedVars.addAll(updatedVars);
         }
@@ -214,19 +252,24 @@ public class StatixSolver {
         // add new constraints
         if(!newConstraints.isEmpty()) {
             // no constraints::addAll, instead recurse immediately below
-            completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
+            final ICompleteness.Transient _completeness = completeness.melt();
+            _completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
+            this.completeness = _completeness.freeze();
             if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
                 subDebug.info("Simplified to:");
                 for(IConstraint newConstraint : newConstraints) {
                     subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
                 }
             }
+            ephemeralActiveConstraints.addAndGet(newConstraints.size());
         }
 
         // add delayed constraints
         if(!delayedConstraints.isEmpty()) {
             delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
-            completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
+            final ICompleteness.Transient _completeness = completeness.melt();
+            _completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
+            this.completeness = _completeness.freeze();
             if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
                 subDebug.info("Delayed:");
                 for(IConstraint delayedConstraint : delayedConstraints.values()) {
@@ -236,6 +279,7 @@ public class StatixSolver {
         }
 
         removeCompleteness(constraint);
+        ephemeralActiveConstraints.decrementAndGet();
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
@@ -256,7 +300,6 @@ public class StatixSolver {
 
     private Unit delay(IConstraint c, IState.Immutable newState, Delay delay, int fuel) throws InterruptedException {
         if(!delay.criticalEdges().isEmpty()) {
-            // FIXME This case should not happen anymore
             debug.error("FIXME: query {} failed on critical edges {}", c.toString(state.unifier()::toString),
                     delay.criticalEdges());
             return fail(c);
@@ -265,10 +308,13 @@ public class StatixSolver {
                     .collect(CapsuleCollectors.toSet());
             final Set.Immutable<ITermVar> foreignVars = Set.Immutable.subtract(vars, state.vars());
             if(!foreignVars.isEmpty()) {
-                // FIXME This case should not happen, but better way of handling foreign variables is necessary
                 debug.error("FIXME: query {} failed on foreign vars {}", c.toString(state.unifier()::toString),
                         foreignVars);
                 return fail(c);
+            } else if(vars.isEmpty()) {
+                debug.info("query {} delayed on no vars, rescheduling", c.toString(state.unifier()::toString));
+                return success(c, newState, ImmutableSet.of(), ImmutableList.of(c), ImmutableMap.of(delay, c),
+                        ImmutableMap.of(), fuel);
             } else {
                 debug.info("query {} delayed on vars {}", c.toString(state.unifier()::toString), vars);
                 return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c),
@@ -277,31 +323,33 @@ public class StatixSolver {
         }
     }
 
-    private <R> Unit successFuture(IConstraint c, IState.Immutable newState, CompletableFuture<R> future, K<R> k,
-            int fuel) throws InterruptedException {
-        pendingScopeGraph += 1;
+    private <R> Unit future(IConstraint c, IState.Immutable newState, IFuture<R> future, K<R> k, int fuel)
+            throws InterruptedException {
         future.handle((r, ex) -> {
-            pendingScopeGraph -= 1;
             solveK(k, r, ex);
             return Unit.unit;
         });
-        return success(c, state, fuel);
+        return Unit.unit;
     }
 
     private Unit fail(IConstraint constraint) throws InterruptedException {
         failed.put(constraint, MessageUtil.findClosestMessage(constraint));
         removeCompleteness(constraint);
+        ephemeralActiveConstraints.decrementAndGet();
         return Unit.unit;
     }
 
     private void removeCompleteness(IConstraint constraint) throws InterruptedException {
-        final java.util.Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
+        final ICompleteness.Transient _completeness = completeness.melt();
+        final java.util.Set<CriticalEdge> removedEdges = _completeness.remove(constraint, state.unifier());
         for(CriticalEdge criticalEdge : removedEdges) {
             closeEdge(criticalEdge);
         }
+        this.completeness = _completeness.freeze();
     }
 
     private Unit queue(IConstraint constraint) {
+        ephemeralActiveConstraints.decrementAndGet();
         constraints.add(constraint);
         return Unit.unit;
     }
@@ -437,7 +485,7 @@ public class StatixSolver {
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
                 final List<ITerm> labels = getOpenEdges(scopeTerm);
 
-                final CompletableFuture<Scope> futureScope =
+                final IFuture<Scope> futureScope =
                         scopeGraph.freshScope(name, labels, ImmutableList.of(Access.INTERNAL, Access.EXTERNAL));
                 final K<Scope> k = (scope, ex, fuel) -> {
                     if(ex != null) {
@@ -450,7 +498,7 @@ public class StatixSolver {
                     final IConstraint eq = new CEqual(scopeTerm, scope, c);
                     return successNew(c, state, ImmutableList.of(eq), fuel);
                 };
-                return successFuture(c, state, futureScope, k, fuel);
+                return future(c, state, futureScope, k, fuel);
             }
 
             @Override public Unit caseResolveQuery(CResolveQuery c) throws InterruptedException {
@@ -473,11 +521,11 @@ public class StatixSolver {
                 final LabelOrder<ITerm> labelOrder = cq.getLabelOrder(min.getLabelOrder());
                 final DataLeq<ITerm> dataEquiv = cq.getDataEquiv(min.getDataEquiv());
 
-                final CompletableFuture<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future =
+                final IFuture<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future =
                         scopeGraph.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
                 final K<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel) -> {
                     if(ex != null) {
-                        // pattern matching, not for the faint of heart
+                        // pattern matching for the brave and stupid
                         try {
                             throw ex;
                         } catch(ResolutionDelayException rde) {
@@ -498,7 +546,7 @@ public class StatixSolver {
                         return successNew(c, state, ImmutableList.of(C), fuel);
                     }
                 };
-                return successFuture(c, state, future, k, fuel);
+                return future(c, state, future, k, fuel);
             }
 
             @Override public Unit caseTellEdge(CTellEdge c) throws InterruptedException {
@@ -594,20 +642,33 @@ public class StatixSolver {
             }
 
             @Override public Unit caseTry(CTry c) throws InterruptedException {
-                return fail(c);
-                // TODO Implement try/entailment that supports queries
-                /*
-                try {
-                    if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext())) {
-                        return success(c, state, fuel);
+                final IDebugContext subDebug = debug.subContext();
+                final IState.Immutable subState = state.withResource(state.resource() + "#try");
+                final StatixSolver subSolver = new StatixSolver(c.constraint(), spec, subState, completeness, subDebug,
+                        progress, cancel, scopeGraph.getSubScopeGraph());
+                final IFuture<SolverResult> subResult = subSolver.entail();
+                final K<SolverResult> k = (r, ex, fuel) -> {
+                    if(ex != null) {
+                        debug.error("try {} failed", ex, c.toString(state.unifier()::toString));
+                        return fail(c);
                     } else {
-                        return fail(c, state);
+                        try {
+                            // check entailment w.r.t. the initial substate, not the current state: otherwise,
+                            // some variables may be treated as external while they are not
+                            if(Solver.entails(subState, r, subDebug)) {
+                                debug.info("constraint {} entailed", c.toString(state.unifier()::toString));
+                                return success(c, state, fuel);
+                            } else {
+                                debug.info("constraint {} not entailed", c.toString(state.unifier()::toString));
+                                return fail(c);
+
+                            }
+                        } catch(Delay delay) {
+                            return delay(c, state, delay, fuel);
+                        }
                     }
-                } catch(Delay e) {
-                    params.debug().info("Try delayed: {}", e.getMessage());
-                    return successDelay(c, state, e, fuel);
-                }
-                */
+                };
+                return future(c, state, subResult, k, fuel);
             }
 
             @Override public Unit caseUser(CUser c) throws InterruptedException {

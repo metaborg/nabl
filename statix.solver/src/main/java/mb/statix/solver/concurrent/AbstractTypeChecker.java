@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -41,6 +40,9 @@ import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.SetDatum;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
+import mb.statix.solver.concurrent.util.CompletableFuture;
+import mb.statix.solver.concurrent.util.ICompletable;
+import mb.statix.solver.concurrent.util.IFuture;
 
 public abstract class AbstractTypeChecker<S, L, D, R>
         implements ClientMessage.Cases<S, L, D>, IScopeGraphFacade<S, L, D>, ITypeChecker<S, L, D, R> {
@@ -56,18 +58,19 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     private int lastMessageId = 0;
 
     private final Coordinator<S, L, D> coordinator;
-    private final CompletableFuture<R> pendingResult = new CompletableFuture<>();
+    private final CompletableFuture<R> pendingResult;
     private State state;
     private boolean waiting;
 
-    private final Map<Long, CompletableFuture<S>> pendingScopes = Maps.newHashMap();
-    private final Map<Long, CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>>> pendingQueries =
-            Maps.newHashMap();
+    private int pendingCount = 0;
+    private final Map<Long, ICompletable<S>> pendingScopes = Maps.newHashMap();
+    private final Map<Long, ICompletable<java.util.Set<IResolutionPath<S, L, D>>>> pendingQueries = Maps.newHashMap();
     private final Multimap<S, EdgeOrData<L>> openEdges = HashMultimap.create();
 
     public AbstractTypeChecker(String resource, Coordinator<S, L, D> coordinator) {
         this.resource = resource;
         this.coordinator = coordinator;
+        this.pendingResult = new CompletableFuture<>();
         setState(State.INIT);
         this.waiting = false;
         coordinator.register(this);
@@ -79,7 +82,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     // required interface, implemented by client
 
-    @Override public abstract CompletableFuture<R> run(S root) throws InterruptedException;
+    @Override public abstract IFuture<R> run(S root) throws InterruptedException;
 
     // misc
 
@@ -88,10 +91,10 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         this.state = state;
     }
 
-    public final CompletableFuture<R> run(ExecutorService executor) {
+    public final IFuture<R> run(ExecutorService executor) {
         executor.submit(() -> {
             try {
-                run();
+                messageLoop();
             } catch(Throwable e) {
                 failed(e);
             }
@@ -114,7 +117,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     // message handling
 
-    final void run() throws InterruptedException {
+    private final void messageLoop() throws InterruptedException {
         while(inState(State.INIT, State.ACTIVE)) {
             if(inbox.isEmpty()) {
                 logger.info("client {} suspended: pending {} scopes, {} queries, {} open edges", this,
@@ -142,6 +145,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
             if(ex != null) {
                 failed(ex);
             } else {
+                logger.info("client {} completed result: {}", ex, this, r);
                 done(r);
             }
             return Unit.unit;
@@ -203,6 +207,13 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     // provided interface for scope graphs, called by client
 
+    @Override public boolean hasPending() {
+        boolean hasPending = pendingCount > 0;
+        logger.error("client {} has {} pending ({}): {} scopes, {} queries", this, pendingCount, hasPending,
+                pendingScopes.size(), pendingQueries.size());
+        return hasPending;
+    }
+
     @Override public void openRootEdges(S root, Iterable<L> labels) {
         assertInState(State.INIT);
         setState(State.ACTIVE);
@@ -210,13 +221,16 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         post(RootEdges.of(labels));
     }
 
-    @Override public CompletableFuture<S> freshScope(String name, Iterable<L> labels, Iterable<Access> accesses) {
+    @Override public IFuture<S> freshScope(String name, Iterable<L> labels, Iterable<Access> accesses) {
         assertInState(State.ACTIVE);
         final Iterable<EdgeOrData<L>> edgesAndData = Iterables.concat(edges(labels), data(accesses));
         final long messageId = post(FreshScope.of(name, labels, accesses));
+        pendingCount += 1;
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
         pendingScopes.put(messageId, pendingScope);
         return pendingScope.whenComplete((scope, ex) -> {
+            pendingCount -= 1;
+            pendingScopes.remove(messageId, pendingScope);
             openEdges.putAll(scope, edgesAndData);
         });
     }
@@ -244,20 +258,29 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         post(CloseEdge.of(source, label));
     }
 
-    @Override public final CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
+    @Override public final IFuture<java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
             DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         assertInState(State.ACTIVE);
         final long messageId = post(Query.of(scope, labelWF, dataWF, labelOrder, dataEquiv));
         final CompletableFuture<java.util.Set<IResolutionPath<S, L, D>>> pendingAnswer = new CompletableFuture<>();
+        pendingCount += 1;
         pendingQueries.put(messageId, pendingAnswer);
-        return pendingAnswer;
+        return pendingAnswer.whenComplete((paths, ex) -> {
+            pendingCount -= 1;
+            pendingQueries.remove(messageId, pendingAnswer);
+        });
     }
+
 
     // provided interface for process, called by client
 
     private final void done(R result) {
         logger.info("client {} done with {}", this, result);
         assertInState(State.ACTIVE);
+        if(pendingCount != 0 || !pendingScopes.isEmpty() || !pendingQueries.isEmpty()) {
+            logger.error("FIXME: client {} done with {} pending, {} scopes, {} queries", this, pendingCount,
+                    pendingScopes.size(), pendingQueries.size());
+        }
         setState(State.DONE);
         post(Done.<S, L, D>builder().build());
         pendingResult.complete(result);

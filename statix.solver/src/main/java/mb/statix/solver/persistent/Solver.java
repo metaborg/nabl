@@ -62,6 +62,15 @@ public class Solver {
 
         final SolverResult result =
                 Solver.solve(spec, state, constraint, isComplete, debug.subContext(), progress, cancel);
+        return Solver.entails(state, result, debug);
+    }
+
+    public static boolean entails(IState.Immutable initialState, SolverResult result, final IDebugContext debug)
+            throws Delay {
+        final IUniDisunifier.Immutable unifier = initialState.unifier();
+        if(debug.isEnabled(Level.Info)) {
+            debug.info("Checking entailment");
+        }
 
         if(result.hasErrors()) {
             // no entailment if errors
@@ -70,8 +79,8 @@ public class Solver {
         }
 
         final IState.Immutable newState = result.state();
-        final Set<ITermVar> newVars = Sets.difference(newState.vars(), state.vars());
-        final Set<Scope> newScopes = Sets.difference(newState.scopes(), state.scopes());
+        final Set<ITermVar> newVars = Sets.difference(newState.vars(), initialState.vars());
+        final Set<Scope> newScopes = Sets.difference(newState.scopes(), initialState.scopes());
 
         if(!result.delays().isEmpty()) {
             final Delay delay = result.delay().removeAll(newVars, newScopes);
@@ -84,8 +93,9 @@ public class Solver {
             }
         }
 
-        // NOTE The retain operation is important because it may change
+        // NOTE The removeAll operation is important because it may change
         //      representatives, which can be local to newUnifier.
+        //      After the removeAll, newUnifier.varSet should not intersect with newVars.
         final IUniDisunifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
         if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
             debug.info("Constraints not entailed: internal variables leak");
