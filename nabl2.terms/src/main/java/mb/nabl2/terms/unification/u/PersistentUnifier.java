@@ -381,27 +381,30 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             private ISubstitution.Immutable removeAll() {
                 final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-                final ListMultimap<ITermVar, ITermVar> invReps;
                 if(vars.isEmpty()) {
                     return subst.freeze();
                 }
-                invReps = getInvReps();
+                final ListMultimap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // var |-> rep
+                        invReps.remove(rep, var);
                         subst.compose(var, rep);
                         for(ITermVar notRep : invReps.get(var)) {
                             putRep(notRep, rep);
+                            invReps.put(rep, notRep);
                         }
                     } else {
-                        final Collection<ITermVar> newReps = invReps.get(var);
+                        final Collection<ITermVar> newReps = invReps.removeAll(var);
                         if(!newReps.isEmpty()) { // rep |-> var
                             rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);
+                            invReps.remove(rep, var);
                             subst.compose(var, rep);
                             for(ITermVar notRep : newReps) {
                                 if(!notRep.equals(rep)) {
                                     putRep(notRep, rep);
+                                    invReps.put(rep, notRep);
                                 }
                             }
                             final ITerm term;
