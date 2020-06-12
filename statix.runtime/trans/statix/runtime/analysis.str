@@ -313,8 +313,8 @@ rules
 
   stx--get-resource-analysis =
     get-resource-constraint-analysis
-  ; ( ?FileAnalysis(<id>)
-    + ?ProjectAnalysis(_, _, _, <id>)
+  ; ( ?FileAnalysis(<id>) + ?FileAnalysisNew(_, <id>)
+    + ?ProjectAnalysis(_, _, _, <id>) + ?ProjectAnalysisNew(_, <id>)
     )
 
   stx--get-ast-analysis =
