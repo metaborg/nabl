@@ -220,7 +220,6 @@ public class StatixTerms {
         IMatcher<IRelation.Immutable<EdgeOrData<ITerm>>> ltMatcher = labelLt();
         if(!isEOP(rel)) {
             // patch label order, replacing EOP with rel
-            // TODO is it necessary to add new EOP pairs? E.g., EOP < rel
             ltMatcher = ltMatcher.map(lt -> {
                 final IRelation.Transient<EdgeOrData<ITerm>> newLt = Relation.Transient.of(lt.getDescription());
                 lt.stream().forEach(ls -> {

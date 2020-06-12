@@ -161,17 +161,6 @@ public class StatixSolver {
     }
 
     private <R> void solveK(K<R> k, R r, Throwable ex) {
-        // FIXME This can be called immediately for entailment, if the try is not delayed
-        //       on queries. In that case, fixedpoint is called within another fixedpoint
-        //       context. This seems confusing at best, and likely error-prone.
-        //       The mechanism should be more similar to other delays, but now delayed on
-        //       a future. This delay cannot be serialized, if there are future-delayed
-        //       constraints left at the end, there was a programming error.
-        //       Many new constraints are hidden, because they are part of the call
-        //       stack and never added to the constraint store. Therefore, the nested
-        //       fixed point sees no remaining constraints in the store, and
-        //       concludes we are done. And then the original fixedpoint continues, actually
-        //       solves many constraints, but the result is lost.
         debug.info("Solving continuation");
         try {
             k.k(r, ex, MAX_DEPTH);
@@ -182,6 +171,13 @@ public class StatixSolver {
         debug.info("Solved continuation");
     }
 
+    // It can happen that fixedpoint is called in the context of a running fixedpoint.
+    // This can happen when a continuation is not triggered by a remote message, but
+    // directly completed (e.g., by a try). The solveK invocation will call fixedpoint
+    // again. To ensure we do not complete too early, it is necessary to track the number
+    // of unsolved constraints in the current execution state (because of the direct
+    // recursion of k), and only complete when there are no left. This is what the
+    // ehpemeralActiveConstraints counter does.
     private void fixedpoint() throws InterruptedException {
         debug.info("Solving constraints");
 
