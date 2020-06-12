@@ -313,13 +313,25 @@ rules
 
   stx--get-resource-analysis =
     get-resource-constraint-analysis
-  ; ( ?FileAnalysis(<id>) + ?FileAnalysisNew(_, <id>)
-    + ?ProjectAnalysis(_, _, _, <id>) + ?ProjectAnalysisNew(_, <id>)
+  ; ( ?FileAnalysis(<id>)
+    + ?ProjectAnalysis(_, _, _, <id>)
     )
 
   stx--get-ast-analysis =
     stx--get-ast-resource
   ; stx--get-resource-analysis
+
+
+  stx--get-resource-analysis-new =
+    get-resource-partial-constraint-analysis
+  ; ( ?FileAnalysisNew(_, <id>)
+    + ?ProjectAnalysisNew(_, <id>)
+    )
+
+  stx--get-ast-analysis-new =
+    stx--get-ast-resource
+  ; stx--get-resource-analysis-new
+
 
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")

@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.Tuple2;
+import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -35,7 +36,6 @@ import mb.statix.solver.concurrent.util.IFuture;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.State;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi extends StatixPrimitive {
@@ -52,7 +52,7 @@ public class STX_solve_multi extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-//        final IDebugContext debug = new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
+        //        final IDebugContext debug = new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
         final IProgress progress = getProgress(terms.get(2));
         final ICancel cancel = getCancel(terms.get(3));
 
@@ -61,7 +61,6 @@ public class STX_solve_multi extends StatixPrimitive {
         final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
 
-        final Scope root = Scope.of("", "0");
         final ExecutorService executor = Executors.newCachedThreadPool();
         final ScopeImpl<Scope> scopeImpl = new ScopeImpl<Scope>() {
             // @formatter:off
@@ -69,7 +68,7 @@ public class STX_solve_multi extends StatixPrimitive {
             @Override public String resource(Scope scope) { return scope.getResource(); }
             // @formatter:on
         };
-        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(root, spec.allLabels(), scopeImpl, cancel);
+        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(spec.allLabels(), scopeImpl, cancel);
 
         final double t0 = System.currentTimeMillis();
 
@@ -77,8 +76,8 @@ public class STX_solve_multi extends StatixPrimitive {
         for(Tuple2<String, IConstraint> resource_constraint : constraints) {
             final String resource = resource_constraint._1();
             final IDebugContext fileDebug = new LoggerDebugContext(LoggerUtils.logger("STX[" + resource + "]"));
-            final StatixTypeChecker fileSolver =
-                    new StatixTypeChecker(resource, solver, spec, resource_constraint._2(), fileDebug, progress, cancel);
+            final StatixTypeChecker fileSolver = new StatixTypeChecker(resource, solver, spec, resource_constraint._2(),
+                    fileDebug, progress, cancel);
             fileSolvers.put(resource, fileSolver.run(executor));
         }
         final IFuture<CoordinatorResult<Scope, ITerm, ITerm>> solveResult = solver.run(executor);
@@ -90,16 +89,12 @@ public class STX_solve_multi extends StatixPrimitive {
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Files analyzed in {} s", (dt / 1_000d));
 
-            final IState.Transient _combinedState = State.of(spec).melt();
             for(Entry<String, IFuture<SolverResult>> entry : fileSolvers.entrySet()) {
                 final SolverResult fileResult = entry.getValue().get();
-                _combinedState.add(fileResult.state());
-            }
-            final IState.Immutable combinedState =
-                    _combinedState.freeze().withScopeGraph(coordinatorResult.scopeGraph());
-
-            for(Entry<String, IFuture<SolverResult>> entry : fileSolvers.entrySet()) {
-                final SolverResult updatedFileResult = entry.getValue().get().withState(combinedState);
+                final IScopeGraph.Immutable<Scope, ITerm, ITerm> fileScopeGraph =
+                        coordinatorResult.scopeGraph().get(entry.getKey());
+                final IState.Immutable updatedFileState = fileResult.state().withScopeGraph(fileScopeGraph);
+                final SolverResult updatedFileResult = entry.getValue().get().withState(updatedFileState);
                 results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(updatedFileResult)));
             }
         } catch(Throwable e) {

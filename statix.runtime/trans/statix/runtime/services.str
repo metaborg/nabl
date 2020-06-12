@@ -16,12 +16,28 @@ rules
     ; a := <stx--get-ast-analysis> node
     ; r := <stx--get-ast-property(|a,Ref())> node
 
+  stx--editor-resolve-new:
+      (node, position, ast, path, project-path) -> r
+    where
+      <stx--get-ast-index> node
+    ; a := <stx--get-ast-analysis-new> node
+    ; r := <stx--get-ast-property(|a,Ref())> node
+
 strategies
 
   stx--editor-hover(pp|prefix,prop):
       (node, position, ast, path, project-path) -> label
     where
       a       := <stx--get-ast-analysis> node
+    ; propval := <stx--get-ast-property(|a, prop)> node
+    with
+      propstr := <pp> propval
+    ; label   := $[[prefix][propstr]]
+
+  stx--editor-hover-new(pp|prefix,prop):
+      (node, position, ast, path, project-path) -> label
+    where
+      a       := <stx--get-ast-analysis-new> node
     ; propval := <stx--get-ast-property(|a, prop)> node
     with
       propstr := <pp> propval
