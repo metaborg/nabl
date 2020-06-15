@@ -71,12 +71,12 @@ public class Message implements IMessage, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Message message = (Message) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        Message message = (Message)o;
         return kind == message.kind &&
-                Objects.equals(content, message.content) &&
-                Objects.equals(origin, message.origin);
+            Objects.equals(content, message.content) &&
+            Objects.equals(origin, message.origin);
     }
 
     @Override

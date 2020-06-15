@@ -88,12 +88,12 @@ public class CAstId implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CAstId cAstId = (CAstId) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CAstId cAstId = (CAstId)o;
         return Objects.equals(term, cAstId.term) &&
-                Objects.equals(idTerm, cAstId.idTerm) &&
-                Objects.equals(cause, cAstId.cause);
+            Objects.equals(idTerm, cAstId.idTerm) &&
+            Objects.equals(cause, cAstId.cause);
     }
 
     @Override

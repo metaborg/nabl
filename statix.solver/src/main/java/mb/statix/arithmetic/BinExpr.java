@@ -47,13 +47,13 @@ class BinExpr implements ArithExpr {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BinExpr binExpr = (BinExpr) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        BinExpr binExpr = (BinExpr)o;
         return Objects.equals(op, binExpr.op) &&
-                Objects.equals(ae1, binExpr.ae1) &&
-                Objects.equals(ae2, binExpr.ae2) &&
-                Objects.equals(f, binExpr.f);
+            Objects.equals(ae1, binExpr.ae1) &&
+            Objects.equals(ae2, binExpr.ae2) &&
+            Objects.equals(f, binExpr.f);
     }
 
     @Override

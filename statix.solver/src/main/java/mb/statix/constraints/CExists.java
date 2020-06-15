@@ -88,12 +88,12 @@ public class CExists implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CExists cExists = (CExists) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CExists cExists = (CExists)o;
         return Objects.equals(vars, cExists.vars) &&
-                Objects.equals(constraint, cExists.constraint) &&
-                Objects.equals(cause, cExists.cause);
+            Objects.equals(constraint, cExists.constraint) &&
+            Objects.equals(cause, cExists.cause);
     }
 
     @Override

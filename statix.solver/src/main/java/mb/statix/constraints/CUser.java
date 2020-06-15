@@ -106,13 +106,13 @@ public class CUser implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CUser cUser = (CUser) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CUser cUser = (CUser)o;
         return Objects.equals(name, cUser.name) &&
-                Objects.equals(args, cUser.args) &&
-                Objects.equals(cause, cUser.cause) &&
-                Objects.equals(message, cUser.message);
+            Objects.equals(args, cUser.args) &&
+            Objects.equals(cause, cUser.cause) &&
+            Objects.equals(message, cUser.message);
     }
 
     @Override

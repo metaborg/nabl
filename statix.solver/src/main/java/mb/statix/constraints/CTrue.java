@@ -66,9 +66,9 @@ public class CTrue implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CTrue cTrue = (CTrue) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CTrue cTrue = (CTrue)o;
         return Objects.equals(cause, cTrue.cause);
     }
 

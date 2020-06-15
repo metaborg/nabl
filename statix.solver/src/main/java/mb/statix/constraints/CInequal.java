@@ -125,14 +125,14 @@ public class CInequal implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CInequal cInequal = (CInequal) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CInequal cInequal = (CInequal)o;
         return Objects.equals(universals, cInequal.universals) &&
-                Objects.equals(term1, cInequal.term1) &&
-                Objects.equals(term2, cInequal.term2) &&
-                Objects.equals(cause, cInequal.cause) &&
-                Objects.equals(message, cInequal.message);
+            Objects.equals(term1, cInequal.term1) &&
+            Objects.equals(term2, cInequal.term2) &&
+            Objects.equals(cause, cInequal.cause) &&
+            Objects.equals(message, cInequal.message);
     }
 
     @Override

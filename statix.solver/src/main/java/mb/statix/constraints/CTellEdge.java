@@ -94,13 +94,13 @@ public class CTellEdge implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CTellEdge cTellEdge = (CTellEdge) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CTellEdge cTellEdge = (CTellEdge)o;
         return Objects.equals(sourceTerm, cTellEdge.sourceTerm) &&
-                Objects.equals(label, cTellEdge.label) &&
-                Objects.equals(targetTerm, cTellEdge.targetTerm) &&
-                Objects.equals(cause, cTellEdge.cause);
+            Objects.equals(label, cTellEdge.label) &&
+            Objects.equals(targetTerm, cTellEdge.targetTerm) &&
+            Objects.equals(cause, cTellEdge.cause);
     }
 
     @Override

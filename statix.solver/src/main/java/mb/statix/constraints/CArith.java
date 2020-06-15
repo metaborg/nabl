@@ -110,14 +110,14 @@ public class CArith implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CArith cArith = (CArith) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CArith cArith = (CArith)o;
         return Objects.equals(expr1, cArith.expr1) &&
-                Objects.equals(op, cArith.op) &&
-                Objects.equals(expr2, cArith.expr2) &&
-                Objects.equals(cause, cArith.cause) &&
-                Objects.equals(message, cArith.message);
+            Objects.equals(op, cArith.op) &&
+            Objects.equals(expr2, cArith.expr2) &&
+            Objects.equals(cause, cArith.cause) &&
+            Objects.equals(message, cArith.message);
     }
 
     @Override

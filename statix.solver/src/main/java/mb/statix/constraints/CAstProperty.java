@@ -114,14 +114,14 @@ public class CAstProperty implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CAstProperty that = (CAstProperty) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CAstProperty that = (CAstProperty)o;
         return Objects.equals(idTerm, that.idTerm) &&
-                Objects.equals(property, that.property) &&
-                op == that.op &&
-                Objects.equals(value, that.value) &&
-                Objects.equals(cause, that.cause);
+            Objects.equals(property, that.property) &&
+            op == that.op &&
+            Objects.equals(value, that.value) &&
+            Objects.equals(cause, that.cause);
     }
 
     @Override

@@ -86,12 +86,12 @@ public class CConj implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CConj cConj = (CConj) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CConj cConj = (CConj)o;
         return Objects.equals(left, cConj.left) &&
-                Objects.equals(right, cConj.right) &&
-                Objects.equals(cause, cConj.cause);
+            Objects.equals(right, cConj.right) &&
+            Objects.equals(cause, cConj.cause);
     }
 
     @Override

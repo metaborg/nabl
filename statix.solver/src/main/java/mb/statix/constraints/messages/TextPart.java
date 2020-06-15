@@ -34,9 +34,9 @@ public class TextPart implements IMessagePart, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TextPart textPart = (TextPart) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        TextPart textPart = (TextPart)o;
         return Objects.equals(text, textPart.text);
     }
 

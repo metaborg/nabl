@@ -61,11 +61,11 @@ public class QueryMin implements IQueryMin, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        QueryMin queryMin = (QueryMin) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        QueryMin queryMin = (QueryMin)o;
         return Objects.equals(labelOrd, queryMin.labelOrd) &&
-                Objects.equals(dataOrd, queryMin.dataOrd);
+            Objects.equals(dataOrd, queryMin.dataOrd);
     }
 
     @Override

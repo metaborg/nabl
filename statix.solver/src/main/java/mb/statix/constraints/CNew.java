@@ -83,11 +83,11 @@ public class CNew implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CNew cNew = (CNew) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CNew cNew = (CNew)o;
         return Objects.equals(terms, cNew.terms) &&
-                Objects.equals(cause, cNew.cause);
+            Objects.equals(cause, cNew.cause);
     }
 
     @Override

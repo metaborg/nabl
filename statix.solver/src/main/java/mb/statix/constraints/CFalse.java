@@ -81,11 +81,11 @@ public class CFalse implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CFalse cFalse = (CFalse) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CFalse cFalse = (CFalse)o;
         return Objects.equals(cause, cFalse.cause) &&
-                Objects.equals(message, cFalse.message);
+            Objects.equals(message, cFalse.message);
     }
 
     @Override

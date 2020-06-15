@@ -94,12 +94,12 @@ public class CTry implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CTry cTry = (CTry) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CTry cTry = (CTry)o;
         return Objects.equals(constraint, cTry.constraint) &&
-                Objects.equals(cause, cTry.cause) &&
-                Objects.equals(message, cTry.message);
+            Objects.equals(cause, cTry.cause) &&
+            Objects.equals(message, cTry.message);
     }
 
     @Override

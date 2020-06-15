@@ -30,12 +30,12 @@ public class ArithTest {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ArithTest arithTest = (ArithTest) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        ArithTest arithTest = (ArithTest)o;
         return isEquals == arithTest.isEquals &&
-                Objects.equals(op, arithTest.op) &&
-                Objects.equals(f, arithTest.f);
+            Objects.equals(op, arithTest.op) &&
+            Objects.equals(f, arithTest.f);
     }
 
     @Override

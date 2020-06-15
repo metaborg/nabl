@@ -105,13 +105,13 @@ public class CEqual implements IConstraint, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CEqual cEqual = (CEqual) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CEqual cEqual = (CEqual)o;
         return Objects.equals(term1, cEqual.term1) &&
-                Objects.equals(term2, cEqual.term2) &&
-                Objects.equals(cause, cEqual.cause) &&
-                Objects.equals(message, cEqual.message);
+            Objects.equals(term2, cEqual.term2) &&
+            Objects.equals(cause, cEqual.cause) &&
+            Objects.equals(message, cEqual.message);
     }
 
     @Override

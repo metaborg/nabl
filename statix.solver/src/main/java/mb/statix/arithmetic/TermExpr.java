@@ -52,9 +52,9 @@ class TermExpr implements ArithExpr {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TermExpr termExpr = (TermExpr) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        TermExpr termExpr = (TermExpr)o;
         return Objects.equals(term, termExpr.term);
     }
 

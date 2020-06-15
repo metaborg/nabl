@@ -39,9 +39,9 @@ public class TermPart implements IMessagePart, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TermPart termPart = (TermPart) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        TermPart termPart = (TermPart)o;
         return Objects.equals(term, termPart.term);
     }
 
