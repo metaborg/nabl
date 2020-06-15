@@ -142,15 +142,11 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RegExpMatcher<?> that = (RegExpMatcher<?>) o;
-        return Objects.equals(state, that.state) &&
-                Objects.equals(stateTransitions, that.stateTransitions) &&
-                Objects.equals(defaultTransitions, that.defaultTransitions) &&
-                Objects.equals(nonFinal, that.nonFinal) &&
-                Objects.equals(isNullable, that.isNullable);
+        return Objects.equals(state, that.state);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(state, stateTransitions, defaultTransitions, nonFinal, isNullable);
+        return Objects.hash(state);
     }
 }
