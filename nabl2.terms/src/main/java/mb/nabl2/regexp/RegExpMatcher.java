@@ -139,9 +139,9 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RegExpMatcher<?> that = (RegExpMatcher<?>) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        RegExpMatcher<?> that = (RegExpMatcher<?>)o;
         return Objects.equals(state, that.state);
     }
 

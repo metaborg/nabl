@@ -95,11 +95,11 @@ class ApplPattern extends Pattern {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ApplPattern that = (ApplPattern) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        ApplPattern that = (ApplPattern)o;
         return Objects.equals(op, that.op) &&
-                Objects.equals(args, that.args);
+            Objects.equals(args, that.args);
     }
 
     @Override

@@ -91,11 +91,11 @@ class PatternAs extends Pattern {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PatternAs patternAs = (PatternAs) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        PatternAs patternAs = (PatternAs)o;
         return Objects.equals(var, patternAs.var) &&
-                Objects.equals(pattern, patternAs.pattern);
+            Objects.equals(pattern, patternAs.pattern);
     }
 
     @Override

@@ -72,9 +72,9 @@ class StringPattern extends Pattern {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StringPattern that = (StringPattern) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        StringPattern that = (StringPattern)o;
         return Objects.equals(value, that.value);
     }
 

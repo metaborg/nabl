@@ -89,9 +89,9 @@ class PatternVar extends Pattern {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PatternVar that = (PatternVar) o;
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        PatternVar that = (PatternVar)o;
         return Objects.equals(var, that.var);
     }
 
