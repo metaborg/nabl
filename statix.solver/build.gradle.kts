@@ -18,6 +18,7 @@ dependencies {
 
   api("com.google.guava:guava")
   api("io.usethesource:capsule")
+  api("org.eclipse.viatra:org.eclipse.viatra.query.runtime.base.itc:2.3.2")
   compileOnly("com.google.code.findbugs:jsr305")
 
   // Annotation processing

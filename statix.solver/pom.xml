@@ -41,6 +41,11 @@
       <artifactId>capsule</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.viatra</groupId>
+      <artifactId>org.eclipse.viatra.query.runtime.base.itc</artifactId>
+      <version>2.3.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
       <scope>provided</scope>
