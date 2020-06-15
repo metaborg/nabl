@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -63,4 +64,16 @@ public class CTrue implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CTrue cTrue = (CTrue)o;
+        return Objects.equals(cause, cTrue.cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cause);
+    }
 }

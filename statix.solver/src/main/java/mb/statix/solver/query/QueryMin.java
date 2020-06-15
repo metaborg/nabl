@@ -1,6 +1,7 @@
 package mb.statix.solver.query;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
@@ -58,4 +59,17 @@ public class QueryMin implements IQueryMin, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        QueryMin queryMin = (QueryMin)o;
+        return Objects.equals(labelOrd, queryMin.labelOrd) &&
+            Objects.equals(dataOrd, queryMin.dataOrd);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(labelOrd, dataOrd);
+    }
 }
