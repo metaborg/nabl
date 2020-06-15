@@ -2,6 +2,7 @@ package mb.statix.arithmetic;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import com.google.common.collect.Multiset;
@@ -49,5 +50,16 @@ class TermExpr implements ArithExpr {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TermExpr termExpr = (TermExpr) o;
+        return Objects.equals(term, termExpr.term);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(term);
+    }
 }

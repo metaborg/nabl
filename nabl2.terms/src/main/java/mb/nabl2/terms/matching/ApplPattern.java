@@ -3,6 +3,7 @@ package mb.nabl2.terms.matching;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -92,4 +93,17 @@ class ApplPattern extends Pattern {
         return sb.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ApplPattern that = (ApplPattern) o;
+        return Objects.equals(op, that.op) &&
+                Objects.equals(args, that.args);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(op, args);
+    }
 }

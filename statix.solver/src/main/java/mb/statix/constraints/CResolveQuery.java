@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -131,4 +132,22 @@ public class CResolveQuery implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CResolveQuery that = (CResolveQuery) o;
+        return Objects.equals(relation, that.relation) &&
+                Objects.equals(filter, that.filter) &&
+                Objects.equals(min, that.min) &&
+                Objects.equals(scopeTerm, that.scopeTerm) &&
+                Objects.equals(resultTerm, that.resultTerm) &&
+                Objects.equals(cause, that.cause) &&
+                Objects.equals(message, that.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(relation, filter, min, scopeTerm, resultTerm, cause, message);
+    }
 }

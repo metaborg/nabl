@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -78,4 +79,17 @@ public class CFalse implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CFalse cFalse = (CFalse) o;
+        return Objects.equals(cause, cFalse.cause) &&
+                Objects.equals(message, cFalse.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cause, message);
+    }
 }

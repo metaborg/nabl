@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -85,4 +86,18 @@ public class CExists implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CExists cExists = (CExists) o;
+        return Objects.equals(vars, cExists.vars) &&
+                Objects.equals(constraint, cExists.constraint) &&
+                Objects.equals(cause, cExists.cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(vars, constraint, cause);
+    }
 }

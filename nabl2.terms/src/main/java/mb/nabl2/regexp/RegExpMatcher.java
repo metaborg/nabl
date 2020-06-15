@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -136,4 +137,20 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         return new RegExpMatcher<>(initial, stateTransitions, defaultTransitions, nonFinal, isNullable);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RegExpMatcher<?> that = (RegExpMatcher<?>) o;
+        return Objects.equals(state, that.state) &&
+                Objects.equals(stateTransitions, that.stateTransitions) &&
+                Objects.equals(defaultTransitions, that.defaultTransitions) &&
+                Objects.equals(nonFinal, that.nonFinal) &&
+                Objects.equals(isNullable, that.isNullable);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(state, stateTransitions, defaultTransitions, nonFinal, isNullable);
+    }
 }

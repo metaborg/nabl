@@ -1,6 +1,7 @@
 package mb.statix.constraints.messages;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -36,4 +37,16 @@ public class TermPart implements IMessagePart, Serializable {
         return sb.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TermPart termPart = (TermPart) o;
+        return Objects.equals(term, termPart.term);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(term);
+    }
 }

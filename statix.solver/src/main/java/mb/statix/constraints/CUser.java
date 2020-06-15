@@ -2,6 +2,7 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -103,4 +104,19 @@ public class CUser implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CUser cUser = (CUser) o;
+        return Objects.equals(name, cUser.name) &&
+                Objects.equals(args, cUser.args) &&
+                Objects.equals(cause, cUser.cause) &&
+                Objects.equals(message, cUser.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, args, cause, message);
+    }
 }

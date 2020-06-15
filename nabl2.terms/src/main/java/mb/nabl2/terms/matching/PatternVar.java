@@ -1,5 +1,6 @@
 package mb.nabl2.terms.matching;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -86,4 +87,16 @@ class PatternVar extends Pattern {
         return isWildcard() ? "_" : var.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PatternVar that = (PatternVar) o;
+        return Objects.equals(var, that.var);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(var);
+    }
 }

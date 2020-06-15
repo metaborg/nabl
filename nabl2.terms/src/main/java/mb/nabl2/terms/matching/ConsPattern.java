@@ -3,6 +3,7 @@ package mb.nabl2.terms.matching;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -83,4 +84,17 @@ class ConsPattern extends Pattern {
         return "[" + head.toString() + "|" + tail.toString() + "]";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConsPattern that = (ConsPattern) o;
+        return Objects.equals(head, that.head) &&
+                Objects.equals(tail, that.tail);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(head, tail);
+    }
 }

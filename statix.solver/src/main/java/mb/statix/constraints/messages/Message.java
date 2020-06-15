@@ -2,6 +2,7 @@ package mb.statix.constraints.messages;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -67,5 +68,19 @@ public class Message implements IMessage, Serializable {
         sb.append("]");
         return sb.toString();
     }
-    
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Message message = (Message) o;
+        return kind == message.kind &&
+                Objects.equals(content, message.content) &&
+                Objects.equals(origin, message.origin);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(kind, content, origin);
+    }
 }
