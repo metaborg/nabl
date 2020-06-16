@@ -1,6 +1,6 @@
 module Common
 
-lexical syntax
+lexical sorts ID INT STRING lexical syntax
 
   ID             = [a-zA-Z] [a-zA-Z0-9]* 
   INT            = "-"? [0-9]+ 

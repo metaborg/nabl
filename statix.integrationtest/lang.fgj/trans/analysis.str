@@ -8,24 +8,33 @@ imports
   statixruntime
   statix/api
 
+  injections/-
+  injections/statix/-
   signatures/-
   pp/-
   pp
 
 rules // Analysis
 
-  editor-analyze = stx-editor-analyze(explicate-injections, remove-injections|"statics", "programOK")
+  editor-analyze = stx-editor-analyze(pre-analyze, post-analyze|"statics", "startOK")
 
-rules
+  pre-analyze  = explicate-injections-FGJ-Start
+  post-analyze = implicate-injections-FGJ-Start
 
-  explicate-injections =
-    explicate-injections(inj-name)
+  // fix injection strategies for different pretty-print name
 
-  inj-name: (sort, into-sort) -> $[[sort']2[into-sort']]
-    with sort' := <camel-abbr> sort
-    with into-sort' := <camel-abbr> into-sort
+  explicate-injections-FGJ-Stx-INT        = explicate-injections-Stx-INT
+  explicate-injections-FGJ-Stx-STRING     = explicate-injections-Stx-STRING
+  explicate-injections-FGJ-Stx-Scope      = explicate-injections-Stx-Scope
+  explicate-injections-FGJ-Stx-Occurrence = explicate-injections-Stx-Occurrence
+  explicate-injections-FGJ-Stx-TermIndex  = explicate-injections-Stx-TermIndex
 
-  camel-abbr = explode-string; filter(is-upper); implode-string
+  implicate-injections-FGJ-Stx-INT        = implicate-injections-Stx-INT
+  implicate-injections-FGJ-Stx-STRING     = implicate-injections-Stx-STRING
+  implicate-injections-FGJ-Stx-Scope      = implicate-injections-Stx-Scope
+  implicate-injections-FGJ-Stx-Occurrence = implicate-injections-Stx-Occurrence
+  implicate-injections-FGJ-Stx-TermIndim  = implicate-injections-Stx-TermIndex
+
 
 rules // Editor services
   

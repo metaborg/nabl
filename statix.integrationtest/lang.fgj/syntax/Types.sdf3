@@ -4,8 +4,10 @@ imports
   
   statix/API
 
-context-free syntax
+context-free sorts TYPE context-free syntax
 
-  TYPE.CLASS = Stx-Scope
-  TYPE.TVAR  = Stx-Occurrence
-
+  TYPE.CLASS  = <class(<Stx-Scope>)>
+  TYPE.TVAR   = <var(<Stx-Occurrence>)>
+  TYPE.CTOR   = <ctor(<{TYPE ", "}*>)>
+  TYPE.METHOD = <mthd(<{Stx-Occurrence ", "}*>, <Stx-Scope>)>
+  TYPE.MTY    = <mthd(<TYPE>, <{TYPE ", "}*>)>

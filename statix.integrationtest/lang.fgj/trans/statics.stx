@@ -2,10 +2,19 @@ module statics // Static semantics of Featherweight Generic Java
 
 imports
 
-  statics/syntax
+  signatures/FGJ-sig
+  signatures/Types-sig
+
   statics/name-resolution
   statics/normalization
   statics/types
+
+rules
+
+  startOK : Start
+
+  startOK(Program2Start(program)) :-
+    programOK(program).
 
 rules
 
@@ -178,7 +187,7 @@ rules
     @x.ref := x', @te.type := strict(T),
     TVar{x@x} in s |-> [(_, d@TVar{x'@_})].        // type var reference
 
-  typeOfTypeExp(s, CTE2TE(cte)) = typeOfClassTypeExp(s, cte).
+  typeOfTypeExp(s, ClassTypeExp2TypeExp(cte)) = typeOfClassTypeExp(s, cte).
 
 rules
 

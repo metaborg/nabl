@@ -31,6 +31,12 @@
     </dependency>
     <dependency>
       <groupId>org.metaborg</groupId>
+      <artifactId>sdf3.ext.statix</artifactId>
+      <version>${metaborg-version}</version>
+      <type>spoofax-language</type>
+    </dependency>
+    <dependency>
+      <groupId>org.metaborg</groupId>
       <artifactId>statix.lang</artifactId>
       <version>${metaborg-version}</version>
       <type>spoofax-language</type>

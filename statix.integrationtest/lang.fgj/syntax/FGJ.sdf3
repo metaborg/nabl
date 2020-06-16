@@ -8,11 +8,11 @@ context-free start-symbols
 
   Start
 
-context-free syntax
+context-free sorts Start context-free syntax
 
   Start = Program
 
-context-free syntax // prog
+context-free sorts Program context-free syntax // prog
 
   Program.Program = <<{ClassDecl "\n\n"}*>>
 
@@ -22,16 +22,16 @@ context-free syntax // prog
     in <Exp>
   >
 
-context-free syntax // T
+context-free sorts TypeExp context-free syntax // T
 
   TypeExp      = ClassTypeExp
   TypeExp.TVar = ID
 
-context-free syntax // N
+context-free sorts ClassTypeExp context-free syntax // N
 
   ClassTypeExp.ClassT = [[ID]<[{TypeExp ","}*]>]
 
-context-free syntax // L
+context-free sorts ClassDecl TVarDecl FieldDecl context-free syntax // L
 
   ClassDecl.ClassDecl = [
     class [ID]<[{TVarDecl ","}*]> extends [ClassTypeExp] {
@@ -45,7 +45,7 @@ context-free syntax // L
 
   FieldDecl.FieldDecl = [[TypeExp] [ID];]
 
-context-free syntax // K
+context-free sorts CtorDecl FieldInit context-free syntax // K
 
   CtorDecl.CtorDecl = [
     [ID]([{Param ", "}*]) {
@@ -56,7 +56,7 @@ context-free syntax // K
 
   FieldInit.FieldInit = [this.[ID] = [Exp];]
 
-context-free syntax // M
+context-free sorts MethodDecl Param context-free syntax // M
 
   MethodDecl.MethodDecl = [
     <[{TVarDecl ","}*]> [TypeExp] [ID]([{Param ", "}*]) {
@@ -66,7 +66,7 @@ context-free syntax // M
 
   Param.Param = [[TypeExp] [ID]]
 
-context-free syntax // e
+context-free sorts Exp context-free syntax // e
 
   Exp.Var     = ID
   Exp.Fld     = [[Exp].[ID]]
