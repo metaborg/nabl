@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -83,4 +84,18 @@ public class CConj implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CConj cConj = (CConj)o;
+        return Objects.equals(left, cConj.left) &&
+            Objects.equals(right, cConj.right) &&
+            Objects.equals(cause, cConj.cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(left, right, cause);
+    }
 }
