@@ -2,6 +2,9 @@ module statix/api
 
 imports
 
+  signatures/statix/-
+  injections/statix/-
+
   statix/runtime/-
 
 rules // analysis
