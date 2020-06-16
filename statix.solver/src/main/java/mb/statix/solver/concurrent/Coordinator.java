@@ -18,7 +18,6 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -26,9 +25,7 @@ import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieFunction;
-import mb.nabl2.util.collections.HashTrieRelation2;
 import mb.nabl2.util.collections.IFunction;
-import mb.nabl2.util.collections.IRelation2;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.scopegraph.INameResolution;
@@ -64,6 +61,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private static final String ROOT_RESOURCE = "";
 
+
     private final ScopeImpl<S> scopeImpl;
     private final S rootScope;
     private final Set.Immutable<L> edgeLabels;
@@ -73,6 +71,22 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     final ICancel cancel;
 
+
+    private final CompletableFuture<CoordinatorResult<S, L, D>> pendingResult = new CompletableFuture<>();
+
+    private final BiMap<String, AbstractTypeChecker<S, L, D, ?>> clients = HashBiMap.create();
+    private final MultiSetMap.Transient<String, String> scopeCounters = MultiSetMap.Transient.of();
+
+    private final IFunction.Transient<String, State> states = HashTrieFunction.Transient.of();
+    private final Set.Transient<String> waiting = Set.Transient.of();
+
+    private final BlockingQueue<CoordinatorMessage<S, L, D>> inbox = Queues.newLinkedBlockingDeque();
+    private final MultiSet.Transient<AbstractTypeChecker<S, L, D, ?>> clocks = MultiSet.Transient.of(); // number of messages send to clients
+
+    private final Collection<Query<S, L, D>> preInitQueries = Lists.newArrayList();
+    private final DelayGraph<S, L, D> delays;
+
+
     public Coordinator(Iterable<L> edgeLabels, ScopeImpl<S> scopeImpl, ICancel cancel) {
         this.scopeImpl = scopeImpl;
         this.rootScope = scopeImpl.make(ROOT_RESOURCE, "0");
@@ -81,23 +95,9 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         this.scopeGraphs = Map.Transient.of();
         this.openEdges = Map.Transient.of();
         this.cancel = new RateLimitedCancel(cancel, 42);
+        this.delays = new DelayGraph<>(scopeImpl);
         registerRoot();
     }
-
-    private final CompletableFuture<CoordinatorResult<S, L, D>> pendingResult = new CompletableFuture<>();
-
-    private final BiMap<String, AbstractTypeChecker<S, L, D, ?>> clients = HashBiMap.create();
-    private final MultiSetMap.Transient<String, String> scopeCounters = MultiSetMap.Transient.of();
-
-    private final IFunction.Transient<AbstractTypeChecker<S, L, D, ?>, State> states = HashTrieFunction.Transient.of();
-    private final Set.Transient<AbstractTypeChecker<S, L, D, ?>> waiting = Set.Transient.of();
-
-    private final BlockingQueue<CoordinatorMessage<S, L, D>> inbox = Queues.newLinkedBlockingDeque();
-    private final MultiSet.Transient<AbstractTypeChecker<S, L, D, ?>> clocks = MultiSet.Transient.of(); // number of messages send to clients
-
-    private final Collection<Query<S, L, D>> preInitQueries = Lists.newArrayList();
-    private final IRelation2.Transient<Tuple2<S, EdgeOrData<L>>, Query<S, L, D>> delays =
-            HashTrieRelation2.Transient.of();
 
     // act as aggregate of all unit scope graphs
     private final IScopeGraph<S, L, D> scopeGraph = new IScopeGraph<S, L, D>() {
@@ -144,8 +144,9 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     }
 
     private void setState(AbstractTypeChecker<S, L, D, ?> client, State state) throws InterruptedException {
+        final String resource = client.resource();
         logger.info("believe client {} is in state {}", client, state);
-        final State oldState = states.put(client, state);
+        final State oldState = states.put(resource, state);
         // start queries
         if(State.INIT.equals(oldState) && states.inverse().get(State.INIT).isEmpty()) {
             logger.info("release pre-init queries");
@@ -157,8 +158,8 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     }
 
     private boolean hasRunningClients() {
-        java.util.Set<AbstractTypeChecker<S, L, D, ?>> initClients = states.inverse().get(State.INIT);
-        java.util.Set<AbstractTypeChecker<S, L, D, ?>> activeClients = states.inverse().get(State.ACTIVE);
+        java.util.Set<String> initClients = states.inverse().get(State.INIT);
+        java.util.Set<String> activeClients = states.inverse().get(State.ACTIVE);
         return !initClients.isEmpty() || !activeClients.isEmpty();
     }
 
@@ -229,7 +230,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             final S scope = e.scope();
             final EdgeOrData<L> label = fixEdgeOrData(resource, scope, e.<L>label());
             logger.info("delay query on edge {}/{}", scope, label);
-            delays.put(Tuple2.of(scope, label), query);
+            delays.addDelayOnEdge(query, scope, label);
         } catch(ResolutionException e) {
             logger.warn("forwarding resolution exception.", e);
             post(client, QueryFailed.of(query.id(), e));
@@ -250,14 +251,11 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         // @formatter:on
     }
 
-    private void releaseDelays(S source, EdgeOrData<L> label) throws InterruptedException {
+    private void closeEdge(S source, EdgeOrData<L> label) throws InterruptedException {
         logger.info("release queries for edge {}/{}", source, label);
-        final java.util.Set<Query<S, L, D>> queries = delays.removeKey(Tuple2.of(source, label));
-        for(Query<S, L, D> query : queries) {
-            if(!delays.containsValue(query)) {
-                logger.info("released {}", query);
-                tryResolve(query);
-            }
+        for(Query<S, L, D> query : delays.removeEdge(source, label)) {
+            logger.info("released {}", query);
+            tryResolve(query);
         }
     }
 
@@ -273,7 +271,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private void post(AbstractTypeChecker<S, L, D, ?> client, ClientMessage<S, L, D> message) {
         logger.info("post {} to client {}", message, client);
-        waiting.__remove(client);
+        waiting.__remove(client.resource());
         clocks.add(client);
         client.receive(message);
     }
@@ -322,7 +320,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         final int n = openEdges.get(resource).remove(scope, EdgeOrData.data(access));
         if(n == 0) {
             logger.info("datum {}/{} closed", scope, access);
-            releaseDelays(scope, EdgeOrData.data(access));
+            closeEdge(scope, EdgeOrData.data(access));
         }
     }
 
@@ -355,7 +353,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         }
         if(n == 0) {
             logger.info("edge {}/{} closed", source, label);
-            releaseDelays(source, EdgeOrData.edge(label));
+            closeEdge(source, EdgeOrData.edge(label));
         }
     }
 
@@ -372,25 +370,26 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
             return;
         }
 
-        final long unitDelays = delays.stream().filter(q -> q._2().client().equals(client)).count();
-        final java.util.Set<Tuple2<S, EdgeOrData<L>>> unitEdges = Sets.newHashSet();
-        for(Entry<S, MultiSet.Immutable<EdgeOrData<L>>> entry : openEdges.get(resource).toMap().entrySet()) {
-            for(EdgeOrData<L> edge : entry.getValue()) {
-                unitEdges.add(Tuple2.of(entry.getKey(), edge));
-            }
-        }
+        final java.util.Set<Tuple2<S, EdgeOrData<L>>> unitEdges = openEdges.get(resource).toMap().entrySet().stream()
+                .flatMap(e -> e.getValue().elementSet().stream().map(l -> Tuple2.of(e.getKey(), l)))
+                .collect(Collectors.toSet());
+
+        final int unitDelays = delays.getDelaysOfUnit(resource).size();
         logger.info("client {} suspended: pending {} queries, {} open edges", client, unitDelays, unitEdges.size());
         logger.info("client {} open edges: {}", client, unitEdges);
 
-        waiting.__insert(client);
+        waiting.__insert(resource);
 
-        detectDeadLock();
+        detectDeadLock(resource);
     }
 
     @Override public void on(Done<S, L, D> message) throws InterruptedException {
         setState(message.client(), State.DONE);
 
-        detectDeadLock();
+        // FIXME detectDeadlock()?
+        // A unit can only be done when all its edges have been closed before.
+        // There should be no more queries delayed on this unit, so no
+        // deadlock should be able to occur because of this.
     }
 
     @Override public void on(Failed<S, L, D> message) throws InterruptedException {
@@ -399,31 +398,34 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
         setState(client, State.FAILED);
 
-        // clean up pending queries
-        java.util.Set<Query<S, L, D>> queries = Sets.newHashSet();
-        for(Entry<S, MultiSet.Immutable<EdgeOrData<L>>> entry : openEdges.get(resource).toMap().entrySet()) {
-            for(EdgeOrData<L> edge : entry.getValue()) {
-                queries.addAll(delays.get(Tuple2.of(entry.getKey(), edge)));
+        // remove delayed queries from this unit
+        delays.removeUnit(resource);
+
+        // remove delayed queries on this unit
+        final MultiSetMap.Transient<S, EdgeOrData<L>> edges = openEdges.__remove(resource);
+        for(Entry<S, MultiSet.Immutable<EdgeOrData<L>>> entry : edges.toMap().entrySet()) {
+            for(EdgeOrData<L> edge : entry.getValue().elementSet()) {
+                for(Query<S, L, D> query : delays.removeEdge(entry.getKey(), edge)) {
+                    tryResolve(query);
+                }
             }
         }
 
-        for(Query<S, L, D> query : queries) {
-            delays.removeValue(query);
-        }
-
-        detectDeadLock();
+        // FIXME detectDeadlock?
+        // The failed unit closes all its edges, possible triggering queries
+        // delayed on the unit. No deadlock can occur?
     }
 
     ////////////////////////////////////////////////////////////////////////////
     // deadlock
     ////////////////////////////////////////////////////////////////////////////
 
-    private void detectDeadLock() {
-        if(states.inverse().get(State.INIT).isEmpty() && !states.inverse().get(State.ACTIVE).isEmpty()
-                && states.inverse().get(State.ACTIVE).stream().allMatch(waiting::contains)) {
-            logger.info("DEADLOCK: no init clients, and all active clients are waiting");
-            for(Tuple2<S, EdgeOrData<L>> key : delays.keySet()) {
-                for(Query<S, L, D> query : delays.removeKey(key)) {
+    private void detectDeadLock(String resource) {
+        final java.util.Set<String> scc = delays.getComponent(resource);
+        if(delays.inPeninsula(resource)
+                && scc.stream().allMatch(c -> states.get(c).get().equals(State.ACTIVE) && waiting.contains(c))) {
+            for(String c : scc) {
+                for(Query<S, L, D> query : delays.removeUnit(c)) {
                     post(query.client(), QueryFailed.of(query.id(), new DeadLockedException("deadlock")));
                 }
             }
