@@ -1,8 +1,8 @@
 package mb.statix.solver.concurrent;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -223,7 +223,9 @@ public abstract class AbstractTypeChecker<S, L, D, R>
 
     @Override public IFuture<S> freshScope(String name, Iterable<L> labels, Iterable<Access> accesses) {
         assertInState(State.ACTIVE);
-        final Iterable<EdgeOrData<L>> edgesAndData = Iterables.concat(edges(labels), data(accesses));
+        final Set<EdgeOrData<L>> edges = edges(labels);
+        final Set<EdgeOrData<L>> data = data(accesses);
+        final Iterable<EdgeOrData<L>> edgesAndData = Iterables.concat(edges, data);
         final long messageId = post(FreshScope.of(name, labels, accesses));
         pendingCount += 1;
         final CompletableFuture<S> pendingScope = new CompletableFuture<>();
@@ -272,8 +274,6 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     }
 
 
-    // provided interface for process, called by client
-
     private final void done(R result) {
         logger.info("client {} done with {}", this, result);
         assertInState(State.ACTIVE);
@@ -296,12 +296,12 @@ public abstract class AbstractTypeChecker<S, L, D, R>
     }
 
 
-    private List<EdgeOrData<L>> edges(Iterable<L> labels) {
-        return Streams.stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
+    private Set<EdgeOrData<L>> edges(Iterable<L> labels) {
+        return Streams.stream(labels).map(EdgeOrData::edge).collect(Collectors.toSet());
     }
 
-    private List<EdgeOrData<L>> data(Iterable<Access> access) {
-        return Streams.stream(access).map(EdgeOrData::<L>data).collect(Collectors.toList());
+    private Set<EdgeOrData<L>> data(Iterable<Access> access) {
+        return Streams.stream(access).map(EdgeOrData::<L>data).collect(Collectors.toSet());
     }
 
 

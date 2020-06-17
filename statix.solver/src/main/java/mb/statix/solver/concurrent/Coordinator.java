@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -59,7 +60,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(Coordinator.class);
 
-    private static final String ROOT_RESOURCE = "";
+    private static final String ROOT_RESOURCE = "<>";
 
 
     private final ScopeImpl<S> scopeImpl;
@@ -132,15 +133,18 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     void registerRoot() {
         scopeGraphs.__put(ROOT_RESOURCE, ScopeGraph.Transient.<S, L, D>of(edgeLabels));
         openEdges.__put(ROOT_RESOURCE, MultiSetMap.Transient.of());
+        delays.addUnits(Iterables2.singleton(ROOT_RESOURCE));
     }
 
     void register(AbstractTypeChecker<S, L, D, ?> client) {
-        if(client.resource().isEmpty()) {
+        final String resource = client.resource();
+        if(resource.isEmpty()) {
             throw new IllegalArgumentException("Resource must not be empty.");
         }
-        clients.put(client.resource(), client);
-        scopeGraphs.__put(client.resource(), ScopeGraph.Transient.<S, L, D>of(edgeLabels));
-        openEdges.__put(client.resource(), MultiSetMap.Transient.of());
+        clients.put(resource, client);
+        scopeGraphs.__put(resource, ScopeGraph.Transient.<S, L, D>of(edgeLabels));
+        openEdges.__put(resource, MultiSetMap.Transient.of());
+        delays.addUnits(Iterables2.singleton(resource));
     }
 
     private void setState(AbstractTypeChecker<S, L, D, ?> client, State state) throws InterruptedException {
@@ -229,7 +233,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
         } catch(IncompleteException e) {
             final S scope = e.scope();
             final EdgeOrData<L> label = fixEdgeOrData(resource, scope, e.<L>label());
-            logger.info("delay query on edge {}/{}", scope, label);
+            logger.info("delay query of {} on edge {}/{}", client, scope, label);
             delays.addDelayOnEdge(query, scope, label);
         } catch(ResolutionException e) {
             logger.warn("forwarding resolution exception.", e);
@@ -367,6 +371,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
         if(message.clock() < clocks.count(client)) {
             // we have sent messages since
+            logger.info("client {} suspended: ignored", client);
             return;
         }
 
@@ -421,9 +426,11 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
     ////////////////////////////////////////////////////////////////////////////
 
     private void detectDeadLock(String resource) {
+        logger.info("Detect deadlock for {}", resource);
         final java.util.Set<String> scc = delays.getComponent(resource);
         if(delays.inPeninsula(resource)
                 && scc.stream().allMatch(c -> states.get(c).get().equals(State.ACTIVE) && waiting.contains(c))) {
+            logger.warn("Detected deadlock for SCC {}", scc);
             for(String c : scc) {
                 for(Query<S, L, D> query : delays.removeUnit(c)) {
                     post(query.client(), QueryFailed.of(query.id(), new DeadLockedException("deadlock")));

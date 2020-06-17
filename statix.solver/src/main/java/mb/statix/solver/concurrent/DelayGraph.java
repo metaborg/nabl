@@ -29,6 +29,12 @@ public class DelayGraph<S, L, D> {
         this.scopeImpl = scopeImpl;
     }
 
+    public void addUnits(Iterable<String> nodes) {
+        for(String node : nodes) {
+            delayGraph.insertNode(node);
+        }
+    }
+
     /**
      * Add query delayed on given edge.
      */
@@ -81,7 +87,8 @@ public class DelayGraph<S, L, D> {
     }
 
     public boolean inPeninsula(String resource) {
-        return sccGraph.hasOutgoingEdges(sccGraph.getRepresentative(resource));
+        final String representative = sccGraph.getRepresentative(resource);
+        return !sccGraph.hasOutgoingEdges(representative);
     }
 
     public java.util.Set<String> getComponent(String resource) {

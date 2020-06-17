@@ -83,7 +83,7 @@ rules // multi file analysis (new)
        ; level := <stx--log-level>
        ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
        ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
-       ; global-scope := Scope("", "0") // also hardcoded in STX_solve_multi
+       ; global-scope := Scope("<>", "0") // also hardcoded in STX_solve_multi
     with
       //
       // 1. Build project task
