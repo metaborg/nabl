@@ -82,6 +82,19 @@ public class STX_solve_multi extends StatixPrimitive {
         }
         final IFuture<CoordinatorResult<Scope, ITerm, ITerm>> solveResult = solver.run(executor);
 
+        final Thread watcher = new Thread(() -> {
+            try {
+                while(true) {
+                    Thread.sleep(1000);
+                    if(cancel.cancelled()) {
+                        executor.shutdownNow();
+                    }
+                }
+            } catch(InterruptedException e) {
+            }
+        }, "StatixWatcher");
+        watcher.start();
+
         final List<ITerm> results = Lists.newArrayList();
         try {
             final CoordinatorResult<Scope, ITerm, ITerm> coordinatorResult = solveResult.get();
@@ -101,6 +114,8 @@ public class STX_solve_multi extends StatixPrimitive {
             executor.shutdownNow();
             logger.error("Async solving failed.", e);
             throw new InterpreterException("Async solving failed.", e);
+        } finally {
+            watcher.interrupt();
         }
 
         return Optional.of(B.newList(results));
