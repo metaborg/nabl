@@ -40,6 +40,10 @@ exports:
   directory: editor
   includes:
   - "statix/**/*.esv"
+- language: StatixLang
+  directory: trans
+  includes:
+  - "signatures/statix/**/*.stx"
 language:
   sdf:
     sdf2table: java
