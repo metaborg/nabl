@@ -73,8 +73,7 @@ test not & closure < or [[
 
 test pre-post-fix ambiguity [[
   ~P*
-]] parse succeeds
-   warning like "amb"
+]] parse ambiguous
 
 test and < or [[
   ~P | Q* & LEX?
