@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent.util;
+package mb.statix.actors;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
@@ -17,7 +17,7 @@ public class CompletableFuture<T> implements ICompletable<T>, IFuture<T> {
         this(new java.util.concurrent.CompletableFuture<>());
     }
 
-    private CompletableFuture(java.util.concurrent.CompletableFuture<T> future) {
+    public CompletableFuture(java.util.concurrent.CompletableFuture<T> future) {
         this.future = future;
     }
 

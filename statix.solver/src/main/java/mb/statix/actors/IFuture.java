@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent.util;
+package mb.statix.actors;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;

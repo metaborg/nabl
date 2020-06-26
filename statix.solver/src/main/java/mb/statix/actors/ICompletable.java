@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent.util;
+package mb.statix.actors;
 
 public interface ICompletable<T> {
 

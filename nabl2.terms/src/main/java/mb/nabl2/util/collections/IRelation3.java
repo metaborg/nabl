@@ -39,6 +39,8 @@ public interface IRelation3<K, L, V> {
 
     interface Immutable<K, L, V> extends IRelation3<K, L, V> {
 
+        @Override IRelation3.Immutable<V, L, K> inverse();
+
         IRelation3.Immutable<K, L, V> put(K key, L label, V value);
 
         IRelation3.Immutable<K, L, V> putAll(IRelation3<K, L, V> other);
@@ -48,6 +50,8 @@ public interface IRelation3<K, L, V> {
     }
 
     interface Transient<K, L, V> extends IRelation3<K, L, V> {
+
+        @Override IRelation3.Transient<V, L, K> inverse();
 
         boolean put(K key, L label, V value);
 
