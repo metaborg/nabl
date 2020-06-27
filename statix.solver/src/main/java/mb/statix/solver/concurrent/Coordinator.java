@@ -29,6 +29,8 @@ import mb.nabl2.util.collections.HashTrieFunction;
 import mb.nabl2.util.collections.IFunction;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
+import mb.statix.actors.CompletableFuture;
+import mb.statix.actors.IFuture;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.Access;
@@ -53,8 +55,6 @@ import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.SetDatum;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
-import mb.statix.solver.concurrent.util.CompletableFuture;
-import mb.statix.solver.concurrent.util.IFuture;
 
 public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 

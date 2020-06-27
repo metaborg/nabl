@@ -2,13 +2,13 @@ package mb.statix.solver.concurrent;
 
 import java.util.Set;
 
+import mb.statix.actors.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.solver.concurrent.util.IFuture;
 
 public interface IScopeGraphFacade<S, L, D> {
 

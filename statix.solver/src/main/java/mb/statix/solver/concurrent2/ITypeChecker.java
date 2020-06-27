@@ -6,6 +6,6 @@ package mb.statix.solver.concurrent2;
 @FunctionalInterface
 public interface ITypeChecker<S, L, D> {
 
-    void run(IUnit<S, L, D> unit) throws InterruptedException;
+    void run(IUnit<S, L, D> unit, S root) throws InterruptedException;
 
 }

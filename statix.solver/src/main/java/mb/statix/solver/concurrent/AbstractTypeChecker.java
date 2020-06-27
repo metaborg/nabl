@@ -18,6 +18,9 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
 
+import mb.statix.actors.CompletableFuture;
+import mb.statix.actors.ICompletable;
+import mb.statix.actors.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
@@ -40,9 +43,6 @@ import mb.statix.solver.concurrent.messages.ScopeAnswer;
 import mb.statix.solver.concurrent.messages.SetDatum;
 import mb.statix.solver.concurrent.messages.Start;
 import mb.statix.solver.concurrent.messages.Suspend;
-import mb.statix.solver.concurrent.util.CompletableFuture;
-import mb.statix.solver.concurrent.util.ICompletable;
-import mb.statix.solver.concurrent.util.IFuture;
 
 public abstract class AbstractTypeChecker<S, L, D, R>
         implements ClientMessage.Cases<S, L, D>, IScopeGraphFacade<S, L, D>, ITypeChecker<S, L, D, R> {
