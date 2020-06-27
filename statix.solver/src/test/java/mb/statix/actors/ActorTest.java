@@ -10,9 +10,9 @@ public class ActorTest {
     private static final ILogger logger = LoggerUtils.logger(ActorTest.class);
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        final ActorSystem system = new ActorSystem(IActorMonitor.NOOP);
-        final IActorRef<IPong> ponger = system.add("ponger", IPong.class, self -> new Pong(self));
-        final IActorRef<IPing> pinger = system.add("pinger", IPing.class, self -> new Ping(self, ponger));
+        final ActorSystem system = new ActorSystem();
+        final IActorRef<IPong> ponger = system.add("ponger", TypeTag.of(IPong.class), self -> new Pong(self));
+        final IActorRef<IPing> pinger = system.add("pinger", TypeTag.of(IPing.class), self -> new Ping(self, ponger));
         system.start();
         pinger.get().start();
         system.stop();

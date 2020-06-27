@@ -55,6 +55,17 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private void put(Invocation invocation) {
         // ASSERT ActorState != DONE
         synchronized(lock) {
+            // It is important to change the state here and not in the message loop.
+            // The reason is that doing it here ensures that the unit is activated before
+            // the sending unit is suspended. If it were the other way around, there could be
+            // a false deadlock reported.
+            if(state.equals(ActorState.WAITING)) {
+                state = ActorState.RUNNING;
+                for(IActorRef<? extends IActorMonitor> monitor : monitors) {
+                    monitor.get().resumed(this);
+                }
+                logger.info("running {}", id);
+            }
             invocations.add(invocation);
             lock.notify();
         }
@@ -106,17 +117,13 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         logger.info("waiting {}", id);
                         state = ActorState.WAITING;
                         for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                            monitor.get().suspend(this);
+                            monitor.get().suspended(this);
                         }
                         lock.wait();
                     }
-                    if(state.equals(ActorState.WAITING)) {
-                        state = ActorState.RUNNING;
-                        for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                            monitor.get().resume(this);
-                        }
-                        logger.info("running {}", id);
-                    }
+                    // Here we are always in state RUNNING:
+                    // (a) invocations was not empty, and we never suspended
+                    // (b) we suspended, and put() set the state to RUNNING before notify()
                     invocation = invocations.remove();
                 }
                 logger.info("invoke {}[{}] : {}", id, state, invocation);
@@ -154,7 +161,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @Override public void addMonitor(IActorRef<? extends IActorMonitor> monitor) {
-        monitors.add(monitor);
+        synchronized(lock) {
+            monitors.add(monitor);
+            monitor.get().started(this);
+        }
     }
 
     @Override public String toString() {
