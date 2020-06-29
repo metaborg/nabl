@@ -29,7 +29,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private final Object lock;
     private volatile ActorState state;
     private Future<?> task;
-    private final Queue<Invocation> invocations;
+    private final Queue<Message> messages;
 
     Actor(String id, TypeTag<T> type, Function1<IActor<T>, ? extends T> supplier) {
         this.id = id;
@@ -41,7 +41,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
         this.lock = new Object();
         this.state = ActorState.INIT;
-        this.invocations = Queues.newArrayDeque();
+        this.messages = Queues.newArrayDeque();
 
         validate();
     }
@@ -52,7 +52,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
     }
 
-    private void put(Invocation invocation) {
+    private void put(Message invocation) {
         // ASSERT ActorState != DONE
         synchronized(lock) {
             // It is important to change the state here and not in the message loop.
@@ -62,11 +62,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             if(state.equals(ActorState.WAITING)) {
                 state = ActorState.RUNNING;
                 for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                    monitor.get().resumed(this);
+                    monitor.async().resumed(this);
                 }
                 logger.info("running {}", id);
             }
-            invocations.add(invocation);
+            messages.add(invocation);
             lock.notify();
         }
     }
@@ -76,14 +76,14 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 (proxy, method, args) -> {
                     // ASSERT ActorState != DONE
                     final Class<?> returnType = method.getReturnType();
-                    final Invocation invocation;
+                    final Message invocation;
                     final Object returnValue;
                     if(Void.TYPE.isAssignableFrom(returnType)) {
-                        invocation = new Invocation(method, args, null);
+                        invocation = new Message(method, args, null);
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final CompletableFuture<?> result = new CompletableFuture<>();
-                        invocation = new Invocation(method, args, result);
+                        invocation = new Message(method, args, result);
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -111,23 +111,23 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         logger.info("starting {}", id);
         try {
             while(!state.equals(ActorState.STOPPED)) {
-                final Invocation invocation;
+                final Message invocation;
                 synchronized(lock) {
-                    while(invocations.isEmpty()) {
+                    while(messages.isEmpty()) {
                         logger.info("waiting {}", id);
                         state = ActorState.WAITING;
                         for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                            monitor.get().suspended(this);
+                            monitor.async().suspended(this);
                         }
                         lock.wait();
                     }
                     // Here we are always in state RUNNING:
                     // (a) invocations was not empty, and we never suspended
                     // (b) we suspended, and put() set the state to RUNNING before notify()
-                    invocation = invocations.remove();
+                    invocation = messages.remove();
                 }
                 logger.info("invoke {}[{}] : {}", id, state, invocation);
-                invocation.invoke();
+                invocation.deliver();
             }
         } catch(InterruptedException e) {
             logger.info("interrupted {}", id);
@@ -146,7 +146,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     /**
      * Get an async interface to the receiver, that can be called non-blocking.
      */
-    @Override public T get() {
+    @Override public T async() {
         return async;
     }
 
@@ -163,7 +163,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @Override public void addMonitor(IActorRef<? extends IActorMonitor> monitor) {
         synchronized(lock) {
             monitors.add(monitor);
-            monitor.get().started(this);
+            monitor.async().started(this);
         }
     }
 
@@ -172,19 +172,19 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private class Invocation {
+    private class Message {
 
         public final Method method;
         public final Object[] args;
         public final ICompletable result;
 
-        public Invocation(Method method, Object[] args, ICompletable<?> result) {
+        public Message(Method method, Object[] args, ICompletable<?> result) {
             this.method = method;
             this.args = args;
             this.result = result;
         }
 
-        public void invoke() {
+        public void deliver() {
             try {
                 final Object returnValue = method.invoke(impl, args);
                 if(result != null) {
@@ -202,6 +202,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 } else {
                     ex.printStackTrace();
                 }
+            } finally {
             }
         }
 

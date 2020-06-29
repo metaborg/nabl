@@ -24,8 +24,8 @@ public class DeadlockTest {
         pp2.addMonitor(dlm);
         system.start();
         //        pp1.get().start(pp1);
-        pp1.get().start(pp2);
-        pp2.get().start(pp1);
+        pp1.async().start(pp2);
+        pp2.async().start(pp1);
     }
 
     interface IPing {
@@ -58,8 +58,8 @@ public class DeadlockTest {
 
         @Override public void start(IActorRef<? extends IPing> target) {
             logger.info("start");
-            target.get().ping(self);
-            dlm.get().waitFor(self, "pong", target);
+            target.async().ping(self);
+            dlm.async().waitFor(self, "pong", target);
         }
 
         @Override public void ping(IActorRef<? extends IPong> source) {
@@ -70,7 +70,7 @@ public class DeadlockTest {
 
         @Override public void pong(IActorRef<? extends IPong> source) {
             logger.info("pong");
-            dlm.get().granted(self, "pong", source);
+            dlm.async().granted(self, "pong", source);
             self.stop();
         }
 

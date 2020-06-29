@@ -15,20 +15,20 @@ public class DeadlockMonitor<T> implements IDeadlockMonitor<T> {
     }
 
     @Override public void waitFor(IActorRef<?> source, T token, IActorRef<?> target) {
-        if(!(source.get() instanceof CanDeadlock)) {
+        if(!(source.async() instanceof CanDeadlock)) {
             throw new IllegalArgumentException("Actor " + source + " must implement CanDeadlock");
         }
-        if(!(target.get() instanceof CanDeadlock)) {
+        if(!(target.async() instanceof CanDeadlock)) {
             throw new IllegalArgumentException("Actor " + source + " must implement CanDeadlock");
         }
         wfg.waitFor(source, token, target);
     }
 
     @Override public void granted(IActorRef<?> source, T token, IActorRef<?> target) {
-        if(!(source.get() instanceof CanDeadlock)) {
+        if(!(source.async() instanceof CanDeadlock)) {
             throw new IllegalArgumentException("Actor " + source + " must implement CanDeadlock");
         }
-        if(!(target.get() instanceof CanDeadlock)) {
+        if(!(target.async() instanceof CanDeadlock)) {
             throw new IllegalArgumentException("Actor " + source + " must implement CanDeadlock");
         }
         wfg.granted(source, token, target);
@@ -39,18 +39,18 @@ public class DeadlockMonitor<T> implements IDeadlockMonitor<T> {
     }
 
     @SuppressWarnings("unchecked") @Override public void suspended(IActorRef<?> actor) {
-        if(!(actor.get() instanceof CanDeadlock)) {
+        if(!(actor.async() instanceof CanDeadlock)) {
             return;
         }
         final SetMultimap<IActorRef<?>, T> waitFors = wfg.suspend(actor);
         if(waitFors.isEmpty()) {
             return;
         }
-        ((CanDeadlock<T>) actor.get()).deadlocked(waitFors);
+        ((CanDeadlock<T>) actor.async()).deadlocked(waitFors);
     }
 
     @Override public void resumed(IActorRef<?> actor) {
-        if(!(actor.get() instanceof CanDeadlock)) {
+        if(!(actor.async() instanceof CanDeadlock)) {
             return;
         }
         wfg.activate(actor);

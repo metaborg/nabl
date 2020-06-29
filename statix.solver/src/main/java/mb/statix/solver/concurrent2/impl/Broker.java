@@ -39,7 +39,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D> {
     }
 
     @Override public IUnitProtocol<S, L, D> get(String id) {
-        return units.get(id).get();
+        return units.get(id).async();
     }
 
     @Override public IFuture<IResult<S, L, D>> run(ICancel cancel) {
@@ -75,7 +75,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D> {
         return new CompletableFuture<>(result);
     }
 
-    private class UnitBroker implements IBrokerProtocol<S, L, D> {
+    private class UnitBroker implements IUnitContext<S, L, D> {
 
         private final String id;
         private final Map<String, IUnitProtocol<S, L, D>> cachedRefs;
@@ -90,7 +90,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D> {
         }
 
         @Override public IUnitProtocol<S, L, D> get(String id) {
-            return cachedRefs.computeIfAbsent(id, _1 -> units.get(id).get());
+            return cachedRefs.computeIfAbsent(id, _1 -> units.get(id).async());
         }
 
         @Override public IScopeImpl<S> scopeImpl() {
