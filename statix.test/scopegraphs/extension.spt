@@ -422,3 +422,35 @@ test usage of predicate which argument extends and provides requires no more per
     d : scope
     d(s) :- s -P-> s.
 ]] 0 errors
+
+test multi-recursive predicate without news gives no permission fails [[
+  resolve {s} c(s, [])
+  signature
+    relations
+      r : int
+  rules
+    c : scope * list(int)
+    c(s, []).
+    c(s, [i|is]) :- !r[i] in s, c(s, is).
+]] > 0 errors
+
+test single-rule recursive predicate without news gives permission caveat succeeds [[
+  resolve {s} c(s, [])
+  signature
+    relations
+      r : int
+  rules
+    c : scope * list(int)
+    c(s, [i|is]) :- !r[i] in s, c(s, is).
+]] 0 errors
+
+test multi-recursive predicate without news with wildcards gives no permission fails [[
+  resolve {s} c(s, [])
+  signature
+    relations
+      r : int
+  rules
+    c : scope * list(int)
+    c(_, []).
+    c(s, [i|is]) :- !r[i] in s, c(s, is).
+]] > 0 errors
