@@ -1,5 +1,8 @@
 package mb.statix.arithmetic;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 import org.metaborg.util.functions.Function2;
 
 import mb.nabl2.terms.ITerm;
@@ -9,9 +12,9 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.Delay;
 
-import java.util.Objects;
+class BinExpr implements ArithExpr, Serializable {
 
-class BinExpr implements ArithExpr {
+    private static final long serialVersionUID = 1L;
 
     private final String op;
     private final ArithExpr ae1;
@@ -45,19 +48,17 @@ class BinExpr implements ArithExpr {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        BinExpr binExpr = (BinExpr)o;
-        return Objects.equals(op, binExpr.op) &&
-            Objects.equals(ae1, binExpr.ae1) &&
-            Objects.equals(ae2, binExpr.ae2) &&
-            Objects.equals(f, binExpr.f);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        BinExpr binExpr = (BinExpr) o;
+        return Objects.equals(op, binExpr.op) && Objects.equals(ae1, binExpr.ae1) && Objects.equals(ae2, binExpr.ae2)
+                && Objects.equals(f, binExpr.f);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(op, ae1, ae2, f);
     }
 }
