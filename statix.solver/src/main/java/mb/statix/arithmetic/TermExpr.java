@@ -2,10 +2,12 @@ package mb.statix.arithmetic;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -14,7 +16,9 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.Delay;
 
-class TermExpr implements ArithExpr {
+class TermExpr implements ArithExpr, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private final ITerm term;
 
@@ -50,16 +54,16 @@ class TermExpr implements ArithExpr {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        TermExpr termExpr = (TermExpr)o;
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        TermExpr termExpr = (TermExpr) o;
         return Objects.equals(term, termExpr.term);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(term);
     }
 }

@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -24,7 +25,9 @@ public interface ArithExpr {
         return Optional.empty();
     }
 
-    default Multiset<ITermVar> getVars() { return ImmutableMultiset.of(); }
+    default Multiset<ITermVar> getVars() {
+        return ImmutableMultiset.of();
+    }
 
     String toString(TermFormatter termToString);
 
