@@ -2,7 +2,7 @@ package mb.statix.solver.concurrent;
 
 import java.util.Set;
 
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;

@@ -29,8 +29,8 @@ import mb.nabl2.util.collections.HashTrieFunction;
 import mb.nabl2.util.collections.IFunction;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
-import mb.statix.actors.CompletableFuture;
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.CompletableFuture;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.Access;
@@ -189,7 +189,7 @@ public class Coordinator<S, L, D> implements CoordinatorMessage.Cases<S, L, D> {
 
         final Map.Transient<String, IScopeGraph.Immutable<S, L, D>> finalScopeGraphs = Map.Transient.of();
         scopeGraphs.forEach((r, sg) -> finalScopeGraphs.__put(r, sg.freeze()));
-        pendingResult.complete(CoordinatorResult.of(finalScopeGraphs.freeze()));
+        pendingResult.completeValue(CoordinatorResult.of(finalScopeGraphs.freeze()));
     }
 
     private void initClients() throws InterruptedException {

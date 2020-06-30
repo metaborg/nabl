@@ -24,7 +24,7 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.Tuple2;
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;

@@ -15,29 +15,34 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Queues;
 
+import mb.statix.actors.futures.AsyncCompletable;
+import mb.statix.actors.futures.CompletableFuture;
+import mb.statix.actors.futures.ICompletable;
+import mb.statix.actors.futures.ICompletableFuture;
+import mb.statix.actors.futures.IFuture;
+
 class Actor<T> implements IActorRef<T>, IActor<T> {
 
     private static final ILogger logger = LoggerUtils.logger(Actor.class);
 
+    private final IActorContext context;
     private final String id;
     private final TypeTag<T> type;
     private final T impl;
     private final Set<IActorRef<? extends IActorMonitor>> monitors;
 
-    private final T async;
-
     private final Object lock;
     private volatile ActorState state;
     private Future<?> task;
-    private final Queue<Message> messages;
+    private final Queue<Runnable> messages;
 
-    Actor(String id, TypeTag<T> type, Function1<IActor<T>, ? extends T> supplier) {
+    Actor(Function1<Actor<T>, IActorContext> context, String id, TypeTag<T> type,
+            Function1<IActor<T>, ? extends T> supplier) {
+        this.context = context.apply(this);
         this.id = id;
         this.type = type;
         this.impl = supplier.apply(this);
         this.monitors = new HashSet<>();
-
-        this.async = makeAsync();
 
         this.lock = new Object();
         this.state = ActorState.INIT;
@@ -52,7 +57,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
     }
 
-    private void put(Message invocation) {
+    private void put(Runnable message) {
         // ASSERT ActorState != DONE
         synchronized(lock) {
             // It is important to change the state here and not in the message loop.
@@ -62,39 +67,85 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             if(state.equals(ActorState.WAITING)) {
                 state = ActorState.RUNNING;
                 for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                    monitor.async().resumed(this);
+                    context.async(monitor).resumed(this);
                 }
                 logger.info("running {}", id);
             }
-            messages.add(invocation);
+            messages.add(message);
             lock.notify();
         }
     }
 
-    @SuppressWarnings("unchecked") private T makeAsync() {
+    @SuppressWarnings("unchecked") T async(Actor<?> sender) {
         return (T) Proxy.newProxyInstance(type.type().getClassLoader(), new Class[] { type.type() },
                 (proxy, method, args) -> {
+                    // This runs on the sender's thread!
                     // ASSERT ActorState != DONE
                     final Class<?> returnType = method.getReturnType();
-                    final Message invocation;
+                    final Runnable message;
                     final Object returnValue;
                     if(Void.TYPE.isAssignableFrom(returnType)) {
-                        invocation = new Message(method, args, null);
+                        message = new Invoke(method, args, null);
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
-                        final CompletableFuture<?> result = new CompletableFuture<>();
-                        invocation = new Message(method, args, result);
+                        final ICompletableFuture<?> result = new CompletableFuture<>();
+                        message = new Invoke(method, args, new ActorCompletable<>(sender, result));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
-                    put(invocation);
+                    put(message);
+                    return returnValue;
+                });
+    }
+
+    private static class ActorCompletable<T> implements ICompletable<T> {
+
+        private final Actor<?> sender;
+        private final ICompletable<T> completable;
+
+        public ActorCompletable(Actor<?> sender, ICompletable<T> completable) {
+            this.sender = sender;
+            this.completable = completable;
+        }
+
+        @Override public void complete(T value, Throwable ex) {
+            sender.put(() -> {
+                completable.complete(value, ex);
+            });
+        }
+
+        @Override public boolean isDone() {
+            return completable.isDone();
+        }
+
+    }
+
+    @SuppressWarnings("unchecked") T async(ExecutorService executor) {
+        return (T) Proxy.newProxyInstance(type.type().getClassLoader(), new Class[] { type.type() },
+                (proxy, method, args) -> {
+                    // This runs on the sender's thread!
+                    // ASSERT ActorState != DONE
+                    final Class<?> returnType = method.getReturnType();
+                    final Runnable message;
+                    final Object returnValue;
+                    if(Void.TYPE.isAssignableFrom(returnType)) {
+                        message = new Invoke(method, args, null);
+                        returnValue = null;
+                    } else if(IFuture.class.isAssignableFrom(returnType)) {
+                        final ICompletableFuture<?> result = new CompletableFuture<>();
+                        message = new Invoke(method, args, new AsyncCompletable<>(executor, result));
+                        returnValue = result;
+                    } else {
+                        throw new IllegalStateException("Unsupported method called: " + method);
+                    }
+                    put(message);
                     return returnValue;
                 });
     }
 
     void run(ExecutorService executorService) {
-        logger.info("start {}", id);
+        //        logger.info("start {}", id);
         synchronized(lock) {
             if(!state.equals(ActorState.INIT)) {
                 throw new IllegalStateException("Actor already started.");
@@ -104,50 +155,47 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
     }
 
+    @Override public <U> U async(IActorRef<U> other) {
+        return context.async(other);
+    }
+
     /**
      * Run the actor.
      */
     private void run() {
-        logger.info("starting {}", id);
+        logger.info("{} starting", id);
         try {
             while(!state.equals(ActorState.STOPPED)) {
-                final Message invocation;
+                final Runnable message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
-                        logger.info("waiting {}", id);
+                        logger.info("{} waiting", id);
                         state = ActorState.WAITING;
                         for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                            monitor.async().suspended(this);
+                            context.async(monitor).suspended(this);
                         }
                         lock.wait();
                     }
                     // Here we are always in state RUNNING:
                     // (a) invocations was not empty, and we never suspended
                     // (b) we suspended, and put() set the state to RUNNING before notify()
-                    invocation = messages.remove();
+                    message = messages.remove();
                 }
-                logger.info("invoke {}[{}] : {}", id, state, invocation);
-                invocation.deliver();
+                logger.info("{}[{}] message {}", id, state, message);
+                message.run();
             }
         } catch(InterruptedException e) {
-            logger.info("interrupted {}", id);
+            logger.info("{} interrupted", id);
         } finally {
             synchronized(lock) {
                 state = ActorState.STOPPED;
             }
         }
-        logger.info("stopped {}", id);
+        logger.info("{} stopped", id);
     }
 
     @Override public String id() {
         return id;
-    }
-
-    /**
-     * Get an async interface to the receiver, that can be called non-blocking.
-     */
-    @Override public T async() {
-        return async;
     }
 
     @Override public void stop() {
@@ -163,7 +211,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @Override public void addMonitor(IActorRef<? extends IActorMonitor> monitor) {
         synchronized(lock) {
             monitors.add(monitor);
-            monitor.async().started(this);
+            context.async(monitor).started(this);
         }
     }
 
@@ -172,27 +220,29 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private class Message {
+    private class Invoke implements Runnable {
 
         public final Method method;
         public final Object[] args;
         public final ICompletable result;
 
-        public Message(Method method, Object[] args, ICompletable<?> result) {
+        public Invoke(Method method, Object[] args, ICompletable<?> result) {
             this.method = method;
             this.args = args;
             this.result = result;
         }
 
-        public void deliver() {
+        @Override public void run() {
             try {
                 final Object returnValue = method.invoke(impl, args);
                 if(result != null) {
+                    // FIXME The completion runs on the thread of the receiving actor,
+                    //       not on the thread of the sending actor, as it should!
                     ((IFuture<?>) returnValue).whenComplete((r, ex) -> {
                         if(ex != null) {
                             result.completeExceptionally(ex);
                         } else {
-                            result.complete(r);
+                            result.completeValue(r);
                         }
                     });
                 }

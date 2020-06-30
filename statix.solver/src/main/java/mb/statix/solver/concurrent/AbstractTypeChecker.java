@@ -18,9 +18,9 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
 
-import mb.statix.actors.CompletableFuture;
-import mb.statix.actors.ICompletable;
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.CompletableFuture;
+import mb.statix.actors.futures.ICompletable;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
@@ -158,7 +158,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         if(!pendingScopes.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
-        pendingScopes.remove(message.requestId()).complete(message.scope());
+        pendingScopes.remove(message.requestId()).completeValue(message.scope());
     }
 
     @Override public final void on(QueryAnswer<S, L, D> message) throws InterruptedException {
@@ -166,7 +166,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         if(!pendingQueries.containsKey(message.requestId())) {
             throw new IllegalStateException("Missing pending answer for query " + message.requestId());
         }
-        pendingQueries.remove(message.requestId()).complete(message.paths());
+        pendingQueries.remove(message.requestId()).completeValue(message.paths());
     }
 
     @Override public final void on(QueryFailed<S, L, D> message) throws InterruptedException {
@@ -283,7 +283,7 @@ public abstract class AbstractTypeChecker<S, L, D, R>
         }
         setState(State.DONE);
         post(Done.<S, L, D>builder().build());
-        pendingResult.complete(result);
+        pendingResult.completeValue(result);
     }
 
     private final void failed(Throwable e) {

@@ -10,7 +10,7 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Maps;
 
-public class ActorSystem {
+public class ActorSystem implements IActorSystem {
 
     private static final ILogger logger = LoggerUtils.logger(ActorSystem.class);
 
@@ -25,9 +25,9 @@ public class ActorSystem {
         this.executorService = Executors.newCachedThreadPool();
     }
 
-    public <T> IActor<T> add(String id, TypeTag<T> type, Function1<IActor<T>, T> supplier) {
+    @Override public <T> IActor<T> add(String id, TypeTag<T> type, Function1<IActor<T>, T> supplier) {
         logger.info("add actor {}", id);
-        final Actor<T> actor = new Actor<>(id, type, supplier);
+        final Actor<T> actor = new Actor<>(ActorContext::new, id, type, supplier);
         synchronized(lock) {
             if(actors.containsKey(id)) {
                 throw new IllegalArgumentException("Actor with id " + id + " already exists.");
@@ -41,7 +41,11 @@ public class ActorSystem {
         return actor;
     }
 
-    public void start() {
+    @Override public <T> T async(IActorRef<T> receiver) {
+        return ((Actor<T>) receiver).async(executorService);
+    }
+
+    @Override public void start() {
         logger.info("start system");
         synchronized(lock) {
             if(running) {
@@ -55,7 +59,7 @@ public class ActorSystem {
         logger.info("started system");
     }
 
-    public void stop() {
+    @Override public void stop() {
         synchronized(lock) {
             if(!running) {
                 throw new IllegalStateException("Actor system not running.");
@@ -65,6 +69,25 @@ public class ActorSystem {
             }
             executorService.shutdown();
         }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private class ActorContext implements IActorContext {
+
+        private final Actor<?> self;
+        private final Map<IActorRef, Object> asyncCache = Maps.newHashMap();
+
+        public ActorContext(Actor<?> self) {
+            this.self = self;
+        }
+
+        @Override public <T> T async(IActorRef<T> receiver) {
+            if(!actors.containsValue(receiver)) {
+                throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
+            }
+            return (T) asyncCache.computeIfAbsent(receiver, r -> ((Actor) r).async(self));
+        }
+
     }
 
 }

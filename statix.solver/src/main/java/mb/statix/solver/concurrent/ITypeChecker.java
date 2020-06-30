@@ -1,6 +1,6 @@
 package mb.statix.solver.concurrent;
 
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.IFuture;
 
 public interface ITypeChecker<S, L, D, R> {
 

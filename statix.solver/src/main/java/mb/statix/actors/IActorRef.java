@@ -4,6 +4,4 @@ public interface IActorRef<T> {
 
     String id();
 
-    T async();
-
 }

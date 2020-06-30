@@ -1,6 +1,6 @@
 package mb.statix.solver.concurrent2;
 
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.IFuture;
 
 /**
  * Represents the user-implemented type checker for a specific unit.
@@ -8,6 +8,6 @@ import mb.statix.actors.IFuture;
 @FunctionalInterface
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(IClientProtocol<S, L, D> unit, S root) throws InterruptedException;
+    IFuture<R> run(ITypeCheckerContext<S, L, D> unit, S root) throws InterruptedException;
 
 }

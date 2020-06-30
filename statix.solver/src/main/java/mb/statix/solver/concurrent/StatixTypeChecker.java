@@ -4,7 +4,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;

@@ -2,7 +2,7 @@ package mb.statix.solver.concurrent2;
 
 import java.util.Set;
 
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
@@ -13,7 +13,7 @@ import mb.statix.scopegraph.reference.LabelWF;
 /**
  * The interface from the system to the type checkers.
  */
-public interface IClientProtocol<S, L, D> {
+public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Initialize root scope.
@@ -48,7 +48,7 @@ public interface IClientProtocol<S, L, D> {
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
 
     // FIXME done()
-    
+
     // FIXME fail()
-    
+
 }

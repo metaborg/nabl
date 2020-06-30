@@ -66,11 +66,10 @@ public class WaitForGraph<N, T> {
     /**
      * Suspend a node. Return deadlocked tokens on the given node.
      */
-    public SetMultimap<N, T> suspend(N node) {
+    public Optional<SetMultimap<N, T>> suspend(N node) {
         if(waitingNodes.contains(node)) {
             throw new IllegalStateException("Node " + node + " is already waiting.");
         }
-        waitForGraph.insertNode(node);
         waitingNodes.add(node);
         return detectDeadlock(node);
     }
@@ -91,16 +90,16 @@ public class WaitForGraph<N, T> {
         return waits.freeze();
     }
 
-    private SetMultimap<N, T> detectDeadlock(N node) {
+    private Optional<SetMultimap<N, T>> detectDeadlock(N node) {
         final N rep = sccGraph.getRepresentative(node);
         if(sccGraph.hasOutgoingEdges(rep)) {
             // other clusters are upstream and may release tokens
-            return SetMultimap.Immutable.of();
+            return Optional.empty();
         }
         final Set<N> scc = Optional.ofNullable(sccGraph.sccs.getPartition(node)).orElse(Collections.singleton(node));
         if(!scc.stream().allMatch(waitingNodes::contains)) {
-            // some units are active
-            return SetMultimap.Immutable.of();
+            // not all units are waiting yet
+            return Optional.empty();
         }
         final SetMultimap.Transient<N, T> waits = SetMultimap.Transient.of();
         for(Entry<T, N> entry : waitForEdges.inverse().get(node)) {
@@ -111,7 +110,11 @@ public class WaitForGraph<N, T> {
                 waits.__insert(other, token);
             }
         }
-        return waits.freeze();
+        return Optional.of(waits.freeze());
+    }
+
+    @Override public String toString() {
+        return waitForGraph.toString();
     }
 
 }

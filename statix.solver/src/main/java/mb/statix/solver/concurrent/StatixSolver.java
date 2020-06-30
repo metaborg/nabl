@@ -39,8 +39,8 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.statix.actors.CompletableFuture;
-import mb.statix.actors.IFuture;
+import mb.statix.actors.futures.CompletableFuture;
+import mb.statix.actors.futures.IFuture;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
@@ -198,7 +198,7 @@ public class StatixSolver {
                 scopeGraph.hasPending(), result.isDone());
         if(ephemeralActiveConstraints.get() == 0 && !scopeGraph.hasPending() && !result.isDone()) {
             debug.info("Finished.");
-            result.complete(finishSolve());
+            result.completeValue(finishSolve());
         } else {
             debug.info("Not finished.");
         }
