@@ -4,10 +4,6 @@ plugins {
   `maven-publish`
 }
 
-spoofaxLanguageSpecification {
-  createPublication.set(true)
-}
-
 ecj {
   toolVersion = "3.20.0"
 }
