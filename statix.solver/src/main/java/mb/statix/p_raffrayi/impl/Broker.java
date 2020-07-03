@@ -3,6 +3,8 @@ package mb.statix.p_raffrayi.impl;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
@@ -21,43 +23,40 @@ import mb.statix.p_raffrayi.IResult;
 import mb.statix.p_raffrayi.IScopeImpl;
 import mb.statix.p_raffrayi.ITypeChecker;
 
-public class Broker<S, L, D> implements IBroker<S, L, D> {
-
-    public static final String PROJECT_ID = "<>";
+public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     private final IScopeImpl<S> scopeImpl;
-    private final S root;
     private final Set<L> edgeLabels;
     private final ActorSystem system;
-    private final IActor<DeadlockMonitor<IProtocolToken>> dlm;
-    private final IActor<IProject<S, L, D>> project;
-    private final Map<String, IActor<IUnit<S, L, D>>> units;
+    private final IActor<DeadlockMonitor<IWaitFor>> dlm;
+    private final Map<String, IActor<IUnit<S, L, D, R>>> units;
 
     public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels) {
         this.scopeImpl = scopeImpl;
-        this.root = scopeImpl.make(PROJECT_ID, "0");
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.system = new ActorSystem();
-        this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class), self -> new DeadlockMonitor<>(self, (_1, _2) -> {}));
+        this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
+                self -> new DeadlockMonitor<>(self, (_1, _2) -> {
+                }));
         this.units = Maps.newHashMap();
-        this.project = system.add(PROJECT_ID, TypeTag.of(IProject.class),
-                self -> new ProjectActor<>(self, new UnitContext(self), root, edgeLabels));
-        project.addMonitor(system.async(dlm));
     }
 
-    @Override public void add(String id, ITypeChecker<S, L, D, ?> unitChecker) {
-        final IActor<IUnit<S, L, D>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new UnitActor<>(self, project, new UnitContext(self), unitChecker, root, edgeLabels));
+    @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
+        add(id, unitChecker, null);
+    }
+
+    private IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+            @Nullable S root) {
+        final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
+                self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
         unit.addMonitor(system.async(dlm));
         units.put(id, unit);
+        system.async(unit)._start(root);
+        return unit;
     }
 
-    @Override public IFuture<IResult<S, L, D>> run(ICancel cancel) {
+    @Override public IFuture<IResult<S, L, D, R>> run(ICancel cancel) {
         system.start();
-        system.async(project)._start(units.values());
-        for(IActor<IUnit<S, L, D>> unit : units.values()) {
-            system.async(unit)._start();
-        }
 
         //        // start cancel watcher
         //        final Thread watcher = new Thread(() -> {
@@ -77,7 +76,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D> {
         return new CompletableFuture<>();
     }
 
-    private class UnitContext implements IUnitContext<S, L, D> {
+    private class UnitContext implements IUnitContext<S, L, D, R> {
 
         private final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> self;
 
@@ -95,41 +94,25 @@ public class Broker<S, L, D> implements IBroker<S, L, D> {
         }
 
         @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner(S scope) {
-            final String id = scopeImpl.id(scope);
-            return id.equals(PROJECT_ID) ? project : units.get(id);
+            return units.get(scopeImpl.id(scope));
         }
 
-        @Override public void waitForInit(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S root) {
-            // TODO Implement method IUnitContext<S,L,D>::waitForInit.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::waitForInit not implemented.");
+        @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id,
+                ITypeChecker<S, L, D, R> unitChecker, S root) {
+            return Broker.this.add(id, unitChecker, root);
         }
 
-        @Override public void grantedInit(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S root) {
-            // TODO Implement method IUnitContext<S,L,D>::grantedInit.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::grantedInit not implemented.");
+        @Override public void suspend(Clock<S, L, D> clock) {
+            // TODO Implement
         }
 
-        @Override public void waitForClose(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S scope,
-                Iterable<L> labels) {
-            // TODO Implement method IUnitContext<S,L,D>::waitForClose.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::waitForClose not implemented.");
+        @Override public void waitFor(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
+            // TODO Implement
         }
 
-        @Override public void grantedClose(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S scope, L label) {
-            // TODO Implement method IUnitContext<S,L,D>::grantedClose.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::grantedClose not implemented.");
+        @Override public void granted(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
+            // TODO Implement
         }
-
-        @Override public void waitForAnswer(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, IFuture<?> future) {
-            // TODO Implement method IUnitContext<S,L,D>::waitForAnswer.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::waitForAnswer not implemented.");
-        }
-
-        @Override public void grantedAnswer(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, IFuture<?> future) {
-            // TODO Implement method IUnitContext<S,L,D>::grantedAnswer.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::grantedAnswer not implemented.");
-        }
-
 
     }
 

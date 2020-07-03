@@ -13,17 +13,23 @@ import mb.statix.scopegraph.reference.LabelWF;
 /**
  * The interface from the system to the type checkers.
  */
-public interface ITypeCheckerContext<S, L, D> {
+public interface ITypeCheckerContext<S, L, D, R> {
+
+    /**
+     * Start sub type-checker, with the given root scope.
+     */
+    void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
 
     /**
      * Initialize root scope.
+     * @param shared TODO
      */
-    void initRoot(S root, Iterable<L> labels);
+    void initRoot(S root, Iterable<L> labels, boolean shared);
 
     /**
-     * Create fresh scope, declaring open edges and data.
+     * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
      */
-    S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data);
+    S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean shared);
 
     /**
      * Set datum of a scope. Scope must be open for data at given access level. Datum is automatically closed by setting
@@ -42,9 +48,14 @@ public interface ITypeCheckerContext<S, L, D> {
     void closeEdge(S source, L label);
 
     /**
+     * Declare scope to be closed for sharing.
+     */
+    void closeShare(S scope);
+
+    /**
      * Execute scope graph query in the given scope.
      */
-    IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
 
     // FIXME done()

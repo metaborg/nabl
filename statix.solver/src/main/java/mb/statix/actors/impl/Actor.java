@@ -40,6 +40,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private final Queue<IMessage<T>> messages;
     private final Set<IActorMonitor> monitors;
 
+    private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
+        throw new IllegalStateException("Cannot get sender when not in message processing context.");
+    });
+
     Actor(Function1<Actor<T>, IActorContext> context, String id, TypeTag<T> type,
             Function1<IActor<T>, ? extends T> supplier) {
         this.context = context.apply(this);
@@ -87,11 +91,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     final Object returnValue;
 
                     if(Void.TYPE.isAssignableFrom(returnType)) {
-                        message = new Invoke(method, args, null);
+                        message = new Invoke(sender, method, args, null);
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(method, args, new ActorCompletable<>(sender, result));
+                        message = new Invoke(sender, method, args, new ActorCompletable<>(sender, result));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -113,6 +117,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
         @SuppressWarnings({ "unchecked", "rawtypes" }) @Override public void complete(U value, Throwable ex) {
             sender.put(new IMessage() {
+
+                @Override public IActorRef sender() {
+                    return sender;
+                }
 
                 @Override public void dispatch(Object impl) {
                     // impl is ignored, since the future does not dispatch on the
@@ -142,11 +150,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     final IMessage<T> message;
                     final Object returnValue;
                     if(Void.TYPE.isAssignableFrom(returnType)) {
-                        message = new Invoke(method, args, null);
+                        message = new Invoke(null, method, args, null);
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(method, args, new AsyncCompletable<>(executor, result));
+                        message = new Invoke(null, method, args, new AsyncCompletable<>(executor, result));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -192,7 +200,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     /**
-     * Run the actor.
+     * Actor main loop.
      */
     private void run() {
         logger.info("{} starting", id);
@@ -220,7 +228,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     message = messages.remove();
                 }
                 logger.info("{}[{}] message {}", id, state, message);
+                sender.set(message.sender());
                 message.dispatch(impl);
+                sender.remove();
             }
         } catch(InterruptedException e) {
             logger.info("{} interrupted", id);
@@ -230,6 +240,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             }
         }
         logger.info("{} stopped", id);
+    }
+
+    @Override public IActorRef<?> sender() {
+        return sender.get();
     }
 
     @Override public void stop() {
@@ -268,14 +282,20 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private class Invoke implements IMessage<T> {
 
+        public final IActorRef<?> sender;
         public final Method method;
         public final Object[] args;
         public final ICompletable result;
 
-        public Invoke(Method method, Object[] args, ICompletable<?> result) {
+        public Invoke(IActorRef<?> sender, Method method, Object[] args, ICompletable<?> result) {
+            this.sender = sender;
             this.method = method;
             this.args = args;
             this.result = result;
+        }
+
+        @Override public IActorRef<?> sender() {
+            return sender;
         }
 
         @Override public void dispatch(T impl) {

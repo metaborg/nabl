@@ -3,12 +3,12 @@ package mb.statix.p_raffrayi.impl;
 import org.metaborg.util.task.ICancel;
 
 import mb.statix.actors.IActorRef;
-import mb.statix.actors.futures.IFuture;
+import mb.statix.p_raffrayi.ITypeChecker;
 
 /**
  * Protocol accepted by the broker, from units
  */
-public interface IUnitContext<S, L, D> {
+public interface IUnitContext<S, L, D, R> {
 
     ICancel cancel();
 
@@ -16,20 +16,16 @@ public interface IUnitContext<S, L, D> {
 
     IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner(S scope);
 
+    IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
+
     //////////////////////////////////////////////////////////////////////////
     // Deadlock detection
     //////////////////////////////////////////////////////////////////////////
 
-    void waitForInit(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S root);
+    void suspend(Clock<S, L, D> clock);
 
-    void grantedInit(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S root);
+    void waitFor(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
 
-    void waitForClose(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S scope, Iterable<L> labels);
-
-    void grantedClose(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, S scope, L label);
-
-    void waitForAnswer(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, IFuture<?> future);
-
-    void grantedAnswer(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit, IFuture<?> future);
+    void granted(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
 
 }

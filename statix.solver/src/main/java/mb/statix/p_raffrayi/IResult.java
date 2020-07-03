@@ -2,10 +2,8 @@ package mb.statix.p_raffrayi;
 
 import java.util.Map;
 
-import mb.statix.scopegraph.IScopeGraph;
+public interface IResult<S, L, D, R> {
 
-public interface IResult<S, L, D> {
-
-    Map<String, IScopeGraph<S, L, D>> scopeGraphs();
+    Map<String, IUnitResult<S, L, D, R>> unitResults();
 
 }

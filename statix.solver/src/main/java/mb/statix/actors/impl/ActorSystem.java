@@ -13,6 +13,7 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.Maps;
 
 import mb.statix.actors.IActor;
+import mb.statix.actors.IActorMonitor;
 import mb.statix.actors.IActorRef;
 import mb.statix.actors.IActorSystem;
 import mb.statix.actors.TypeTag;
@@ -53,6 +54,9 @@ public class ActorSystem implements IActorSystem {
         return actor;
     }
 
+    @Override public void addMonitor(IActorRef<?> actor, IActorRef<? extends IActorMonitor> monitor) {
+        ((Actor<?>) actor).addMonitor(async(monitor));
+    }
 
     @Override public <T> T async(IActorRef<T> receiver) {
         return ((Actor<T>) receiver).async(executorService);
