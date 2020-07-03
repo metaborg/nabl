@@ -3,6 +3,6 @@ plugins {
   `maven-publish`
 }
 
-spoofax {
-  createPublication = true
+spoofaxLanguageSpecification {
+  createPublication.set(true)
 }
