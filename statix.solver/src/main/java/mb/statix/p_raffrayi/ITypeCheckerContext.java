@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent2;
+package mb.statix.p_raffrayi;
 
 import java.util.Set;
 

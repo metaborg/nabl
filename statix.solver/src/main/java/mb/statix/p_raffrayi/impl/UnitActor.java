@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent2.impl;
+package mb.statix.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
@@ -10,6 +10,7 @@ import mb.nabl2.util.collections.MultiSet;
 import mb.statix.actors.IActor;
 import mb.statix.actors.IActorRef;
 import mb.statix.actors.futures.IFuture;
+import mb.statix.p_raffrayi.ITypeChecker;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
@@ -18,7 +19,6 @@ import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.terms.path.Paths;
-import mb.statix.solver.concurrent2.ITypeChecker;
 
 public class UnitActor<S, L, D> extends AbstractClient<S, L, D> implements IUnit<S, L, D> {
 

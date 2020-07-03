@@ -1,4 +1,4 @@
-package mb.statix.actors;
+package mb.statix.actors.impl;
 
 public enum ActorState {
 

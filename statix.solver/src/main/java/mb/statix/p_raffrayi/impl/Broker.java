@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent2.impl;
+package mb.statix.p_raffrayi.impl;
 
 import java.util.Map;
 import java.util.Set;
@@ -8,7 +8,6 @@ import org.metaborg.util.task.ICancel;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
-import mb.statix.actors.ActorSystem;
 import mb.statix.actors.IActor;
 import mb.statix.actors.IActorRef;
 import mb.statix.actors.TypeTag;
@@ -16,10 +15,11 @@ import mb.statix.actors.deadlock.DeadlockMonitor;
 import mb.statix.actors.deadlock.IDeadlockMonitor;
 import mb.statix.actors.futures.CompletableFuture;
 import mb.statix.actors.futures.IFuture;
-import mb.statix.solver.concurrent2.IBroker;
-import mb.statix.solver.concurrent2.IResult;
-import mb.statix.solver.concurrent2.IScopeImpl;
-import mb.statix.solver.concurrent2.ITypeChecker;
+import mb.statix.actors.impl.ActorSystem;
+import mb.statix.p_raffrayi.IBroker;
+import mb.statix.p_raffrayi.IResult;
+import mb.statix.p_raffrayi.IScopeImpl;
+import mb.statix.p_raffrayi.ITypeChecker;
 
 public class Broker<S, L, D> implements IBroker<S, L, D> {
 
@@ -38,25 +38,25 @@ public class Broker<S, L, D> implements IBroker<S, L, D> {
         this.root = scopeImpl.make(PROJECT_ID, "0");
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.system = new ActorSystem();
-        this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class), self -> new DeadlockMonitor<>(self));
+        this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class), self -> new DeadlockMonitor<>(self, (_1, _2) -> {}));
         this.units = Maps.newHashMap();
         this.project = system.add(PROJECT_ID, TypeTag.of(IProject.class),
                 self -> new ProjectActor<>(self, new UnitContext(self), root, edgeLabels));
-        project.addMonitor(dlm);
+        project.addMonitor(system.async(dlm));
     }
 
     @Override public void add(String id, ITypeChecker<S, L, D, ?> unitChecker) {
         final IActor<IUnit<S, L, D>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new UnitActor<>(self, project, new UnitContext(self), unitChecker, root, edgeLabels));
-        unit.addMonitor(dlm);
+        unit.addMonitor(system.async(dlm));
         units.put(id, unit);
     }
 
     @Override public IFuture<IResult<S, L, D>> run(ICancel cancel) {
         system.start();
-        project.async()._start(units.values());
+        system.async(project)._start(units.values());
         for(IActor<IUnit<S, L, D>> unit : units.values()) {
-            unit.async()._start();
+            system.async(unit)._start();
         }
 
         //        // start cancel watcher

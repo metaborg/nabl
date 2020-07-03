@@ -1,15 +1,15 @@
 package mb.statix.actors;
 
-import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
+import org.metaborg.util.functions.Action2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import io.usethesource.capsule.SetMultimap;
-import mb.statix.actors.deadlock.CanDeadlock;
+import mb.nabl2.util.collections.IRelation3;
 import mb.statix.actors.deadlock.DeadlockMonitor;
 import mb.statix.actors.deadlock.IDeadlockMonitor;
+import mb.statix.actors.impl.ActorSystem;
 
 public class DeadlockTest {
 
@@ -18,11 +18,11 @@ public class DeadlockTest {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         final ActorSystem system = new ActorSystem();
         TypeTag<IDeadlockMonitor<String>> tt = TypeTag.of(IDeadlockMonitor.class);
-        final IActor<IDeadlockMonitor<String>> dlm = system.add("dlm", tt, self -> new DeadlockMonitor<>(self));
+        final IActor<IDeadlockMonitor<String>> dlm = system.add("dlm", tt, self -> new DeadlockMonitor<>(self, dlh));
         final IActor<IPingPong> pp1 = system.add("pp1", TypeTag.of(IPingPong.class), self -> new PingPong(self, dlm));
-        pp1.addMonitor(dlm);
-//        final IActor<IPingPong> pp2 = system.add("pp2", TypeTag.of(IPingPong.class), self -> new PingPong(self, dlm));
-//        pp2.addMonitor(dlm);
+        pp1.addMonitor(system.async(dlm));
+        //        final IActor<IPingPong> pp2 = system.add("pp2", TypeTag.of(IPingPong.class), self -> new PingPong(self, dlm));
+        //        pp2.addMonitor(system.async(dlm));
         system.start();
         system.async(pp1).start(pp1);
         //        system.async(pp1).start(pp2);
@@ -41,7 +41,7 @@ public class DeadlockTest {
 
     }
 
-    interface IPingPong extends IPing, IPong, CanDeadlock<String> {
+    interface IPingPong extends IPing, IPong {
 
         void start(IActorRef<? extends IPing> target);
 
@@ -75,14 +75,15 @@ public class DeadlockTest {
             self.stop();
         }
 
-        @Override public void deadlocked(SetMultimap<IActorRef<?>, String> waitFors) {
-            logger.error("{} detected deadlock: {}", self, waitFors);
-            for(Entry<IActorRef<?>, String> waitFor : waitFors.entrySet()) {
-                // reply after all
-                self.async((IActorRef<? extends IPong>) waitFor.getKey()).pong(self);
-            }
-        }
-
     }
+
+    private static Action2<IActor<?>, IRelation3.Immutable<IActorRef<?>, String, IActorRef<?>>> dlh =
+            (self, waitFors) -> {
+                logger.error("{} detected deadlock: {}", self, waitFors);
+                //        for(Entry<IActorRef<?>, String> waitFor : waitFors.entrySet()) {
+                //            // reply after all
+                //            self.async((IActorRef<? extends IPong>) waitFor.getKey()).pong(self);
+                //        }
+            };
 
 }

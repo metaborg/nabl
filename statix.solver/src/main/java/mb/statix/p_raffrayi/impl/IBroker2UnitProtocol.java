@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent2.impl;
+package mb.statix.p_raffrayi.impl;
 
 public interface IBroker2UnitProtocol<S, L, D> {
 

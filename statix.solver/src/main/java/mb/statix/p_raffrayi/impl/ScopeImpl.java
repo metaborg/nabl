@@ -1,7 +1,7 @@
-package mb.statix.solver.concurrent2.impl;
+package mb.statix.p_raffrayi.impl;
 
+import mb.statix.p_raffrayi.IScopeImpl;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.concurrent2.IScopeImpl;
 
 public class ScopeImpl implements IScopeImpl<Scope> {
 

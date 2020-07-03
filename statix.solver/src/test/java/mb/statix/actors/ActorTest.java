@@ -5,6 +5,8 @@ import java.util.concurrent.ExecutionException;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import mb.statix.actors.impl.ActorSystem;
+
 public class ActorTest {
 
     private static final ILogger logger = LoggerUtils.logger(ActorTest.class);

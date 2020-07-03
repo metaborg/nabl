@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent2.impl;
+package mb.statix.p_raffrayi.impl;
 
 import mb.statix.actors.IActorRef;
 import mb.statix.actors.futures.IFuture;

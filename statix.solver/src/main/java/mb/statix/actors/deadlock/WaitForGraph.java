@@ -66,7 +66,7 @@ public class WaitForGraph<N, T> {
     /**
      * Suspend a node. Return deadlocked tokens on the given node.
      */
-    public Optional<SetMultimap<N, T>> suspend(N node) {
+    public Optional<IRelation3.Immutable<N, T, N>> suspend(N node) {
         if(waitingNodes.contains(node)) {
             throw new IllegalStateException("Node " + node + " is already waiting.");
         }
@@ -90,7 +90,7 @@ public class WaitForGraph<N, T> {
         return waits.freeze();
     }
 
-    private Optional<SetMultimap<N, T>> detectDeadlock(N node) {
+    private Optional<IRelation3.Immutable<N, T, N>> detectDeadlock(N node) {
         final N rep = sccGraph.getRepresentative(node);
         if(sccGraph.hasOutgoingEdges(rep)) {
             // other clusters are upstream and may release tokens
@@ -101,16 +101,19 @@ public class WaitForGraph<N, T> {
             // not all units are waiting yet
             return Optional.empty();
         }
-        final SetMultimap.Transient<N, T> waits = SetMultimap.Transient.of();
-        for(Entry<T, N> entry : waitForEdges.inverse().get(node)) {
-            final N other = entry.getValue();
-            if(scc.contains(other)) {
-                final T token = entry.getKey();
-                waitForEdges.remove(other, token, node);
-                waits.__insert(other, token);
+        final IRelation3.Transient<N, T, N> waitFors = HashTrieRelation3.Transient.of();
+        for(N source : scc) {
+            for(Entry<T, N> entry : waitForEdges.get(source)) {
+                final N target = entry.getValue();
+                if(scc.contains(target)) {
+                    final T token = entry.getKey();
+                    waitForEdges.remove(source, token, target);
+                    waitFors.put(source, token, target);
+                }
             }
+
         }
-        return Optional.of(waits.freeze());
+        return Optional.of(waitFors.freeze());
     }
 
     @Override public String toString() {

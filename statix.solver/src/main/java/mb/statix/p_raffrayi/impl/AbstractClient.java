@@ -1,4 +1,4 @@
-package mb.statix.solver.concurrent2.impl;
+package mb.statix.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
@@ -88,7 +88,7 @@ public abstract class AbstractClient<S, L, D> implements IUnit2UnitProtocol<S, L
             if(parent == null) {
                 throw new IllegalArgumentException("Not our own scope, and no parent: cannot propagate up.");
             }
-            parent.async()._initRoot(root, labels, unit);
+            self.async(parent)._initRoot(root, labels, unit);
         }
 
     }
@@ -116,7 +116,7 @@ public abstract class AbstractClient<S, L, D> implements IUnit2UnitProtocol<S, L
         scopeGraph.addEdge(source, label, target);
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(source);
         if(!owner.equals(self)) {
-            owner.async()._addEdge(source, label, target);
+            self.async(owner)._addEdge(source, label, target);
         }
     }
 
@@ -131,7 +131,7 @@ public abstract class AbstractClient<S, L, D> implements IUnit2UnitProtocol<S, L
                 releaseDelays(source, edge);
             }
         } else {
-            owner.async()._closeEdge(source, label);
+            self.async(owner)._closeEdge(source, label);
         }
     }
 
@@ -166,7 +166,7 @@ public abstract class AbstractClient<S, L, D> implements IUnit2UnitProtocol<S, L
                             return Optional.empty();
                         } else {
                             final IFuture<Env<S, L, D>> future =
-                                    (owner.async()._query(path, labelWF, dataWF, labelOrder, dataEquiv));
+                                    (self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv));
                             context.waitForAnswer(owner, future);
                             return Optional.of(future.whenComplete((r, ex) -> {
                                 context.grantedAnswer(owner, future);

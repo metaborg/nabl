@@ -1,4 +1,4 @@
-package mb.statix.actors;
+package mb.statix.actors.impl;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -15,6 +15,10 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Queues;
 
+import mb.statix.actors.IActor;
+import mb.statix.actors.IActorMonitor;
+import mb.statix.actors.IActorRef;
+import mb.statix.actors.TypeTag;
 import mb.statix.actors.futures.AsyncCompletable;
 import mb.statix.actors.futures.CompletableFuture;
 import mb.statix.actors.futures.ICompletable;
@@ -28,62 +32,60 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private final IActorContext context;
     private final String id;
     private final TypeTag<T> type;
-    private final T impl;
-    private final Set<IActorRef<? extends IActorMonitor>> monitors;
+    private final Function1<IActor<T>, ? extends T> supplier;
 
     private final Object lock;
     private volatile ActorState state;
     private Future<?> task;
-    private final Queue<Runnable> messages;
+    private final Queue<IMessage<T>> messages;
+    private final Set<IActorMonitor> monitors;
 
     Actor(Function1<Actor<T>, IActorContext> context, String id, TypeTag<T> type,
             Function1<IActor<T>, ? extends T> supplier) {
         this.context = context.apply(this);
         this.id = id;
         this.type = type;
-        this.impl = supplier.apply(this);
-        this.monitors = new HashSet<>();
+        this.supplier = supplier;
 
         this.lock = new Object();
         this.state = ActorState.INIT;
         this.messages = Queues.newArrayDeque();
-
-        validate();
+        this.monitors = new HashSet<>();
     }
 
-    private void validate() {
-        if(!type.type().isInstance(impl)) {
-            throw new IllegalArgumentException("Given implementation does not implement the given interface.");
-        }
+    @Override public String id() {
+        return id;
     }
 
-    private void put(Runnable message) {
-        // ASSERT ActorState != DONE
-        synchronized(lock) {
-            // It is important to change the state here and not in the message loop.
-            // The reason is that doing it here ensures that the unit is activated before
-            // the sending unit is suspended. If it were the other way around, there could be
-            // a false deadlock reported.
-            if(state.equals(ActorState.WAITING)) {
-                state = ActorState.RUNNING;
-                for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                    context.async(monitor).resumed(this);
-                }
-                logger.info("running {}", id);
-            }
-            messages.add(message);
-            lock.notify();
-        }
+    ///////////////////////////////////////////////////////////////////////////
+    // Start actors
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
+        return context.add(id, type, supplier);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Async interface for other actors
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public <U> U async(IActorRef<U> other) {
+        return context.async(other);
     }
 
     @SuppressWarnings("unchecked") T async(Actor<?> sender) {
         return (T) Proxy.newProxyInstance(type.type().getClassLoader(), new Class[] { type.type() },
                 (proxy, method, args) -> {
+                    if(method.getDeclaringClass().equals(Object.class)) {
+                        return method.invoke(this, args);
+                    }
+
                     // This runs on the sender's thread!
                     // ASSERT ActorState != DONE
                     final Class<?> returnType = method.getReturnType();
-                    final Runnable message;
+                    final IMessage<T> message;
                     final Object returnValue;
+
                     if(Void.TYPE.isAssignableFrom(returnType)) {
                         message = new Invoke(method, args, null);
                         returnValue = null;
@@ -99,19 +101,25 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 });
     }
 
-    private static class ActorCompletable<T> implements ICompletable<T> {
+    private class ActorCompletable<U> implements ICompletable<U> {
 
         private final Actor<?> sender;
-        private final ICompletable<T> completable;
+        private final ICompletable<U> completable;
 
-        public ActorCompletable(Actor<?> sender, ICompletable<T> completable) {
+        public ActorCompletable(Actor<?> sender, ICompletable<U> completable) {
             this.sender = sender;
             this.completable = completable;
         }
 
-        @Override public void complete(T value, Throwable ex) {
-            sender.put(() -> {
-                completable.complete(value, ex);
+        @SuppressWarnings({ "unchecked", "rawtypes" }) @Override public void complete(U value, Throwable ex) {
+            sender.put(new IMessage() {
+
+                @Override public void dispatch(Object impl) {
+                    // impl is ignored, since the future does not dispatch on the
+                    // object directly, instead just calling the handler(s).
+                    completable.complete(value, ex);
+                }
+
             });
         }
 
@@ -124,10 +132,14 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @SuppressWarnings("unchecked") T async(ExecutorService executor) {
         return (T) Proxy.newProxyInstance(type.type().getClassLoader(), new Class[] { type.type() },
                 (proxy, method, args) -> {
+                    if(method.getDeclaringClass().equals(Object.class)) {
+                        return method.invoke(this, args);
+                    }
+
                     // This runs on the sender's thread!
                     // ASSERT ActorState != DONE
                     final Class<?> returnType = method.getReturnType();
-                    final Runnable message;
+                    final IMessage<T> message;
                     final Object returnValue;
                     if(Void.TYPE.isAssignableFrom(returnType)) {
                         message = new Invoke(method, args, null);
@@ -144,19 +156,39 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 });
     }
 
+    private void put(IMessage<T> message) {
+        // ASSERT ActorState != DONE
+        synchronized(lock) {
+            // It is important to change the state here and not in the message loop.
+            // The reason is that doing it here ensures that the unit is activated before
+            // the sending unit is suspended. If it were the other way around, there could be
+            // a false deadlock reported.
+            if(state.equals(ActorState.WAITING)) {
+                state = ActorState.RUNNING;
+                for(IActorMonitor monitor : monitors) {
+                    monitor.resumed(this);
+                }
+                logger.info("running {}", id);
+            }
+            messages.add(message);
+            lock.notify();
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Run & stop
+    ///////////////////////////////////////////////////////////////////////////
+
     void run(ExecutorService executorService) {
         //        logger.info("start {}", id);
         synchronized(lock) {
             if(!state.equals(ActorState.INIT)) {
                 throw new IllegalStateException("Actor already started.");
             }
+
             state = ActorState.RUNNING;
             task = executorService.submit(() -> this.run());
         }
-    }
-
-    @Override public <U> U async(IActorRef<U> other) {
-        return context.async(other);
     }
 
     /**
@@ -164,15 +196,21 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
      */
     private void run() {
         logger.info("{} starting", id);
+
+        final T impl = supplier.apply(this);
+        if(!type.type().isInstance(impl)) {
+            throw new IllegalArgumentException("Given implementation does not implement the given interface.");
+        }
+
         try {
             while(!state.equals(ActorState.STOPPED)) {
-                final Runnable message;
+                final IMessage<T> message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
                         logger.info("{} waiting", id);
                         state = ActorState.WAITING;
-                        for(IActorRef<? extends IActorMonitor> monitor : monitors) {
-                            context.async(monitor).suspended(this);
+                        for(IActorMonitor monitor : monitors) {
+                            monitor.suspended(this);
                         }
                         lock.wait();
                     }
@@ -182,7 +220,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     message = messages.remove();
                 }
                 logger.info("{}[{}] message {}", id, state, message);
-                message.run();
+                message.dispatch(impl);
             }
         } catch(InterruptedException e) {
             logger.info("{} interrupted", id);
@@ -192,10 +230,6 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             }
         }
         logger.info("{} stopped", id);
-    }
-
-    @Override public String id() {
-        return id;
     }
 
     @Override public void stop() {
@@ -208,19 +242,31 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
     }
 
-    @Override public void addMonitor(IActorRef<? extends IActorMonitor> monitor) {
+    ///////////////////////////////////////////////////////////////////////////
+    // Monitors
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void addMonitor(IActorMonitor monitor) {
         synchronized(lock) {
             monitors.add(monitor);
-            context.async(monitor).started(this);
+            monitor.started(this);
         }
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // toString
+    ///////////////////////////////////////////////////////////////////////////
 
     @Override public String toString() {
         return "Actor[" + id + "]";
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Invoke message implementation
+    ///////////////////////////////////////////////////////////////////////////
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private class Invoke implements Runnable {
+    private class Invoke implements IMessage<T> {
 
         public final Method method;
         public final Object[] args;
@@ -232,8 +278,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             this.result = result;
         }
 
-        @Override public void run() {
+        @Override public void dispatch(T impl) {
             try {
+                method.setAccessible(true);
                 final Object returnValue = method.invoke(impl, args);
                 if(result != null) {
                     // FIXME The completion runs on the thread of the receiving actor,

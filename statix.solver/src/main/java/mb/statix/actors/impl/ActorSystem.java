@@ -1,14 +1,21 @@
-package mb.statix.actors;
+package mb.statix.actors.impl;
 
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Maps;
+
+import mb.statix.actors.IActor;
+import mb.statix.actors.IActorRef;
+import mb.statix.actors.IActorSystem;
+import mb.statix.actors.TypeTag;
 
 public class ActorSystem implements IActorSystem {
 
@@ -26,6 +33,11 @@ public class ActorSystem implements IActorSystem {
     }
 
     @Override public <T> IActor<T> add(String id, TypeTag<T> type, Function1<IActor<T>, T> supplier) {
+        return add(null, id, type, supplier);
+    }
+
+    private <T> IActor<T> add(@Nullable IActorRef<?> parent, String id, TypeTag<T> type,
+            Function1<IActor<T>, T> supplier) {
         logger.info("add actor {}", id);
         final Actor<T> actor = new Actor<>(ActorContext::new, id, type, supplier);
         synchronized(lock) {
@@ -40,6 +52,7 @@ public class ActorSystem implements IActorSystem {
         logger.info("added actor {}", id);
         return actor;
     }
+
 
     @Override public <T> T async(IActorRef<T> receiver) {
         return ((Actor<T>) receiver).async(executorService);
@@ -79,6 +92,10 @@ public class ActorSystem implements IActorSystem {
 
         public ActorContext(Actor<?> self) {
             this.self = self;
+        }
+
+        @Override public <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
+            return ActorSystem.this.add(self, id, type, supplier);
         }
 
         @Override public <T> T async(IActorRef<T> receiver) {
