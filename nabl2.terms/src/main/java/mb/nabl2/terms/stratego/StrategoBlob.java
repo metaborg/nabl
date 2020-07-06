@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermPrinter;
+import org.spoofax.interpreter.terms.TermType;
 import org.spoofax.terms.AbstractSimpleTerm;
 import org.spoofax.terms.AbstractTermFactory;
 import org.spoofax.terms.TermFactory;
@@ -41,18 +42,21 @@ public class StrategoBlob extends AbstractSimpleTerm implements IStrategoTerm {
         throw new IndexOutOfBoundsException();
     }
 
-    @Override
-    public IStrategoTerm[] getAllSubterms() {
+    @Override public IStrategoTerm[] getAllSubterms() {
         return TermFactory.EMPTY_TERM_ARRAY;
     }
 
-    @Override
-    public List<IStrategoTerm> getSubterms() {
+    @Override public List<IStrategoTerm> getSubterms() {
         return Collections.emptyList();
     }
 
+    @Deprecated
     @Override public int getTermType() {
-        return IStrategoTerm.BLOB;
+        return getType().getValue();
+    }
+
+    @Override public TermType getType() {
+        return TermType.BLOB;
     }
 
     @SuppressWarnings("deprecation") @Override public IStrategoList getAnnotations() {
