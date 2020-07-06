@@ -13,6 +13,7 @@ import com.google.common.collect.Maps;
 import mb.statix.actors.IActor;
 import mb.statix.actors.IActorRef;
 import mb.statix.actors.TypeTag;
+import mb.statix.actors.deadlock.Clock;
 import mb.statix.actors.deadlock.DeadlockMonitor;
 import mb.statix.actors.deadlock.IDeadlockMonitor;
 import mb.statix.actors.futures.CompletableFuture;
@@ -64,7 +65,6 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
                 self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
         synchronized(lock) {
             units.put(id, unit);
-            unit.addMonitor(system.async(dlm));
         }
         system.async(unit)._start(root).whenComplete((r, ex) -> addResult(id, r, ex));
         return unit;
@@ -74,11 +74,13 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         synchronized(lock) {
             if(ex != null) {
                 result.completeExceptionally(ex);
-                // TODO Handle failure better
+                // TODO Existing units may still complete results
+                system.stop();
             } else {
                 results.put(id, unitResult);
                 if(results.size() == units.size()) {
                     result.completeValue(Result.of(results));
+                    system.stop();
                 }
             }
         }
@@ -112,9 +114,9 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     private class UnitContext implements IUnitContext<S, L, D, R> {
 
-        private final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> self;
+        private final IActor<? extends IUnit2UnitProtocol<S, L, D>> self;
 
-        public UnitContext(IActorRef<? extends IUnit2UnitProtocol<S, L, D>> self) {
+        public UnitContext(IActor<? extends IUnit2UnitProtocol<S, L, D>> self) {
             this.self = self;
         }
 
@@ -137,16 +139,20 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             return Broker.this.add(id, unitChecker, root);
         }
 
-        @Override public void suspend(Clock<S, L, D> clock) {
-            // TODO Implement
-        }
-
         @Override public void waitFor(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
-            // TODO Implement
+            self.async(dlm).waitFor(unit, token);
         }
 
         @Override public void granted(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
-            // TODO Implement
+            self.async(dlm).granted(unit, token);
+        }
+
+        @Override public void suspended(Clock clock) {
+            self.async(dlm).suspended(clock);
+        }
+
+        @Override public void stopped(Clock clock) {
+            self.async(dlm).stopped(clock);
         }
 
     }

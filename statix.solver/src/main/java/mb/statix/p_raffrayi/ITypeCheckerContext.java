@@ -22,7 +22,6 @@ public interface ITypeCheckerContext<S, L, D, R> {
 
     /**
      * Initialize root scope.
-     * @param shared TODO
      */
     void initRoot(S root, Iterable<L> labels, boolean shared);
 
@@ -57,9 +56,5 @@ public interface ITypeCheckerContext<S, L, D, R> {
      */
     IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
-
-    // FIXME done()
-
-    // FIXME fail()
 
 }

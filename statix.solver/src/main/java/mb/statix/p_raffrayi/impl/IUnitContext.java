@@ -3,6 +3,7 @@ package mb.statix.p_raffrayi.impl;
 import org.metaborg.util.task.ICancel;
 
 import mb.statix.actors.IActorRef;
+import mb.statix.actors.deadlock.Clock;
 import mb.statix.p_raffrayi.ITypeChecker;
 
 /**
@@ -22,10 +23,12 @@ public interface IUnitContext<S, L, D, R> {
     // Deadlock detection
     //////////////////////////////////////////////////////////////////////////
 
-    void suspend(Clock<S, L, D> clock);
-
     void waitFor(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
 
     void granted(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
+
+    void suspended(Clock clock);
+
+    void stopped(Clock clock);
 
 }

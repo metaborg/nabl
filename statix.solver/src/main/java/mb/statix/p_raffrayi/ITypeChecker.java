@@ -8,6 +8,6 @@ import mb.statix.actors.futures.IFuture;
 @FunctionalInterface
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, S root) throws InterruptedException;
+    IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, S root);
 
 }

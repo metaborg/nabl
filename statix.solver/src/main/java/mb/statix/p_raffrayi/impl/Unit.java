@@ -18,6 +18,7 @@ import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.actors.IActor;
 import mb.statix.actors.IActorMonitor;
 import mb.statix.actors.IActorRef;
+import mb.statix.actors.deadlock.Clock;
 import mb.statix.actors.futures.CompletableFuture;
 import mb.statix.actors.futures.ICompletable;
 import mb.statix.actors.futures.IFuture;
@@ -44,7 +45,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final ITypeChecker<S, L, D, R> unitChecker;
 
     private final IUnit<S, L, D, R> local;
-    private Clock<S, L, D> clock;
+    private Clock clock;
+    private UnitState state;
     private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     private final IScopeGraph.Transient<S, L, D> scopeGraph;
@@ -55,9 +57,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
-    public Unit(IActor<? extends IUnit<S, L, D, R>> self,
-            @Nullable IActorRef<? extends IUnit2UnitProtocol<S, L, D>> parent, IUnitContext<S, L, D, R> context,
-            ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+    Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit2UnitProtocol<S, L, D>> parent,
+            IUnitContext<S, L, D, R> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -65,6 +66,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         this.local = self.async(self);
         this.clock = Clock.of();
+        this.state = UnitState.INIT;
         this.unitResult = new CompletableFuture<>();
 
         this.scopeGraph = ScopeGraph.Transient.of(edgeLabels);
@@ -74,6 +76,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
+
+        self.addMonitor(this);
     }
 
     @SuppressWarnings("unchecked") private IActorRef<? extends IUnit<S, L, D, R>> sender() {
@@ -85,23 +89,24 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root) {
-        try {
-            uninitializedScopes.add(root);
-            context.waitFor(IWaitFor.of("init", root), self);
+        assertInState(UnitState.INIT);
 
-            // run() after inits are initialized before run, since unitChecker
-            // can immediately call methods, that are executed synchronously
+        state = UnitState.ACTIVE;
+        uninitializedScopes.add(root);
+        context.waitFor(IWaitFor.of("init", root), self);
 
-            this.unitChecker.run(this, root).whenComplete(this::handleResult);
-        } catch(InterruptedException e) {
-            // FIXME Handle this
-            e.printStackTrace();
-        }
+        // run() after inits are initialized before run, since unitChecker
+        // can immediately call methods, that are executed synchronously
+
+        this.unitChecker.run(this, root).whenComplete(this::handleResult);
         return unitResult;
     }
 
     private void handleResult(R result, Throwable ex) {
-        // TODO Change state
+        assertInState(UnitState.INIT, UnitState.ACTIVE);
+
+        state = UnitState.DONE;
+
         if(ex != null) {
             unitResult.completeExceptionally(ex);
         } else {
@@ -117,6 +122,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // guarantees as for remote calls.
 
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+        assertInState(UnitState.ACTIVE);
+
         assertShared(root);
         // ASSERT root is owned by us, or shared with us
 
@@ -127,10 +134,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void initRoot(S root, Iterable<L> labels, boolean shared) {
+        assertInState(UnitState.ACTIVE);
+
         local._initRoot(root, labels, shared);
     }
 
     @Override public S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean shared) {
+        assertInState(UnitState.ACTIVE);
+
         final String name = baseName.replace("-", "_");
         final int n = scopeNameCounters.add(name);
         final S scope = context.makeScope(name + "-" + n);
@@ -149,23 +160,33 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void setDatum(S scope, D datum, Access access) {
+        assertInState(UnitState.ACTIVE);
+
         local._setDatum(scope, datum, access);
     }
 
     @Override public void addEdge(S source, L label, S target) {
+        assertInState(UnitState.ACTIVE);
+
         local._addEdge(source, label, target);
     }
 
     @Override public void closeEdge(S source, L label) {
+        assertInState(UnitState.ACTIVE);
+
         local._closeEdge(source, label);
     }
 
     @Override public void closeShare(S scope) {
+        assertInState(UnitState.ACTIVE);
+
         local._closeShare(scope);
     }
 
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+        assertInState(UnitState.ACTIVE);
+
         final IFuture<Env<S, L, D>> result = local._query(Paths.empty(scope), labelWF, dataWF, labelOrder, dataEquiv);
         clock = clock.sent(self);
         context.waitFor(IWaitFor.of("answer", result), self);
@@ -361,8 +382,29 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // Deadlock handling
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void suspended(IActor<?> self) {
+        context.suspended(clock);
+    }
+
+    @Override public void stopped(IActor<?> self) {
+        // TODO Cleanup
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     // Assertions
     ///////////////////////////////////////////////////////////////////////////
+
+    private void assertInState(UnitState... states) {
+        for(UnitState s : states) {
+            if(state.equals(s)) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Expected state " + states + ", was " + state);
+    }
 
     private void assertShared(S scope) {
         if(!sharedScopes.contains(scope)) {
@@ -388,12 +430,5 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Deadlock handling
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Override public void suspended(IActorRef<?> actor) {
-        context.suspend(clock);
-    }
 
 }
