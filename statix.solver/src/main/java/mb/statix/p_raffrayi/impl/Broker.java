@@ -22,23 +22,36 @@ import mb.statix.p_raffrayi.IBroker;
 import mb.statix.p_raffrayi.IResult;
 import mb.statix.p_raffrayi.IScopeImpl;
 import mb.statix.p_raffrayi.ITypeChecker;
+import mb.statix.p_raffrayi.IUnitResult;
 
 public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     private final IScopeImpl<S> scopeImpl;
     private final Set<L> edgeLabels;
+    private final ICancel cancel;
+
     private final ActorSystem system;
     private final IActor<DeadlockMonitor<IWaitFor>> dlm;
-    private final Map<String, IActor<IUnit<S, L, D, R>>> units;
 
-    public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels) {
+    private final Object lock = new Object();
+    private final Map<String, IActor<IUnit<S, L, D, R>>> units;
+    private final Map<String, IUnitResult<S, L, D, R>> results;
+    private final CompletableFuture<IResult<S, L, D, R>> result;
+
+
+    public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
+        this.cancel = cancel;
+
         this.system = new ActorSystem();
         this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
                 self -> new DeadlockMonitor<>(self, (_1, _2) -> {
                 }));
+
         this.units = Maps.newHashMap();
+        this.results = Maps.newHashMap();
+        this.result = new CompletableFuture<>();
     }
 
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
@@ -49,31 +62,52 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             @Nullable S root) {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
-        unit.addMonitor(system.async(dlm));
-        units.put(id, unit);
-        system.async(unit)._start(root);
+        synchronized(lock) {
+            units.put(id, unit);
+            unit.addMonitor(system.async(dlm));
+        }
+        system.async(unit)._start(root).whenComplete((r, ex) -> addResult(id, r, ex));
         return unit;
     }
 
-    @Override public IFuture<IResult<S, L, D, R>> run(ICancel cancel) {
+    private void addResult(String id, IUnitResult<S, L, D, R> unitResult, Throwable ex) {
+        synchronized(lock) {
+            if(ex != null) {
+                result.completeExceptionally(ex);
+                // TODO Handle failure better
+            } else {
+                results.put(id, unitResult);
+                if(results.size() == units.size()) {
+                    result.completeValue(Result.of(results));
+                }
+            }
+        }
+    }
+
+    @Override public void run() {
         system.start();
 
-        //        // start cancel watcher
-        //        final Thread watcher = new Thread(() -> {
-        //            try {
-        //                while(true) {
-        //                    Thread.sleep(1000);
-        //                    if(cancel.cancelled()) {
-        //                        executor.shutdownNow();
-        //                        return;
-        //                    }
-        //                }
-        //            } catch(InterruptedException e) {
-        //            }
-        //        }, "StatixWatcher");
-        //        watcher.start();
+        // start cancel watcher
+        final Thread watcher = new Thread(() -> {
+            try {
+                while(true) {
+                    if(result.isDone()) {
+                        return;
+                    } else if(cancel.cancelled()) {
+                        system.stop();
+                        return;
+                    } else {
+                        Thread.sleep(1000);
+                    }
+                }
+            } catch(InterruptedException e) {
+            }
+        }, "PRaffrayiWatcher");
+        watcher.start();
+    }
 
-        return new CompletableFuture<>();
+    @Override public IFuture<IResult<S, L, D, R>> result() {
+        return result;
     }
 
     private class UnitContext implements IUnitContext<S, L, D, R> {
@@ -85,8 +119,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
 
         @Override public ICancel cancel() {
-            // TODO Implement method IUnitContext<S,L,D>::cancel.
-            throw new UnsupportedOperationException("Method IUnitContext<S,L,D>::cancel not implemented.");
+            return cancel;
         }
 
         @Override public S makeScope(String name) {
@@ -94,7 +127,9 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
 
         @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner(S scope) {
-            return units.get(scopeImpl.id(scope));
+            synchronized(lock) {
+                return units.get(scopeImpl.id(scope));
+            }
         }
 
         @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id,

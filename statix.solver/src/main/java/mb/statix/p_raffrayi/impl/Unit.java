@@ -22,6 +22,7 @@ import mb.statix.actors.futures.CompletableFuture;
 import mb.statix.actors.futures.ICompletable;
 import mb.statix.actors.futures.IFuture;
 import mb.statix.p_raffrayi.ITypeChecker;
+import mb.statix.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -44,6 +45,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final IUnit<S, L, D, R> local;
     private Clock<S, L, D> clock;
+    private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     private final IScopeGraph.Transient<S, L, D> scopeGraph;
     private final MultiSet.Transient<S> sharedScopes;
@@ -63,6 +65,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         this.local = self.async(self);
         this.clock = Clock.of();
+        this.unitResult = new CompletableFuture<>();
 
         this.scopeGraph = ScopeGraph.Transient.of(edgeLabels);
         this.sharedScopes = MultiSet.Transient.of();
@@ -81,18 +84,28 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // IUnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _start(@Nullable S root) {
+    @Override public IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root) {
         try {
             uninitializedScopes.add(root);
             context.waitFor(IWaitFor.of("init", root), self);
 
-            // run() after inits above, since the checker can immediately call
-            // methods, that are executed synchronously
+            // run() after inits are initialized before run, since unitChecker
+            // can immediately call methods, that are executed synchronously
 
-            this.unitChecker.run(this, root);
+            this.unitChecker.run(this, root).whenComplete(this::handleResult);
         } catch(InterruptedException e) {
             // FIXME Handle this
             e.printStackTrace();
+        }
+        return unitResult;
+    }
+
+    private void handleResult(R result, Throwable ex) {
+        // TODO Change state
+        if(ex != null) {
+            unitResult.completeExceptionally(ex);
+        } else {
+            unitResult.completeValue(UnitResult.of(result, scopeGraph.freeze()));
         }
     }
 
@@ -303,7 +316,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         });
     }
 
-    @Override public final void _release(ICompletable<Void> future) {
+    @Override public final void _complete(ICompletable<Void> future) {
         future.completeValue(null);
     }
 
@@ -317,7 +330,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             final EdgeOrData<L> edge = entry.getKey();
             if(!openEdges.contains(scope, edge)) {
                 delays.remove(scope, edge, future);
-                local._release(future);
+                local._complete(future);
             }
         }
     }
@@ -325,7 +338,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void releaseDelays(S scope, EdgeOrData<L> edge) {
         for(ICompletable<Void> future : delays.get(scope, edge)) {
             delays.remove(scope, edge, future);
-            local._release(future);
+            local._complete(future);
         }
     }
 

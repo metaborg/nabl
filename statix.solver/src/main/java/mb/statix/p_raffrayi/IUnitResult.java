@@ -4,7 +4,7 @@ import mb.statix.scopegraph.IScopeGraph;
 
 public interface IUnitResult<S, L, D, R> {
 
-    IScopeGraph<S, L, D> scopeGraphs();
+    IScopeGraph.Immutable<S, L, D> scopeGraph();
 
     R analysis();
 
