@@ -74,9 +74,7 @@ public class DeadlockMonitor<T> implements IDeadlockMonitor<T> {
                     this.sent.computeIfAbsent(receiver, __ -> MultiSet.Immutable.of());
             if(receiverClock.count(current) < sent) {
                 this.sent.put(receiver, receiverClock.set(current, sent));
-                // TODO If suspended
                 wfg.resume(receiver);
-
             }
         }
 
