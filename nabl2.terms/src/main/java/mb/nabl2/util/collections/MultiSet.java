@@ -54,6 +54,17 @@ public abstract class MultiSet<E> implements Iterable<E> {
             return elements;
         }
 
+        public Immutable<E> set(E e, int n) {
+            if(n < 0) {
+                throw new IllegalArgumentException("count must be positive");
+            }
+            if(n > 0) {
+                return new MultiSet.Immutable<>(elements.__put(e, n));
+            } else {
+                return new MultiSet.Immutable<>(elements.__remove(e));
+            }
+        }
+
         public Immutable<E> add(E e) {
             return add(e, 1);
         }
@@ -119,6 +130,28 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
         @Override protected Map<E, Integer> elements() {
             return elements;
+        }
+
+        /**
+         * Set an element to n.
+         * 
+         * @param e
+         *            Element to be set
+         * @param n
+         *            New count
+         * @return Old count for the element
+         */
+        public int set(E e, int n) {
+            if(n < 0) {
+                throw new IllegalArgumentException("count must be positive");
+            }
+            final Integer c;
+            if(n > 0) {
+                c = elements.__put(e, n);
+            } else {
+                c = elements.__remove(e);
+            }
+            return c != null ? c : 0;
         }
 
         /**
