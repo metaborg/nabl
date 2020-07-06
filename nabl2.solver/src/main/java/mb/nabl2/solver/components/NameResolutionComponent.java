@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.constraints.equality.ImmutableCEqual;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.nameresolution.CAssoc;
@@ -29,13 +29,13 @@ import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.TypeException;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
 import mb.nabl2.solver.exceptions.DelayException;
+import mb.nabl2.solver.exceptions.InterruptedDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IProperties;
@@ -81,7 +81,7 @@ public class NameResolutionComponent extends ASolver {
     }
 
     public NameResolutionResult finish() {
-        return ImmutableNameResolutionResult.of(scopeGraph.freeze(), nameResolution.toCache(), properties.freeze());
+        return NameResolutionResult.of(scopeGraph.freeze(), nameResolution.toCache(), properties.freeze());
     }
 
     public IProperties.Immutable<Occurrence, ITerm, ITerm> finishDeclProperties() {
@@ -100,6 +100,8 @@ public class NameResolutionComponent extends ASolver {
         final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
             paths = nameResolution.resolve(ref);
+        } catch(InterruptedException e) {
+            throw new InterruptedDelayException(e);
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
         }
@@ -114,7 +116,7 @@ public class NameResolutionComponent extends ASolver {
             }
             case 1: {
                 final Occurrence decl = Iterables.getOnlyElement(declarations);
-                result = SolveResult.constraints(ImmutableCEqual.of(r.getDeclaration(), decl, r.getMessageInfo()));
+                result = SolveResult.constraints(CEqual.of(r.getDeclaration(), decl, r.getMessageInfo()));
                 break;
             }
             default: {
@@ -124,7 +126,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        return ImmutableSolveResult.copyOf(result);
+        return SolveResult.copyOf(result);
     }
 
     private SolveResult solve(CAssoc a) throws DelayException {
@@ -145,7 +147,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
             case 1: {
-                result = SolveResult.constraints(ImmutableCEqual.of(a.getScope(), scopes.get(0), a.getMessageInfo()));
+                result = SolveResult.constraints(CEqual.of(a.getScope(), scopes.get(0), a.getMessageInfo()));
                 break;
             }
             default: {
@@ -176,7 +178,7 @@ public class NameResolutionComponent extends ASolver {
             properties.putValue(decl, key, value);
             return Optional.empty();
         } else {
-            return Optional.of(ImmutableCEqual.of(value, prev.get(), message));
+            return Optional.of(CEqual.of(value, prev.get(), message));
         }
 
     }
@@ -187,7 +189,7 @@ public class NameResolutionComponent extends ASolver {
 
     @Value.Immutable
     @Serial.Version(42l)
-    public static abstract class NameResolutionResult {
+    public static abstract class ANameResolutionResult {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 

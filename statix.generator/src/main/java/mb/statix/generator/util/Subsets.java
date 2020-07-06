@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.ImmutableTuple2;
+import mb.nabl2.util.Tuple2;
 
 public class Subsets<E> {
 
@@ -32,7 +32,7 @@ public class Subsets<E> {
             return Stream.empty();
         }
         return enumerate(size, 0, elementList.size() - size, rnd)
-                .map(subset -> ImmutableTuple2.of(subset, elementSet.__removeAll(subset)));
+                .map(subset -> Tuple2.of(subset, elementSet.__removeAll(subset)));
     }
 
     private Stream<Set.Immutable<E>> enumerate(int n, int start, int end, Random rnd) {

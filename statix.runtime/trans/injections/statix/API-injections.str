@@ -1,0 +1,18 @@
+module injections/statix/API-injections
+
+// hand-written injections file for projects importing API.sdf3 and using the
+// SDF3-to-Statix signature generator.
+
+rules
+
+  explicate-injections-Stx-INT = id
+  explicate-injections-Stx-STRING = id
+  explicate-injections-Stx-Scope = id
+  explicate-injections-Stx-Occurrence = id
+  explicate-injections-Stx-TermIndex = id
+
+  implicate-injections-Stx-INT = id
+  implicate-injections-Stx-STRING = id
+  implicate-injections-Stx-Scope = id
+  implicate-injections-Stx-Occurrence = id
+  implicate-injections-Stx-TermIndex = id

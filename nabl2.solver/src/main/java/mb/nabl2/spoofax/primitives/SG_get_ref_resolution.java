@@ -29,14 +29,15 @@ public class SG_get_ref_resolution extends AnalysisPrimitive {
             throws InterpreterException {
         return Occurrence.matcher().match(term, solution.unifier()).<ITerm>flatMap(ref -> {
             try {
-                final Collection<IResolutionPath<Scope, Label, Occurrence>> paths = solution.nameResolution().resolve(ref);
+                final Collection<IResolutionPath<Scope, Label, Occurrence>> paths =
+                        solution.nameResolution().resolve(ref);
                 List<ITerm> pathTerms = Lists.newArrayListWithExpectedSize(paths.size());
                 for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
                     pathTerms.add(B.newTuple(path.getDeclaration(), Paths.toTerm(path)));
                 }
                 ITerm result = B.newList(pathTerms);
                 return Optional.of(result);
-            } catch(CriticalEdgeException e) {
+            } catch(CriticalEdgeException | InterruptedException e) {
                 return Optional.empty();
             }
         });

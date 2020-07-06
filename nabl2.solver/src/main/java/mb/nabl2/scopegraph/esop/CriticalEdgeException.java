@@ -22,7 +22,7 @@ public class CriticalEdgeException extends Throwable {
     }
 
     public CriticalEdgeException(IScope scope, ILabel label) {
-        this(ImmutableList.of(ImmutableCriticalEdge.of(scope, label)));
+        this(ImmutableList.of(CriticalEdge.of(scope, label)));
     }
 
     public List<CriticalEdge> criticalEdges() {

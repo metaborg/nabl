@@ -28,7 +28,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public abstract class Pattern implements Serializable {
@@ -79,7 +78,7 @@ public abstract class Pattern implements Serializable {
      * Fresh variables are generated for unmatched variables in the patterns. As a result, the resulting substitution
      * has entries for all the variables in the patterns, and no pattern variables escape in the equalities.
      */
-    public Optional<MatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier,
+    public Optional<AMatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
         // substitution from pattern variables to unifier variables
         final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
@@ -92,11 +91,11 @@ public abstract class Pattern implements Serializable {
         final Eqs eqs = new Eqs() {
 
             @Override public void add(ITermVar var, ITerm term) {
-                termEqs.add(ImmutableTuple2.of(var, term));
+                termEqs.add(Tuple2.of(var, term));
             }
 
             @Override public void add(ITermVar var, Pattern pattern) {
-                patternEqs.add(ImmutableTuple2.of(var, pattern));
+                patternEqs.add(Tuple2.of(var, pattern));
             }
 
         };
@@ -116,18 +115,18 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = termEq._1();
             final ITerm rightTerm = termEq._2();
             stuckVars.add(leftVar);
-            allEqs.add(ImmutableTuple2.of(leftVar, rightTerm));
+            allEqs.add(Tuple2.of(leftVar, rightTerm));
         }
         for(Tuple2<ITermVar, Pattern> patternEq : patternEqs) {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
-                allEqs.add(ImmutableTuple2.of(subst.apply(v), subst.apply(t)));
+                allEqs.add(Tuple2.of(subst.apply(v), subst.apply(t)));
             }, (v) -> v.orElse(fresh.apply(Optional.empty())));
             stuckVars.add(leftVar);
-            allEqs.add(ImmutableTuple2.of(leftVar, subst.apply(rightTerm)));
+            allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }
 
-        return Optional.of(ImmutableMatchResult.of(subst, stuckVars.build(), allEqs.build()));
+        return Optional.of(MatchResult.of(subst, stuckVars.build(), allEqs.build()));
     }
 
     protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
@@ -158,9 +157,9 @@ public abstract class Pattern implements Serializable {
     public Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> asTerm(Function1<Optional<ITermVar>, ITermVar> fresh) {
         final ImmutableList.Builder<Tuple2<ITermVar, ITerm>> eqs = ImmutableList.builder();
         final ITerm term = asTerm((v, t) -> {
-            eqs.add(ImmutableTuple2.of(v, t));
+            eqs.add(Tuple2.of(v, t));
         }, fresh);
-        return ImmutableTuple2.of(term, eqs.build());
+        return Tuple2.of(term, eqs.build());
     }
 
     protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh);

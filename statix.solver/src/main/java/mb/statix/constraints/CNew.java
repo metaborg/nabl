@@ -2,6 +2,7 @@ package mb.statix.constraints;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -80,4 +81,17 @@ public class CNew implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CNew cNew = (CNew)o;
+        return Objects.equals(terms, cNew.terms) &&
+            Objects.equals(cause, cNew.cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(terms, cause);
+    }
 }

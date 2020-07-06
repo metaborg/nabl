@@ -7,7 +7,6 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.SetMultimap;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> {
@@ -26,11 +25,11 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
     }
 
     @Override public boolean contains(K key, L label) {
-        return fwdKL().containsKey(ImmutableTuple2.of(key, label));
+        return fwdKL().containsKey(Tuple2.of(key, label));
     }
 
     @Override public boolean contains(K key, L label, V value) {
-        return fwdK().containsEntry(key, ImmutableTuple2.of(label, value));
+        return fwdK().containsEntry(key, Tuple2.of(label, value));
     }
 
     @Override public java.util.Set<K> keySet() {
@@ -42,7 +41,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
     }
 
     @Override public java.util.Set<V> get(K key, L label) {
-        return fwdKL().get(ImmutableTuple2.of(key, label));
+        return fwdKL().get(Tuple2.of(key, label));
     }
 
     @Override public java.util.Set<Tuple2<L, V>> get(K key) {
@@ -88,10 +87,10 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         }
 
         @Override public IRelation3.Immutable<K, L, V> put(K key, L label, V value) {
-            return new HashTrieRelation3.Immutable<>(fwdK.__insert(key, ImmutableTuple2.of(label, value)),
-                    fwdKL.__insert(ImmutableTuple2.of(key, label), value),
-                    bwdV.__insert(value, ImmutableTuple2.of(label, key)),
-                    bwdVL.__insert(ImmutableTuple2.of(value, label), key));
+            return new HashTrieRelation3.Immutable<>(fwdK.__insert(key, Tuple2.of(label, value)),
+                    fwdKL.__insert(Tuple2.of(key, label), value),
+                    bwdV.__insert(value, Tuple2.of(label, key)),
+                    bwdVL.__insert(Tuple2.of(value, label), key));
         }
 
         @Override public IRelation3.Immutable<K, L, V> putAll(IRelation3<K, L, V> other) {
@@ -175,10 +174,10 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         }
 
         @Override public boolean put(K key, L label, V value) {
-            if(fwdK.__insert(key, ImmutableTuple2.of(label, value))) {
-                fwdKL.__insert(ImmutableTuple2.of(key, label), value);
-                bwdV.__insert(value, ImmutableTuple2.of(label, key));
-                bwdVL.__insert(ImmutableTuple2.of(value, label), key);
+            if(fwdK.__insert(key, Tuple2.of(label, value))) {
+                fwdKL.__insert(Tuple2.of(key, label), value);
+                bwdV.__insert(value, Tuple2.of(label, key));
+                bwdVL.__insert(Tuple2.of(value, label), key);
                 return true;
 
             }
@@ -197,9 +196,9 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                 for(Tuple2<L, V> entry : entries) {
                     L label = entry._1();
                     V value = entry._2();
-                    fwdKL.__remove(ImmutableTuple2.of(key, label));
+                    fwdKL.__remove(Tuple2.of(key, label));
                     bwdV.__remove(value);
-                    bwdVL.__remove(ImmutableTuple2.of(value, label));
+                    bwdVL.__remove(Tuple2.of(value, label));
                 }
                 return true;
             }
@@ -208,11 +207,11 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
 
         @Override public boolean remove(K key, L label) {
             java.util.Set<V> values;
-            if(!(values = fwdKL.get(ImmutableTuple2.of(key, label))).isEmpty()) {
-                fwdKL.__remove(ImmutableTuple2.of(key, label));
+            if(!(values = fwdKL.get(Tuple2.of(key, label))).isEmpty()) {
+                fwdKL.__remove(Tuple2.of(key, label));
                 for(V value : values) {
-                    bwdV.__remove(value, ImmutableTuple2.of(label, key));
-                    bwdVL.__remove(ImmutableTuple2.of(value, label), key);
+                    bwdV.__remove(value, Tuple2.of(label, key));
+                    bwdVL.__remove(Tuple2.of(value, label), key);
                 }
                 return true;
             }
@@ -220,10 +219,10 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         }
 
         @Override public boolean remove(K key, L label, V value) {
-            if(fwdK.__remove(key, ImmutableTuple2.of(label, value))) {
-                fwdKL.__remove(ImmutableTuple2.of(key, label), value);
-                bwdV.__remove(value, ImmutableTuple2.of(label, key));
-                bwdVL.__remove(ImmutableTuple2.of(value, label), key);
+            if(fwdK.__remove(key, Tuple2.of(label, value))) {
+                fwdKL.__remove(Tuple2.of(key, label), value);
+                bwdV.__remove(value, Tuple2.of(label, key));
+                bwdVL.__remove(Tuple2.of(value, label), key);
                 return true;
             }
             return false;

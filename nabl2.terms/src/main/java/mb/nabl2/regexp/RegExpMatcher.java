@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -32,6 +33,10 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         this.defaultTransitions = defaultTransitions;
         this.nonFinal = nonFinal;
         this.isNullable = isNullable;
+    }
+
+    @Override public IRegExp<S> regexp() {
+        return state;
     }
 
     @Override public RegExpMatcher<S> match(S symbol) {
@@ -132,4 +137,16 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         return new RegExpMatcher<>(initial, stateTransitions, defaultTransitions, nonFinal, isNullable);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        RegExpMatcher<?> that = (RegExpMatcher<?>)o;
+        return Objects.equals(state, that.state);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(state);
+    }
 }

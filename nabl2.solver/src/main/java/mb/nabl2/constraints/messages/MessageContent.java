@@ -31,12 +31,12 @@ public abstract class MessageContent implements IMessageContent {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class TermMessage extends MessageContent {
+    static abstract class ATermMessage extends MessageContent {
 
         @Value.Parameter abstract ITerm getTerm();
 
-        @Override public TermMessage apply(Function1<ITerm, ITerm> f) {
-            return ImmutableTermMessage.of(f.apply(getTerm()));
+        @Override public ATermMessage apply(Function1<ITerm, ITerm> f) {
+            return TermMessage.of(f.apply(getTerm()));
         }
 
         @Override public ITerm build() {
@@ -55,11 +55,11 @@ public abstract class MessageContent implements IMessageContent {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class TextMessage extends MessageContent {
+    static abstract class ATextMessage extends MessageContent {
 
         @Value.Parameter abstract String getText();
 
-        @Override public TextMessage apply(Function1<ITerm, ITerm> f) {
+        @Override public ATextMessage apply(Function1<ITerm, ITerm> f) {
             return this;
         }
 
@@ -79,17 +79,17 @@ public abstract class MessageContent implements IMessageContent {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class CompoundMessage extends MessageContent {
+    static abstract class ACompoundMessage extends MessageContent {
 
         @Value.Parameter abstract List<IMessageContent> getParts();
 
-        @Override public CompoundMessage apply(Function1<ITerm, ITerm> f) {
-            return ImmutableCompoundMessage
+        @Override public ACompoundMessage apply(Function1<ITerm, ITerm> f) {
+            return CompoundMessage
                     .of(getParts().stream().map(p -> p.apply(f)).collect(ImmutableList.toImmutableList()));
         }
 
         @Override public IMessageContent withDefault(IMessageContent defaultContent) {
-            return ImmutableCompoundMessage.of(getParts().stream().map(p -> p.withDefault(defaultContent))
+            return CompoundMessage.of(getParts().stream().map(p -> p.withDefault(defaultContent))
                     .collect(ImmutableList.toImmutableList()));
         }
 
@@ -115,9 +115,9 @@ public abstract class MessageContent implements IMessageContent {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    static abstract class DefaultMessage extends MessageContent {
+    static abstract class ADefaultMessage extends MessageContent {
 
-        @Override public DefaultMessage apply(Function1<ITerm, ITerm> f) {
+        @Override public ADefaultMessage apply(Function1<ITerm, ITerm> f) {
             return this;
         }
 
@@ -142,13 +142,13 @@ public abstract class MessageContent implements IMessageContent {
     public static IMatcher<MessageContent> matcher() {
         // @formatter:off
         return M.<MessageContent>cases(
-            M.appl0(DEFAULT, (t) -> ImmutableDefaultMessage.of()),
-            M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> ImmutableCompoundMessage.of(ps)),
-            M.string(s -> ImmutableTextMessage.of(s.getValue())),
+            M.appl0(DEFAULT, (t) -> DefaultMessage.of()),
+            M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> CompoundMessage.of(ps)),
+            M.string(s -> TextMessage.of(s.getValue())),
             partMatcher(),
-            M.term(t -> ImmutableCompoundMessage.of(Iterables2.from(
-                ImmutableTermMessage.of(t),
-                ImmutableTextMessage.of(" (error message was malformed)")
+            M.term(t -> CompoundMessage.of(Iterables2.from(
+                TermMessage.of(t),
+                TextMessage.of(" (error message was malformed)")
             )))
         );
         // @formatter:on
@@ -157,18 +157,18 @@ public abstract class MessageContent implements IMessageContent {
     public static IMatcher<MessageContent> partMatcher() {
         // @formatter:off
         return M.<MessageContent>cases(
-            M.appl1(TEXT, M.stringValue(), (t,s) -> ImmutableTextMessage.of(s)),
-            M.appl1(TERM, M.term(), (t,s) -> ImmutableTermMessage.of(s))
+            M.appl1(TEXT, M.stringValue(), (t,s) -> TextMessage.of(s)),
+            M.appl1(TERM, M.term(), (t,s) -> TermMessage.of(s))
         );
         // @formatter:on
     }
 
     public static MessageContent of(String text) {
-        return ImmutableTextMessage.of(text);
+        return TextMessage.of(text);
     }
 
     public static MessageContent of() {
-        return ImmutableDefaultMessage.of();
+        return DefaultMessage.of();
     }
 
     public static class Builder {
@@ -180,12 +180,12 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         public Builder append(String text) {
-            parts.add(ImmutableTextMessage.of(text));
+            parts.add(TextMessage.of(text));
             return this;
         }
 
         public Builder append(ITerm term) {
-            parts.add(ImmutableTermMessage.of(term));
+            parts.add(TermMessage.of(term));
             return this;
         }
 
@@ -195,7 +195,7 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         public MessageContent build() {
-            return ImmutableCompoundMessage.of(parts.build());
+            return CompoundMessage.of(parts.build());
         }
 
     }

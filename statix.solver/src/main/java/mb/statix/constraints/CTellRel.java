@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -91,4 +92,19 @@ public class CTellRel implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CTellRel cTellRel = (CTellRel)o;
+        return Objects.equals(scopeTerm, cTellRel.scopeTerm) &&
+            Objects.equals(relation, cTellRel.relation) &&
+            Objects.equals(datumTerm, cTellRel.datumTerm) &&
+            Objects.equals(cause, cTellRel.cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(scopeTerm, relation, datumTerm, cause);
+    }
 }

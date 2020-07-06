@@ -81,19 +81,23 @@ public class InterpreterTerms {
     private static ITerm nameresolution(Iterable<Occurrence> refs,
             IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
         final Map<ITerm, ITerm> entries = Maps.newHashMap();
-        for(Occurrence ref : refs) {
-            try {
-                Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
-                if(paths.size() == 1) {
-                    IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
-                    ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));
-                    entries.put(ref, value);
-                } else {
-                    logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
+        try {
+            for(Occurrence ref : refs) {
+                try {
+                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                    if(paths.size() == 1) {
+                        IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
+                        ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));
+                        entries.put(ref, value);
+                    } else {
+                        logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
+                    }
+                } catch(CriticalEdgeException e) {
+                    logger.warn("Could not convert unresolvable {}.", ref);
                 }
-            } catch(CriticalEdgeException e) {
-                logger.warn("Could not convert unresolvable {}.", ref);
             }
+        } catch(InterruptedException e) {
+            logger.warn("Conversion interrupted.");
         }
         return map(entries.entrySet());
     }

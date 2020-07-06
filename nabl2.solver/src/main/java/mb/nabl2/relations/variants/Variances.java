@@ -12,7 +12,7 @@ public class Variances {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    public static abstract class Invariant implements IVariance {
+    public static abstract class AInvariant implements IVariance {
 
         @Override public <T> T match(Cases<T> cases) {
             return cases.caseInvariant();
@@ -22,7 +22,7 @@ public class Variances {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    public static abstract class Covariant implements IVariance {
+    public static abstract class ACovariant implements IVariance {
 
         @Value.Parameter public abstract RelationName getRelation();
 
@@ -34,7 +34,7 @@ public class Variances {
 
     @Value.Immutable
     @Serial.Version(value = 42L)
-    public static abstract class Contravariant implements IVariance {
+    public static abstract class AContravariant implements IVariance {
 
         @Value.Parameter public abstract RelationName getRelation();
 
@@ -47,9 +47,9 @@ public class Variances {
     public static IMatcher<IVariance> matcher() {
         // @formatter:off
         return M.cases(
-            M.appl0("Invar", t -> ImmutableInvariant.of()),
-            M.appl1("Covar", RelationName.matcher(), (t,r) -> ImmutableCovariant.of(r)),
-            M.appl1("Contravar", RelationName.matcher(), (t,r) -> ImmutableContravariant.of(r))
+            M.appl0("Invar", t -> Invariant.of()),
+            M.appl1("Covar", RelationName.matcher(), (t,r) -> Covariant.of(r)),
+            M.appl1("Contravar", RelationName.matcher(), (t,r) -> Contravariant.of(r))
         );
         // @formatter:on
     }

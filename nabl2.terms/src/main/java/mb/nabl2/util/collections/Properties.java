@@ -9,8 +9,6 @@ import org.metaborg.util.functions.Function1;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
-import mb.nabl2.util.ImmutableTuple2;
-import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 
@@ -29,7 +27,7 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
     }
 
     @Override public Optional<V> getValue(I index, K key) {
-        return Optional.ofNullable(values().get(ImmutableTuple2.of(index, key)));
+        return Optional.ofNullable(values().get(Tuple2.of(index, key)));
     }
 
     @Override public boolean contains(I index) {
@@ -37,12 +35,12 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
     }
 
     @Override public boolean contains(I index, K key) {
-        return values().containsKey(ImmutableTuple2.of(index, key));
+        return values().containsKey(Tuple2.of(index, key));
     }
 
     @Override public Stream<Tuple3<I, K, V>> stream() {
         return values().entrySet().stream()
-                .map(entry -> ImmutableTuple3.of(entry.getKey()._1(), entry.getKey()._2(), entry.getValue()));
+                .map(entry -> Tuple3.of(entry.getKey()._1(), entry.getKey()._2(), entry.getValue()));
     }
 
     @Override public String toString() {
@@ -124,7 +122,7 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
         }
 
         @Override public Optional<V> putValue(I index, K key, V value) {
-            V prev = values.__put(ImmutableTuple2.of(index, key), value);
+            V prev = values.__put(Tuple2.of(index, key), value);
             if(!value.equals(prev)) {
                 keys.__put(index, key);
                 return Optional.ofNullable(prev);

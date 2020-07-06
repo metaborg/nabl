@@ -12,17 +12,12 @@ imports
 
   signatures/statix/test/-
 
-rules // maps
-
-  normalize-mapping-constraints(|a):
-      Test(body, section*){a*} -> Test(body, section''*){a*}
-    with nabl2-custom-analysis-info-msg(|"| Normalize mapping constraints...")
-    with (section'*, maps) := <collectbu-map(replace-map(|a))> section*;
-         rule* := <map(map-to-rules(|a)); concat> maps;
-         section''* := <conc> (section'*, <rules-to-sections> rule*)
-
 rules // util
+
+  normalize-in-sections(replace):
+      Test(body, section*){a*} -> Test(body, section'*){a*}
+    where (section'*, _) := <replaceconcat-in-sections(replace)> section*
 
   normalize-scoped(replace,in-head,add-vars,to-c):
       Test(body, section*){a*} -> Test(<mk-CExists>(bvs', body'), section*){a*}
-    with (body', bvs') := <collect-map-in-constraints(replace, add-vars, to-c)> body
+    with (body', bvs') := <replace-in-constraints(replace, add-vars, to-c)> body

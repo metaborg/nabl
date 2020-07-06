@@ -14,7 +14,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import mb.nabl2.constraints.Constraints;
-import mb.nabl2.constraints.equality.ImmutableCEqual;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageInfo;
@@ -30,15 +30,14 @@ import mb.nabl2.relations.terms.FunctionName.RelationFunctions;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.FunctionUndefinedException;
 import mb.nabl2.solver.exceptions.RelationDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.ImmutableTuple2;
 import mb.nabl2.util.Tuple2;
 
 
@@ -65,7 +64,7 @@ public class RelationComponent extends ASolver {
             String lubName = RelationFunctions.LUB.of(relationName);
             CheckedFunction1<ITerm, Optional<ITerm>, DelayException> lubFun = (term) -> {
                 Optional<Tuple2<ITerm, ITerm>> pair =
-                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) ImmutableTuple2.of(l, r))
+                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) Tuple2.of(l, r))
                                 .match(term);
                 if(pair.isPresent()) {
                     return lub(relationName, pair.get()._1(), pair.get()._2());
@@ -77,7 +76,7 @@ public class RelationComponent extends ASolver {
             String glbName = RelationFunctions.GLB.of(relationName);
             CheckedFunction1<ITerm, Optional<ITerm>, DelayException> glbFun = (term) -> {
                 Optional<Tuple2<ITerm, ITerm>> pair =
-                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) ImmutableTuple2.of(l, r))
+                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) Tuple2.of(l, r))
                                 .match(term);
                 if(pair.isPresent()) {
                     return glb(relationName, pair.get()._1(), pair.get()._2());
@@ -184,12 +183,12 @@ public class RelationComponent extends ASolver {
                 IMessageInfo message = c.getMessageInfo().withDefaultContent(
                         MessageContent.builder().append(name).append(" failed on ").append(term).build());
                 return result.map(ret -> {
-                    return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
+                    return SolveResult.constraints(CEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 }).orElse(SolveResult.messages(message));
             },
             extName -> {
                 return callExternal(extName, term).map(ret -> {
-                    return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
+                    return SolveResult.constraints(CEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 }).orElse(SolveResult.messages(c.getMessageInfo()));
             }
         ));

@@ -16,9 +16,8 @@ import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.TypeException;
 import mb.nabl2.solver.exceptions.DelayException;
@@ -36,7 +35,7 @@ public class ScopeGraphComponent extends ASolver {
 
     // ------------------------------------------------------------------------------------------------------//
 
-    public ISolver.SeedResult seed(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> solution,
+    public SeedResult seed(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> solution,
             @SuppressWarnings("unused") IMessageInfo message) throws InterruptedException {
         scopeGraph.addAll(solution, unifier()::getVars);
         return SeedResult.empty();

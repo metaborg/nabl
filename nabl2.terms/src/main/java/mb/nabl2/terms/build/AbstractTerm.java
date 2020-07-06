@@ -1,13 +1,13 @@
 package mb.nabl2.terms.build;
 
+import java.util.Objects;
+
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.Terms;
-
-import java.util.Objects;
 
 public abstract class AbstractTerm implements ITerm {
 

@@ -11,16 +11,16 @@ public interface INameResolution<S extends IScope, L extends ILabel, O extends I
 
     java.util.Set<O> getResolvedRefs();
 
-    Collection<IResolutionPath<S, L, O>> resolve(O ref) throws CriticalEdgeException;
+    Collection<IResolutionPath<S, L, O>> resolve(O ref) throws CriticalEdgeException, InterruptedException;
 
     Collection<O> decls(S scope) throws CriticalEdgeException;
 
     Collection<O> refs(S scope) throws CriticalEdgeException;
 
-    Collection<O> visible(S scope) throws CriticalEdgeException;
+    Collection<O> visible(S scope) throws CriticalEdgeException, InterruptedException;
 
-    Collection<O> reachable(S scope) throws CriticalEdgeException;
+    Collection<O> reachable(S scope) throws CriticalEdgeException, InterruptedException;
 
-    Collection<Map.Entry<O, Collection<IResolutionPath<S, L, O>>>> resolutionEntries();
+    Collection<? extends Map.Entry<O, ? extends Collection<IResolutionPath<S, L, O>>>> resolutionEntries();
 
 }

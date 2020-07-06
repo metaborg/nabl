@@ -15,12 +15,10 @@ import mb.nabl2.constraints.equality.IEqualityConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SeedResult;
-import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.exceptions.VariableDelayException;
-import mb.nabl2.solver.ImmutableSeedResult;
-import mb.nabl2.solver.ImmutableSolveResult;
+import mb.nabl2.solver.SeedResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
+import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
@@ -51,7 +49,7 @@ public class EqualityComponent extends ASolver {
             final MessageContent content = MessageContent.of("Recursive unifier");
             messages.add(message.withContent(content));
         }
-        return ImmutableSeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
+        return SeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
     }
 
     public SolveResult solve(IEqualityConstraint constraint) throws VariableDelayException {
@@ -74,7 +72,7 @@ public class EqualityComponent extends ASolver {
         } catch(OccursException ex) {
         }
         if(unifyResult != null) {
-            final SolveResult solveResult = ImmutableSolveResult.builder().unifierDiff(unifyResult).build();
+            final SolveResult solveResult = SolveResult.builder().unifierDiff(unifyResult).build();
             this.unifier.set(unifier.freeze());
             return solveResult;
         } else {

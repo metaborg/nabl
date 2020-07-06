@@ -55,9 +55,9 @@ public class StrategoTerms {
             var -> termFactory.makeAppl("nabl2.Var", new IStrategoTerm[] { termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()) })
         ));
         // @formatter:on
-        switch(strategoTerm.getTermType()) {
-            case IStrategoTerm.BLOB:
-            case IStrategoTerm.LIST:
+        switch(strategoTerm.getType()) {
+            case BLOB:
+            case LIST:
                 break;
             default:
                 strategoTerm = putAttachments(strategoTerm, term.getAttachments());
@@ -105,7 +105,7 @@ public class StrategoTerms {
             term = StrategoTermIndices.put(index.get(), term, termFactory);
         }
 
-        StrategoAnnotations annotations = attachments.getInstance(StrategoAnnotations.class);
+        AStrategoAnnotations annotations = attachments.getInstance(AStrategoAnnotations.class);
         if(annotations != null) {
             @SuppressWarnings({ "unchecked" }) T result = (T) termFactory.copyAttachments(term,
                     termFactory.annotateTerm(term, termFactory.makeList(annotations.getAnnotationList())));
@@ -162,7 +162,7 @@ public class StrategoTerms {
             b.put(TermIndex.class, termIndex);
         });
 
-        b.put(StrategoAnnotations.class, ImmutableStrategoAnnotations.of(term.getAnnotations()));
+        b.put(AStrategoAnnotations.class, StrategoAnnotations.of(term.getAnnotations()));
 
         return b.build();
     }
@@ -170,20 +170,20 @@ public class StrategoTerms {
     // matching
 
     public static <T> T match(IStrategoTerm term, ICases<T> cases) {
-        switch(term.getTermType()) {
-            case IStrategoTerm.APPL:
+        switch(term.getType()) {
+            case APPL:
                 return cases.caseAppl((IStrategoAppl) term);
-            case IStrategoTerm.LIST:
+            case LIST:
                 return cases.caseList((IStrategoList) term);
-            case IStrategoTerm.TUPLE:
+            case TUPLE:
                 return cases.caseTuple((IStrategoTuple) term);
-            case IStrategoTerm.INT:
+            case INT:
                 return cases.caseInt((IStrategoInt) term);
-            case IStrategoTerm.REAL:
+            case REAL:
                 return cases.caseReal((IStrategoReal) term);
-            case IStrategoTerm.STRING:
+            case STRING:
                 return cases.caseString((IStrategoString) term);
-            case IStrategoTerm.BLOB:
+            case BLOB:
                 if(term instanceof StrategoBlob) {
                     StrategoBlob blob = (StrategoBlob) term;
                     return cases.caseBlob(blob);
@@ -191,7 +191,7 @@ public class StrategoTerms {
                     throw new IllegalArgumentException("Unsupported Stratego blob type " + term.getClass());
                 }
             default:
-                throw new IllegalArgumentException("Unsupported Stratego term type " + term.getTermType());
+                throw new IllegalArgumentException("Unsupported Stratego term type " + term.getType());
         }
     }
 

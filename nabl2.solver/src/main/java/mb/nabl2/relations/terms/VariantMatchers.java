@@ -44,13 +44,13 @@ public class VariantMatchers {
             this.variance = variance;
         }
 
-        @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
+        @Override public Optional<List<IArg<ITerm>>> match(ITerm t) {
             return M.listElems(M.term(), (l, list) -> {
-                List<IVariantMatcher.Arg<ITerm>> args = Lists.newArrayList();
+                List<IVariantMatcher.IArg<ITerm>> args = Lists.newArrayList();
                 for(ITerm arg : list) {
-                    args.add(ImmutableArg.of(variance, arg));
+                    args.add(Arg.of(variance, arg));
                 }
-                return (List<IVariantMatcher.Arg<ITerm>>) args;
+                return (List<IVariantMatcher.IArg<ITerm>>) args;
             }).match(t);
         }
 
@@ -92,11 +92,11 @@ public class VariantMatchers {
             this.variances = ImmutableList.copyOf(variances);
         }
 
-        @Override public Optional<List<Arg<ITerm>>> match(ITerm t) {
+        @Override public Optional<List<IArg<ITerm>>> match(ITerm t) {
             return IMatcher.flatten(M.appl(op, appl -> {
                 return Optionals.when(variances.size() == appl.getArity()).map(eq -> {
-                    return (List<Arg<ITerm>>) Lists.newArrayList(Iterables2.zip(variances, appl.getArgs(), (v, a) -> {
-                        return (IVariantMatcher.Arg<ITerm>) ImmutableArg.of(v, a);
+                    return (List<IArg<ITerm>>) Lists.newArrayList(Iterables2.zip(variances, appl.getArgs(), (v, a) -> {
+                        return (IVariantMatcher.IArg<ITerm>) Arg.of(v, a);
                     }));
                 });
             })).match(t);
@@ -132,7 +132,7 @@ public class VariantMatchers {
     }
 
     @Value.Immutable
-    static abstract class Arg implements IVariantMatcher.Arg<ITerm>, Serializable {
+    static abstract class AArg implements IVariantMatcher.IArg<ITerm>, Serializable {
 
         private static final long serialVersionUID = 42L;
 

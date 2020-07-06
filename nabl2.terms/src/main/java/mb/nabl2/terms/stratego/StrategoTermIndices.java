@@ -52,7 +52,7 @@ public final class StrategoTermIndices {
                 ));
             // @formatter:on
             termFactory.copyAttachments(term, result);
-            final TermIndex index1 = ImmutableTermIndex.of(resource, ++currentId);
+            final TermIndex index1 = TermIndex.of(resource, ++currentId);
             final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
             result = put(index2, result, termFactory);
             return result;
@@ -66,7 +66,7 @@ public final class StrategoTermIndices {
                 result = termFactory.makeListCons(index(list.head()), index(list.tail()), list.getAnnotations());
             }
             termFactory.copyAttachments(list, result);
-            final TermIndex index1 = ImmutableTermIndex.of(resource, ++currentId);
+            final TermIndex index1 = TermIndex.of(resource, ++currentId);
             final TermIndex index2 = (TermIndex) TermOrigin.get(list).map(o -> o.put(index1)).orElse(index1);
             result = (IStrategoList) put(index2, result, termFactory);
             return result;
@@ -172,7 +172,7 @@ public final class StrategoTermIndices {
         IStrategoTerm resourceTerm = term.getSubterm(0);
         IStrategoTerm idTerm = term.getSubterm(1);
 
-        final TermIndex index1 = ImmutableTermIndex.of(TermUtils.toJavaString(resourceTerm), TermUtils.toJavaInt(idTerm));
+        final TermIndex index1 = TermIndex.of(TermUtils.toJavaString(resourceTerm), TermUtils.toJavaInt(idTerm));
         final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
         return Optional.of(index2);
     }

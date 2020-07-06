@@ -19,21 +19,22 @@ rules
 
   normalize-resolves(|a) =
     nabl2-custom-analysis-info-msg(|"| Normalize namespace-based queries...");
-    bottomup(
-      try(normalize-resolve(|a))
-    )
+    bottomup(try(normalize-resolve(|a)))
 
   normalize-resolve(|a): t@ResolveMatch(_){a*} -> wf{a*}
     with wf := <norm-get-ast-decl-property(|a, "wf")> t
+      <+ wf := <empty-LabelRE>
 
   normalize-resolve(|a): t@ResolveLt(_){a*} -> ord{a*}
     with ord := <norm-get-ast-decl-property(|a, "ord")> t
+      <+ ord := <empty-LabelOrd>
 
-  normalize-resolve(|a): OccurrenceMatch(StxOccurrence(ns, ts, _)){a*} -> lam{a*}
+  normalize-resolve(|a): om@OccurrenceMatch(StxOccurrence(ns, ts, _)){a*} -> lam{a*}
     with NS(tys) := <norm-get-ast-decl-type(|a)> ns;
          us := <mk-fresh-Vars(|"u")> tys;
          d := <mk-Occurrence>(ns, us, WithId(<mk-Wld(|AST_ID())>));
          lam := <mk-LLam>([d], CEqual(<mk-Tuple>(us), <mk-Tuple>(ts), NoMessage()))
+      <+ lam := <fail-LLam>
 
 rules
 
@@ -48,35 +49,36 @@ rules
     )
 
 
-  normalize-query: CAskRel(rel, ts, st, msg) -> c
+  normalize-query: c@CAskRel(rel, ts, st, msg) -> c'
     with PRED(tys) := <norm-get-ast-type> rel
-       ; c := <ask-rel-query(|tys, [])> (rel, st, ts, [])
-
+       ; c' := <ask-rel-query(|tys, [])> (rel, st, ts, [])
+      <+ c' := <fail-C>
 
   normalize-query-ops =
     normalize-scoped(replace-functional-relop,id,id,functional-relop-to-c)
 
   replace-functional-relop: t@AskRelOp(rel, in_ts, st){a*} -> out_v{a*}
     with ty := <norm-get-ast-type> t
-    with out_v := <mk-fresh-Var(|ty)>("t")
+       ; out_v := <mk-fresh-Var(|ty)>("t")
+      <+ out_v := <mk-fresh-Var>("t")
 
-  functional-relop-to-c: (AskRelOp(rel, in_ts, st), out_v) -> c
+  functional-relop-to-c: (c@AskRelOp(rel, in_ts, st), out_v) -> c'
     with FUN(intys, outty) := <norm-get-ast-type> rel
-       ; c := <ask-rel-query(|intys, outty)> (rel, st, in_ts, [out_v])
+       ; c' := <ask-rel-query(|intys, outty)> (rel, st, in_ts, [out_v])
+      <+ c' := <fail-C>
 
 
   ask-rel-query(|intys, outty): (rel, st, in_ts, out_ts) -> c
-    with us       := <mk-fresh-Vars(|"u")> intys;
-         eq       := CEqual(<mk-Tuple>(us), <mk-Tuple>(in_ts), NoMessage());
-         in_v     := <mk-Tuple>(us);
-         match    := <mk-LLam>([in_v], eq);
-         filter   := Filter(Epsilon(), match)
-
-    with in_wlds  := <mk-Wlds> intys;
-         in_wld   := <mk-Tuple>(in_wlds);
-         ord      := <mk-LLam>([in_wld, in_wld], CFalse(NoMessage()));
-         min      := Min([], ord)
-    with t        := <conc;mk-Tuple>(in_wlds, out_ts);
-         pt       := <mk-Tuple>([<mk-Wld(|PATH())>, t]);
-         pts      := <mk-List>([pt])
-    with c        := CResolveQuery(rel, filter, min, st, pts, NoMessage())
+    where us       := <mk-fresh-Vars(|"u")> intys;
+          eq       := CEqual(<mk-Tuple>(us), <mk-Tuple>(in_ts), NoMessage());
+          in_v     := <mk-Tuple>(us);
+          match    := <mk-LLam>([in_v], eq);
+          filter   := Filter(Epsilon(), match)
+    where in_wlds  := <mk-Wlds> intys;
+          in_wld   := <mk-Tuple>(in_wlds);
+          ord      := <mk-LLam>([in_wld, in_wld], CFalse(NoMessage()));
+          min      := Min([], ord)
+    where t        := <conc;mk-Tuple>(in_wlds, out_ts);
+          pt       := <mk-Tuple>([<mk-Wld(|PATH())>, t]);
+          pts      := <mk-List>([pt])
+    where c        := CResolveQuery(rel, filter, min, st, pts, NoMessage())

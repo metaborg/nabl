@@ -14,7 +14,6 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.ImmutableTuple3;
 import mb.nabl2.util.Tuple3;
 
 public class Diseq {
@@ -63,7 +62,7 @@ public class Diseq {
             lefts.add(v);
             rights.add(t);
         });
-        return ImmutableTuple3.of(universals, B.newTuple(lefts.build()), B.newTuple(rights.build()));
+        return Tuple3.of(universals, B.newTuple(lefts.build()), B.newTuple(rights.build()));
     }
 
     public Diseq apply(ISubstitution.Immutable subst) {

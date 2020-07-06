@@ -1,17 +1,17 @@
 package mb.nabl2.solver.components;
 
-import mb.nabl2.constraints.equality.ImmutableCEqual;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.relations.CBuildRelation;
 import mb.nabl2.constraints.relations.CCheckRelation;
 import mb.nabl2.constraints.relations.CEvalFunction;
 import mb.nabl2.constraints.relations.IRelationConstraint;
 import mb.nabl2.relations.IFunctionName;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SolveResult;
+import mb.nabl2.solver.SolverCore;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.UnconditionalDelayExpection;
 import mb.nabl2.solver.exceptions.VariableDelayException;
-import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 
 
@@ -47,7 +47,7 @@ public class ExternalRelationComponent extends ASolver {
             },
             extName -> {
                 return callExternal(extName, term).map(ret -> {
-                    return SolveResult.constraints(ImmutableCEqual.of(c.getResult(), ret, c.getMessageInfo()));
+                    return SolveResult.constraints(CEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 }).orElse(SolveResult.empty());
             }
             // @formatter:on

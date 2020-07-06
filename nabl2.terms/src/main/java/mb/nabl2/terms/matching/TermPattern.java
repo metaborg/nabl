@@ -162,7 +162,7 @@ public class TermPattern {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
         }
 
-        public Optional<MatchResult> matchWithEqs(final Iterable<Pattern> patterns,
+        public Optional<AMatchResult> matchWithEqs(final Iterable<Pattern> patterns,
                 final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier,
                 Function1<Optional<ITermVar>, ITermVar> fresh) {
             return TermPattern.P.newTuple(patterns).matchWithEqs(B.newTuple(terms), unifier, fresh);

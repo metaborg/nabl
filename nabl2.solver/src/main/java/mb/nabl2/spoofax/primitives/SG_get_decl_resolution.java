@@ -36,7 +36,7 @@ public class SG_get_decl_resolution extends AnalysisPrimitive {
                     Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
                     paths.stream().filter(path -> path.getDeclaration().equals(decl))
                             .map(p -> B.newTuple(ref, Paths.toTerm(p))).forEach(entries::add);
-                } catch(CriticalEdgeException e) {
+                } catch(CriticalEdgeException | InterruptedException e) {
                     // ignore
                 }
             }

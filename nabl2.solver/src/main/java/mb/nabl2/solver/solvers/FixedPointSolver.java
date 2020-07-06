@@ -11,6 +11,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.RateLimitedCancel;
 
 import com.google.common.collect.Lists;
 
@@ -19,8 +20,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.solver.ISolver;
-import mb.nabl2.solver.ISolver.SolveResult;
-import mb.nabl2.solver.ImmutableSolveResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.InterruptedDelayException;
@@ -46,7 +46,7 @@ public class FixedPointSolver {
     private final ISolver component;
 
     public FixedPointSolver(ICancel cancel, IProgress progress, ISolver component) {
-        this.cancel = cancel;
+        this.cancel = new RateLimitedCancel(cancel, 42);
         this.progress = progress;
         this.component = component;
         this.stepSubject = PublishSubject.create();
@@ -129,15 +129,15 @@ public class FixedPointSolver {
             }
         } while(progress);
 
-      //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
-      //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
+        //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
+        //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
 
         unsolved.addAll(constraints);
         unsolved.addAll(variableDelays.values());
         unsolved.addAll(criticalEdgeDelays.values());
         unsolved.addAll(relationDelays.values());
 
-        return ImmutableSolveResult.builder()
+        return SolveResult.builder()
         // @formatter:off
                 .messages(messages.freeze())
                 .constraints(unsolved)

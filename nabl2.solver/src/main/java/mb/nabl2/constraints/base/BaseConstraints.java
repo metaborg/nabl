@@ -25,22 +25,22 @@ public final class BaseConstraints {
         return M.<IBaseConstraint>cases(
         // @formatter:off
             M.appl1(C_TRUE, MessageInfo.matcherOnlyOriginTerm(), (c, origin) -> {
-                return ImmutableCTrue.of(origin);
+                return CTrue.of(origin);
             }),
             M.appl1(C_FALSE, MessageInfo.matcher(), (c, msginfo) -> {
-                return ImmutableCFalse.of(msginfo);
+                return CFalse.of(msginfo);
             }),
             M.appl2(C_CONJ, (t, u) -> Constraints.matcher().match(t, u), (t, u) -> Constraints.matcher().match(t, u),
                     (c, c1, c2) -> {
-                        return ImmutableCConj.of(c1, c2, MessageInfo.empty());
+                        return CConj.of(c1, c2, MessageInfo.empty());
                     }),
             M.appl2(C_EXISTS, M.listElems(M.var()), (t, u) -> Constraints.matcher().match(t, u),
                     (c, vars, constraint) -> {
-                        return ImmutableCExists.of(vars, constraint, MessageInfo.empty());
+                        return CExists.of(vars, constraint, MessageInfo.empty());
                     }),
             M.appl2(C_NEW, M.listElems(M.var()), MessageInfo.matcherOnlyOriginTerm(),
                     (c, vars, origin) -> {
-                        return ImmutableCNew.of(vars, origin);
+                        return CNew.of(vars, origin);
                     })
             // @formatter:on
         );
@@ -61,22 +61,22 @@ public final class BaseConstraints {
     public static IBaseConstraint substitute(IBaseConstraint constraint, ISubstitution.Immutable subst) {
         // @formatter:off
         return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
-            t -> ImmutableCTrue.of(t.getMessageInfo().apply(subst::apply)),
-            f -> ImmutableCFalse.of(f.getMessageInfo().apply(subst::apply)),
+            t -> CTrue.of(t.getMessageInfo().apply(subst::apply)),
+            f -> CFalse.of(f.getMessageInfo().apply(subst::apply)),
             c -> {
-                return ImmutableCConj.of(
+                return CConj.of(
                         Constraints.substitute(c.getLeft(), subst),
                         Constraints.substitute(c.getRight(), subst),
                         c.getMessageInfo().apply(subst::apply));
             },
             e -> {
                 final ISubstitution.Immutable restrictedSubst = subst.removeAll(e.getEVars());
-                return ImmutableCExists.of(e.getEVars(),
+                return CExists.of(e.getEVars(),
                         Constraints.substitute(e.getConstraint(), restrictedSubst),
                         e.getMessageInfo().apply(restrictedSubst::apply));
             },
             n -> {
-                return ImmutableCNew.of(n.getNVars().stream().map(subst::apply).collect(ImmutableList.toImmutableList()),
+                return CNew.of(n.getNVars().stream().map(subst::apply).collect(ImmutableList.toImmutableList()),
                         n.getMessageInfo().apply(subst::apply));
             }
         ));
@@ -86,21 +86,21 @@ public final class BaseConstraints {
     public static IBaseConstraint transform(IBaseConstraint constraint, Function1<ITerm, ITerm> map) {
         // @formatter:off
         return constraint.match(IBaseConstraint.Cases.<IBaseConstraint>of(
-            t -> ImmutableCTrue.of(t.getMessageInfo().apply(map::apply)),
-            f -> ImmutableCFalse.of(f.getMessageInfo().apply(map::apply)),
+            t -> CTrue.of(t.getMessageInfo().apply(map::apply)),
+            f -> CFalse.of(f.getMessageInfo().apply(map::apply)),
             c -> {
-                return ImmutableCConj.of(
+                return CConj.of(
                         Constraints.transform(c.getLeft(), map),
                         Constraints.transform(c.getRight(), map),
                         c.getMessageInfo().apply(map::apply));
             },
             e -> {
-                return ImmutableCExists.of(e.getEVars(),
+                return CExists.of(e.getEVars(),
                         Constraints.transform(e.getConstraint(), map),
                         e.getMessageInfo().apply(map::apply));
             },
             n -> {
-                return ImmutableCNew.of(n.getNVars().stream().map(map::apply).collect(ImmutableList.toImmutableList()),
+                return CNew.of(n.getNVars().stream().map(map::apply).collect(ImmutableList.toImmutableList()),
                         n.getMessageInfo().apply(map::apply));
             }
         ));

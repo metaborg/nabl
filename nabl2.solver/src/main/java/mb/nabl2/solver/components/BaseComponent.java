@@ -13,12 +13,11 @@ import mb.nabl2.constraints.base.CConj;
 import mb.nabl2.constraints.base.CExists;
 import mb.nabl2.constraints.base.CNew;
 import mb.nabl2.constraints.base.IBaseConstraint;
-import mb.nabl2.constraints.equality.ImmutableCEqual;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.scopegraph.terms.ImmutableScope;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ASolver;
-import mb.nabl2.solver.ISolver.SolveResult;
+import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -64,14 +63,14 @@ public class BaseComponent extends ASolver {
     private SolveResult solve(CNew constraint) {
         final List<IConstraint> constraints = Lists.newArrayList();
         for(ITerm scope : constraint.getNVars()) {
-            constraints.add(ImmutableCEqual.of(scope, newScope(scope), constraint.getMessageInfo()));
+            constraints.add(CEqual.of(scope, newScope(scope), constraint.getMessageInfo()));
         }
         return SolveResult.constraints(constraints);
     }
 
     private Scope newScope(ITerm term) {
-        return M.var(v -> ImmutableScope.of(v.getResource(), fresh(v.getName()))).match(term, unifier())
-                .orElseGet(() -> ImmutableScope.of("", fresh("s"))).withAttachments(term.getAttachments());
+        return M.var(v -> Scope.of(v.getResource(), fresh(v.getName()))).match(term, unifier())
+                .orElseGet(() -> Scope.of("", fresh("s"))).withAttachments(term.getAttachments());
     }
 
 }

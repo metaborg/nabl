@@ -5,6 +5,7 @@ imports
 signature
   constructors
     Ref  :           AstProperty
+    Type :           AstProperty
     Prop : String -> AstProperty
 
 rules
@@ -24,4 +25,5 @@ rules
   stx--get-ast-resource =
     prim("SG_get_ast_resource")
 
-  stx--get-ast-property(|a,prop) = prim("STX_get_ast_property",a,prop)
+  stx--get-ast-property(|a,prop) =
+    prim("STX_get_ast_property", a, prop)

@@ -2,6 +2,8 @@ package mb.statix.arithmetic;
 
 import org.metaborg.util.functions.Predicate2;
 
+import java.util.Objects;
+
 public class ArithTest {
 
     private final String op;
@@ -26,4 +28,18 @@ public class ArithTest {
         return op;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        ArithTest arithTest = (ArithTest)o;
+        return isEquals == arithTest.isEquals &&
+            Objects.equals(op, arithTest.op) &&
+            Objects.equals(f, arithTest.f);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(op, f, isEquals);
+    }
 }
