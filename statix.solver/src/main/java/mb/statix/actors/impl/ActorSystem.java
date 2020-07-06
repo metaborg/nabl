@@ -22,10 +22,9 @@ public class ActorSystem implements IActorSystem {
 
     private static final ILogger logger = LoggerUtils.logger(ActorSystem.class);
 
+    private final Object lock = new Object();
     private final Map<String, Actor<?>> actors;
     private final ExecutorService executorService;
-
-    private final Object lock = new Object();
     private volatile boolean running = false;
 
     public ActorSystem() {
@@ -77,12 +76,24 @@ public class ActorSystem implements IActorSystem {
     }
 
     @Override public void stop() {
+        stop(false);
+    }
+
+    @Override public void cancel() {
+        stop(true);
+    }
+
+    private void stop(boolean force) {
         synchronized(lock) {
             if(!running) {
                 throw new IllegalStateException("Actor system not running.");
             }
             for(Actor<?> actor : actors.values()) {
-                actor.stop();
+                if(force) {
+                    actor.cancel();
+                } else {
+                    actor.stop();
+                }
             }
             executorService.shutdown();
         }

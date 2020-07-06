@@ -31,13 +31,13 @@ public class DeadlockTest {
 
     interface IPing {
 
-        void ping(IActorRef<? extends IPong> source);
+        void ping();
 
     }
 
     interface IPong {
 
-        void pong(IActorRef<? extends IPong> source);
+        void pong();
 
     }
 
@@ -59,19 +59,19 @@ public class DeadlockTest {
 
         @Override public void start(IActorRef<? extends IPing> target) {
             logger.info("{} started", self);
-            self.async(target).ping(self);
+            self.async(target).ping();
             self.async(dlm).waitFor(self, "pong", target);
         }
 
-        @Override public void ping(IActorRef<? extends IPong> source) {
-            logger.info("{} received ping from {}", self, source);
+        @Override public void ping() {
+            logger.info("{} received ping from {}", self, self.sender());
             //            source.get().pong(self);
 
         }
 
-        @Override public void pong(IActorRef<? extends IPong> source) {
-            logger.info("{} recieved pong from {}", self, source);
-            self.async(dlm).granted(self, "pong", source);
+        @Override public void pong() {
+            logger.info("{} recieved pong from {}", self, self.sender());
+            self.async(dlm).granted(self, "pong", self.sender());
             self.stop();
         }
 

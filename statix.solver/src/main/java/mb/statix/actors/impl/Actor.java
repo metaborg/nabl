@@ -36,9 +36,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
     private final Object lock;
     private volatile ActorState state;
-    private Future<?> task;
     private final Queue<IMessage<T>> messages;
     private final Set<IActorMonitor> monitors;
+    private Future<?> task;
 
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get sender when not in message processing context.");
@@ -118,14 +118,15 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         @SuppressWarnings({ "unchecked", "rawtypes" }) @Override public void complete(U value, Throwable ex) {
             sender.put(new IMessage() {
 
-                @Override public IActorRef sender() {
-                    return sender;
-                }
-
                 @Override public void dispatch(Object impl) {
                     // impl is ignored, since the future does not dispatch on the
                     // object directly, instead just calling the handler(s).
-                    completable.complete(value, ex);
+                    try {
+                        Actor.sender.set(sender);
+                        completable.complete(value, ex);
+                    } finally {
+                        Actor.sender.remove();
+                    }
                 }
 
             });
@@ -165,19 +166,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     private void put(IMessage<T> message) {
-        // ASSERT ActorState != DONE
+        // ASSERT ActorState != STOPPED
         synchronized(lock) {
-            // It is important to change the state here and not in the message loop.
-            // The reason is that doing it here ensures that the unit is activated before
-            // the sending unit is suspended. If it were the other way around, there could be
-            // a false deadlock reported.
-            if(state.equals(ActorState.WAITING)) {
-                state = ActorState.RUNNING;
-                for(IActorMonitor monitor : monitors) {
-                    monitor.resumed(this);
-                }
-                logger.info("running {}", id);
-            }
             messages.add(message);
             lock.notify();
         }
@@ -191,7 +181,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         //        logger.info("start {}", id);
         synchronized(lock) {
             if(!state.equals(ActorState.INIT)) {
-                throw new IllegalStateException("Actor already started.");
+                throw new IllegalStateException("Actor already started and/or stopped.");
             }
 
             state = ActorState.RUNNING;
@@ -207,7 +197,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
         final T impl = supplier.apply(this);
         if(!type.type().isInstance(impl)) {
-            throw new IllegalArgumentException("Given implementation does not implement the given interface.");
+            throw new IllegalArgumentException("Supplied implementation does not implement the given interface.");
         }
 
         try {
@@ -222,24 +212,29 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         }
                         lock.wait();
                     }
-                    // Here we are always in state RUNNING:
-                    // (a) invocations was not empty, and we never suspended
-                    // (b) we suspended, and put() set the state to RUNNING before notify()
+                    if(state.equals(ActorState.WAITING)) {
+                        state = ActorState.RUNNING;
+                        for(IActorMonitor monitor : monitors) {
+                            monitor.resumed(this);
+                        }
+                        logger.info("running {}", id);
+                    }
                     message = messages.remove();
                 }
                 logger.info("{}[{}] message {}", id, state, message);
-                sender.set(message.sender());
-                message.dispatch(impl);
-                sender.remove();
+                message.dispatch(impl); // responsible for setting sender!
             }
-        } catch(InterruptedException e) {
+        } catch(InterruptedException ex) {
             logger.info("{} interrupted", id);
+        } catch(StopException ex) {
+            logger.info("{} stopped", id);
+        } catch(ActorException ex) {
+            logger.info("{} failed", ex, id);
         } finally {
             synchronized(lock) {
                 state = ActorState.STOPPED;
             }
         }
-        logger.info("{} stopped", id);
     }
 
     @Override public IActorRef<?> sender() {
@@ -247,11 +242,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @Override public void stop() {
+        put(new Stop());
+    }
+
+    void cancel() {
         synchronized(lock) {
-            if(state.equals(ActorState.INIT) || state.equals(ActorState.STOPPED)) {
-                return;
-            }
-            state = ActorState.STOPPED;
             task.cancel(true);
         }
     }
@@ -294,17 +289,15 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             this.result = result;
         }
 
-        @Override public IActorRef<?> sender() {
-            return sender;
-        }
-
-        @Override public void dispatch(T impl) {
+        @Override public void dispatch(T impl) throws ActorException {
             try {
+                Actor.sender.set(sender);
                 method.setAccessible(true);
                 final Object returnValue = method.invoke(impl, args);
                 if(result != null) {
-                    // FIXME The completion runs on the thread of the receiving actor,
-                    //       not on the thread of the sending actor, as it should!
+                    // NOTE The completion runs on the thread of the receiving actor.
+                    //      The different async(...) cases dispatch the result as a message,
+                    //      or as a job on the executor.
                     ((IFuture<?>) returnValue).whenComplete((r, ex) -> {
                         if(ex != null) {
                             result.completeExceptionally(ex);
@@ -314,17 +307,26 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     });
                 }
             } catch(ReflectiveOperationException | IllegalArgumentException ex) {
-                if(result != null) {
-                    result.completeExceptionally(ex);
-                } else {
-                    ex.printStackTrace();
-                }
+                throw new ActorException("Dispatch failed.", ex);
             } finally {
+                Actor.sender.remove();
             }
         }
 
         @Override public String toString() {
             return "invoke " + method + "(" + Arrays.toString(args) + ")";
+        }
+
+    }
+
+    private class Stop implements IMessage<T> {
+
+        @Override public void dispatch(T impl) throws StopException {
+            throw new StopException();
+        }
+
+        @Override public String toString() {
+            return "stop";
         }
 
     }

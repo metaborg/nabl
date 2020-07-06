@@ -17,6 +17,7 @@ public class ActorTest {
         final IActorRef<IPing> pinger = system.add("pinger", TypeTag.of(IPing.class), self -> new Ping(self, ponger));
         system.start();
         system.async(pinger).start();
+        Thread.sleep(2000);
         system.stop();
     }
 
@@ -40,7 +41,7 @@ public class ActorTest {
 
         @Override public void start() {
             logger.info("start");
-            self.async(ponger).ping(self);
+            self.async(ponger).ping();
 
         }
 
@@ -52,7 +53,7 @@ public class ActorTest {
     }
 
     private static interface IPong {
-        void ping(IActorRef<IPing> pinger);
+        void ping();
     }
 
     private static class Pong implements IPong {
@@ -63,9 +64,9 @@ public class ActorTest {
             this.self = self;
         }
 
-        @Override public void ping(IActorRef<IPing> pinger) {
+        @Override public void ping() {
             logger.info("ping");
-            self.async(pinger).pong();
+            self.async((IActorRef<IPing>) self.sender()).pong();
             self.stop();
         }
 

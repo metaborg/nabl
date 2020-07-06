@@ -26,6 +26,9 @@ public interface IActor<T> extends IActorRef<T> {
      */
     void addMonitor(IActorMonitor monitor);
 
+    /**
+     * Stop the actor.
+     */
     void stop();
 
 }
