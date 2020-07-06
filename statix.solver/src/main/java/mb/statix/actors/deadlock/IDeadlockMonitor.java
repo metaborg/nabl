@@ -1,12 +1,15 @@
 package mb.statix.actors.deadlock;
 
-import mb.statix.actors.IActorMonitor;
 import mb.statix.actors.IActorRef;
 
-public interface IDeadlockMonitor<T> extends IActorMonitor {
+public interface IDeadlockMonitor<T> {
 
-    void waitFor(IActorRef<?> source, T token, IActorRef<?> target);
+    void waitFor(IActorRef<?> actor, T token);
 
-    void granted(IActorRef<?> source, T token, IActorRef<?> target);
+    void granted(IActorRef<?> actor, T token);
+
+    void suspended(Clock clock);
+
+    void stopped(Clock clock);
 
 }

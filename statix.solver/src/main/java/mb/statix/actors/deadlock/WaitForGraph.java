@@ -9,7 +9,6 @@ import java.util.Set;
 import org.eclipse.viatra.query.runtime.base.itc.alg.incscc.IncSCCAlg;
 import org.eclipse.viatra.query.runtime.base.itc.graphimpl.Graph;
 
-import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 
@@ -18,25 +17,35 @@ import mb.nabl2.util.collections.IRelation3;
  */
 public class WaitForGraph<N, T> {
 
+    // FIXME Handling stopped nodes.
+    //       a. resume of stopped node -- can be ignored.
+    //       b. wait-for on stopped node -- could be resolved by an even later messages
+    //       c. granted from a stopped node -- apply as usual
+    //       d. suspend while having wait-fors on stopped nodes -- if the actor received all messages from the stopped node, it will be permanently stuck
+    //       e. stopping -- if suspended actors have wait-fors on this node, and we didn't send them messages, they are permanently stuck
+
     private final Graph<N> waitForGraph = new Graph<>();
     private final IncSCCAlg<N> sccGraph = new IncSCCAlg<>(waitForGraph);
     private final Set<N> waitingNodes = new HashSet<>();
+    private final Set<N> stoppedNodes = new HashSet<>();
     private final IRelation3.Transient<N, T, N> waitForEdges = HashTrieRelation3.Transient.of();
 
     public WaitForGraph() {
     }
 
-    public void add(N node) {
-        waitForGraph.insertNode(node);
+    private void addNodeIfAbsent(N node) {
+        if(!waitForGraph.getAllNodes().contains(node)) {
+            waitForGraph.insertNode(node);
+        }
     }
 
     /**
      * Register a wait-for in the graph.
      */
     public void waitFor(N source, T token, N target) {
-        if(waitingNodes.contains(source)) {
-            throw new IllegalStateException("Node " + source + " is not active.");
-        }
+        addNodeIfAbsent(source);
+        addNodeIfAbsent(target);
+
         waitForGraph.insertEdge(source, target);
         // ASSERT is not already in the graph
         waitForEdges.put(source, token, target);
@@ -46,9 +55,6 @@ public class WaitForGraph<N, T> {
      * Remove a wait-for from the graph.
      */
     public void granted(N source, T token, N target) {
-        if(waitingNodes.contains(source)) {
-            throw new IllegalStateException("Node " + source + " is not active.");
-        }
         waitForGraph.deleteEdgeThatExists(source, target);
         waitForEdges.remove(source, token, target);
     }
@@ -56,10 +62,9 @@ public class WaitForGraph<N, T> {
     /**
      * Node is activated.
      */
-    public void activate(N node) {
-        if(!waitingNodes.contains(node)) {
-            throw new IllegalStateException("Node " + node + " is not waiting.");
-        }
+    public void resume(N node) {
+        addNodeIfAbsent(node);
+
         waitingNodes.remove(node);
     }
 
@@ -67,27 +72,29 @@ public class WaitForGraph<N, T> {
      * Suspend a node. Return deadlocked tokens on the given node.
      */
     public Optional<IRelation3.Immutable<N, T, N>> suspend(N node) {
-        if(waitingNodes.contains(node)) {
-            throw new IllegalStateException("Node " + node + " is already waiting.");
-        }
+        addNodeIfAbsent(node);
+
         waitingNodes.add(node);
         return detectDeadlock(node);
     }
 
     /**
-     * Remove a node. Return tokens waiting on that node.
+     * Remove a node. Return tokens the node was waiting on.
      */
-    public SetMultimap<N, T> remove(N node) {
+    public IRelation3.Immutable<N, T, N> remove(N node) {
+        addNodeIfAbsent(node);
+
         waitForGraph.deleteNode(node);
         waitingNodes.remove(node);
-        final SetMultimap.Transient<N, T> waits = SetMultimap.Transient.of();
-        for(Entry<T, N> entry : waitForEdges.inverse().get(node)) {
-            final N other = entry.getValue();
+        stoppedNodes.add(node);
+        final IRelation3.Transient<N, T, N> waitFors = HashTrieRelation3.Transient.of();
+        for(Entry<T, N> entry : waitForEdges.get(node)) {
+            final N target = entry.getValue();
             final T token = entry.getKey();
-            waitForEdges.remove(other, token, node);
-            waits.__insert(other, token);
+            waitForEdges.remove(node, token, target);
+            waitFors.put(node, token, target);
         }
-        return waits.freeze();
+        return waitFors.freeze();
     }
 
     private Optional<IRelation3.Immutable<N, T, N>> detectDeadlock(N node) {

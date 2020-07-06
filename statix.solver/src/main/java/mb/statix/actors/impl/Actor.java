@@ -201,7 +201,12 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         try {
-            while(!state.equals(ActorState.STOPPED)) {
+            synchronized(lock) {
+                for(IActorMonitor monitor : monitors) {
+                    monitor.started(this);
+                }
+            }
+            while(true) {
                 final IMessage<T> message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
@@ -233,6 +238,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         } finally {
             synchronized(lock) {
                 state = ActorState.STOPPED;
+                for(IActorMonitor monitor : monitors) {
+                    monitor.stopped(this);
+                }
             }
         }
     }
@@ -258,7 +266,6 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @Override public void addMonitor(IActorMonitor monitor) {
         synchronized(lock) {
             monitors.add(monitor);
-            monitor.started(this);
         }
     }
 
