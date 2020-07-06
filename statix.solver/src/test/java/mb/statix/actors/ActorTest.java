@@ -5,7 +5,10 @@ import java.util.concurrent.ExecutionException;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.statix.actors.impl.ActorSystem;
+import mb.statix.concurrent.actors.IActor;
+import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.TypeTag;
+import mb.statix.concurrent.actors.impl.ActorSystem;
 
 public class ActorTest {
 

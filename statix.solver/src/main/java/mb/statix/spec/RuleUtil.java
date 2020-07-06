@@ -45,7 +45,6 @@ import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;

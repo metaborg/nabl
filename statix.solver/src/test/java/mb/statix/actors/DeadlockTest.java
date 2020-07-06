@@ -7,10 +7,14 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.util.collections.IRelation3;
-import mb.statix.actors.deadlock.Clock;
-import mb.statix.actors.deadlock.DeadlockMonitor;
-import mb.statix.actors.deadlock.IDeadlockMonitor;
-import mb.statix.actors.impl.ActorSystem;
+import mb.statix.concurrent.actors.IActor;
+import mb.statix.concurrent.actors.IActorMonitor;
+import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.TypeTag;
+import mb.statix.concurrent.actors.deadlock.Clock;
+import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
+import mb.statix.concurrent.actors.deadlock.IDeadlockMonitor;
+import mb.statix.concurrent.actors.impl.ActorSystem;
 
 public class DeadlockTest {
 
