@@ -121,6 +121,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // NB. Invoke methods via `local` so that we have the same scheduling & ordering
     // guarantees as for remote calls.
 
+    @Override public String id() {
+        return self.id();
+    }
+
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
         assertInState(UnitState.ACTIVE);
 
@@ -429,6 +433,5 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             throw new IllegalArgumentException("Edge or datum " + source + "/" + edgeOrDatum + " must be closed.");
         }
     }
-
 
 }

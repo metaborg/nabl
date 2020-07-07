@@ -1,5 +1,7 @@
 package mb.statix.concurrent.p_raffrayi;
 
+import javax.annotation.Nullable;
+
 import mb.statix.concurrent.actors.futures.IFuture;
 
 /**
@@ -8,6 +10,6 @@ import mb.statix.concurrent.actors.futures.IFuture;
 @FunctionalInterface
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, S root);
+    IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, @Nullable S root);
 
 }

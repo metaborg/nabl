@@ -117,7 +117,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return future.isDone();
     }
 
-    public static <T> IFuture<T> of(T value) {
+    public static <T> IFuture<T> completed(T value) {
         final java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
         future.complete(value);
         return new CompletableFuture<>(future);

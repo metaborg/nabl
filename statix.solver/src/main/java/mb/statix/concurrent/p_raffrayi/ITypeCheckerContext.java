@@ -16,6 +16,11 @@ import mb.statix.scopegraph.reference.LabelWF;
 public interface ITypeCheckerContext<S, L, D, R> {
 
     /**
+     * Return id of the current unit.
+     */
+    String id();
+
+    /**
      * Start sub type-checker, with the given root scope.
      */
     void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
@@ -56,5 +61,51 @@ public interface ITypeCheckerContext<S, L, D, R> {
      */
     IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
+
+    default ITypeCheckerContext<S, L, D, R> subContext(String subId) {
+        final ITypeCheckerContext<S, L, D, R> outer = this;
+        return new ITypeCheckerContext<S, L, D, R>() {
+
+            private final String id = outer.id() + "#" + subId;
+
+            @Override public String id() {
+                return id;
+            }
+
+            @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public void initRoot(S root, Iterable<L> labels, boolean shared) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean shared) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public void setDatum(S scope, D datum, Access access) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public void addEdge(S source, L label, S target) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public void closeEdge(S source, L label) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public void closeShare(S scope) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
+                    DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+                return outer.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
+            }
+
+        };
+    }
 
 }

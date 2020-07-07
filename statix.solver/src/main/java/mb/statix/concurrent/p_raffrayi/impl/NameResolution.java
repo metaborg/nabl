@@ -185,7 +185,7 @@ abstract class NameResolution<S, L, D> {
     }
 
     private IFuture<Env<S, L, D>> empty() {
-        return CompletableFuture.of(Env.empty());
+        return CompletableFuture.completed(Env.empty());
     }
 
     ///////////////////////////////////////////////////////////////////////////

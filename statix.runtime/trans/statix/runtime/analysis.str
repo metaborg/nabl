@@ -83,27 +83,27 @@ rules // multi file analysis (new)
        ; level := <stx--log-level>
        ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
        ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
-       ; global-scope := Scope("<>", "0") // also hardcoded in STX_solve_multi
+       ; s-root      := Var("s_root")
     with
       //
       // 1. Build project task
       //
       switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
-          project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
-        case ?Cached(ProjectAnalysisNew(project-C, _)):
+          project-rule := LLam([s-root], C(proj-c-name, <map(stx--explode)> [s-root], NoMessage()))
+        case ?Cached(ProjectAnalysisNew(project-rule, _)):
           project-ast := ()
         otherwise:
           fatal-err(|"Unexpected change on project")
       end
-    ; project-task := (project-resource, project-C)
+    ; project-task := (project-resource, project-rule)
       //
       // 2. Build file tasks
       //
     ; changed-file-ast*  := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> file-change*
     ; changed-file-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> changed-file-ast*
-    ; changed-file-task* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> changed-file-ast'*
-    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysisNew(file-C, _))) -> (resource, file-C) \)> file-change*
+    ; changed-file-task* := <map(\ (resource, ast') -> (resource, LLam([s-root], C(file-c-name, <map(stx--explode)> [s-root, ast'], NoMessage()))) \)> changed-file-ast'*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysisNew(file-rule, _))) -> (resource, file-rule) \)> file-change*
     ; file-task* := [changed-file-task*, cached-file-task*]
       //
       // 3. Solve all tasks
@@ -111,32 +111,33 @@ rules // multi file analysis (new)
     ; task*          := [project-task, file-task*]
     ; changed-ast*   := [(project-resource, project-ast), changed-file-ast'*]
     ; analysis*      := <stx--solve-multi-new(|spec, level, progress, cancel)> task*
-    ; project-result := < stx--mk-result(\ (C, a) -> ProjectAnalysisNew(C, a) \|changed-ast*, task*, analysis*)
+    ; project-result := < stx--mk-result(\ (rule, a) -> ProjectAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
                         ; \ (resource, result) -> (resource, result) \
                         > (project-resource, project-change)
-    ; file-result*   := <map( stx--mk-result(\ (C, a) -> FileAnalysisNew(C, a) \|changed-ast*, task*, analysis*)
+    ; file-result*   := <map( stx--mk-result(\ (rule, a) -> FileAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
                             ; \ (resource, result) -> (resource, result) \
                             )> file-change*
     ; result* := [project-result|file-result*]
       //
       // 4. Compute scope graph diff
       //
-    ; if Cached(ProjectAnalysisNew(_, project-analysis')) := project-change then
-        project-analysis := <lookup> (project-resource, analysis*)
-      ; diff := <stx--diff-scopegraphs(|global-scope)> (project-analysis, project-analysis')
-      ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
-      end
+  // Disabled as long as we do not know the root scope here
+  //; if Cached(ProjectAnalysisNew(_, project-analysis')) := project-change then
+  //    project-analysis := <lookup> (project-resource, analysis*)
+  //  ; diff := <stx--diff-scopegraphs(|global-scope)> (project-analysis, project-analysis')
+  //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+  //  end
 
   // @param spec  : Spec
   // @param level : LogLevel
-  // @type [(String, Constraint)] -> [(String, SolverResult)]
+  // @type [(String, Rule)] -> [(String, SolverResult)]
   stx--solve-multi-new(|spec, level, progress, cancel) =
     prim("STX_solve_multi", spec, level, progress, cancel)
 
   stx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
-    with C := <lookup> (resource, task*)
+    with rule := <lookup> (resource, task*)
        ; state := <lookup> (resource, state*)
-       ; analysis := <mk-analysis> (C, state)
+       ; analysis := <mk-analysis> (rule, state)
        ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages> state
        ; switch !change
            case ?Added(_) + ?Changed(_, _):

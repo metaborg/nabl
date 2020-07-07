@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -18,24 +17,25 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.Tuple2;
-import mb.statix.concurrent._attic.Coordinator;
-import mb.statix.concurrent._attic.CoordinatorResult;
-import mb.statix.concurrent._attic.ScopeImpl;
-import mb.statix.concurrent._attic.StatixTypeChecker;
-import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.IBroker;
+import mb.statix.concurrent.p_raffrayi.IResult;
+import mb.statix.concurrent.p_raffrayi.IScopeImpl;
+import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.Broker;
+import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
+import mb.statix.concurrent.solver.ProjectTypeChecker;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi extends StatixPrimitive {
@@ -52,70 +52,42 @@ public class STX_solve_multi extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        //        final IDebugContext debug = new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
+        final IDebugContext debug = new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
         final IProgress progress = getProgress(terms.get(2));
         final ICancel cancel = getCancel(terms.get(3));
 
-        final IMatcher<Tuple2<String, IConstraint>> constraintMatcher =
-                M.tuple2(M.stringValue(), StatixTerms.constraint(), (t, r, c) -> Tuple2.of(r, c));
-        final List<Tuple2<String, IConstraint>> constraints = M.listElems(constraintMatcher).match(term)
-                .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
+        final IMatcher<Tuple2<String, Rule>> constraintMatcher =
+                M.tuple2(M.stringValue(), StatixTerms.hoconstraint(), (t, r, c) -> Tuple2.of(r, c));
+        final Map<String, Rule> units = M.listElems(constraintMatcher).match(term)
+                .orElseThrow(() -> new InterpreterException("Expected list of constraints.")).stream()
+                .collect(Collectors.toMap(Tuple2::_1, Tuple2::_2));
 
-        final ExecutorService executor = Executors.newCachedThreadPool();
-        final ScopeImpl<Scope> scopeImpl = new ScopeImpl<Scope>() {
-            // @formatter:off
-            @Override public Scope make(String resource, String name) { return Scope.of(resource, name); }
-            @Override public String resource(Scope scope) { return scope.getResource(); }
-            // @formatter:on
-        };
-        final Coordinator<Scope, ITerm, ITerm> solver = new Coordinator<>(spec.allLabels(), scopeImpl, cancel);
+        final IScopeImpl<Scope> scopeImpl = new ScopeImpl();
+
+        final IBroker<Scope, ITerm, ITerm, SolverResult> broker = new Broker<>(scopeImpl, spec.allLabels(), cancel);
+        broker.add(".", new ProjectTypeChecker(units, spec, debug));
 
         final double t0 = System.currentTimeMillis();
-
-        final Map<String, IFuture<SolverResult>> fileSolvers = Maps.newHashMap();
-        for(Tuple2<String, IConstraint> resource_constraint : constraints) {
-            final String resource = resource_constraint._1();
-            final IDebugContext fileDebug = new LoggerDebugContext(LoggerUtils.logger("STX[" + resource + "]"));
-            final StatixTypeChecker fileSolver = new StatixTypeChecker(resource, solver, spec, resource_constraint._2(),
-                    fileDebug, progress, cancel);
-            fileSolvers.put(resource, fileSolver.run(executor));
-        }
-        final IFuture<CoordinatorResult<Scope, ITerm, ITerm>> solveResult = solver.run(executor);
-
-        final Thread watcher = new Thread(() -> {
-            try {
-                while(true) {
-                    Thread.sleep(1000);
-                    if(cancel.cancelled()) {
-                        executor.shutdownNow();
-                    }
-                }
-            } catch(InterruptedException e) {
-            }
-        }, "StatixWatcher");
-        watcher.start();
+        broker.run();
 
         final List<ITerm> results = Lists.newArrayList();
         try {
-            final CoordinatorResult<Scope, ITerm, ITerm> coordinatorResult = solveResult.get();
+            final IResult<Scope, ITerm, ITerm, SolverResult> solveResult = broker.result().get();
 
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Files analyzed in {} s", (dt / 1_000d));
 
-            for(Entry<String, IFuture<SolverResult>> entry : fileSolvers.entrySet()) {
-                final SolverResult fileResult = entry.getValue().get();
-                final IScopeGraph.Immutable<Scope, ITerm, ITerm> fileScopeGraph =
-                        coordinatorResult.scopeGraph().get(entry.getKey());
+            for(Entry<String, IUnitResult<Scope, ITerm, ITerm, SolverResult>> entry : solveResult.unitResults()
+                    .entrySet()) {
+                final SolverResult fileResult = entry.getValue().analysis();
+                final IScopeGraph.Immutable<Scope, ITerm, ITerm> fileScopeGraph = entry.getValue().scopeGraph();
                 final IState.Immutable updatedFileState = fileResult.state().withScopeGraph(fileScopeGraph);
-                final SolverResult updatedFileResult = entry.getValue().get().withState(updatedFileState);
+                final SolverResult updatedFileResult = fileResult.withState(updatedFileState);
                 results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(updatedFileResult)));
             }
         } catch(Throwable e) {
-            executor.shutdownNow();
             logger.error("Async solving failed.", e);
             throw new InterpreterException("Async solving failed.", e);
-        } finally {
-            watcher.interrupt();
         }
 
         return Optional.of(B.newList(results));
