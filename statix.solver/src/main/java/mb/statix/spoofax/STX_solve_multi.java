@@ -65,7 +65,7 @@ public class STX_solve_multi extends StatixPrimitive {
         final IScopeImpl<Scope> scopeImpl = new ScopeImpl();
 
         final IBroker<Scope, ITerm, ITerm, SolverResult> broker = new Broker<>(scopeImpl, spec.allLabels(), cancel);
-        broker.add(".", new ProjectTypeChecker(units, spec, debug));
+        broker.add("<ROOT>", new ProjectTypeChecker(units, spec, debug));
 
         final double t0 = System.currentTimeMillis();
         broker.run();

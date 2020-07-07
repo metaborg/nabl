@@ -24,6 +24,7 @@ import mb.statix.concurrent.p_raffrayi.IResult;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
 public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
@@ -32,7 +33,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     private final ICancel cancel;
 
     private final ActorSystem system;
-    private final IActor<DeadlockMonitor<IWaitFor>> dlm;
+    private final IActor<IDeadlockMonitor<IWaitFor<S, L, D>>> dlm;
 
     private final Object lock = new Object();
     private final Map<String, IActor<IUnit<S, L, D, R>>> units;
@@ -56,17 +57,17 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     }
 
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
-        add(id, unitChecker, null);
+        final IActor<IUnit<S, L, D, R>> unit = add(id, null, unitChecker);
+        system.async(unit)._start(null).whenComplete((r, ex) -> addResult(id, r, ex));
     }
 
-    private IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-            @Nullable S root) {
+    private IActor<IUnit<S, L, D, R>> add(String id, @Nullable IActorRef<? extends IUnit2UnitProtocol<S, L, D>> parent,
+            ITypeChecker<S, L, D, R> unitChecker) {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
+                self -> new Unit<>(self, parent, new UnitContext(self), unitChecker, edgeLabels));
         synchronized(lock) {
             units.put(id, unit);
         }
-        system.async(unit)._start(root).whenComplete((r, ex) -> addResult(id, r, ex));
         return unit;
     }
 
@@ -96,6 +97,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
                     if(result.isDone()) {
                         return;
                     } else if(cancel.cancelled()) {
+                        result.completeExceptionally(new InterruptedException());
                         system.stop();
                         return;
                     } else {
@@ -136,14 +138,16 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
         @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id,
                 ITypeChecker<S, L, D, R> unitChecker, S root) {
-            return Broker.this.add(id, unitChecker, root);
+            final IActor<IUnit<S, L, D, R>> unit = Broker.this.add(id, self, unitChecker);
+            self.async(unit)._start(root).whenComplete((r, ex) -> addResult(id, r, ex));
+            return unit;
         }
 
-        @Override public void waitFor(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
+        @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
             self.async(dlm).waitFor(unit, token);
         }
 
-        @Override public void granted(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
+        @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
             self.async(dlm).granted(unit, token);
         }
 

@@ -90,7 +90,7 @@ rules // multi file analysis (new)
       //
       switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
-          project-rule := LLam([s-root], C(proj-c-name, <map(stx--explode)> [s-root], NoMessage()))
+          project-rule := LLam([s-root], C(proj-c-name, [s-root], NoMessage()))
         case ?Cached(ProjectAnalysisNew(project-rule, _)):
           project-ast := ()
         otherwise:
@@ -102,7 +102,7 @@ rules // multi file analysis (new)
       //
     ; changed-file-ast*  := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> file-change*
     ; changed-file-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> changed-file-ast*
-    ; changed-file-task* := <map(\ (resource, ast') -> (resource, LLam([s-root], C(file-c-name, <map(stx--explode)> [s-root, ast'], NoMessage()))) \)> changed-file-ast'*
+    ; changed-file-task* := <map(\ (resource, ast') -> (resource, LLam([s-root], C(file-c-name, [s-root, <stx--explode> ast'], NoMessage()))) \)> changed-file-ast'*
     ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysisNew(file-rule, _))) -> (resource, file-rule) \)> file-change*
     ; file-task* := [changed-file-task*, cached-file-task*]
       //

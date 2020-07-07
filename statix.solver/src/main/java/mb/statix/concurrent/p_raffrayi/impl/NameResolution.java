@@ -44,9 +44,9 @@ abstract class NameResolution<S, L, D> {
     private final Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete; // default: true
 
     public NameResolution(IScopeGraph<S, L, D> scopeGraph, LabelOrder<L> labelOrder, DataWF<D> dataWF,
-            DataLeq<D> dataEquiv, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete) {
+            DataLeq<D> dataEquiv, Access access, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete) {
         this.scopeGraph = scopeGraph;
-        this.dataLabel = EdgeOrData.data(Access.INTERNAL);
+        this.dataLabel = EdgeOrData.data(access);
         this.allLabels = Streams.concat(Stream.of(dataLabel), scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge))
                 .collect(Collectors.toSet());
         this.labelOrder = labelOrder;

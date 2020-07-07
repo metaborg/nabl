@@ -31,12 +31,13 @@ public class ProjectTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Sol
 
     @Override public IFuture<SolverResult> run(ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> context,
             @Nullable Scope root) {
-        final Scope projectScope = context.freshScope("", Collections.emptySet(), Collections.emptySet(), true);
+        final Scope projectScope = context.freshScope("s_root", Collections.emptySet(), Collections.emptySet(), true);
         for(Entry<String, Rule> entry : units.entrySet()) {
             final String id = entry.getKey();
             final Rule rule = entry.getValue();
             context.add(id, new UnitTypeChecker(rule, spec, debug), projectScope);
         }
+        context.closeShare(projectScope);
         return CompletableFuture.completed(null);
     }
 

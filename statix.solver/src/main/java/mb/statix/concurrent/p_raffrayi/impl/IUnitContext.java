@@ -5,6 +5,7 @@ import org.metaborg.util.task.ICancel;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
 /**
  * Protocol accepted by the broker, from units
@@ -23,9 +24,9 @@ public interface IUnitContext<S, L, D, R> {
     // Deadlock detection
     //////////////////////////////////////////////////////////////////////////
 
-    void waitFor(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
+    void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
 
-    void granted(IWaitFor token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
+    void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
 
     void suspended(Clock clock);
 

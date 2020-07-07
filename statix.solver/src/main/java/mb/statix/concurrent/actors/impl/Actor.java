@@ -136,6 +136,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             return completable.isDone();
         }
 
+        @Override public String toString() {
+            return sender + " completes " + completable;
+        }
+
     }
 
     @SuppressWarnings("unchecked") T async(ExecutorService executor) {
@@ -166,8 +170,12 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     private void put(IMessage<T> message) {
-        // ASSERT ActorState != STOPPED
         synchronized(lock) {
+            if(state.equals(ActorState.STOPPED)) {
+                logger.warn("{} received message when already stopped", id);
+                // FIXME Ignore, or signal error?
+                return;
+            }
             messages.add(message);
             lock.notify();
         }
@@ -193,11 +201,12 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
      * Actor main loop.
      */
     private void run() {
-        logger.info("{} starting", id);
+        logger.info("{} start", id);
 
         final T impl = supplier.apply(this);
-        if(!type.type().isInstance(impl)) {
-            throw new IllegalArgumentException("Supplied implementation does not implement the given interface.");
+        if(impl == null || !type.type().isInstance(impl)) {
+            throw new IllegalArgumentException(
+                    "Supplied implementation " + impl + " does not implement the given interface " + type.type() + ".");
         }
 
         try {
@@ -210,7 +219,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 final IMessage<T> message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
-                        logger.info("{} waiting", id);
+                        logger.info("{} suspend", id);
                         state = ActorState.WAITING;
                         for(IActorMonitor monitor : monitors) {
                             monitor.suspended(this);
@@ -222,11 +231,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         for(IActorMonitor monitor : monitors) {
                             monitor.resumed(this);
                         }
-                        logger.info("running {}", id);
+                        logger.info("{} resume", id);
                     }
                     message = messages.remove();
                 }
-                logger.info("{}[{}] message {}", id, state, message);
+                logger.info("{}[{}] deliver message {}", id, state, message);
                 message.dispatch(impl); // responsible for setting sender!
             }
         } catch(InterruptedException ex) {
@@ -238,6 +247,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         } finally {
             synchronized(lock) {
                 state = ActorState.STOPPED;
+                messages.clear();
                 for(IActorMonitor monitor : monitors) {
                     monitor.stopped(this);
                 }
@@ -321,7 +331,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         @Override public String toString() {
-            return "invoke " + method + "(" + Arrays.toString(args) + ")";
+            return sender + " invokes " + method.getName() + "(" + Arrays.toString(args) + ")";
         }
 
     }

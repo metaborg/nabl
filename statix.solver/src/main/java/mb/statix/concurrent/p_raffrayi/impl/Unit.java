@@ -24,6 +24,10 @@ import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseEdge;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.Resolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -49,7 +53,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private UnitState state;
     private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
-    private final IScopeGraph.Transient<S, L, D> scopeGraph;
+    private IScopeGraph.Immutable<S, L, D> scopeGraph;
     private final MultiSet.Transient<S> sharedScopes;
     private final MultiSet.Transient<S> uninitializedScopes;
     private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
@@ -69,7 +73,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.state = UnitState.INIT;
         this.unitResult = new CompletableFuture<>();
 
-        this.scopeGraph = ScopeGraph.Transient.of(edgeLabels);
+        this.scopeGraph = ScopeGraph.Immutable.of(edgeLabels);
         this.sharedScopes = MultiSet.Transient.of();
         this.uninitializedScopes = MultiSet.Transient.of();
         this.openEdges = MultiSetMap.Transient.of();
@@ -92,8 +96,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertInState(UnitState.INIT);
 
         state = UnitState.ACTIVE;
-        uninitializedScopes.add(root);
-        context.waitFor(IWaitFor.of("init", root), self);
+        if(root != null) {
+            uninitializedScopes.add(root);
+            context.waitFor(InitScope.of(root), self);
+        }
 
         // run() after inits are initialized before run, since unitChecker
         // can immediately call methods, that are executed synchronously
@@ -107,10 +113,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         state = UnitState.DONE;
 
+        // FIXME Only do this once all wait-fors are gone!
         if(ex != null) {
             unitResult.completeExceptionally(ex);
         } else {
-            unitResult.completeValue(UnitResult.of(result, scopeGraph.freeze()));
+            unitResult.completeValue(UnitResult.of(result, scopeGraph));
         }
     }
 
@@ -134,7 +141,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> subunit = context.add(id, unitChecker, root);
 
         uninitializedScopes.add(root);
-        context.waitFor(IWaitFor.of("init", root), subunit);
+        context.waitFor(InitScope.of(root), subunit);
     }
 
     @Override public void initRoot(S root, Iterable<L> labels, boolean shared) {
@@ -152,12 +159,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         Streams.concat(stream(labels).map(EdgeOrData::edge), stream(data).map(EdgeOrData::<L>data)).forEach(edge -> {
             openEdges.put(scope, edge);
-            context.waitFor(IWaitFor.of("closeEdge", scope, edge), self);
+            context.waitFor(CloseEdge.of(scope, edge), self);
         });
 
         if(shared) {
             sharedScopes.add(scope);
-            context.waitFor(IWaitFor.of("closeScope", scope), self);
+            context.waitFor(CloseScope.of(scope), self);
         }
 
         return scope;
@@ -193,10 +200,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         final IFuture<Env<S, L, D>> result = local._query(Paths.empty(scope), labelWF, dataWF, labelOrder, dataEquiv);
         clock = clock.sent(self);
-        context.waitFor(IWaitFor.of("answer", result), self);
+        context.waitFor(Resolution.of(result), self);
         return result.whenComplete((env, ex) -> {
             clock = clock.received(self);
-            context.granted(IWaitFor.of("answer", result), self);
+            context.granted(Resolution.of(result), self);
         }).thenApply(CapsuleUtil::toSet);
     }
 
@@ -210,16 +217,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertUninitialized(root);
 
         uninitializedScopes.remove(root);
-        context.granted(IWaitFor.of("init", root), sender());
+        context.granted(InitScope.of(root), sender());
 
         stream(labels).map(EdgeOrData::edge).forEach(edge -> {
             openEdges.put(root, edge);
-            context.waitFor(IWaitFor.of("closeEdge", root, edge), sender());
+            context.waitFor(CloseEdge.of(root, edge), sender());
         });
 
         if(shared) {
             sharedScopes.add(root);
-            context.waitFor(IWaitFor.of("closeScope", root), sender());
+            context.waitFor(CloseScope.of(root), sender());
         }
 
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(root);
@@ -229,7 +236,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             }
         } else {
             if(parent == null) {
-                throw new IllegalArgumentException("Not our own scope, and no parent: cannot propagate up.");
+                throw new IllegalArgumentException(root + " not our own scope, and no parent: cannot propagate up.");
             }
             self.async(parent)._initRoot(root, labels, shared);
             clock = clock.sent(parent);
@@ -246,9 +253,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             assertEdgeClosed(scope, EdgeOrData.data(Access.INTERNAL));
         }
 
-        scopeGraph.setDatum(scope, datum);
+        scopeGraph = scopeGraph.setDatum(scope, datum);
         openEdges.remove(scope, edge);
-        context.granted(IWaitFor.of("closeEdge", scope, edge), self);
+        context.granted(CloseEdge.of(scope, edge), self);
 
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -265,7 +272,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public final void _addEdge(S source, L label, S target) {
         assertEdgeOpen(source, EdgeOrData.edge(label));
 
-        scopeGraph.addEdge(source, label, target);
+        scopeGraph = scopeGraph.addEdge(source, label, target);
 
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(source);
         if(!owner.equals(self)) {
@@ -280,7 +287,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         final EdgeOrData<L> edge = EdgeOrData.edge(label);
         openEdges.remove(source, edge);
-        context.granted(IWaitFor.of("closeEdge", source, edge), sender());
+        context.granted(CloseEdge.of(source, edge), sender());
 
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(source);
         if(owner.equals(self)) {
@@ -299,7 +306,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertShared(scope);
 
         sharedScopes.remove(scope);
-        context.granted(IWaitFor.of("closeScope", scope), sender());
+        context.granted(CloseScope.of(scope), sender());
 
         final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -314,8 +321,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+        // FIXME If we make a round-trip back to our own module, access should still count as external. Is this the case?
+        final Access access = self.sender().equals(self) ? Access.INTERNAL : Access.EXTERNAL;
         final NameResolution<S, L, D> nr =
-                new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, this::isComplete) {
+                new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, access, this::isComplete) {
 
                     @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
                             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
@@ -325,9 +334,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                         } else {
                             final IFuture<Env<S, L, D>> result =
                                     (self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv));
-                            context.waitFor(IWaitFor.of("answer", result), owner);
+                            context.waitFor(Resolution.of(result), owner);
                             return Optional.of(result.whenComplete((r, ex) -> {
-                                context.granted(IWaitFor.of("answer", result), owner);
+                                context.granted(Resolution.of(result), owner);
                                 clock = clock.received(owner);
                             }));
                         }
@@ -394,7 +403,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void stopped(IActor<?> self) {
-        // TODO Cleanup
+        if(!state.equals(UnitState.DONE)) {
+            state = UnitState.DONE;
+            // TODO Cleanup
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
