@@ -1,4 +1,4 @@
-package mb.statix.concurrent._attic;
+package mb.statix.concurrent.solver;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.reference.EdgeOrData;

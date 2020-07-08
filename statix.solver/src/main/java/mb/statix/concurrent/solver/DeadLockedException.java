@@ -1,4 +1,4 @@
-package mb.statix.concurrent._attic;
+package mb.statix.concurrent.solver;
 
 public class DeadLockedException extends Exception {
 
