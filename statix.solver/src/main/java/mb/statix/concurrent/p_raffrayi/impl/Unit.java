@@ -204,7 +204,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         local._closeEdge(source, label);
     }
 
-    @Override public void closeShare(S scope) {
+    @Override public void closeScope(S scope) {
         assertInState(UnitState.ACTIVE);
 
         local._closeScope(scope);
@@ -215,10 +215,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertInState(UnitState.ACTIVE);
 
         final IFuture<Env<S, L, D>> result = local._query(Paths.empty(scope), labelWF, dataWF, labelOrder, dataEquiv);
-        clock = clock.sent(self);
         context.waitFor(Resolution.of(result), self);
         return result.whenComplete((env, ex) -> {
-            clock = clock.received(self);
             context.granted(Resolution.of(result), self);
         }).thenApply(CapsuleUtil::toSet);
     }
@@ -228,8 +226,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public final void _initRoot(S root, Iterable<L> labels, boolean shared) {
-        clock = clock.received(self.sender(TYPE));
-
         assertUninitialized(root);
 
         uninitializedScopes.remove(root);
@@ -255,14 +251,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 throw new IllegalArgumentException(root + " not our own scope, and no parent: cannot propagate up.");
             }
             self.async(parent)._initRoot(root, labels, shared);
-            clock = clock.sent(parent);
         }
 
     }
 
     @Override public final void _setDatum(S scope, D datum, Access access) {
-        clock = clock.received(self.sender(TYPE));
-
         final EdgeOrData<L> edge = EdgeOrData.data(access);
         assertEdgeOpen(scope, edge);
         if(access.equals(Access.EXTERNAL)) {
@@ -297,8 +290,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public final void _closeEdge(S source, L label) {
-        clock = clock.received(self.sender(TYPE));
-
         assertEdgeOpen(source, EdgeOrData.edge(label));
 
         final EdgeOrData<L> edge = EdgeOrData.edge(label);
@@ -312,13 +303,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             }
         } else {
             self.async(owner)._closeEdge(source, label);
-            clock = clock.sent(owner);
         }
     }
 
     @Override public final void _closeScope(S scope) {
-        clock = clock.received(self.sender(TYPE));
-
         assertShared(scope);
 
         sharedScopes.remove(scope);
@@ -331,14 +319,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             }
         } else {
             self.async(owner)._closeScope(scope);
-            clock = clock.sent(owner);
         }
     }
 
     @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-        // FIXME If we make a round-trip back to our own module, access should still count as external. Is this the case?
-        final Access access = self.sender().equals(self) ? Access.INTERNAL : Access.EXTERNAL;
+        final IActorRef<? extends IUnit<S, L, D, R>> sender = self.sender(TYPE); // capture for correct use in whenComplete
+
+        final Access access = sender.equals(self) ? Access.INTERNAL : Access.EXTERNAL;
         final NameResolution<S, L, D> nr =
                 new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, access, this::isComplete) {
 
@@ -348,22 +336,19 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                         if(owner.equals(self)) {
                             return Optional.empty();
                         } else {
+                            // this code should mirror query(...)
                             final IFuture<Env<S, L, D>> result =
-                                    (self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv));
+                                    self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
                             context.waitFor(Resolution.of(result), owner);
                             return Optional.of(result.whenComplete((r, ex) -> {
                                 context.granted(Resolution.of(result), owner);
-                                clock = clock.received(owner);
                             }));
                         }
                     }
 
                 };
-        final IActorRef<? extends IUnit<S, L, D, R>> sender = self.sender(TYPE); // capture for correct use in whenComplete
-        final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
-        return result.whenComplete((r, ex) -> {
-            clock = clock.sent(sender);
-        });
+
+        return nr.env(path, labelWF, context.cancel());
     }
 
     @Override public final void _complete(ICompletable<Void> future) {
@@ -413,6 +398,20 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
+
+    @SuppressWarnings("unchecked") @Override public void sent(IActor<?> self, IActorRef<?> target,
+            java.util.Set<String> tags) {
+        if(tags.contains("stuckness")) {
+            clock = clock.sent((IActorRef<? extends IUnit<S, L, D, R>>) target);
+        }
+    }
+
+    @SuppressWarnings("unchecked") @Override public void delivered(IActor<?> self, IActorRef<?> source,
+            java.util.Set<String> tags) {
+        if(tags.contains("stuckness")) {
+            clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, R>>) source);
+        }
+    }
 
     @Override public void suspended(IActor<?> self) {
         if(state.equals(UnitState.INIT)) {

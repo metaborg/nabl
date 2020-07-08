@@ -69,7 +69,7 @@ public class DeadlockTest {
 
         @Override public void ping() {
             logger.info("{} received ping from {}", self, self.sender());
-            clock = clock.received(self.sender(IPingPong.TYPE));
+            clock = clock.delivered(self.sender(IPingPong.TYPE));
             //            clock = clock.sent(self.sender());
             //            self.async((IActorRef<IPong>)self.sender()).pong();
 
@@ -77,7 +77,7 @@ public class DeadlockTest {
 
         @Override public void pong() {
             logger.info("{} recieved pong from {}", self, self.sender());
-            clock = clock.received(self.sender(IPingPong.TYPE));
+            clock = clock.delivered(self.sender(IPingPong.TYPE));
             self.async(dlm).granted(self.sender(IPingPong.TYPE), "pong");
             self.stop();
         }

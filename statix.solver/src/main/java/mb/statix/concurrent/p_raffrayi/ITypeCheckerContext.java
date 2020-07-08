@@ -54,7 +54,7 @@ public interface ITypeCheckerContext<S, L, D, R> {
     /**
      * Declare scope to be closed for sharing.
      */
-    void closeShare(S scope);
+    void closeScope(S scope);
 
     /**
      * Execute scope graph query in the given scope.
@@ -96,7 +96,7 @@ public interface ITypeCheckerContext<S, L, D, R> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void closeShare(S scope) {
+            @Override public void closeScope(S scope) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

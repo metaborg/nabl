@@ -37,7 +37,7 @@ public class ProjectTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Sol
             final Rule rule = entry.getValue();
             context.add(id, new UnitTypeChecker(rule, spec, debug), projectScope);
         }
-        context.closeShare(projectScope);
+        context.closeScope(projectScope);
         return CompletableFuture.completed(SolverResult.of(spec));
     }
 

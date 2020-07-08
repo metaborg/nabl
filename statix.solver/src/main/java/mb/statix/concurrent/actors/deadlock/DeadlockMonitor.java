@@ -88,7 +88,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
 
         // check if any actor sent us messages we haven't received
         boolean atleast = true;
-        final MultiSet.Transient<IActorRef<? extends N>> receivedClock = clock.received().melt();
+        final MultiSet.Transient<IActorRef<? extends N>> receivedClock = clock.delivered().melt();
         for(Entry<IActorRef<? extends N>, Integer> entry : this.sent
                 .computeIfAbsent(current, __ -> MultiSet.Immutable.of()).entrySet()) {
             final IActorRef<? extends N> sender = entry.getKey();

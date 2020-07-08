@@ -13,12 +13,15 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Queues;
 
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
+import mb.statix.concurrent.actors.deadlock.RelevantMessage;
+import mb.statix.concurrent.actors.deadlock.RelevantResult;
 import mb.statix.concurrent.actors.futures.AsyncCompletable;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
@@ -95,55 +98,23 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(sender, method, args, new ActorCompletable<>(sender, result));
+                        message = new Invoke(sender, method, args, new Complete<>(sender, method, result));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
+
                     put(message);
+
+                    final RelevantMessage marker;
+                    if((marker = method.getAnnotation(RelevantMessage.class)) != null && marker.value().length > 0) {
+                        for(IActorMonitor monitor : sender.monitors) {
+                            monitor.sent(sender, this, ImmutableSet.copyOf(marker.value()));
+                        }
+                    }
+
                     return returnValue;
                 });
-    }
-
-    private class ActorCompletable<U> implements ICompletable<U> {
-
-        private final Actor<?> sender;
-        private final ICompletable<U> completable;
-
-        public ActorCompletable(Actor<?> sender, ICompletable<U> completable) {
-            this.sender = sender;
-            this.completable = completable;
-        }
-
-        @SuppressWarnings({ "unchecked", "rawtypes" }) @Override public void complete(U value, Throwable ex) {
-            sender.put(new IMessage() {
-
-                @Override public void dispatch(Object impl) {
-                    // impl is ignored, since the future does not dispatch on the
-                    // object directly, instead just calling the handler(s).
-                    try {
-                        Actor.sender.set(sender);
-                        completable.complete(value, ex);
-                    } finally {
-                        Actor.sender.remove();
-                    }
-                }
-
-                @Override public String toString() {
-                    return ActorCompletable.this.toString();
-                }
-
-            });
-        }
-
-        @Override public boolean isDone() {
-            return completable.isDone();
-        }
-
-        @Override public String toString() {
-            return sender + " completes " + completable;
-        }
-
     }
 
     @SuppressWarnings("unchecked") T async(ExecutorService executor) {
@@ -168,7 +139,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
+
                     put(message);
+
+                    // no sender, so cannot call senders monitors
+
                     return returnValue;
                 });
     }
@@ -240,7 +215,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     message = messages.remove();
                 }
                 logger.info("{}[{}] deliver message {}", id, state, message);
-                message.dispatch(impl); // responsible for setting sender!
+                message.dispatch(impl); // responsible for setting sender, and calling monitor!
             }
         } catch(InterruptedException ex) {
             logger.info("{} interrupted", id);
@@ -302,10 +277,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private class Invoke implements IMessage<T> {
 
-        public final IActorRef<?> sender;
-        public final Method method;
-        public final Object[] args;
-        public final ICompletable result;
+        private final IActorRef<?> sender;
+        private final Method method;
+        private final Object[] args;
+        private final ICompletable result;
 
         public Invoke(IActorRef<?> sender, Method method, Object[] args, ICompletable<?> result) {
             this.sender = sender;
@@ -317,12 +292,21 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         @Override public void dispatch(T impl) throws ActorException {
             try {
                 Actor.sender.set(sender);
+
                 method.setAccessible(true);
                 final Object returnValue = method.invoke(impl, args);
+
+                final RelevantMessage marker;
+                if((marker = method.getAnnotation(RelevantMessage.class)) != null && marker.value().length > 0) {
+                    for(IActorMonitor monitor : monitors) {
+                        monitor.delivered(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
+                    }
+                }
+
                 if(result != null) {
                     // NOTE The completion runs on the thread of the receiving actor.
-                    //      The different async(...) cases dispatch the result as a message,
-                    //      or as a job on the executor.
+                    //      The different async(...) cases dispatch the result as a
+                    //      message on the thread of the sender, or as a job on the executor.
                     ((IFuture<?>) returnValue).whenComplete((r, ex) -> {
                         if(ex != null) {
                             result.completeExceptionally(ex);
@@ -340,6 +324,76 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
         @Override public String toString() {
             return sender + " invokes " + method.getName() + "(" + Arrays.toString(args) + ")";
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    private class Complete<U> implements ICompletable<U>, IMessage {
+
+        private final Actor<?> sender;
+        private final Method method;
+        private final ICompletable<U> completable;
+
+        private U value;
+        private Throwable ex;
+
+        private Complete(Actor<?> sender, Method method, ICompletable<U> completable) {
+            this.sender = sender;
+            this.method = method;
+            this.completable = completable;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Completable -- called on the receiver's thread
+        ///////////////////////////////////////////////////////////////////////
+
+        @SuppressWarnings({ "unchecked" }) @Override public void complete(U value, Throwable ex) {
+            this.value = value;
+            this.ex = ex;
+
+            sender.put(this);
+
+            final RelevantMessage marker;
+            if((marker = method.getAnnotation(RelevantMessage.class)) != null && marker.value().length > 0) {
+                for(IActorMonitor monitor : monitors) {
+                    monitor.sent(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
+                }
+            }
+
+        }
+
+        @Override public boolean isDone() {
+            return completable.isDone();
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // IMessage -- called on the sender's thread
+        ///////////////////////////////////////////////////////////////////////
+
+        @Override public void dispatch(Object impl) {
+            // impl is ignored, since the future does not dispatch on the
+            // object directly, instead just calling the handler(s).
+            try {
+                Actor.sender.set(Actor.this);
+
+                completable.complete(value, ex);
+
+                final RelevantResult marker;
+                if((marker = method.getAnnotation(RelevantResult.class)) != null && marker.value().length > 0) {
+                    for(IActorMonitor monitor : monitors) {
+                        monitor.delivered(sender, Actor.this, ImmutableSet.copyOf(marker.value()));
+                    }
+                }
+
+
+            } finally {
+                Actor.sender.remove();
+            }
+        }
+
+        @Override public String toString() {
+            return sender + " completes " + completable;
         }
 
     }
