@@ -415,7 +415,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void suspended(IActor<?> self) {
-        if(!state.equals(UnitState.ACTIVE)) {
+        if(state.equals(UnitState.INIT)) {
             return;
         }
 

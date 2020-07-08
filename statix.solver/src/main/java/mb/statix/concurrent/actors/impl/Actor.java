@@ -129,6 +129,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     }
                 }
 
+                @Override public String toString() {
+                    return ActorCompletable.this.toString();
+                }
+
             });
         }
 

@@ -102,4 +102,12 @@ public class LabeledGraph<V, L> implements IGraphDataSource<V>, IBiDirectionalGr
         return graph.getSourceNodes(target);
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Object
+    ////////////////////////////////////////////////////////////////////////////
+
+    @Override public String toString() {
+        return "Graph[" + edges.toString() + "]";
+    }
+
 }

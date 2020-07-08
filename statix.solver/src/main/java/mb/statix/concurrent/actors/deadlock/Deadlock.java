@@ -26,4 +26,8 @@ public class Deadlock<N, S, T> {
         return new Deadlock<>(Map.Immutable.of(node, state), HashTrieRelation3.Immutable.of());
     }
 
+    @Override public String toString() {
+        return "Deadlock[" + nodes() + ", " + edges() + "]";
+    }
+
 }

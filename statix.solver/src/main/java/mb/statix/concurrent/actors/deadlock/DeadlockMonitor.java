@@ -20,6 +20,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
     private final IActor<? extends IDeadlockMonitor<N, S, T>> self;
 
     private final WaitForGraph<IActorRef<? extends N>, S, T> wfg = new WaitForGraph<>();
+    private final Map<IActorRef<? extends N>, Clock<N>> clocks = Maps.newHashMap();
     private final Map<IActorRef<? extends N>, MultiSet.Immutable<IActorRef<? extends N>>> sent = Maps.newHashMap(); // per actor, messages sent to it by others
     private Action2<IActor<?>, Deadlock<IActorRef<? extends N>, S, T>> handler;
 
@@ -68,6 +69,11 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
      * whether this actor received at least all messages that we know about.
      */
     private boolean processClock(final IActorRef<? extends N> current, final Clock<N> clock) {
+        if(clocks.computeIfAbsent(current, __ -> Clock.of()).equals(clock)) {
+            return false;
+        }
+        clocks.put(current, clock);
+
         // process sent messages, and resume receiving actors
         for(Entry<IActorRef<? extends N>, Integer> entry : clock.sent().entrySet()) {
             final IActorRef<? extends N> receiver = entry.getKey();
