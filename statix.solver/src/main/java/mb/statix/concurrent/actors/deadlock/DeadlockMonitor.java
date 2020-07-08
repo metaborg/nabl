@@ -56,8 +56,8 @@ public class DeadlockMonitor<T> implements IDeadlockMonitor<T> {
         if(!processClock(self.sender(), clock)) {
             return;
         }
-        final IRelation3.Immutable<IActorRef<?>, T, IActorRef<?>> waitFors = wfg.remove(self.sender());
-        logger.warn("{} stopped, with remaining {}", self.sender(), waitFors);
+        wfg.remove(self.sender());
+        logger.warn("{} stopped", self.sender());
     }
 
     /**

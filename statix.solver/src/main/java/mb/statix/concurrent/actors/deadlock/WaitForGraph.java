@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.viatra.query.runtime.base.itc.alg.incscc.IncSCCAlg;
-import org.eclipse.viatra.query.runtime.base.itc.graphimpl.Graph;
 
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
@@ -24,47 +23,32 @@ public class WaitForGraph<N, T> {
     //       d. suspend while having wait-fors on stopped nodes -- if the actor received all messages from the stopped node, it will be permanently stuck
     //       e. stopping -- if suspended actors have wait-fors on this node, and we didn't send them messages, they are permanently stuck
 
-    private final Graph<N> waitForGraph = new Graph<>();
+    private final LabeledGraph<N, T> waitForGraph = new LabeledGraph<>();
     private final IncSCCAlg<N> sccGraph = new IncSCCAlg<>(waitForGraph);
     private final Set<N> waitingNodes = new HashSet<>();
     private final Set<N> stoppedNodes = new HashSet<>();
-    private final IRelation3.Transient<N, T, N> waitForEdges = HashTrieRelation3.Transient.of();
 
     public WaitForGraph() {
-    }
-
-    private void addNodeIfAbsent(N node) {
-        if(!waitForGraph.getAllNodes().contains(node)) {
-            waitForGraph.insertNode(node);
-        }
     }
 
     /**
      * Register a wait-for in the graph.
      */
     public void waitFor(N source, T token, N target) {
-        addNodeIfAbsent(source);
-        addNodeIfAbsent(target);
-
-        waitForGraph.insertEdge(source, target);
-        // ASSERT is not already in the graph
-        waitForEdges.put(source, token, target);
+        waitForGraph.addEdge(source, token, target);
     }
 
     /**
      * Remove a wait-for from the graph.
      */
     public void granted(N source, T token, N target) {
-        waitForGraph.deleteEdgeThatExists(source, target);
-        waitForEdges.remove(source, token, target);
+        waitForGraph.removeEdge(source, token, target);
     }
 
     /**
      * Node is activated.
      */
     public void resume(N node) {
-        addNodeIfAbsent(node);
-
         waitingNodes.remove(node);
     }
 
@@ -72,49 +56,44 @@ public class WaitForGraph<N, T> {
      * Suspend a node. Return deadlocked tokens on the given node.
      */
     public Optional<IRelation3.Immutable<N, T, N>> suspend(N node) {
-        addNodeIfAbsent(node);
-
         waitingNodes.add(node);
         return detectDeadlock(node);
     }
 
     /**
-     * Remove a node. Return tokens the node was waiting on.
+     * Remove a node, and any tokens this node was waiting on.
      */
-    public IRelation3.Immutable<N, T, N> remove(N node) {
-        addNodeIfAbsent(node);
-
-        waitForGraph.deleteNode(node);
+    public void remove(N node) {
         waitingNodes.remove(node);
         stoppedNodes.add(node);
-        final IRelation3.Transient<N, T, N> waitFors = HashTrieRelation3.Transient.of();
-        for(Entry<T, N> entry : waitForEdges.get(node)) {
-            final N target = entry.getValue();
-            final T token = entry.getKey();
-            waitForEdges.remove(node, token, target);
-            waitFors.put(node, token, target);
+        for(Entry<N, T> entry : waitForGraph.getOutgoingEdges(node).entrySet()) {
+            final N target = entry.getKey();
+            final T token = entry.getValue();
+            waitForGraph.removeEdge(node, token, target);
         }
-        return waitFors.freeze();
     }
 
     private Optional<IRelation3.Immutable<N, T, N>> detectDeadlock(N node) {
         final N rep = sccGraph.getRepresentative(node);
+        if(rep == null) {
+            // node has no in- or outgoing edges
+            return Optional.of(HashTrieRelation3.Immutable.of());
+        }
         if(sccGraph.hasOutgoingEdges(rep)) {
             // other clusters are upstream and may release tokens
             return Optional.empty();
         }
-        final Set<N> scc = Optional.ofNullable(sccGraph.sccs.getPartition(node)).orElse(Collections.singleton(node));
+        final Set<N> scc = Optional.ofNullable(sccGraph.sccs.getPartition(rep)).orElse(Collections.singleton(node));
         if(!scc.stream().allMatch(waitingNodes::contains)) {
             // not all units are waiting yet
             return Optional.empty();
         }
         final IRelation3.Transient<N, T, N> waitFors = HashTrieRelation3.Transient.of();
         for(N source : scc) {
-            for(Entry<T, N> entry : waitForEdges.get(source)) {
-                final N target = entry.getValue();
+            for(Entry<N, T> entry : waitForGraph.getOutgoingEdges(source).entrySet()) {
+                final N target = entry.getKey();
                 if(scc.contains(target)) {
-                    final T token = entry.getKey();
-                    waitForEdges.remove(source, token, target);
+                    final T token = entry.getValue();
                     waitFors.put(source, token, target);
                 }
             }
