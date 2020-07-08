@@ -1,5 +1,6 @@
 package mb.statix.concurrent.solver;
 
+import static com.google.common.collect.Streams.stream;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
@@ -22,6 +23,7 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
@@ -709,12 +711,12 @@ public class StatixSolver {
     private List<ITerm> getOpenEdges(ITerm varOrScope) {
         // we must include queued edge closes here, to ensure we registered the open
         // edge when the close is released
-        final Stream<EdgeOrData<ITerm>> openEdges = Streams.stream(completeness.get(varOrScope, state.unifier()));
-        final Stream<EdgeOrData<ITerm>> queuedEdges = M
-                .var().match(varOrScope).map(var -> delayedCloses.stream()
-                        .filter(e -> state.unifier().findRecursive(var).equals(varOrScope)).map(e -> e.edgeOrData()))
-                .orElse(Stream.<EdgeOrData<ITerm>>empty());
-        return Streams.concat(openEdges, queuedEdges).<ITerm>flatMap(eod -> {
+        final List<EdgeOrData<ITerm>> openEdges =
+                Streams.stream(completeness.get(varOrScope, state.unifier())).collect(Collectors.toList());
+        final List<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope).map(var -> delayedCloses.stream()
+                .filter(e -> state.unifier().findRecursive(var).equals(e.scope())).map(e -> e.edgeOrData()))
+                .orElse(Stream.<EdgeOrData<ITerm>>empty()).collect(Collectors.toList());
+        return stream(Iterables.concat(openEdges, queuedEdges)).<ITerm>flatMap(eod -> {
             return eod.match(acc -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
         }).collect(Collectors.toList());
     }
