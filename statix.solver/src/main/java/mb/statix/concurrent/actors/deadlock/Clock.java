@@ -2,36 +2,35 @@ package mb.statix.concurrent.actors.deadlock;
 
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSet.Immutable;
-import mb.statix.concurrent.actors.IActorRef;
 
-public class Clock {
+public class Clock<N> {
 
-    private final MultiSet.Immutable<IActorRef<?>> sent;
-    private final MultiSet.Immutable<IActorRef<?>> received;
+    private final MultiSet.Immutable<N> sent;
+    private final MultiSet.Immutable<N> received;
 
-    public Clock(Immutable<IActorRef<?>> sent, Immutable<IActorRef<?>> received) {
+    public Clock(Immutable<N> sent, Immutable<N> received) {
         this.sent = sent;
         this.received = received;
     }
 
-    public MultiSet.Immutable<IActorRef<?>> sent() {
+    public MultiSet.Immutable<N> sent() {
         return sent;
     }
 
-    public MultiSet.Immutable<IActorRef<?>> received() {
+    public MultiSet.Immutable<N> received() {
         return received;
     }
 
-    public Clock received(IActorRef<?> sender) {
-        return new Clock(sent, received.add(sender));
+    public Clock<N> received(N sender) {
+        return new Clock<>(sent, received.add(sender));
     }
 
-    public Clock sent(IActorRef<?> receiver) {
-        return new Clock(sent.add(receiver), received);
+    public Clock<N> sent(N receiver) {
+        return new Clock<>(sent.add(receiver), received);
     }
 
-    public static Clock of() {
-        return new Clock(MultiSet.Immutable.of(), MultiSet.Immutable.of());
+    public static <N> Clock<N> of() {
+        return new Clock<>(MultiSet.Immutable.of(), MultiSet.Immutable.of());
     }
 
 }

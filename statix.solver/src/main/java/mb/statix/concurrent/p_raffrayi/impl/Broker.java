@@ -8,12 +8,14 @@ import javax.annotation.Nullable;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
+import mb.statix.concurrent.actors.deadlock.Deadlock;
 import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
 import mb.statix.concurrent.actors.deadlock.IDeadlockMonitor;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
@@ -33,7 +35,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     private final ICancel cancel;
 
     private final ActorSystem system;
-    private final IActor<IDeadlockMonitor<IWaitFor<S, L, D>>> dlm;
+    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>, UnitState, IWaitFor<S, L, D>>> dlm;
 
     private final Object lock = new Object();
     private final Map<String, IActor<IUnit<S, L, D, R>>> units;
@@ -48,8 +50,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
         this.system = new ActorSystem();
         this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
-                self -> new DeadlockMonitor<>(self, (_1, _2) -> {
-                }));
+                self -> new DeadlockMonitor<>(self, this::handleDeadlock));
 
         this.units = Maps.newHashMap();
         this.results = Maps.newHashMap();
@@ -58,10 +59,10 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
         final IActor<IUnit<S, L, D, R>> unit = add(id, null, unitChecker);
-        system.async(unit)._start(null).whenComplete((r, ex) -> addResult(id, r, ex));
+        system.async(unit)._start(null);
     }
 
-    private IActor<IUnit<S, L, D, R>> add(String id, @Nullable IActorRef<? extends IUnit2UnitProtocol<S, L, D>> parent,
+    private IActor<IUnit<S, L, D, R>> add(String id, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
             ITypeChecker<S, L, D, R> unitChecker) {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new Unit<>(self, parent, new UnitContext(self), unitChecker, edgeLabels));
@@ -83,6 +84,18 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
                     result.completeValue(Result.of(results));
                     system.stop();
                 }
+            }
+        }
+    }
+
+    private void handleDeadlock(IActor<?> dlm,
+            Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, UnitState, IWaitFor<S, L, D>> deadlock) {
+        if(deadlock.edges().isEmpty()) {
+            final IActorRef<? extends IUnit<S, L, D, R>> unit = Iterables.getOnlyElement(deadlock.nodes().keySet());
+            dlm.async(unit)._done().whenComplete((r, ex) -> addResult(unit.id(), r, ex));
+        } else {
+            for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
+                dlm.async(unit)._fail();
             }
         }
     }
@@ -116,9 +129,9 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     private class UnitContext implements IUnitContext<S, L, D, R> {
 
-        private final IActor<? extends IUnit2UnitProtocol<S, L, D>> self;
+        private final IActor<? extends IUnit<S, L, D, R>> self;
 
-        public UnitContext(IActor<? extends IUnit2UnitProtocol<S, L, D>> self) {
+        public UnitContext(IActor<? extends IUnit<S, L, D, R>> self) {
             this.self = self;
         }
 
@@ -130,32 +143,32 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             return scopeImpl.make(self.id(), name);
         }
 
-        @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner(S scope) {
+        @Override public IActorRef<? extends IUnit<S, L, D, R>> owner(S scope) {
             synchronized(lock) {
                 return units.get(scopeImpl.id(scope));
             }
         }
 
-        @Override public IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id,
-                ITypeChecker<S, L, D, R> unitChecker, S root) {
+        @Override public IActorRef<? extends IUnit<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+                S root) {
             final IActor<IUnit<S, L, D, R>> unit = Broker.this.add(id, self, unitChecker);
-            self.async(unit)._start(root).whenComplete((r, ex) -> addResult(id, r, ex));
+            self.async(unit)._start(root);
             return unit;
         }
 
-        @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
+        @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
             self.async(dlm).waitFor(unit, token);
         }
 
-        @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit) {
+        @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
             self.async(dlm).granted(unit, token);
         }
 
-        @Override public void suspended(Clock clock) {
-            self.async(dlm).suspended(clock);
+        @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
+            self.async(dlm).suspended(state, clock);
         }
 
-        @Override public void stopped(Clock clock) {
+        @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
             self.async(dlm).stopped(clock);
         }
 

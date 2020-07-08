@@ -88,7 +88,7 @@ public class DeadlockTest {
         }
 
         @Override public void suspended(IActor<?> self) {
-            self.async(dlm).suspended(clock);
+            self.async(dlm).suspended(state, clock);
         }
 
         @Override public void stopped(IActor<?> self) {

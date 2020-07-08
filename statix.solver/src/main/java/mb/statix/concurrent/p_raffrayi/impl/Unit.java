@@ -44,14 +44,14 @@ import mb.statix.scopegraph.terms.path.Paths;
 class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final IActor<? extends IUnit<S, L, D, R>> self;
-    private final @Nullable IActorRef<? extends IUnit2UnitProtocol<S, L, D>> parent;
+    private final @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent;
     private final IUnitContext<S, L, D, R> context;
-    private final ITypeChecker<S, L, D, R> unitChecker;
+    private final ITypeChecker<S, L, D, R> typeChecker;
 
     private final IUnit<S, L, D, R> local;
-    private Clock clock;
+    private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
     private UnitState state;
-    private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
+    private final CompletableFuture<R> typeCheckerResult;
 
     private IScopeGraph.Immutable<S, L, D> scopeGraph;
     private final MultiSet.Transient<S> sharedScopes;
@@ -61,17 +61,17 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
-    Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit2UnitProtocol<S, L, D>> parent,
+    Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
             IUnitContext<S, L, D, R> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
         this.self = self;
         this.parent = parent;
         this.context = context;
-        this.unitChecker = unitChecker;
+        this.typeChecker = unitChecker;
 
         this.local = self.async(self);
         this.clock = Clock.of();
         this.state = UnitState.INIT;
-        this.unitResult = new CompletableFuture<>();
+        this.typeCheckerResult = new CompletableFuture<>();
 
         this.scopeGraph = ScopeGraph.Immutable.of(edgeLabels);
         this.sharedScopes = MultiSet.Transient.of();
@@ -92,7 +92,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // IUnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root) {
+    @Override public void _start(@Nullable S root) {
         assertInState(UnitState.INIT);
 
         state = UnitState.ACTIVE;
@@ -104,8 +104,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         // run() after inits are initialized before run, since unitChecker
         // can immediately call methods, that are executed synchronously
 
-        this.unitChecker.run(this, root).whenComplete(this::handleResult);
-        return unitResult;
+        this.typeChecker.run(this, root).whenComplete(this::handleResult);
     }
 
     private void handleResult(R result, Throwable ex) {
@@ -115,10 +114,28 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         // FIXME Only do this once all wait-fors are gone!
         if(ex != null) {
-            unitResult.completeExceptionally(ex);
+            typeCheckerResult.completeExceptionally(ex);
         } else {
-            unitResult.completeValue(UnitResult.of(result, scopeGraph));
+            typeCheckerResult.completeValue(result);
         }
+    }
+
+    @Override public IFuture<IUnitResult<S, L, D, R>> _done() {
+        assertInState(UnitState.DONE);
+        final CompletableFuture<IUnitResult<S, L, D, R>> unitResult = new CompletableFuture<>();
+        typeCheckerResult.whenComplete((analysis, ex) -> {
+            if(ex != null) {
+                unitResult.completeExceptionally(ex);
+            } else {
+                unitResult.completeValue(UnitResult.of(analysis, scopeGraph));
+            }
+        });
+        return unitResult;
+    }
+
+    @Override public void _fail() {
+        // TODO What to do here?
+        throw new IllegalStateException("Failed, do not know how to handle.");
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -138,7 +155,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertShared(root);
         // ASSERT root is owned by us, or shared with us
 
-        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> subunit = context.add(id, unitChecker, root);
+        final IActorRef<? extends IUnit<S, L, D, R>> subunit = context.add(id, unitChecker, root);
 
         uninitializedScopes.add(root);
         context.waitFor(InitScope.of(root), subunit);
@@ -191,7 +208,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public void closeShare(S scope) {
         assertInState(UnitState.ACTIVE);
 
-        local._closeShare(scope);
+        local._closeScope(scope);
     }
 
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
@@ -229,7 +246,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             context.waitFor(CloseScope.of(root), sender());
         }
 
-        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(root);
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(root);
         if(owner.equals(self)) {
             if(isScopeComplete(root)) {
                 releaseDelays(root);
@@ -257,7 +274,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         openEdges.remove(scope, edge);
         context.granted(CloseEdge.of(scope, edge), self);
 
-        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(scope);
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
             if(isEdgeComplete(scope, edge)) {
                 releaseDelays(scope, edge);
@@ -274,7 +291,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         scopeGraph = scopeGraph.addEdge(source, label, target);
 
-        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(source);
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
         if(!owner.equals(self)) {
             self.async(owner)._addEdge(source, label, target);
         }
@@ -289,7 +306,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         openEdges.remove(source, edge);
         context.granted(CloseEdge.of(source, edge), sender());
 
-        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(source);
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
         if(owner.equals(self)) {
             if(isEdgeComplete(source, edge)) {
                 releaseDelays(source, edge);
@@ -300,7 +317,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    @Override public final void _closeShare(S scope) {
+    @Override public final void _closeScope(S scope) {
         clock = clock.received(sender());
 
         assertShared(scope);
@@ -308,13 +325,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         sharedScopes.remove(scope);
         context.granted(CloseScope.of(scope), sender());
 
-        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(scope);
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
             if(isScopeComplete(scope)) {
                 releaseDelays(scope);
             }
         } else {
-            self.async(owner)._closeShare(scope);
+            self.async(owner)._closeScope(scope);
             clock = clock.sent(owner);
         }
     }
@@ -328,7 +345,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
                     @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
                             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
-                        final IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner = context.owner(path.getTarget());
+                        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(path.getTarget());
                         if(owner.equals(self)) {
                             return Optional.empty();
                         } else {
@@ -399,7 +416,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void suspended(IActor<?> self) {
-        context.suspended(clock);
+        if(!state.equals(UnitState.ACTIVE)) {
+            return;
+        }
+
+        context.suspended(state, clock);
     }
 
     @Override public void stopped(IActor<?> self) {
@@ -407,6 +428,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             state = UnitState.DONE;
             // TODO Cleanup
         }
+        context.stopped(clock);
     }
 
     ///////////////////////////////////////////////////////////////////////////

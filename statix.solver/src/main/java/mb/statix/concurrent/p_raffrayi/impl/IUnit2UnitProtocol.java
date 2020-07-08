@@ -19,7 +19,7 @@ public interface IUnit2UnitProtocol<S, L, D> {
 
     void _closeEdge(S source, L label);
 
-    void _closeShare(S scope);
+    void _closeScope(S scope);
 
     IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF, LabelOrder<L> labelOrder,
             DataLeq<D> dataEquiv);

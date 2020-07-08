@@ -16,20 +16,20 @@ public interface IUnitContext<S, L, D, R> {
 
     S makeScope(String name);
 
-    IActorRef<? extends IUnit2UnitProtocol<S, L, D>> owner(S scope);
+    IActorRef<? extends IUnit<S, L, D, R>> owner(S scope);
 
-    IActorRef<? extends IUnit2UnitProtocol<S, L, D>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
+    IActorRef<? extends IUnit<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
 
     //////////////////////////////////////////////////////////////////////////
     // Deadlock detection
     //////////////////////////////////////////////////////////////////////////
 
-    void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
+    void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 
-    void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit2UnitProtocol<S, L, D>> unit);
+    void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 
-    void suspended(Clock clock);
+    void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
 
-    void stopped(Clock clock);
+    void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
 
 }
