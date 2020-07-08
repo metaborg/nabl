@@ -259,6 +259,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         return sender.get();
     }
 
+    @SuppressWarnings("unchecked") @Override public <U> IActorRef<U> sender(TypeTag<U> type) {
+        return (IActorRef<U>) sender.get();
+    }
+
     @Override public void stop() {
         put(new Stop());
     }

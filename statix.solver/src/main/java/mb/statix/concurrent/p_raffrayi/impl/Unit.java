@@ -18,6 +18,7 @@ import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
@@ -42,6 +43,8 @@ import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.path.Paths;
 
 class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
+
+    private final TypeTag<IUnit<S, L, D, R>> TYPE = TypeTag.of(IUnit.class);
 
     private final IActor<? extends IUnit<S, L, D, R>> self;
     private final @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent;
@@ -82,10 +85,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.scopeNameCounters = MultiSet.Transient.of();
 
         self.addMonitor(this);
-    }
-
-    @SuppressWarnings("unchecked") private IActorRef<? extends IUnit<S, L, D, R>> sender() {
-        return (IActorRef<? extends IUnit<S, L, D, R>>) self.sender();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -229,21 +228,21 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public final void _initRoot(S root, Iterable<L> labels, boolean shared) {
-        clock = clock.received(sender());
+        clock = clock.received(self.sender(TYPE));
 
         assertUninitialized(root);
 
         uninitializedScopes.remove(root);
-        context.granted(InitScope.of(root), sender());
+        context.granted(InitScope.of(root), self.sender(TYPE));
 
         stream(labels).map(EdgeOrData::edge).forEach(edge -> {
             openEdges.put(root, edge);
-            context.waitFor(CloseEdge.of(root, edge), sender());
+            context.waitFor(CloseEdge.of(root, edge), self.sender(TYPE));
         });
 
         if(shared) {
             sharedScopes.add(root);
-            context.waitFor(CloseScope.of(root), sender());
+            context.waitFor(CloseScope.of(root), self.sender(TYPE));
         }
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(root);
@@ -262,7 +261,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public final void _setDatum(S scope, D datum, Access access) {
-        clock = clock.received(sender());
+        clock = clock.received(self.sender(TYPE));
 
         final EdgeOrData<L> edge = EdgeOrData.data(access);
         assertEdgeOpen(scope, edge);
@@ -298,13 +297,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public final void _closeEdge(S source, L label) {
-        clock = clock.received(sender());
+        clock = clock.received(self.sender(TYPE));
 
         assertEdgeOpen(source, EdgeOrData.edge(label));
 
         final EdgeOrData<L> edge = EdgeOrData.edge(label);
         openEdges.remove(source, edge);
-        context.granted(CloseEdge.of(source, edge), sender());
+        context.granted(CloseEdge.of(source, edge), self.sender(TYPE));
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
         if(owner.equals(self)) {
@@ -318,12 +317,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public final void _closeScope(S scope) {
-        clock = clock.received(sender());
+        clock = clock.received(self.sender(TYPE));
 
         assertShared(scope);
 
         sharedScopes.remove(scope);
-        context.granted(CloseScope.of(scope), sender());
+        context.granted(CloseScope.of(scope), self.sender(TYPE));
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -360,7 +359,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     }
 
                 };
-        final IActorRef<? extends IUnit<S, L, D, R>> sender = sender(); // capture for correct use in whenComplete
+        final IActorRef<? extends IUnit<S, L, D, R>> sender = self.sender(TYPE); // capture for correct use in whenComplete
         final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
         return result.whenComplete((r, ex) -> {
             clock = clock.sent(sender);

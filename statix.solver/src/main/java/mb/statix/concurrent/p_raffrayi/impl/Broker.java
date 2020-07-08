@@ -42,7 +42,6 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     private final Map<String, IUnitResult<S, L, D, R>> results;
     private final CompletableFuture<IResult<S, L, D, R>> result;
 
-
     public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);

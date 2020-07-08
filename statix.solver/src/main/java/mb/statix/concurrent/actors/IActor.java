@@ -22,6 +22,11 @@ public interface IActor<T> extends IActorRef<T> {
     @Nullable IActorRef<?> sender();
 
     /**
+     * Get typed sender of the current message being handled.
+     */
+    @Nullable <U> IActorRef<U> sender(TypeTag<U> type);
+
+    /**
      * Add a monitor.
      */
     void addMonitor(IActorMonitor monitor);

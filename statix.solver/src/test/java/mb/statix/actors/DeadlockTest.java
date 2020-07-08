@@ -6,12 +6,12 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.nabl2.util.collections.IRelation3;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
+import mb.statix.concurrent.actors.deadlock.Deadlock;
 import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
 import mb.statix.concurrent.actors.deadlock.IDeadlockMonitor;
 import mb.statix.concurrent.actors.impl.ActorSystem;
@@ -22,8 +22,9 @@ public class DeadlockTest {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         final ActorSystem system = new ActorSystem();
-        TypeTag<IDeadlockMonitor<String>> tt = TypeTag.of(IDeadlockMonitor.class);
-        final IActor<IDeadlockMonitor<String>> dlm = system.add("dlm", tt, self -> new DeadlockMonitor<>(self, dlh));
+        TypeTag<IDeadlockMonitor<IPingPong, Void, String>> tt = TypeTag.of(IDeadlockMonitor.class);
+        final IActor<IDeadlockMonitor<IPingPong, Void, String>> dlm =
+                system.add("dlm", tt, self -> new DeadlockMonitor<>(self, dlh));
         final IActor<IPingPong> pp1 = system.add("pp1", TypeTag.of(IPingPong.class), self -> new PingPong(self, dlm));
         final IActor<IPingPong> pp2 = system.add("pp2", TypeTag.of(IPingPong.class), self -> new PingPong(self, dlm));
         system.start();
@@ -32,32 +33,26 @@ public class DeadlockTest {
         system.async(pp2).start(pp1);
     }
 
-    interface IPing {
+    interface IPingPong {
+
+        static TypeTag<IPingPong> TYPE = TypeTag.of(IPingPong.class);
+
+        void start(IActorRef<? extends IPingPong> target);
 
         void ping();
 
-    }
-
-    interface IPong {
-
         void pong();
-
-    }
-
-    interface IPingPong extends IPing, IPong {
-
-        void start(IActorRef<? extends IPing> target);
 
     }
 
     private static class PingPong implements IPingPong, IActorMonitor {
 
         private final IActor<IPingPong> self;
-        private final IActorRef<IDeadlockMonitor<String>> dlm;
+        private final IActorRef<IDeadlockMonitor<IPingPong, Void, String>> dlm;
 
-        private Clock clock;
+        private Clock<IActorRef<? extends IPingPong>> clock;
 
-        public PingPong(IActor<IPingPong> self, IActorRef<IDeadlockMonitor<String>> dlm) {
+        public PingPong(IActor<IPingPong> self, IActorRef<IDeadlockMonitor<IPingPong, Void, String>> dlm) {
             this.self = self;
             this.dlm = dlm;
 
@@ -65,7 +60,7 @@ public class DeadlockTest {
             self.addMonitor(this);
         }
 
-        @Override public void start(IActorRef<? extends IPing> target) {
+        @Override public void start(IActorRef<? extends IPingPong> target) {
             logger.info("{} started", self);
             self.async(target).ping();
             clock = clock.sent(target);
@@ -74,7 +69,7 @@ public class DeadlockTest {
 
         @Override public void ping() {
             logger.info("{} received ping from {}", self, self.sender());
-            clock = clock.received(self.sender());
+            clock = clock.received(self.sender(IPingPong.TYPE));
             //            clock = clock.sent(self.sender());
             //            self.async((IActorRef<IPong>)self.sender()).pong();
 
@@ -82,13 +77,13 @@ public class DeadlockTest {
 
         @Override public void pong() {
             logger.info("{} recieved pong from {}", self, self.sender());
-            clock = clock.received(self.sender());
-            self.async(dlm).granted(self.sender(), "pong");
+            clock = clock.received(self.sender(IPingPong.TYPE));
+            self.async(dlm).granted(self.sender(IPingPong.TYPE), "pong");
             self.stop();
         }
 
         @Override public void suspended(IActor<?> self) {
-            self.async(dlm).suspended(state, clock);
+            self.async(dlm).suspended(null, clock);
         }
 
         @Override public void stopped(IActor<?> self) {
@@ -97,9 +92,9 @@ public class DeadlockTest {
 
     }
 
-    private static Action2<IActor<?>, IRelation3.Immutable<IActorRef<?>, String, IActorRef<?>>> dlh =
-            (self, waitFors) -> {
-                logger.error("{} detected deadlock: {}", self, waitFors);
+    private static Action2<IActor<?>, Deadlock<IActorRef<? extends IPingPong>, Void, String>> dlh =
+            (self, deadlock) -> {
+                logger.error("{} detected deadlock: {}", self, deadlock);
                 //        for(Entry<IActorRef<?>, String> waitFor : waitFors.entrySet()) {
                 //            // reply after all
                 //            self.async((IActorRef<? extends IPong>) waitFor.getKey()).pong(self);
