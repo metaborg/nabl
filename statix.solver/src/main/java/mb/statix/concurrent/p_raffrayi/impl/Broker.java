@@ -163,11 +163,11 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             self.async(dlm).granted(unit, token);
         }
 
-        @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
+        @Override public void suspended(UnitState state, Clock<IUnit<S, L, D, R>> clock) {
             self.async(dlm).suspended(state, clock);
         }
 
-        @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
+        @Override public void stopped(Clock<IUnit<S, L, D, R>> clock) {
             self.async(dlm).stopped(clock);
         }
 

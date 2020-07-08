@@ -50,7 +50,7 @@ public class DeadlockTest {
         private final IActor<IPingPong> self;
         private final IActorRef<IDeadlockMonitor<IPingPong, Void, String>> dlm;
 
-        private Clock<IActorRef<? extends IPingPong>> clock;
+        private Clock<IPingPong> clock;
 
         public PingPong(IActor<IPingPong> self, IActorRef<IDeadlockMonitor<IPingPong, Void, String>> dlm) {
             this.self = self;

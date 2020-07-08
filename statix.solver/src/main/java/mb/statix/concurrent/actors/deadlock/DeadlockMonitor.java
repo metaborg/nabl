@@ -39,7 +39,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
         wfg.granted(sender(), token, actor);
     }
 
-    @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock) {
+    @Override public void suspended(S state, Clock<N> clock) {
         if(!processClock(sender(), clock)) {
             return;
         }
@@ -50,7 +50,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
         });
     }
 
-    @Override public void stopped(Clock<IActorRef<? extends N>> clock) {
+    @Override public void stopped(Clock<N> clock) {
         if(!processClock(sender(), clock)) {
             return;
         }
@@ -67,7 +67,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
      * given actor since their last event, and updates their clocks to the latest known number of sent messages. Returns
      * whether this actor received at least all messages that we know about.
      */
-    private boolean processClock(final IActorRef<? extends N> current, final Clock<IActorRef<? extends N>> clock) {
+    private boolean processClock(final IActorRef<? extends N> current, final Clock<N> clock) {
         // process sent messages, and resume receiving actors
         for(Entry<IActorRef<? extends N>, Integer> entry : clock.sent().entrySet()) {
             final IActorRef<? extends N> receiver = entry.getKey();

@@ -52,7 +52,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final ITypeChecker<S, L, D, R> typeChecker;
 
     private final IUnit<S, L, D, R> local;
-    private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
+    private Clock<IUnit<S, L, D, R>> clock;
     private UnitState state;
     private final CompletableFuture<R> typeCheckerResult;
 
