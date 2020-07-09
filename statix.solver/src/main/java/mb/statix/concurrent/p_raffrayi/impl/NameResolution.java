@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.log.ILogger;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
@@ -43,8 +44,11 @@ abstract class NameResolution<S, L, D> {
 
     private final Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete; // default: true
 
+    private final ILogger logger;
+
     public NameResolution(IScopeGraph<S, L, D> scopeGraph, LabelOrder<L> labelOrder, DataWF<D> dataWF,
-            DataLeq<D> dataEquiv, Access access, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete) {
+            DataLeq<D> dataEquiv, Access access, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete,
+            ILogger logger) {
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data(access);
         this.allLabels = Streams.concat(Stream.of(dataLabel), scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge))
@@ -53,24 +57,29 @@ abstract class NameResolution<S, L, D> {
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
         this.isComplete = isComplete;
+        this.logger = logger;
     }
 
     public abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv);
 
     public IFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
+        logger.info("env {}", path);
         return externalEnv(path, re, labelOrder, dataWF, dataEquiv).orElseGet(() -> env_L(path, re, allLabels, cancel));
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
     private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWF<L> re, Set<EdgeOrData<L>> L, ICancel cancel) {
+        logger.info("env_L {} {} {}", path, re, L);
         try {
             cancel.throwIfCancelled();
             final Set<EdgeOrData<L>> max_L = max(L);
             final List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
             for(EdgeOrData<L> l : max_L) {
-                final IFuture<Env<S, L, D>> env1 = env_L(path, re, smaller(L, l), cancel);
+                final IFuture<Env<S, L, D>> env1 = env_L(path, re, smaller(L, l), cancel).whenComplete((r, ex) -> {
+                    logger.info("env_L {} {} {}: env1", path, re, L);
+                });
                 envs.add(env1);
                 final IFuture<Env<S, L, D>> env2 = env1.thenCompose((e1) -> {
                     if(!e1.isEmpty() && dataEquiv.alwaysTrue()) {
@@ -79,10 +88,13 @@ abstract class NameResolution<S, L, D> {
                     return env_l(path, re, l, cancel).thenApply(e2 -> {
                         return minus(e2, e1);
                     });
+                }).whenComplete((r, ex) -> {
+                    logger.info("env_L {} {} {}: env2", path, re, L);
                 });
                 envs.add(env2);
             }
             return new AggregateFuture<>(envs).thenApply((es) -> {
+                logger.info("env_L {} {}: result", path, L);
                 final Env.Builder<S, L, D> env = Env.builder();
                 es.forEach(env::addAll);
                 return env.build();
@@ -118,15 +130,19 @@ abstract class NameResolution<S, L, D> {
 
     private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
+            logger.info("env_l {} {}", path, l);
             return l.matchInResolution(acc -> env_data(path, re), lbl -> env_edges(path, re, lbl, cancel));
         } catch(ResolutionException | InterruptedException e) {
+            logger.error("This should not happen!");
             throw new IllegalStateException("Should not happen.");
         }
     }
 
     private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWF<L> re) {
+        logger.info("env_data {}", path);
         try {
             if(!re.accepting()) {
+                logger.info("env_data {}: empty", path);
                 return empty();
             }
             return isComplete.apply(path.getTarget(), dataLabel).thenApply(ignored -> {
@@ -134,7 +150,9 @@ abstract class NameResolution<S, L, D> {
                 if((datum = getData(re, path).orElse(null)) == null || !dataWF.wf(datum)) {
                     return Env.empty();
                 }
-                return Env.of(Paths.resolve(path, datum));
+                final IResolutionPath<S, L, D> resPath = Paths.resolve(path, datum);
+                logger.info("env_data {}", resPath);
+                return Env.of(resPath);
             });
         } catch(ResolutionException | InterruptedException ex) {
             return CompletableFuture.completedExceptionally(ex);
@@ -142,6 +160,7 @@ abstract class NameResolution<S, L, D> {
     }
 
     private IFuture<Env<S, L, D>> env_edges(IScopePath<S, L> path, LabelWF<L> re, L l, ICancel cancel) {
+        logger.info("env_edges {}", path);
         try {
             final LabelWF<L> newRe;
             if((newRe = re.step(l).orElse(null)) == null) {
@@ -157,6 +176,7 @@ abstract class NameResolution<S, L, D> {
                     }
                 }
                 return new AggregateFuture<>(envs).thenApply(es -> {
+                    logger.info("env_edges {}: result", path);
                     final Env.Builder<S, L, D> env = Env.builder();
                     es.forEach(env::addAll);
                     return env.build();

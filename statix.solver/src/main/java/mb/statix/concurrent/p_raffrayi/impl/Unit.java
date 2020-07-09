@@ -7,6 +7,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
+
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -44,6 +47,8 @@ import mb.statix.scopegraph.terms.path.Paths;
 
 class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
+    private final ILogger logger;
+
     private final TypeTag<IUnit<S, L, D, R>> TYPE = TypeTag.of(IUnit.class);
 
     private final IActor<? extends IUnit<S, L, D, R>> self;
@@ -66,6 +71,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
             IUnitContext<S, L, D, R> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+        this.logger = LoggerUtils.logger("Unit[" + self.id() + "]");
+
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -326,29 +333,34 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         final IActorRef<? extends IUnit<S, L, D, R>> sender = self.sender(TYPE); // capture for correct use in whenComplete
 
+        logger.info("got _query from {}", sender);
         final Access access = sender.equals(self) ? Access.INTERNAL : Access.EXTERNAL;
-        final NameResolution<S, L, D> nr =
-                new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, access, this::isComplete) {
+        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv,
+                access, this::isComplete, logger) {
 
-                    @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
-                            LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
-                        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(path.getTarget());
-                        if(owner.equals(self)) {
-                            return Optional.empty();
-                        } else {
-                            // this code should mirror query(...)
-                            final IFuture<Env<S, L, D>> result =
-                                    self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
-                            context.waitFor(Resolution.of(result), owner);
-                            return Optional.of(result.whenComplete((r, ex) -> {
-                                context.granted(Resolution.of(result), owner);
-                            }));
-                        }
-                    }
+            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
+                    LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
+                final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(path.getTarget());
+                if(owner.equals(self)) {
+                    return Optional.empty();
+                } else {
+                    logger.info("have _query for {}", owner);
+                    // this code mirrors query(...)
+                    final IFuture<Env<S, L, D>> result =
+                            self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
+                    context.waitFor(Resolution.of(result), owner);
+                    return Optional.of(result.whenComplete((r, ex) -> {
+                        logger.info("got answer from {}", sender);
+                        context.granted(Resolution.of(result), owner);
+                    }));
+                }
+            }
 
-                };
+        };
 
-        return nr.env(path, labelWF, context.cancel());
+        return nr.env(path, labelWF, context.cancel()).whenComplete((env, ex) -> {
+            logger.info("have answer for {}", sender);
+        });
     }
 
     @Override public final void _complete(ICompletable<Void> future) {
@@ -361,9 +373,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private void releaseDelays(S scope) {
         for(Entry<EdgeOrData<L>, ICompletable<Void>> entry : delays.get(scope)) {
-            final ICompletable<Void> future = entry.getValue();
             final EdgeOrData<L> edge = entry.getKey();
             if(!openEdges.contains(scope, edge)) {
+                logger.info("released {} (/ {})", scope, edge);
+                final ICompletable<Void> future = entry.getValue();
                 delays.remove(scope, edge, future);
                 local._complete(future);
             }
@@ -372,6 +385,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private void releaseDelays(S scope, EdgeOrData<L> edge) {
         for(ICompletable<Void> future : delays.get(scope, edge)) {
+            logger.info("released {} / {}", scope, edge);
             delays.remove(scope, edge, future);
             local._complete(future);
         }
@@ -390,6 +404,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(isEdgeComplete(scope, edge)) {
             result.completeValue(null);
         } else {
+            logger.info("delayed on {}/{}", scope, edge);
             delays.put(scope, edge, result);
         }
         return result;
