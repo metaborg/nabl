@@ -196,7 +196,7 @@ public class StatixSolver {
                 result.isDone());
         if(ephemeralActiveConstraints.get() == 0 && pendingResults.get() == 0 && !result.isDone()) {
             debug.info("Finished.");
-            result.completeValue(finishSolve());
+            result.complete(finishSolve());
         } else {
             debug.info("Not finished.");
         }

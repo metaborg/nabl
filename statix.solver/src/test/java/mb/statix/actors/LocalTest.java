@@ -41,7 +41,7 @@ public class LocalTest {
         }
 
         @Override public IFuture<String> get() {
-            return CompletableFuture.completed("Hello!");
+            return CompletableFuture.completedFuture("Hello!");
         }
 
     }

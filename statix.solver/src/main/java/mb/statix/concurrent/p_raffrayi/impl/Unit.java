@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -57,11 +58,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final ITypeChecker<S, L, D, R> typeChecker;
 
     private final IUnit<S, L, D, R> local;
-    private Clock<IUnit<S, L, D, R>> clock;
+    private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
     private UnitState state;
     private final CompletableFuture<R> typeCheckerResult;
 
-    private IScopeGraph.Immutable<S, L, D> scopeGraph;
+    private Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     private final MultiSet.Transient<S> sharedScopes;
     private final MultiSet.Transient<S> uninitializedScopes;
     private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
@@ -83,7 +84,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.state = UnitState.INIT;
         this.typeCheckerResult = new CompletableFuture<>();
 
-        this.scopeGraph = ScopeGraph.Immutable.of(edgeLabels);
+        this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of(edgeLabels));
         this.sharedScopes = MultiSet.Transient.of();
         this.uninitializedScopes = MultiSet.Transient.of();
         this.openEdges = MultiSetMap.Transient.of();
@@ -122,7 +123,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(ex != null) {
             typeCheckerResult.completeExceptionally(ex);
         } else {
-            typeCheckerResult.completeValue(result);
+            typeCheckerResult.complete(result);
         }
     }
 
@@ -133,7 +134,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             if(ex != null) {
                 unitResult.completeExceptionally(ex);
             } else {
-                unitResult.completeValue(UnitResult.of(analysis, scopeGraph));
+                unitResult.complete(UnitResult.of(analysis, scopeGraph.get()));
             }
         });
         return unitResult;
@@ -269,7 +270,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             assertEdgeClosed(scope, EdgeOrData.data(Access.INTERNAL));
         }
 
-        scopeGraph = scopeGraph.setDatum(scope, datum);
+        scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
         openEdges.remove(scope, edge);
         context.granted(CloseEdge.of(scope, edge), self);
 
@@ -288,7 +289,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public final void _addEdge(S source, L label, S target) {
         assertEdgeOpen(source, EdgeOrData.edge(label));
 
-        scopeGraph = scopeGraph.addEdge(source, label, target);
+        scopeGraph.set(scopeGraph.get().addEdge(source, label, target));
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
         if(!owner.equals(self)) {
@@ -364,7 +365,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public final void _complete(ICompletable<Void> future) {
-        future.completeValue(null);
+        future.complete(null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -375,8 +376,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         for(Entry<EdgeOrData<L>, ICompletable<Void>> entry : delays.get(scope)) {
             final EdgeOrData<L> edge = entry.getKey();
             if(!openEdges.contains(scope, edge)) {
-                logger.info("released {} (/ {})", scope, edge);
                 final ICompletable<Void> future = entry.getValue();
+                logger.info("released {} on {}(/{})", future, scope, edge);
                 delays.remove(scope, edge, future);
                 local._complete(future);
             }
@@ -385,7 +386,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private void releaseDelays(S scope, EdgeOrData<L> edge) {
         for(ICompletable<Void> future : delays.get(scope, edge)) {
-            logger.info("released {} / {}", scope, edge);
+            logger.info("released {} on {}/{}", future, scope, edge);
             delays.remove(scope, edge, future);
             local._complete(future);
         }
@@ -402,9 +403,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private IFuture<Void> isComplete(S scope, EdgeOrData<L> edge) {
         final CompletableFuture<Void> result = new CompletableFuture<>();
         if(isEdgeComplete(scope, edge)) {
-            result.completeValue(null);
+            result.complete(null);
         } else {
-            logger.info("delayed on {}/{}", scope, edge);
+            logger.info("delayed {} on {}/{}", result, scope, edge);
             delays.put(scope, edge, result);
         }
         return result;

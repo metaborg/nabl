@@ -72,4 +72,8 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         return alwaysTrue = constraint.isAlways(spec).orElse(false);
     }
 
+    @Override public String toString() {
+        return constraint.toString(state.unifier()::toString);
+    }
+
 }

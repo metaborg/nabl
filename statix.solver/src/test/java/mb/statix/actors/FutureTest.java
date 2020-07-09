@@ -58,7 +58,7 @@ public class FutureTest {
         }
 
         @Override public IFuture<String> get() {
-            return CompletableFuture.completed("Hello!");
+            return CompletableFuture.completedFuture("Hello!");
         }
 
     }

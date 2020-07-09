@@ -8,8 +8,8 @@ public interface IDeadlockMonitor<N, S, T> {
 
     void granted(IActorRef<? extends N> actor, T token);
 
-    void suspended(S state, Clock<N> clock);
+    void suspended(S state, Clock<IActorRef<? extends N>> clock);
 
-    void stopped(Clock<N> clock);
+    void stopped(Clock<IActorRef<? extends N>> clock);
 
 }

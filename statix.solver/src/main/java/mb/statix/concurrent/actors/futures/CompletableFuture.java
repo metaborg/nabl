@@ -22,14 +22,10 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
     @Override public <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ?> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
-            if(ex != null) {
-                result.completeExceptionally(ex);
-            } else {
-                try {
-                    result.completeValue(handler.apply(r, ex));
-                } catch(Throwable inner) {
-                    result.completeExceptionally(inner);
-                }
+            try {
+                result.complete(handler.apply(r, ex));
+            } catch(Throwable inner) {
+                result.completeExceptionally(inner);
             }
         });
         return result;
@@ -38,15 +34,11 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
     @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler) {
         final CompletableFuture<T> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
-            if(ex != null) {
-                result.completeExceptionally(ex);
-            } else {
-                try {
-                    handler.apply(r, ex);
-                    result.completeValue(r);
-                } catch(Throwable inner) {
-                    result.completeExceptionally(inner);
-                }
+            try {
+                handler.apply(r, ex);
+                result.complete(r, ex);
+            } catch(Throwable inner) {
+                result.completeExceptionally(inner);
             }
         });
         return result;
@@ -71,7 +63,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
                 result.completeExceptionally(ex);
             } else {
                 try {
-                    result.completeValue(handler.apply(r));
+                    result.complete(handler.apply(r));
                 } catch(Throwable inner) {
                     result.completeExceptionally(inner);
                 }
@@ -88,7 +80,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
             } else {
                 try {
                     handler.apply(r);
-                    result.completeValue(null);
+                    result.complete(null);
                 } catch(Throwable inner) {
                     result.completeExceptionally(inner);
                 }
@@ -117,7 +109,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return future.isDone();
     }
 
-    public static <T> IFuture<T> completed(T value) {
+    public static <T> IFuture<T> completedFuture(T value) {
         final java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
         future.complete(value);
         return new CompletableFuture<>(future);

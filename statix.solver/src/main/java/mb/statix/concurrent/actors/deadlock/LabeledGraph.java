@@ -8,7 +8,6 @@ import org.eclipse.viatra.query.runtime.base.itc.igraph.IGraphDataSource;
 import org.eclipse.viatra.query.runtime.base.itc.igraph.IGraphObserver;
 import org.eclipse.viatra.query.runtime.matchers.util.IMemoryView;
 
-import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.MultiSetMap;
 
@@ -22,28 +21,24 @@ public class LabeledGraph<V, L> implements IGraphDataSource<V>, IBiDirectionalGr
         this.edges = MultiSetMap.Transient.of();
     }
 
-    public SetMultimap.Immutable<V, L> getOutgoingEdges(V source) {
+    public MultiSetMap.Immutable<V, L> getOutgoingEdges(V source) {
         if(!graph.getAllNodes().contains(source)) {
-            return SetMultimap.Immutable.of();
+            return MultiSetMap.Immutable.of();
         }
-        final SetMultimap.Transient<V, L> outgoingEdges = SetMultimap.Transient.of();
+        final MultiSetMap.Transient<V, L> outgoingEdges = MultiSetMap.Transient.of();
         for(V target : graph.getTargetNodes(source)) {
-            for(L label : edges.get(Tuple2.of(source, target))) {
-                outgoingEdges.__insert(target, label);
-            }
+            outgoingEdges.putAll(target, edges.get(Tuple2.of(source, target)));
         }
         return outgoingEdges.freeze();
     }
 
-    public SetMultimap.Immutable<V, L> getIncomingEdges(V target) {
+    public MultiSetMap.Immutable<V, L> getIncomingEdges(V target) {
         if(!graph.getAllNodes().contains(target)) {
-            return SetMultimap.Immutable.of();
+            return MultiSetMap.Immutable.of();
         }
-        final SetMultimap.Transient<V, L> incomingEdges = SetMultimap.Transient.of();
+        final MultiSetMap.Transient<V, L> incomingEdges = MultiSetMap.Transient.of();
         for(V source : graph.getSourceNodes(target)) {
-            for(L label : edges.get(Tuple2.of(source, target))) {
-                incomingEdges.__insert(source, label);
-            }
+            incomingEdges.putAll(source, edges.get(Tuple2.of(source, target)));
         }
         return incomingEdges.freeze();
     }

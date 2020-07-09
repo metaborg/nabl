@@ -6,7 +6,7 @@ public interface ICompletable<T> {
 
     void complete(T value, Throwable ex);
 
-    default void completeValue(T value) {
+    default void complete(T value) {
         complete(value, null);
     }
 

@@ -66,4 +66,8 @@ class ConstraintDataWF implements DataWF<ITerm> {
         }
     }
 
+    @Override public String toString() {
+        return constraint.toString(state.unifier()::toString);
+    }
+
 }

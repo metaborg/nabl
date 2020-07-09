@@ -1,15 +1,15 @@
 package mb.statix.concurrent.actors.deadlock;
 
 import io.usethesource.capsule.Map;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
+import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.collections.MultiSetMap;
 
 public class Deadlock<N, S, T> {
 
     private final Map.Immutable<N, S> nodes;
-    private final IRelation3.Immutable<N, T, N> edges;
+    private final MultiSetMap.Immutable<Tuple2<N, N>, T> edges;
 
-    Deadlock(Map.Immutable<N, S> nodes, IRelation3.Immutable<N, T, N> edges) {
+    Deadlock(Map.Immutable<N, S> nodes, MultiSetMap.Immutable<Tuple2<N, N>, T> edges) {
         this.nodes = nodes;
         this.edges = edges;
     }
@@ -18,12 +18,12 @@ public class Deadlock<N, S, T> {
         return nodes;
     }
 
-    public IRelation3.Immutable<N, T, N> edges() {
+    public MultiSetMap.Immutable<Tuple2<N, N>, T> edges() {
         return edges;
     }
 
     static <N, S, T> Deadlock<N, S, T> of(N node, S state) {
-        return new Deadlock<>(Map.Immutable.of(node, state), HashTrieRelation3.Immutable.of());
+        return new Deadlock<>(Map.Immutable.of(node, state), MultiSetMap.Immutable.of());
     }
 
     @Override public String toString() {

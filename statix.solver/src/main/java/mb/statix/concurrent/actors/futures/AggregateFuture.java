@@ -1,54 +1,72 @@
 package mb.statix.concurrent.actors.futures;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.CheckedFunction2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Lists;
 
 public class AggregateFuture<T> implements IFuture<List<T>> {
 
-    private final CompletableFuture<List<T>> result;
-    private final List<T> results;
-    private final AtomicInteger count;
+    private static final ILogger logger = LoggerUtils.logger(AggregateFuture.class);
 
-    public AggregateFuture(Iterable<IFuture<T>> futures) {
-        final List<IFuture<T>> futureList = Lists.newArrayList(futures);
+    private Object lock = new Object();
+    private volatile int remaining;
+    private final T[] results;
+    private final CompletableFuture<List<T>> result;
+
+    @SafeVarargs public AggregateFuture(IFuture<? extends T>... futures) {
+        this(Arrays.asList(futures));
+    }
+
+    @SuppressWarnings("unchecked") public AggregateFuture(Iterable<? extends IFuture<? extends T>> futures) {
+        final List<? extends IFuture<? extends T>> futureList = Lists.newArrayList(futures);
         final int count = futureList.size();
+        this.results = (T[]) new Object[count];
         this.result = new CompletableFuture<>();
-        this.results = Lists.newArrayListWithExpectedSize(count);
-        // set the count before calling whenComplete, as whenComplete is triggered
-        // immediately for futures that already completed
-        this.count = new AtomicInteger(count);
+        logger.trace("{} initialized with {}: {}", this, count, futureList);
+
+        this.remaining = count;
         for(int i = 0; i < count; i++) {
             final int j = i;
             futureList.get(i).whenComplete((r, ex) -> {
                 whenComplete(j, r, ex);
             });
         }
-        fireIfComplete();
-    }
-
-    private synchronized void whenComplete(int i, T r, Throwable ex) {
-        // INVARIANT count > 0
-        if(ex != null) {
-            count.set(-1); // count will never be 0 and trigger completion
-            result.completeExceptionally(ex);
-        } else {
-            count.decrementAndGet();
-            results.set(i, r);
+        synchronized(lock) {
+            fireIfComplete();
         }
-        fireIfComplete();
     }
 
-    private synchronized void fireIfComplete() {
-        if(count.get() == 0) {
-            result.completeValue(results);
+    private void whenComplete(int i, T r, Throwable ex) {
+        // INVARIANT count > 0
+        synchronized(lock) {
+            if(ex != null) {
+                logger.trace("{} completed {}: exception", this, i);
+                remaining = -1; // count will never be 0 and trigger completion
+                result.completeExceptionally(ex);
+            } else {
+                logger.trace("{} completed {}: value", this, i);
+                remaining -= 1;
+                results[i] = r;
+            }
+            fireIfComplete();
+        }
+    }
+
+    private void fireIfComplete() {
+        if(remaining == 0) {
+            logger.trace("{} done: completed all", this);
+            result.complete(Arrays.asList(results));
+        } else {
+            logger.trace("{} open: {} remaining", this, remaining);
         }
     }
 

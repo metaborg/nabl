@@ -8,8 +8,9 @@ import org.eclipse.viatra.query.runtime.base.itc.alg.incscc.IncSCCAlg;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
+import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.collections.MultiSet;
+import mb.nabl2.util.collections.MultiSetMap;
 
 /**
  * A data structure to detect deadlock. Maintains a wait-for graph with tokens.
@@ -25,6 +26,10 @@ public class WaitForGraph<N, S, T> {
 
     private final LabeledGraph<N, T> waitForGraph = new LabeledGraph<>();
     private final IncSCCAlg<N> sccGraph = new IncSCCAlg<>(waitForGraph);
+
+    private final Map.Transient<N, Clock<N>> clocks = Map.Transient.of();
+    private final Map.Transient<N, MultiSet.Immutable<N>> sent = Map.Transient.of(); // per actor, messages sent to it by others
+
     private final Map.Transient<N, S> waitingNodes = Map.Transient.of();
     private final Set.Transient<N> stoppedNodes = Set.Transient.of();
 
@@ -46,31 +51,67 @@ public class WaitForGraph<N, S, T> {
     }
 
     /**
-     * Node is activated.
-     */
-    public void resume(N node) {
-        waitingNodes.__remove(node);
-    }
-
-    /**
      * Suspend a node. Return deadlocked tokens on the given node.
      */
-    public Optional<Deadlock<N, S, T>> suspend(N node, S state) {
+    public Optional<Optional<Deadlock<N, S, T>>> suspend(N node, S state, Clock<N> clock) {
+        if(!processClock(node, clock)) {
+            return Optional.empty();
+        }
         waitingNodes.__put(node, state);
-        return detectDeadlock(node);
+        return Optional.of(detectDeadlock(node));
     }
 
     /**
      * Remove a node, and any tokens this node was waiting on.
      */
-    public void remove(N node) {
+    public void remove(N node, Clock<N> clock) {
+        processClock(node, clock); // ignore return value, always relevant
         waitingNodes.__remove(node);
         stoppedNodes.__insert(node);
-        for(Entry<N, T> entry : waitForGraph.getOutgoingEdges(node).entrySet()) {
+        for(Entry<N, MultiSet.Immutable<T>> entry : waitForGraph.getOutgoingEdges(node).toMap().entrySet()) {
             final N target = entry.getKey();
-            final T token = entry.getValue();
-            waitForGraph.removeEdge(node, token, target);
+            for(T token : entry.getValue()) {
+                waitForGraph.removeEdge(node, token, target);
+            }
         }
+    }
+
+    /**
+     * Process the clock of a received event. This activates any suspended actors that have received messages from the
+     * given actor since their last event, and updates their clocks to the latest known number of sent messages. Returns
+     * whether this actor received at least all messages that we know about.
+     */
+    private boolean processClock(final N node, final Clock<N> clock) {
+        if(clocks.containsKey(node) && clocks.get(node).equals(clock)) {
+            return false;
+        }
+        clocks.__put(node, clock);
+
+        // process sent messages, and resume receiving actors
+        for(Entry<N, Integer> entry : clock.sent().entrySet()) {
+            final N receiver = entry.getKey();
+            final int sent = entry.getValue();
+            final MultiSet.Immutable<N> receiverClock = this.sent.getOrDefault(receiver, MultiSet.Immutable.of());
+            if(receiverClock.count(node) < sent) {
+                this.sent.put(receiver, receiverClock.set(node, sent));
+                waitingNodes.__remove(receiver);
+            }
+        }
+
+        // check if any actor sent us messages we haven't received
+        boolean atleast = true;
+        final MultiSet.Transient<N> receivedClock = clock.delivered().melt();
+        for(Entry<N, Integer> entry : this.sent.getOrDefault(node, MultiSet.Immutable.of()).entrySet()) {
+            final N sender = entry.getKey();
+            final int sent = entry.getValue();
+            if(receivedClock.count(sender) < sent) {
+                receivedClock.set(sender, sent);
+                atleast = false;
+            }
+        }
+        this.sent.put(node, receivedClock.freeze());
+
+        return atleast;
     }
 
     private Optional<Deadlock<N, S, T>> detectDeadlock(N node) {
@@ -93,13 +134,13 @@ public class WaitForGraph<N, S, T> {
         for(N source : scc) {
             nodes.__put(source, waitingNodes.get(source));
         }
-        final IRelation3.Transient<N, T, N> edges = HashTrieRelation3.Transient.of();
+        final MultiSetMap.Transient<Tuple2<N, N>, T> edges = MultiSetMap.Transient.of();
         for(N source : scc) {
-            for(Entry<N, T> entry : waitForGraph.getOutgoingEdges(source).entrySet()) {
+            for(Entry<N, MultiSet.Immutable<T>> entry : waitForGraph.getOutgoingEdges(source).toMap().entrySet()) {
                 final N target = entry.getKey();
                 if(scc.contains(target)) {
-                    final T token = entry.getValue();
-                    edges.put(source, token, target);
+                    final Tuple2<N, N> key = Tuple2.of(source, target);
+                    edges.putAll(key, entry.getValue());
                 }
             }
 

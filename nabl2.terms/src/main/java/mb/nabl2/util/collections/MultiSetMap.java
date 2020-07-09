@@ -16,6 +16,10 @@ public abstract class MultiSetMap<K, V> {
         return toMap().isEmpty();
     }
 
+    public int size() {
+        return toMap().entrySet().stream().mapToInt(e -> e.getValue().size()).sum();
+    }
+
     public boolean containsKey(K key) {
         return toMap().containsKey(key);
     }

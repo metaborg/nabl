@@ -311,7 +311,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         if(ex != null) {
                             result.completeExceptionally(ex);
                         } else {
-                            result.completeValue(r);
+                            result.complete(r);
                         }
                     });
                 }

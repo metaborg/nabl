@@ -14,8 +14,13 @@ public class RelationLabelOrder implements LabelOrder<ITerm> {
         this.labelOrd = labelOrd;
     }
 
-    @Override public boolean lt(EdgeOrData<ITerm> l1, EdgeOrData<ITerm> l2) throws ResolutionException, InterruptedException {
+    @Override public boolean lt(EdgeOrData<ITerm> l1, EdgeOrData<ITerm> l2)
+            throws ResolutionException, InterruptedException {
         return labelOrd.contains(l1, l2);
+    }
+
+    @Override public String toString() {
+        return labelOrd.toString();
     }
 
 }
