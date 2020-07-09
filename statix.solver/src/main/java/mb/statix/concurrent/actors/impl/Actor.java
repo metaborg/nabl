@@ -381,7 +381,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
                 final RelevantResult marker;
                 if((marker = method.getAnnotation(RelevantResult.class)) != null && marker.value().length > 0) {
-                    for(IActorMonitor monitor : monitors) {
+                    for(IActorMonitor monitor : sender.monitors) {
                         monitor.delivered(sender, Actor.this, ImmutableSet.copyOf(marker.value()));
                     }
                 }

@@ -31,6 +31,7 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
                 whenComplete(j, r, ex);
             });
         }
+        fireIfComplete();
     }
 
     private synchronized void whenComplete(int i, T r, Throwable ex) {
@@ -39,10 +40,15 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
             count.set(-1); // count will never be 0 and trigger completion
             result.completeExceptionally(ex);
         } else {
+            count.decrementAndGet();
             results.set(i, r);
-            if(count.decrementAndGet() == 0) {
-                result.completeValue(results);
-            }
+        }
+        fireIfComplete();
+    }
+
+    private synchronized void fireIfComplete() {
+        if(count.get() == 0) {
+            result.completeValue(results);
         }
     }
 
@@ -73,6 +79,5 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
     @Override public boolean isDone() {
         return result.isDone();
     }
-
 
 }

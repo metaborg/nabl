@@ -52,9 +52,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
     }
 
     @Override public void stopped(Clock<N> clock) {
-        if(!processClock(sender(), clock)) {
-            return;
-        }
+        processClock(sender(), clock); // ignore return value, always relevant
         wfg.remove(sender());
         logger.warn("{} stopped", self.sender());
     }
@@ -70,6 +68,7 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
      */
     private boolean processClock(final IActorRef<? extends N> current, final Clock<N> clock) {
         if(clocks.computeIfAbsent(current, __ -> Clock.of()).equals(clock)) {
+            logger.warn("{} event ignored: unchanged clock {}", current, clock);
             return false;
         }
         clocks.put(current, clock);
@@ -100,6 +99,9 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
         }
         this.sent.put(current, receivedClock.freeze());
 
+        if(!atleast) {
+            logger.warn("{} event ignored: undelivered messages", current);
+        }
         return atleast;
     }
 

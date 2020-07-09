@@ -10,9 +10,9 @@ import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.impl.ActorSystem;
 
-public class ActorTest {
+public class PingPongTest {
 
-    private static final ILogger logger = LoggerUtils.logger(ActorTest.class);
+    private static final ILogger logger = LoggerUtils.logger(PingPongTest.class);
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         final ActorSystem system = new ActorSystem();
