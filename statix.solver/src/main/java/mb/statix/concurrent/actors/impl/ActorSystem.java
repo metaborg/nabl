@@ -57,8 +57,8 @@ public class ActorSystem implements IActorSystem {
         ((Actor<?>) actor).addMonitor(async(monitor));
     }
 
-    @Override public <T> T async(IActorRef<T> receiver) {
-        return ((Actor<T>) receiver).async(executorService);
+    @Override public <T> T async(IActorRef<T> reciever) {
+        return ((Actor<T>) reciever).async(executorService);
     }
 
     @Override public void start() {
@@ -113,11 +113,11 @@ public class ActorSystem implements IActorSystem {
             return ActorSystem.this.add(self, id, type, supplier);
         }
 
-        @Override public <T> T async(IActorRef<T> receiver) {
-            if(!actors.containsValue(receiver)) {
-                throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
+        @Override public <T> T async(IActorRef<T> reciever) {
+            if(!actors.containsValue(reciever)) {
+                throw new IllegalArgumentException("Actor " + reciever + " not part of this system.");
             }
-            return (T) asyncCache.computeIfAbsent(receiver, r -> ((Actor) r).async(self));
+            return (T) asyncCache.computeIfAbsent(reciever, r -> ((Actor) r).async(self));
         }
 
     }

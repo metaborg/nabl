@@ -14,7 +14,7 @@ public interface IActor<T> extends IActorRef<T> {
     /**
      * Get the async interface to an actor to send messages.
      */
-    <U> U async(IActorRef<U> receiver);
+    <U> U async(IActorRef<U> reciever);
 
     /**
      * Get sender of the current message being handled.

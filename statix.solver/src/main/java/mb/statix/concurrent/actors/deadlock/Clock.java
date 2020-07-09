@@ -27,8 +27,8 @@ public class Clock<N> {
         return new Clock<>(sent, delivered.add(sender));
     }
 
-    public Clock<N> sent(N receiver) {
-        return new Clock<>(sent.add(receiver), delivered);
+    public Clock<N> sent(N reciever) {
+        return new Clock<>(sent.add(reciever), delivered);
     }
 
     @Override public int hashCode() {
@@ -48,7 +48,7 @@ public class Clock<N> {
 
 
     @Override public String toString() {
-        return "Clock[sent = " + sent + ", received = " + delivered + "]";
+        return "Clock[sent = " + sent + ", delivered = " + delivered + "]";
     }
 
     public static <N> Clock<N> of() {

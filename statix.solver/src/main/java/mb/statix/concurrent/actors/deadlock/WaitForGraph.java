@@ -21,7 +21,7 @@ public class WaitForGraph<N, S, T> {
     //       a. resume of stopped node -- can be ignored.
     //       b. wait-for on stopped node -- could be resolved by an even later messages
     //       c. granted from a stopped node -- apply as usual
-    //       d. suspend while having wait-fors on stopped nodes -- if the actor received all messages from the stopped node, it will be permanently stuck
+    //       d. suspend while having wait-fors on stopped nodes -- if the actor recieved all messages from the stopped node, it will be permanently stuck
     //       e. stopping -- if suspended actors have wait-fors on this node, and we didn't send them messages, they are permanently stuck
 
     private final LabeledGraph<N, T> waitForGraph = new LabeledGraph<>();
@@ -34,6 +34,10 @@ public class WaitForGraph<N, S, T> {
     private final Set.Transient<N> stoppedNodes = Set.Transient.of();
 
     public WaitForGraph() {
+    }
+
+    public boolean isWaiting(N node) {
+        return waitingNodes.containsKey(node);
     }
 
     /**
@@ -77,9 +81,9 @@ public class WaitForGraph<N, S, T> {
     }
 
     /**
-     * Process the clock of a received event. This activates any suspended actors that have received messages from the
+     * Process the clock of a recieved event. This activates any suspended actors that have recieved messages from the
      * given actor since their last event, and updates their clocks to the latest known number of sent messages. Returns
-     * whether this actor received at least all messages that we know about.
+     * whether this actor recieved at least all messages that we know about.
      */
     private boolean processClock(final N node, final Clock<N> clock) {
         if(clocks.containsKey(node) && clocks.get(node).equals(clock)) {
@@ -87,29 +91,29 @@ public class WaitForGraph<N, S, T> {
         }
         clocks.__put(node, clock);
 
-        // process sent messages, and resume receiving actors
+        // process sent messages, and resume recieving actors
         for(Entry<N, Integer> entry : clock.sent().entrySet()) {
-            final N receiver = entry.getKey();
+            final N reciever = entry.getKey();
             final int sent = entry.getValue();
-            final MultiSet.Immutable<N> receiverClock = this.sent.getOrDefault(receiver, MultiSet.Immutable.of());
-            if(receiverClock.count(node) < sent) {
-                this.sent.put(receiver, receiverClock.set(node, sent));
-                waitingNodes.__remove(receiver);
+            final MultiSet.Immutable<N> recieverClock = this.sent.getOrDefault(reciever, MultiSet.Immutable.of());
+            if(recieverClock.count(node) < sent) {
+                this.sent.put(reciever, recieverClock.set(node, sent));
+                waitingNodes.__remove(reciever);
             }
         }
 
-        // check if any actor sent us messages we haven't received
+        // check if any actor sent us messages we haven't recieved
         boolean atleast = true;
-        final MultiSet.Transient<N> receivedClock = clock.delivered().melt();
+        final MultiSet.Transient<N> recievedClock = clock.delivered().melt();
         for(Entry<N, Integer> entry : this.sent.getOrDefault(node, MultiSet.Immutable.of()).entrySet()) {
             final N sender = entry.getKey();
             final int sent = entry.getValue();
-            if(receivedClock.count(sender) < sent) {
-                receivedClock.set(sender, sent);
+            if(recievedClock.count(sender) < sent) {
+                recievedClock.set(sender, sent);
                 atleast = false;
             }
         }
-        this.sent.put(node, receivedClock.freeze());
+        this.sent.put(node, recievedClock.freeze());
 
         return atleast;
     }

@@ -151,7 +151,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private void put(IMessage<T> message) {
         synchronized(lock) {
             if(state.equals(ActorState.STOPPED)) {
-                logger.warn("{} received message when already stopped", id);
+                logger.warn("{} recieved message when already stopped", id);
                 // FIXME Ignore, or signal error?
                 return;
             }
@@ -304,7 +304,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 }
 
                 if(result != null) {
-                    // NOTE The completion runs on the thread of the receiving actor.
+                    // NOTE The completion runs on the thread of the recieving actor.
                     //      The different async(...) cases dispatch the result as a
                     //      message on the thread of the sender, or as a job on the executor.
                     ((IFuture<?>) returnValue).whenComplete((r, ex) -> {
@@ -345,7 +345,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         ///////////////////////////////////////////////////////////////////////
-        // Completable -- called on the receiver's thread
+        // Completable -- called on the reciever's thread
         ///////////////////////////////////////////////////////////////////////
 
         @SuppressWarnings({ "unchecked" }) @Override public void complete(U value, Throwable ex) {

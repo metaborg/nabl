@@ -10,6 +10,6 @@ interface IActorContext {
 
     <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier);
 
-    <T> T async(IActorRef<T> receiver);
+    <T> T async(IActorRef<T> reciever);
 
 }
