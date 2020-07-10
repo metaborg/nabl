@@ -20,8 +20,7 @@ import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.deadlock.RelevantMessage;
-import mb.statix.concurrent.actors.deadlock.RelevantResult;
+import mb.statix.concurrent.actors.deadlock.Relevant;
 import mb.statix.concurrent.actors.futures.AsyncCompletable;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
@@ -43,13 +42,19 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private final Set<IActorMonitor> monitors;
     private Future<?> task;
 
+    final T asyncSystem;
+    final T asyncActor;
+
+    static final ThreadLocal<Actor<?>> current = ThreadLocal.withInitial(() -> {
+        throw new IllegalStateException("Cannot get current actor.");
+    });
+
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get sender when not in message processing context.");
     });
 
-    Actor(Function1<Actor<T>, IActorContext> context, String id, TypeTag<T> type,
-            Function1<IActor<T>, ? extends T> supplier) {
-        this.context = context.apply(this);
+    Actor(IActorContext context, String id, TypeTag<T> type, Function1<IActor<T>, ? extends T> supplier) {
+        this.context = context;
         this.id = id;
         this.type = type;
         this.supplier = supplier;
@@ -58,6 +63,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         this.state = ActorState.INIT;
         this.messages = Queues.newArrayDeque();
         this.monitors = new HashSet<>();
+
+        this.asyncSystem = newAsyncSystem();
+        this.asyncActor = newAsyncActor();
+
     }
 
     @Override public String id() {
@@ -72,20 +81,26 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         return context.add(id, type, supplier);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Async interface for other actors
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Override public <U> U async(IActorRef<U> other) {
-        return context.async(other);
+    private void put(IMessage<T> message) {
+        synchronized(lock) {
+            if(state.equals(ActorState.STOPPED)) {
+                logger.warn("{} received message when already stopped", id);
+                // FIXME Ignore, or signal error?
+                return;
+            }
+            messages.add(message);
+            lock.notify();
+        }
     }
 
-    @SuppressWarnings("unchecked") T async(Actor<?> sender) {
-        return (T) Proxy.newProxyInstance(type.type().getClassLoader(), new Class[] { type.type() },
+    @SuppressWarnings("unchecked") private T newAsyncActor() {
+        return (T) Proxy.newProxyInstance(this.type.type().getClassLoader(), new Class[] { this.type.type() },
                 (proxy, method, args) -> {
                     if(method.getDeclaringClass().equals(Object.class)) {
                         return method.invoke(this, args);
                     }
+
+                    final Actor<?> sender = Actor.current.get();
 
                     // This runs on the sender's thread!
                     // ASSERT ActorState != DONE
@@ -98,17 +113,17 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(sender, method, args, new Complete<>(sender, method, result));
+                        message = new Invoke(sender, method, args, new Return<>(sender, method, result));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
-                    logger.info("{}[{}] send to {}[{}] message {}", sender.id, sender.state, id, state, message);
+                    logger.info("send {} message {}", Actor.this, message);
                     put(message);
 
-                    final RelevantMessage marker;
-                    if((marker = method.getAnnotation(RelevantMessage.class)) != null && marker.value().length > 0) {
+                    final Relevant marker;
+                    if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
                         for(IActorMonitor monitor : sender.monitors) {
                             monitor.sent(sender, this, ImmutableSet.copyOf(marker.value()));
                         }
@@ -118,8 +133,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 });
     }
 
-    @SuppressWarnings("unchecked") T async(ExecutorService executor) {
-        return (T) Proxy.newProxyInstance(type.type().getClassLoader(), new Class[] { type.type() },
+    @SuppressWarnings("unchecked") private T newAsyncSystem() {
+        return (T) Proxy.newProxyInstance(this.type.type().getClassLoader(), new Class[] { this.type.type() },
                 (proxy, method, args) -> {
                     if(method.getDeclaringClass().equals(Object.class)) {
                         return method.invoke(this, args);
@@ -135,13 +150,14 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(null, method, args, new AsyncCompletable<>(executor, result));
+                        message =
+                                new Invoke(null, method, args, new AsyncCompletable<>(this.context.executor(), result));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
-                    logger.info("system send to {}[{}] message {}", id, state, message);
+                    logger.info("send {} message {}", Actor.this, message);
                     put(message);
 
                     // no sender, so cannot call senders monitors
@@ -150,16 +166,12 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 });
     }
 
-    private void put(IMessage<T> message) {
-        synchronized(lock) {
-            if(state.equals(ActorState.STOPPED)) {
-                logger.warn("{} recieved message when already stopped", id);
-                // FIXME Ignore, or signal error?
-                return;
-            }
-            messages.add(message);
-            lock.notify();
-        }
+    @Override public <U> U async(IActorRef<U> receiver) {
+        return context.async(receiver);
+    }
+
+    @Override public T local() {
+        return asyncActor;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -182,7 +194,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
      * Actor main loop.
      */
     private void run() {
-        logger.info("{} start", id);
+        LoggerUtils.setContextId("actor:" + id);
+        current.set(this);
+
+        logger.info("start");
 
         final T impl = supplier.apply(this);
         if(impl == null || !type.type().isInstance(impl)) {
@@ -200,7 +215,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 final IMessage<T> message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
-                        logger.info("{} suspend", id);
+                        logger.info("suspend");
                         state = ActorState.WAITING;
                         for(IActorMonitor monitor : monitors) {
                             monitor.suspended(this);
@@ -212,19 +227,19 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         for(IActorMonitor monitor : monitors) {
                             monitor.resumed(this);
                         }
-                        logger.info("{} resume", id);
+                        logger.info("resume");
                     }
                     message = messages.remove();
                 }
-                logger.info("{}[{}] deliver message {}", id, state, message);
+                logger.info("deliver message {}", message);
                 message.dispatch(impl); // responsible for setting sender, and calling monitor!
             }
         } catch(InterruptedException ex) {
-            logger.info("{} interrupted", id);
+            logger.info("interrupted");
         } catch(StopException ex) {
-            logger.info("{} stopped", id);
+            logger.info("stopped");
         } catch(ActorException ex) {
-            logger.info("{} failed", ex, id);
+            logger.info("failed", ex);
         } finally {
             synchronized(lock) {
                 state = ActorState.STOPPED;
@@ -269,7 +284,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public String toString() {
-        return "Actor[" + id + "]";
+        return "actor:" + id;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -298,15 +313,15 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 method.setAccessible(true);
                 final Object returnValue = method.invoke(impl, args);
 
-                final RelevantMessage marker;
-                if((marker = method.getAnnotation(RelevantMessage.class)) != null && marker.value().length > 0) {
+                final Relevant marker;
+                if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
                     for(IActorMonitor monitor : monitors) {
                         monitor.delivered(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
                     }
                 }
 
                 if(result != null) {
-                    // NOTE The completion runs on the thread of the recieving actor.
+                    // NOTE The completion runs on the thread of the receiving actor.
                     //      The different async(...) cases dispatch the result as a
                     //      message on the thread of the sender, or as a job on the executor.
                     ((IFuture<?>) returnValue).whenComplete((r, ex) -> {
@@ -331,7 +346,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @SuppressWarnings("rawtypes")
-    private class Complete<U> implements ICompletable<U>, IMessage {
+    private class Return<U> implements ICompletable<U>, IMessage {
 
         private final Actor<?> sender;
         private final Method method;
@@ -340,25 +355,25 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         private U value;
         private Throwable ex;
 
-        private Complete(Actor<?> sender, Method method, ICompletable<U> completable) {
+        private Return(Actor<?> sender, Method method, ICompletable<U> completable) {
             this.sender = sender;
             this.method = method;
             this.completable = completable;
         }
 
         ///////////////////////////////////////////////////////////////////////
-        // Completable -- called on the reciever's thread
+        // Completable -- called on the receiver's thread
         ///////////////////////////////////////////////////////////////////////
 
         @SuppressWarnings({ "unchecked" }) @Override public void complete(U value, Throwable ex) {
             this.value = value;
             this.ex = ex;
 
-            logger.info("{}[{}] send to {}[{}] message {}", id, state, sender.id, sender.state, this);
+            logger.info("send {} message {}", sender, this);
             sender.put(this);
 
-            final RelevantMessage marker;
-            if((marker = method.getAnnotation(RelevantMessage.class)) != null && marker.value().length > 0) {
+            final Relevant marker;
+            if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
                 for(IActorMonitor monitor : monitors) {
                     monitor.sent(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
                 }
@@ -371,7 +386,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         ///////////////////////////////////////////////////////////////////////
-        // IMessage -- called on the sender's thread
+        // IMessage -- called on the (original) sender's thread
         ///////////////////////////////////////////////////////////////////////
 
         @Override public void dispatch(Object impl) {
@@ -382,8 +397,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
                 completable.complete(value, ex);
 
-                final RelevantResult marker;
-                if((marker = method.getAnnotation(RelevantResult.class)) != null && marker.value().length > 0) {
+                final Relevant marker;
+                if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
                     for(IActorMonitor monitor : sender.monitors) {
                         monitor.delivered(sender, Actor.this, ImmutableSet.copyOf(marker.value()));
                     }
@@ -396,7 +411,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         @Override public String toString() {
-            return sender + " completes " + completable;
+            return Actor.this + " returns " + completable;
         }
 
     }

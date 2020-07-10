@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
@@ -33,6 +34,8 @@ import mb.statix.scopegraph.terms.path.Paths;
 
 abstract class NameResolution<S, L, D> {
 
+    private static final ILogger logger = LoggerUtils.logger(NameResolution.class);
+
     private final Ref<? extends IScopeGraph<S, L, D>> scopeGraph;
 
     private final EdgeOrData<L> dataLabel;
@@ -45,11 +48,8 @@ abstract class NameResolution<S, L, D> {
 
     private final Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete; // default: true
 
-    private final ILogger logger;
-
     public NameResolution(Ref<? extends IScopeGraph<S, L, D>> scopeGraph, LabelOrder<L> labelOrder, DataWF<D> dataWF,
-            DataLeq<D> dataEquiv, Access access, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete,
-            ILogger logger) {
+            DataLeq<D> dataEquiv, Access access, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete) {
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data(access);
         this.allLabels =
@@ -59,7 +59,6 @@ abstract class NameResolution<S, L, D> {
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
         this.isComplete = isComplete;
-        this.logger = logger;
     }
 
     public abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,

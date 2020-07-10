@@ -25,11 +25,14 @@ public class ActorSystem implements IActorSystem {
     private final Object lock = new Object();
     private final Map<String, Actor<?>> actors;
     private final ExecutorService executorService;
-    private volatile boolean running = false;
+    private volatile boolean running;
+    private final IActorContext context;
 
     public ActorSystem() {
         this.actors = Maps.newHashMap();
         this.executorService = Executors.newCachedThreadPool();
+        this.running = false;
+        this.context = new ActorContext();
     }
 
     @Override public <T> IActor<T> add(String id, TypeTag<T> type, Function1<IActor<T>, T> supplier) {
@@ -39,7 +42,7 @@ public class ActorSystem implements IActorSystem {
     private <T> IActor<T> add(@Nullable IActorRef<?> parent, String id, TypeTag<T> type,
             Function1<IActor<T>, T> supplier) {
         logger.info("add actor {}", id);
-        final Actor<T> actor = new Actor<>(ActorContext::new, id, type, supplier);
+        final Actor<T> actor = new Actor<>(context, id, type, supplier);
         synchronized(lock) {
             if(actors.containsKey(id)) {
                 throw new IllegalArgumentException("Actor with id " + id + " already exists.");
@@ -57,8 +60,8 @@ public class ActorSystem implements IActorSystem {
         ((Actor<?>) actor).addMonitor(async(monitor));
     }
 
-    @Override public <T> T async(IActorRef<T> reciever) {
-        return ((Actor<T>) reciever).async(executorService);
+    @Override public <T> T async(IActorRef<T> receiver) {
+        return ((Actor<T>) receiver).asyncSystem;
     }
 
     @Override public void start() {
@@ -99,25 +102,26 @@ public class ActorSystem implements IActorSystem {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // IActorContext
+    ///////////////////////////////////////////////////////////////////////////
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private class ActorContext implements IActorContext {
 
-        private final Actor<?> self;
-        private final Map<IActorRef, Object> asyncCache = Maps.newHashMap();
-
-        public ActorContext(Actor<?> self) {
-            this.self = self;
-        }
-
         @Override public <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
-            return ActorSystem.this.add(self, id, type, supplier);
+            return ActorSystem.this.add(Actor.current.get(), id, type, supplier);
         }
 
-        @Override public <T> T async(IActorRef<T> reciever) {
-            if(!actors.containsValue(reciever)) {
-                throw new IllegalArgumentException("Actor " + reciever + " not part of this system.");
+        @Override public <T> T async(IActorRef<T> receiver) {
+            if(!actors.containsValue(receiver)) {
+                throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
             }
-            return (T) asyncCache.computeIfAbsent(reciever, r -> ((Actor) r).async(self));
+            return (T) ((Actor) receiver).asyncActor;
+        }
+
+        @Override public ExecutorService executor() {
+            return executorService;
         }
 
     }

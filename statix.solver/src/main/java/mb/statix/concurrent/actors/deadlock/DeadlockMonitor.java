@@ -26,12 +26,12 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
     }
 
     @Override public void waitFor(IActorRef<? extends N> actor, T token) {
-        logger.info("dlm {} waitFor {} / {}", self.sender(TYPE), actor, token);
+        logger.info("{} waitFor {} / {}", self.sender(TYPE), actor, token);
         wfg.waitFor(self.sender(TYPE), token, actor);
     }
 
     @Override public void granted(IActorRef<? extends N> actor, T token) {
-        logger.info("dlm {} granted {} / {}", self.sender(TYPE), actor, token);
+        logger.info("{} granted {} / {}", self.sender(TYPE), actor, token);
         wfg.granted(self.sender(TYPE), token, actor);
     }
 

@@ -10,7 +10,7 @@ public interface IActorSystem {
     /**
      * Get async interface to actor.
      */
-    <T> T async(IActorRef<T> reciever);
+    <T> T async(IActorRef<T> receiver);
 
     void addMonitor(IActorRef<?> actor, IActorRef<? extends IActorMonitor> monitor);
 

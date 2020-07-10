@@ -27,8 +27,8 @@ public class Clock<N> {
         return new Clock<>(sent, delivered.add(sender));
     }
 
-    public Clock<N> sent(N reciever) {
-        return new Clock<>(sent.add(reciever), delivered);
+    public Clock<N> sent(N receiver) {
+        return new Clock<>(sent.add(receiver), delivered);
     }
 
     @Override public int hashCode() {

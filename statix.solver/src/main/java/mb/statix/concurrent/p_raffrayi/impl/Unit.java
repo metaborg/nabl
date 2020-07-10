@@ -48,7 +48,7 @@ import mb.statix.scopegraph.terms.path.Paths;
 
 class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
-    private final ILogger logger;
+    private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
     private final TypeTag<IUnit<S, L, D, R>> TYPE = TypeTag.of(IUnit.class);
 
@@ -72,8 +72,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
             IUnitContext<S, L, D, R> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
-        this.logger = LoggerUtils.logger("Unit[" + self.id() + "]");
-
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -336,28 +334,28 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         logger.info("got _query from {}", sender);
         final Access access = sender.equals(self) ? Access.INTERNAL : Access.EXTERNAL;
-        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv,
-                access, this::isComplete, logger) {
+        final NameResolution<S, L, D> nr =
+                new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, access, this::isComplete) {
 
-            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
-                    LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
-                final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(path.getTarget());
-                if(owner.equals(self)) {
-                    return Optional.empty();
-                } else {
-                    logger.info("have _query for {}", owner);
-                    // this code mirrors query(...)
-                    final IFuture<Env<S, L, D>> result =
-                            self.async(owner)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
-                    context.waitFor(Resolution.of(result), owner);
-                    return Optional.of(result.whenComplete((r, ex) -> {
-                        logger.info("got answer from {}", sender);
-                        context.granted(Resolution.of(result), owner);
-                    }));
-                }
-            }
+                    @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
+                            LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
+                        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(path.getTarget());
+                        if(owner.equals(self)) {
+                            return Optional.empty();
+                        } else {
+                            logger.info("have _query for {}", owner);
+                            // this code mirrors query(...)
+                            final IFuture<Env<S, L, D>> result =
+                                    self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                            context.waitFor(Resolution.of(result), owner);
+                            return Optional.of(result.whenComplete((r, ex) -> {
+                                logger.info("got answer from {}", sender);
+                                context.granted(Resolution.of(result), owner);
+                            }));
+                        }
+                    }
 
-        };
+                };
 
         return nr.env(path, labelWF, context.cancel()).whenComplete((env, ex) -> {
             logger.info("have answer for {}", sender);
@@ -419,7 +417,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.sent((IActorRef<? extends IUnit<S, L, D, R>>) target);
-            logger.info("{} updated clock: {}", self, clock);
+            logger.info("updated clock: {}", clock);
         }
     }
 
@@ -427,7 +425,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, R>>) source);
-            logger.info("{} updated clock: {}", self, clock);
+            logger.info("updated clock: {}", clock);
         }
     }
 

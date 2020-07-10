@@ -5,6 +5,8 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
@@ -29,6 +31,8 @@ import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
 public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
+
+    private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
     private final IScopeImpl<S> scopeImpl;
     private final Set<L> edgeLabels;
