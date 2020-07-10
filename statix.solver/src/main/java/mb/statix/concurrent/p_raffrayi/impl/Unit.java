@@ -419,6 +419,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.sent((IActorRef<? extends IUnit<S, L, D, R>>) target);
+            logger.info("{} updated clock: {}", self, clock);
         }
     }
 
@@ -426,6 +427,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, R>>) source);
+            logger.info("{} updated clock: {}", self, clock);
         }
     }
 

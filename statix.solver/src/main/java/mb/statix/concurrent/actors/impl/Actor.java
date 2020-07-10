@@ -104,6 +104,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
+                    logger.info("{}[{}] send to {}[{}] message {}", sender.id, sender.state, id, state, message);
                     put(message);
 
                     final RelevantMessage marker;
@@ -140,6 +141,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
+                    logger.info("system send to {}[{}] message {}", id, state, message);
                     put(message);
 
                     // no sender, so cannot call senders monitors
@@ -352,6 +354,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             this.value = value;
             this.ex = ex;
 
+            logger.info("{}[{}] send to {}[{}] message {}", id, state, sender.id, sender.state, this);
             sender.put(this);
 
             final RelevantMessage marker;
