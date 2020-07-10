@@ -3,12 +3,12 @@ package mb.statix.concurrent.actors.impl;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashSet;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
+import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -38,9 +38,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
     private final Object lock;
     private volatile ActorState state;
-    private final Queue<IMessage<T>> messages;
+    private final Deque<IMessage<T>> messages;
+    private final Set<IReturn<?>> returns;
+
+    private final Object monitorsLock;
     private final Set<IActorMonitor> monitors;
-    private Future<?> task;
 
     final T asyncSystem;
     final T asyncActor;
@@ -62,6 +64,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         this.lock = new Object();
         this.state = ActorState.INIT;
         this.messages = Queues.newArrayDeque();
+        this.returns = new HashSet<>();
+
+        this.monitorsLock = new Object();
         this.monitors = new HashSet<>();
 
         this.asyncSystem = newAsyncSystem();
@@ -81,13 +86,17 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         return context.add(id, type, supplier);
     }
 
-    private void put(IMessage<T> message) throws ActorStoppedException {
+    private void put(IMessage<T> message, boolean priority) throws ActorStoppedException {
         synchronized(lock) {
             if(state.equals(ActorState.STOPPED)) {
                 logger.warn("{} received message when already stopped", id);
                 throw new ActorStoppedException("Actor " + this + " not running.");
             }
-            messages.add(message);
+            if(priority) {
+                messages.addFirst(message);
+            } else {
+                messages.addLast(message);
+            }
             lock.notify();
         }
     }
@@ -112,20 +121,24 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(sender, method, args, new Return<>(sender, method, result));
+                        final Return<?> ret = new Return<>(sender, method, result);
+                        message = new Invoke(sender, method, args, ret);
                         returnValue = result;
+                        synchronized(lock) {
+                            returns.add(ret);
+                        }
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
                     logger.info("send {} message {}", Actor.this, message);
-                    put(message);
+                    put(message, false);
 
                     final Relevant marker;
                     if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                        for(IActorMonitor monitor : sender.monitors) {
+                        sender.forEachMonitor(monitor -> {
                             monitor.sent(sender, this, ImmutableSet.copyOf(marker.value()));
-                        }
+                        });
                     }
 
                     return returnValue;
@@ -157,7 +170,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     }
 
                     logger.info("send {} message {}", Actor.this, message);
-                    put(message);
+                    put(message, false);
 
                     // no sender, so cannot call senders monitors
 
@@ -185,7 +198,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             }
 
             state = ActorState.RUNNING;
-            task = executorService.submit(() -> this.run());
+            executorService.submit(() -> this.run());
         }
     }
 
@@ -205,27 +218,25 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         try {
-            synchronized(lock) {
-                for(IActorMonitor monitor : monitors) {
-                    monitor.started(this);
-                }
-            }
+            forEachMonitor(monitor -> {
+                monitor.started(this);
+            });
             while(true) {
                 final IMessage<T> message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
                         logger.info("suspend");
                         state = ActorState.WAITING;
-                        for(IActorMonitor monitor : monitors) {
+                        forEachMonitor(monitor -> {
                             monitor.suspended(this);
-                        }
+                        });
                         lock.wait();
                     }
                     if(state.equals(ActorState.WAITING)) {
                         state = ActorState.RUNNING;
-                        for(IActorMonitor monitor : monitors) {
+                        forEachMonitor(monitor -> {
                             monitor.resumed(this);
-                        }
+                        });
                         logger.info("resume");
                     }
                     message = messages.remove();
@@ -243,9 +254,16 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             synchronized(lock) {
                 state = ActorState.STOPPED;
                 messages.clear();
-                for(IActorMonitor monitor : monitors) {
-                    monitor.stopped(this);
+                for(IReturn<?> ret : returns) {
+                    try {
+                        ret.complete(null, new ActorStoppedException());
+                    } catch(ActorStoppedException e) {
+                        // receiver stopped, ignore
+                    }
                 }
+                forEachMonitor(monitor -> {
+                    monitor.stopped(this);
+                });
             }
         }
     }
@@ -260,15 +278,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
     @Override public void stop() {
         try {
-            put(new Stop());
+            put(new Stop(), true);
         } catch(ActorStoppedException ex) {
             // actor already stopped, do nothing
-        }
-    }
-
-    void cancel() {
-        synchronized(lock) {
-            task.cancel(true);
         }
     }
 
@@ -277,8 +289,14 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void addMonitor(IActorMonitor monitor) {
-        synchronized(lock) {
+        synchronized(monitorsLock) {
             monitors.add(monitor);
+        }
+    }
+
+    void forEachMonitor(Action1<? super IActorMonitor> action) {
+        synchronized(monitorsLock) {
+            monitors.forEach(action::apply);
         }
     }
 
@@ -297,7 +315,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @FunctionalInterface
     private interface IReturn<U> {
 
-        void complete(U value, Throwable ex) throws ActorException;
+        void complete(U value, Throwable ex) throws ActorStoppedException;
 
         public static <U> IReturn<U> of(ICompletable<U> completable) {
             return completable::complete;
@@ -329,9 +347,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
                 final Relevant marker;
                 if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                    for(IActorMonitor monitor : monitors) {
+                    forEachMonitor(monitor -> {
                         monitor.delivered(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
-                    }
+                    });
                 }
 
                 if(result != null) {
@@ -373,20 +391,23 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         // complete -- called on the receiver's thread
         ///////////////////////////////////////////////////////////////////////
 
-        @Override public void complete(U value, Throwable ex) throws ActorException {
+        @Override public void complete(U value, Throwable ex) throws ActorStoppedException {
+            if(!returns.remove(this)) {
+                throw new IllegalStateException("Dangling return?");
+            }
+
             this.value = value;
             this.ex = ex;
 
             logger.info("send {} message {}", sender, this);
-            sender.put(this);
+            sender.put(this, false);
 
             final Relevant marker;
             if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                for(IActorMonitor monitor : monitors) {
+                forEachMonitor(monitor -> {
                     monitor.sent(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
-                }
+                });
             }
-
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -403,9 +424,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
                 final Relevant marker;
                 if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                    for(IActorMonitor monitor : sender.monitors) {
+                    sender.forEachMonitor(monitor -> {
                         monitor.delivered(sender, Actor.this, ImmutableSet.copyOf(marker.value()));
-                    }
+                    });
                 }
 
 

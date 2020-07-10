@@ -82,27 +82,25 @@ public class ActorSystem implements IActorSystem {
     }
 
     @Override public void stop() {
-        stop(false);
-    }
-
-    @Override public void cancel() {
-        stop(true);
-    }
-
-    private void stop(boolean force) {
         synchronized(lock) {
             if(!state.equals(ActorSystemState.RUNNING)) {
                 throw new IllegalStateException("Actor system not started.");
             }
             state = ActorSystemState.STOPPED;
             for(Actor<?> actor : actors.values()) {
-                if(force) {
-                    actor.cancel();
-                } else {
-                    actor.stop();
-                }
+                actor.stop();
             }
             executorService.shutdown();
+        }
+    }
+
+    @Override public void cancel() {
+        synchronized(lock) {
+            if(!state.equals(ActorSystemState.RUNNING)) {
+                throw new IllegalStateException("Actor system not started.");
+            }
+            state = ActorSystemState.STOPPED;
+            executorService.shutdownNow();
         }
     }
 
