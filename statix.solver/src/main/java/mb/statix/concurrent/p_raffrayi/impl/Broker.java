@@ -28,6 +28,7 @@ import mb.statix.concurrent.p_raffrayi.IResult;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
 public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
@@ -99,6 +100,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         } else {
             for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
                 dlm.async(unit)._fail();
+                addResult(unit.id(), null, new TypeCheckingFailedException());
             }
         }
     }
@@ -173,6 +175,10 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
         @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
             self.async(dlm).stopped(clock);
+        }
+
+        @Override public void failed() {
+            system.cancel();
         }
 
     }

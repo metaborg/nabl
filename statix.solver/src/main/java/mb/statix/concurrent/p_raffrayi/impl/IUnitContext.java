@@ -32,4 +32,6 @@ public interface IUnitContext<S, L, D, R> {
 
     void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
 
+    void failed();
+
 }

@@ -94,7 +94,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // IUnitProtocol interface, called by IUnit implementations
+    // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void _start(@Nullable S root) {
@@ -114,15 +114,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private void handleResult(R result, Throwable ex) {
         assertInState(UnitState.INIT, UnitState.ACTIVE);
-
         state = UnitState.DONE;
-
-        // FIXME Only do this once all wait-fors are gone!
-        if(ex != null) {
-            typeCheckerResult.completeExceptionally(ex);
-        } else {
-            typeCheckerResult.complete(result);
-        }
+        typeCheckerResult.complete(result, ex);
     }
 
     @Override public IFuture<IUnitResult<S, L, D, R>> _done() {
@@ -139,8 +132,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _fail() {
-        // TODO What to do here?
-        throw new IllegalStateException("Failed, do not know how to handle.");
+        self.stop();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -228,7 +220,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // IUnitProtocol interface, called by IUnit implementations
+    // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public final void _initRoot(S root, Iterable<L> labels, boolean shared) {
@@ -433,16 +425,22 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(state.equals(UnitState.INIT)) {
             return;
         }
+        // even when DONE it is important to report suspend, to
+        // have correct deadlock detection of querying units
 
         context.suspended(state, clock);
     }
 
     @Override public void stopped(IActor<?> self) {
-        if(!state.equals(UnitState.DONE)) {
+        if(state.equals(UnitState.INIT)) {
             state = UnitState.DONE;
-            // TODO Cleanup
+            return;
+        } else if(state.equals(UnitState.DONE)) {
+            context.stopped(clock);
+        } else {
+            state = UnitState.DONE;
+            context.failed();
         }
-        context.stopped(clock);
     }
 
     ///////////////////////////////////////////////////////////////////////////
