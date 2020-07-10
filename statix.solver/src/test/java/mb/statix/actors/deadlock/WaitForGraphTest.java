@@ -1,25 +1,33 @@
 package mb.statix.actors.deadlock;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.metaborg.util.unit.Unit.unit;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
+import org.metaborg.util.functions.Action1;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.Lists;
+
+import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.deadlock.Deadlock;
 import mb.statix.concurrent.actors.deadlock.WaitForGraph;
 
-// @formatter:off
 public class WaitForGraphTest {
 
-    private static final String NODE_1 = "1";
-    private static final String NODE_2 = "2";
-    private static final String NODE_3 = "3";
+    private final static int SETS = 13;
+
+    private static final Integer NODE_1 = 1;
+    private static final Integer NODE_2 = 2;
+    private static final Integer NODE_3 = 3;
 
     private static final String RES_A = "A";
     private static final String RES_B = "B";
@@ -30,489 +38,194 @@ public class WaitForGraphTest {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test public void testSelfDeadlock() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
+        trace1.delivered(NODE_1);
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 1);
+        trace1.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1);
     }
 
     @Test public void testSelfDeadlockTwoResources() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_B, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_B, NODE_1);
+        trace1.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
+        trace1.delivered(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
+        trace1.delivered(NODE_1);
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 2);
+        trace1.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1);
     }
 
     @Test public void testSelfDeadlockResourceTwice() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
+        trace1.delivered(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
+        trace1.delivered(NODE_1);
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 2);
+        trace1.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1);
     }
 
     @Test public void testSelfSuspendBeforeDeliver() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
 
-        assertActive(wfg.suspend(NODE_1, unit, clock1));
+        trace1.suspendNotDeadlocked();
+
+        runInterleavedSet(SETS, trace1);
     }
 
     @Test public void testSelfGrantBeforeSuspend() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
-        clock1 = clock1.sent(NODE_1);
+        trace1.delivered(NODE_1);
+        trace1.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_1);
-        wfg.granted(NODE_1, RES_A, NODE_1);
+        trace1.delivered(NODE_1);
+        trace1.granted(RES_A, NODE_1);
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
+        trace1.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Two node scenarios
     ///////////////////////////////////////////////////////////////////////////
 
-    @Test public void testDuoRequestResponseBeforeSuspends() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-                                             clock2 = clock2.delivered(NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-    }
-
     @Test public void testDuoRequestResponseRequestersWaitsForResponse() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
+        Trace trace2 = new Trace(NODE_2);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
 
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
+        trace1.suspendNotDeadlocked();
 
-                                             clock2 = clock2.delivered(NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
+        trace2.delivered(NODE_1);
+        trace2.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
+        trace1.delivered(NODE_2);
+        trace1.granted(RES_A, NODE_2);
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
+        trace1.suspendDeadlocked(new Object());
 
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-    }
+        trace2.suspendDeadlocked(new Object());
 
-    @Test public void testDuoRequestResponseRequestersWaitsAfterResponse() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-                                             clock2 = clock2.delivered(NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
-        assertActive(wfg.suspend(NODE_1, unit, clock1));
-
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
+        runInterleavedSet(SETS, trace1, trace2);
     }
 
     @Test public void testDuoRequestMultipleResponse() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
+        Trace trace2 = new Trace(NODE_2);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
 
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
+        trace1.suspendNotDeadlocked();
 
-                                             clock2 = clock2.delivered(NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
+        trace2.delivered(NODE_1);
+        trace2.sent(NODE_1);
 
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
+        trace1.delivered(NODE_2);
+        trace1.granted(RES_A, NODE_2);
 
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
+        trace1.suspendNotDeadlocked();
 
-                                             clock2 = clock2.delivered(NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
+        trace2.delivered(NODE_1);
+        trace2.sent(NODE_1);
 
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
+        trace2.suspendDeadlocked(new Object());
 
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
+        trace1.delivered(NODE_2);
+        trace1.granted(RES_A, NODE_2);
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
+        trace1.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1, trace2);
     }
 
-    @Test public void testDuoRequestResponseResponderSuspendsAfterRequest() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
+    @Test public void testDuoMutualRequestResponse() {
+        final Trace trace1 = new Trace(NODE_1);
+        final Trace trace2 = new Trace(NODE_2);
 
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
+        trace1.suspendNotDeadlocked();
 
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
+        trace2.waitFor(RES_B, NODE_1);
+        trace2.sent(NODE_1);
+        trace2.suspendNotDeadlocked();
 
-                               assertActive(wfg.suspend(NODE_2, unit, clock2));
+        trace1.delivered(NODE_2);
+        trace1.sent(NODE_2);
+        trace1.suspendNotDeadlocked();
 
-                                             clock2 = clock2.delivered(NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
+        trace2.delivered(NODE_1);
+        trace2.sent(NODE_1);
+        trace2.suspendNotDeadlocked();
 
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
+        trace1.delivered(NODE_2);
+        trace1.granted(RES_A, NODE_2);
 
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
+        trace1.suspendDeadlocked(new Object());
 
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
+        trace2.delivered(NODE_1);
+        trace2.granted(RES_B, NODE_1);
+
+        trace2.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1, trace2);
     }
 
-    @Test public void testDuoMutualRequestResponseDeadlock() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
+    @Test public void testDuoMutualRequestResponseDeadlocked() {
+        final Trace trace1 = new Trace(NODE_1);
+        final Trace trace2 = new Trace(NODE_2);
+        final Object marker = new Object();
 
-        /* A.1 */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
+        trace1.suspendNotDeadlocked();
 
-                                                                      /* B.1 */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
+        trace2.waitFor(RES_B, NODE_1);
+        trace2.sent(NODE_1);
+        trace2.suspendNotDeadlocked();
 
-        /* B.1 */
-        clock1 = clock1.delivered(NODE_2);
-                                                  
-                                                                      /* A.1 */
-                                             clock2 = clock2.delivered(NODE_1);
+        trace1.delivered(NODE_2);
 
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
+        trace2.delivered(NODE_1);
 
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 2, 2);
-    }
+        trace1.suspendDeadlocked(marker);
 
-    @Test public void testDuoMutualRequestResponseSuspendAtTheEnd() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
+        trace2.suspendDeadlocked(marker);
 
-        /* A.1 */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-                                                                      /* B.1 */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-        /* B.1 */
-        clock1 = clock1.delivered(NODE_2);
-        /* A.2 */
-        clock1 = clock1.sent(NODE_2);
-                                                  
-                                                                      /* A.1 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                                                      /* B.2 */ 
-                                                  clock2 = clock2.sent(NODE_1);
-
-        /* B.2 */
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-                                                                      /* A.2 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                            wfg.granted(NODE_2, RES_B, NODE_1);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
-    }
-
-    @Test public void testDuoMutualRequestResponseSuspendActivatesOther() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-        /* 1.i */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
-
-                                                                      /* 2.i */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-                                                                      /* 1.i */
-                                             clock2 = clock2.delivered(NODE_1);
-                                                                     /* 2.ii */ 
-                                                  clock2 = clock2.sent(NODE_1);
-
-                              assertWaiting(wfg.suspend(NODE_2, unit, clock2));
-                              assertFalse(wfg.isWaiting(NODE_1));
-                              // at this point, 1 and two have mutual wait-fors,
-                              // but 1 is activated here, so no deadlock is
-                              // reported
-                                                  
-        /* 2.i */
-        clock1 = clock1.delivered(NODE_2);
-        /* 1.ii */
-        clock1 = clock1.sent(NODE_2);
-                                                  
-        assertActive(wfg.suspend(NODE_1, unit, clock1));
-        assertFalse(wfg.isWaiting(NODE_2));
-        // at this point, 1 and two still have mutual
-        // wait-fors, but now 2 is also activated, and
-        // 1 remains active because 2.ii is not delivered
-
-                                                                     /* 1.ii */
-                                             clock2 = clock2.delivered(NODE_1);
-                                            wfg.granted(NODE_2, RES_B, NODE_1);
-
-        /* 2.ii */
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Interleavings of two node mutual request-reponse scenario
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Test public void testDuoMutualRequestResponseInterleaving1() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-        /* A.1 */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.1 */
-        clock1 = clock1.delivered(NODE_2);
-        /* A.2 */
-        clock1 = clock1.sent(NODE_2);
-                                                  
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.2 */
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-                                                                      /* B.1 */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-                                                                      /* A.1 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                                                      /* B.2 */ 
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-                                                                      /* A.2 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                            wfg.granted(NODE_2, RES_B, NODE_1);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
-    }
-
-    @Test public void testDuoMutualRequestResponseInterleaving2() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-                                                                      /* B.1 */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-        /* A.1 */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.1 */
-        clock1 = clock1.delivered(NODE_2);
-        /* A.2 */
-        clock1 = clock1.sent(NODE_2);
-                                                  
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.2 */
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-                                                                      /* A.1 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                                                      /* B.2 */ 
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-                                                                      /* A.2 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                            wfg.granted(NODE_2, RES_B, NODE_1);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
-    }
-
-    @Test public void testDuoMutualRequestResponseInterleaving3() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-                                                                      /* B.1 */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-        /* A.1 */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-                                                                      /* A.1 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                                                      /* B.2 */ 
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-                                                                      /* A.2 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                            wfg.granted(NODE_2, RES_B, NODE_1);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.1 */
-        clock1 = clock1.delivered(NODE_2);
-        /* A.2 */
-        clock1 = clock1.sent(NODE_2);
-                                                  
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.2 */
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-    }
-
-    @Test public void testDuoMutualRequestResponseInterleaving4() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-
-                                                                      /* B.1 */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_1);
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-                                                                      /* A.1 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                                                      /* B.2 */ 
-                                                  clock2 = clock2.sent(NODE_1);
-
-                        assertNotDeadlocked(wfg.suspend(NODE_2, unit, clock2));
-
-        /* A.1 */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
-
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.1 */
-        clock1 = clock1.delivered(NODE_2);
-        /* A.2 */
-        clock1 = clock1.sent(NODE_2);
-                                                  
-        assertNotDeadlocked(wfg.suspend(NODE_1, unit, clock1));
-
-        /* B.2 */
-        clock1 = clock1.delivered(NODE_2);
-        wfg.granted(NODE_1, RES_A, NODE_2);
-
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
-
-                                                                      /* A.2 */
-                                             clock2 = clock2.delivered(NODE_1);
-                                            wfg.granted(NODE_2, RES_B, NODE_1);
-
-                       assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
-
+        runInterleavedSet(SETS, trace1, trace2);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -520,125 +233,264 @@ public class WaitForGraphTest {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test public void testThreeNodeDeadlock() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-        Clock<String> clock3 = Clock.of();
+        Trace trace1 = new Trace(NODE_1);
+        Trace trace2 = new Trace(NODE_2);
+        Trace trace3 = new Trace(NODE_3);
+        Object marker = new Object();
 
         /* 1.i */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
 
-                                                         /* 2.i */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_3);
-                                               clock2 = clock2.sent(NODE_3);
-
-                                                                                                         /* 3.i */ 
-                                                                               wfg.waitFor(NODE_3, RES_C, NODE_1);
-                                                                                     clock3 = clock3.sent(NODE_1);
+        /* 2.i */
+        trace2.waitFor(RES_B, NODE_3);
+        trace2.sent(NODE_3);
 
         /* 3.i */
-        clock1 = clock1.delivered(NODE_3);
-                                                                                     
-                                                       /* 1.i */
-                                          clock2 = clock2.delivered(NODE_1);
-                                                                                     
-                                                                                                         /* 2.i */
-                                                                                clock3 = clock3.delivered(NODE_2);
-                                                                                     
-        assertWaiting(wfg.suspend(NODE_1, unit, clock1));
+        trace3.waitFor(RES_C, NODE_1);
+        trace3.sent(NODE_1);
 
-                                                                 assertWaiting(wfg.suspend(NODE_3, unit, clock3));
-                                                  
-                                   assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 3, 3);
+        /* 3.i */
+        trace1.delivered(NODE_3);
 
+        /* 1.i */
+        trace2.delivered(NODE_1);
+
+        /* 2.i */
+        trace3.delivered(NODE_2);
+
+        trace1.suspendDeadlocked(marker);
+
+        trace3.suspendDeadlocked(marker);
+
+        trace2.suspendDeadlocked(marker);
+
+        runInterleavedSet(SETS, trace1, trace2, trace3);
     }
 
-    @Test public void testThreeNodeChasingSuspendAtTheEnd() {
-        final WaitForGraph<String, Unit, String> wfg = new WaitForGraph<>();
-        Clock<String> clock1 = Clock.of();
-        Clock<String> clock2 = Clock.of();
-        Clock<String> clock3 = Clock.of();
+    @Test public void testThreeNodeChasing() {
+        Trace trace1 = new Trace(NODE_1);
+        Trace trace2 = new Trace(NODE_2);
+        Trace trace3 = new Trace(NODE_3);
 
         /* 1.i  */
-        wfg.waitFor(NODE_1, RES_A, NODE_2);
-        clock1 = clock1.sent(NODE_2);
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
 
-                                                       /* 2.i  */ 
-                                            wfg.waitFor(NODE_2, RES_B, NODE_3);
-                                               clock2 = clock2.sent(NODE_3);
-
-                                                                                                        /* 3.i  */
-                                                                               wfg.waitFor(NODE_3, RES_C, NODE_1);
-                                                                                                        /* 3.i  */
-                                                                                     clock3 = clock3.sent(NODE_1);
+        /* 2.i  */
+        trace2.waitFor(RES_B, NODE_3);
+        trace2.sent(NODE_3);
 
         /* 3.i  */
-        clock1 = clock1.delivered(NODE_3);
+        trace3.waitFor(RES_C, NODE_1);
+        /* 3.i  */
+        trace3.sent(NODE_1);
+
+        /* 3.i  */
+        trace1.delivered(NODE_3);
         /* 1.ii */
-        clock1 = clock1.sent(NODE_3);
-                                                                                     
-                                                       /* 1.i  */
-                                          clock2 = clock2.delivered(NODE_1);
-                                                       /* 2.ii */
-                                             clock2 = clock2.sent(NODE_1);
-                                                                                     
-                                                                                                        /* 2.i  */
-                                                                                clock3 = clock3.delivered(NODE_2);
-                                                                                                        /* 3.ii */
-                                                                                     clock3 = clock3.sent(NODE_2);
-                                                                                     
+        trace1.sent(NODE_3);
+
+        /* 1.i  */
+        trace2.delivered(NODE_1);
         /* 2.ii */
-        clock1 = clock1.delivered(NODE_2);
+        trace2.sent(NODE_1);
+
+        /* 2.i  */
+        trace3.delivered(NODE_2);
+        /* 3.ii */
+        trace3.sent(NODE_2);
+
         /* 2.ii */
-        wfg.granted(NODE_1, RES_A, NODE_2);
+        trace1.delivered(NODE_2);
+        /* 2.ii */
+        trace1.granted(RES_A, NODE_2);
 
-                                                       /* 3.ii */
-                                           clock2 = clock2.delivered(NODE_3);
-                                                       /* 3.ii */
-                                           wfg.granted(NODE_2, RES_A, NODE_3);
+        /* 3.ii */
+        trace2.delivered(NODE_3);
+        /* 3.ii */
+        trace2.granted(RES_A, NODE_3);
 
-                                                                                                        /* 1.ii */
-                                                                                clock3 = clock3.delivered(NODE_1);
-                                                                                                        /* 1.ii */
-                                                                               wfg.granted(NODE_3, RES_A, NODE_1);
-                                                                                     
-        assertDeadlock(wfg.suspend(NODE_1, unit, clock1), 1, 0);
+        /* 1.ii */
+        trace3.delivered(NODE_1);
+        /* 1.ii */
+        trace3.granted(RES_A, NODE_1);
 
-                                   assertDeadlock(wfg.suspend(NODE_2, unit, clock2), 1, 0);
+        trace1.suspendDeadlocked(new Object());
 
-                                                                 assertDeadlock(wfg.suspend(NODE_3, unit, clock3), 1, 0);
-                                                  
+        trace2.suspendDeadlocked(new Object());
+
+        trace3.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1, trace2, trace3);
     }
-    
+
+    @Test public void testThreeNodeTransitiveWait() {
+        Trace trace1 = new Trace(NODE_1);
+        Trace trace2 = new Trace(NODE_2);
+        Trace trace3 = new Trace(NODE_3);
+
+        trace2.waitFor(RES_A, NODE_3);
+        trace2.sent(NODE_3);
+
+        trace3.delivered(NODE_2);
+
+        trace1.waitFor(RES_A, NODE_2);
+        trace1.sent(NODE_2);
+
+        trace2.delivered(NODE_1);
+        trace2.suspendNotDeadlocked();
+
+        trace3.sent(NODE_2);
+        trace3.suspendDeadlocked(new Object());
+
+        trace1.suspendNotDeadlocked();
+
+        trace2.delivered(NODE_3);
+        trace2.granted(RES_A, NODE_3);
+
+        trace2.sent(NODE_1);
+        trace2.suspendDeadlocked(new Object());
+
+        trace1.delivered(NODE_2);
+        trace1.granted(RES_A, NODE_2);
+
+        trace1.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1, trace2, trace3);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
-    // Assertions
+    // Trace
     ///////////////////////////////////////////////////////////////////////////
 
-    private void assertActive(Optional<Optional<Deadlock<String, Unit, String>>> suspend) {
-        if(suspend.isPresent()) {
-            throw new AssertionError("Expected active, but got " + (suspend.get().isPresent() ? "deadlocked" : "waiting"));
+    private static class Trace {
+
+        private final Integer node;
+        private final List<Step> steps;
+        private MultiSet.Immutable<Object> markers;
+
+        public Trace(Integer node) {
+            this.node = node;
+            this.steps = new ArrayList<>();
+            this.markers = MultiSet.Immutable.of();
+        }
+
+        public Iterable<Step> steps() {
+            return steps;
+        }
+
+        public MultiSet.Immutable<Object> markers() {
+            return markers;
+        }
+
+        public void sent(Integer reciever) {
+            steps.add((wfg, clock, markers, logger) -> {
+                logger.apply("sent to " + reciever);
+                return clock.sent(reciever);
+            });
+        }
+
+        public void delivered(Integer sender) {
+            steps.add((wfg, clock, markers, logger) -> {
+                logger.apply(node + " delivered from " + sender);
+                return clock.delivered(sender);
+            });
+        }
+
+        public void waitFor(String token, Integer other) {
+            steps.add((wfg, clock, markers, logger) -> {
+                logger.apply(node + " waits for " + other + "/" + token);
+                wfg.waitFor(node, token, other);
+                return clock;
+            });
+        }
+
+        public void granted(String token, Integer other) {
+            steps.add((wfg, clock, markers, logger) -> {
+                logger.apply(node + " was granted " + other + "/" + token);
+                wfg.granted(node, token, other);
+                return clock;
+            });
+        }
+
+        public void suspendNotDeadlocked() {
+            steps.add((wfg, clock, markers, logger) -> {
+                // FIXME these can be optional
+                logger.apply(node + " suspended");
+                final Optional<Optional<Deadlock<Integer, Unit, String>>> suspend = wfg.suspend(node, unit, clock);
+                if(suspend.isPresent() && suspend.get().isPresent()) {
+                    throw new AssertionError("Unexpected deadlock");
+                }
+                return clock;
+            });
+        }
+
+        public void suspendDeadlocked(Object marker) {
+            markers = markers.add(marker);
+            steps.add((wfg, clock, markers, logger) -> {
+                logger.apply(node + " suspended");
+                final Optional<Optional<Deadlock<Integer, Unit, String>>> suspend = wfg.suspend(node, unit, clock);
+                if(markers.remove(marker) == 0 && (!suspend.isPresent() || !suspend.get().isPresent())) {
+                    throw new AssertionError("Expected deadlock, got " + (!suspend.isPresent() ? "active" : "waiting"));
+                }
+                return clock;
+            });
+        }
+
+    }
+
+    private interface Step {
+
+        Clock<Integer> step(WaitForGraph<Integer, Unit, String> wfg, Clock<Integer> clock,
+                MultiSet.Transient<Object> markers, Action1<String> logger);
+
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Exectute
+    ///////////////////////////////////////////////////////////////////////////
+
+    @SafeVarargs private final void runInterleaved(Trace... traces) {
+
+        final LinkedList<LinkedList<Step>> nodes = Arrays.stream(traces).map(tr -> Lists.newLinkedList(tr.steps()))
+                .filter(tr -> !tr.isEmpty()).collect(Collectors.toCollection(LinkedList::new));
+
+        final MultiSet.Transient<Object> markers = MultiSet.Transient.of();
+        Arrays.stream(traces).forEach(tr -> markers.addAll(tr.markers()));
+
+        final LinkedList<Clock<Integer>> clocks =
+                nodes.stream().map(tr -> Clock.<Integer>of()).collect(Collectors.toCollection(LinkedList::new));
+
+        final WaitForGraph<Integer, Unit, String> wfg = new WaitForGraph<>();
+        final List<String> log = Lists.newArrayList();
+
+        final Random rnd = new Random();
+        while(!nodes.isEmpty()) {
+            final int idx = rnd.nextInt(nodes.size());
+
+            final LinkedList<Step> steps = nodes.get(idx);
+            final Clock<Integer> clock = clocks.get(idx);
+
+            final Step step = steps.remove();
+            try {
+                Clock<Integer> newClock = step.step(wfg, clock, markers, log::add);
+                clocks.set(idx, newClock);
+            } catch(AssertionError ex) {
+                throw new AssertionError(ex.getMessage() + "\n" + log.stream().collect(Collectors.joining("\n")));
+            }
+
+            if(steps.isEmpty()) {
+                nodes.remove(idx);
+                clocks.remove(idx);
+            }
         }
     }
 
-    private void assertWaiting(Optional<Optional<Deadlock<String, Unit, String>>> suspend) {
-        assertTrue("Expected waiting, but got active", suspend.isPresent());
-        assertFalse("Expected waiting, but got deadlocked", suspend.get().isPresent());
-    }
-
-    private void assertNotDeadlocked(Optional<Optional<Deadlock<String, Unit, String>>> suspend) {
-        if(suspend.isPresent() && suspend.get().isPresent()) {
-            throw new AssertionError("Expected not deadlocked, but is deadlocked");
+    @SafeVarargs private final void runInterleavedSet(int n, Trace... traces) {
+        for(int i = 0; i < n; i++) {
+            runInterleaved(traces);
         }
-    }
-
-    private void assertDeadlock(Optional<Optional<Deadlock<String, Unit, String>>> suspend, int expectedNodes,
-            int expectedWaitFors) {
-        assertTrue("Expected deadlocked, but got active", suspend.isPresent());
-        assertTrue("Expected deadlock, but got waiting", suspend.get().isPresent());
-        assertEquals(expectedNodes, suspend.get().get().nodes().size());
-        assertEquals(expectedWaitFors, suspend.get().get().edges().size());
     }
 
 }
-// @formatter:on
