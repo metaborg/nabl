@@ -81,12 +81,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         return context.add(id, type, supplier);
     }
 
-    private void put(IMessage<T> message) {
+    private void put(IMessage<T> message) throws ActorStoppedException {
         synchronized(lock) {
             if(state.equals(ActorState.STOPPED)) {
                 logger.warn("{} received message when already stopped", id);
-                // FIXME Ignore, or signal error?
-                return;
+                throw new ActorStoppedException("Actor " + this + " not running.");
             }
             messages.add(message);
             lock.notify();
@@ -150,8 +149,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message =
-                                new Invoke(null, method, args, new AsyncCompletable<>(this.context.executor(), result));
+                        message = new Invoke(null, method, args,
+                                IReturn.of(new AsyncCompletable<>(this.context.executor(), result)));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -260,7 +259,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @Override public void stop() {
-        put(new Stop());
+        try {
+            put(new Stop());
+        } catch(ActorStoppedException ex) {
+            // actor already stopped, do nothing
+        }
     }
 
     void cancel() {
@@ -291,15 +294,26 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     // Invoke message implementation
     ///////////////////////////////////////////////////////////////////////////
 
+    @FunctionalInterface
+    private interface IReturn<U> {
+
+        void complete(U value, Throwable ex) throws ActorException;
+
+        public static <U> IReturn<U> of(ICompletable<U> completable) {
+            return completable::complete;
+        }
+
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private class Invoke implements IMessage<T> {
 
         private final IActorRef<?> sender;
         private final Method method;
         private final Object[] args;
-        private final ICompletable result;
+        private final IReturn result;
 
-        public Invoke(IActorRef<?> sender, Method method, Object[] args, ICompletable<?> result) {
+        public Invoke(IActorRef<?> sender, Method method, Object[] args, IReturn<?> result) {
             this.sender = sender;
             this.method = method;
             this.args = args;
@@ -324,13 +338,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     // NOTE The completion runs on the thread of the receiving actor.
                     //      The different async(...) cases dispatch the result as a
                     //      message on the thread of the sender, or as a job on the executor.
-                    ((IFuture<?>) returnValue).whenComplete((r, ex) -> {
-                        if(ex != null) {
-                            result.completeExceptionally(ex);
-                        } else {
-                            result.complete(r);
-                        }
-                    });
+                    ((IFuture<?>) returnValue).whenComplete(result::complete);
                 }
             } catch(ReflectiveOperationException | IllegalArgumentException ex) {
                 throw new ActorException("Dispatch failed.", ex);
@@ -345,8 +353,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
     }
 
-    @SuppressWarnings("rawtypes")
-    private class Return<U> implements ICompletable<U>, IMessage {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private class Return<U> implements IMessage, IReturn<U> {
 
         private final Actor<?> sender;
         private final Method method;
@@ -362,10 +370,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         ///////////////////////////////////////////////////////////////////////
-        // Completable -- called on the receiver's thread
+        // complete -- called on the receiver's thread
         ///////////////////////////////////////////////////////////////////////
 
-        @SuppressWarnings({ "unchecked" }) @Override public void complete(U value, Throwable ex) {
+        @Override public void complete(U value, Throwable ex) throws ActorException {
             this.value = value;
             this.ex = ex;
 
@@ -379,10 +387,6 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 }
             }
 
-        }
-
-        @Override public boolean isDone() {
-            return completable.isDone();
         }
 
         ///////////////////////////////////////////////////////////////////////

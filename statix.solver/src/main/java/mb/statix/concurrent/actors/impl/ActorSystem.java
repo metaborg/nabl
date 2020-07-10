@@ -25,13 +25,13 @@ public class ActorSystem implements IActorSystem {
     private final Object lock = new Object();
     private final Map<String, Actor<?>> actors;
     private final ExecutorService executorService;
-    private volatile boolean running;
+    private volatile ActorSystemState state;
     private final IActorContext context;
 
     public ActorSystem() {
         this.actors = Maps.newHashMap();
         this.executorService = Executors.newCachedThreadPool();
-        this.running = false;
+        this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
 
@@ -44,11 +44,14 @@ public class ActorSystem implements IActorSystem {
         logger.info("add actor {}", id);
         final Actor<T> actor = new Actor<>(context, id, type, supplier);
         synchronized(lock) {
+            if(state.equals(ActorSystemState.STOPPED)) {
+                throw new IllegalStateException("Actor system already stopped.");
+            }
             if(actors.containsKey(id)) {
                 throw new IllegalArgumentException("Actor with id " + id + " already exists.");
             }
             actors.put(id, actor);
-            if(running) {
+            if(state.equals(ActorSystemState.RUNNING)) {
                 actor.run(executorService);
             }
         }
@@ -67,13 +70,13 @@ public class ActorSystem implements IActorSystem {
     @Override public void start() {
         logger.info("start system");
         synchronized(lock) {
-            if(running) {
-                throw new IllegalStateException("Actor system already running.");
+            if(!state.equals(ActorSystemState.INIT)) {
+                throw new IllegalStateException("Actor system already started.");
             }
+            state = ActorSystemState.RUNNING;
             for(Actor<?> actor : actors.values()) {
                 actor.run(executorService);
             }
-            running = true;
         }
         logger.info("started system");
     }
@@ -88,9 +91,10 @@ public class ActorSystem implements IActorSystem {
 
     private void stop(boolean force) {
         synchronized(lock) {
-            if(!running) {
-                throw new IllegalStateException("Actor system not running.");
+            if(!state.equals(ActorSystemState.RUNNING)) {
+                throw new IllegalStateException("Actor system not started.");
             }
+            state = ActorSystemState.STOPPED;
             for(Actor<?> actor : actors.values()) {
                 if(force) {
                     actor.cancel();
