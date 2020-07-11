@@ -479,7 +479,7 @@ public class StatixSolver {
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm datumTerm = c.datumTerm();
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
-                final List<ITerm> labels = getOpenEdges(scopeTerm);
+                final Set<ITerm> labels = getOpenEdges(scopeTerm);
 
                 final Scope scope =
                         scopeGraph.freshScope(name, labels, ImmutableList.of(Access.INTERNAL, Access.EXTERNAL), false);
@@ -708,7 +708,7 @@ public class StatixSolver {
 
     private Set.Transient<CriticalEdge> delayedCloses = Set.Transient.of();
 
-    private List<ITerm> getOpenEdges(ITerm varOrScope) {
+    private Set.Immutable<ITerm> getOpenEdges(ITerm varOrScope) {
         // we must include queued edge closes here, to ensure we registered the open
         // edge when the close is released
         final List<EdgeOrData<ITerm>> openEdges =
@@ -718,7 +718,7 @@ public class StatixSolver {
                 .orElse(Stream.<EdgeOrData<ITerm>>empty()).collect(Collectors.toList());
         return stream(Iterables.concat(openEdges, queuedEdges)).<ITerm>flatMap(eod -> {
             return eod.match(acc -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
-        }).collect(Collectors.toList());
+        }).collect(CapsuleCollectors.toSet());
     }
 
     private void closeEdge(CriticalEdge criticalEdge) throws InterruptedException {
