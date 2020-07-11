@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -19,8 +20,8 @@ import com.google.common.collect.Queues;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.MessageTags;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.deadlock.Relevant;
 import mb.statix.concurrent.actors.futures.AsyncCompletable;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
@@ -134,12 +135,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     logger.info("send {} message {}", Actor.this, message);
                     put(message, false);
 
-                    final Relevant marker;
-                    if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                        sender.forEachMonitor(monitor -> {
-                            monitor.sent(sender, this, ImmutableSet.copyOf(marker.value()));
-                        });
-                    }
+                    final Set<String> tags = tags(method);
+                    sender.forEachMonitor(monitor -> {
+                        monitor.sent(sender, this, tags);
+                    });
 
                     return returnValue;
                 });
@@ -300,6 +299,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
     }
 
+    private Set<String> tags(Method method) {
+        return Optional.ofNullable(method.getAnnotation(MessageTags.class))
+                .map(tags -> ImmutableSet.copyOf(tags.value())).orElse(ImmutableSet.of());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // toString
     ///////////////////////////////////////////////////////////////////////////
@@ -345,12 +349,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 method.setAccessible(true);
                 final Object returnValue = method.invoke(impl, args);
 
-                final Relevant marker;
-                if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                    forEachMonitor(monitor -> {
-                        monitor.delivered(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
-                    });
-                }
+                final Set<String> tags = tags(method);
+                forEachMonitor(monitor -> {
+                    monitor.delivered(Actor.this, sender, tags);
+                });
 
                 if(result != null) {
                     // NOTE The completion runs on the thread of the receiving actor.
@@ -402,12 +404,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             logger.info("send {} message {}", sender, this);
             sender.put(this, false);
 
-            final Relevant marker;
-            if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                forEachMonitor(monitor -> {
-                    monitor.sent(Actor.this, sender, ImmutableSet.copyOf(marker.value()));
-                });
-            }
+            final Set<String> tags = tags(method);
+            forEachMonitor(monitor -> {
+                monitor.sent(Actor.this, sender, tags);
+            });
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -422,12 +422,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
                 completable.complete(value, ex);
 
-                final Relevant marker;
-                if((marker = method.getAnnotation(Relevant.class)) != null && marker.value().length > 0) {
-                    sender.forEachMonitor(monitor -> {
-                        monitor.delivered(sender, Actor.this, ImmutableSet.copyOf(marker.value()));
-                    });
-                }
+                final Set<String> tags = tags(method);
+                sender.forEachMonitor(monitor -> {
+                    monitor.delivered(sender, Actor.this, tags);
+                });
 
 
             } finally {

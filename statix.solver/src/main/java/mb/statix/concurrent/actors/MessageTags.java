@@ -1,4 +1,4 @@
-package mb.statix.concurrent.actors.deadlock;
+package mb.statix.concurrent.actors;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target(METHOD)
 @Inherited
-public @interface Relevant {
+public @interface MessageTags {
 
     public String[] value();
 
