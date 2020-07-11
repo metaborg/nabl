@@ -28,7 +28,6 @@ import mb.statix.concurrent.p_raffrayi.IResult;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
 public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
@@ -63,7 +62,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
         final IActor<IUnit<S, L, D, R>> unit = add(id, null, unitChecker);
-        system.async(unit)._start(null);
+        system.async(unit)._start(null).whenComplete((r, ex) -> addResult(unit.id(), r, ex));
     }
 
     private IActor<IUnit<S, L, D, R>> add(String id, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
@@ -80,7 +79,6 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         synchronized(lock) {
             if(ex != null) {
                 result.completeExceptionally(ex);
-                // TODO Existing units may still complete results
                 system.stop();
             } else {
                 results.put(id, unitResult);
@@ -96,11 +94,10 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, UnitState, IWaitFor<S, L, D>> deadlock) {
         if(deadlock.edges().isEmpty()) {
             final IActorRef<? extends IUnit<S, L, D, R>> unit = Iterables.getOnlyElement(deadlock.nodes().keySet());
-            dlm.async(unit)._done().whenComplete((r, ex) -> addResult(unit.id(), r, ex));
+            dlm.async(unit)._done();
         } else {
             for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
                 dlm.async(unit)._fail();
-                addResult(unit.id(), null, new TypeCheckingFailedException());
             }
         }
     }
@@ -157,7 +154,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         @Override public IActorRef<? extends IUnit<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
                 S root) {
             final IActor<IUnit<S, L, D, R>> unit = Broker.this.add(id, self, unitChecker);
-            self.async(unit)._start(root);
+            self.async(unit)._start(root).whenComplete((r, ex) -> addResult(unit.id(), r, ex));
             return unit;
         }
 
@@ -175,10 +172,6 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
         @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
             self.async(dlm).stopped(clock);
-        }
-
-        @Override public void failed() {
-            system.cancel();
         }
 
     }

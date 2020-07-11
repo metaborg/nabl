@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
+import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.Optional;
 
@@ -29,6 +30,7 @@ import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseEdge;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
@@ -60,7 +62,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final IUnit<S, L, D, R> local;
     private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
     private UnitState state;
+
     private final CompletableFuture<R> typeCheckerResult;
+    private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     private Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     private final MultiSet.Transient<S> sharedScopes;
@@ -80,7 +84,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.local = self.async(self);
         this.clock = Clock.of();
         this.state = UnitState.INIT;
+
         this.typeCheckerResult = new CompletableFuture<>();
+        this.unitResult = new CompletableFuture<>();
 
         this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of(edgeLabels));
         this.sharedScopes = MultiSet.Transient.of();
@@ -97,7 +103,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _start(@Nullable S root) {
+    @Override public IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root) {
         assertInState(UnitState.INIT);
 
         state = UnitState.ACTIVE;
@@ -110,6 +116,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         // can immediately call methods, that are executed synchronously
 
         this.typeChecker.run(this, root).whenComplete(this::handleResult);
+
+        return unitResult;
     }
 
     private void handleResult(R result, Throwable ex) {
@@ -118,9 +126,19 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         typeCheckerResult.complete(result, ex);
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, R>> _done() {
+    private void fail() {
+        final TypeCheckingFailedException ex = new TypeCheckingFailedException();
+        // FIXME Fail delays? Note that this is called from stopped() as well,
+        //       when the actor is not running and (local) messages cannot be
+        //       processed.
+        unitResult.completeExceptionally(ex);
+    }
+
+    @Override public void _done() {
         assertInState(UnitState.DONE);
-        final CompletableFuture<IUnitResult<S, L, D, R>> unitResult = new CompletableFuture<>();
+
+        // typeCheckerResult should be completed here, since we go to DONE only
+        // in handleResult
         typeCheckerResult.whenComplete((analysis, ex) -> {
             if(ex != null) {
                 unitResult.completeExceptionally(ex);
@@ -128,11 +146,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 unitResult.complete(UnitResult.of(analysis, scopeGraph.get()));
             }
         });
-        return unitResult;
     }
 
     @Override public void _fail() {
-        self.stop();
+        assertInState(UnitState.INIT, UnitState.ACTIVE);
+        fail();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -354,8 +372,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         });
     }
 
-    @Override public final void _complete(ICompletable<Void> future) {
-        future.complete(null);
+    @Override public final <U> void _complete(ICompletable<U> future, U value, Throwable exception) {
+        future.complete(value, exception);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -369,7 +387,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 final ICompletable<Void> future = entry.getValue();
                 logger.info("released {} on {}(/{})", future, scope, edge);
                 delays.remove(scope, edge, future);
-                local._complete(future);
+                local._complete(future, null, null);
             }
         }
     }
@@ -378,7 +396,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         for(ICompletable<Void> future : delays.get(scope, edge)) {
             logger.info("released {} on {}/{}", future, scope, edge);
             delays.remove(scope, edge, future);
-            local._complete(future);
+            local._complete(future, null, null);
         }
     }
 
@@ -432,15 +450,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void stopped(IActor<?> self) {
-        if(state.equals(UnitState.INIT)) {
+        if(!state.equals(UnitState.DONE)) {
             state = UnitState.DONE;
-            return;
-        } else if(state.equals(UnitState.DONE)) {
-            context.stopped(clock);
-        } else {
-            state = UnitState.DONE;
-            context.failed();
+            fail();
+            unitResult.completeExceptionally(new TypeCheckingFailedException());
         }
+
+        context.stopped(clock);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -453,7 +469,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 return;
             }
         }
-        throw new IllegalStateException("Expected state " + states + ", was " + state);
+        throw new IllegalStateException("Expected state " + Arrays.toString(states) + ", was " + state);
     }
 
     private void assertShared(S scope) {

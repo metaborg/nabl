@@ -110,8 +110,9 @@ public class WaitForGraph<N, S, T> {
             final int received = receiverClock.count(node);
             if(sent > received) {
                 this.knownMessagesTo.put(receiver, receiverClock.set(node, sent));
-                waitingNodes.__remove(receiver);
-                logger.info("{} activates {} (sent {} > received {})", node, receiver, sent, received);
+                if(waitingNodes.__remove(receiver) != null) {
+                    logger.info("{} activates {} (sent {} > received {})", node, receiver, sent, received);
+                }
             }
         }
 
