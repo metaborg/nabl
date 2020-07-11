@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.unit.Unit;
@@ -228,6 +229,41 @@ public class WaitForGraphTest {
         runInterleavedSet(SETS, trace1, trace2);
     }
 
+    /**
+     * In this scenario, node 1 is deadlocked, but can still answer node 2. But, node 2's request does not help node 1
+     * to make progress, so it is still deadlocked after the exchange. In this case, deadlock can be reported twice.
+     */
+    @Test @Ignore public void testDuoRequestResponseDeadlockReportedTwice() {
+        Trace trace1 = new Trace(NODE_1);
+        Trace trace2 = new Trace(NODE_2);
+
+        Object marker1 = new Object();
+
+        trace1.waitFor(RES_A, NODE_1);
+        trace1.sent(NODE_1);
+
+        trace1.delivered(NODE_1);
+
+        trace1.suspendDeadlocked(marker1);
+
+        trace2.waitFor(RES_B, NODE_1);
+        trace2.sent(NODE_1);
+
+        trace2.suspendNotDeadlocked();
+
+        trace1.delivered(NODE_2);
+        trace1.sent(NODE_2);
+
+        trace1.suspendDeadlocked(marker1);
+
+        trace2.delivered(NODE_1);
+        trace2.granted(RES_B, NODE_1);
+
+        trace2.suspendDeadlocked(new Object());
+
+        runInterleavedSet(SETS, trace1, trace2);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Three node scenarios
     ///////////////////////////////////////////////////////////////////////////
@@ -386,7 +422,7 @@ public class WaitForGraphTest {
 
         public void sent(Integer reciever) {
             steps.add((wfg, clock, markers, logger) -> {
-                logger.apply("sent to " + reciever);
+                logger.apply(node + " sent to " + reciever);
                 return clock.sent(reciever);
             });
         }
@@ -395,6 +431,13 @@ public class WaitForGraphTest {
             steps.add((wfg, clock, markers, logger) -> {
                 logger.apply(node + " delivered from " + sender);
                 return clock.delivered(sender);
+            });
+        }
+
+        public void internal() {
+            steps.add((wfg, clock, markers, logger) -> {
+                logger.apply(node + " internal");
+                return clock.internal();
             });
         }
 
@@ -419,7 +462,8 @@ public class WaitForGraphTest {
                 // FIXME these can be optional
                 logger.apply(node + " suspended");
                 final Optional<Optional<Deadlock<Integer, Unit, String>>> suspend = wfg.suspend(node, unit, clock);
-                if(suspend.isPresent() && suspend.get().isPresent()) {
+                final boolean isDeadlocked = suspend.isPresent() && suspend.get().isPresent();
+                if(isDeadlocked) {
                     throw new AssertionError("Unexpected deadlock");
                 }
                 return clock;
@@ -431,8 +475,18 @@ public class WaitForGraphTest {
             steps.add((wfg, clock, markers, logger) -> {
                 logger.apply(node + " suspended");
                 final Optional<Optional<Deadlock<Integer, Unit, String>>> suspend = wfg.suspend(node, unit, clock);
-                if(markers.remove(marker) == 0 && (!suspend.isPresent() || !suspend.get().isPresent())) {
-                    throw new AssertionError("Expected deadlock, got " + (!suspend.isPresent() ? "active" : "waiting"));
+                final boolean isDeadlocked = suspend.isPresent() && suspend.get().isPresent();
+                if(isDeadlocked) {
+                    if(!markers.contains(marker)) {
+                        throw new AssertionError("Deadlock reported twice.");
+                    } else {
+                        markers.removeAll(marker);
+                    }
+                } else {
+                    if(markers.contains(marker) && markers.remove(marker) == 0) {
+                        throw new AssertionError(
+                                "Expected deadlock, got " + (!suspend.isPresent() ? "active" : "waiting"));
+                    }
                 }
                 return clock;
             });
