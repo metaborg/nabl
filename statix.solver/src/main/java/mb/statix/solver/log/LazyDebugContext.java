@@ -20,10 +20,6 @@ public class LazyDebugContext implements IDebugContext {
         this.log = log;
     }
 
-    @Override public Level getLevel() {
-        return debug.getLevel();
-    }
-
     @Override public int getDepth() {
         return debug.getDepth() + offset;
     }
@@ -32,19 +28,23 @@ public class LazyDebugContext implements IDebugContext {
         return debug.isEnabled(level);
     }
 
+    @Override public Level getDebugLevel() {
+        return debug.getDebugLevel();
+    }
+
     @Override public IDebugContext subContext() {
         return new LazyDebugContext(debug, offset + 1, log);
     }
 
-    @Override public void info(String fmt, Object... args) {
-        if(isEnabled(Level.Info)) {
-            log.append(Level.Info, prefix() + fmt, null, args);
+    @Override public void debug(String fmt, Object... args) {
+        if(isEnabled(getDebugLevel())) {
+            log.append(getDebugLevel(), prefix() + fmt, null, args);
         }
     }
 
-    @Override public void info(String fmt, Throwable t, Object... args) {
-        if(isEnabled(Level.Info)) {
-            log.append(Level.Info, prefix() + fmt, t, args);
+    @Override public void debug(String fmt, Throwable t, Object... args) {
+        if(isEnabled(getDebugLevel())) {
+            log.append(getDebugLevel(), prefix() + fmt, t, args);
         }
     }
 

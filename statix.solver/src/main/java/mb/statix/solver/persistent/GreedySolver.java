@@ -140,7 +140,7 @@ class GreedySolver {
     }
 
     public SolverResult solve() throws InterruptedException {
-        debug.info("Solving constraints");
+        debug.debug("Solving constraints");
 
         IState.Immutable state = this.initialState;
 
@@ -155,10 +155,10 @@ class GreedySolver {
         }
 
         final Map<IConstraint, Delay> delayed = constraints.delayed();
-        debug.info("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
+        debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
         for(Delay delayedConstraint : delayed.values()) {
-            debug.info(" * {}", delayedConstraint.toString());
+            debug.debug(" * {}", delayedConstraint.toString());
         }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
@@ -183,9 +183,9 @@ class GreedySolver {
         // no constraints::addAll, instead recurse immediately below
         completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
         if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
-            subDebug.info("Simplified to:");
+            subDebug.debug("Simplified to:");
             for(IConstraint newConstraint : newConstraints) {
-                subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
+                subDebug.debug(" * {}", Solver.toString(newConstraint, unifier));
             }
         }
 
@@ -193,9 +193,9 @@ class GreedySolver {
         delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
         completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
         if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
-            subDebug.info("Delayed:");
+            subDebug.debug("Delayed:");
             for(IConstraint delayedConstraint : delayedConstraints.values()) {
-                subDebug.info(" * {}", Solver.toString(delayedConstraint, unifier));
+                subDebug.debug(" * {}", Solver.toString(delayedConstraint, unifier));
             }
         }
 
@@ -250,7 +250,7 @@ class GreedySolver {
         }
 
         if(debug.isEnabled(Level.Info)) {
-            debug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+            debug.debug("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
         }
 
         // solve
@@ -297,7 +297,7 @@ class GreedySolver {
                     final IUniDisunifier.Result<IUnifier.Immutable> result;
                     if((result = unifier.unify(term1, term2).orElse(null)) != null) {
                         if(debug.isEnabled(Level.Info)) {
-                            debug.info("Unification succeeded: {}", result.result());
+                            debug.debug("Unification succeeded: {}", result.result());
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars = result.result().varSet();
@@ -305,14 +305,14 @@ class GreedySolver {
                                 ImmutableMap.of(), fuel);
                     } else {
                         if(debug.isEnabled(Level.Info)) {
-                            debug.info("Unification failed: {} != {}", unifier.toString(term1),
+                            debug.debug("Unification failed: {} != {}", unifier.toString(term1),
                                     unifier.toString(term2));
                         }
                         return fail(c, state);
                     }
                 } catch(OccursException e) {
                     if(debug.isEnabled(Level.Info)) {
-                        debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                        debug.debug("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
                     }
                     return fail(c, state);
                 }
@@ -346,7 +346,7 @@ class GreedySolver {
                 final IUniDisunifier.Result<Optional<Diseq>> result;
                 if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
                     if(debug.isEnabled(Level.Info)) {
-                        debug.info("Disunification succeeded: {}", result);
+                        debug.debug("Disunification succeeded: {}", result);
                     }
                     final IState.Immutable newState = state.withUnifier(result.unifier());
                     final Set<ITermVar> updatedVars =
@@ -355,7 +355,7 @@ class GreedySolver {
                             fuel);
                 } else {
                     if(debug.isEnabled(Level.Info)) {
-                        debug.info("Disunification failed");
+                        debug.debug("Disunification failed");
                     }
                     return fail(c, state);
                 }
@@ -415,13 +415,13 @@ class GreedySolver {
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                     return successNew(c, state, ImmutableList.of(C), fuel);
                 } catch(IncompleteException e) {
-                    params.debug().info("Query resolution delayed: {}", e.getMessage());
+                    params.debug().debug("Query resolution delayed: {}", e.getMessage());
                     return successDelay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), fuel);
                 } catch(ResolutionDelayException e) {
-                    params.debug().info("Query resolution delayed: {}", e.getMessage());
+                    params.debug().debug("Query resolution delayed: {}", e.getMessage());
                     return successDelay(c, state, e.getCause(), fuel);
                 } catch(ResolutionException e) {
-                    params.debug().info("Query resolution failed: {}", e.getMessage());
+                    params.debug().debug("Query resolution failed: {}", e.getMessage());
                     return fail(c, state);
                 }
             }
@@ -536,7 +536,7 @@ class GreedySolver {
                         return fail(c, state);
                     }
                 } catch(Delay e) {
-                    params.debug().info("Try delayed: {}", e.getMessage());
+                    params.debug().debug("Try delayed: {}", e.getMessage());
                     return successDelay(c, state, e, fuel);
                 }
             }
@@ -551,19 +551,19 @@ class GreedySolver {
                 final List<Rule> rules = spec.rules().getRules(name);
                 final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
                 if(results.isEmpty()) {
-                    debug.info("No rule applies");
+                    debug.debug("No rule applies");
                     return fail(c, state);
                 } else if(results.size() == 1) {
                     final ApplyResult applyResult = results.get(0)._2();
-                    proxyDebug.info("Rule accepted");
-                    proxyDebug.info("| Implied equalities: {}", applyResult.diff());
+                    proxyDebug.debug("Rule accepted");
+                    proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
                     return success(c, applyResult.state(), applyResult.diff().varSet(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.varSet().stream()).collect(Collectors.toSet());
-                    proxyDebug.info("Rule delayed (multiple conditional matches)");
+                    proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
                 }
             }

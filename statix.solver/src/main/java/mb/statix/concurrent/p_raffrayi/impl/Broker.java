@@ -173,7 +173,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
 
         @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            logger.info("wait for {}/{}", unit, token);
+            logger.debug("wait for {}/{}", unit, token);
             waitFors.put(unit, token);
             self.async(dlm).waitFor(unit, token);
         }
@@ -183,7 +183,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
                 logger.error("not waiting for granted {}/{}", unit, token);
                 throw new IllegalStateException(self + " not waiting for granted " + unit + "/" + token);
             }
-            logger.info("granted {}/{}", unit, token);
+            logger.debug("granted {}/{}", unit, token);
             waitFors.remove(unit, token);
             self.async(dlm).granted(unit, token);
         }

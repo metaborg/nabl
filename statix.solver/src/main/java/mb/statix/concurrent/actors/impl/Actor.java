@@ -92,7 +92,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private void put(IMessage<T> message, boolean priority) throws ActorStoppedException {
         synchronized(lock) {
             if(state.equals(ActorState.STOPPED)) {
-                logger.warn("{} received message when already stopped", id);
+                logger.debug("{} received message when already stopped", id);
                 throw new ActorStoppedException("Actor " + this + " not running.");
             }
             if(priority) {

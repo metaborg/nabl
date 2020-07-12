@@ -8,17 +8,17 @@ public interface IDebugContext {
         return getDepth() == 0;
     }
 
-    Level getLevel();
-
     int getDepth();
+
+    Level getDebugLevel();
 
     boolean isEnabled(Level level);
 
     IDebugContext subContext();
 
-    void info(String fmt, Object... args);
+    void debug(String fmt, Object... args);
 
-    void info(String fmt, Throwable t, Object... args);
+    void debug(String fmt, Throwable t, Object... args);
 
     void warn(String fmt, Object... args);
 

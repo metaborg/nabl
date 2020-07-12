@@ -159,14 +159,14 @@ public class StatixSolver {
     }
 
     private <R> void solveK(K<R> k, R r, Throwable ex) {
-        debug.info("Solving continuation");
+        debug.debug("Solving continuation");
         try {
             k.k(r, ex, MAX_DEPTH);
             fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
         }
-        debug.info("Solved continuation");
+        debug.debug("Solved continuation");
     }
 
     // It can happen that fixedpoint is called in the context of a running fixedpoint.
@@ -177,7 +177,7 @@ public class StatixSolver {
     // recursion of k), and only complete when there are no left. This is what the
     // ehpemeralActiveConstraints counter does.
     private void fixedpoint() throws InterruptedException {
-        debug.info("Solving constraints");
+        debug.debug("Solving constraints");
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
@@ -192,22 +192,22 @@ public class StatixSolver {
                     "Expected no remaining active constraints, but got " + constraints.activeSize());
         }
 
-        debug.info("Has ephermeral: {}, pending: {}, done: {}", ephemeralActiveConstraints.get(), pendingResults.get(),
+        debug.debug("Has ephermeral: {}, pending: {}, done: {}", ephemeralActiveConstraints.get(), pendingResults.get(),
                 result.isDone());
         if(ephemeralActiveConstraints.get() == 0 && pendingResults.get() == 0 && !result.isDone()) {
-            debug.info("Finished.");
+            debug.debug("Finished.");
             result.complete(finishSolve());
         } else {
-            debug.info("Not finished.");
+            debug.debug("Not finished.");
         }
     }
 
     private SolverResult finishSolve() {
         final Map<IConstraint, Delay> delayed = constraints.delayed();
-        debug.info("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
+        debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
         for(Entry<IConstraint, Delay> entry : delayed.entrySet()) {
-            debug.info(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
+            debug.debug(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
         }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
@@ -250,9 +250,9 @@ public class StatixSolver {
             _completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
             this.completeness = _completeness.freeze();
             if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
-                subDebug.info("Simplified to:");
+                subDebug.debug("Simplified to:");
                 for(IConstraint newConstraint : newConstraints) {
-                    subDebug.info(" * {}", Solver.toString(newConstraint, unifier));
+                    subDebug.debug(" * {}", Solver.toString(newConstraint, unifier));
                 }
             }
             ephemeralActiveConstraints.addAndGet(newConstraints.size());
@@ -265,9 +265,9 @@ public class StatixSolver {
             _completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
             this.completeness = _completeness.freeze();
             if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
-                subDebug.info("Delayed:");
+                subDebug.debug("Delayed:");
                 for(IConstraint delayedConstraint : delayedConstraints.values()) {
-                    subDebug.info(" * {}", Solver.toString(delayedConstraint, unifier));
+                    subDebug.debug(" * {}", Solver.toString(delayedConstraint, unifier));
                 }
             }
         }
@@ -306,11 +306,11 @@ public class StatixSolver {
                         foreignVars);
                 return fail(c);
             } else if(vars.isEmpty()) {
-                debug.info("query {} delayed on no vars, rescheduling", c.toString(state.unifier()::toString));
+                debug.debug("query {} delayed on no vars, rescheduling", c.toString(state.unifier()::toString));
                 return success(c, newState, ImmutableSet.of(), ImmutableList.of(c), ImmutableMap.of(delay, c),
                         ImmutableMap.of(), fuel);
             } else {
-                debug.info("query {} delayed on vars {}", c.toString(state.unifier()::toString), vars);
+                debug.debug("query {} delayed on vars {}", c.toString(state.unifier()::toString), vars);
                 return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c),
                         ImmutableMap.of(), fuel);
             }
@@ -366,7 +366,7 @@ public class StatixSolver {
         }
 
         if(debug.isEnabled(Level.Info)) {
-            debug.info("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+            debug.debug("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
         }
 
         // solve
@@ -412,7 +412,7 @@ public class StatixSolver {
                     final IUniDisunifier.Result<IUnifier.Immutable> result;
                     if((result = unifier.unify(term1, term2).orElse(null)) != null) {
                         if(debug.isEnabled(Level.Info)) {
-                            debug.info("Unification succeeded: {}", result.result());
+                            debug.debug("Unification succeeded: {}", result.result());
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars = result.result().varSet();
@@ -420,14 +420,14 @@ public class StatixSolver {
                                 ImmutableMap.of(), fuel);
                     } else {
                         if(debug.isEnabled(Level.Info)) {
-                            debug.info("Unification failed: {} != {}", unifier.toString(term1),
+                            debug.debug("Unification failed: {} != {}", unifier.toString(term1),
                                     unifier.toString(term2));
                         }
                         return fail(c);
                     }
                 } catch(OccursException e) {
                     if(debug.isEnabled(Level.Info)) {
-                        debug.info("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
+                        debug.debug("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
                     }
                     return fail(c);
                 }
@@ -460,7 +460,7 @@ public class StatixSolver {
                 final IUniDisunifier.Result<Optional<Diseq>> result;
                 if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
                     if(debug.isEnabled(Level.Info)) {
-                        debug.info("Disunification succeeded: {}", result);
+                        debug.debug("Disunification succeeded: {}", result);
                     }
                     final IState.Immutable newState = state.withUnifier(result.unifier());
                     final Set<ITermVar> updatedVars =
@@ -469,7 +469,7 @@ public class StatixSolver {
                             fuel);
                 } else {
                     if(debug.isEnabled(Level.Info)) {
-                        debug.info("Disunification failed");
+                        debug.debug("Disunification failed");
                     }
                     return fail(c);
                 }
@@ -657,10 +657,10 @@ public class StatixSolver {
                             // check entailment w.r.t. the initial substate, not the current state: otherwise,
                             // some variables may be treated as external while they are not
                             if(Solver.entails(subState, r, subDebug)) {
-                                debug.info("constraint {} entailed", c.toString(state.unifier()::toString));
+                                debug.debug("constraint {} entailed", c.toString(state.unifier()::toString));
                                 return success(c, state, fuel);
                             } else {
-                                debug.info("constraint {} not entailed", c.toString(state.unifier()::toString));
+                                debug.debug("constraint {} not entailed", c.toString(state.unifier()::toString));
                                 return fail(c);
 
                             }
@@ -681,19 +681,19 @@ public class StatixSolver {
                 final List<Rule> rules = spec.rules().getRules(name);
                 final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
                 if(results.isEmpty()) {
-                    debug.info("No rule applies");
+                    debug.debug("No rule applies");
                     return fail(c);
                 } else if(results.size() == 1) {
                     final ApplyResult applyResult = results.get(0)._2();
-                    proxyDebug.info("Rule accepted");
-                    proxyDebug.info("| Implied equalities: {}", applyResult.diff());
+                    proxyDebug.debug("Rule accepted");
+                    proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
                     return success(c, applyResult.state(), applyResult.diff().varSet(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.varSet().stream()).collect(CapsuleCollectors.toSet());
-                    proxyDebug.info("Rule delayed (multiple conditional matches)");
+                    proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return delay(c, state, Delay.ofVars(stuckVars), fuel);
                 }
             }
@@ -722,7 +722,7 @@ public class StatixSolver {
     }
 
     private void closeEdge(CriticalEdge criticalEdge) throws InterruptedException {
-        debug.info("client {} close edge {}/{}", this, state.unifier().toString(criticalEdge.scope()),
+        debug.debug("client {} close edge {}/{}", this, state.unifier().toString(criticalEdge.scope()),
                 criticalEdge.edgeOrData());
         delayedCloses.__insert(criticalEdge);
         delayAction(() -> {
@@ -732,7 +732,7 @@ public class StatixSolver {
     }
 
     private void closeGroundEdge(CriticalEdge criticalEdge) {
-        debug.info("client {} close edge {}/{}", this, state.unifier().toString(criticalEdge.scope()),
+        debug.debug("client {} close edge {}/{}", this, state.unifier().toString(criticalEdge.scope()),
                 criticalEdge.edgeOrData());
         final Scope scope = Scope.matcher().match(criticalEdge.scope(), state.unifier())
                 .orElseThrow(() -> new IllegalArgumentException(
