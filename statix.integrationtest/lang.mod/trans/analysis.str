@@ -10,7 +10,7 @@ imports
 
 rules // Analysis
 
-  editor-analyze = stx--editor-analyze-new(id, id|"static-semantics", "projectOk", "fileOk")
+  editor-analyze = stx-editor-analyze(id, id|"static-semantics", "projectOk", "fileOk")
 
 rules // Editor Services
 

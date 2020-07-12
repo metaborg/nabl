@@ -25,7 +25,8 @@ signature
     MOD : scope -> TYPE
 
   relations
-    typeOfDecl : occurrence -> TYPE
+    var    : occurrence -> scope
+    typeOf : -> TYPE
 
   namespaces
     Var : string
@@ -52,9 +53,11 @@ rules // Item
 
   itemOK(s, Dbg(exp)) :- {T}
     typeOfExp(s, exp) == NUM() | error "Can only debug integers" @exp.
-  itemOK(s, Let(id, exp)) :- {T}
+  itemOK(s, Let(id, exp)) :- {T s_var}
     typeOfExp(s, exp) == T,
-    s -> Var{id} with typeOfDecl T.
+    new s_var,
+    s -> Var{id} with var s_var,
+    !typeOf[T] in s_var.
   itemOK(s, Use(use_ref)) :- {s_mod}
     scopeOfUseRef(s, use_ref) == s_mod,
     s -I-> s_mod.
@@ -73,11 +76,12 @@ rules // Use reference
 
   resolveUse : scope * string -> scope
 
-  resolveUse(s, id) = S :- {id'}
-	query typeOfDecl
+  resolveUse(s, id) = S :- {id' s_var}
+	query var
   	  filter P* and { Var{x'} :- x' == id }
   	  min $ < P and true
-  	  in s |-> [(_, (Var{id'}, MOD(S)))],
+  	  in s |-> [(_, (Var{id'}, s_var))],
+  	MOD(S) == typeOf(s_var),
   	@id.ref := id'.
 
 rules // Expression
@@ -89,13 +93,22 @@ rules // Expression
   	new s_mod,
   	s_mod -P-> s,
     itemsOK(s_mod, items).
-  typeOfExp(s, Ref(id)) = T :- {id'}
-  	typeOfDecl of Var{id} in s |-> [(_, (Var{id'}, T))],
+  typeOfExp(s, Ref(id)) = T :- {id' s_var}
+  	var of Var{id} in s |-> [(_, (Var{id'}, s_var))],
+  	T == typeOf(s_var),
   	@id.ref := id'.
-  typeOfExp(s, QRef(exp, id)) = T :- {s_mod id'}
+  typeOfExp(s, QRef(exp, id)) = T :- {s_mod id' s_var}
   	typeOfExp(s, exp) == MOD(s_mod),
-	query typeOfDecl
+	  query var
   	  filter e and { Var{x'} :- x' == id } // For qualified references, only look one level deep (filter e).
   	  min and true
-  	  in s_mod |-> [(_, (Var{id'}, T))],
+  	  in s_mod |-> [(_, (Var{id'}, s_var))],
+  	T == typeOf(s_var),
   	@id.ref := id'.
+
+rules
+  	
+  typeOf : scope -> TYPE
+  
+  typeOf(s) = T :-
+    query typeOf filter e and true in s |-> [(_, T)].
