@@ -135,7 +135,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _deadlocked() {
-        fail(null);
+        fail(new Exception("Deadlocked"));
     }
 
     private void fail(Throwable ex) {

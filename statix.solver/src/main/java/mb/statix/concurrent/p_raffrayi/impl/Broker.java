@@ -107,6 +107,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             final IActorRef<? extends IUnit<S, L, D, R>> unit = Iterables.getOnlyElement(deadlock.nodes().keySet());
             dlm.async(unit)._done();
         } else {
+            logger.error("type checking is stuck: {}", deadlock);
             for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
                 dlm.async(unit)._deadlocked();
             }
