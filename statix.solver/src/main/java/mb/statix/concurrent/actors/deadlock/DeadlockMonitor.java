@@ -26,26 +26,26 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
     }
 
     @Override public void waitFor(IActorRef<? extends N> actor, T token) {
-        logger.info("{} waitFor {} / {}", self.sender(TYPE), actor, token);
+        logger.debug("{} waitFor {} / {}", self.sender(TYPE), actor, token);
         wfg.waitFor(self.sender(TYPE), token, actor);
     }
 
     @Override public void granted(IActorRef<? extends N> actor, T token) {
-        logger.info("{} granted {} / {}", self.sender(TYPE), actor, token);
+        logger.debug("{} granted {} / {}", self.sender(TYPE), actor, token);
         wfg.granted(self.sender(TYPE), token, actor);
     }
 
     @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock) {
         wfg.suspend(self.sender(TYPE), state, clock).flatMap(o -> o).ifPresent(deadlock -> {
-            logger.info("{} deadlocked: {}", self.sender(TYPE), deadlock);
-            logger.info("wfg: {}", wfg);
+            logger.debug("{} deadlocked: {}", self.sender(TYPE), deadlock);
+            logger.debug("wfg: {}", wfg);
             handler.apply(self, deadlock);
         });
     }
 
     @Override public void stopped(Clock<IActorRef<? extends N>> clock) {
         wfg.remove(self.sender(TYPE), clock);
-        logger.warn("{} stopped", self.sender(TYPE));
+        logger.debug("{} stopped", self.sender(TYPE));
     }
 
 }

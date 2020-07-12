@@ -41,7 +41,7 @@ public class ActorSystem implements IActorSystem {
 
     private <T> IActor<T> add(@Nullable IActorRef<?> parent, String id, TypeTag<T> type,
             Function1<IActor<T>, T> supplier) {
-        logger.info("add actor {}", id);
+        logger.debug("add actor {}", id);
         final Actor<T> actor = new Actor<>(context, id, type, supplier);
         synchronized(lock) {
             if(state.equals(ActorSystemState.STOPPED)) {
@@ -55,7 +55,7 @@ public class ActorSystem implements IActorSystem {
                 actor.run(executorService);
             }
         }
-        logger.info("added actor {}", id);
+        logger.debug("added actor {}", id);
         return actor;
     }
 
@@ -68,7 +68,7 @@ public class ActorSystem implements IActorSystem {
     }
 
     @Override public void start() {
-        logger.info("start system");
+        logger.debug("start system");
         synchronized(lock) {
             if(!state.equals(ActorSystemState.INIT)) {
                 throw new IllegalStateException("Actor system already started.");
@@ -78,7 +78,7 @@ public class ActorSystem implements IActorSystem {
                 actor.run(executorService);
             }
         }
-        logger.info("started system");
+        logger.debug("started system");
     }
 
     @Override public void stop() {

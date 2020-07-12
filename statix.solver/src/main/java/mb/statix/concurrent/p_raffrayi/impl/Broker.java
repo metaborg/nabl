@@ -79,7 +79,6 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         synchronized(lock) {
             units.put(id, unit);
         }
-        logger.info("Added unit {}", id);
         return unit;
     }
 
@@ -180,7 +179,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
         @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
             if(!waitFors.contains(unit, token)) {
-                logger.error("Not waiting for granted {}/{}", unit, token);
+                logger.error("not waiting for granted {}/{}", unit, token);
                 throw new IllegalStateException(self + " not waiting for granted " + unit + "/" + token);
             }
             logger.info("granted {}/{}", unit, token);

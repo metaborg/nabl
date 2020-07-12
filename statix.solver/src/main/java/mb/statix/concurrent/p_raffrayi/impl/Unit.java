@@ -345,7 +345,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, R>> sender, IScopePath<S, L> path,
             LabelWF<L> labelWF, DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-        logger.info("got _query from {}", sender);
+        logger.debug("got _query from {}", sender);
         final Access access = sender.equals(self) ? Access.INTERNAL : Access.EXTERNAL;
         final NameResolution<S, L, D> nr =
                 new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, access, this::isComplete) {
@@ -356,13 +356,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                         if(owner.equals(self)) {
                             return Optional.empty();
                         } else {
-                            logger.info("have _query for {}", owner);
+                            logger.debug("have _query for {}", owner);
                             // this code mirrors query(...)
                             final IFuture<Env<S, L, D>> result =
                                     self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
                             context.waitFor(Resolution.of(result), owner);
                             return Optional.of(result.whenComplete((r, ex) -> {
-                                logger.info("got answer from {}", sender);
+                                logger.debug("got answer from {}", sender);
                                 context.granted(Resolution.of(result), owner);
                             }));
                         }
@@ -371,7 +371,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 };
 
         return nr.env(path, labelWF, context.cancel()).whenComplete((env, ex) -> {
-            logger.info("have answer for {}", sender);
+            logger.debug("have answer for {}", sender);
         });
     }
 
@@ -384,7 +384,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             final EdgeOrData<L> edge = entry.getKey();
             if(!context.isWaitingFor(CloseEdge.of(scope, edge))) {
                 final ICompletable<Void> future = entry.getValue();
-                logger.info("released {} on {}(/{})", future, scope, edge);
+                logger.debug("released {} on {}(/{})", future, scope, edge);
                 delays.remove(scope, edge, future);
                 self.complete(future, null, null);
             }
@@ -393,7 +393,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private void releaseDelays(S scope, EdgeOrData<L> edge) {
         for(ICompletable<Void> future : delays.get(scope, edge)) {
-            logger.info("released {} on {}/{}", future, scope, edge);
+            logger.debug("released {} on {}/{}", future, scope, edge);
             delays.remove(scope, edge, future);
             self.complete(future, null, null);
         }
@@ -412,7 +412,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(isEdgeClosed(scope, edge)) {
             result.complete(null);
         } else {
-            logger.info("delayed {} on {}/{}", result, scope, edge);
+            logger.debug("delayed {} on {}/{}", result, scope, edge);
             delays.put(scope, edge, result);
         }
         return result;
@@ -426,7 +426,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.sent((IActorRef<? extends IUnit<S, L, D, R>>) target);
-            logger.info("updated clock: {}", clock);
+            logger.debug("updated clock: {}", clock);
         }
     }
 
@@ -434,7 +434,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, R>>) source);
-            logger.info("updated clock: {}", clock);
+            logger.debug("updated clock: {}", clock);
         }
     }
 

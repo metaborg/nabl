@@ -134,7 +134,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
-                    logger.info("send {} message {}", Actor.this, message);
+                    logger.debug("send {} message {}", Actor.this, message);
                     put(message, false);
 
                     final Set<String> tags = tags(method);
@@ -170,7 +170,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
-                    logger.info("send {} message {}", Actor.this, message);
+                    logger.debug("send {} message {}", Actor.this, message);
                     put(message, false);
 
                     // no sender, so cannot call senders monitors
@@ -206,7 +206,6 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     ///////////////////////////////////////////////////////////////////////////
 
     void run(ExecutorService executorService) {
-        //        logger.info("start {}", id);
         synchronized(lock) {
             if(!state.equals(ActorState.INIT)) {
                 throw new IllegalStateException("Actor already started and/or stopped.");
@@ -224,7 +223,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         LoggerUtils.setContextId("actor:" + id);
         current.set(this);
 
-        logger.info("start");
+        logger.debug("start");
 
         final T impl = supplier.apply(this);
         if(impl == null || !type.type().isInstance(impl)) {
@@ -240,7 +239,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 final IMessage<T> message;
                 synchronized(lock) {
                     while(messages.isEmpty()) {
-                        logger.info("suspend");
+                        logger.debug("suspend");
                         state = ActorState.WAITING;
                         forEachMonitor(monitor -> {
                             monitor.suspended(this);
@@ -252,15 +251,15 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         forEachMonitor(monitor -> {
                             monitor.resumed(this);
                         });
-                        logger.info("resume");
+                        logger.debug("resume");
                     }
                     message = messages.remove();
                 }
-                logger.info("deliver message {}", message);
+                logger.debug("deliver message {}", message);
                 message.dispatch(impl); // responsible for setting sender, and calling monitor!
             }
         } catch(StopException ex) {
-            logger.info("stopped");
+            logger.debug("stopped");
             doStop(null);
         } catch(Throwable ex) {
             logger.error("failed", ex);
@@ -430,7 +429,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             this.value = value;
             this.ex = ex;
 
-            logger.info("send {} message {}", invoker, this);
+            logger.debug("send {} message {}", invoker, this);
             invoker.put(this, false);
 
             final Set<String> tags = tags(method);
