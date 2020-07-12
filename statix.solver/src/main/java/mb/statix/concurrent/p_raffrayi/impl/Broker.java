@@ -13,7 +13,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
+import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
+import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
@@ -54,6 +56,11 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         this.system = new ActorSystem();
         this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
                 self -> new DeadlockMonitor<>(self, this::handleDeadlock));
+        dlm.addMonitor(new IActorMonitor() {
+            @Override public void failed(mb.statix.concurrent.actors.IActor<?> self, Throwable ex) {
+                fail(ex);
+            };
+        });
 
         this.units = Maps.newHashMap();
         this.results = Maps.newHashMap();
@@ -72,14 +79,14 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         synchronized(lock) {
             units.put(id, unit);
         }
+        logger.info("Added unit {}", id);
         return unit;
     }
 
     private void addResult(String id, IUnitResult<S, L, D, R> unitResult, Throwable ex) {
         synchronized(lock) {
             if(ex != null) {
-                result.completeExceptionally(ex);
-                system.stop();
+                fail(ex);
             } else {
                 results.put(id, unitResult);
                 if(results.size() == units.size()) {
@@ -90,6 +97,11 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
     }
 
+    private void fail(Throwable ex) {
+        result.completeExceptionally(ex);
+        system.stop();
+    }
+
     private void handleDeadlock(IActor<?> dlm,
             Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, UnitState, IWaitFor<S, L, D>> deadlock) {
         if(deadlock.edges().isEmpty()) {
@@ -97,7 +109,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             dlm.async(unit)._done();
         } else {
             for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
-                dlm.async(unit)._fail();
+                dlm.async(unit)._deadlocked();
             }
         }
     }
@@ -132,9 +144,11 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     private class UnitContext implements IUnitContext<S, L, D, R> {
 
         private final IActor<? extends IUnit<S, L, D, R>> self;
+        private final MultiSetMap.Transient<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors;
 
         public UnitContext(IActor<? extends IUnit<S, L, D, R>> self) {
             this.self = self;
+            this.waitFors = MultiSetMap.Transient.of();
         }
 
         @Override public ICancel cancel() {
@@ -159,11 +173,27 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
 
         @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+            logger.info("wait for {}/{}", unit, token);
+            waitFors.put(unit, token);
             self.async(dlm).waitFor(unit, token);
         }
 
         @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+            if(!waitFors.contains(unit, token)) {
+                logger.error("Not waiting for granted {}/{}", unit, token);
+                throw new IllegalStateException(self + " not waiting for granted " + unit + "/" + token);
+            }
+            logger.info("granted {}/{}", unit, token);
+            waitFors.remove(unit, token);
             self.async(dlm).granted(unit, token);
+        }
+
+        @Override public boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+            return waitFors.contains(unit, token);
+        }
+
+        @Override public boolean isWaitingFor(IWaitFor<S, L, D> token) {
+            return waitFors.containsValue(token);
         }
 
         @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {

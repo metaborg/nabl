@@ -3,8 +3,10 @@ package mb.statix.concurrent.p_raffrayi.impl;
 import static com.google.common.collect.Streams.stream;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -19,7 +21,6 @@ import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
-import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
@@ -32,8 +33,8 @@ import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseEdge;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.DoneSharing;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.InitShare;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Resolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -59,17 +60,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final IUnitContext<S, L, D, R> context;
     private final ITypeChecker<S, L, D, R> typeChecker;
 
-    private final IUnit<S, L, D, R> local;
     private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
     private UnitState state;
 
     private final CompletableFuture<R> typeCheckerResult;
     private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
-    private Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
-    private final MultiSet.Transient<S> sharedScopes;
-    private final MultiSet.Transient<S> uninitializedScopes;
-    private final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges;
+    private final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
+    private final Set.Transient<S> scopes;
     private final IRelation3.Transient<S, EdgeOrData<L>, ICompletable<Void>> delays;
 
     private final MultiSet.Transient<String> scopeNameCounters;
@@ -81,7 +79,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.context = context;
         this.typeChecker = unitChecker;
 
-        this.local = self.async(self);
         this.clock = Clock.of();
         this.state = UnitState.INIT;
 
@@ -89,9 +86,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.unitResult = new CompletableFuture<>();
 
         this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of(edgeLabels));
-        this.sharedScopes = MultiSet.Transient.of();
-        this.uninitializedScopes = MultiSet.Transient.of();
-        this.openEdges = MultiSetMap.Transient.of();
+        this.scopes = Set.Transient.of();
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
@@ -108,8 +103,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         state = UnitState.ACTIVE;
         if(root != null) {
-            uninitializedScopes.add(root);
-            context.waitFor(InitScope.of(root), self);
+            doAddLocalShare(self, root); // FIXME If we doAddShare here, the system deadlocks but is not picked up by DLM
         }
 
         // run() after inits are initialized before run, since unitChecker
@@ -126,14 +120,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         typeCheckerResult.complete(result, ex);
     }
 
-    private void fail() {
-        final TypeCheckingFailedException ex = new TypeCheckingFailedException();
-        // FIXME Fail delays? Note that this is called from stopped() as well,
-        //       when the actor is not running and (local) messages cannot be
-        //       processed.
-        unitResult.completeExceptionally(ex);
-    }
-
     @Override public void _done() {
         assertInState(UnitState.DONE);
 
@@ -148,9 +134,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         });
     }
 
-    @Override public void _fail() {
-        assertInState(UnitState.INIT, UnitState.ACTIVE);
-        fail();
+    @Override public void _deadlocked() {
+        fail(null);
+    }
+
+    private void fail(Throwable ex) {
+        final TypeCheckingFailedException tcfe = new TypeCheckingFailedException(ex);
+        unitResult.completeExceptionally(tcfe);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -166,38 +156,34 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
         assertInState(UnitState.ACTIVE);
-
-        assertShared(root);
-        // ASSERT root is owned by us, or shared with us
+        assertOwnOrSharedScope(root);
 
         final IActorRef<? extends IUnit<S, L, D, R>> subunit = context.add(id, unitChecker, root);
 
-        uninitializedScopes.add(root);
-        context.waitFor(InitScope.of(root), subunit);
+        doAddShare(subunit, root);
     }
 
-    @Override public void initRoot(S root, Iterable<L> labels, boolean shared) {
+    @Override public void initRoot(S root, Iterable<L> labels, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
-        local._initRoot(root, labels, shared);
+        final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
+
+        doInitShare(self, root, edges, sharing);
     }
 
-    @Override public S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean shared) {
+    @Override public S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         final String name = baseName.replace("-", "_");
         final int n = scopeNameCounters.add(name);
         final S scope = context.makeScope(name + "-" + n);
 
-        Streams.concat(stream(labels).map(EdgeOrData::edge), stream(data).map(EdgeOrData::<L>data)).forEach(edge -> {
-            openEdges.put(scope, edge);
-            context.waitFor(CloseEdge.of(scope, edge), self);
-        });
+        final List<EdgeOrData<L>> edges =
+                Streams.concat(stream(labels).map(EdgeOrData::edge), stream(data).map(EdgeOrData::<L>data))
+                        .collect(Collectors.toList());
 
-        if(shared) {
-            sharedScopes.add(scope);
-            context.waitFor(CloseScope.of(scope), self);
-        }
+        doAddLocalShare(self, scope);
+        doInitShare(self, scope, edges, sharing);
 
         return scope;
     }
@@ -205,34 +191,43 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public void setDatum(S scope, D datum, Access access) {
         assertInState(UnitState.ACTIVE);
 
-        local._setDatum(scope, datum, access);
+        final EdgeOrData<L> edge = EdgeOrData.data(access);
+        assertEdgeOpen(scope, edge);
+
+        if(access.equals(Access.EXTERNAL) && !isEdgeClosed(scope, EdgeOrData.data(Access.INTERNAL))) {
+            throw new IllegalArgumentException("Cannot set external data before internal data.");
+        }
+
+        scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
+        doCloseEdge(self, scope, edge);
     }
 
     @Override public void addEdge(S source, L label, S target) {
         assertInState(UnitState.ACTIVE);
 
-        local._addEdge(source, label, target);
+        doAddEdge(self, source, label, target);
     }
 
     @Override public void closeEdge(S source, L label) {
         assertInState(UnitState.ACTIVE);
 
-        local._closeEdge(source, label);
+        doCloseEdge(self, source, EdgeOrData.edge(label));
     }
 
-    @Override public void closeScope(S scope) {
+    @Override public void doneSharing(S scope) {
         assertInState(UnitState.ACTIVE);
 
-        local._closeScope(scope);
+        doDoneSharing(self, scope);
     }
 
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         assertInState(UnitState.ACTIVE);
 
-        final IFuture<Env<S, L, D>> result = local._query(Paths.empty(scope), labelWF, dataWF, labelOrder, dataEquiv);
+        final IFuture<Env<S, L, D>> result = doQuery(self, Paths.empty(scope), labelWF, dataWF, labelOrder, dataEquiv);
         context.waitFor(Resolution.of(result), self);
-        return result.whenComplete((env, ex) -> {
+
+        return self.schedule(result).whenComplete((env, ex) -> {
             context.granted(Resolution.of(result), self);
         }).thenApply(CapsuleUtil::toSet);
     }
@@ -241,107 +236,115 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public final void _initRoot(S root, Iterable<L> labels, boolean shared) {
-        assertUninitialized(root);
-
-        uninitializedScopes.remove(root);
-        context.granted(InitScope.of(root), self.sender(TYPE));
-
-        stream(labels).map(EdgeOrData::edge).forEach(edge -> {
-            openEdges.put(root, edge);
-            context.waitFor(CloseEdge.of(root, edge), self.sender(TYPE));
-        });
-
-        if(shared) {
-            sharedScopes.add(root);
-            context.waitFor(CloseScope.of(root), self.sender(TYPE));
-        }
-
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(root);
-        if(owner.equals(self)) {
-            if(isScopeComplete(root)) {
-                releaseDelays(root);
-            }
-        } else {
-            if(parent == null) {
-                throw new IllegalArgumentException(root + " not our own scope, and no parent: cannot propagate up.");
-            }
-            self.async(parent)._initRoot(root, labels, shared);
-        }
-
+    @Override public void _initShare(S scope, Iterable<EdgeOrData<L>> edges, boolean sharing) {
+        doInitShare(self.sender(TYPE), scope, edges, sharing);
     }
 
-    @Override public final void _setDatum(S scope, D datum, Access access) {
-        final EdgeOrData<L> edge = EdgeOrData.data(access);
-        assertEdgeOpen(scope, edge);
-        if(access.equals(Access.EXTERNAL)) {
-            assertEdgeClosed(scope, EdgeOrData.data(Access.INTERNAL));
-        }
+    @Override public void _addShare(S scope) {
+        doAddShare(self.sender(TYPE), scope);
+    }
 
-        scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
-        openEdges.remove(scope, edge);
-        context.granted(CloseEdge.of(scope, edge), self);
-
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
-        if(owner.equals(self)) {
-            if(isEdgeComplete(scope, edge)) {
-                releaseDelays(scope, edge);
-            }
-        } else {
-            throw new IllegalArgumentException("Scope " + scope + " is not owned by this actor: cannot set datum.");
-
-        }
-
+    @Override public void _doneSharing(S scope) {
+        doDoneSharing(self.sender(TYPE), scope);
     }
 
     @Override public final void _addEdge(S source, L label, S target) {
+        doAddEdge(self.sender(TYPE), source, label, target);
+    }
+
+    @Override public void _closeEdge(S scope, EdgeOrData<L> edge) {
+        doCloseEdge(self.sender(TYPE), scope, edge);
+    }
+
+    @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+        return doQuery(self.sender(TYPE), path, labelWF, dataWF, labelOrder, dataEquiv);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Implementations -- independent of message handling context
+    ///////////////////////////////////////////////////////////////////////////
+
+    private final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
+        scopes.__insert(scope);
+        context.waitFor(InitShare.of(scope), sender);
+    }
+
+    private final void doAddShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
+        doAddLocalShare(sender, scope);
+
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        if(!owner.equals(self)) {
+            self.async(parent)._addShare(scope);
+        }
+    }
+
+    private final void doInitShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope,
+            Iterable<EdgeOrData<L>> edges, boolean sharing) {
+        assertOwnOrSharedScope(scope);
+
+        context.granted(InitShare.of(scope), sender);
+        for(EdgeOrData<L> edge : edges) {
+            context.waitFor(CloseEdge.of(scope, edge), sender);
+        }
+        if(sharing) {
+            context.waitFor(DoneSharing.of(scope), sender);
+        }
+
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        if(owner.equals(self)) {
+            if(isScopeInitialized(scope)) {
+                releaseDelays(scope);
+            }
+        } else {
+            self.async(parent)._initShare(scope, edges, sharing);
+        }
+    }
+
+    private final void doDoneSharing(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
+        assertOwnOrSharedScope(scope);
+
+        context.granted(DoneSharing.of(scope), sender);
+
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        if(owner.equals(self)) {
+            if(isScopeInitialized(scope)) {
+                releaseDelays(scope);
+            }
+        } else {
+            self.async(parent)._doneSharing(scope);
+        }
+    }
+
+    private final void doCloseEdge(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
+        assertOwnOrSharedScope(scope);
+
+        context.granted(CloseEdge.of(scope, edge), sender);
+
+        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        if(owner.equals(self)) {
+            if(isEdgeClosed(scope, edge)) {
+                releaseDelays(scope, edge);
+            }
+        } else {
+            self.async(parent)._closeEdge(scope, edge);
+        }
+    }
+
+    private final void doAddEdge(IActorRef<? extends IUnit<S, L, D, R>> sender, S source, L label, S target) {
+        assertOwnOrSharedScope(source);
         assertEdgeOpen(source, EdgeOrData.edge(label));
 
         scopeGraph.set(scopeGraph.get().addEdge(source, label, target));
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
         if(!owner.equals(self)) {
-            self.async(owner)._addEdge(source, label, target);
+            self.async(parent)._addEdge(source, label, target);
         }
     }
 
-    @Override public final void _closeEdge(S source, L label) {
-        assertEdgeOpen(source, EdgeOrData.edge(label));
-
-        final EdgeOrData<L> edge = EdgeOrData.edge(label);
-        openEdges.remove(source, edge);
-        context.granted(CloseEdge.of(source, edge), self.sender(TYPE));
-
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
-        if(owner.equals(self)) {
-            if(isEdgeComplete(source, edge)) {
-                releaseDelays(source, edge);
-            }
-        } else {
-            self.async(owner)._closeEdge(source, label);
-        }
-    }
-
-    @Override public final void _closeScope(S scope) {
-        assertShared(scope);
-
-        sharedScopes.remove(scope);
-        context.granted(CloseScope.of(scope), self.sender(TYPE));
-
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
-        if(owner.equals(self)) {
-            if(isScopeComplete(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
-            self.async(owner)._closeScope(scope);
-        }
-    }
-
-    @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-        final IActorRef<? extends IUnit<S, L, D, R>> sender = self.sender(TYPE); // capture for correct use in whenComplete
-
+    private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, R>> sender, IScopePath<S, L> path,
+            LabelWF<L> labelWF, DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         logger.info("got _query from {}", sender);
         final Access access = sender.equals(self) ? Access.INTERNAL : Access.EXTERNAL;
         final NameResolution<S, L, D> nr =
@@ -372,10 +375,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         });
     }
 
-    @Override public final <U> void _complete(ICompletable<U> future, U value, Throwable exception) {
-        future.complete(value, exception);
-    }
-
     ///////////////////////////////////////////////////////////////////////////
     // Resolution & delays
     ///////////////////////////////////////////////////////////////////////////
@@ -383,11 +382,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void releaseDelays(S scope) {
         for(Entry<EdgeOrData<L>, ICompletable<Void>> entry : delays.get(scope)) {
             final EdgeOrData<L> edge = entry.getKey();
-            if(!openEdges.contains(scope, edge)) {
+            if(!context.isWaitingFor(CloseEdge.of(scope, edge))) {
                 final ICompletable<Void> future = entry.getValue();
                 logger.info("released {} on {}(/{})", future, scope, edge);
                 delays.remove(scope, edge, future);
-                local._complete(future, null, null);
+                self.complete(future, null, null);
             }
         }
     }
@@ -396,21 +395,21 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         for(ICompletable<Void> future : delays.get(scope, edge)) {
             logger.info("released {} on {}/{}", future, scope, edge);
             delays.remove(scope, edge, future);
-            local._complete(future, null, null);
+            self.complete(future, null, null);
         }
     }
 
-    private boolean isScopeComplete(S scope) {
-        return !sharedScopes.contains(scope) && !uninitializedScopes.contains(scope);
+    private boolean isScopeInitialized(S scope) {
+        return !context.isWaitingFor(InitShare.of(scope)) && !context.isWaitingFor(DoneSharing.of(scope));
     }
 
-    private boolean isEdgeComplete(S scope, EdgeOrData<L> edge) {
-        return isScopeComplete(scope) && !openEdges.contains(scope, edge);
+    private boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
+        return isScopeInitialized(scope) && !context.isWaitingFor(CloseEdge.of(scope, edge));
     }
 
     private IFuture<Void> isComplete(S scope, EdgeOrData<L> edge) {
         final CompletableFuture<Void> result = new CompletableFuture<>();
-        if(isEdgeComplete(scope, edge)) {
+        if(isEdgeClosed(scope, edge)) {
             result.complete(null);
         } else {
             logger.info("delayed {} on {}/{}", result, scope, edge);
@@ -450,12 +449,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void stopped(IActor<?> self) {
-        if(!state.equals(UnitState.DONE)) {
-            state = UnitState.DONE;
-            fail();
-            unitResult.completeExceptionally(new TypeCheckingFailedException());
-        }
+        context.stopped(clock);
+    }
 
+    @Override public void failed(IActor<?> self, Throwable ex) {
+        fail(ex);
         context.stopped(clock);
     }
 
@@ -472,27 +470,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         throw new IllegalStateException("Expected state " + Arrays.toString(states) + ", was " + state);
     }
 
-    private void assertShared(S scope) {
-        if(!sharedScopes.contains(scope)) {
-            throw new IllegalArgumentException("Scope " + scope + " must be shared.");
+    private void assertOwnOrSharedScope(S scope) {
+        if(!scopes.contains(scope)) {
+            throw new IllegalArgumentException("Scope " + scope + " is not owned or shared.");
         }
     }
 
-    private void assertUninitialized(S scope) {
-        if(!uninitializedScopes.contains(scope)) {
-            throw new IllegalArgumentException("Scope " + scope + " must be uninitialized.");
-        }
-    }
-
-    private void assertEdgeOpen(S source, EdgeOrData<L> edgeOrDatum) {
-        if(!openEdges.contains(source, edgeOrDatum)) {
-            throw new IllegalArgumentException("Edge or datum " + source + "/" + edgeOrDatum + " must be open.");
-        }
-    }
-
-    private void assertEdgeClosed(S source, EdgeOrData<L> edgeOrDatum) {
-        if(openEdges.contains(source, edgeOrDatum)) {
-            throw new IllegalArgumentException("Edge or datum " + source + "/" + edgeOrDatum + " must be closed.");
+    private void assertEdgeOpen(S scope, EdgeOrData<L> edge) {
+        assertOwnOrSharedScope(scope);
+        if(isEdgeClosed(scope, edge)) {
+            throw new IllegalArgumentException("Edge " + edge + " is not open.");
         }
     }
 

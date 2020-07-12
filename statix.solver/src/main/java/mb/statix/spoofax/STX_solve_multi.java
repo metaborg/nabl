@@ -28,7 +28,7 @@ import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
-import mb.statix.concurrent.solver.ProjectTypeChecker;
+import mb.statix.concurrent.solver.test.ProjectTypeChecker;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;

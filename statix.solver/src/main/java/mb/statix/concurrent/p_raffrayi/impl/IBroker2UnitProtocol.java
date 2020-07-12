@@ -11,6 +11,6 @@ public interface IBroker2UnitProtocol<S, L, D, R> {
 
     void _done();
 
-    void _fail();
+    void _deadlocked();
 
 }

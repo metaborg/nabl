@@ -1,8 +1,7 @@
-package mb.statix.concurrent.solver;
+package mb.statix.concurrent.solver.test;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
@@ -32,11 +31,7 @@ public class ProjectTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Sol
     @Override public IFuture<SolverResult> run(ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> context,
             @Nullable Scope root) {
         final Scope projectScope = context.freshScope("s_root", Collections.emptySet(), Collections.emptySet(), true);
-        for(Entry<String, Rule> entry : units.entrySet()) {
-            final String id = entry.getKey();
-            final Rule rule = entry.getValue();
-            context.add(id, new UnitTypeChecker(rule, spec, debug), projectScope);
-        }
+        context.add("<SUBROOT>", new SubProjectTypeChecker(units, spec, debug), projectScope);
         context.doneSharing(projectScope);
         return CompletableFuture.completedFuture(SolverResult.of(spec));
     }
