@@ -7,14 +7,14 @@ imports
 
 context-free syntax
 
-  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-OccurrencePosition>}>
+  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-TermIndex>}>
 
   Stx-OccurrencePosition      = Stx-TermIndex
-  Stx-OccurrencePosition.NoId = <@->
 
   Stx-Scope.Scope = <#<Stx-STRING>-<Stx-STRING>>
 
   Stx-TermIndex.TermIndex = <@<Stx-STRING>-<Stx-INT>>
+  Stx-TermIndex.NoId      = <@->
 
   Stx-Var.Var = <?<Stx-STRING>-<Stx-STRING>>
 
