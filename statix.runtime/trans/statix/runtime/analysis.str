@@ -77,7 +77,7 @@ rules // single file elaboration
 
 rules // multi file analysis (new)
 
-  stx--editor-analyze-new(pre, post|spec-name, project-constraint, file-constraint):
+  cstx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -110,11 +110,11 @@ rules // multi file analysis (new)
       //
     ; task*          := [project-task, file-task*]
     ; changed-ast*   := [(project-resource, project-ast), changed-file-ast'*]
-    ; analysis*      := <stx--solve-multi-new(|spec, level, progress, cancel)> task*
+    ; analysis*      := <cstx--solve-multi(|spec, level, progress, cancel)> task*
     ; project-result := < stx--mk-result(\ (rule, a) -> ProjectAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
                         ; \ (resource, result) -> (resource, result) \
                         > (project-resource, project-change)
-    ; file-result*   := <map( stx--mk-result(\ (rule, a) -> FileAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
+    ; file-result*   := <map( cstx--mk-result(\ (rule, a) -> FileAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
                             ; \ (resource, result) -> (resource, result) \
                             )> file-change*
     ; result* := [project-result|file-result*]
@@ -131,10 +131,10 @@ rules // multi file analysis (new)
   // @param spec  : Spec
   // @param level : LogLevel
   // @type [(String, Rule)] -> [(String, SolverResult)]
-  stx--solve-multi-new(|spec, level, progress, cancel) =
+  cstx--solve-multi(|spec, level, progress, cancel) =
     prim("STX_solve_multi", spec, level, progress, cancel)
 
-  stx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
+  cstx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
     with rule := <lookup> (resource, task*)
        ; state := <lookup> (resource, state*)
        ; analysis := <mk-analysis> (rule, state)
@@ -323,15 +323,15 @@ rules
   ; stx--get-resource-analysis
 
 
-  stx--get-resource-analysis-new =
+  cstx--get-resource-analysis =
     get-resource-partial-constraint-analysis
   ; ( ?FileAnalysisNew(_, <id>)
     + ?ProjectAnalysisNew(_, <id>)
     )
 
-  stx--get-ast-analysis-new =
+  cstx--get-ast-analysis =
     stx--get-ast-resource
-  ; stx--get-resource-analysis-new
+  ; cstx--get-resource-analysis
 
 
   stx--is-debug-custom-enabled =
