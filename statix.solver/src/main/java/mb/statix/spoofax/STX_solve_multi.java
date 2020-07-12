@@ -28,13 +28,11 @@ import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
-import mb.statix.concurrent.solver.test.ProjectTypeChecker;
+import mb.statix.concurrent.solver.ProjectTypeChecker;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.log.LoggerDebugContext;
-import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -53,7 +51,7 @@ public class STX_solve_multi extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final IDebugContext debug = new NullDebugContext(); // new LoggerDebugContext(logger); // getDebugContext(terms.get(1));
+        final IDebugContext debug = getDebugContext(terms.get(1));
         final IProgress progress = getProgress(terms.get(2));
         final ICancel cancel = getCancel(terms.get(3));
 
