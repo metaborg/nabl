@@ -28,6 +28,10 @@ public abstract class MultiSetMap<K, V> {
         return get(key).contains(value);
     }
 
+    public boolean containsValue(V value) {
+        return toMap().values().stream().anyMatch(vs -> vs.contains(value));
+    }
+
     public int count(K key, V value) {
         return get(key).count(value);
     }
