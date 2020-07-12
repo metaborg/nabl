@@ -22,8 +22,8 @@ signature
     ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
     FileAnalysis    : Constraint -> AnalysisResult
 
-    ProjectAnalysisNew : Constraint * Analysis -> AnalysisResult
-    FileAnalysisNew    : Constraint * Analysis -> AnalysisResult
+    ProjectAnalysis : Constraint * Analysis -> AnalysisResult // cstx -- concurrent version
+    FileAnalysis    : Constraint * Analysis -> AnalysisResult // cstx -- concurrent version
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
@@ -91,7 +91,7 @@ rules // multi file analysis (new)
       switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-rule := LLam([s-root], C(proj-c-name, [s-root], NoMessage()))
-        case ?Cached(ProjectAnalysisNew(project-rule, _)):
+        case ?Cached(ProjectAnalysis(project-rule, _)):
           project-ast := ()
         otherwise:
           fatal-err(|"Unexpected change on project")
@@ -103,7 +103,7 @@ rules // multi file analysis (new)
     ; changed-file-ast*  := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> file-change*
     ; changed-file-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> changed-file-ast*
     ; changed-file-task* := <map(\ (resource, ast') -> (resource, LLam([s-root], C(file-c-name, [s-root, <stx--explode> ast'], NoMessage()))) \)> changed-file-ast'*
-    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysisNew(file-rule, _))) -> (resource, file-rule) \)> file-change*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(file-rule, _))) -> (resource, file-rule) \)> file-change*
     ; file-task* := [changed-file-task*, cached-file-task*]
       //
       // 3. Solve all tasks
@@ -111,10 +111,10 @@ rules // multi file analysis (new)
     ; task*          := [project-task, file-task*]
     ; changed-ast*   := [(project-resource, project-ast), changed-file-ast'*]
     ; analysis*      := <cstx--solve-multi(|spec, level, progress, cancel)> task*
-    ; project-result := < stx--mk-result(\ (rule, a) -> ProjectAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
+    ; project-result := < cstx--mk-result(\ (rule, a) -> ProjectAnalysis(rule, a) \|changed-ast*, task*, analysis*)
                         ; \ (resource, result) -> (resource, result) \
                         > (project-resource, project-change)
-    ; file-result*   := <map( cstx--mk-result(\ (rule, a) -> FileAnalysisNew(rule, a) \|changed-ast*, task*, analysis*)
+    ; file-result*   := <map( cstx--mk-result(\ (rule, a) -> FileAnalysis(rule, a) \|changed-ast*, task*, analysis*)
                             ; \ (resource, result) -> (resource, result) \
                             )> file-change*
     ; result* := [project-result|file-result*]
@@ -122,7 +122,7 @@ rules // multi file analysis (new)
       // 4. Compute scope graph diff
       //
   // Disabled as long as we do not know the root scope here
-  //; if Cached(ProjectAnalysisNew(_, project-analysis')) := project-change then
+  //; if Cached(ProjectAnalysis(_, project-analysis')) := project-change then
   //    project-analysis := <lookup> (project-resource, analysis*)
   //  ; diff := <stx--diff-scopegraphs(|global-scope)> (project-analysis, project-analysis')
   //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
@@ -312,27 +312,13 @@ rules
 
 rules
 
-  stx--get-resource-analysis =
-    get-resource-constraint-analysis
-  ; ( ?FileAnalysis(<id>)
-    + ?ProjectAnalysis(_, _, _, <id>)
-    )
-
   stx--get-ast-analysis =
     stx--get-ast-resource
   ; stx--get-resource-analysis
 
-
-  cstx--get-resource-analysis =
-    get-resource-partial-constraint-analysis
-  ; ( ?FileAnalysisNew(_, <id>)
-    + ?ProjectAnalysisNew(_, <id>)
-    )
-
-  cstx--get-ast-analysis =
-    stx--get-ast-resource
-  ; cstx--get-resource-analysis
-
+  stx--get-resource-analysis =
+    get-resource-constraint-analysis         ; ( ?FileAnalysis(<id>)    + ?ProjectAnalysis(_, _, _, <id>) )
+ <+ get-resource-partial-constraint-analysis ; ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, <id>)       )
 
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")
