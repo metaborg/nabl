@@ -48,7 +48,7 @@ public class WaitForGraph<N, S, T> {
      * Register a wait-for in the graph.
      */
     public void waitFor(N source, T token, N target) {
-        logger.info("{} waits for {}/{}", source, target, token);
+        logger.debug("{} waits for {}/{}", source, target, token);
         waitForGraph.addEdge(source, token, target);
     }
 
@@ -56,7 +56,7 @@ public class WaitForGraph<N, S, T> {
      * Remove a wait-for from the graph.
      */
     public void granted(N source, T token, N target) {
-        logger.info("{} was granted {}/{}", source, target, token);
+        logger.debug("{} was granted {}/{}", source, target, token);
         waitForGraph.removeEdge(source, token, target);
     }
 
@@ -64,7 +64,7 @@ public class WaitForGraph<N, S, T> {
      * Suspend a node. Return deadlocked tokens on the given node.
      */
     public Optional<Optional<Deadlock<N, S, T>>> suspend(N node, S state, Clock<N> clock) {
-        logger.info("{}[{}] suspended {}", node, state, clock);
+        logger.debug("{}[{}] suspended {}", node, state, clock);
         if(!processClock(node, clock)) {
             return Optional.empty();
         }
@@ -76,7 +76,7 @@ public class WaitForGraph<N, S, T> {
      * Remove a node, and any tokens this node was waiting on.
      */
     public void remove(N node, Clock<N> clock) {
-        logger.info("{} stopped {}", node, clock);
+        logger.debug("{} stopped {}", node, clock);
         processClock(node, clock);
         waitingNodes.__remove(node);
         stoppedNodes.__insert(node);
@@ -96,7 +96,7 @@ public class WaitForGraph<N, S, T> {
      */
     private boolean processClock(final N node, final Clock<N> clock) {
         if(clocks.containsKey(node) && clocks.get(node).equals(clock)) {
-            logger.info("{} stale event {}", node, clock);
+            logger.debug("{} stale event {}", node, clock);
             return false;
         }
         clocks.__put(node, clock);
@@ -111,7 +111,7 @@ public class WaitForGraph<N, S, T> {
             if(sent > received) {
                 this.knownMessagesTo.put(receiver, receiverClock.set(node, sent));
                 if(waitingNodes.__remove(receiver) != null) {
-                    logger.info("{} activates {} (sent {} > received {})", node, receiver, sent, received);
+                    logger.debug("{} activates {} (sent {} > received {})", node, receiver, sent, received);
                 }
             }
         }
@@ -124,7 +124,7 @@ public class WaitForGraph<N, S, T> {
             final int sent = entry.getValue();
             final int received = receivedClock.count(sender);
             if(received < sent) {
-                logger.info("{} kept active by {} (received {} < sent {})", node, sender, received, sent);
+                logger.debug("{} kept active by {} (received {} < sent {})", node, sender, received, sent);
                 receivedClock.set(sender, sent);
                 atleast = false;
             }
