@@ -59,6 +59,10 @@
       <groupId>org.eclipse.viatra</groupId>
       <artifactId>org.eclipse.viatra.query.runtime.base.itc</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.collections</groupId>
+      <artifactId>eclipse-collections</artifactId>
+    </dependency>
     <!-- javax.annotation & jsr305 necessary for annotations in dependencies -->
     <dependency>
       <groupId>javax.annotation</groupId>
