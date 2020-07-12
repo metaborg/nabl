@@ -23,21 +23,27 @@ public interface IActorMonitor {
     }
 
     /**
-     * Actor is suspended.
+     * Actor suspended.
      */
     default void suspended(IActor<?> self) {
     }
 
     /**
-     * Actor is resumed.
+     * Actor resumed.
      */
     default void resumed(IActor<?> self) {
     }
 
     /**
-     * Actor is stopped.
+     * Actor stopped.
      */
     default void stopped(IActor<?> self) {
+    }
+
+    /**
+     * Actor failed.
+     */
+    default void failed(IActor<?> self, Throwable ex) {
     }
 
 }

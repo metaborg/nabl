@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
@@ -185,6 +187,20 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         return asyncActor;
     }
 
+    @Override public <U> void complete(ICompletable<U> completable, U value, Throwable ex) {
+        try {
+            put(new Complete<>(completable, value, ex), false);
+        } catch(ActorStoppedException e) {
+            completable.completeExceptionally(e);
+        }
+    }
+
+    @Override public <U> IFuture<U> schedule(IFuture<U> future) {
+        final CompletableFuture<U> completable = new CompletableFuture<>();
+        future.whenComplete((value, ex) -> complete(completable, value, ex));
+        return completable;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Run & stop
     ///////////////////////////////////////////////////////////////////////////
@@ -243,27 +259,35 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 logger.info("deliver message {}", message);
                 message.dispatch(impl); // responsible for setting sender, and calling monitor!
             }
-        } catch(InterruptedException ex) {
-            logger.info("interrupted");
         } catch(StopException ex) {
             logger.info("stopped");
-        } catch(ActorException ex) {
-            logger.info("failed", ex);
-        } finally {
-            synchronized(lock) {
-                state = ActorState.STOPPED;
-                messages.clear();
-                for(IReturn<?> ret : returns) {
-                    try {
-                        ret.complete(null, new ActorStoppedException());
-                    } catch(ActorStoppedException e) {
-                        // receiver stopped, ignore
-                    }
+            doStop(null);
+        } catch(Throwable ex) {
+            logger.error("failed", ex);
+            doStop(ex);
+        }
+    }
+
+    private void doStop(@Nullable Throwable cause) {
+        final boolean failed = cause != null;
+        final Throwable ex = new ActorStoppedException(cause);
+        synchronized(lock) {
+            state = ActorState.STOPPED;
+            messages.clear();
+            for(IReturn<?> ret : returns) {
+                try {
+                    ret.complete(null, ex);
+                } catch(ActorStoppedException e) {
+                    // receiver stopped, ignore
                 }
-                forEachMonitor(monitor -> {
-                    monitor.stopped(this);
-                });
             }
+            forEachMonitor(monitor -> {
+                if(failed) {
+                    monitor.failed(this, ex);
+                } else {
+                    monitor.stopped(this);
+                }
+            });
         }
     }
 
@@ -343,27 +367,32 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         @Override public void dispatch(T impl) throws ActorException {
+            final Object returnValue;
             try {
                 Actor.sender.set(sender);
 
                 method.setAccessible(true);
-                final Object returnValue = method.invoke(impl, args);
-
-                final Set<String> tags = tags(method);
-                forEachMonitor(monitor -> {
-                    monitor.delivered(Actor.this, sender, tags);
-                });
-
+                returnValue = method.invoke(impl, args);
+            } catch(Throwable ex) {
+                final ActorException ae = new ActorException("Dispatch failed.", ex);
                 if(result != null) {
-                    // NOTE The completion runs on the thread of the receiving actor.
-                    //      The different async(...) cases dispatch the result as a
-                    //      message on the thread of the sender, or as a job on the executor.
-                    ((IFuture<?>) returnValue).whenComplete(result::complete);
+                    result.complete(null, ae);
                 }
-            } catch(ReflectiveOperationException | IllegalArgumentException ex) {
-                throw new ActorException("Dispatch failed.", ex);
+                throw ae;
             } finally {
                 Actor.sender.remove();
+            }
+
+            final Set<String> tags = tags(method);
+            forEachMonitor(monitor -> {
+                monitor.delivered(Actor.this, sender, tags);
+            });
+
+            if(result != null) {
+                // NOTE The completion runs on the thread of the receiving actor.
+                //      The different async(...) cases dispatch the result as a
+                //      message on the thread of the sender, or as a job on the executor.
+                ((IFuture<?>) returnValue).whenComplete(result::complete);
             }
         }
 
@@ -376,7 +405,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private class Return<U> implements IMessage, IReturn<U> {
 
-        private final Actor<?> sender;
+        private final Actor<?> invoker;
         private final Method method;
         private final ICompletable<U> completable;
 
@@ -384,7 +413,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         private Throwable ex;
 
         private Return(Actor<?> sender, Method method, ICompletable<U> completable) {
-            this.sender = sender;
+            this.invoker = sender;
             this.method = method;
             this.completable = completable;
         }
@@ -401,17 +430,17 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             this.value = value;
             this.ex = ex;
 
-            logger.info("send {} message {}", sender, this);
-            sender.put(this, false);
+            logger.info("send {} message {}", invoker, this);
+            invoker.put(this, false);
 
             final Set<String> tags = tags(method);
             forEachMonitor(monitor -> {
-                monitor.sent(Actor.this, sender, tags);
+                monitor.sent(Actor.this, invoker, tags);
             });
         }
 
         ///////////////////////////////////////////////////////////////////////
-        // IMessage -- called on the (original) sender's thread
+        // IMessage -- called on the invoker's thread
         ///////////////////////////////////////////////////////////////////////
 
         @Override public void dispatch(Object impl) {
@@ -423,8 +452,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 completable.complete(value, ex);
 
                 final Set<String> tags = tags(method);
-                sender.forEachMonitor(monitor -> {
-                    monitor.delivered(sender, Actor.this, tags);
+                invoker.forEachMonitor(monitor -> {
+                    monitor.delivered(invoker, Actor.this, tags);
                 });
 
 
@@ -435,6 +464,39 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
         @Override public String toString() {
             return Actor.this + " returns " + completable;
+        }
+
+    }
+
+    private class Complete<U> implements IMessage<T> {
+
+        private final ICompletable<U> completable;
+        private final U value;
+        private final Throwable ex;
+
+        private Complete(ICompletable<U> completable, U value, Throwable ex) {
+            this.completable = completable;
+            this.value = value;
+            this.ex = ex;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // IMessage -- called on the (original) sender's thread
+        ///////////////////////////////////////////////////////////////////////
+
+        @Override public void dispatch(Object impl) {
+            // impl is ignored, since the future does not dispatch on the
+            // object directly, instead just calling the handler(s).
+            try {
+                Actor.sender.set(Actor.this);
+                completable.complete(value, ex);
+            } finally {
+                Actor.sender.remove();
+            }
+        }
+
+        @Override public String toString() {
+            return "complete " + completable;
         }
 
     }
