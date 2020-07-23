@@ -78,21 +78,7 @@ abstract class NameResolution<S, L, D> {
             final Set<EdgeOrData<L>> max_L = max(L);
             final List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
             for(EdgeOrData<L> l : max_L) {
-                final IFuture<Env<S, L, D>> env1 = env_L(path, re, smaller(L, l), cancel);
-                logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
-                env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
-                envs.add(env1);
-                final IFuture<Env<S, L, D>> env2 = env1.thenCompose((e1) -> {
-                    if(!e1.isEmpty() && dataEquiv.alwaysTrue()) {
-                        return empty();
-                    }
-                    return env_l(path, re, l, cancel).thenApply(e2 -> {
-                        return minus(e2, e1);
-                    });
-                });
-                logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
-                env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
-                envs.add(env2);
+                envs.add(env_lL(path, re, l, smaller(L, l), cancel));
             }
             final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
             logger.trace("env_L {} {} {}: listEnv: {}", path, re, L, listEnv);
@@ -108,6 +94,24 @@ abstract class NameResolution<S, L, D> {
         } catch(ResolutionException | InterruptedException ex) {
             return CompletableFuture.completedExceptionally(ex);
         }
+    }
+
+    private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, Set<EdgeOrData<L>> L,
+            ICancel cancel) {
+        final IFuture<Env<S, L, D>> env1 = env_L(path, re, L, cancel);
+        logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
+        env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
+        return env1.thenCompose(e1 -> {
+            if(!e1.isEmpty() && dataEquiv.alwaysTrue()) {
+                return CompletableFuture.completedFuture(e1);
+            }
+            final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
+            logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
+            env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
+            return env2.thenApply(e2 -> {
+                return shadows(e1, e2);
+            });
+        });
     }
 
     private Set<EdgeOrData<L>> max(Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
@@ -155,7 +159,7 @@ abstract class NameResolution<S, L, D> {
             guard.whenComplete((r, ex) -> logger.trace("env_data {} {}: pass {}", path, re, guard));
             final IFuture<Env<S, L, D>> env = guard.thenApply(ignored -> {
                 final D datum;
-                if((datum = getData(re, path).orElse(null)) == null || !dataWF.wf(datum)) {
+                if((datum = getData(path.getTarget()).orElse(null)) == null || !dataWF.wf(datum)) {
                     return Env.empty();
                 }
                 logger.trace("env_data {} {}: datum {}", path, re, datum);
@@ -185,7 +189,7 @@ abstract class NameResolution<S, L, D> {
             guard.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: pass {}", path, re, l, guard));
             return guard.thenCompose(ignored -> {
                 List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
-                for(S nextScope : getEdges(newRe, path, l)) {
+                for(S nextScope : getEdges(path.getTarget(), l)) {
                     final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
                     if(p.isPresent()) {
                         envs.add(env(p.get(), newRe, cancel));
@@ -213,15 +217,17 @@ abstract class NameResolution<S, L, D> {
     // environments                                                          //
     ///////////////////////////////////////////////////////////////////////////
 
-    private Env<S, L, D> minus(Env<S, L, D> env1, Env<S, L, D> env2) throws ResolutionException, InterruptedException {
+    private Env<S, L, D> shadows(Env<S, L, D> env1, Env<S, L, D> env2)
+            throws ResolutionException, InterruptedException {
         final Env.Builder<S, L, D> env = Env.builder();
-        outer: for(IResolutionPath<S, L, D> p1 : env1) {
-            for(IResolutionPath<S, L, D> p2 : env2) {
+        env.addAll(env1);
+        outer: for(IResolutionPath<S, L, D> p2 : env2) {
+            for(IResolutionPath<S, L, D> p1 : env1) {
                 if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
-                    continue outer;
+                    continue outer; // skip
                 }
             }
-            env.add(p1);
+            env.add(p2);
         }
         return env.build();
     }
@@ -234,12 +240,12 @@ abstract class NameResolution<S, L, D> {
     // edges and data                                                        //
     ///////////////////////////////////////////////////////////////////////////
 
-    protected Optional<D> getData(LabelWF<L> re, IScopePath<S, L> path) {
-        return scopeGraph.get().getData(path.getTarget());
+    protected Optional<D> getData(S scope) {
+        return scopeGraph.get().getData(scope);
     }
 
-    protected Iterable<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
-        return scopeGraph.get().getEdges(path.getTarget(), l);
+    protected Iterable<S> getEdges(S scope, L l) {
+        return scopeGraph.get().getEdges(scope, l);
     }
 
 }
