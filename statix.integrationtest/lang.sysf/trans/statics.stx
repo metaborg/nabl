@@ -49,8 +49,14 @@ signature
 
 rules
 
-  programOK : Exp
-  programOK(e) :- {s T}
+  projectOK : scope
+
+  projectOK(s).
+
+
+  fileOK : scope * Exp
+
+  fileOK(_, e) :- {s T}
     new s,
     typeOfExp(s, e) == T.
 

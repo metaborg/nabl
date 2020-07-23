@@ -11,7 +11,7 @@ imports
 
 rules // Analysis
 
-  editor-analyze = stx-editor-analyze(id|"statics", "programOK")
+  editor-analyze = stx-editor-analyze(id|"statics", "projectOK", "fileOK")
   
 rules // Editor services
   

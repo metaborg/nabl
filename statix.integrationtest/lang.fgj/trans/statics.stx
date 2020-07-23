@@ -9,14 +9,19 @@ imports
 
 rules
 
-  programOK : Program
+  projectOK : scope
 
-  programOK(Program(cdecls)) :- {s}
+  projectOK(s).
+
+
+  fileOK : scope * Program
+
+  fileOK(_, Program(cdecls)) :- {s}
     new s,
     object(s),
     classesOK(s, cdecls).
 
-  programOK(Let(cdecls, e)) :- {s}
+  fileOK(_, Let(cdecls, e)) :- {s}
     new s,
     object(s),
     classesOK(s, cdecls),
