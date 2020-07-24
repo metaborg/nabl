@@ -4,7 +4,6 @@ import java.util.Set;
 
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.LabelOrder;
@@ -33,13 +32,13 @@ public interface ITypeCheckerContext<S, L, D, R> {
     /**
      * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
      */
-    S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean shared);
+    S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared);
 
     /**
      * Set datum of a scope. Scope must be open for data at given access level. Datum is automatically closed by setting
      * it.
      */
-    void setDatum(S scope, D datum, Access access);
+    void setDatum(S scope, D datum);
 
     /**
      * Add edge. Source scope must be open for this label.
@@ -54,7 +53,7 @@ public interface ITypeCheckerContext<S, L, D, R> {
     /**
      * Declare scope to be closed for sharing.
      */
-    void doneSharing(S scope);
+    void closeScope(S scope);
 
     /**
      * Execute scope graph query in the given scope.
@@ -80,11 +79,11 @@ public interface ITypeCheckerContext<S, L, D, R> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean shared) {
+            @Override public S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void setDatum(S scope, D datum, Access access) {
+            @Override public void setDatum(S scope, D datum) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
@@ -96,7 +95,7 @@ public interface ITypeCheckerContext<S, L, D, R> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void doneSharing(S scope) {
+            @Override public void closeScope(S scope) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

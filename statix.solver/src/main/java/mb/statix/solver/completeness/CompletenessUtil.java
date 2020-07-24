@@ -13,7 +13,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.Constraints;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.CriticalEdge;
@@ -45,7 +44,7 @@ public class CompletenessUtil {
             onFalse -> Unit.unit,
             onInequal -> Unit.unit,
             onNew -> {
-                criticalEdge.apply(onNew.scopeTerm(), EdgeOrData.data(Access.INTERNAL));
+                criticalEdge.apply(onNew.scopeTerm(), EdgeOrData.data());
                 return Unit.unit;
             },
             onResolveQuery -> Unit.unit,

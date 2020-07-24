@@ -13,7 +13,6 @@ import com.google.common.collect.Streams;
 
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.IncompleteException;
 import mb.statix.scopegraph.reference.LabelOrder;
@@ -44,7 +43,7 @@ public class NameResolution<S extends D, L, D, X> {
             DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.spec = spec;
         this.scopeGraph = scopeGraph;
-        this.dataLabel = EdgeOrData.data(Access.INTERNAL);
+        this.dataLabel = EdgeOrData.data();
         this.allLabels = Streams.concat(Stream.of(dataLabel), scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge))
                 .collect(Collectors.toSet());
         this.labelWF = labelWF;
@@ -120,7 +119,7 @@ public class NameResolution<S extends D, L, D, X> {
 
     private Env<S, L, D, X> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path)
             throws ResolutionException, InterruptedException {
-        return l.matchInResolution(acc -> env_data(re, path), lbl -> env_edges(lbl, re, path));
+        return l.matchInResolution(() -> env_data(re, path), lbl -> env_edges(lbl, re, path));
     }
 
     private Env<S, L, D, X> env_data(LabelWF<L> re, IScopePath<S, L> path)

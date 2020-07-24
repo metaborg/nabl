@@ -62,7 +62,6 @@ import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -481,12 +480,8 @@ public class StatixSolver {
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
                 final Set<ITerm> labels = getOpenEdges(scopeTerm);
 
-                final Scope scope =
-                        scopeGraph.freshScope(name, labels, ImmutableList.of(Access.INTERNAL, Access.EXTERNAL), false);
-                scopeGraph.setDatum(scope, datumTerm, Access.INTERNAL);
-                delayAction(() -> {
-                    scopeGraph.setDatum(scope, state.unifier().findRecursive(datumTerm), Access.EXTERNAL);
-                }, state.unifier().getVars(datumTerm));
+                final Scope scope = scopeGraph.freshScope(name, labels, true, false);
+                scopeGraph.setDatum(scope, datumTerm);
                 final IConstraint eq = new CEqual(scopeTerm, scope, c);
                 return successNew(c, state, ImmutableList.of(eq), fuel);
             }
@@ -713,11 +708,12 @@ public class StatixSolver {
         // edge when the close is released
         final List<EdgeOrData<ITerm>> openEdges =
                 Streams.stream(completeness.get(varOrScope, state.unifier())).collect(Collectors.toList());
-        final List<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope).map(var -> delayedCloses.stream()
-                .filter(e -> state.unifier().findRecursive(var).equals(e.scope())).map(e -> e.edgeOrData()))
+        final List<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope)
+                .map(var -> delayedCloses.stream().filter(e -> state.unifier().findRecursive(var).equals(e.scope()))
+                        .map(e -> e.edgeOrData()))
                 .orElse(Stream.<EdgeOrData<ITerm>>empty()).collect(Collectors.toList());
         return stream(Iterables.concat(openEdges, queuedEdges)).<ITerm>flatMap(eod -> {
-            return eod.match(acc -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
+            return eod.match(() -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
         }).collect(CapsuleCollectors.toSet());
     }
 
@@ -739,7 +735,7 @@ public class StatixSolver {
                         "Expected scope, got " + state.unifier().toString(criticalEdge.scope())));
         // @formatter:off
         criticalEdge.edgeOrData().match(
-            acc -> {
+            () -> {
                 // ignore data labels, they are managed separately
                 return Unit.unit;
             },
@@ -771,6 +767,21 @@ public class StatixSolver {
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // external data
+    ///////////////////////////////////////////////////////////////////////////
+
+    public IFuture<ITerm> getExternalRepresentation(ITerm t) {
+        final CompletableFuture<ITerm> f = new CompletableFuture<>();
+        try {
+            delayAction(() -> {
+                f.complete(state.unifier().findRecursive(t));
+            }, state.unifier().getVars(t));
+        } catch(InterruptedException ex) {
+            f.completeExceptionally(ex);
+        }
+        return f;
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // toString

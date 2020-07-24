@@ -14,7 +14,7 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Streams;
+import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
@@ -39,7 +39,6 @@ import mb.statix.concurrent.p_raffrayi.impl.tokens.Resolution;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -171,35 +170,35 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         doInitShare(self, root, edges, sharing);
     }
 
-    @Override public S freshScope(String baseName, Iterable<L> labels, Iterable<Access> data, boolean sharing) {
+    @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         final String name = baseName.replace("-", "_");
         final int n = scopeNameCounters.add(name);
         final S scope = context.makeScope(name + "-" + n);
 
-        final List<EdgeOrData<L>> edges =
-                Streams.concat(stream(labels).map(EdgeOrData::edge), stream(data).map(EdgeOrData::<L>data))
-                        .collect(Collectors.toList());
+        final List<EdgeOrData<L>> labels = Lists.newArrayList();
+        for(L l : edgeLabels) {
+            labels.add(EdgeOrData.edge(l));
+        }
+        if(data) {
+            labels.add(EdgeOrData.data());
+        }
 
         doAddLocalShare(self, scope);
-        doInitShare(self, scope, edges, sharing);
+        doInitShare(self, scope, labels, sharing);
 
         return scope;
     }
 
-    @Override public void setDatum(S scope, D datum, Access access) {
+    @Override public void setDatum(S scope, D datum) {
         assertInState(UnitState.ACTIVE);
 
-        final EdgeOrData<L> edge = EdgeOrData.data(access);
-        assertEdgeOpen(scope, edge);
-
-        if(access.equals(Access.EXTERNAL) && !isEdgeClosed(scope, EdgeOrData.data(Access.INTERNAL))) {
-            throw new IllegalArgumentException("Cannot set external data before internal data.");
-        }
+        final EdgeOrData<L> edge = EdgeOrData.data();
+        assertLabelOpen(scope, edge);
 
         scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
-        doCloseEdge(self, scope, edge);
+        doCloseLabel(self, scope, edge);
     }
 
     @Override public void addEdge(S source, L label, S target) {
@@ -211,13 +210,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public void closeEdge(S source, L label) {
         assertInState(UnitState.ACTIVE);
 
-        doCloseEdge(self, source, EdgeOrData.edge(label));
+        doCloseLabel(self, source, EdgeOrData.edge(label));
     }
 
-    @Override public void doneSharing(S scope) {
+    @Override public void closeScope(S scope) {
         assertInState(UnitState.ACTIVE);
 
-        doDoneSharing(self, scope);
+        doCloseScope(self, scope);
     }
 
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
@@ -245,7 +244,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _doneSharing(S scope) {
-        doDoneSharing(self.sender(TYPE), scope);
+        doCloseScope(self.sender(TYPE), scope);
     }
 
     @Override public final void _addEdge(S source, L label, S target) {
@@ -253,7 +252,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _closeEdge(S scope, EdgeOrData<L> edge) {
-        doCloseEdge(self.sender(TYPE), scope, edge);
+        doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
     @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
@@ -301,7 +300,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private final void doDoneSharing(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
+    private final void doCloseScope(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
         context.granted(DoneSharing.of(scope), sender);
@@ -316,7 +315,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private final void doCloseEdge(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
+    private final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
         context.granted(CloseEdge.of(scope, edge), sender);
@@ -333,7 +332,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final void doAddEdge(IActorRef<? extends IUnit<S, L, D, R>> sender, S source, L label, S target) {
         assertOwnOrSharedScope(source);
-        assertEdgeOpen(source, EdgeOrData.edge(label));
+        assertLabelOpen(source, EdgeOrData.edge(label));
 
         scopeGraph.set(scopeGraph.get().addEdge(source, label, target));
 
@@ -346,9 +345,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, R>> sender, IScopePath<S, L> path,
             LabelWF<L> labelWF, DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         logger.debug("got _query from {}", sender);
-        final Access access = sender.equals(self) ? Access.INTERNAL : Access.EXTERNAL;
+        final boolean external = !sender.equals(self);
         final NameResolution<S, L, D> nr =
-                new NameResolution<S, L, D>(scopeGraph, labelOrder, dataWF, dataEquiv, access, this::isComplete) {
+                new NameResolution<S, L, D>(scopeGraph.get().getEdgeLabels(), labelOrder, dataWF, dataEquiv) {
 
                     @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
                             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
@@ -366,6 +365,26 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                                 context.granted(Resolution.of(result), owner);
                             }));
                         }
+                    }
+
+                    @Override protected IFuture<Optional<D>> getDatum(S scope) {
+                        return isComplete(scope, EdgeOrData.data()).thenCompose(__ -> {
+                            final Optional<D> datum;
+                            if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
+                                return CompletableFuture.completedFuture(Optional.empty());
+                            }
+                            if(external) {
+                                return typeChecker.getExternalRepresentation(datum.get()).thenApply(Optional::of);
+                            } else {
+                                return CompletableFuture.completedFuture(datum);
+                            }
+                        });
+                    }
+
+                    @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
+                        return isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+                            return scopeGraph.get().getEdges(scope, label);
+                        });
                     }
 
                 };
@@ -476,7 +495,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private void assertEdgeOpen(S scope, EdgeOrData<L> edge) {
+    private void assertLabelOpen(S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
             throw new IllegalArgumentException("Edge " + edge + " is not open.");

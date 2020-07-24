@@ -2,27 +2,20 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.metaborg.util.Ref;
-import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Streams;
 
+import io.usethesource.capsule.Set;
+import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -36,42 +29,55 @@ abstract class NameResolution<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(NameResolution.class);
 
-    private final Ref<? extends IScopeGraph<S, L, D>> scopeGraph;
-
     private final EdgeOrData<L> dataLabel;
-    private final Set<EdgeOrData<L>> allLabels;
+    private final Set.Immutable<L> edgeLabels;
 
-    private final LabelOrder<L> labelOrder; // default: false
+    private final LabelOrder<L> labelOrder;
 
-    private final DataWF<D> dataWF; // default: true
-    private final DataLeq<D> dataEquiv; // default: false
+    private final DataWF<D> dataWF;
+    private final DataLeq<D> dataEquiv;
 
-    private final Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete; // default: true
+    public NameResolution(Iterable<L> edgeLabels, LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
+        this.dataLabel = EdgeOrData.data();
+        this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
 
-    public NameResolution(Ref<? extends IScopeGraph<S, L, D>> scopeGraph, LabelOrder<L> labelOrder, DataWF<D> dataWF,
-            DataLeq<D> dataEquiv, Access access, Function2<S, EdgeOrData<L>, IFuture<Void>> isComplete) {
-        this.scopeGraph = scopeGraph;
-        this.dataLabel = EdgeOrData.data(access);
-        this.allLabels =
-                Streams.concat(Stream.of(dataLabel), scopeGraph.get().getEdgeLabels().stream().map(EdgeOrData::edge))
-                        .collect(Collectors.toSet());
         this.labelOrder = labelOrder;
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
-        this.isComplete = isComplete;
     }
 
-    public abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv);
+
+    protected abstract IFuture<Optional<D>> getDatum(S scope);
+
+    protected abstract IFuture<Iterable<S>> getEdges(S scope, L label);
+
+    ///////////////////////////////////////////////////////////////////////////
 
     public IFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
         logger.trace("env {}", path);
-        return externalEnv(path, re, labelOrder, dataWF, dataEquiv).orElseGet(() -> env_L(path, re, allLabels, cancel));
+        final Set.Transient<EdgeOrData<L>> labels = Set.Transient.of();
+        try {
+            if(re.accepting()) {
+                labels.__insert(dataLabel);
+            }
+            for(L l : edgeLabels) {
+                if(re.step(l).isPresent()) {
+                    labels.__insert(EdgeOrData.edge(l));
+                }
+            }
+        } catch(InterruptedException | ResolutionException ex) {
+            return CompletableFuture.completedExceptionally(ex);
+        }
+        return externalEnv(path, re, labelOrder, dataWF, dataEquiv)
+                .orElseGet(() -> env_L(path, re, labels.freeze(), cancel));
     }
 
-    // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
-    // the graph
-    private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWF<L> re, Set<EdgeOrData<L>> L, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWF<L> re, Set.Immutable<EdgeOrData<L>> L,
+            ICancel cancel) {
         logger.trace("env_L {} {} {}", path, re, L);
         try {
             cancel.throwIfCancelled();
@@ -96,8 +102,8 @@ abstract class NameResolution<S, L, D> {
         }
     }
 
-    private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, Set<EdgeOrData<L>> L,
-            ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l,
+            Set.Immutable<EdgeOrData<L>> L, ICancel cancel) {
         final IFuture<Env<S, L, D>> env1 = env_L(path, re, L, cancel);
         logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
         env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
@@ -114,33 +120,34 @@ abstract class NameResolution<S, L, D> {
         });
     }
 
-    private Set<EdgeOrData<L>> max(Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<EdgeOrData<L>> max = ImmutableSet.builder();
+    private Set.Immutable<EdgeOrData<L>> max(Set.Immutable<EdgeOrData<L>> L)
+            throws ResolutionException, InterruptedException {
+        final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
                     continue outer;
                 }
             }
-            max.add(l1);
+            max.__insert(l1);
         }
-        return max.build();
+        return max.freeze();
     }
 
-    private Set<EdgeOrData<L>> smaller(Set<EdgeOrData<L>> L, EdgeOrData<L> l1)
+    private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<EdgeOrData<L>> smaller = ImmutableSet.builder();
+        final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
-                smaller.add(l2);
+                smaller.__insert(l2);
             }
         }
-        return smaller.build();
+        return smaller.freeze();
     }
 
     private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
-            return l.matchInResolution(acc -> env_data(path, re), lbl -> env_edges(path, re, lbl, cancel));
+            return l.matchInResolution(() -> env_data(path, re), lbl -> env_edges(path, re, lbl, cancel));
         } catch(ResolutionException | InterruptedException e) {
             throw new IllegalStateException("Should not happen.");
         }
@@ -148,48 +155,30 @@ abstract class NameResolution<S, L, D> {
 
     private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWF<L> re) {
         logger.trace("env_data {} {}", path, re);
-        try {
-            if(!re.accepting()) {
-                final IFuture<Env<S, L, D>> env = empty();
-                logger.trace("env_data {} {}: empty {}", path, re, env);
-                return env;
+        final IFuture<Optional<D>> datum = getDatum(path.getTarget());
+        logger.trace("env_data {} {}: datum {}", path, re, datum);
+        final IFuture<Env<S, L, D>> env = datum.thenApply(d -> {
+            if(!d.isPresent() || !dataWF.wf(d.get())) {
+                return Env.empty();
             }
-            final IFuture<Void> guard = isComplete.apply(path.getTarget(), dataLabel);
-            logger.trace("env_data {} {}: guard {}", path, re, guard);
-            guard.whenComplete((r, ex) -> logger.trace("env_data {} {}: pass {}", path, re, guard));
-            final IFuture<Env<S, L, D>> env = guard.thenApply(ignored -> {
-                final D datum;
-                if((datum = getData(path.getTarget()).orElse(null)) == null || !dataWF.wf(datum)) {
-                    return Env.empty();
-                }
-                logger.trace("env_data {} {}: datum {}", path, re, datum);
-                final IResolutionPath<S, L, D> resPath = Paths.resolve(path, datum);
-                return Env.of(resPath);
-            });
-            logger.trace("env_data {} {}: env {}", path, re, env);
-            env.whenComplete((r, ex) -> logger.trace("env_data {} {}: result {}", path, re, env));
-            return env;
-        } catch(ResolutionException | InterruptedException ex) {
-            return CompletableFuture.completedExceptionally(ex);
-        }
+            logger.trace("env_data {} {}: datum {}", path, re, d.get());
+            final IResolutionPath<S, L, D> resPath = Paths.resolve(path, d.get());
+            return Env.of(resPath);
+        });
+        logger.trace("env_data {} {}: env {}", path, re, env);
+        env.whenComplete((r, ex) -> logger.trace("env_data {} {}: result {}", path, re, env));
+        return env;
     }
 
     private IFuture<Env<S, L, D>> env_edges(IScopePath<S, L> path, LabelWF<L> re, L l, ICancel cancel) {
         logger.trace("env_edges {} {} {}", path, re, l);
         try {
-            final LabelWF<L> newRe;
-            if((newRe = re.step(l).orElse(null)) == null) {
-                final IFuture<Env<S, L, D>> env = empty();
-                logger.trace("env_edges {} {} {}: empty {}", path, re, l, env);
-                return env;
-            }
-            final EdgeOrData<L> edgeLabel = EdgeOrData.edge(l);
-            final IFuture<Void> guard = isComplete.apply(path.getTarget(), edgeLabel);
-            logger.trace("env_edges {} {} {}: guard {}", path, re, l, guard);
-            guard.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: pass {}", path, re, l, guard));
-            return guard.thenCompose(ignored -> {
+            final LabelWF<L> newRe = re.step(l).get();
+            final IFuture<Iterable<S>> scopes = getEdges(path.getTarget(), l);
+            logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
+            return scopes.thenCompose(ss -> {
                 List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
-                for(S nextScope : getEdges(path.getTarget(), l)) {
+                for(S nextScope : ss) {
                     final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
                     if(p.isPresent()) {
                         envs.add(env(p.get(), newRe, cancel));
@@ -230,22 +219,6 @@ abstract class NameResolution<S, L, D> {
             env.add(p2);
         }
         return env.build();
-    }
-
-    private IFuture<Env<S, L, D>> empty() {
-        return CompletableFuture.completedFuture(Env.empty());
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // edges and data                                                        //
-    ///////////////////////////////////////////////////////////////////////////
-
-    protected Optional<D> getData(S scope) {
-        return scopeGraph.get().getData(scope);
-    }
-
-    protected Iterable<S> getEdges(S scope, L l) {
-        return scopeGraph.get().getEdges(scope, l);
     }
 
 }

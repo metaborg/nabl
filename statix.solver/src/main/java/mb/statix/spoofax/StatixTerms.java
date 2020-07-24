@@ -68,7 +68,6 @@ import mb.statix.constraints.messages.TextPart;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
-import mb.statix.scopegraph.reference.Access;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
@@ -223,8 +222,8 @@ public class StatixTerms {
             ltMatcher = ltMatcher.map(lt -> {
                 final IRelation.Transient<EdgeOrData<ITerm>> newLt = Relation.Transient.of(lt.getDescription());
                 lt.stream().forEach(ls -> {
-                    final EdgeOrData<ITerm> newL1 = ls._1().match(acc -> EdgeOrData.edge(rel), EdgeOrData::edge);
-                    final EdgeOrData<ITerm> newL2 = ls._2().match(acc -> EdgeOrData.edge(rel), EdgeOrData::edge);
+                    final EdgeOrData<ITerm> newL1 = ls._1().match(() -> EdgeOrData.edge(rel), EdgeOrData::edge);
+                    final EdgeOrData<ITerm> newL2 = ls._2().match(() -> EdgeOrData.edge(rel), EdgeOrData::edge);
                     try {
                         newLt.add(newL1, newL2);
                     } catch(RelationException e) {
@@ -313,8 +312,8 @@ public class StatixTerms {
 
     public static IMatcher<Tuple2<EdgeOrData<ITerm>, EdgeOrData<ITerm>>> labelPair() {
         return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> {
-            final EdgeOrData<ITerm> _l1 = isEOP(l1) ? EdgeOrData.data(Access.INTERNAL) : EdgeOrData.edge(l1);
-            final EdgeOrData<ITerm> _l2 = isEOP(l2) ? EdgeOrData.data(Access.INTERNAL) : EdgeOrData.edge(l2);
+            final EdgeOrData<ITerm> _l1 = isEOP(l1) ? EdgeOrData.data() : EdgeOrData.edge(l1);
+            final EdgeOrData<ITerm> _l2 = isEOP(l2) ? EdgeOrData.data() : EdgeOrData.edge(l2);
             return Tuple2.of(_l1, _l2);
         });
     }

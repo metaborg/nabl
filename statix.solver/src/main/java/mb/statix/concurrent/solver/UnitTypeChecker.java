@@ -27,6 +27,8 @@ public class UnitTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Solver
     private final Spec spec;
     private final IDebugContext debug;
 
+    private StatixSolver solver;
+
     public UnitTypeChecker(Rule rule, Spec spec, IDebugContext debug) {
         this.rule = rule;
         this.spec = spec;
@@ -41,9 +43,13 @@ public class UnitTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Solver
             return CompletableFuture
                     .completedExceptionally(new IllegalArgumentException("Cannot apply initial rule to root scope."));
         }
-        final StatixSolver solver = new StatixSolver(applyResult.body(), spec, applyResult.state(),
-                Completeness.Immutable.of(spec), debug, new NullProgress(), new NullCancel(), context);
+        solver = new StatixSolver(applyResult.body(), spec, applyResult.state(), Completeness.Immutable.of(spec), debug,
+                new NullProgress(), new NullCancel(), context);
         return solver.solve(root);
+    }
+
+    @Override public IFuture<ITerm> getExternalRepresentation(ITerm datum) {
+        return solver.getExternalRepresentation(datum);
     }
 
 }

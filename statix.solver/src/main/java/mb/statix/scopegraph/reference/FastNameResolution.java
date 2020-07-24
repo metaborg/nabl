@@ -36,7 +36,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
             DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.scopeGraph = scopeGraph;
-        this.dataLabel = EdgeOrData.data(Access.INTERNAL);
+        this.dataLabel = EdgeOrData.data();
         this.allLabels = scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge).collect(CapsuleCollectors.toSet())
                 .__insert(dataLabel);
         this.labelWF = labelWF;
@@ -78,7 +78,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path,
             Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
-        return l.matchInResolution(acc -> env_data(re, path, specifics),
+        return l.matchInResolution(() -> env_data(re, path, specifics),
                 lbl -> env_edges(lbl, re, path, specifics, cancel));
     }
 

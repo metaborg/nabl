@@ -39,7 +39,7 @@ public class SubProjectTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, 
             final Rule rule = entry.getValue();
             context.add(id, new UnitTypeChecker(rule, spec, debug), root);
         }
-        context.doneSharing(root);
+        context.closeScope(root);
         return CompletableFuture.completedFuture(SolverResult.of(spec));
     }
 

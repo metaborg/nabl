@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi;
 
 import javax.annotation.Nullable;
 
+import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 
 /**
@@ -10,5 +11,9 @@ import mb.statix.concurrent.actors.futures.IFuture;
 public interface ITypeChecker<S, L, D, R> {
 
     IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, @Nullable S root);
+
+    default IFuture<D> getExternalRepresentation(D datum) {
+        return CompletableFuture.completedFuture(datum);
+    }
 
 }
