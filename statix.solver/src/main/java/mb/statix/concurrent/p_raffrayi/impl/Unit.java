@@ -32,10 +32,10 @@ import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseEdge;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.DoneSharing;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.InitShare;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.Resolution;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseLabel;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -223,11 +223,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         assertInState(UnitState.ACTIVE);
 
-        final IFuture<Env<S, L, D>> result = doQuery(self, Paths.empty(scope), labelWF, dataWF, labelOrder, dataEquiv);
-        context.waitFor(Resolution.of(result), self);
+        final IScopePath<S, L> path = Paths.empty(scope);
+        final IFuture<Env<S, L, D>> result = doQuery(self, path, labelWF, dataWF, labelOrder, dataEquiv);
+        final Query<S, L, D> wf = Query.of(path, labelWF, dataWF, labelOrder, dataEquiv, result);
+        context.waitFor(wf, self);
 
         return self.schedule(result).whenComplete((env, ex) -> {
-            context.granted(Resolution.of(result), self);
+            context.granted(wf, self);
         }).thenApply(CapsuleUtil::toSet);
     }
 
@@ -266,7 +268,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         scopes.__insert(scope);
-        context.waitFor(InitShare.of(scope), sender);
+        context.waitFor(InitScope.of(scope), sender);
     }
 
     private final void doAddShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
@@ -282,12 +284,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             Iterable<EdgeOrData<L>> edges, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
-        context.granted(InitShare.of(scope), sender);
+        context.granted(InitScope.of(scope), sender);
         for(EdgeOrData<L> edge : edges) {
-            context.waitFor(CloseEdge.of(scope, edge), sender);
+            context.waitFor(CloseLabel.of(scope, edge), sender);
         }
         if(sharing) {
-            context.waitFor(DoneSharing.of(scope), sender);
+            context.waitFor(CloseScope.of(scope), sender);
         }
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
@@ -303,7 +305,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final void doCloseScope(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
-        context.granted(DoneSharing.of(scope), sender);
+        context.granted(CloseScope.of(scope), sender);
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -318,7 +320,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
-        context.granted(CloseEdge.of(scope, edge), sender);
+        context.granted(CloseLabel.of(scope, edge), sender);
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -359,10 +361,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                             // this code mirrors query(...)
                             final IFuture<Env<S, L, D>> result =
                                     self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
-                            context.waitFor(Resolution.of(result), owner);
+                            final Query<S, L, D> wf = Query.of(path, re, dataWF, labelOrder, dataEquiv, result);
+                            context.waitFor(wf, owner);
                             return Optional.of(result.whenComplete((r, ex) -> {
                                 logger.debug("got answer from {}", sender);
-                                context.granted(Resolution.of(result), owner);
+                                context.granted(wf, owner);
                             }));
                         }
                     }
@@ -401,7 +404,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void releaseDelays(S scope) {
         for(Entry<EdgeOrData<L>, ICompletable<Void>> entry : delays.get(scope)) {
             final EdgeOrData<L> edge = entry.getKey();
-            if(!context.isWaitingFor(CloseEdge.of(scope, edge))) {
+            if(!context.isWaitingFor(CloseLabel.of(scope, edge))) {
                 final ICompletable<Void> future = entry.getValue();
                 logger.debug("released {} on {}(/{})", future, scope, edge);
                 delays.remove(scope, edge, future);
@@ -419,11 +422,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     private boolean isScopeInitialized(S scope) {
-        return !context.isWaitingFor(InitShare.of(scope)) && !context.isWaitingFor(DoneSharing.of(scope));
+        return !context.isWaitingFor(InitScope.of(scope)) && !context.isWaitingFor(CloseScope.of(scope));
     }
 
     private boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
-        return isScopeInitialized(scope) && !context.isWaitingFor(CloseEdge.of(scope, edge));
+        return isScopeInitialized(scope) && !context.isWaitingFor(CloseLabel.of(scope, edge));
     }
 
     private IFuture<Void> isComplete(S scope, EdgeOrData<L> edge) {

@@ -3,7 +3,7 @@ package mb.statix.concurrent.p_raffrayi.impl.tokens;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public abstract class ADoneSharing<S, L, D> implements IWaitFor<S, L, D> {
+public abstract class AInitScope<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract S scope();
 

@@ -5,7 +5,7 @@ import org.immutables.value.Value;
 import mb.statix.scopegraph.reference.EdgeOrData;
 
 @Value.Immutable
-public abstract class ACloseEdge<S, L, D> implements IWaitFor<S, L, D> {
+public abstract class ACloseLabel<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract S scope();
 
