@@ -16,7 +16,7 @@
 
   <modules>
     <module>lang.fgj</module>
-    <!--module>lang.fgj.test</module-->
+    <module>lang.fgj.test</module>
     <module>lang.stlcrec</module>
     <module>lang.stlcrec.test</module>
     <module>lang.sysf</module>
