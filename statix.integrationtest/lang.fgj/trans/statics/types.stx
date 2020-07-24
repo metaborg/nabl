@@ -12,3 +12,25 @@ signature
     PROJ   : scope * occurrence -> TYPE // delayed projection
 
     PL     : scope -> TYPE // Placeholder for variables (used for type equality)
+
+signature
+
+  relations
+    typeOf : -> TYPE
+    
+rules
+
+  typeOf : scope -> TYPE
+  
+  typeOf(s) = T :-
+    query typeOf
+      filter e and true
+      min /* */ and true
+      in s |-> [(_, T)].
+      
+      
+  withType : TYPE -> scope
+  
+  withType(T) = s :-
+    new s, !typeOf[T] in s.
+  

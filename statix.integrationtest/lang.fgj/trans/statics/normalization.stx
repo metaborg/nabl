@@ -22,19 +22,19 @@ rules // forces normalization of a postponed projection
 
   strictA(s, Field{x@i}) = T :- {p d S}
     typeOfDecl of Field{x@i} in s |-> [(p, (d, S))],
-    norm(scopes(p), S) == T.
+    norm(scopes(p), typeOf(S)) == T.
 
   strictA(s, MType{@i}) = T :- {p d S}
     typeOfDecl of MType{@i} in s |-> [(p, (d, S))],
-    norm(scopes(p), S) == T.
+    norm(scopes(p), typeOf(S)) == T.
 
   strictA(s, Ctor{@i}) = T :- {p d S}
     typeOfDecl of Ctor{@i} in s |-> [(p, (d, S))],
-    norm(scopes(p), S) == T.
+    norm(scopes(p), typeOf(S)) == T.
 
   strictA(s, TVar{x@i}) = T :- {p d S}
     typeOfDecl of TVar{x@i} in s |-> [(p, (d, S))],
-    norm(scopes(p), S) == T.
+    norm(scopes(p), typeOf(S)) == T.
 
 
 rules // normalize types

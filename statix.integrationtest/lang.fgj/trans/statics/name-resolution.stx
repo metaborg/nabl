@@ -16,7 +16,7 @@ signature
     Class      : string
 
   relations
-    typeOfDecl     : occurrence -> TYPE
+    typeOfDecl     : occurrence -> scope
     tparamsOfClass : -> list(occurrence)
 
   name-resolution
