@@ -505,7 +505,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void assertLabelOpen(S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
-            throw new IllegalArgumentException("Edge " + edge + " is not open.");
+            throw new IllegalArgumentException("Label " + scope + "/" + edge + " is not open on " + self + ".");
         }
     }
 
