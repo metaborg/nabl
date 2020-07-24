@@ -33,4 +33,9 @@ rules
   
   withType(T) = s :-
     new s, !typeOf[T] in s.
-  
+
+
+  matchType : TYPE -> scope
+
+  matchType(T) = s :-
+    T == typeOf(s).

@@ -189,7 +189,7 @@ rules
 
   typeOfClassTypeExp(s, cte@ClassT(x, tes)) = CT@CLASS(s_inst) :- {x' s_class Xs Ts Us}
     @x.ref := x', @cte.type := strict(CT),
-    typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, withType(CLASS(s_class))))],    // class type
+    typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, matchType(CLASS(s_class))))], // class type
     typesOfTypeExps(s, tes) == Ts,          // type arguments
     ?tparamsOfClass[] in s_class == Xs,     // type parameters
     instWith(s_class, Xs, Ts) == s_inst,    // super class type variable instantiation
@@ -203,7 +203,7 @@ rules
 
   typeOfExp(s, ee@Var(x)) = T :- {x' p d}
     @x.ref := x', @ee.type := strict(T),
-    typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, withType(T)))].
+    typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, matchType(T)))].
 
   typeOfExp(s, ee@Fld(e, x)) = S :- {s_inst}
     @ee.type := strict(S),
@@ -213,7 +213,7 @@ rules
   typeOfExp(s, ee@Call(e, tys, x, es)) = U :- {S s_cls x' Ts m_inst Xs s_mtype s_minst Us Ss p}
     @x.ref := x', @ee.type := strict(U),
     promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_cls),
-    typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, withType(METHOD(Xs, s_mtype))))],
+    typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, matchType(METHOD(Xs, s_mtype))))],
     typesOfTypeExps(s, tys) == Ts,
     instWith(s_mtype, Xs, Ts) == s_minst,
     norm(scopes(p), PROJ(s_minst, MType{@-})) == MTY(U, Us),
