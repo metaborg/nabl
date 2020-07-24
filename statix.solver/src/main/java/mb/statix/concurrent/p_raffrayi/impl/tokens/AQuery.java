@@ -10,7 +10,7 @@ import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.LabelOrder;
 import mb.statix.scopegraph.reference.LabelWF;
 
-@Value.Immutable
+@Value.Immutable(prehash = true)
 public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract IScopePath<S, L> path();
