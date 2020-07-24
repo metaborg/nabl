@@ -116,7 +116,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void handleResult(R result, Throwable ex) {
         assertInState(UnitState.INIT, UnitState.ACTIVE);
         state = UnitState.DONE;
-        typeCheckerResult.complete(result, ex);
+        if(ex != null) {
+            unitResult.completeExceptionally(ex);
+        } else {
+            typeCheckerResult.complete(result, ex);
+        }
     }
 
     @Override public void _done() {
