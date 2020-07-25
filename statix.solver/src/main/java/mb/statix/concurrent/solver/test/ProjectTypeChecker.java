@@ -30,7 +30,8 @@ public class ProjectTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Sol
 
     @Override public IFuture<SolverResult> run(ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> context,
             @Nullable Scope root) {
-        final Scope projectScope = context.freshScope("s_root", Collections.emptySet(), false, true);
+        final Scope projectScope = context.freshScope("s_root", Collections.emptySet(), true, true);
+        context.setDatum(projectScope, projectScope);
         context.add("<SUBROOT>", new SubProjectTypeChecker(units, spec, debug), projectScope);
         context.closeScope(projectScope);
         return CompletableFuture.completedFuture(SolverResult.of(spec));
