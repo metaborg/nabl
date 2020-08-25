@@ -23,10 +23,10 @@ public class WaitForGraph<N, S, T> {
 
     // FIXME Handling stopped nodes.
     //       a. resume of stopped node -- can be ignored.
-    //       b. wait-for on stopped node -- could be resolved by an even later messages
+    //       b. wait-for on stopped node -- could be resolved by later messages
     //       c. granted from a stopped node -- apply as usual
     //       d. suspend while having wait-fors on stopped nodes -- if the actor received all messages from the stopped node, it will be permanently stuck
-    //       e. stopping -- if suspended actors have wait-fors on this node, and we didn't send them messages, they are permanently stuck
+    //       e. stopping -- if suspended actors have wait-fors on this node, and we didn't send them messages, they are deadlocked on those wait-fors
 
     private final LabeledGraph<N, T> waitForGraph = new LabeledGraph<>();
     private final IncSCCAlg<N> sccGraph = new IncSCCAlg<>(waitForGraph);
