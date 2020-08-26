@@ -1,9 +1,13 @@
 package mb.statix.concurrent.actors.deadlock;
 
+import java.util.Map.Entry;
+
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import mb.nabl2.util.collections.MultiSet;
+import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
@@ -35,7 +39,10 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
         wfg.granted(self.sender(TYPE), token, actor);
     }
 
-    @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock) {
+    @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock,
+            MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
+            MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
+        processBatchedWaitFors(waitFors, grants);
         wfg.suspend(self.sender(TYPE), state, clock).flatMap(o -> o).ifPresent(deadlock -> {
             logger.debug("{} deadlocked: {}", self.sender(TYPE), deadlock);
             logger.debug("wfg: {}", wfg);
@@ -43,9 +50,28 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
         });
     }
 
-    @Override public void stopped(Clock<IActorRef<? extends N>> clock) {
+    @Override public void stopped(Clock<IActorRef<? extends N>> clock,
+            MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
+            MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
+        processBatchedWaitFors(waitFors, grants);
         wfg.remove(self.sender(TYPE), clock);
         logger.debug("{} stopped", self.sender(TYPE));
+    }
+
+    private void processBatchedWaitFors(MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
+            MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
+        // Process batch waitFors and grantes. Process waitFors first, in case the client
+        // does not discharge waitFors locally, but really only batches.
+        for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> waitForEntry : waitFors.toMap().entrySet()) {
+            for(T waitFor : waitForEntry.getValue()) {
+                waitFor(waitForEntry.getKey(), waitFor);
+            }
+        }
+        for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> grantedEntry : grants.toMap().entrySet()) {
+            for(T granted : grantedEntry.getValue()) {
+                waitFor(grantedEntry.getKey(), granted);
+            }
+        }
     }
 
 }

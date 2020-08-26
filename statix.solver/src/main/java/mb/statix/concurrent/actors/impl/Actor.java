@@ -7,7 +7,6 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nullable;
 
@@ -50,6 +49,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     final T asyncSystem;
     final T asyncActor;
 
+    private T impl;
+
     static final ThreadLocal<Actor<?>> current = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get current actor.");
     });
@@ -65,7 +66,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         this.supplier = supplier;
 
         this.lock = new Object();
-        this.state = ActorState.INIT;
+        this.state = ActorState.INITIAL;
         this.messages = Queues.newArrayDeque();
         this.returns = new HashSet<>();
 
@@ -100,7 +101,17 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             } else {
                 messages.addLast(message);
             }
-            lock.notify();
+            if(state.equals(ActorState.WAITING)) {
+                logger.debug("resume {}", this);
+
+                state = ActorState.RUNNING;
+
+                forEachMonitor(monitor -> {
+                    monitor.resumed(this);
+                });
+
+                context.executor().submit(() -> this.run());
+            }
         }
     }
 
@@ -205,14 +216,27 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     // Run & stop
     ///////////////////////////////////////////////////////////////////////////
 
-    void run(ExecutorService executorService) {
+    void start() {
         synchronized(lock) {
-            if(!state.equals(ActorState.INIT)) {
+            if(!state.equals(ActorState.INITIAL)) {
                 throw new IllegalStateException("Actor already started and/or stopped.");
             }
 
+            logger.debug("start");
+
+            this.impl = supplier.apply(this);
+            if(impl == null || !type.type().isInstance(impl)) {
+                throw new IllegalArgumentException("Supplied implementation " + impl
+                        + " does not implement the given interface " + type.type() + ".");
+            }
+
             state = ActorState.RUNNING;
-            executorService.submit(() -> this.run());
+
+            forEachMonitor(monitor -> {
+                monitor.started(this);
+            });
+
+            context.executor().submit(() -> this.run());
         }
     }
 
@@ -220,50 +244,40 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
      * Actor main loop.
      */
     private void run() {
-        LoggerUtils.setContextId("actor:" + id);
-        current.set(this);
-
-        logger.debug("start");
-
-        final T impl = supplier.apply(this);
-        if(impl == null || !type.type().isInstance(impl)) {
-            throw new IllegalArgumentException(
-                    "Supplied implementation " + impl + " does not implement the given interface " + type.type() + ".");
-        }
-
         try {
-            forEachMonitor(monitor -> {
-                monitor.started(this);
-            });
+            current.set(this);
+            LoggerUtils.setContextId("act:" + id);
+
             while(true) {
                 final IMessage<T> message;
                 synchronized(lock) {
-                    while(messages.isEmpty()) {
+                    if(messages.isEmpty()) {
                         logger.debug("suspend");
+
                         state = ActorState.WAITING;
+
                         forEachMonitor(monitor -> {
                             monitor.suspended(this);
                         });
-                        lock.wait();
+
+                        break;
+                    } else {
+                        message = messages.remove();
                     }
-                    if(state.equals(ActorState.WAITING)) {
-                        state = ActorState.RUNNING;
-                        forEachMonitor(monitor -> {
-                            monitor.resumed(this);
-                        });
-                        logger.debug("resume");
-                    }
-                    message = messages.remove();
                 }
                 logger.debug("deliver message {}", message);
                 message.dispatch(impl); // responsible for setting sender, and calling monitor!
             }
+
         } catch(StopException ex) {
             logger.debug("stopped");
             doStop(null);
         } catch(Throwable ex) {
             logger.error("failed", ex);
             doStop(ex);
+        } finally {
+            current.remove();
+            LoggerUtils.clearContextId();
         }
     }
 

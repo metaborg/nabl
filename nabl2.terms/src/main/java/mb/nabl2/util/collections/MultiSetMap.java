@@ -114,6 +114,13 @@ public abstract class MultiSetMap<K, V> {
             return n;
         }
 
+        public Immutable<K, V> clear() {
+            final Immutable<K, V> cleared =
+                    new Immutable<>(Map.Immutable.<K, MultiSet.Immutable<V>>of().__putAll(entries));
+            entries.keySet().forEach(entries::__remove);
+            return cleared;
+        }
+
         public Immutable<K, V> freeze() {
             return new Immutable<>(entries.freeze());
         }

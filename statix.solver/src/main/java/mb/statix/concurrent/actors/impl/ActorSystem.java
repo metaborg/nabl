@@ -30,7 +30,7 @@ public class ActorSystem implements IActorSystem {
 
     public ActorSystem() {
         this.actors = Maps.newHashMap();
-        this.executorService = Executors.newCachedThreadPool();
+        this.executorService = Executors.newWorkStealingPool();
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
@@ -52,7 +52,7 @@ public class ActorSystem implements IActorSystem {
             }
             actors.put(id, actor);
             if(state.equals(ActorSystemState.RUNNING)) {
-                actor.run(executorService);
+                actor.start();
             }
         }
         logger.debug("added actor {}", id);
@@ -75,7 +75,7 @@ public class ActorSystem implements IActorSystem {
             }
             state = ActorSystemState.RUNNING;
             for(Actor<?> actor : actors.values()) {
-                actor.run(executorService);
+                actor.start();
             }
         }
         logger.debug("started system");

@@ -13,13 +13,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
-import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.deadlock.Deadlock;
+import mb.statix.concurrent.actors.deadlock.DeadlockBatcher;
 import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
 import mb.statix.concurrent.actors.deadlock.IDeadlockMonitor;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
@@ -144,11 +144,11 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     private class UnitContext implements IUnitContext<S, L, D, R> {
 
         private final IActor<? extends IUnit<S, L, D, R>> self;
-        private final MultiSetMap.Transient<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors;
+        private final DeadlockBatcher<IUnit<S, L, D, R>, UnitState, IWaitFor<S, L, D>> udlm;
 
         public UnitContext(IActor<? extends IUnit<S, L, D, R>> self) {
             this.self = self;
-            this.waitFors = MultiSetMap.Transient.of();
+            this.udlm = new DeadlockBatcher<>(self, dlm);
         }
 
         @Override public ICancel cancel() {
@@ -173,35 +173,27 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
 
         @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            logger.debug("wait for {}/{}", unit, token);
-            waitFors.put(unit, token);
-            self.async(dlm).waitFor(unit, token);
+            udlm.waitFor(unit, token);
         }
 
         @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            if(!waitFors.contains(unit, token)) {
-                logger.error("not waiting for granted {}/{}", unit, token);
-                throw new IllegalStateException(self + " not waiting for granted " + unit + "/" + token);
-            }
-            logger.debug("granted {}/{}", unit, token);
-            waitFors.remove(unit, token);
-            self.async(dlm).granted(unit, token);
+            udlm.granted(unit, token);
         }
 
         @Override public boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            return waitFors.contains(unit, token);
+            return udlm.isWaitingFor(unit, token);
         }
 
         @Override public boolean isWaitingFor(IWaitFor<S, L, D> token) {
-            return waitFors.containsValue(token);
+            return udlm.isWaitingFor(token);
         }
 
         @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
-            self.async(dlm).suspended(state, clock);
+            udlm.suspended(state, clock);
         }
 
         @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
-            self.async(dlm).stopped(clock);
+            udlm.stopped(clock);
         }
 
     }
