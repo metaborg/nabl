@@ -86,7 +86,7 @@ public class DeadlockBatcher<N, S, T> implements IDeadlockMonitor<N, S, T> {
         }
         for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> grantedEntry : grants.toMap().entrySet()) {
             for(T granted : grantedEntry.getValue()) {
-                waitFor(grantedEntry.getKey(), granted);
+                granted(grantedEntry.getKey(), granted);
             }
         }
     }

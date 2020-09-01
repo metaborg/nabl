@@ -34,6 +34,8 @@ import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseLabel;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.ExternalRep;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
 import mb.statix.scopegraph.IScopeGraph;
@@ -137,8 +139,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         });
     }
 
-    @Override public void _deadlocked() {
-        fail(new Exception("Deadlocked"));
+    @Override public void _deadlocked(Iterable<IWaitFor<S, L, D>> waitFors) {
+        final Exception ex = new Exception("Deadlocked");
+        // FIXME This has no effect if the unit already finished!
+        fail(ex);
     }
 
     private void fail(Throwable ex) {
@@ -357,11 +361,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
                     @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
                             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
-                        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(path.getTarget());
+                        final S scope = path.getTarget();
+                        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
                         if(owner.equals(self)) {
+                            logger.debug("local env {}", scope);
                             return Optional.empty();
                         } else {
-                            logger.debug("have _query for {}", owner);
+                            logger.debug("remote env {} at {}", scope, owner);
                             // this code mirrors query(...)
                             final IFuture<Env<S, L, D>> result =
                                     self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
@@ -381,7 +387,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                                 return CompletableFuture.completedFuture(Optional.empty());
                             }
                             if(external) {
-                                return typeChecker.getExternalRepresentation(datum.get()).thenApply(Optional::of);
+                                logger.debug("require external rep for {}", datum.get());
+                                final IFuture<D> externalRepresentation =
+                                        typeChecker.getExternalRepresentation(datum.get());
+                                final IWaitFor<S, L, D> token = ExternalRep.of(datum.get(), externalRepresentation);
+                                context.waitFor(token, self);
+                                return externalRepresentation.thenApply(rep -> {
+                                    logger.debug("got external rep {} for {}", rep, datum.get());
+                                    context.granted(token, self);
+                                    return Optional.of(rep);
+                                });
                             } else {
                                 return CompletableFuture.completedFuture(datum);
                             }
@@ -396,9 +411,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
                 };
 
-        return nr.env(path, labelWF, context.cancel()).whenComplete((env, ex) -> {
+        final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
+        result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
+        return result;
     }
 
     ///////////////////////////////////////////////////////////////////////////

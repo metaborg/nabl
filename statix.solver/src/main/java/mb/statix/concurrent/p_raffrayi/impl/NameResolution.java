@@ -13,6 +13,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -57,7 +58,8 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    public IFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
+    public ICompletableFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
+        final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
         logger.trace("env {}", path);
         final Set.Transient<EdgeOrData<L>> labels = Set.Transient.of();
         try {
@@ -69,11 +71,12 @@ abstract class NameResolution<S, L, D> {
                     labels.__insert(EdgeOrData.edge(l));
                 }
             }
+            externalEnv(path, re, labelOrder, dataWF, dataEquiv)
+                    .orElseGet(() -> env_L(path, re, labels.freeze(), cancel)).whenComplete(result::complete);
         } catch(InterruptedException | ResolutionException ex) {
-            return CompletableFuture.completedExceptionally(ex);
+            result.completeExceptionally(ex);
         }
-        return externalEnv(path, re, labelOrder, dataWF, dataEquiv)
-                .orElseGet(() -> env_L(path, re, labels.freeze(), cancel));
+        return result;
     }
 
     private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWF<L> re, Set.Immutable<EdgeOrData<L>> L,

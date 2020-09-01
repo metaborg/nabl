@@ -97,8 +97,10 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     }
 
     private void fail(Throwable ex) {
-        result.completeExceptionally(ex);
-        system.stop();
+        synchronized(lock) {
+            result.completeExceptionally(ex);
+            system.stop();
+        }
     }
 
     private void handleDeadlock(IActor<?> dlm,
@@ -109,7 +111,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         } else {
             logger.error("type checking is stuck: {}", deadlock);
             for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
-                dlm.async(unit)._deadlocked();
+                dlm.async(unit)._deadlocked(deadlock.waitingFor(unit));
             }
         }
     }

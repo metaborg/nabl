@@ -7,9 +7,13 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.concurrent.ClosableLock;
+import org.metaborg.util.concurrent.IClosableLock;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
@@ -43,7 +47,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private final Deque<IMessage<T>> messages;
     private final Set<IReturn<?>> returns;
 
-    private final Object monitorsLock;
+    private final ReadWriteLock monitorsLock;
     private final Set<IActorMonitor> monitors;
 
     final T asyncSystem;
@@ -70,7 +74,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         this.messages = Queues.newArrayDeque();
         this.returns = new HashSet<>();
 
-        this.monitorsLock = new Object();
+        this.monitorsLock = new ReentrantReadWriteLock();
         this.monitors = new HashSet<>();
 
         this.asyncSystem = newAsyncSystem();
@@ -325,13 +329,13 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void addMonitor(IActorMonitor monitor) {
-        synchronized(monitorsLock) {
+        try(IClosableLock lock = new ClosableLock(monitorsLock.writeLock())) {
             monitors.add(monitor);
         }
     }
 
     void forEachMonitor(Action1<? super IActorMonitor> action) {
-        synchronized(monitorsLock) {
+        try(IClosableLock lock = new ClosableLock(monitorsLock.readLock())) {
             monitors.forEach(action::apply);
         }
     }
