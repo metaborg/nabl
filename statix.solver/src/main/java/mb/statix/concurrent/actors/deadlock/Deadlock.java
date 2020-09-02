@@ -24,6 +24,9 @@ public class Deadlock<N, S, T> {
         return edges;
     }
 
+    /**
+     * Return al tokens the given unit is waiting for.
+     */
     public Set.Immutable<T> waitingFor(N node) {
         return edges.toMap().entrySet().stream().filter(e -> e.getKey()._1().equals(node))
                 .flatMap(e -> e.getValue().elementSet().stream()).collect(CapsuleCollectors.toSet());

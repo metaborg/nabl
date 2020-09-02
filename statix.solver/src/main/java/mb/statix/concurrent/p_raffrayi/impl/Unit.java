@@ -14,6 +14,7 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
@@ -28,10 +29,11 @@ import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
+import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseLabel;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.ExternalRep;
@@ -128,8 +130,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public void _done() {
         assertInState(UnitState.DONE);
 
-        // typeCheckerResult should be completed here, since we go to DONE only
-        // in handleResult
+        // CHECK does state == DONE imply that typeCheckerResult is
+        //       always present?
         typeCheckerResult.whenComplete((analysis, ex) -> {
             if(ex != null) {
                 unitResult.completeExceptionally(ex);
@@ -140,14 +142,29 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _deadlocked(Iterable<IWaitFor<S, L, D>> waitFors) {
-        final Exception ex = new Exception("Deadlocked");
-        // FIXME This has no effect if the unit already finished!
-        fail(ex);
-    }
-
-    private void fail(Throwable ex) {
-        final TypeCheckingFailedException tcfe = new TypeCheckingFailedException(ex);
-        unitResult.completeExceptionally(tcfe);
+        final Set.Transient<ICompletable<?>> deadlocked = Set.Transient.of();
+        for(IWaitFor<S, L, D> wf : waitFors) {
+            // @formatter:off
+            wf.visit(IWaitFor.cases(
+                initScope -> {
+                    Iterables.addAll(deadlocked, delays.remove(initScope.scope()).values());
+                },
+                closeScope -> {
+                    Iterables.addAll(deadlocked, delays.remove(closeScope.scope()).values());
+                },
+                closeLabel -> {
+                    deadlocked.__insertAll(delays.remove(closeLabel.scope(), closeLabel.label()));
+                },
+                query -> {},
+                externalRep -> {
+                    // FIXME This assumes these are always local loops,
+                    //       such that we always wait for self.
+                    deadlocked.__insert(externalRep.future());
+                }
+            ));
+            // @formatter:on
+        }
+        deadlocked.forEach(dl -> dl.completeExceptionally(new DeadlockException()));
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -388,11 +405,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                             }
                             if(external) {
                                 logger.debug("require external rep for {}", datum.get());
-                                final IFuture<D> externalRepresentation =
-                                        typeChecker.getExternalRepresentation(datum.get());
-                                final IWaitFor<S, L, D> token = ExternalRep.of(datum.get(), externalRepresentation);
+                                final ICompletableFuture<D> externalRep = new CompletableFuture<>();
+                                typeChecker.getExternalRepresentation(datum.get()).whenComplete(externalRep::complete);
+                                final IWaitFor<S, L, D> token = ExternalRep.of(datum.get(), externalRep);
                                 context.waitFor(token, self);
-                                return externalRepresentation.thenApply(rep -> {
+                                return externalRep.thenApply(rep -> {
                                     logger.debug("got external rep {} for {}", rep, datum.get());
                                     context.granted(token, self);
                                     return Optional.of(rep);
@@ -496,7 +513,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void failed(IActor<?> self, Throwable ex) {
-        fail(ex);
+        unitResult.completeExceptionally(ex);
         context.stopped(clock);
     }
 

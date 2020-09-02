@@ -6,6 +6,8 @@ import org.metaborg.util.functions.Function3;
 
 import com.google.common.annotations.Beta;
 
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.Tuple3;
 
 public interface IRelation3<K, L, V> {
@@ -57,9 +59,9 @@ public interface IRelation3<K, L, V> {
 
         boolean putAll(IRelation3<K, L, V> other);
 
-        boolean remove(K key);
+        SetMultimap.Immutable<L, V> remove(K key);
 
-        boolean remove(K key, L label);
+        Set.Immutable<V> remove(K key, L label);
 
         boolean remove(K key, L label, V value);
 

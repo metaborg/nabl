@@ -25,4 +25,8 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract IFuture<Env<S, L, D>> future();
 
+    @Override public void visit(Cases<S, L, D> cases) {
+        cases.on((Query<S, L, D>) this);
+    }
+
 }

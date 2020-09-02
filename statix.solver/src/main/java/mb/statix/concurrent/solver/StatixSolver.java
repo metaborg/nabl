@@ -43,6 +43,7 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.util.VarIndexedCollection;
 import mb.statix.constraints.CArith;
@@ -526,7 +527,7 @@ public class StatixSolver {
                             //                            return delay(c, state, delay, fuel);
                             debug.error("query {} delayed (unsupported)", c.toString(state.unifier()::toString));
                             return fail(c);
-                        } catch(DeadLockedException dle) {
+                        } catch(DeadlockException dle) {
                             debug.error("query {} deadlocked", c.toString(state.unifier()::toString));
                             return fail(c);
                         } catch(Throwable t) {
