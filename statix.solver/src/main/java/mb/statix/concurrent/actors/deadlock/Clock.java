@@ -9,12 +9,10 @@ public class Clock<N> {
 
     private final MultiSet.Immutable<N> sent;
     private final MultiSet.Immutable<N> delivered;
-    private final int internal;
 
-    public Clock(Immutable<N> sent, Immutable<N> delivered, int internal) {
+    public Clock(Immutable<N> sent, Immutable<N> delivered) {
         this.sent = sent;
         this.delivered = delivered;
-        this.internal = internal;
     }
 
     public MultiSet.Immutable<N> sent() {
@@ -26,15 +24,11 @@ public class Clock<N> {
     }
 
     public Clock<N> delivered(N sender) {
-        return new Clock<>(sent, delivered.add(sender), internal);
+        return new Clock<>(sent, delivered.add(sender));
     }
 
     public Clock<N> sent(N receiver) {
-        return new Clock<>(sent.add(receiver), delivered, internal);
-    }
-
-    public Clock<N> internal() {
-        return new Clock<>(sent, delivered, internal + 1);
+        return new Clock<>(sent.add(receiver), delivered);
     }
 
     @Override public int hashCode() {
@@ -54,11 +48,11 @@ public class Clock<N> {
 
 
     @Override public String toString() {
-        return "Clock[sent = " + sent + ", delivered = " + delivered + ", internal = " + internal + "]";
+        return "Clock[sent = " + sent + ", delivered = " + delivered + "]";
     }
 
     public static <N> Clock<N> of() {
-        return new Clock<>(MultiSet.Immutable.of(), MultiSet.Immutable.of(), 0);
+        return new Clock<>(MultiSet.Immutable.of(), MultiSet.Immutable.of());
     }
 
 }

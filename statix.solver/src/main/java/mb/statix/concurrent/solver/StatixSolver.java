@@ -202,12 +202,13 @@ public class StatixSolver {
         }
     }
 
-    private SolverResult finishSolve() {
+    private SolverResult finishSolve() throws InterruptedException {
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
         for(Entry<IConstraint, Delay> entry : delayed.entrySet()) {
             debug.debug(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
+            removeCompleteness(entry.getKey());
         }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());

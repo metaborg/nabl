@@ -164,7 +164,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             ));
             // @formatter:on
         }
-        deadlocked.forEach(dl -> dl.completeExceptionally(new DeadlockException()));
+        for(ICompletable<?> dl : deadlocked) {
+            // progress clock, to ensure deadlock detection is done after this
+            // deadlock is handled, or else _done can be missed
+            clock = clock.sent(self).delivered(self);
+            self.complete(dl, null, new DeadlockException());
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////

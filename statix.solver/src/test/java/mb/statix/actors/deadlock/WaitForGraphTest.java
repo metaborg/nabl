@@ -434,13 +434,6 @@ public class WaitForGraphTest {
             });
         }
 
-        public void internal() {
-            steps.add((wfg, clock, markers, logger) -> {
-                logger.apply(node + " internal");
-                return clock.internal();
-            });
-        }
-
         public void waitFor(String token, Integer other) {
             steps.add((wfg, clock, markers, logger) -> {
                 logger.apply(node + " waits for " + other + "/" + token);
