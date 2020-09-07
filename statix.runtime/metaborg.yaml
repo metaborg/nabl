@@ -15,6 +15,7 @@ exports:
   includes:
   - "statixruntime.str"
   - "statix/**/*.str"
+  - "injections/statix/**/*.str"
   - "statix/**/*.meta"
   ## SDF3
 - language: TemplateLang
@@ -40,10 +41,14 @@ exports:
   directory: editor
   includes:
   - "statix/**/*.esv"
-- language: StatixLang
-  directory: trans
-  includes:
-  - "signatures/statix/**/*.stx"
+  ## StatixLang
+  ## FIXME These cannot be exported as long as there is no good way to retain the
+  ##       generated ATerms in importing modules (transitively!). For now one has
+  ##       to copy it in their own project. Sad.
+# language: StatixLang
+# directory: trans
+# includes:
+# - "signatures/statix/**/*.stx"
 language:
   sdf:
     sdf2table: java
