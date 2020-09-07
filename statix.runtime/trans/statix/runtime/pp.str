@@ -34,6 +34,9 @@ rules
     where(is-string)
   ; ![S(<id>)]
 
+  prettyprint-Statix-Stx-ATerm =
+    ![S(<strip-annos;write-to-string>)]
+
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
     where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)

@@ -13,6 +13,8 @@ signature
     CConj   : Constraint * Constraint -> Constraint
     CExists : List(Var) * Constraint -> Constraint
     C       : String * List(Term) * Message -> Constraint
+  constructors
+    LLam    : List(Term) * Constraint -> HoConstraint
 
   constructors
     NoMessage : Message
