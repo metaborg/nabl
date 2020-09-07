@@ -1,0 +1,33 @@
+module analysis
+
+imports
+
+  injections/Units-injections
+
+  statixruntime
+  statix/api
+
+  pp
+
+rules // Analysis
+
+  // multi-file analysis
+  editor-analyze = stx-editor-analyze(explicate-injections-Units, implicate-injections-Units | "statics", "projectOk", "fileOk")
+
+rules // Editor Services
+
+  editor-resolve = stx-editor-resolve
+
+  editor-hover = stx-editor-hover(pp-TYPE)
+
+rules // Debugging
+
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-parsed: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"parsed.aterm")> path
+       ; result   := ast
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := ast

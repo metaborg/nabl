@@ -1,0 +1,199 @@
+module units/name-resolution/kwta-impl
+
+imports
+
+  signatures/units/Units-sig
+  signatures/units/Type-sig
+
+  units/name-resolution/interface
+
+signature
+
+  relations
+    pkg  : ID -> scope
+    mod  : ID -> scope
+    var  : ID -> scope
+    type : ID -> scope
+
+  relations
+    typeOf  : TYPE
+
+rules
+
+  declareVar(x, T, s) :- {s_decl}
+    !var[x, s_decl] in s,
+    new s_decl, !typeOf[T] in s_decl.
+
+
+  resolveVar(s, ref) = T :- {x' s_decl} @ref.ref := x',
+    resolveVars(s, ref) == [(_, (x', s_decl))],
+    T == typeOf(s_decl).
+
+
+  resolveSuperVars(s, x) = xTs :- {ps}
+    query var
+      filter LEX* EXT+
+        and { x' :- x' == x }
+      min $ < LEX, $ < EXT,
+          EXT < LEX
+        and true
+      in s |-> ps,
+    xTs == typesOf(ps).
+
+  
+
+  resolveVars : scope * DefRef -> list((path * (ID * scope)))
+
+  resolveVars(s, DefRef(x)) = ps :-
+    query var
+      filter (LEX|IMPORT)* OPEN? EXT*
+        and { x' :- x' == x }
+      min $ < LEX, $ < IMPORT, $ < OPEN, $ < EXT,
+          IMPORT < LEX, IMPORT < OPEN,
+          OPEN < LEX,
+          EXT < LEX
+        and true
+      in s |-> ps.
+
+  resolveVars(s, QDefRef(m, x)) = ps :- {s_mod}
+    resolveMod(s, m) == s_mod,
+    query var
+      filter EXT* and { x' :- x' == x }
+      min $ < EXT and true
+      in s_mod |-> ps.
+
+
+rules
+
+  declareType(x, T, s) :- {s_decl}
+    !type[x, s_decl] in s,
+    new s_decl, !typeOf[T] in s_decl.
+
+
+  resolveType(s, ref) = T :- {x' s_decl} @ref.ref := x',
+    resolveTypes(s, ref) == [(_, (x', s_decl))],
+    T == typeOf(s_decl).
+
+
+  resolveSuperTypes(s, x) = xTs :- {ps}
+    query type
+      filter LEX* EXT+
+        and { x' :- x' == x }
+      min $ < LEX, $ < EXT,
+          EXT < LEX
+        and true
+      in s |-> ps,
+    xTs == typesOf(ps).
+
+
+  resolveTypes : scope * DefRef -> list((path * (ID * scope)))
+
+  resolveTypes(s, DefRef(x)) = ps :-
+    query type
+      filter (LEX|IMPORT)* OPEN? EXT*
+         and { x' :- x' == x }
+      min $ < LEX, $ < IMPORT, $ < OPEN, $ < EXT,
+          IMPORT < LEX, IMPORT < OPEN,
+          OPEN < LEX,
+          EXT < LEX
+         and true
+      in s |-> ps.
+
+  resolveTypes(s, QDefRef(m, x)) = ps :- {s_mod}
+    resolveMod(s, m) == s_mod,
+    query type
+      filter EXT* and { x' :- x' == x }
+      min $ < EXT and true
+      in s_mod |-> ps.
+
+
+rules
+
+  declareMod(x, s_mod, s) :-
+    !mod[x, s_mod] in s.
+
+
+  resolveMod(s, ModRef(x)) = s_mod :- {x'} @x.ref := x',
+    query mod
+      filter (LEX|IMPORT)* OPEN? (EXT* | PKG?)
+         and { x' :- x' == x }
+      min $ < LEX, $ < IMPORT, $ < OPEN, $ < EXT,
+          IMPORT < LEX, IMPORT < OPEN,
+          OPEN < LEX,
+          EXT < LEX
+         and true
+      in s |-> [(_, (x', s_mod))].
+
+  resolveMod(s, QModInModRef(m, x)) = s_mod :- {s_mod' x'}
+    resolveMod(s, m) == s_mod',
+    resolveMemberMod(s_mod', x) == s_mod.
+
+  resolveMod(s, QModInPkgRef(p, x)) = s_mod :- {s_pkg x'}
+    resolvePkg(s, p) == s_pkg,
+    resolveMemberMod(s_pkg, x) == s_mod.
+
+
+  resolveMemberMod : scope * UCID -> scope
+  
+  resolveMemberMod(s, x) = s_mod :- {x'} @x.ref := x',
+    query mod
+      filter EXT* | PKG? and { x' :- x' == x }
+      min $ < EXT and true
+      in s |-> [(_, (x', s_mod))].
+
+
+rules
+
+  declarePkg(x, s_pkg, s) :- {s_decl}
+    !pkg[x, s_pkg] in s,
+    composePkgs(s_pkg, resolveMemberPkgs(s, x), x).
+
+
+  resolvePkg(s, PkgRef(x)) = s_pkg :- {ps}
+    query pkg
+      filter LEX* and { x' :- x' == x }
+      min $ < LEX and true
+      in s |-> ps@[_|_],
+    new s_pkg,
+    composePkgs(s_pkg, ps, x).
+
+  resolvePkg(s, QPkgRef(p, x)) = s_pkg :- {s_pkg' ps}
+    resolvePkg(s, p) == s_pkg',
+    new s_pkg,
+    composePkgs(s_pkg, resolveMemberPkgs(s_pkg', x), x).
+
+
+  resolveMemberPkgs : scope * LCID -> list((path * (ID * scope)))
+
+  resolveMemberPkgs(s, x) = ps :-
+    query pkg
+      filter PKG? and { x' :- x' == x }
+      min /**/ and true
+      in s |-> ps@[_|_].
+
+
+  composePkgs maps composePkg(*, list(*), *)
+
+  composePkg : scope * (path * (ID * scope)) * LCID
+
+  composePkg(s_pkg, (_, (x', s_pkg)), x).
+
+  composePkg(s_pkg, (_, (x', s_pkg')), x) :- // @x.ref := x',
+    s_pkg -PKG-> s_pkg'.
+
+rules
+
+  typeOf : scope -> TYPE
+  
+  typeOf(s_decl) = T :-
+    query typeOf
+      filter e and true
+      min /* */ and false
+      in s_decl |-> [(_, T)].
+
+  typesOf : list((path * (ID * scope))) -> list((ID * TYPE))
+  
+  typesOf([]) = [].
+
+  typesOf([(_, (x, s_decl))|ps]) = [(x, typeOf(s_decl))|typesOf(ps)].
+  

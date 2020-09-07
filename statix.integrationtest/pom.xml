@@ -21,6 +21,9 @@
     <module>lang.stlcrec.test</module>
     <module>lang.sysf</module>
     <module>lang.sysf.test</module>
+    <module>lang.units</module>
+    <module>lang.units.multifile</module>
+    <module>lang.units.multifile.test</module>
   </modules>
 
   <build>

@@ -1,0 +1,14 @@
+module units/Type
+
+imports
+
+  statix/API
+
+context-free sorts
+
+  TYPE
+
+context-free syntax
+
+  TYPE.UNIT = "unit"
+  TYPE.GEN  = <gen(<Stx-Scope>)>

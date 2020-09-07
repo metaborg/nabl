@@ -1,0 +1,7 @@
+module Execution
+
+menus
+  
+  menu: "Execution" // (openeditor)
+    
+    action: "Execute Changes" = execute-changes (source)

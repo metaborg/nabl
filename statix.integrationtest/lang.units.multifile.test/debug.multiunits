@@ -1,0 +1,23 @@
+changeset
+
+  +[A.units]
+  module A {
+    type t = unit
+  }
+
+  +[B.units]
+  module B extends A {
+    var x : t
+  }
+
+changeset
+
+  ~[A.units]
+  module A {
+    type t = unit
+  }
+
+  ~[B.units]
+  module B extends A {
+    var x : t
+  }

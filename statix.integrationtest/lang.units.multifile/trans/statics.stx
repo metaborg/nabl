@@ -1,0 +1,95 @@
+module statics
+
+signature
+  name-resolution
+    labels S
+  relations
+    unit : occurrence -> TAG
+  namespaces
+    Unit : ID
+  sorts TAG constructors
+    ADDED   : TAG
+    CHANGED : TAG
+    REMOVED : TAG
+
+rules
+
+  startOK : Start
+
+  startOK(changeSets) :- {s}
+    new s,
+    changeSetsOk(s, changeSets).
+
+rules
+
+  changeSetsOk : scope * list(ChangeSet)
+
+  changeSetsOk(s, []).
+
+  changeSetsOk(s, [ChangeSet(changes)|changeSets]) :- {s'}
+    changesOk(s, changes),
+    new s', s' -S-> s,
+    changeSetsOk(s', changeSets).
+
+rules
+
+  changesOk maps changeOk(*, list(*))
+
+  changeOk : scope * Change
+
+  changeOk(s, Added(x, _)) :-
+    !unit[Unit{x@x}, ADDED()] in s,
+    noDups(s, x),
+    noPreviousExists(s, x).
+
+  changeOk(s, Changed(x, _)) :-
+    !unit[Unit{x@x}, CHANGED()] in s,
+    noDups(s, x),
+    previousExists(s, x).
+
+  changeOk(s, Removed(x)) :-
+    !unit[Unit{x@x}, REMOVED()] in s,
+    noDups(s, x),
+    previousExists(s, x).
+
+rules
+
+  noDups : scope * ID
+
+  noDups(s, x) :-
+    query unit filter e and { Unit{x'@_} :- x' == x } in s |-> [_].
+  
+rules
+  
+  previousExists : scope * ID
+
+  previousExists(s, x) :- {r}
+    query unit filter S S* and { Unit{x'@_} :- x' == x } min $ < S and true in s |-> r,
+    previousExists_(r).
+    
+  previousExists_ : list((path * (occurrence * TAG)))
+  previousExists_([(_, (_, ADDED()))]).
+  previousExists_([(_, (_, CHANGED()))]).
+
+rules
+
+  noPreviousExists : scope * ID
+
+  noPreviousExists(s, x) :- {r}
+    query unit filter S S* and { Unit{x'@_} :- x' == x } min $ < S and true in s |-> r,
+    noPreviousExists_(r).
+
+  noPreviousExists_ : list((path * (occurrence * TAG)))
+  noPreviousExists_([]).
+  noPreviousExists_([(_, (_, REMOVED()))]).
+
+signature
+  sorts ID = string
+  sorts Start = list(ChangeSet)
+  sorts ChangeSet constructors
+    ChangeSet : list(Change) -> ChangeSet
+  sorts Change constructors
+    Added   : ID * Unit -> Change
+    Changed : ID * Unit -> Change
+    Removed : ID -> Change
+  sorts Unit

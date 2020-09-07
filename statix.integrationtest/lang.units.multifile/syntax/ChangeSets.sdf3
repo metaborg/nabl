@@ -1,0 +1,32 @@
+module ChangeSets
+
+imports
+  
+  Common
+  units/Units
+
+context-free sorts
+
+  ChangeSet
+  Change
+
+context-free syntax
+
+  ChangeSet.ChangeSet = <
+    changeset
+    <{Change "\n"}*>
+  >
+
+  Change.Added = <
+    +[<UNITID>]
+    <Unit>
+  >
+
+  Change.Removed = <
+    -[<UNITID>]
+  >
+
+  Change.Changed = <
+    ~[<UNITID>]
+    <Unit>
+  >

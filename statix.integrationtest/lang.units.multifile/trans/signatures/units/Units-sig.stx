@@ -1,0 +1,62 @@
+module signatures/units/Units-sig
+
+imports
+  signatures/units/Common-sig
+
+signature
+
+  sorts
+    Unit
+    Pkg
+    Mem
+    Mod
+    Extends
+    Def
+    Expr
+    Type
+    DefRef
+    ModRef
+    PkgRef
+
+  constructors
+    Unit-Plhdr : Unit
+    Pkg-Plhdr : Pkg
+    Mem-Plhdr : Mem
+    Mod-Plhdr : Mod
+    Extends-Plhdr : Extends
+    Def-Plhdr : Def
+    Expr-Plhdr : Expr
+    Type-Plhdr : Type
+    DefRef-Plhdr : DefRef
+    ModRef-Plhdr : ModRef
+    PkgRef-Plhdr : PkgRef
+
+signature
+
+  constructors
+    Mem2Unit : Mem -> Unit
+    Pkg : LCID * list(Mem) -> Pkg
+    PkgMem : Pkg -> Mem
+    ModMem : Mod -> Mem
+    Mod : UCID * Extends * list(Def) -> Mod
+    NoExtends : Extends
+    Extends : ModRef -> Extends
+    Import : ModRef -> Def
+    Open : ModRef -> Def
+    ModDef : Mod -> Def
+    VarDef : ID * Expr -> Def
+    VarDefTyped : ID * Type -> Def
+    TypeDef : ID -> Def
+    TypeDefAlias : ID * Type -> Def
+    VarRef : DefRef -> Expr
+    UnitLit : Expr
+    Free : Type
+    Unit : Type
+    TypeRef : DefRef -> Type
+    DefRef : ID -> DefRef
+    QDefRef : ModRef * ID -> DefRef
+    ModRef : UCID -> ModRef
+    QModInModRef : ModRef * UCID -> ModRef
+    QModInPkgRef : PkgRef * UCID -> ModRef
+    PkgRef : LCID -> PkgRef
+    QPkgRef : PkgRef * LCID -> PkgRef

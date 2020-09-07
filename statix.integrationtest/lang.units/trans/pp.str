@@ -1,0 +1,56 @@
+module pp
+
+imports
+
+  libstratego-gpp
+  libspoofax/sdf/pp
+  libspoofax/editor/refactoring/-
+  pp/Units-parenthesize
+  pp/Units-pp
+  pp/units/Units-pp
+  pp/units/Type-pp
+  statix/api
+
+rules
+
+  editor-format:
+    (node, _, ast, path, project-path) -> (filename, result)
+    with
+      ext      := <get-extension> path
+    ; filename := <guarantee-extension(|$[pp.[ext]])> path
+    ; result   := <pp-Units-string> node
+
+rules
+  
+  pp-Units-string =
+    parenthesize-Units
+    ; prettyprint-Units-start-symbols
+    ; !V([], <id>)
+    ; box2text-string(|120)
+      
+  pp-partial-Units-string =
+    parenthesize-Units
+    ; prettyprint-Units
+    ; !V([], <id>)
+    ; box2text-string(|120)
+    
+  pp-partial-Units-string(|sort) =
+    parenthesize-Units
+    ; prettyprint-Units(|sort)
+    ; !V([], <id>)
+    ; box2text-string(|120)  
+      
+  pp-TYPE =
+    parenthesize-Units
+    ; prettyprint-Units-TYPE
+    ; !V([], <id>)
+    ; box2text-string(|120)
+      
+
+rules
+
+  prettyprint-Units-Stx-Scope = stx-prettyprint-term
+
+rules
+  
+  construct-textual-change = construct-textual-change(pp-partial-Units-string, parenthesize, override-reconstruction, resugar)
