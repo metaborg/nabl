@@ -6,8 +6,8 @@ imports
   signatures/units/Type-sig
 
   units/name-resolution/interface
-  units/name-resolution/default-impl // causes stuckness with concurrent solver
-//units/name-resolution/kwta-impl
+//units/name-resolution/default-impl // causes stuckness with concurrent solver
+  units/name-resolution/kwta-impl
 
 
 rules
