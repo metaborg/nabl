@@ -1,4 +1,4 @@
-module packages
+module modules
 
 language UnitsMultifile
 
