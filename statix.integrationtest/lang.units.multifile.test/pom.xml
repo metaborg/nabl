@@ -38,7 +38,7 @@
         <artifactId>spoofax-maven-plugin</artifactId>
         <version>${metaborg-version}</version>
         <configuration>
-          <languageUnderTest>org.metaborg:statix.integrationtest.lang.stlcrec:${metaborg-version}</languageUnderTest>
+            <languageUnderTest>org.metaborg:statix.integrationtest.lang.units.multifile:${metaborg-version}</languageUnderTest>
         </configuration>
       </plugin>
       <!-- Skip installation and deployment. -->
