@@ -4,4 +4,4 @@ menus
   
   menu: "Execution" // (openeditor)
     
-    action: "Execute Changes" = execute-changes (source)
+    action: "Execute Changes" = debug-execute-changes

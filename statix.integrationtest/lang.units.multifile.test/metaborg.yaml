@@ -7,6 +7,6 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 runtime:
   nabl2:
-    debug: analysis files # custom
+    debug: # analysis files custom
 build:
   useBuildSystemSpec: true

@@ -15,4 +15,4 @@ context-free start-symbols
 
 context-free syntax
 
-  Start = <<{ChangeSet "\n\n"}*>>
+  Start.ChangeSets = <<{ChangeSet "\n\n"}*>>

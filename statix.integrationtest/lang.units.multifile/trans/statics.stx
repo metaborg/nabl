@@ -16,7 +16,7 @@ rules
 
   startOK : Start
 
-  startOK(changeSets) :- {s}
+  startOK(ChangeSets(changeSets)) :- {s}
     new s,
     changeSetsOk(s, changeSets).
 
@@ -85,7 +85,8 @@ rules
 
 signature
   sorts ID = string
-  sorts Start = list(ChangeSet)
+  sorts Start constructors
+    ChangeSets : list(ChangeSet) -> Start
   sorts ChangeSet constructors
     ChangeSet : list(Change) -> ChangeSet
   sorts Change constructors
