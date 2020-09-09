@@ -1,0 +1,74 @@
+module units/Units
+
+imports
+
+  units/Common
+
+context-free sorts
+
+  Unit
+  Pkg
+  Mem
+  Mod
+  Extends
+  Def
+  Expr
+  Type
+  DefRef
+  ModRef
+  PkgRef
+
+context-free syntax
+
+  Unit = Mem
+
+context-free syntax
+
+  Pkg.Pkg = <
+    package <LCID> {
+      <{Mem "\n\n"}*>
+    }
+  >
+
+  Mem.PkgMem = Pkg
+  Mem.ModMem = Mod
+
+context-free syntax
+
+  Mod.Mod = <
+    module <UCID> <Extends> {
+      <{Def "\n"}*>
+    }
+  >
+  
+  Extends.NoExtends =
+  Extends.Extends = <extends <ModRef>>
+
+  Def.Import       = <import <ModRef>>
+  Def.Open         = <open <ModRef>>
+  Def.ModDef       = <<Mod>>
+  Def.VarDef       = <var <ID> = <Expr>>
+  Def.VarDefTyped  = <var <ID> : <Type>>
+  Def.TypeDef      = <type <ID>>
+  Def.TypeDefAlias = <type <ID> = <Type>>
+
+  Expr.VarRef  = DefRef
+  Expr.UnitLit = "()"
+
+  Type.Free     = "?"
+  Type.Unit     = "unit"
+  Type.TypeRef  = DefRef
+
+  DefRef.DefRef  = ID
+  DefRef.QDefRef = <<ModRef>.<ID>>
+
+  ModRef.ModRef       = UCID
+  ModRef.QModInModRef = <<ModRef>.<UCID>>
+  ModRef.QModInPkgRef = <<PkgRef>.<UCID>>
+
+  PkgRef.PkgRef  = LCID
+  PkgRef.QPkgRef = <<PkgRef>.<LCID>>
+
+lexical syntax
+
+  ID = "var" | "type" | "unit" | "module" | "import" | "pingpong" | "package" | "open" | "if" | "unless" {reject}

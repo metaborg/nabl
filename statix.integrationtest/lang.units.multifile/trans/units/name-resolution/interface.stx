@@ -1,0 +1,40 @@
+module units/name-resolution/interface
+
+imports
+
+  signatures/units/Units-sig
+  signatures/units/Type-sig
+
+signature
+
+  name-resolution
+    labels LEX IMPORT EXT OPEN PKG
+
+rules
+
+  declareVar : ID * TYPE * scope
+
+  resolveVar : scope * DefRef -> TYPE
+
+  resolveSuperVars : scope * ID -> list((ID * TYPE))
+
+rules
+
+  declareType : ID * TYPE * scope
+
+  resolveType : scope * DefRef -> TYPE
+
+  resolveSuperTypes : scope * ID -> list((ID * TYPE))
+
+rules
+
+  declareMod : ID * scope * scope
+
+  resolveMod : scope * ModRef -> scope
+
+rules
+
+  declarePkg : LCID * scope * scope
+
+  resolvePkg : scope * PkgRef -> scope
+

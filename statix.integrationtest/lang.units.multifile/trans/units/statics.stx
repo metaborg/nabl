@@ -1,0 +1,160 @@
+module units/statics
+
+imports
+
+  signatures/units/Units-sig
+  signatures/units/Type-sig
+
+  units/name-resolution/interface
+  units/name-resolution/default-impl // causes stuckness with concurrent solver
+//units/name-resolution/kwta-impl
+
+
+rules
+
+  projectOk : scope
+
+  projectOk(s).
+
+
+  unitOk : scope * Mem
+
+  unitOk(s, mem) :-
+    memOk(s, mem, s).
+
+
+rules
+
+  pkgOk : scope * Pkg * scope
+  
+  pkgOk(s_lex, Pkg(x, mems), s_pkg) :- {s_pkg' s_lex'}
+    new s_pkg',
+    declarePkg(x, s_pkg', s_pkg),
+    new s_lex', s_lex' -LEX-> s_lex,
+    s_lex' -OPEN-> s_pkg',
+    memsOk(s_lex', mems, s_pkg').
+
+
+rules
+
+  memsOk maps memOk(*, list(*), *)
+
+  memOk : scope * Mem * scope
+
+  memOk(s_lex, PkgMem(pkg), s_pkg) :-
+    pkgOk(s_lex, pkg, s_pkg).
+
+  memOk(s_lex, ModMem(mod), s_pkg) :-
+    modOk(s_lex, mod, s_pkg).
+
+rules
+
+  modOk : scope * Mod * scope
+
+  modOk(s_lex, Mod(x, extends, defs), s_modOrPkg) :- {s_mod}
+    new s_mod, s_mod -LEX-> s_lex,
+    declareMod(x, s_mod, s_modOrPkg),
+    extendsOk(s_lex, extends, s_mod),
+    defsOk(s_mod, defs, s_mod).
+
+
+  extendsOk : scope * Extends * scope
+  
+  extendsOk(s_lex, NoExtends(), s_mod).
+
+  extendsOk(s_lex, Extends(m), s_mod) :- {s_mod'}
+    resolveMod(s_lex, m) == s_mod',
+    s_mod -EXT-> s_mod'.
+
+rules
+
+  defsOk : scope * list(Def) * scope
+
+  defsOk(s_lex, [], s_mod).
+
+  defsOk(s_lex, [Import(m)|defs], s_mod) :- {s_lex' T x}
+    new s_lex', s_lex' -LEX-> s_lex, s_lex' -IMPORT-> s_mod,
+    declareMod(modName(m), resolveMod(s_lex, m), s_lex'),
+    defsOk(s_lex', defs, s_mod).
+
+  defsOk(s_lex, [Open(m)|defs], s_mod) :- {s_lex' s_mod'}
+    new s_lex', s_lex' -LEX-> s_lex, s_lex' -IMPORT-> s_mod,
+    resolveMod(s_lex, m) == s_mod',
+    s_lex' -OPEN-> s_mod',
+    defsOk(s_lex', defs, s_mod).
+
+  defsOk(s_lex, [def|defs], s_mod) :-
+    defOk(s_lex, def, s_mod),
+    defsOk(s_lex, defs, s_mod).
+
+
+  defOk : scope * Def * scope
+
+  defOk(s_lex, ModDef(mod), s_mod) :- {s_mod'}
+    modOk(s_lex, mod, s_mod).
+
+  defOk(s, VarDef(x, e), s_mod) :-
+    declareVar(x, typeOfExpr(s, e), s_mod),
+    try { resolveSuperVars(s, x) == [] } | warning $[Shadowing inherited var [x]] @x,
+    true.
+
+  defOk(s, VarDefTyped(x, ty), s_mod) :-
+    declareVar(x, typeOfType(s, ty), s_mod),
+    try { resolveSuperVars(s, x) == [] } | warning $[Shadowing inherited var [x]] @x,
+    true.
+
+  defOk(s, TypeDef(x), s_mod) :- {T}
+    new T, declareType(x, GEN(T), s_mod),
+    try { resolveSuperTypes(s, x) == [] } | warning $[Shadowing inherited type [x]] @x,
+    true.
+
+  defOk(s, TypeDefAlias(x, ty), s_mod) :-
+    declareType(x, typeOfType(s, ty), s_mod),
+    try { resolveSuperTypes(s, x) == [] } | warning $[Shadowing inherited type [x]] @x,
+    true.
+
+
+rules
+
+  typeOfExpr : scope * Expr -> TYPE
+
+  typeOfExpr(s_lex, e@VarRef(r)) = T@resolveVar(s_lex, r) :- @e.type := T.
+
+  typeOfExpr(s_lex, e@UnitLit()) = T@UNIT() :- @e.type := T.
+
+
+rules
+
+  typeOfType : scope * Type -> TYPE
+  
+  typeOfType(s_lex, t@Free()) = T :- @t.type := T.
+
+  typeOfType(s_lex, t@Unit()) = T@UNIT() :- @t.type := T.
+
+  typeOfType(s_lex, t@TypeRef(x)) = T@resolveType(s_lex, x) :- @t.type := T.
+
+
+rules
+
+  defName : DefRef -> ID
+  
+  defName(DefRef(x)) = x.
+  defName(QDefRef(_, x)) = x.
+
+
+rules
+
+  modName : ModRef -> ID
+  
+  modName(ModRef(x)) = x.
+  modName(QModInModRef(_, x)) = x.
+  modName(QModInPkgRef(_, x)) = x.
+
+
+rules
+
+  pkgName : PkgRef -> ID
+  
+  pkgName(PkgRef(x)) = x.
+  pkgName(QPkgRef(_, x)) = x.
+

@@ -1,0 +1,79 @@
+module packages
+
+language UnitsMultifile
+
+test module can refer to members of imported modules [[
+  changeset
+
+  +[A.units]
+  module A {
+    module X {
+      type t
+    }
+  }
+
+  +[B.units]
+  module B {
+    import A.X
+    var x : X.t
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]
+
+test module cannot refer to members of later imported modules [[
+  changeset
+
+  +[A.units]
+  module A {
+    module X {
+      type t
+    }
+  }
+
+  +[B.units]
+  module B {
+    var x : X.t
+    import A.X
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Fails()]
+
+test module can refer to members of opened modules [[
+  changeset
+
+  +[A.units]
+  module A {
+    module X {
+      type t
+    }
+  }
+
+  +[B.units]
+  module B {
+    open A.X
+    var x : t
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]
+
+test module cannot refer to members of later opened modules [[
+  changeset
+
+  +[A.units]
+  module A {
+    module X {
+      type t
+    }
+  }
+
+  +[B.units]
+  module B {
+    var x : t
+    open A.X
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Fails()]
