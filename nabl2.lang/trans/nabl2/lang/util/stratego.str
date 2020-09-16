@@ -69,6 +69,7 @@ rules
 
   sanitize-vars = topdown(try(Var(
     \ "id"        -> "'id"        \
+  + \ "is"        -> "'is"        \
   + \ "no-attrs"  -> "'no-attrs"  \
   + \ "avoid"     -> "'avoid"     \
   + \ "prefer"    -> "'prefer"    \
