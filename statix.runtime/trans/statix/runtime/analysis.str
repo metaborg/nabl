@@ -18,8 +18,8 @@ imports
 signature
   constructors
 
-    ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
-    FileAnalysis    : Constraint -> AnalysisResult
+    ProjectAnalysis : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
+    FileAnalysis    : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
@@ -44,7 +44,7 @@ rules // single file analysis
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
              ; ast'' := <post> ast'
-             ; file-analysis := FileAnalysis(a)
+             ; file-analysis := FileAnalysis(a, a)
       \})> (resource-ast'*, solve-result*)
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
@@ -68,7 +68,7 @@ rules // single file elaboration
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
-             ; file-analysis := FileAnalysis(a)
+             ; file-analysis := FileAnalysis(a, a)
       \})> (resource-ast'*, solve-result*)
 
 rules // multi file analysis
@@ -105,20 +105,21 @@ rules // multi file analysis
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
-    ; file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
-    ; file-result* := <zip({ file-state', ast'', file-analysis: \
+    ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
+    ; initial-file-result* := <zip({ file-state', ast'', file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast'', file-analysis, [], [], []))
           with ast'' := <post> ast'
-             ; file-analysis := FileAnalysis(file-state)
-      \})> (resource-ast'*, file-state*)
+             ; file-analysis := FileAnalysis(file-state, None())
+      \})> (resource-ast'*, initial-file-state*)
       //
       // 4. Combine and solve all partial solution
       //
-    ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
-    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [file-state*, cached-state*]
+    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _))))> change*
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
+    ; file-result* := <map((id, Full(id, FileAnalysis(id, !project-analysis), id, id, id)))> initial-file-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
@@ -230,7 +231,7 @@ rules
 
   stx--get-resource-analysis =
     get-resource-constraint-analysis
-  ; ( ?FileAnalysis(<id>)
+  ; ( ?FileAnalysis(_, <id>)
     + ?ProjectAnalysis(_, _, _, <id>)
     )
 
