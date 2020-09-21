@@ -170,5 +170,5 @@ rules
    * @type resource:String -> analysis:Term
    */
   nabl2--get-resource-partial-analysis =
-    get-resource-partial-constraint-analysis
+    get-resource-constraint-analysis
   ; ?CompatAnalysis(<id>, _)
