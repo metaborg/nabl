@@ -24,6 +24,7 @@
     <module>lang.units</module>
     <module>lang.units.multifile</module>
     <module>lang.units.multifile.test</module>
+    <module>lang.units.multifile.test.concurrent</module>
   </modules>
 
   <build>

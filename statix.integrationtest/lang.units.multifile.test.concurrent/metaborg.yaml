@@ -1,12 +1,12 @@
 ---
 id: org.metaborg:statix.integrationtest.lang.units.multifile.test:${metaborgVersion}
-name: UnitsMultifileTest
+name: UnitsMultifileTestConcurrent
 dependencies:
   compile:
   - org.metaborg:statix.integrationtest.lang.units.multifile:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 language:
   statix:
-    concurrent: false
+    concurrent: true
 build:
   useBuildSystemSpec: true
