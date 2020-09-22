@@ -5,8 +5,8 @@ dependencies:
   compile:
   - org.metaborg:statix.integrationtest.lang.units.multifile:${metaborgVersion}
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
-runtime:
-  nabl2:
-    debug: # analysis files custom
+language:
+  statix:
+    concurrent: true
 build:
   useBuildSystemSpec: true

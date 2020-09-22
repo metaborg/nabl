@@ -326,6 +326,9 @@ rules
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")
 
+  stx--is-concurrent-enabled =
+    prim("STX_is_concurrent_enabled")
+
 rules
 
   /**
