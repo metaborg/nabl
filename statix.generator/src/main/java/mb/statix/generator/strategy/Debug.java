@@ -1,11 +1,12 @@
 package mb.statix.generator.strategy;
 
+import org.metaborg.util.functions.Action1;
+
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
-import org.metaborg.util.functions.Action1;
 
 public final class Debug<I extends SearchState, O extends SearchState> extends SearchStrategy<I, O> {
     private final Action1<SearchNode<O>> debug;

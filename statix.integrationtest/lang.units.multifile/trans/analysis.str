@@ -9,6 +9,7 @@ imports
   statix/runtime/-
   statixruntime
   statix/api
+  statix/runtime/analysis
 
   signatures/-
   signatures/ChangeSets-sig

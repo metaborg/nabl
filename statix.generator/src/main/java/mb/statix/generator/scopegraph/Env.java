@@ -25,8 +25,12 @@ public class Env<S, L, D, X> {
         return matches.stream().allMatch(m -> m.condition.isPresent());
     }
 
-    public static <S, L, D, X> Env<S, L, D, X> of() {
+    public static <S, L, D, X> Env<S, L, D, X> empty() {
         return new Env<>(ImmutableList.of(), ImmutableList.of());
+    }
+
+    public static <S, L, D, X> Env<S, L, D, X> match(IResolutionPath<S, L, D> path, Optional<X> x) {
+        return new Env<>(ImmutableList.of(new Match<>(path, x)), ImmutableList.of());
     }
 
     public static <S, L, D, X> Builder<S, L, D, X> builder() {

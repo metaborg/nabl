@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -49,6 +50,18 @@
       <groupId>org.immutables</groupId>
       <artifactId>serial</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.viatra</groupId>
+      <artifactId>org.eclipse.viatra.query.runtime.matchers</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.viatra</groupId>
+      <artifactId>org.eclipse.viatra.query.runtime.base.itc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.collections</groupId>
+      <artifactId>eclipse-collections</artifactId>
     </dependency>
     <!-- javax.annotation & jsr305 necessary for annotations in dependencies -->
     <dependency>

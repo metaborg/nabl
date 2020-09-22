@@ -1,5 +1,7 @@
 package mb.statix.solver.log;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.Level;
 
 public class Log {
@@ -20,8 +22,8 @@ public class Log {
         return first == null;
     }
 
-    public void append(Level level, String message, Object[] args) {
-        final Entry next = new Entry(level, message, args);
+    public void append(Level level, String message, @Nullable Throwable t, Object[] args) {
+        final Entry next = new Entry(level, message, t, args);
         if(isEmpty()) {
             first = next;
             last = next;
@@ -33,7 +35,7 @@ public class Log {
 
     public void flush(IDebugContext debug) {
         while(!isEmpty()) {
-            debug.log(first.level, first.message, first.args);
+            first.log(debug);
             first = first.next;
         }
     }
@@ -63,13 +65,23 @@ public class Log {
 
         private final Level level;
         private final String message;
+        private final @Nullable Throwable t;
         private final Object[] args;
         private Entry next;
 
-        private Entry(Level level, String message, Object[] args) {
+        private Entry(Level level, String message, @Nullable Throwable t, Object[] args) {
             this.level = level;
             this.message = message;
+            this.t = t;
             this.args = args;
+        }
+
+        private void log(IDebugContext debug) {
+            if(t != null) {
+                debug.log(level, message, t, args);
+            } else {
+                debug.log(level, message, args);
+            }
         }
 
     }

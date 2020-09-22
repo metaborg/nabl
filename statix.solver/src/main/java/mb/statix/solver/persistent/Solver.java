@@ -57,38 +57,48 @@ public class Solver {
             throws Delay, InterruptedException {
         final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Info)) {
-            debug.info("Checking entailment of {}", toString(constraint, unifier));
+            debug.debug("Checking entailment of {}", toString(constraint, unifier));
         }
 
         final SolverResult result =
                 Solver.solve(spec, state, constraint, isComplete, debug.subContext(), progress, cancel);
+        return Solver.entails(state, result, debug);
+    }
+
+    public static boolean entails(IState.Immutable initialState, SolverResult result, final IDebugContext debug)
+            throws Delay {
+        final IUniDisunifier.Immutable unifier = initialState.unifier();
+        if(debug.isEnabled(Level.Info)) {
+            debug.debug("Checking entailment");
+        }
 
         if(result.hasErrors()) {
             // no entailment if errors
-            debug.info("Constraints not entailed: errors");
+            debug.debug("Constraints not entailed: errors");
             return false;
         }
 
         final IState.Immutable newState = result.state();
-        final Set<ITermVar> newVars = Sets.difference(newState.vars(), state.vars());
-        final Set<Scope> newScopes = Sets.difference(newState.scopes(), state.scopes());
+        final Set<ITermVar> newVars = Sets.difference(newState.vars(), initialState.vars());
+        final Set<Scope> newScopes = Sets.difference(newState.scopes(), initialState.scopes());
 
         if(!result.delays().isEmpty()) {
             final Delay delay = result.delay().removeAll(newVars, newScopes);
             if(delay.criticalEdges().isEmpty() && delay.vars().isEmpty()) {
-                debug.info("Constraints not entailed: internal stuckness"); // of the point-free mind
+                debug.debug("Constraints not entailed: internal stuckness"); // of the point-free mind
                 return false;
             } else {
-                debug.info("Cannot decide constraint entailment: unsolved constraints");
+                debug.debug("Cannot decide constraint entailment: unsolved constraints");
                 throw delay;
             }
         }
 
-        // NOTE The retain operation is important because it may change
+        // NOTE The removeAll operation is important because it may change
         //      representatives, which can be local to newUnifier.
+        //      After the removeAll, newUnifier.varSet should not intersect with newVars.
         final IUniDisunifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
         if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
-            debug.info("Constraints not entailed: internal variables leak");
+            debug.debug("Constraints not entailed: internal variables leak");
             return false;
         }
 
@@ -97,7 +107,7 @@ public class Solver {
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`
         if(!unifiedVars.isEmpty()) {
-            debug.info("Cannot decide constraint entailment: unified rigid vars)");
+            debug.debug("Cannot decide constraint entailment: unified rigid vars)");
             throw Delay.ofVars(unifiedVars);
         }
 
@@ -110,11 +120,11 @@ public class Solver {
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {
-            debug.info("Cannot decide constraint entailment: disunified rigid vars)");
+            debug.debug("Cannot decide constraint entailment: disunified rigid vars)");
             throw Delay.ofVars(disunifiedVars);
         }
 
-        debug.info("Constraints entailed");
+        debug.debug("Constraints entailed");
         return true;
     }
 
@@ -126,11 +136,11 @@ public class Solver {
         }
     }
 
-    static String toString(IConstraint constraint, IUniDisunifier.Immutable unifier) {
+    public static String toString(IConstraint constraint, IUniDisunifier.Immutable unifier) {
         return constraint.toString(Solver.shallowTermFormatter(unifier));
     }
 
-    static String toString(Iterable<IConstraint> constraints, IUniDisunifier.Immutable unifier) {
+    public static String toString(Iterable<IConstraint> constraints, IUniDisunifier.Immutable unifier) {
         final StringBuilder sb = new StringBuilder();
         boolean first = true;
         for(IConstraint constraint : constraints) {

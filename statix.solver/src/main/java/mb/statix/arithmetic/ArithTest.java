@@ -1,8 +1,8 @@
 package mb.statix.arithmetic;
 
-import org.metaborg.util.functions.Predicate2;
-
 import java.util.Objects;
+
+import org.metaborg.util.functions.Predicate2;
 
 public class ArithTest {
 

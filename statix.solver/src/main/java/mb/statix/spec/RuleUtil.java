@@ -45,7 +45,6 @@ import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
@@ -106,8 +105,8 @@ public class RuleUtil {
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
      * rules that could be applied, or empty if onlyOne is true, and multiple matches were found.
      */
-    private static Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state,
-            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
+    private static Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state, List<Rule> rules,
+            List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
@@ -196,15 +195,16 @@ public class RuleUtil {
      */
     public static List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Collection<Rule> rules,
             List<? extends ITerm> args, @Nullable IConstraint cause) {
-        return rules.stream().flatMap(
-                rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> Tuple2.of(rule, result)))
+        return rules.stream()
+                .flatMap(rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> Tuple2.of(rule, result)))
                 .collect(ImmutableList.toImmutableList());
     }
 
     /**
      * Computes the order independent rules.
      *
-     * @param rules the ordered set of rules for which to compute
+     * @param rules
+     *            the ordered set of rules for which to compute
      * @return the set of order independent rules
      */
     public static ImmutableSet<Rule> computeOrderIndependentRules(List<Rule> rules) {
@@ -223,10 +223,10 @@ public class RuleUtil {
             // Create term for params and add implied equalities
             final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = paramsPattern.asTerm(Optional::get);
             try {
-                if (!diseqs.unify(p_eqs._2()).isPresent()) {
+                if(!diseqs.unify(p_eqs._2()).isPresent()) {
                     return Stream.empty();
                 }
-            } catch (OccursException e) {
+            } catch(OccursException e) {
                 return Stream.empty();
             }
 
@@ -245,7 +245,8 @@ public class RuleUtil {
                 final java.util.Set<ITermVar> universals = fresh.reset();
                 return diseqs.disunify(universals, left, right).isPresent();
             });
-            if (!guardsOk) return Stream.empty();
+            if(!guardsOk)
+                return Stream.empty();
 
             // Add params as guard for next rule
             guards.add(paramsPattern);
@@ -330,7 +331,6 @@ public class RuleUtil {
                 c -> { constraints.add(c); return true; },
                 c -> { constraints.add(c); return true; },
                 c -> { constraints.add(c); return true; },
-                c -> { constraints.add(c); return true; },
                 c -> { constraints.add(c); return true; }
             ));
             // @formatter:on
@@ -351,15 +351,15 @@ public class RuleUtil {
      * includeRule determine which premises should be inlined. The fragments are closed only w.r.t. the included
      * predicates.
      */
-    public static SetMultimap<String, Rule> makeFragments(RuleSet rules,
-            Predicate1<String> includePredicate, Predicate2<String, String> includeRule, int generations) {
+    public static SetMultimap<String, Rule> makeFragments(RuleSet rules, Predicate1<String> includePredicate,
+            Predicate2<String, String> includeRule, int generations) {
         final SetMultimap<String, Rule> fragments = HashMultimap.create();
 
         // 1. make all rules unordered, and keep included rules
         final SetMultimap<String, Rule> newRules = HashMultimap.create();
-        for (String ruleName : rules.getRuleNames()) {
+        for(String ruleName : rules.getRuleNames()) {
             if(includePredicate.test(ruleName)) {
-                for (Rule r : rules.getOrderIndependentRules(ruleName)) {
+                for(Rule r : rules.getOrderIndependentRules(ruleName)) {
                     if(includeRule.test(r.name(), r.label())) {
                         newRules.put(ruleName, r);
                     }
@@ -407,6 +407,12 @@ public class RuleUtil {
         }
 
         return ImmutableSetMultimap.copyOf(fragments);
+    }
+
+    public static Set.Immutable<ITermVar> freeVars(Rule rule) {
+        final Set.Transient<ITermVar> freeVars = Set.Transient.of();
+        freeVars(rule, freeVars::__insert);
+        return freeVars.freeze();
     }
 
     public static void freeVars(Rule rule, Action1<ITermVar> onVar) {

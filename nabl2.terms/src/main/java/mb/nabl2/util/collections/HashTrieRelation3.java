@@ -2,10 +2,10 @@ package mb.nabl2.util.collections;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.collect.Sets;
 
+import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.Tuple2;
 
@@ -88,8 +88,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
 
         @Override public IRelation3.Immutable<K, L, V> put(K key, L label, V value) {
             return new HashTrieRelation3.Immutable<>(fwdK.__insert(key, Tuple2.of(label, value)),
-                    fwdKL.__insert(Tuple2.of(key, label), value),
-                    bwdV.__insert(value, Tuple2.of(label, key)),
+                    fwdKL.__insert(Tuple2.of(key, label), value), bwdV.__insert(value, Tuple2.of(label, key)),
                     bwdVL.__insert(Tuple2.of(value, label), key));
         }
 
@@ -189,7 +188,8 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                     (change, klv) -> Boolean.logicalOr(change, put(klv._1(), klv._2(), klv._3())), Boolean::logicalOr);
         }
 
-        @Override public boolean remove(K key) {
+        @Override public SetMultimap.Immutable<L, V> remove(K key) {
+            final SetMultimap.Transient<L, V> removed = SetMultimap.Transient.of();
             java.util.Set<Tuple2<L, V>> entries;
             if(!(entries = fwdK.get(key)).isEmpty()) {
                 fwdK.__remove(key);
@@ -199,23 +199,24 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                     fwdKL.__remove(Tuple2.of(key, label));
                     bwdV.__remove(value);
                     bwdVL.__remove(Tuple2.of(value, label));
+                    removed.__insert(label, value);
                 }
-                return true;
             }
-            return false;
+            return removed.freeze();
         }
 
-        @Override public boolean remove(K key, L label) {
+        @Override public Set.Immutable<V> remove(K key, L label) {
+            final Set.Transient<V> removed = Set.Transient.of();
             java.util.Set<V> values;
             if(!(values = fwdKL.get(Tuple2.of(key, label))).isEmpty()) {
                 fwdKL.__remove(Tuple2.of(key, label));
                 for(V value : values) {
                     bwdV.__remove(value, Tuple2.of(label, key));
                     bwdVL.__remove(Tuple2.of(value, label), key);
+                    removed.__insert(value);
                 }
-                return true;
             }
-            return false;
+            return removed.freeze();
         }
 
         @Override public boolean remove(K key, L label, V value) {
@@ -278,11 +279,11 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             return rel1.isEmpty() && rel2.isEmpty();
         }
 
-        @Override public Set<? extends Map.Entry<L, V>> get(K key) {
+        @Override public java.util.Set<? extends Map.Entry<L, V>> get(K key) {
             return Sets.union(rel1.get(key), rel2.get(key));
         }
 
-        @Override public Set<V> get(K key, L label) {
+        @Override public java.util.Set<V> get(K key, L label) {
             return Sets.union(rel1.get(key, label), rel2.get(key, label));
         }
 

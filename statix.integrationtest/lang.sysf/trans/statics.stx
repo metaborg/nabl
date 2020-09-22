@@ -34,9 +34,9 @@ signature
     PL    : scope -> Type
 
   relations
-    var   : occurrence -> Type
+    var   : occurrence -> scope
     body  : Type
-    type  : occurrence -> Type
+    type  : occurrence -> scope
     subst : occurrence -> Type
 
   name-resolution
@@ -49,8 +49,14 @@ signature
 
 rules
 
-  programOK : Exp
-  programOK(e) :- {s T}
+  projectOK : scope
+
+  projectOK(s).
+
+
+  fileOK : scope * Exp
+
+  fileOK(_, e) :- {s T}
     new s,
     typeOfExp(s, e) == T.
 
@@ -66,10 +72,10 @@ rules
   typeOfTypeExp(s, AllType(x, t)) = ALL(X, s_all) :-
     new s_all, s_all -P-> s,
     X == TVar{x@x},
-    s_all -> TVar{x@x} with var TVAR(X),
+    s_all -> TVar{x@x} with var withType(TVAR(X)),
     !body[typeOfTypeExp(s_all, t)] in s_all.
         
-  typeOfTypeExp(s, VarType(X)) = T :-
+  typeOfTypeExp(s, VarType(X)) = typeOf(T) :-
     var of TVar{X@X} in s |-> [(_, (_, T))].
 
 rules
@@ -81,10 +87,10 @@ rules
   typeOfExp(s, Fun(x, t_arg, e)) = FUN(U, T) :- {s_fun}
     typeOfTypeExp(s, t_arg) == U,
     new s_fun, s_fun -P-> s,
-    s_fun -> Var{x@x} with type U,
+    s_fun -> Var{x@x} with type withType(U),
     typeOfExp(s_fun, e) == T.
 
-  typeOfExp(s, Var(x)) = T :-
+  typeOfExp(s, Var(x)) = typeOf(T) :-
     type of Var{x@x} in s |-> [(_, (_, T))].
 
   typeOfExp(s, App(e1, e2)) = T :- {U V}
@@ -95,7 +101,7 @@ rules
   typeOfExp(s, TFun(x, e)) = ALL(X, s_all) :-
     new s_all, s_all -P-> s,
     X == TVar{x@x},
-    s_all -> TVar{x@x} with var TVAR(X),
+    s_all -> TVar{x@x} with var withType(TVAR(X)),
     !body[typeOfExp(s_all, e)] in s_all.
 
   typeOfExp(s, TApp(e, t)) = PROJB(s_inst) :- {x i s_all}
@@ -105,12 +111,12 @@ rules
     
   typeOfExp(s, Let(x, e1, e2)) = U :- {s_let}
     new s_let, s_let -P-> s,
-    s_let -> Var{x@x} with type typeOfExp(s, e1),
+    s_let -> Var{x@x} with type withType(typeOfExp(s, e1)),
     typeOfExp(s_let, e2) == U.
     
   typeOfExp(s, LetT(x, t, e)) = U :- {s_let}
     new s_let, s_let -P-> s,
-    s -> TVar{x@x} with var typeOfTypeExp(s, t),
+    s -> TVar{x@x} with var withType(typeOfTypeExp(s, t)),
     typeOfExp(s_let, e) == U.    
     
   typeOfExp(s, TAS(e, t)) = T :- {U}
@@ -228,3 +234,25 @@ rules
   scopes_acc : path * list(scope) -> list(scope)
   scopes_acc(_PathEmpty(s), acc) = [s|acc].
   scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
+
+signature
+
+  relations
+    typeOf : -> Type
+    
+rules
+
+  typeOf : scope -> Type
+  
+  typeOf(s) = T :-
+    query typeOf
+      filter e and true
+      min /* */ and true
+      in s |-> [(_, T)].
+      
+      
+  withType : Type -> scope
+  
+  withType(T) = s :-
+    new s, !typeOf[T] in s.
+  

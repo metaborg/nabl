@@ -52,18 +52,22 @@ class ConstraintDataWF implements DataWF<ITerm> {
             }
             if(Solver.entails(spec, state, result, isComplete, debug, progress.subProgress(1), cancel)) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Well-formed {}", unifier.toString(B.newTuple(datum)));
+                    debug.debug("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("Not well-formed {}", unifier.toString(B.newTuple(datum)));
+                    debug.debug("Not well-formed {}", unifier.toString(B.newTuple(datum)));
                 }
                 return false;
             }
         } catch(Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
         }
+    }
+
+    @Override public String toString() {
+        return constraint.toString(state.unifier()::toString);
     }
 
 }

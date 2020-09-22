@@ -1,13 +1,14 @@
 package mb.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.metaborg.util.functions.Action2;
 
 import io.usethesource.capsule.Map;
 
-public abstract class MultiSet<E> {
+public abstract class MultiSet<E> implements Iterable<E> {
 
     protected abstract Map<E, Integer> elements();
 
@@ -27,12 +28,16 @@ public abstract class MultiSet<E> {
         return elements().containsKey(e);
     }
 
+    public Set<Entry<E, Integer>> entrySet() {
+        return elements().entrySet();
+    }
+
     public java.util.Set<E> elementSet() {
         return elements().keySet();
     }
 
-    public void forEach(Action2<E, Integer> f) {
-        elements().entrySet().forEach(e -> f.apply(e.getKey(), e.getValue()));
+    @Override public Iterator<E> iterator() {
+        return new MultiSetIterator();
     }
 
     public static class Immutable<E> extends MultiSet<E> implements Serializable {
@@ -47,6 +52,17 @@ public abstract class MultiSet<E> {
 
         @Override protected Map<E, Integer> elements() {
             return elements;
+        }
+
+        public Immutable<E> set(E e, int n) {
+            if(n < 0) {
+                throw new IllegalArgumentException("count must be positive");
+            }
+            if(n > 0) {
+                return new MultiSet.Immutable<>(elements.__put(e, n));
+            } else {
+                return new MultiSet.Immutable<>(elements.__remove(e));
+            }
         }
 
         public Immutable<E> add(E e) {
@@ -114,6 +130,28 @@ public abstract class MultiSet<E> {
 
         @Override protected Map<E, Integer> elements() {
             return elements;
+        }
+
+        /**
+         * Set an element to n.
+         * 
+         * @param e
+         *            Element to be set
+         * @param n
+         *            New count
+         * @return Old count for the element
+         */
+        public int set(E e, int n) {
+            if(n < 0) {
+                throw new IllegalArgumentException("count must be positive");
+            }
+            final Integer c;
+            if(n > 0) {
+                c = elements.__put(e, n);
+            } else {
+                c = elements.__remove(e);
+            }
+            return c != null ? c : 0;
         }
 
         /**
@@ -219,6 +257,28 @@ public abstract class MultiSet<E> {
     @Override public String toString() {
         return elements().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
                 .collect(Collectors.joining(", ", "{", "}"));
+    }
+
+    private class MultiSetIterator implements Iterator<E> {
+
+        private Iterator<Map.Entry<E, Integer>> it = elements().entryIterator();
+        private E next;
+        private int count;
+
+        @Override public boolean hasNext() {
+            return (next != null && count > 0) || it.hasNext();
+        }
+
+        @Override public E next() {
+            if(next == null || count <= 0) {
+                final Map.Entry<E, Integer> entry = it.next();
+                next = entry.getKey();
+                count = entry.getValue();
+            }
+            count -= 1;
+            return next;
+        }
+
     }
 
 }

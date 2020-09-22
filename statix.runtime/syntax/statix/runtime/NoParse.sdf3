@@ -26,3 +26,26 @@ context-free syntax
   Stx-ATerm   = Stx-Occurrence
   Stx-ATerm   = Stx-TermIndex
 
+
+context-free syntax
+
+  Stx-Diff = <
+    scope graph diff {
+      matched scopes <{Stx-MatchEntry "; "}*>
+      added {
+        <Stx-Changes>
+      }
+      removed {
+        <Stx-Changes>
+      }
+    }
+  >
+
+  Stx-Changes = <
+    scopes <{Stx-ScopeEntry "\n"}*>
+    edges  <{Stx-EdgeEntry "\n"}*>
+  >
+
+  Stx-MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
+  Stx-ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
+  Stx-EdgeEntry = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]

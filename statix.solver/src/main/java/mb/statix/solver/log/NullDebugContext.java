@@ -14,8 +14,8 @@ public class NullDebugContext implements IDebugContext {
         this.depth = depth;
     }
 
-    @Override public Level getLevel() {
-        return Level.Error;
+    @Override public Level getDebugLevel() {
+        return Level.Trace;
     }
 
     @Override public int getDepth() {
@@ -30,16 +30,27 @@ public class NullDebugContext implements IDebugContext {
         return new NullDebugContext(depth + 1);
     }
 
-    @Override public void info(String fmt, Object... args) {
+    @Override public void debug(String fmt, Object... args) {
+    }
+
+    @Override public void debug(String fmt, Throwable t, Object... args) {
     }
 
     @Override public void warn(String fmt, Object... args) {
     }
 
+    @Override public void warn(String fmt, Throwable t, Object... args) {
+    }
+
     @Override public void error(String fmt, Object... args) {
+    }
+
+    @Override public void error(String fmt, Throwable t, Object... args) {
     }
 
     @Override public void log(Level level, String fmt, Object... args) {
     }
 
+    @Override public void log(Level level, String fmt, Throwable t, Object... args) {
+    }
 }

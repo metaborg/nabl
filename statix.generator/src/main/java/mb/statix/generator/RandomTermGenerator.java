@@ -1,8 +1,5 @@
 package mb.statix.generator;
 
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.google.common.collect.ImmutableList;
 
 import mb.statix.generator.nodes.SearchNode;

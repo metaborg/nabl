@@ -9,15 +9,19 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.nabl2.util.collections.MultiSet;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
 
 public interface ICompleteness {
 
     boolean isEmpty();
-    
-    boolean isComplete(Scope scope, ITerm label, IUniDisunifier unifier);
+
+    MultiSet<EdgeOrData<ITerm>> get(ITerm varOrScope, IUniDisunifier unifier);
+
+    boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUniDisunifier unifier);
 
     interface Immutable extends ICompleteness {
 

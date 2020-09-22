@@ -4,10 +4,10 @@ public interface DataWF<D> {
 
     boolean wf(D d) throws ResolutionException, InterruptedException;
 
-    static <V> DataWF<V> ANY() {
-        return new DataWF<V>() {
+    static <D> DataWF<D> ANY() {
+        return new DataWF<D>() {
 
-            @Override public boolean wf(V d) {
+            @Override public boolean wf(D d) {
                 return true;
             }
 

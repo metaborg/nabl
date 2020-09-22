@@ -22,7 +22,6 @@ import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
-import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
@@ -74,8 +73,6 @@ public interface IConstraint {
 
         R caseTellEdge(CTellEdge c);
 
-        R caseTellRel(CTellRel c);
-
         R caseTermId(CAstId c);
 
         R caseTermProperty(CAstProperty c);
@@ -111,8 +108,6 @@ public interface IConstraint {
         R caseResolveQuery(CResolveQuery c) throws E;
 
         R caseTellEdge(CTellEdge c) throws E;
-
-        R caseTellRel(CTellRel c) throws E;
 
         R caseTermId(CAstId c) throws E;
 

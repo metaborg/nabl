@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -21,7 +22,6 @@ import mb.statix.solver.query.IQueryMin;
 public class CResolveQuery implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final ITerm relation;
     private final IQueryFilter filter;
     private final IQueryMin min;
     private final ITerm scopeTerm;
@@ -30,28 +30,23 @@ public class CResolveQuery implements IConstraint, Serializable {
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
 
-    public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
-        this(relation, filter, min, scopeTerm, resultTerm, null, null);
+    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
+        this(filter, min, scopeTerm, resultTerm, null, null);
     }
 
-    public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IMessage message) {
-        this(relation, filter, min, scopeTerm, resultTerm, null, message);
+        this(filter, min, scopeTerm, resultTerm, null, message);
     }
 
-    public CResolveQuery(ITerm relation, IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IConstraint cause, @Nullable IMessage message) {
-        this.relation = relation;
         this.filter = filter;
         this.min = min;
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
         this.message = message;
-    }
-
-    public ITerm relation() {
-        return relation;
     }
 
     public IQueryFilter filter() {
@@ -75,7 +70,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
-        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause, message);
+        return new CResolveQuery(filter, min, scopeTerm, resultTerm, cause, message);
     }
 
     @Override public Optional<IMessage> message() {
@@ -83,7 +78,7 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery withMessage(@Nullable IMessage message) {
-        return new CResolveQuery(relation, filter, min, scopeTerm, resultTerm, cause, message);
+        return new CResolveQuery(filter, min, scopeTerm, resultTerm, cause, message);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -104,20 +99,18 @@ public class CResolveQuery implements IConstraint, Serializable {
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
-        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+        return new CResolveQuery(filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
+                cause, message == null ? null : message.apply(subst));
     }
 
     @Override public CResolveQuery apply(IRenaming subst) {
-        return new CResolveQuery(relation, filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+        return new CResolveQuery(filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
+                cause, message == null ? null : message.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("query ");
-        sb.append(relation);
-        sb.append(" ");
         sb.append(filter.toString(termToString));
         sb.append(" ");
         sb.append(min.toString(termToString));
@@ -132,22 +125,18 @@ public class CResolveQuery implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CResolveQuery that = (CResolveQuery)o;
-        return Objects.equals(relation, that.relation) &&
-            Objects.equals(filter, that.filter) &&
-            Objects.equals(min, that.min) &&
-            Objects.equals(scopeTerm, that.scopeTerm) &&
-            Objects.equals(resultTerm, that.resultTerm) &&
-            Objects.equals(cause, that.cause) &&
-            Objects.equals(message, that.message);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CResolveQuery that = (CResolveQuery) o;
+        return Objects.equals(filter, that.filter) && Objects.equals(min, that.min)
+                && Objects.equals(scopeTerm, that.scopeTerm) && Objects.equals(resultTerm, that.resultTerm)
+                && Objects.equals(cause, that.cause) && Objects.equals(message, that.message);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(relation, filter, min, scopeTerm, resultTerm, cause, message);
+    @Override public int hashCode() {
+        return Objects.hash(filter, min, scopeTerm, resultTerm, cause, message);
     }
 }

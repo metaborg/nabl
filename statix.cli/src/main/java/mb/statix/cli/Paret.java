@@ -1,8 +1,8 @@
 package mb.statix.cli;
 
 import static mb.statix.constraints.Constraints.collectBase;
-import static mb.statix.generator.util.StreamUtil.flatMap;
 import static mb.statix.generator.strategy.SearchStrategies.*;
+import static mb.statix.generator.util.StreamUtil.flatMap;
 
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ import mb.statix.generator.predicate.Any;
 import mb.statix.generator.predicate.Match;
 import mb.statix.generator.predicate.Not;
 import mb.statix.generator.util.StreamUtil;
-import mb.statix.scopegraph.reference.CriticalEdge;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.CompletenessUtil;
 import mb.statix.spec.Rule;

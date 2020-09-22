@@ -20,10 +20,6 @@ public class LazyDebugContext implements IDebugContext {
         this.log = log;
     }
 
-    @Override public Level getLevel() {
-        return debug.getLevel();
-    }
-
     @Override public int getDepth() {
         return debug.getDepth() + offset;
     }
@@ -32,31 +28,59 @@ public class LazyDebugContext implements IDebugContext {
         return debug.isEnabled(level);
     }
 
+    @Override public Level getDebugLevel() {
+        return debug.getDebugLevel();
+    }
+
     @Override public IDebugContext subContext() {
         return new LazyDebugContext(debug, offset + 1, log);
     }
 
-    @Override public void info(String fmt, Object... args) {
-        if(isEnabled(Level.Info)) {
-            log.append(Level.Info, prefix() + fmt, args);
+    @Override public void debug(String fmt, Object... args) {
+        if(isEnabled(getDebugLevel())) {
+            log.append(getDebugLevel(), prefix() + fmt, null, args);
+        }
+    }
+
+    @Override public void debug(String fmt, Throwable t, Object... args) {
+        if(isEnabled(getDebugLevel())) {
+            log.append(getDebugLevel(), prefix() + fmt, t, args);
         }
     }
 
     @Override public void warn(String fmt, Object... args) {
         if(isEnabled(Level.Warn)) {
-            log.append(Level.Warn, prefix() + fmt, args);
+            log.append(Level.Warn, prefix() + fmt, null, args);
+        }
+    }
+
+    @Override public void warn(String fmt, Throwable t, Object... args) {
+        if(isEnabled(Level.Warn)) {
+            log.append(Level.Warn, prefix() + fmt, t, args);
         }
     }
 
     @Override public void error(String fmt, Object... args) {
         if(isEnabled(Level.Error)) {
-            log.append(Level.Error, prefix() + fmt, args);
+            log.append(Level.Error, prefix() + fmt, null, args);
+        }
+    }
+
+    @Override public void error(String fmt, Throwable t, Object... args) {
+        if(isEnabled(Level.Error)) {
+            log.append(Level.Error, prefix() + fmt, t, args);
         }
     }
 
     @Override public void log(Level level, String fmt, Object... args) {
         if(isEnabled(level)) {
-            log.append(level, prefix() + fmt, args);
+            log.append(level, prefix() + fmt, null, args);
+        }
+    }
+
+    @Override public void log(Level level, String fmt, Throwable t, Object... args) {
+        if(isEnabled(level)) {
+            log.append(level, prefix() + fmt, t, args);
         }
     }
 

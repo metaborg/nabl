@@ -14,7 +14,6 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 
 public class STX_compare_patterns extends StatixPrimitive {
 

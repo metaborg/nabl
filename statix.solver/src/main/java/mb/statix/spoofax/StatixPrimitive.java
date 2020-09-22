@@ -12,8 +12,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
@@ -45,7 +43,6 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
-import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -114,8 +111,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     protected IDebugContext getDebugContext(ITerm levelTerm) throws InterpreterException {
         final String levelString =
                 M.stringValue().match(levelTerm).orElseThrow(() -> new InterpreterException("Expected log level."));
-        final @Nullable Level level = levelString.equalsIgnoreCase("None") ? null : Level.parse(levelString);
-        final IDebugContext debug = level != null ? new LoggerDebugContext(logger, level) : new NullDebugContext();
+        final Level level = levelString.equalsIgnoreCase("None") ? Level.Debug : Level.parse(levelString);
+        final IDebugContext debug = new LoggerDebugContext(logger, level);
         return debug;
     }
 
@@ -161,7 +158,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         if(traceCount >= MAX_TRACE) {
             trace.addLast("... trace truncated ...");
         }
-        
+
         // use empty origin if none was found
         if(originTerm == null) {
             originTerm = B.EMPTY_TUPLE;
@@ -200,7 +197,6 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             onNew -> Stream.empty(),
             onResolveQuery -> Stream.empty(),
             onTellEdge -> Stream.empty(),
-            onTellRel -> Stream.empty(),
             onTermId -> Stream.empty(),
             onTermProperty -> Stream.empty(),
             onTrue -> Stream.empty(),

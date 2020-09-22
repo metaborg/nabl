@@ -487,15 +487,36 @@ public class TermMatch {
         }
 
         default <R> IMatcher<R> map(Function<T, R> fun) {
-            return (term, unifier) -> this.match(term, unifier).<R>map(fun);
+            return (term, unifier) -> {
+                final Optional<T> result = this.match(term, unifier);
+                if(result.isPresent()) {
+                    return Optional.of(fun.apply(result.get()));
+                } else {
+                    return Optional.empty();
+                }
+            };
         }
 
         default IMatcher<T> filter(Predicate<T> pred) {
-            return (term, unifier) -> this.match(term, unifier).filter(pred);
+            return (term, unifier) -> {
+                final Optional<T> result = this.match(term, unifier);
+                if(result.isPresent() && pred.test(result.get())) {
+                    return result;
+                } else {
+                    return Optional.empty();
+                }
+            };
         }
 
         default <R> IMatcher<R> flatMap(Function<T, Optional<R>> fun) {
-            return (term, unifier) -> this.match(term, unifier).<R>flatMap(fun);
+            return (term, unifier) -> {
+                final Optional<T> result = this.match(term, unifier);
+                if(result.isPresent()) {
+                    return fun.apply(result.get());
+                } else {
+                    return Optional.empty();
+                }
+            };
         }
 
         static <T> IMatcher<T> flatten(IMatcher<Optional<T>> m) {
