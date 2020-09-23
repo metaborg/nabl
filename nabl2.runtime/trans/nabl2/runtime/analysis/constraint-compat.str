@@ -100,9 +100,13 @@ signature
                  * List(EditorMessage)    // notes
                 -> AnalysisResult
 
-    CompatAnalysis : Term // initial analysis
-                   * Term // final analysis
-                  -> CompatAnalysis
+    CompatUnitAnalysis : Term // initial analysis
+                       * Term // final analysis
+                      -> CompatAnalysis
+
+    CompatProjectAnalysis : Term // initial analysis
+                          * Term // final analysis
+                         -> CompatAnalysis
 
 rules
 
@@ -113,7 +117,7 @@ rules
     ; unit-result* := <map({ ?(resource, ast)
                            ; ( UnitResult(ast', a', error*, warning*, note*) :=
                                    <analyze> AnalyzeUnit(resource, ast)
-                             < !(resource, Full(ast', CompatAnalysis(a', a'), error*, warning*, note*))
+                             < !(resource, Full(ast', CompatUnitAnalysis(a', a'), error*, warning*, note*))
                              + !(resource, Failed())
                              )
                            })> ast*
@@ -125,7 +129,7 @@ rules
       switch !project-change
         case ?Added(_) + ?Changed(_, _):
           InitialResult(project-initial-analysis) := <analyze> AnalyzeInitial(project-resource)
-        case ?Cached(CompatAnalysis(project-initial-analysis, _)):
+        case ?Cached(CompatProjectAnalysis(project-initial-analysis, _)):
           id
         otherwise:
           fatal-err(|"Unexpected change on project")
@@ -135,20 +139,20 @@ rules
                                      ?(unit-resource, unit-ast)
                                    ; ( UnitResult(unit-ast', unit-analysis) :=
                                            <analyze> AnalyzeUnit(unit-resource, unit-ast, project-initial-analysis)
-                                     < !(unit-resource, Full(unit-ast', CompatAnalysis(unit-analysis, None()), [], [], []))
+                                     < !(unit-resource, Full(unit-ast', CompatUnitAnalysis(unit-analysis, None()), [], [], []))
                                      + !(unit-resource, Failed())
                                      )
                                    })> ast*
-    ; unit-initial-analysis-new* := <filter(?(_, Full(_, CompatAnalysis(<id>, _), _, _, _)))> unit-initial-result*
-    ; unit-initial-analysis-cached* := <filter(?(_, Cached(CompatAnalysis(<id>, _))))> change*
+    ; unit-initial-analysis-new* := <filter(?(_, Full(_, CompatUnitAnalysis(<id>, _), _, _, _)))> unit-initial-result*
+    ; unit-initial-analysis-cached* := <filter(?(_, Cached(CompatUnitAnalysis(<id>, _))))> change*
     ; unit-initial-analysis* := [unit-initial-analysis-new*, unit-initial-analysis-cached*]
-    ; if project-analysis-cached*@[_|_] := <filter(?(<id>, Cached(CompatAnalysis(_, _))))> change* then
+    ; if project-analysis-cached*@[_|_] := <filter(?(<id>, Cached(CompatProjectAnalysis(_, _))))> change* then
         <fatal-err(|"Context is in inconsistent state. Clean the project to reset the context. This can happen when a context is written in one environment (e.g., Eclipse) and later read in another (e.g., Maven).")> project-analysis-cached*
       end
     ; FinalResult(final-analysis, error*, warning*, note*) :=
           <analyze> AnalyzeFinal(project-resource, project-initial-analysis, unit-initial-analysis*)
-    ; project-analysis := CompatAnalysis(project-initial-analysis, final-analysis)
-    ; unit-result* := <map((id, try(Full(id, CompatAnalysis(id, !final-analysis), id, id, id))))> unit-initial-result*
+    ; project-analysis := CompatProjectAnalysis(project-initial-analysis, final-analysis)
+    ; unit-result* := <map((id, try(Full(id, CompatUnitAnalysis(id, !final-analysis), id, id, id))))> unit-initial-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
@@ -164,11 +168,11 @@ rules
    */
   nabl2--get-resource-analysis =
     get-resource-constraint-analysis
-  ; ?CompatAnalysis(_, <id>)
+  ; ( ?CompatUnitAnalysis(_, <id>) + ?CompatProjectAnalysis(_, <id>) )
 
   /**
    * @type resource:String -> analysis:Term
    */
   nabl2--get-resource-partial-analysis =
     get-resource-constraint-analysis
-  ; ?CompatAnalysis(<id>, _)
+  ; ( ?CompatUnitAnalysis(<id>, _) + ?CompatProjectAnalysis(<id>, _) )
