@@ -9,7 +9,7 @@ context-free syntax
 
   Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-TermIndex>}>
 
-  Stx-OccurrencePosition      = Stx-TermIndex
+  Stx-OccurrencePosition = Stx-TermIndex
 
   Stx-Scope.Scope = <#<Stx-STRING>-<Stx-STRING>>
 
@@ -29,7 +29,7 @@ context-free syntax
 
 context-free syntax
 
-  Stx-Diff = <
+  Stx-Diff.Diff = <
     scope graph diff {
       matched scopes <{Stx-MatchEntry "; "}*>
       added {
@@ -41,11 +41,11 @@ context-free syntax
     }
   >
 
-  Stx-Changes = <
+  Stx-Changes.Changes = <
     scopes <{Stx-ScopeEntry "\n"}*>
     edges  <{Stx-EdgeEntry "\n"}*>
   >
 
-  Stx-MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
-  Stx-ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
-  Stx-EdgeEntry = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]
+  Stx-MatchEntry.MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
+  Stx-ScopeEntry.ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
+  Stx-EdgeEntry.EdgeEntry   = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]

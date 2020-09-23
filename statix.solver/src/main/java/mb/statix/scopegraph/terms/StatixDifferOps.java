@@ -23,6 +23,12 @@ import mb.statix.scopegraph.diff.ScopeGraphDifferOps;
 
 public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
 
+    private static final String DIFF_OP = "Diff";
+    private static final String CHANGES_OP = "Changes";
+    private static final String MATCH_OP = "MatchEntry";
+    private static final String SCOPE_OP = "ScopeEntry";
+    private static final String EDGE_OP = "EdgeEntry";
+
     private final IUnifier.Immutable currentUnifier;
     private final IUnifier.Immutable previousUnifier;
 
@@ -167,19 +173,19 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
     public static ITerm toTerm(ScopeGraphDiff<Scope, ITerm, ITerm> diff, IUnifier.Immutable current,
             IUnifier.Immutable previous) {
         final List<ITerm> matchedScopes = diff.matchedScopes().entrySet().stream()
-                .map(e -> B.newTuple(e.getKey(), e.getValue())).collect(ImmutableList.toImmutableList());
+                .map(e -> B.newAppl(MATCH_OP, e.getKey(), e.getValue())).collect(ImmutableList.toImmutableList());
         final ITerm added = toTerm(diff.added(), current);
         final ITerm removed = toTerm(diff.removed(), previous);
-        return B.newTuple(B.newList(matchedScopes), added, removed);
+        return B.newAppl(DIFF_OP, B.newList(matchedScopes), added, removed);
     }
 
     public static ITerm toTerm(ScopeGraphDiff.Changes<Scope, ITerm, ITerm> changes, IUnifier.Immutable unifier) {
         final List<ITerm> scopes = changes.scopes().entrySet().stream()
-                .map(e -> B.newTuple(e.getKey(), unifier.findRecursive(e.getValue())))
+                .map(e -> B.newAppl(SCOPE_OP, e.getKey(), unifier.findRecursive(e.getValue())))
                 .collect(ImmutableList.toImmutableList());
-        final List<ITerm> edges = changes.edges().stream().map(e -> B.newTuple(e.source, e.label, e.target))
+        final List<ITerm> edges = changes.edges().stream().map(e -> B.newAppl(EDGE_OP, e.source, e.label, e.target))
                 .collect(ImmutableList.toImmutableList());
-        return B.newTuple(B.newList(scopes), B.newList(edges));
+        return B.newAppl(CHANGES_OP, B.newList(scopes), B.newList(edges));
     }
 
 }
