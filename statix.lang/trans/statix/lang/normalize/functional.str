@@ -55,5 +55,6 @@ rules
        ; out_v := <mk-fresh-Var(|ty)>(x)
       <+ out_v := <mk-fresh-Var>(x)
 
-  functional-cop-to-c: (COp(x, in_ts), out_v) -> C(x, ts, NoMessage())
+  functional-cop-to-c: (COp(x, in_ts), out_v) -> C(x, ts, msg)
     with ts := <conc> (in_ts, [out_v])
+       ; msg := <CurrentMessage>
