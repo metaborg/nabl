@@ -1,0 +1,39 @@
+---
+id: org.metaborg:statix.integrationtest.lang.units.multifile:2.6.0-SNAPSHOT
+name: UnitsMultifile
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  - org.metaborg:statix.lang:${metaborgVersion}
+  - org.metaborg:sdf3.ext.statix:${metaborgVersion}
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+  - org.metaborg:statix.runtime:${metaborgVersion}
+  - org.metaborg:statix.integrationtest.lang.units:${metaborgVersion}
+language:
+  sdf:
+    pretty-print: Units
+    sdf2table: java
+    placeholder:
+      prefix: "$"
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc
+exports:
+- language: ATerm
+  directory: src-gen/statix

@@ -1,6 +1,7 @@
 package mb.nabl2.relations.variants;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -156,6 +157,19 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
                     Relation.Immutable.of(description.relationDescription()));
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            VariantRelation.Immutable<?> immutable = (VariantRelation.Immutable<?>) o;
+            return Objects.equals(description, immutable.description) &&
+                    Objects.equals(baseRelation, immutable.baseRelation);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, baseRelation);
+        }
     }
 
 
@@ -199,6 +213,18 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
                     Relation.Transient.of(description.relationDescription()));
         }
 
+        @Override public boolean equals(Object o) {
+            if(this == o) return true;
+            if(o == null || getClass() != o.getClass()) return false;
+            VariantRelation.Transient<?> that = (VariantRelation.Transient<?>)o;
+            return Objects.equals(description, that.description) &&
+                Objects.equals(baseRelation, that.baseRelation);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(description, baseRelation);
+        }
     }
 
 }

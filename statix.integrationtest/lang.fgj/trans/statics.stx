@@ -9,16 +9,18 @@ imports
 
 rules
 
-  programOK : Program
+  projectOK : scope
 
-  programOK(Program(cdecls)) :- {s}
-    new s,
-    object(s),
+  projectOK(s) :-
+    object(s).
+
+
+  fileOK : scope * Program
+
+  fileOK(s, Program(cdecls)) :-
     classesOK(s, cdecls).
 
-  programOK(Let(cdecls, e)) :- {s}
-    new s,
-    object(s),
+  fileOK(s, Let(cdecls, e)) :-
     classesOK(s, cdecls),
     strict(typeOfExp(s, e)) == _.
 
@@ -29,12 +31,12 @@ rules
   object(s) :- {s_class s_ctor}
     // class
     new s_class, s_class -P-> s,
-    s -> Class{"Object"@-} with typeOfDecl CLASS(s_class),
+    s -> Class{"Object"@-} with typeOfDecl withType(CLASS(s_class)),
     // type parameters
     !tparamsOfClass[[]] in s_class,
     // constructor
     new s_ctor, s_ctor -P-> s_class,
-    s_class -> Ctor{@-} with typeOfDecl CTOR([]).
+    s_class -> Ctor{@-} with typeOfDecl withType(CTOR([])).
 
 rules
 
@@ -43,7 +45,7 @@ rules
 
   classOK(s, ClassDecl(x, tvars, cte_super, fields, ctor, methods)) :- {s_class Xs s_super p_super}
     new s_class, s_class -P-> s,                  // class scope
-    s -> Class{x@x} with typeOfDecl CLASS(s_class),  // class declaration and type
+    s -> Class{x@x} with typeOfDecl withType(CLASS(s_class)),  // class declaration and type
     classTParamsOK(s_class, tvars) == Xs,
     typeOfClassTypeExp(s_class, cte_super) == CLASS(s_super),
     s_class -S-> s_super,
@@ -65,7 +67,7 @@ rules
 
   fieldDeclOK(s_class, FieldDecl(te, x)) :- {T}
     typeOfTypeExp(s_class, te) == T,            // field type
-    s_class -> Field{x@x} with typeOfDecl T.    // field declaration
+    s_class -> Field{x@x} with typeOfDecl withType(T).    // field declaration
 
 rules
 
@@ -75,7 +77,7 @@ rules
     x == y,                                          // constructor name corresponds to class name
     new s_ctor, s_ctor -P-> s_class,                 // ctor body scope
     typesOfParams(s_ctor, params) == Ts,             // ctor param types
-    s_class -> Ctor{@x} with typeOfDecl CTOR(Ts),    // ctor declaration
+    s_class -> Ctor{@x} with typeOfDecl withType(CTOR(Ts)),    // ctor declaration
     superClassCtorType(s_class) == CTOR(Ss),         // constructor type with instantiated type variables
     typesOfExps(s_ctor, es) == Us,                   // argument types
     subTypes(s_ctor, Us, Ss),                        // valid arguments
@@ -90,7 +92,7 @@ rules
     query typeOfDecl filter I*P* and { Field{x'@_} :- x' == x }
           in s |-> [(_, (_, T))],                    // field type
     typeOfExp(s, e) == U,                            // expr type
-    subType(s, U, T).
+    subType(s, U, typeOf(T)).
 
 rules
 
@@ -114,8 +116,8 @@ rules
     subType(s_method, U, T),                  // body type is subtype of return type
 
     new s_mtype,
-    s_mtype -> MType{@x} with typeOfDecl MTY(T, Ts),    //
-    !typeOfDecl[d, METHOD(Xs, s_mtype)] in s_class,         // method type
+    s_mtype -> MType{@x} with typeOfDecl withType(MTY(T, Ts)),    //
+    !typeOfDecl[d, withType(METHOD(Xs, s_mtype))] in s_class,         // method type
 
     overrideOK(s_class, d, METHOD(Xs, s_mtype)).
 
@@ -123,10 +125,10 @@ rules
 
   methodThisOK(s_method, s_class, d@Method{_@x}) :- {s_inst}
     new s_inst, s_inst -I-> s_class,
-    s_method -> Var{"this"@x} with typeOfDecl CLASS(s_inst).
+    s_method -> Var{"this"@x} with typeOfDecl withType(CLASS(s_inst)).
 
   overrideOK  : scope * occurrence * TYPE
-  overrideOK2 : scope * list((path * (occurrence * TYPE))) * TYPE
+  overrideOK2 : scope * list((path * (occurrence * scope))) * TYPE
 
   overrideOK(s, d@Method{x@_}, T) :- {ps}
     overrides(s, d) == ps, overrideOK2(s, ps, T).
@@ -134,9 +136,9 @@ rules
   overrideOK2(s, [], T).
 
   overrideOK2(s, [(_, (d', mt2))], mt1) :- {U Us}
-    typeEq(mt1, mt2).
+    typeEq(mt1, typeOf(mt2)).
 
-  overrides : scope * occurrence -> list((path * (occurrence * TYPE)))
+  overrides : scope * occurrence -> list((path * (occurrence * scope)))
   overrides(s_class, Method{x@_}) = ps :-
     query typeOfDecl filter S S* and { d :- d == Method{x@_} }
                      min $ < I, $ < S and true
@@ -149,7 +151,7 @@ rules
 
   typeOfParam(s, Param(te, x)) = T :- {d}
     typeOfTypeExp(s, te) == T,          // param type
-    s -> Var{x@x} with typeOfDecl T.    // param declaration
+    s -> Var{x@x} with typeOfDecl withType(T).    // param declaration
 
 rules
 
@@ -157,7 +159,7 @@ rules
   typesOfTParams maps typeOfTParam(*, list(*)) = list(*)
 
   typeOfTParam(s, TVarDecl(x, cte)) = TVar{x@x} :-
-    s -> TVar{x@x} with typeOfDecl typeOfClassTypeExp(s, cte). // t is upper bound of type parameter
+    s -> TVar{x@x} with typeOfDecl withType(typeOfClassTypeExp(s, cte)). // t is upper bound of type parameter
 
   boundsOfTParams: scope * list(occurrence) -> list(TYPE)
   boundsOfTParams(s, []) = [].
@@ -187,7 +189,7 @@ rules
 
   typeOfClassTypeExp(s, cte@ClassT(x, tes)) = CT@CLASS(s_inst) :- {x' s_class Xs Ts Us}
     @x.ref := x', @cte.type := strict(CT),
-    typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, CLASS(s_class)))],    // class type
+    typeOfDecl of Class{x@x} in s |-> [(_, (Class{x'@_}, matchType(CLASS(s_class))))], // class type
     typesOfTypeExps(s, tes) == Ts,          // type arguments
     ?tparamsOfClass[] in s_class == Xs,     // type parameters
     instWith(s_class, Xs, Ts) == s_inst,    // super class type variable instantiation
@@ -201,7 +203,7 @@ rules
 
   typeOfExp(s, ee@Var(x)) = T :- {x' p d}
     @x.ref := x', @ee.type := strict(T),
-    typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, T))].
+    typeOfDecl of Var{x@x} in s |-> [(p, (d@Var{x'@_}, matchType(T)))].
 
   typeOfExp(s, ee@Fld(e, x)) = S :- {s_inst}
     @ee.type := strict(S),
@@ -211,7 +213,7 @@ rules
   typeOfExp(s, ee@Call(e, tys, x, es)) = U :- {S s_cls x' Ts m_inst Xs s_mtype s_minst Us Ss p}
     @x.ref := x', @ee.type := strict(U),
     promoteType(s, strict(typeOfExp(s, e))) == CLASS(s_cls),
-    typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, METHOD(Xs, s_mtype)))],
+    typeOfDecl of Method{x@x} in s_cls |-> [(p, (Method{x'@_}, matchType(METHOD(Xs, s_mtype))))],
     typesOfTypeExps(s, tys) == Ts,
     instWith(s_mtype, Xs, Ts) == s_minst,
     norm(scopes(p), PROJ(s_minst, MType{@-})) == MTY(U, Us),
@@ -352,7 +354,7 @@ rules // abbreviation
 
   superClassCtorType : scope -> TYPE
 
-  superClassCtorType(s) = norm(scopes(p), T) :-
+  superClassCtorType(s) = norm(scopes(p), typeOf(T)) :-
     query typeOfDecl filter I* S I* and { d :- d == Ctor{@_} }
                      in s |-> [(p, (_, T))].
 

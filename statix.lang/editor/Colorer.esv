@@ -1,10 +1,80 @@
 module Colorer
 
-imports 
-
-  libspoofax/color/default
-  completion/colorer/StatixLang-cc-esv
-
+//imports 
+//
+//  libspoofax/color/default
+//  completion/colorer/StatixLang-cc-esv
+  
+colorer Default, token-based highlighting
+                                  
+  keyword    : 127 0 85 bold      
+  //keyword    : 203 75 22 bold // orange 
+  
+  identifier : default            
+  string     : blue               
+  number     : darkgreen          
+  var        : 139 69 19 italic   
+  operator   : 0 0 230        
+  layout     : 63 127 95 italic   
+  
 colorer
 
   RuleLabel._ : 0 0 139
+  
+  //RelationId : 38 139 210 bold // blue   
+  
+  //ConstraintId : 8 0 255   // dark blue  
+  ConstraintId : 0 0 109   // dark blue   
+  
+  NamespaceId : 108 113 196 // violet
+
+  VARID : 101 123 131 italic // base0
+  
+  UCID : 7 54 66 bold // base02
+  LCID : black
+  
+  ID :  88 110 117 // base02
+  
+  Str : 0 128 0       // darkgreen
+  
+  FileID : yellow
+  ModuleID : blue
+  
+  STRID : 0 0 255 bold // blue   
+  
+  OpId : 7 54 66 bold // base02
+  
+  MessageChars : 181 137   0 // yellow
+  
+colorer System colors
+                                  
+  darkblue   = 0 0 128 italic     
+  blue       = 0 0 255     
+  mediumblue = 0 0 200 
+  
+  darkred   = 128 0 0       
+  red       = 255 0 0       
+  red2      = 240 0 0       
+  red3      = 225 0 0       
+  red4      = 210 0 0   
+   
+  flred     = 255 10 0       
+  flred2    = 240 10 0       
+  flred3    = 225 10 0       
+  flred4    = 210 10 0       
+  
+  darkgreen = 0 128 0       
+  green     = 0 255 0       
+  
+  cyan      = 0 255 255     
+  magenta   = 255 0 255     
+  yellow    = 255 255 0     
+  white     = 255 255 255   
+  black     = 0 0 0         
+  gray      = 128 128 128   
+  grey      = gray          
+  orange    		= 255 165 0     
+  darkorange  	= 255 10 0     
+  pink      = 255 105 180   
+  brown     = 139 69 19     
+  default   = _   

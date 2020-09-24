@@ -1,12 +1,14 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -85,4 +87,18 @@ public class CAstId implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CAstId cAstId = (CAstId)o;
+        return Objects.equals(term, cAstId.term) &&
+            Objects.equals(idTerm, cAstId.idTerm) &&
+            Objects.equals(cause, cAstId.cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(term, idTerm, cause);
+    }
 }

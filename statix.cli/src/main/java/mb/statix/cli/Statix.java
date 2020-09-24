@@ -91,7 +91,7 @@ public class Statix {
         // try loading from resources
         final FileObject langResource;
         try {
-            langResource = S.resourceService.resolve("res:statix.lang.spoofax-language");
+            langResource = S.resourceService.resolve("res://statix.lang.spoofax-language");
         } catch(MetaborgRuntimeException ex) {
             throw new MetaborgException("Failed to load language.", ex);
         }

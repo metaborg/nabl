@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,8 +10,8 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -122,4 +123,20 @@ public class CInequal implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CInequal cInequal = (CInequal)o;
+        return Objects.equals(universals, cInequal.universals) &&
+            Objects.equals(term1, cInequal.term1) &&
+            Objects.equals(term2, cInequal.term2) &&
+            Objects.equals(cause, cInequal.cause) &&
+            Objects.equals(message, cInequal.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(universals, term1, term2, cause, message);
+    }
 }

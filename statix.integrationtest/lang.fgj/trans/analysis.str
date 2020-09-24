@@ -14,7 +14,7 @@ imports
 
 rules // Analysis
 
-  editor-analyze = stx-editor-analyze(explicate-injections, remove-injections|"statics", "programOK")
+  editor-analyze = stx-editor-analyze(explicate-injections, remove-injections|"statics", "projectOK", "fileOK")
 
 rules
 
@@ -35,7 +35,7 @@ rules // Editor services
       (node, position, ast, path, project-path) -> lbl
     where
       a  := <stx-get-ast-analysis> node
-    ; ty := <stx-get-ast-property(|a,"type")> node
+    ; ty := <stx-get-ast-type(|a)> node
     with
       lbl := <pp-TYPE(|a) <+ strip-annos;write-to-string> ty
 

@@ -40,7 +40,7 @@ signature
     REC   : scope -> Type
 
   relations
-    typeOfDecl : occurrence -> Type
+    typeOfDecl : occurrence -> scope
 
   namespaces
     Var  : string
@@ -54,8 +54,14 @@ signature
 
 rules
 
-  programOK : Exp
-  programOK(e) :- {s T}
+  projectOK : scope
+
+  projectOK(s).
+
+
+  fileOK : scope * Exp
+
+  fileOK(_, e) :- {s T}
     new s,
     typeOfExp(s, e) == T.
 
@@ -78,11 +84,11 @@ rules
   typeOfExp(s, Fun(x, te, e)) = FUN(S, T) :- {s_fun}
     typeOfTypeExp(s, te) == S,
     new s_fun, s_fun -P-> s,
-    s_fun -> Var{x} with typeOfDecl S,
+    s_fun -> Var{x} with typeOfDecl withType(S),
     typeOfExp(s_fun, e) == T.
 
   [T-Var]
-  typeOfExp(s, v@Var(x)) = T :- {d} @x.ref := varOrFldPos(d),
+  typeOfExp(s, v@Var(x)) = typeOf(T) :- {d} @x.ref := varOrFldPos(d),
     query typeOfDecl
           filter P*(R|E)* and { d :- varOrFld(x, d) }
           min $ < P, $ < R, $ < E, R < P, R < E and true
@@ -111,14 +117,14 @@ rules
     typeOfExp(s_with, e2) == T.
 
   [T-FAccess]
-  typeOfExp(s, FAccess(e, x)) = T :- {rs x'} @x.ref := x',
+  typeOfExp(s, FAccess(e, x)) = typeOf(T) :- {rs x'} @x.ref := x',
     typeOfExp(s, e) == REC(rs),
     typeOfDecl of Fld{x} in rs |-> [(_, (Fld{x'}, T))].
 
   [T-TypeLet]
   typeOfExp(s, TypeLet(x, te, e)) = S :- {s_let}
     new s_let, s_let -P-> s,
-    s_let -> Type{x} with typeOfDecl typeOfTypeExp(s, te),
+    s_let -> Type{x} with typeOfDecl withType(typeOfTypeExp(s, te)),
     typeOfExp(s_let, e) == S.
 
   [T-Let]
@@ -140,7 +146,7 @@ rules
 
   [T-Bind]
   letBindOK(s, Bind(x, e), s_bnd) :-
-    s_bnd -> Fld{x} with typeOfDecl typeOfExp(s, e).
+    s_bnd -> Fld{x} with typeOfDecl withType(typeOfExp(s, e)).
 
 rules
 
@@ -149,7 +155,7 @@ rules
 
   [T-FieldInit]
   fieldInitOK(s, Bind(x, e), rs) :- {T}
-    rs -> Fld{x} with typeOfDecl typeOfExp(s, e),
+    rs -> Fld{x} with typeOfDecl withType(typeOfExp(s, e)),
     unique(x, rs).
 
   unique : ID * scope
@@ -182,7 +188,7 @@ rules
     new rs, rs -R-> rs1, rs -E-> rs2.
 
   [TE-Ref]
-  typeOfTypeExp(s, TypeRef(x)) = T :- {x'} @x.ref := x',
+  typeOfTypeExp(s, TypeRef(x)) = typeOf(T) :- {x'} @x.ref := x',
     typeOfDecl of Type{x} in s |-> [(_, (Type{x'}, T))].
 
 rules
@@ -192,7 +198,7 @@ rules
 
   [TE-Decl]
   fieldTypeOK(s, Decl(x, te), rs) :-
-    rs -> Fld{x} with typeOfDecl typeOfTypeExp(s, te),
+    rs -> Fld{x} with typeOfDecl withType(typeOfTypeExp(s, te)),
     unique(x, rs).
 
 rules
@@ -212,7 +218,7 @@ rules
   subField(s_sub, (p_sup, d_sup@Fld{x})) :- {S T}
     S == ?typeOfDecl[d_sup] in dst(p_sup),
     typeOfDecl of Fld{x} in s_sub |-> [(_, (_, T))],
-    subType(T, S).
+    subType(typeOf(T), typeOf(S)).
 
   allFields: scope -> list((path * occurrence))
   allFields(s) = ps :-
@@ -235,30 +241,28 @@ rules
 
 rules
 
-//  src : path -> scope
-//  src(_PathEmpty(s)) = s.
-//  src(_PathStep(p, _, _)) = src(p).
-
-rules
-
   dst : path -> scope
   dst(_PathEmpty(s)) = s.
   dst(_PathStep(_, _, s)) = s.
 
+signature
+
+  relations
+    typeOf : -> Type
+    
 rules
 
-//  scopes : path -> list(scope)
-//  scopes(p) = scopes_acc(p, []).
-//
-//  scopes_acc : path * list(scope) -> list(scope)
-//  scopes_acc(_PathEmpty(s), acc) = [s|acc].
-//  scopes_acc(_PathStep(p, _, s), acc) = scopes_acc(p, [s|acc]).
-
-rules
-
-//  labels : path -> list(label)
-//  labels(p) = labels_acc(p, []).
-//
-//  labels_acc : path * list(label) -> list(label)
-//  labels_acc(_PathEmpty(_), acc) = [].
-//  labels_acc(_PathStep(p, l, _), acc) = labels_acc(p, [l|acc]).
+  typeOf : scope -> Type
+  
+  typeOf(s) = T :-
+    query typeOf
+      filter e and true
+      min /* */ and true
+      in s |-> [(_, T)].
+      
+      
+  withType : Type -> scope
+  
+  withType(T) = s :-
+    new s, !typeOf[T] in s.
+  

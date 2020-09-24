@@ -1,0 +1,14 @@
+module units/boolean
+
+signature
+
+  sorts BOOL constructors
+    TRUE  : BOOL
+    FALSE : BOOL
+
+rules
+
+  not : BOOL -> BOOL
+  
+  not(TRUE())  = FALSE().
+  not(FALSE()) = TRUE().

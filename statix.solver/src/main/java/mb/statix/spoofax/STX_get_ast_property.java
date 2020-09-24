@@ -16,7 +16,6 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple2;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.persistent.SolverResult;
 

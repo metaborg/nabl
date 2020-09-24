@@ -51,12 +51,12 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
             }
             if(Solver.entails(spec, state, result, isComplete, debug, progress.subProgress(1), cancel)) {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
+                    debug.debug("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
                 return true;
             } else {
                 if(debug.isEnabled(Level.Info)) {
-                    debug.info("{} does not shadow {}", unifier.toString(datum1), unifier.toString(datum2));
+                    debug.debug("{} does not shadow {}", unifier.toString(datum1), unifier.toString(datum2));
                 }
                 return false;
             }
@@ -70,6 +70,10 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
             return alwaysTrue.booleanValue();
 
         return alwaysTrue = constraint.isAlways(spec).orElse(false);
+    }
+
+    @Override public String toString() {
+        return constraint.toString(state.unifier()::toString);
     }
 
 }

@@ -1,6 +1,7 @@
 package mb.statix.solver;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
@@ -19,7 +20,7 @@ public class ConstraintContext {
         return debug;
     }
 
-    public boolean isComplete(Scope scope, ITerm label, IState state) {
+    public boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IState state) {
         return isComplete.test(scope, label, state);
     }
 

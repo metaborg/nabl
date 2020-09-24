@@ -1,0 +1,104 @@
+module packages
+
+language UnitsMultifile
+
+test module sees other module in same compilation unit [[
+  changeset
+
+  +[A.units]
+  package p {
+    module A {}
+    module B extends A {}
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]
+
+test module sees other module in same package [[
+  changeset
+
+  +[A.units]
+  package p {
+    module A {}
+  }
+
+  +[B.units]
+  package p {
+    module B extends A {}
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]
+
+test module cannot see other module in different package [[
+  changeset
+
+  +[A.units]
+  package p {
+    module A {}
+  }
+
+  +[B.units]
+  package q {
+    module B extends A {}
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Fails()]
+
+test module can refer qualified to module in different package [[
+  changeset
+
+  +[A.units]
+  package p {
+    module A {}
+  }
+
+  +[B.units]
+  package q {
+    module B extends p.A {}
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]
+
+test module members can refer members from super module [[
+  changeset
+
+  +[A.units]
+  package p {
+    module A {
+      type t
+    }
+  }
+
+  +[B.units]
+  package q {
+    module B extends p.A {
+      var x : t
+    }
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]
+
+test modules can refer to each others members [[
+  changeset
+
+  +[A.units]
+  package p {
+    module A {
+      type t
+      var y = q.B.x
+    }
+  }
+
+  +[B.units]
+  package q {
+    module B extends p.A {
+      var x : t
+    }
+  }
+
+]] analysis succeeds
+   run run-test to !ATerm[Succeeds()]

@@ -1,0 +1,13 @@
+module signatures/statix/API-sig
+
+// hand-written signature file for projects importing API.sdf3 and using the
+// SDF3-to-Statix signature generator.
+
+signature
+
+  sorts
+    Stx-INT        = int
+    Stx-STRING     = string
+    Stx-Scope      = scope
+    Stx-Occurrence = occurrence
+    Stx-TermIndex  = astId

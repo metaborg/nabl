@@ -1,7 +1,15 @@
 package mb.statix.generator.strategy;
 
+import java.util.Map;
+
+import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function1;
+import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate1;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
@@ -13,12 +21,6 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
-import org.metaborg.util.functions.Action1;
-import org.metaborg.util.functions.Function1;
-import org.metaborg.util.functions.Function2;
-import org.metaborg.util.functions.Predicate1;
-
-import java.util.Map;
 
 
 /**

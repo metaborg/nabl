@@ -1,9 +1,11 @@
 package mb.statix.solver.query;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
@@ -64,4 +66,17 @@ public class QueryFilter implements IQueryFilter, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        QueryFilter that = (QueryFilter)o;
+        return Objects.equals(pathWf, that.pathWf) &&
+            Objects.equals(dataWf, that.dataWf);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pathWf, dataWf);
+    }
 }

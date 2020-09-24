@@ -1,0 +1,19 @@
+module testing
+
+imports
+
+  execution
+
+signature
+  sorts TestResult constructors
+    Succeeds : TestResult
+    Fails    : TestResult
+
+rules
+
+  run-test: change-sets -> messages*
+    with result    := <execute-changes(id)> change-sets
+       ; messages* := <Snd;map(msgs-to-test-result)> result
+
+  msgs-to-test-result: ([]   , _, _) -> Succeeds()
+  msgs-to-test-result: ([_|_], _, _) -> Fails()

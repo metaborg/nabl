@@ -1,14 +1,14 @@
 package mb.statix.generator.strategy;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**

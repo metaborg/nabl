@@ -10,6 +10,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -17,53 +18,53 @@ import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.terms.path.Paths;
 
-public class FastNameResolution<S extends D, L, D> implements INameResolution<S, L, D> {
+public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
 
     private final IScopeGraph<S, L, D> scopeGraph;
-    private final L relation;
-    private final Set.Immutable<L> labels;
+
+    private final EdgeOrData<L> dataLabel;
+    private final Set.Immutable<EdgeOrData<L>> allLabels;
 
     private final LabelWF<L> labelWF; // default: true
     private final LabelOrder<L> labelOrder; // default: false
-    private final Predicate2<S, L> isEdgeComplete; // default: true
 
     private final DataWF<D> dataWF; // default: true
     private final DataLeq<D> dataEquiv; // default: false
-    private final Predicate2<S, L> isDataComplete; // default: true
 
-    public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, L relation, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            Predicate2<S, L> isEdgeComplete, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, L> isDataComplete) {
+    private final Predicate2<S, EdgeOrData<L>> isComplete; // default: true
+
+    public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+            DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.scopeGraph = scopeGraph;
-        this.relation = relation;
-        this.labels =
-                Set.Immutable.<L>of().__insertAll(scopeGraph.getEdgeLabels()).__insert(scopeGraph.getNoDataLabel());
+        this.dataLabel = EdgeOrData.data();
+        this.allLabels = scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge).collect(CapsuleCollectors.toSet())
+                .__insert(dataLabel);
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
-        this.isEdgeComplete = isEdgeComplete;
         this.dataWF = dataWF;
         this.dataEquiv = dataEquiv;
-        this.isDataComplete = isDataComplete;
+        this.isComplete = isComplete;
     }
 
     @Override public Env<S, L, D> resolve(S scope, ICancel cancel) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope), Env.of(), cancel);
+        return env(labelWF, Paths.empty(scope), Env.empty(), cancel);
     }
 
     private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics,
             ICancel cancel) throws ResolutionException, InterruptedException {
-        return env_L(labels, re, path, specifics, cancel);
+        return env_L(allLabels, re, path, specifics, cancel);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Env<S, L, D> env_L(Set.Immutable<L> L, LabelWF<L> re, IScopePath<S, L> path,
+    private Env<S, L, D> env_L(Set.Immutable<EdgeOrData<L>> L, LabelWF<L> re, IScopePath<S, L> path,
             Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
         cancel.throwIfCancelled();
         final Env.Builder<S, L, D> env = Env.builder();
-        final Set.Immutable<L> max_L = max(L);
-        for(L l : max_L) {
-            final Set.Immutable<L> smaller = smaller(L, l);
+        final Set.Immutable<EdgeOrData<L>> max_L = max(L);
+        for(EdgeOrData<L> l : max_L) {
+            final Set.Immutable<EdgeOrData<L>> smaller = smaller(L, l);
             final Env<S, L, D> env1 = env_L(smaller, re, path, specifics, cancel);
             env.addAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
@@ -74,64 +75,40 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         return env.build();
     }
 
-    private Env<S, L, D> env_l(L l, LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics,
-            ICancel cancel) throws ResolutionException, InterruptedException {
-        if(scopeGraph.getEdgeLabels().contains(l)) {
-            return env_nonEOP(l, re, path, specifics, cancel);
-        } else if(scopeGraph.getNoDataLabel().equals(l)) {
-            return env_EOP(re, path, specifics);
-        } else {
-            throw new IllegalStateException("Encountered unknown label " + l);
-        }
+    private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path,
+            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+            throws ResolutionException, InterruptedException {
+        return l.matchInResolution(() -> env_data(re, path, specifics),
+                lbl -> env_edges(lbl, re, path, specifics, cancel));
     }
 
-    private Env<S, L, D> env_EOP(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
+    private Env<S, L, D> env_data(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
             throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
-            return Env.of();
+            return Env.empty();
         }
-        final S scope = path.getTarget();
-        if(!isDataComplete.test(scope, relation)) {
-            throw new IncompleteDataException(scope, relation);
+        if(!isComplete.test(path.getTarget(), dataLabel)) {
+            throw new IncompleteException(path.getTarget(), dataLabel);
         }
-        final Env.Builder<S, L, D> env = Env.builder();
-        if(relation.equals(scopeGraph.getNoDataLabel())) {
-            final D datum = scope;
-            if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                env.add(Paths.resolve(path, relation, 0, datum));
-            }
-        } else {
-            int index = 0;
-            for(D datum : getData(re, path, relation)) {
-                if(dataWF.wf(datum) && notShadowed(datum, specifics)) {
-                    env.add(Paths.resolve(path, relation, index++, datum));
-                }
-            }
+        final D datum;
+        if((datum = getData(re, path).orElse(null)) == null || !dataWF.wf(datum) || isShadowed(datum, specifics)) {
+            return Env.empty();
         }
-        return env.build();
+        return Env.of(Paths.resolve(path, datum));
     }
 
-    private boolean notShadowed(D datum, Iterable<IResolutionPath<S, L, D>> specifics)
-            throws ResolutionException, InterruptedException {
-        for(IResolutionPath<S, L, D> p : specifics) {
-            if(dataEquiv.leq(p.getDatum(), datum)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private Env<S, L, D> env_nonEOP(L l, LabelWF<L> re, IScopePath<S, L> path,
+    private Env<S, L, D> env_edges(L l, LabelWF<L> re, IScopePath<S, L> path,
             Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
-            return Env.of();
+            return Env.empty();
         } else {
             re = newRe.get();
         }
-        if(!isEdgeComplete.test(path.getTarget(), l)) {
-            throw new IncompleteEdgeException(path.getTarget(), l);
+        final EdgeOrData<L> edgeLabel = EdgeOrData.edge(l);
+        if(!isComplete.test(path.getTarget(), edgeLabel)) {
+            throw new IncompleteException(path.getTarget(), edgeLabel);
         }
         final Env.Builder<S, L, D> env = Env.builder();
         for(S nextScope : getEdges(re, path, l)) {
@@ -143,12 +120,22 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
         return env.build();
     }
 
+    private boolean isShadowed(D datum, Iterable<IResolutionPath<S, L, D>> specifics)
+            throws ResolutionException, InterruptedException {
+        for(IResolutionPath<S, L, D> p : specifics) {
+            if(dataEquiv.leq(p.getDatum(), datum)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // edges and data                                                        //
     ///////////////////////////////////////////////////////////////////////////
 
-    protected Iterable<D> getData(LabelWF<L> re, IScopePath<S, L> path, L l) {
-        return scopeGraph.getData(path.getTarget(), l);
+    protected Optional<D> getData(LabelWF<L> re, IScopePath<S, L> path) {
+        return scopeGraph.getData(path.getTarget());
     }
 
     protected Iterable<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
@@ -159,20 +146,22 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     // max labels                                                            //
     ///////////////////////////////////////////////////////////////////////////
 
-    private final Map<Set.Immutable<L>, Set.Immutable<L>> maxCache = Maps.newHashMap();
+    private final Map<Set.Immutable<EdgeOrData<L>>, Set.Immutable<EdgeOrData<L>>> maxCache = Maps.newHashMap();
 
-    private Set.Immutable<L> max(Set.Immutable<L> L) throws ResolutionException, InterruptedException {
-        Set.Immutable<L> max;
+    private Set.Immutable<EdgeOrData<L>> max(Set.Immutable<EdgeOrData<L>> L)
+            throws ResolutionException, InterruptedException {
+        Set.Immutable<EdgeOrData<L>> max;
         if((max = maxCache.get(L)) == null) {
             maxCache.put(L, (max = computeMax(L)));
         }
         return max;
     }
 
-    private Set.Immutable<L> computeMax(Set.Immutable<L> L) throws ResolutionException, InterruptedException {
-        final Set.Transient<L> max = Set.Transient.of();
-        outer: for(L l1 : L) {
-            for(L l2 : L) {
+    private Set.Immutable<EdgeOrData<L>> computeMax(Set.Immutable<EdgeOrData<L>> L)
+            throws ResolutionException, InterruptedException {
+        final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
+        outer: for(EdgeOrData<L> l1 : L) {
+            for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
                     continue outer;
                 }
@@ -186,20 +175,23 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     // smaller labels                                                        //
     ///////////////////////////////////////////////////////////////////////////
 
-    private final Map<Tuple2<Set.Immutable<L>, L>, Set.Immutable<L>> smallerCache = Maps.newHashMap();
+    private final Map<Tuple2<Set.Immutable<EdgeOrData<L>>, EdgeOrData<L>>, Set.Immutable<EdgeOrData<L>>> smallerCache =
+            Maps.newHashMap();
 
-    private Set.Immutable<L> smaller(Set.Immutable<L> L, L l1) throws ResolutionException, InterruptedException {
-        Tuple2<Set.Immutable<L>, L> key = Tuple2.of(L, l1);
-        Set.Immutable<L> smaller;
+    private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
+            throws ResolutionException, InterruptedException {
+        Tuple2<Set.Immutable<EdgeOrData<L>>, EdgeOrData<L>> key = Tuple2.of(L, l1);
+        Set.Immutable<EdgeOrData<L>> smaller;
         if(null == (smaller = smallerCache.get(key))) {
             smallerCache.put(key, (smaller = computeSmaller(L, l1)));
         }
         return smaller;
     }
 
-    private Set.Immutable<L> computeSmaller(Set.Immutable<L> L, L l1) throws ResolutionException, InterruptedException {
-        final Set.Transient<L> smaller = Set.Transient.of();
-        for(L l2 : L) {
+    private Set.Immutable<EdgeOrData<L>> computeSmaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
+            throws ResolutionException, InterruptedException {
+        final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
+        for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
                 smaller.__insert(l2);
             }
@@ -211,19 +203,19 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
     // builder                                                               //
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S extends D, L, D> Builder<S, L, D> builder() {
+    public static <S, L, D> Builder<S, L, D> builder() {
         return new Builder<>();
     }
 
-    public static class Builder<S extends D, L, D> implements INameResolution.Builder<S, L, D> {
+    public static class Builder<S, L, D> implements INameResolution.Builder<S, L, D> {
 
         private LabelWF<L> labelWF = LabelWF.ANY();
         private LabelOrder<L> labelOrder = LabelOrder.NONE();
-        private Predicate2<S, L> isEdgeComplete = (s, l) -> true;
 
         private DataWF<D> dataWF = DataWF.ANY();
         private DataLeq<D> dataEquiv = DataLeq.NONE();
-        private Predicate2<S, L> isDataComplete = (s, r) -> true;
+
+        private Predicate2<S, EdgeOrData<L>> isComplete = (s, l) -> true;
 
         @Override public Builder<S, L, D> withLabelWF(LabelWF<L> labelWF) {
             this.labelWF = labelWF;
@@ -232,11 +224,6 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
 
         @Override public Builder<S, L, D> withLabelOrder(LabelOrder<L> labelOrder) {
             this.labelOrder = labelOrder;
-            return this;
-        }
-
-        @Override public Builder<S, L, D> withEdgeComplete(Predicate2<S, L> isEdgeComplete) {
-            this.isEdgeComplete = isEdgeComplete;
             return this;
         }
 
@@ -250,14 +237,13 @@ public class FastNameResolution<S extends D, L, D> implements INameResolution<S,
             return this;
         }
 
-        @Override public Builder<S, L, D> withDataComplete(Predicate2<S, L> isDataComplete) {
-            this.isDataComplete = isDataComplete;
+        @Override public Builder<S, L, D> withIsComplete(Predicate2<S, EdgeOrData<L>> isComplete) {
+            this.isComplete = isComplete;
             return this;
         }
 
-        @Override public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, L relation) {
-            return new FastNameResolution<>(scopeGraph, relation, labelWF, labelOrder, isEdgeComplete, dataWF,
-                    dataEquiv, isDataComplete);
+        @Override public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph) {
+            return new FastNameResolution<>(scopeGraph, labelWF, labelOrder, dataWF, dataEquiv, isComplete);
         }
 
     }

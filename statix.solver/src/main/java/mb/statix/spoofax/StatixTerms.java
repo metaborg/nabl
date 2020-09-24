@@ -5,27 +5,28 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.optionals.Optionals;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
-import mb.nabl2.regexp.IAlphabet;
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpBuilder;
-import mb.nabl2.regexp.impl.FiniteAlphabet;
 import mb.nabl2.regexp.impl.RegExpBuilder;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
@@ -54,10 +55,10 @@ import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
-import mb.statix.constraints.CTellRel;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.IMessagePart;
 import mb.statix.constraints.messages.Message;
@@ -67,12 +68,14 @@ import mb.statix.constraints.messages.TextPart;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
+import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.spec.FreshVars;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
@@ -89,12 +92,12 @@ public class StatixTerms {
     public static final String WITHID_OP = "WithId";
     public static final String NOID_OP = "NoId";
 
+    private static final String EOP_OP = "EOP";
+
     public static IMatcher<Spec> spec() {
         return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
-                (t, edgeLabels, relationLabels, noRelationLabel, rules, ext) -> {
-                    final IAlphabet<ITerm> labels = new FiniteAlphabet<>(
-                            Iterables2.cons(noRelationLabel, Iterables.concat(relationLabels, edgeLabels)));
-                    return Spec.of(rules, edgeLabels, relationLabels, noRelationLabel, labels, ext);
+                (t, edgeLabels, dataLabels, noRelationLabel, rules, ext) -> {
+                    return Spec.of(rules, edgeLabels, dataLabels, ext);
                 });
     }
 
@@ -161,17 +164,26 @@ public class StatixTerms {
                     return new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
-                    return new CNew(ts);
+                    return Constraints.conjoin(ts.stream().map(s -> new CNew(s, s)).collect(Collectors.toList()));
                 }),
-                M.appl6("CResolveQuery", M.term(), queryFilter(), queryMin(), term(), term(), message(),
-                        (c, rel, filter, min, scope, result, msg) -> {
-                    return new CResolveQuery(rel, filter, min, scope, result, msg.orElse(null));
-                }),
+                M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
+                        (c, rel, filterTerm, minTerm, scope, result, msg) -> {
+                    final Optional<IQueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                    final Optional<IQueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                    return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
+                        return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
+                    });
+                }).flatMap(o -> o),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    return new CTellRel(scope, rel, B.newTuple(args, c.getAttachments()));
+                    final FreshVars f = new FreshVars(args.stream().flatMap(a -> a.getVars().stream()).collect(Collectors.toList()));
+                    final ITermVar d = f.fresh("d");
+                    return (IConstraint) Constraints.exists(ImmutableSet.of(d), Constraints.conjoin(Iterables2.from(
+                        new CNew(d, B.newTuple(args, c.getAttachments())),
+                        new CTellEdge(scope, rel, d)
+                    )));
                 }),
                 M.appl0("CTrue", (c) -> {
                     return new CTrue();
@@ -191,16 +203,45 @@ public class StatixTerms {
         return M.stringValue();
     }
 
-    public static IMatcher<IQueryFilter> queryFilter() {
-        return M.appl2("Filter", labelRE(new RegExpBuilder<>()), hoconstraint(), (f, wf, dataConstraint) -> {
+    public static IMatcher<IQueryFilter> queryFilter(ITerm rel) {
+        final IRegExpBuilder<ITerm> builder = new RegExpBuilder<>();
+        IMatcher<IRegExp<ITerm>> reMatcher = labelRE(builder);
+        if(!isEOP(rel)) {
+            // append relation to the regular expression
+            reMatcher = reMatcher.map(re -> builder.concat(re, builder.symbol(rel)));
+        }
+        return M.appl2("Filter", reMatcher, hoconstraint(), (f, wf, dataConstraint) -> {
             return new QueryFilter(wf, dataConstraint);
         });
     }
 
-    public static IMatcher<IQueryMin> queryMin() {
-        return M.appl2("Min", labelLt(), hoconstraint(), (m, ord, dataConstraint) -> {
+    public static IMatcher<IQueryMin> queryMin(ITerm rel) {
+        IMatcher<IRelation.Immutable<EdgeOrData<ITerm>>> ltMatcher = labelLt();
+        if(!isEOP(rel)) {
+            // patch label order, replacing EOP with rel
+            ltMatcher = ltMatcher.map(lt -> {
+                final IRelation.Transient<EdgeOrData<ITerm>> newLt = Relation.Transient.of(lt.getDescription());
+                lt.stream().forEach(ls -> {
+                    final EdgeOrData<ITerm> newL1 = ls._1().match(() -> EdgeOrData.edge(rel), EdgeOrData::edge);
+                    final EdgeOrData<ITerm> newL2 = ls._2().match(() -> EdgeOrData.edge(rel), EdgeOrData::edge);
+                    try {
+                        newLt.add(newL1, newL2);
+                    } catch(RelationException e) {
+                        // patching should not invalidate the relation
+                        // we assume that rel is not currently in the relation
+                        throw new IllegalStateException();
+                    }
+                });
+                return newLt.freeze();
+            });
+        }
+        return M.appl2("Min", ltMatcher, hoconstraint(), (m, ord, dataConstraint) -> {
             return new QueryMin(ord, dataConstraint);
         });
+    }
+
+    private static boolean isEOP(ITerm label) {
+        return M.appl0(EOP_OP).match(label).isPresent();
     }
 
     public static IMatcher<Rule> hoconstraint() {
@@ -254,10 +295,11 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<IRelation.Immutable<ITerm>> labelLt() {
+    public static IMatcher<IRelation.Immutable<EdgeOrData<ITerm>>> labelLt() {
         return M.listElems(labelPair(), (t, ps) -> {
-            final IRelation.Transient<ITerm> order = Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
-            for(Tuple2<ITerm, ITerm> p : ps) {
+            final IRelation.Transient<EdgeOrData<ITerm>> order =
+                    Relation.Transient.of(RelationDescription.STRICT_PARTIAL_ORDER);
+            for(Tuple2<EdgeOrData<ITerm>, EdgeOrData<ITerm>> p : ps) {
                 try {
                     order.add(p._1(), p._2());
                 } catch(RelationException e) {
@@ -268,8 +310,12 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Tuple2<ITerm, ITerm>> labelPair() {
-        return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> Tuple2.of(l1, l2));
+    public static IMatcher<Tuple2<EdgeOrData<ITerm>, EdgeOrData<ITerm>>> labelPair() {
+        return M.appl2("LabelPair", label(), label(), (t, l1, l2) -> {
+            final EdgeOrData<ITerm> _l1 = isEOP(l1) ? EdgeOrData.data() : EdgeOrData.edge(l1);
+            final EdgeOrData<ITerm> _l2 = isEOP(l2) ? EdgeOrData.data() : EdgeOrData.edge(l2);
+            return Tuple2.of(_l1, _l2);
+        });
     }
 
     public static IMatcher<CAstProperty.Op> propertyOp() {
@@ -557,14 +603,23 @@ public class StatixTerms {
                 .collect(ImmutableList.toImmutableList()));
     }
 
-    public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path) {
-        return B.newTuple(explicate(path.getPath()), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path, Set<ITerm> relationLabels) {
+        return B.newTuple(explicate(path.getPath(), relationLabels), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
     }
 
-    public static ITerm explicate(IScopePath<Scope, ITerm> path) {
+    public static ITerm explicate(IScopePath<Scope, ITerm> path, Set<ITerm> relationLabels) {
         ITerm pathTerm = B.newAppl(PATH_EMPTY_OP, path.getSource());
-        for(IStep<Scope, ITerm> step : path) {
+        final Iterator<IStep<Scope, ITerm>> it = path.iterator();
+        while(it.hasNext()) {
+            final IStep<Scope, ITerm> step = it.next();
+            if(relationLabels.contains(step.getLabel())) {
+                // drop declaration labels at then end, only retain "edge" steps
+                break;
+            }
             pathTerm = B.newAppl(PATH_STEP_OP, pathTerm, step.getLabel(), step.getTarget());
+        }
+        if(it.hasNext()) {
+            throw new IllegalArgumentException("Encountered a relation label in the middle of path.");
         }
         return pathTerm;
     }

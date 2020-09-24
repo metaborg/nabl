@@ -7,6 +7,8 @@ imports
   statix/lang/Common
   statix/lang/Core
 
+  statix/API
+
 sorts
 
   IType // internal type
@@ -50,7 +52,7 @@ context-free syntax
 
   ExtSets = <| <{ExtSet "\n"}*>>
 
-  ExtSet.ExtParam = [[ExtId].[Int]]
+  ExtSet.ExtParam = [[ExtId].[Stx-INT]]
   ExtSet.ExtVar   = [[ExtId]]
   ExtSet.ExtLit   = [{[{ExtLabel ", "}*]}]
   ExtSet.ExtAll   = "*"

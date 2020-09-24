@@ -1,0 +1,3 @@
+module E {
+  var e = P.B.b
+}

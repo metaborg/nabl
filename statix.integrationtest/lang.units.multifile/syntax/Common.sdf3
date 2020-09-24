@@ -1,0 +1,39 @@
+module Common
+
+lexical sorts
+
+  UNITID
+
+lexical syntax
+
+  UNITID-COMPONENT = [a-zA-Z] [a-zA-Z0-9]* 
+  UNITID           = {UNITID-COMPONENT "."}+
+
+  LAYOUT         = [\ \t\n\r] 
+  CommentChar    = [\*] 
+  LAYOUT         = "/*" InsideComment* "*/" 
+  InsideComment  = ~[\*] 
+  InsideComment  = CommentChar 
+  LAYOUT         = "//" ~[\n\r]* NewLineEOF 
+  NewLineEOF     = [\n\r] 
+  NewLineEOF     = EOF 
+  EOF            =  
+
+lexical restrictions
+
+  // Ensure greedy matching for lexicals
+  
+  CommentChar      -/- [\/]
+  UNITID-COMPONENT -/- [a-zA-Z0-9\_]
+  
+  // EOF may not be followed by any char
+  
+  EOF           -/- ~[]
+  
+context-free restrictions
+
+  // Ensure greedy matching for comments
+  
+  LAYOUT? -/- [\ \t\n\r]
+  LAYOUT? -/- [\/].[\/]
+  LAYOUT? -/- [\/].[\*]

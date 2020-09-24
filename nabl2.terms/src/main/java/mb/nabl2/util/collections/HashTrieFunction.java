@@ -128,31 +128,25 @@ public abstract class HashTrieFunction<K, V> implements IFunction<K, V> {
             return bwd;
         }
 
-        @Override public boolean put(K key, V value) {
-            if(fwd.containsKey(key)) {
-                if(value.equals(fwd.get(key))) {
-                    return false;
-                } else {
-                    throw new IllegalArgumentException("Already in domain.");
-                }
+        @Override public V put(K key, V value) {
+            final V oldValue = fwd.__put(key, value);
+            if(oldValue != null) {
+                bwd.__remove(oldValue, key);
             }
-            fwd.__put(key, value);
             bwd.__insert(value, key);
-            return true;
+            return oldValue;
         }
 
-        @Override public boolean putAll(IFunction<K, V> other) {
-            return other.stream().reduce(false, (change, kv) -> Boolean.logicalOr(change, put(kv._1(), kv._2())),
-                    Boolean::logicalOr);
+        @Override public void putAll(IFunction<K, V> other) {
+            other.stream().forEach(kv -> put(kv._1(), kv._2()));
         }
 
         @Override public boolean remove(K key) {
-            V value = fwd.__remove(key);
-            if(value != null) {
-                bwd.__remove(value, key);
-                return true;
+            V oldValue = fwd.__remove(key);
+            if(oldValue != null) {
+                bwd.__remove(oldValue, key);
             }
-            return false;
+            return oldValue != null;
         }
 
         @Override public HashTrieInverseFunction.Transient<V, K> inverse() {

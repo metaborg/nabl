@@ -1,0 +1,92 @@
+module execution
+
+imports
+
+  libspoofax/analysis/constraint
+  libspoofax/term/origin
+
+  pp/statix/runtime/-
+  statix/runtime/-
+  statixruntime
+  statix/api
+
+  signatures/-
+  signatures/UnitsMultifile-sig
+  signatures/ChangeSets-sig
+
+  pp
+
+rules
+
+  project-resource = !""
+
+  debug-execute-changes:
+      (_, _, change-sets, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"mresult")> path
+       ; result   := <execute-changes(debug)> change-sets
+
+
+  execute-changes(dbg):
+      ChangeSets(change-sets) -> result
+    with spec-name := "units/statics"
+    with change-sets' := <strip-annos;add-initial-project> change-sets
+       ; <dbg> "****************"
+       ; <dbg> "* BEGIN SCRIPT *"
+       ; <dbg> "****************"
+       ; result* := <foldl(execute-changes(dbg|spec-name, "projectOk", "unitOk"))> (change-sets', ([], []))
+       ; <dbg> "*****************"
+       ; <dbg> "* FINISH SCRIPT *"
+       ; <dbg> "*****************"
+       ; result := result*
+
+  add-initial-project: []                               -> [ChangeSet([Added(<project-resource>, ())])]
+  add-initial-project: [ChangeSet(changes)|change-sets] -> [ChangeSet([Added(<project-resource>, ())|changes])|change-sets]
+
+  normalize-changeset(|cache): ChangeSet(change*) -> schange*
+    with schange1* := <map(normalize-change(|cache))> change*
+       ; schange2* := <filter(\ (x, a) -> (x, Cached(a)) where <not(lookup)> (x, schange1*) \)> cache
+       ; schange* := <conc> (schange1*, schange2*)
+  
+  normalize-change(|cache): Added(x, t)   -> (x, Added(t'))      with t' := <set-origins-file(|x)> t
+  normalize-change(|cache): Changed(x, t) -> (x, Changed(t', a)) with t' := <set-origins-file(|x)> t ; a := <lookup> (x, cache)
+  normalize-change(|cache): Removed(x)    -> (x, Removed(a))     with a := <lookup> (x, cache)
+
+  set-origins-file(|x) = topdown(try(set-origin-file(|x)))
+
+  set-origin-file(|x) = 
+    origin-location-offset-set(|<origin-location-offset;(!x, id, id, id, id)>)
+    
+
+  execute-changes(dbg|spec-name, project-constraint, file-constraint): (changeset, (cache, messages*)) -> (result*, [messages|messages*])
+    with changeset' := <normalize-changeset(|cache)> changeset
+       ; project-resource := <project-resource>
+       ; ([project-change], change*) := <partition(?(project-resource, <id>))> changeset'
+    with <dbg> "**************"
+       ; <dbg> "* BEGIN STEP *"
+       ; <dbg> "**************"
+    with AnalysisResult(mresult*) := <stx-editor-analyze(id, id|spec-name, project-constraint, file-constraint)> AnalyzeMulti((project-resource, project-change), change*, (), ())
+
+       ; error* := <mapconcat(Snd; (?Full(_, _, <id>, _, _) + ?Update(_, <id>, _, _)))> mresult*
+       ; <map(format-message(|"ERROR ");dbg)> error*
+       ; warning* := <mapconcat(Snd; (?Full(_, _, _, <id>, _) + ?Update(_, _, <id>, _)))> mresult*
+       ; <map(format-message(|"WARN  ");dbg)> warning*
+       ; note* := <mapconcat(Snd; (?Full(_, _, _, _, <id>) + ?Update(_, _, _, <id>)))> mresult*
+       ; <map(format-message(|"NOTE  ");dbg)> note*
+       ; messages := (error*, warning*, note*)
+
+       ; new-result* := <map((id, ?Full(_, <id>, _, _, _) + ?Update(<id>, _, _, _)))> mresult*
+       ; old-result* := <filter(\ (x, r) -> (x, r) where <not(lookup)> (x, new-result*) \)> cache
+       ; result* := <conc> (new-result*, old-result*)
+    with <dbg> "***************"
+       ; <dbg> "* FINISH STEP *"
+       ; <dbg> "***************"
+
+
+  format-message(|prefix): (o, msg) -> $[[prefix][<format-origin> o] : [msg]]
+
+  format-origin =
+    !$[[<origin-file>]:[<origin-line>].[<origin-column>]]
+
+rules
+
+  lookup(|k) = <lookup> (k, <id>)

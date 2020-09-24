@@ -1,0 +1,60 @@
+---
+id: org.metaborg:statix.integrationtest.lang.units:2.6.0-SNAPSHOT
+name: Units
+dependencies:
+  compile:
+  - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.template:${metaborgVersion}
+  - org.metaborg:statix.lang:${metaborgVersion}
+  - org.metaborg:sdf3.ext.statix:${metaborgVersion}
+  source:
+  - org.metaborg:meta.lib.spoofax:${metaborgVersion}
+  - org.metaborg:statix.runtime:${metaborgVersion}
+language:
+  sdf:
+    pretty-print: Units
+    sdf2table: java
+    placeholder:
+      prefix: "$"
+  stratego:
+    format: ctree
+    args:
+    - -la
+    - stratego-lib
+    - -la
+    - stratego-sglr
+    - -la
+    - stratego-gpp
+    - -la
+    - stratego-xtc
+    - -la
+    - stratego-aterm
+    - -la
+    - stratego-sdf
+    - -la
+    - strc
+exports:
+## Statix
+- language: ATerm
+  directory:
+  - src-gen/statix
+## SDF3
+- language: TemplateLang
+  directory: syntax
+  includes:
+  - "units/**/*.sdf3"
+- language: ATerm
+  directory: src-gen/syntax
+  includes:
+  - "**/*.aterm"
+- language: EditorService
+  directory: src-gen
+  includes:
+  - "completion/colorer/units/**/*.esv"
+- language: Stratego-Sugar
+  directory: src-gen
+  includes:
+  - "completion/units/**/*.str"
+  - "injections/units/**/*.str"
+  - "pp/units/**/*.str"
+  - "signatures/units/**/*.str"

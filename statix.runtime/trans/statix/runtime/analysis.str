@@ -9,6 +9,7 @@ imports
   libspoofax/resource/path
 
   signatures/statix/runtime/-
+  pp/statix/runtime/-
 
   statix/runtime/ast
   statix/runtime/constraints
@@ -18,8 +19,11 @@ imports
 signature
   constructors
 
-    ProjectAnalysis : Scope * SolverResult * Constraint * Analysis -> AnalysisResult
-    FileAnalysis    : Constraint -> AnalysisResult
+    ProjectAnalysis : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
+    FileAnalysis    : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
+
+    ProjectAnalysis : Constraint * Analysis -> AnalysisResult // cstx -- concurrent version
+    FileAnalysis    : Constraint * Analysis -> AnalysisResult // cstx -- concurrent version
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
@@ -44,7 +48,7 @@ rules // single file analysis
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
              ; ast'' := <post> ast'
-             ; file-analysis := FileAnalysis(a)
+             ; file-analysis := FileAnalysis(a, a)
       \})> (resource-ast'*, solve-result*)
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
@@ -68,8 +72,81 @@ rules // single file elaboration
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
-             ; file-analysis := FileAnalysis(a)
+             ; file-analysis := FileAnalysis(a, a)
       \})> (resource-ast'*, solve-result*)
+
+rules // multi file analysis (new)
+
+  cstx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; level := <stx--log-level>
+       ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
+       ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
+       ; s-root      := Var("s_root")
+    with
+      //
+      // 1. Build project task
+      //
+      switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-rule := LLam([s-root], C(proj-c-name, [s-root], NoMessage()))
+        case ?Cached(ProjectAnalysis(project-rule, _)):
+          project-ast := ()
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+    ; project-task := (project-resource, project-rule)
+      //
+      // 2. Build file tasks
+      //
+    ; changed-file-ast*  := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> file-change*
+    ; changed-file-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> changed-file-ast*
+    ; changed-file-task* := <map(\ (resource, ast') -> (resource, LLam([s-root], C(file-c-name, [s-root, <stx--explode> ast'], NoMessage()))) \)> changed-file-ast'*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(file-rule, _))) -> (resource, file-rule) \)> file-change*
+    ; file-task* := [changed-file-task*, cached-file-task*]
+      //
+      // 3. Solve all tasks
+      //
+    ; task*          := [project-task, file-task*]
+    ; changed-ast*   := [(project-resource, project-ast), changed-file-ast'*]
+    ; analysis*      := <cstx--solve-multi(|spec, level, progress, cancel)> task*
+    ; project-result := < cstx--mk-result(\ (rule, a) -> ProjectAnalysis(rule, a) \|changed-ast*, task*, analysis*)
+                        ; \ (resource, result) -> (resource, result) \
+                        > (project-resource, project-change)
+    ; file-result*   := <map( cstx--mk-result(\ (rule, a) -> FileAnalysis(rule, a) \|changed-ast*, task*, analysis*)
+                            ; \ (resource, result) -> (resource, result) \
+                            )> file-change*
+    ; result* := [project-result|file-result*]
+      //
+      // 4. Compute scope graph diff
+      //
+  // Disabled as long as we do not know the root scope here
+  //; if Cached(ProjectAnalysis(_, project-analysis')) := project-change then
+  //    project-analysis := <lookup> (project-resource, analysis*)
+  //  ; diff := <stx--diff-scopegraphs(|global-scope)> (project-analysis, project-analysis')
+  //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+  //  end
+
+  // @param spec  : Spec
+  // @param level : LogLevel
+  // @type [(String, Rule)] -> [(String, SolverResult)]
+  cstx--solve-multi(|spec, level, progress, cancel) =
+    prim("STX_solve_multi", spec, level, progress, cancel)
+
+  cstx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
+    with rule := <lookup> (resource, task*)
+       ; state := <lookup> (resource, state*)
+       ; analysis := <mk-analysis> (rule, state)
+       ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages> state
+       ; switch !change
+           case ?Added(_) + ?Changed(_, _):
+             ast    := <lookup> (resource, changed-ast*)
+           ; result := Full(ast, analysis, error*, warning*, note*)
+           case ?Cached(_):
+             result := Update(analysis, error*, warning*, note*)
+         end
+
 
 rules // multi file analysis
 
@@ -105,20 +182,21 @@ rules // multi file analysis
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
-    ; file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
-    ; file-result* := <zip({ file-state', ast'', file-analysis: \
+    ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
+    ; initial-file-result* := <zip({ file-state', ast'', file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast'', file-analysis, [], [], []))
           with ast'' := <post> ast'
-             ; file-analysis := FileAnalysis(file-state)
-      \})> (resource-ast'*, file-state*)
+             ; file-analysis := FileAnalysis(file-state, None())
+      \})> (resource-ast'*, initial-file-state*)
       //
       // 4. Combine and solve all partial solution
       //
-    ; cached-state* := <filter(?(_, Cached(FileAnalysis(<id>))))> change*
-    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [file-state*, cached-state*]
+    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _))))> change*
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
+    ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state), id, id, id)))> initial-file-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
@@ -126,6 +204,13 @@ rules // multi file analysis
           project-result := Update(project-analysis, error*, warning*, note*)
       end
     ; result* := [(project-resource, project-result)|file-result*]
+      //
+      // 5. Compute scope graph diff
+      //
+    ; if Cached(ProjectAnalysis(_, _, _, final-project-state')) := project-change then
+        diff := <stx--diff-scopegraphs(|global-scope)> (final-project-state, final-project-state')
+      ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+      end
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
       AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
@@ -228,18 +313,21 @@ rules
 
 rules
 
-  stx--get-resource-analysis =
-    get-resource-constraint-analysis
-  ; ( ?FileAnalysis(<id>)
-    + ?ProjectAnalysis(_, _, _, <id>)
-    )
-
   stx--get-ast-analysis =
     stx--get-ast-resource
   ; stx--get-resource-analysis
 
+  stx--get-resource-analysis =
+    get-resource-constraint-analysis
+  ; ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
+   <+ ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, <id>) // cstx
+    )
+
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")
+
+  stx--is-concurrent-enabled =
+    prim("STX_is_concurrent_enabled")
 
 rules
 
@@ -268,6 +356,9 @@ rules
    */
   stx--debug-scopegraph =
     prim("STX_debug_scopegraph")
+
+  stx--diff-scopegraphs(|s0) =
+    prim("STX_diff_scopegraphs",s0)
 
   stx--get-occurrence-ns: StxOccurrence(ns, _, _) -> ns
 

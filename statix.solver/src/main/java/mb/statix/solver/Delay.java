@@ -4,7 +4,6 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.CapsuleUtil;
-import mb.statix.scopegraph.reference.CriticalEdge;
 
 public class Delay extends Throwable {
 

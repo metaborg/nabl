@@ -1,12 +1,14 @@
 package mb.statix.constraints;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -107,4 +109,20 @@ public class CArith implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null || getClass() != o.getClass()) return false;
+        CArith cArith = (CArith)o;
+        return Objects.equals(expr1, cArith.expr1) &&
+            Objects.equals(op, cArith.op) &&
+            Objects.equals(expr2, cArith.expr2) &&
+            Objects.equals(cause, cArith.cause) &&
+            Objects.equals(message, cArith.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expr1, op, expr2, cause, message);
+    }
 }

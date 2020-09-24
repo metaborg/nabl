@@ -37,8 +37,7 @@ public interface IFunction<K, V> {
 
     interface Immutable<K, V> extends IFunction<K, V> {
 
-        @Override
-        IInverseFunction.Immutable<V, K> inverse();
+        @Override IInverseFunction.Immutable<V, K> inverse();
 
         Transient<K, V> melt();
 
@@ -46,14 +45,13 @@ public interface IFunction<K, V> {
 
     interface Transient<K, V> extends IFunction<K, V> {
 
-        boolean put(K key, V value);
+        V put(K key, V value);
 
-        boolean putAll(IFunction<K, V> other);
+        void putAll(IFunction<K, V> other);
 
         boolean remove(K key);
 
-        @Override
-        IInverseFunction.Transient<V, K> inverse();
+        @Override IInverseFunction.Transient<V, K> inverse();
 
         Immutable<K, V> freeze();
 

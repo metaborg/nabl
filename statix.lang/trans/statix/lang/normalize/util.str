@@ -181,11 +181,21 @@ rules
        ; c'' := <mk-CExists>(vs'', c')
 
   replace-in-constraints(replace,add-vars,to-c): c -> (c'', vs'')
-    with (c', maps) := <replacebu(replace, not-a-scope)> c
+    with {| CurrentMessage:
+         rules(CurrentMessage : _ -> <constraint-message> c)
+       ; (c', maps) := <replacebu(replace, not-a-scope)> c
        ; c'' := <filter(to-c);list-to-conj(|c')> maps
          // variables in the new term that were not already in the old one
        ; vs'' := <raw-diff> (<map(Snd);all-vars> maps, <all-vars> c)
+       |}
 
+  constraint-message =
+    ?C(_, _, <id>)
+  + ?CFalse(<id>)
+  + ?CEqual(_, _, <id>)
+  + ?CInequal(_, _, <id>)
+  + ?CResolveQuery(_, _, _, _, _, <id>)
+  + !NoMessage()
 
   is-scope = ?Rule(_, _, _)
   is-scope = ?LLam(_, _)
