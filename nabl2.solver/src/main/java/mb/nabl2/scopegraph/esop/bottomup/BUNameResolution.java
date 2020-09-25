@@ -1,8 +1,6 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.io.Writer;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Map.Entry;
@@ -167,6 +165,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         if(!isComplete(env)) {
             // FIXME Include actual critical edges
+            logger.warn("incorrect critical edges will be reported");
             throw new CriticalEdgeException(env.scope, dataLabel);
         }
         return _env;
@@ -183,6 +182,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         if(env.wf.isAccepting()) {
             if(isOpen.test(env.scope, dataLabel)) {
                 // FIXME mark env/dataLabel open
+                logger.warn("ignoring open edge {}/{}", env.scope, dataLabel);
             } else {
                 for(O d : scopeGraph.getDecls().inverse().get(env.scope)) {
                     declPaths.__insert(Paths.decl(Paths.<S, L, O>empty(env.scope), d));
@@ -196,6 +196,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             }
             if(isOpen.test(env.scope, l)) {
                 // FIXME mark env/l open
+                logger.warn("ignoring open edge {}/{}", env.scope, l);
             } else {
                 for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
                     final Key srcEnv = new Key(env.kind, scope, nextWf);
@@ -354,44 +355,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             return kind.toString() + "/" + scope.toString() + "/" + wf.regexp().toString();
         }
 
-    }
-
-
-    public void write(Writer out) throws IOException {
-        write("", out);
-    }
-
-    public void write(String prefix, Writer out) throws IOException {
-        out.write(prefix + "bu:\n");
-        out.write(prefix + "| back refs:\n");
-        // FIXME
-        //        for(Entry<Key, RefKey> backref : backrefs.entrySet()) {
-        //            out.write(prefix + "| - " + backref.getValue() + " -< " + backref.getKey() + "\n");
-        //        }
-        out.write(prefix + "| back edges:\n");
-        for(Tuple3<Key, IStep<S, L, O>, Key> backedge : (Iterable<Tuple3<Key, IStep<S, L, O>, Key>>) backedges
-                .stream()::iterator) {
-            out.write(prefix + "| - " + backedge._3() + " -" + backedge._2() + "-< " + backedge._1() + "\n");
-        }
-        out.write(prefix + "| back imports:\n");
-        // FIXME
-        //        for(Tuple3<RefKey, Tuple2<L, IRegExpMatcher<L>>, Key> backimport : (Iterable<Tuple3<RefKey, Tuple2<L, IRegExpMatcher<L>>, Key>>) backimports
-        //                .stream()::iterator) {
-        //            out.write(prefix + "| - " + backimport._3() + " =" + backimport._2()._1() + "=< " + backimport._1() + "\n");
-        //        }
-        out.write(prefix + "| ref paths:\n");
-        // FIXME
-        //        for(RefKey ref : refEnvs.keySet()) {
-        //            final BUEnv<S, L, O, IResolutionPath<S, L, O>> paths = refEnvs.get(ref);
-        //            out.write(prefix + "| - " + ref + ":\n");
-        //            paths.write(prefix + "|   | ", out);
-        //        }
-        out.write("| env paths:\n");
-        for(Key env : envs.keySet()) {
-            final BUEnv<S, L, O, IDeclPath<S, L, O>> paths = envs.get(env);
-            out.write(prefix + "| - " + env + ":\n");
-            paths.write(prefix + "|   | ", out);
-        }
     }
 
 
