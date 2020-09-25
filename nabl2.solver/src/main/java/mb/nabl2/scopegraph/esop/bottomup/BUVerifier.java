@@ -9,6 +9,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.time.AggregateTimer;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -29,36 +30,44 @@ public class BUVerifier {
             logger.info("verifying {} resolve entries", solution.nameResolutionCache().resolutionEntries().size());
             for(Entry<Occurrence, Collection<IResolutionPath<Scope, Label, Occurrence>>> entry : solution
                     .nameResolutionCache().resolutionEntries().entrySet()) {
-                timer.start();
-                final Collection<IResolutionPath<Scope, Label, Occurrence>> result =
-                        nameResolution.resolve(entry.getKey());
-                timer.stop();
-                verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
+                try {
+                    timer.start();
+                    final Collection<IResolutionPath<Scope, Label, Occurrence>> result =
+                            nameResolution.resolve(entry.getKey());
+                    timer.stop();
+                    verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
+                } catch(CriticalEdgeException ex) {
+                    logger.error("[resolve {}] stuck {}", entry.getKey(), ex.criticalEdges());
+
+                }
             }
             logger.info("verifying {} visible entries", solution.nameResolutionCache().visibilityEntries().size());
             for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().visibilityEntries()
                     .entrySet()) {
-                timer.start();
-                final Collection<Occurrence> result = nameResolution.visible(entry.getKey());
-                timer.stop();
-                verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
+                try {
+                    timer.start();
+                    final Collection<Occurrence> result = nameResolution.visible(entry.getKey());
+                    timer.stop();
+                    verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
+                } catch(CriticalEdgeException ex) {
+                    logger.error("[visible {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                }
             }
             logger.info("verifying {} reachable entries", solution.nameResolutionCache().reachabilityEntries().size());
             for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().reachabilityEntries()
                     .entrySet()) {
-                timer.start();
-                final Collection<Occurrence> result = nameResolution.reachable(entry.getKey());
-                timer.stop();
-                verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
+                try {
+                    timer.start();
+                    final Collection<Occurrence> result = nameResolution.reachable(entry.getKey());
+                    timer.stop();
+                    verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
+                } catch(CriticalEdgeException ex) {
+                    logger.error("[reachable {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                }
             }
-            //            try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
-            //                nameResolution.write(out);
-            //            } catch(IllegalArgumentException | IOException e) {
-            //                logger.error("Failed to write name resolution");
-            //            }
             logger.info("bottom-up resolution took {} s",
                     (double) timer.total() / (double) TimeUnit.NANOSECONDS.convert(1l, TimeUnit.SECONDS));
-        } catch(Exception e) {
+        } catch(InterruptedException e) {
             logger.error("bottom-up resolution failed", e);
         }
     }
@@ -70,13 +79,6 @@ public class BUVerifier {
         final Set.Immutable<E> missing = Set.Immutable.subtract(expectedSet, actualSet);
         final Set.Immutable<E> extra = Set.Immutable.subtract(actualSet, expectedSet);
         if(!missing.isEmpty() || !extra.isEmpty()) {
-            /*
-            try(Writer out = new OutputStreamWriter(new LoggingOutputStream(logger, Level.Info))) {
-                bu.write(out);
-            } catch(IllegalArgumentException | IOException e) {
-                logger.error("Failed to write bu");
-            }
-            */
             final Set.Immutable<E> matched = Set.Immutable.intersect(actualSet, expectedSet);
             logger.info("[{}] {} matched {}", tag, matched.size(), matched);
         }

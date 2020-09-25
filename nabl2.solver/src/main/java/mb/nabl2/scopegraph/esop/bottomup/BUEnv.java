@@ -13,17 +13,15 @@ import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
-import mb.nabl2.scopegraph.path.IOpenPath;
 import mb.nabl2.scopegraph.terms.SpacedName;
 
 public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
-    private static final ILogger logger = LoggerUtils.logger(BUEnv.class);
+    @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(BUEnv.class);
 
     private final Function2<P, P, Integer> compare;
 
     private final SetMultimap.Transient<SpacedName, P> paths = SetMultimap.Transient.of();
-    private final Set.Transient<IOpenPath<S, L, O>> open = Set.Transient.of();
 
     public BUEnv(Function2<P, P, Integer> compare) {
         this.compare = compare;
@@ -35,10 +33,6 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
 
     public java.util.Collection<P> pathSet() {
         return paths.values();
-    }
-
-    public java.util.Collection<IOpenPath<S, L, O>> openSet() {
-        return open;
     }
 
     public Set.Immutable<P> get(SpacedName name) {
@@ -55,22 +49,19 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
         for(P path : changes.addedPaths()) {
             addPath(path, addedPaths, removedPaths);
         }
-        final Set.Transient<IOpenPath<S, L, O>> addedOpen = Set.Transient.of();
-        final Set.Transient<IOpenPath<S, L, O>> removedOpen = Set.Transient.of();
-        for(IOpenPath<S, L, O> open : changes.removedOpen()) {
-            removeOpen(open, removedOpen);
-        }
-        for(IOpenPath<S, L, O> open : changes.addedOpen()) {
-            addOpen(open, addedOpen, removedOpen);
-        }
-        return new BUChanges<>(addedPaths.freeze(), removedPaths.freeze(), addedOpen.freeze(), removedOpen.freeze());
+        return new BUChanges<>(addedPaths.freeze(), removedPaths.freeze());
     }
 
     private void removePath(P oldPath, Set.Transient<P> removed) throws InterruptedException {
         final SpacedName name = oldPath.getDeclaration().getSpacedName();
-        //        logger.info("removing path from {} env", env.get(name).size());
-        if(paths.__remove(name, oldPath)) {
-            removed.__insert(oldPath);
+        //        logger.info("adding path to {} env", env.get(name).size());
+        for(P path : paths.get(name)) {
+            if(Thread.interrupted()) {
+                throw new InterruptedException();
+            }
+            if(paths.__remove(name, path)) {
+                removed.__insert(path);
+            }
         }
     }
 
@@ -97,22 +88,6 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
         }
         // there are no smaller selected paths
         if(paths.__insert(name, newPath)) {
-            added.__insert(newPath);
-        }
-    }
-
-    private void removeOpen(IOpenPath<S, L, O> oldPath, Set.Transient<IOpenPath<S, L, O>> removed)
-            throws InterruptedException {
-        //        logger.info("removing path from {} env", env.get(name).size());
-        if(open.__remove(oldPath)) {
-            removed.__insert(oldPath);
-        }
-    }
-
-    private void addOpen(IOpenPath<S, L, O> newPath, Set.Transient<IOpenPath<S, L, O>> added,
-            Set.Transient<IOpenPath<S, L, O>> removed) throws InterruptedException {
-        //        logger.info("adding path to {} env", env.get(name).size());
-        if(open.__insert(newPath)) {
             added.__insert(newPath);
         }
     }

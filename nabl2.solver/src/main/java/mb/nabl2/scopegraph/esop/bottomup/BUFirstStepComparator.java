@@ -11,23 +11,21 @@ import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
 import mb.nabl2.scopegraph.path.IStep;
 
-public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurrence> {
+public class BUFirstStepComparator<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
     private final L labelD;
-    private final IRelation<L> topOrder;
-    private final IRelation<L> importOrder;
+    private final IRelation<L> order;
 
-    public BUComparator(L labelD, IRelation<L> topOrder, IRelation<L> importOrder) {
+    public BUFirstStepComparator(L labelD, IRelation<L> order) {
         this.labelD = labelD;
-        this.topOrder = topOrder;
-        this.importOrder = importOrder;
+        this.order = order;
     }
 
     public Integer compare(IResolutionPath<S, L, O> path1, IResolutionPath<S, L, O> path2) {
-        if(topOrder.isEmpty() && importOrder.isEmpty()) {
+        if(order.isEmpty()) {
             return path1.equals(path2) ? 0 : null;
         }
-        return compare(path1, path2, topOrder);
+        return compare(path1, path2, order);
     }
 
     private Integer compare(IResolutionPath<S, L, O> path1, IResolutionPath<S, L, O> path2, IRelation<L> order) {
@@ -38,10 +36,10 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
     }
 
     public Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2) {
-        if(topOrder.isEmpty() && importOrder.isEmpty()) {
+        if(order.isEmpty()) {
             return path1.equals(path2) ? 0 : null;
         }
-        return compare(path1, path2, topOrder);
+        return compare(path1, path2, order);
     }
 
     private Integer compare(IDeclPath<S, L, O> path1, IDeclPath<S, L, O> path2, IRelation<L> order) {
@@ -60,10 +58,10 @@ public class BUComparator<S extends IScope, L extends ILabel, O extends IOccurre
         final Iterator<IStep<S, L, O>> it2 = path2.iterator();
         final L l1 = it1.hasNext() ? it1.next().getLabel() : labelD;
         final L l2 = it2.hasNext() ? it2.next().getLabel() : labelD;
-        return compare(l1, l2, order);
+        return compare(l1, l2);
     }
 
-    private Integer compare(L l1, L l2, IRelation<L> order) {
+    private Integer compare(L l1, L l2) {
         if(l1.equals(l2)) {
             return 0;
         } else if(order.contains(l1, l2)) {

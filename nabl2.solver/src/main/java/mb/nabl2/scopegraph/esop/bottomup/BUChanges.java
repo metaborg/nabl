@@ -17,19 +17,13 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
     private final Set.Immutable<P> addedPaths;
     private final Set.Immutable<P> removedPaths;
 
-    private final Set.Immutable<IOpenPath<S, L, O>> addedOpen;
-    private final Set.Immutable<IOpenPath<S, L, O>> removedOpen;
-
-    BUChanges(Set.Immutable<P> addedPaths, Set.Immutable<P> removedPaths, Set.Immutable<IOpenPath<S, L, O>> addedOpen,
-            Set.Immutable<IOpenPath<S, L, O>> removedOpen) {
+    BUChanges(Set.Immutable<P> addedPaths, Set.Immutable<P> removedPaths) {
         this.addedPaths = addedPaths;
         this.removedPaths = removedPaths;
-        this.addedOpen = addedOpen;
-        this.removedOpen = removedOpen;
     }
 
     public boolean isEmpty() {
-        return addedPaths.isEmpty() && removedPaths.isEmpty();
+        return addedPaths.isEmpty();
     }
 
     public Set.Immutable<P> addedPaths() {
@@ -40,25 +34,13 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
         return removedPaths;
     }
 
-    public Set.Immutable<IOpenPath<S, L, O>> addedOpen() {
-        return addedOpen;
-    }
-
-    public Set.Immutable<IOpenPath<S, L, O>> removedOpen() {
-        return removedOpen;
-    }
-
     public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q> flatMap(Function1<P, Stream<Q>> pathMapper,
             Function1<IOpenPath<S, L, O>, Stream<IOpenPath<S, L, O>>> openMapper) {
         final Set.Immutable<Q> mappedAddedPaths =
                 addedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
         final Set.Immutable<Q> mappedRemovedPaths =
                 removedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
-        final Set.Immutable<IOpenPath<S, L, O>> mappedAddedOpen =
-                addedOpen.stream().flatMap(openMapper::apply).collect(CapsuleCollectors.toSet());
-        final Set.Immutable<IOpenPath<S, L, O>> mappedRemovedOpen =
-                removedOpen.stream().flatMap(openMapper::apply).collect(CapsuleCollectors.toSet());
-        return new BUChanges<>(mappedAddedPaths, mappedRemovedPaths, mappedAddedOpen, mappedRemovedOpen);
+        return new BUChanges<>(mappedAddedPaths, mappedRemovedPaths);
     }
 
 }
