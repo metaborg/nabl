@@ -144,85 +144,85 @@ rules
 
 rules
 
-  //                   /-> [y] =I=> (sy) -> [x]
-  // [x] -> (sx) -P-> (s) =I=> [y]    
-  //                   ^-------/
-  // expect: resolve x via y
   [[ ResolveXViaY(xr,yr,yd,xd) ^ () ]] :=
-    new s sx sy,
-    {yd} <- s,
+    new s1 s2 sx sy,
+    {xr} -> sx,
+    sx -P-> s1,
+    {yr} <=I= s1,
+    {yr} -> s2,
+    {yd} <- s2,
     {yd} =I=> sy,
     {xd} <- sy,
-    {yr} -> s,
-    {yr} <=I= s,
-    sx -P-> s,
-    {xr} -> sx,
     {xr} |-> _.
 
   [[ ResolveXViaYAndZ(xr,yr,yd,zr,zd,xd) ^ () ]] :=
     new s sx sy sz,
+
+    {xr} -> sx,
+    {yr} <=I= sx,
+
+    {yr} -> s,
     {yd} <- s,
     {yd} =I=> sy,
-    {zr} -> s,
     {zr} <=I= sy,
+
+    {zr} -> s,
     {zd} <- s,
     {zd} =I=> sz,
     {xd} <- sz,
-    {yr} <=I= s,
-    {yr} -> s,
-    sx -P-> s,
-    {xr} -> sx,
+
     {xr} |-> _.
 
   [[ ResolveXViaAmbiguousImport(xr,yr,yd1,xd1,yd2,xd2) ^ () ]] :=
-    new s sy1 sy2,
-    {xr} -> s,
-    {yr} -> s,
-    {yr} <=I= s,
+    new s1 s2 sy1 sy2,
 
-    {yd1} <- s,
+    {xr} -> s1,
+    {yr} <=I= s1,
+    {yr} -> s2,
+
+    {yd1} <- s2,
     {yd1} =I=> sy1,
     {xd1} <- sy1,
 
-    {yd2} <- s,
+    {yd2} <- s2,
     {yd2} =I=> sy2,
     {xd2} <- sy2,
  
     {xr} |-> _.
 
   [[ ResolveXViaUnorderedImports(xr,yr1,yd1,xd1,yr2,yd2,xd2) ^ () ]] :=
-    new s sy1 sy2,
-    {xr} -> s,
+    new s1 s2 sy1 sy2,
+    {xr} -> s1,
 
-    {yr1} -> s,
-    {yr1} <=I= s,
-    {yd1} <- s,
+    {yr1} -> s2,
+    {yr1} <=I= s1,
+    {yd1} <- s2,
     {yd1} =I=> sy1,
     {xd1} <- sy1,
 
-    {yr2} -> s,
-    {yr2} <=J= s,
-    {yd2} <- s,
+    {yr2} -> s2,
+    {yr2} <=J= s1,
+    {yd2} <- s2,
     {yd2} =J=> sy2,
     {xd2} <- sy2,
  
     {xr} |-> _.
 
   [[ ResolveInParentWithNonResolvingImport(xr,xd,yr) ^ () ]] :=
-    new s ps,
+    new s ps is,
     {xr} -> s,
     s -P-> ps,
     {xd} <- ps,
-    {yr} -> s,
+    {yr} -> is,
     {yr} <=I= s,
     {xr} |-> _.
 
-  [[ ResolveViaImportNotInSameScope(xr,yr,yd,xd) ^ () ]] :=
-    new s1 s2 sy,
-    {xr} -> s1,
-    {yr} <=I= s1,
-    {yr} -> s2,
-    {yd} <- s2,
+  [[ ResolveViaImportInSameScope(xr,yr,yd,xd) ^ () ]] :=
+    new s sy,
+    {xr} -> s,
+    {yr} <=I= s,
+    {yr} -> s,
+    {yd} <- s,
     {yd} =I=> sy,
     {xd} <- sy,
     {xr} |-> _.
@@ -254,18 +254,18 @@ rules
     {xr} |-> _.
 
   [[ ImportCycle(xr,yr1,yd,zr,zd,yr2,xd) ^ () ]] :=
-    new s sy sz,
-    {xr} -> s,
-    {yr1} -> s,
-    {yr1} <=I= s,
-    {zr} -> s,
-    {yr2} -> s,
+    new s1 s2 sy sz,
+    {xr} -> s1,
+    {yr1} -> s2,
+    {yr1} <=I= s1,
+    {zr} -> s2,
+    {yr2} -> s2,
 
-    {yd} <- s,
+    {yd} <- s2,
     {yd} =I=> sy,
     {zr} <=I= sy,
     
-    {zd} <- s,
+    {zd} <- s2,
     {zd} =I=> sz,
     {yr2} <=I= sz,
     {xd} <- sz,

@@ -103,11 +103,6 @@ test resolve in parent with non-resolving import [[
 ]] 0 errors
    resolve #1 to #2
 
-test importing scope and reference scope are different [[
-  resolve [[x]] via y in different scope in y { [[x]] }
-]] 0 errors
-   resolve #1 to #2
-
 //-------------------------------
 
 test resolve via scope in type [[
@@ -127,16 +122,20 @@ test resolve with import cycle [[
 ]] 0 errors
    resolve #1 to #2
 
-test import into nested module with same name [[
-  resolve [[x]] via y and y in y { y { [[x]] } }
-]] resolve #1 to #2
-
 test do not resolve with self as import [[
   resolve [[x]] via itself to [[x]] { x }
 ]] 0 errors
    resolve #1 to #2
 
 //-------------------------------
+
+test import via reference in same scope [[
+  resolve [[x]] via y in same scope y { [[x]] }
+]] > 0 errors
+
+test import into nested module with same name [[
+  resolve [[x]] via y and y in y { y { [[x]] } }
+]] > 0 errors
 
 test import anomaly [[
   anomaly {
@@ -156,11 +155,7 @@ test import anomaly [[
       def z = [[x]] + [[y]]
     }
   }
-]] 0 errors
-   resolve #5 to #3
-   resolve #6 to #1
-   resolve #7 to #2
-   resolve #8 to #4
+]] > 0 errors
 
 //-------------------------------
 
