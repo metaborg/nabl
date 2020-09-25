@@ -129,6 +129,9 @@ test do not resolve with self as import [[
 
 //-------------------------------
 
+// the tests in this block are all supported by the PEPM'16 resolution algorithm,
+// but get stuck in the environment based resolution algorithm.
+
 test import via reference in same scope [[
   resolve [[x]] via y in same scope y { [[x]] }
 ]] > 0 errors

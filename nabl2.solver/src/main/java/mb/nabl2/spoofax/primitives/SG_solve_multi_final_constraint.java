@@ -59,7 +59,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
         final List<ISolution> unitSolutions =
                 unitResults.stream().map(MultiUnitResult::solution).collect(Collectors.toList());
 
-        final ISolution solution;
+        /*final*/ ISolution solution;
         try {
             final Function1<String, String> fresh = globalFresh::fresh;
             final IMessageInfo defaultMessage =
@@ -71,7 +71,12 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
             throw new InterpreterException(ex);
         }
 
-        BUVerifier.verify(solution);
+        if(!BUVerifier.verify(solution)) {
+            final IMessages.Transient messages = solution.messages().melt();
+            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
+                    Actions.sourceTerm("")));
+            solution = solution.withMessages(messages.freeze());
+        }
 
         final List<IConstraint> constraints = Stream.concat(initialResult.constraints().stream(),
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());

@@ -21,7 +21,8 @@ public class BUVerifier {
 
     private static ILogger logger = LoggerUtils.logger(BUVerifier.class);
 
-    public static void verify(ISolution solution) {
+    public static boolean verify(ISolution solution) {
+        boolean success = true;
         try {
             logger.info("resolving with bottom-up resolution");
             AggregateTimer timer = new AggregateTimer(false);
@@ -35,10 +36,11 @@ public class BUVerifier {
                     final Collection<IResolutionPath<Scope, Label, Occurrence>> result =
                             nameResolution.resolve(entry.getKey());
                     timer.stop();
-                    verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
+                    success &= verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
                 } catch(CriticalEdgeException ex) {
+                    timer.stop();
                     logger.error("[resolve {}] stuck {}", entry.getKey(), ex.criticalEdges());
-
+                    success &= false;
                 }
             }
             logger.info("verifying {} visible entries", solution.nameResolutionCache().visibilityEntries().size());
@@ -48,9 +50,11 @@ public class BUVerifier {
                     timer.start();
                     final Collection<Occurrence> result = nameResolution.visible(entry.getKey());
                     timer.stop();
-                    verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
+                    success &= verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
                 } catch(CriticalEdgeException ex) {
+                    timer.stop();
                     logger.error("[visible {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                    success &= false;
                 }
             }
             logger.info("verifying {} reachable entries", solution.nameResolutionCache().reachabilityEntries().size());
@@ -60,19 +64,23 @@ public class BUVerifier {
                     timer.start();
                     final Collection<Occurrence> result = nameResolution.reachable(entry.getKey());
                     timer.stop();
-                    verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
+                    success &= verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
                 } catch(CriticalEdgeException ex) {
+                    timer.stop();
                     logger.error("[reachable {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                    success &= false;
                 }
             }
             logger.info("bottom-up resolution took {} s",
                     (double) timer.total() / (double) TimeUnit.NANOSECONDS.convert(1l, TimeUnit.SECONDS));
         } catch(InterruptedException e) {
             logger.error("bottom-up resolution failed", e);
+            success = false;
         }
+        return success;
     }
 
-    private static <E> void verifyEquals(String tag, Collection<E> expected, Collection<E> actual,
+    private static <E> boolean verifyEquals(String tag, Collection<E> expected, Collection<E> actual,
             BUNameResolution<Scope, Label, Occurrence> bu) {
         final Set.Immutable<E> expectedSet = CapsuleUtil.toSet(expected);
         final Set.Immutable<E> actualSet = CapsuleUtil.toSet(actual);
@@ -88,6 +96,7 @@ public class BUVerifier {
         if(!extra.isEmpty()) {
             logger.error("[{}] {} extra {}", tag, extra.size(), extra);
         }
+        return missing.isEmpty() && extra.isEmpty();
     }
 
 }

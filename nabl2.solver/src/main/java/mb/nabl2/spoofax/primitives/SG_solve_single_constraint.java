@@ -18,6 +18,9 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.constraints.messages.MessageContent;
+import mb.nabl2.constraints.messages.MessageInfo;
+import mb.nabl2.constraints.messages.MessageKind;
 import mb.nabl2.scopegraph.esop.bottomup.BUVerifier;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
@@ -27,6 +30,7 @@ import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.solvers.BaseSolution;
 import mb.nabl2.solver.solvers.GraphSolution;
 import mb.nabl2.solver.solvers.SingleFileSolver;
+import mb.nabl2.spoofax.analysis.Actions;
 import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.spoofax.analysis.SingleUnitResult;
 import mb.nabl2.stratego.ConstraintTerms;
@@ -62,18 +66,24 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final IProgress progress = new NullProgress();
         final SingleFileSolver solver = new SingleFileSolver(debugConfig,
                 ScopeGraphMultiFileAnalysisPrimitive.callExternal(env, strategoTerms));
-        final ISolution solution;
+        /*final*/ ISolution solution;
         try {
-            GraphSolution graphSolution = solver.solveGraph(
-                    BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
-                    cancel, progress);
+            GraphSolution graphSolution =
+                    solver.solveGraph(BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
+                            cancel, progress);
             ISolution constraintSolution = solver.solve(graphSolution, fresh::fresh, cancel, progress);
             solution = constraintSolution;
         } catch(InterruptedException | SolverException ex) {
             throw new InterpreterException(ex);
         }
 
-        BUVerifier.verify(solution);
+        if(!BUVerifier.verify(solution)) {
+            final IMessages.Transient messages = solution.messages().melt();
+            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
+                    Actions.sourceTerm("")));
+            solution = solution.withMessages(messages.freeze());
+        }
+
 
         final IResult result = SingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
         final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();

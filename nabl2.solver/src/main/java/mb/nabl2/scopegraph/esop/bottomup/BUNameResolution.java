@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import org.eclipse.viatra.query.runtime.base.itc.alg.incscc.IncSCCAlg;
 import org.eclipse.viatra.query.runtime.base.itc.graphimpl.Graph;
 import org.metaborg.util.functions.Predicate2;
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -168,7 +167,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         if(!isComplete(env)) {
             // FIXME Include actual critical edges
-            throw new CriticalEdgeException(Iterables2.empty());
+            throw new CriticalEdgeException(env.scope, dataLabel);
         }
         return _env;
     }
