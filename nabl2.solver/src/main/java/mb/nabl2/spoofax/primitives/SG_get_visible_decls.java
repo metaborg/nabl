@@ -7,7 +7,8 @@ import java.util.Optional;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
@@ -23,7 +24,7 @@ public class SG_get_visible_decls extends AnalysisPrimitive {
         return Scope.matcher().match(term, solution.unifier()).<ITerm>flatMap(scope -> {
             try {
                 return Optional.of(B.newList(solution.nameResolution().visible(scope)));
-            } catch(CriticalEdgeException | InterruptedException e) {
+            } catch(CriticalEdgeException | StuckException | InterruptedException e) {
                 return Optional.empty();
             }
         });

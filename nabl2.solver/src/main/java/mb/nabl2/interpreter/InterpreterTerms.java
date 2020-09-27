@@ -16,8 +16,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.constraints.namebinding.DeclProperties;
+import mb.nabl2.scopegraph.CriticalEdgeException;
 import mb.nabl2.scopegraph.IScopeGraph;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
@@ -92,7 +93,7 @@ public class InterpreterTerms {
                     } else {
                         logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
                     }
-                } catch(CriticalEdgeException e) {
+                } catch(CriticalEdgeException | StuckException e) {
                     logger.warn("Could not convert unresolvable {}.", ref);
                 }
             }

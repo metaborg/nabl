@@ -9,7 +9,8 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.time.AggregateTimer;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -39,7 +40,11 @@ public class BUVerifier {
                     success &= verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
                 } catch(CriticalEdgeException ex) {
                     timer.stop();
-                    logger.error("[resolve {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                    logger.error("[resolve {}] incomplete", ex, entry.getKey());
+                    success &= false;
+                } catch(StuckException ex) {
+                    timer.stop();
+                    logger.error("[resolve {}] stuck", ex, entry.getKey());
                     success &= false;
                 }
             }
@@ -53,7 +58,11 @@ public class BUVerifier {
                     success &= verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
                 } catch(CriticalEdgeException ex) {
                     timer.stop();
-                    logger.error("[visible {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                    logger.error("[visible {}] incomplete", ex, entry.getKey());
+                    success &= false;
+                } catch(StuckException ex) {
+                    timer.stop();
+                    logger.error("[visible {}] stuck", entry.getKey());
                     success &= false;
                 }
             }
@@ -67,14 +76,18 @@ public class BUVerifier {
                     success &= verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
                 } catch(CriticalEdgeException ex) {
                     timer.stop();
-                    logger.error("[reachable {}] stuck {}", entry.getKey(), ex.criticalEdges());
+                    logger.error("[reachable {}] incomplete", ex, entry.getKey());
+                    success &= false;
+                } catch(StuckException ex) {
+                    timer.stop();
+                    logger.error("[reachable {}] stuck", entry.getKey());
                     success &= false;
                 }
             }
             logger.info("bottom-up resolution took {} s",
                     (double) timer.total() / (double) TimeUnit.NANOSECONDS.convert(1l, TimeUnit.SECONDS));
         } catch(InterruptedException e) {
-            logger.error("bottom-up resolution failed", e);
+            logger.error("bottom-up resolution interrupted", e);
             success = false;
         }
         return success;

@@ -7,9 +7,10 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import mb.nabl2.scopegraph.CriticalEdgeException;
 import mb.nabl2.scopegraph.INameResolution;
 import mb.nabl2.scopegraph.IScopeGraph;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.terms.ITerm;
@@ -37,7 +38,7 @@ public final class NameResolutionTerms {
         List<ITerm> paths;
         try {
             paths = nameResolution.resolve(ref).stream().map(this::buildPath).collect(ImmutableList.toImmutableList());
-        } catch(CriticalEdgeException e) {
+        } catch(CriticalEdgeException | StuckException e) {
             paths = ImmutableList.of();
         }
         final ITerm result;

@@ -1,6 +1,6 @@
 package mb.nabl2.solver.exceptions;
 
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
 
 public class CriticalEdgeDelayException extends DelayException {
 

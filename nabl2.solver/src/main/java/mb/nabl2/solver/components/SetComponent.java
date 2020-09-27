@@ -26,7 +26,8 @@ import mb.nabl2.constraints.sets.CDistinct;
 import mb.nabl2.constraints.sets.CEvalSet;
 import mb.nabl2.constraints.sets.CSubsetEq;
 import mb.nabl2.constraints.sets.ISetConstraint;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.sets.SetEvaluator;
@@ -80,6 +81,10 @@ public class SetComponent extends ASolver {
             rightSet = maybeRightSet.get().apply();
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(StuckException e) {
+            IMessageInfo message = constraint.getMessageInfo()
+                    .withDefaultContent(MessageContent.builder().append("Name set is stuck.").build());
+            return SolveResult.messages(message);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         }
@@ -113,6 +118,10 @@ public class SetComponent extends ASolver {
             set = maybeSet.get().apply();
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(StuckException e) {
+            IMessageInfo message = constraint.getMessageInfo()
+                    .withDefaultContent(MessageContent.builder().append("Name set is stuck.").build());
+            return SolveResult.messages(message);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         }
@@ -149,6 +158,10 @@ public class SetComponent extends ASolver {
             set = maybeSet.get().apply();
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(StuckException e) {
+            IMessageInfo message = constraint.getMessageInfo()
+                    .withDefaultContent(MessageContent.builder().append("Name set is stuck.").build());
+            return SolveResult.messages(message);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         }

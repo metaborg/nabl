@@ -20,7 +20,8 @@ import mb.nabl2.constraints.nameresolution.CAssoc;
 import mb.nabl2.constraints.nameresolution.CDeclProperty;
 import mb.nabl2.constraints.nameresolution.CResolve;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -104,6 +105,10 @@ public class NameResolutionComponent extends ASolver {
             throw new InterruptedDelayException(e);
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(StuckException e) {
+            IMessageInfo message = r.getMessageInfo().withDefaultContent(
+                    MessageContent.builder().append("Resolution of ").append(ref).append(" is stuck.").build());
+            return SolveResult.messages(message);
         }
         final Set<Occurrence> declarations = Sets.newHashSet(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;

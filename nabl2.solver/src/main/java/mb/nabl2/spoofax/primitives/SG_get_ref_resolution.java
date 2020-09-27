@@ -10,7 +10,8 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -37,7 +38,7 @@ public class SG_get_ref_resolution extends AnalysisPrimitive {
                 }
                 ITerm result = B.newList(pathTerms);
                 return Optional.of(result);
-            } catch(CriticalEdgeException | InterruptedException e) {
+            } catch(CriticalEdgeException | StuckException | InterruptedException e) {
                 return Optional.empty();
             }
         });
