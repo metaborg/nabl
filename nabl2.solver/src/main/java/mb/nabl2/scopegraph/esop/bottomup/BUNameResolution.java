@@ -31,6 +31,7 @@ import mb.nabl2.scopegraph.INameResolution;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.StuckException;
+import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -42,7 +43,9 @@ import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.collections.HashTrieRelation2;
 import mb.nabl2.util.collections.HashTrieRelation3;
+import mb.nabl2.util.collections.IRelation2;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
 
@@ -119,14 +122,15 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     // Implementation
     ///////////////////////////////////////////////////////////////////////////
 
-    private Map.Transient<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs = Map.Transient.of();
+    private final Map.Transient<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs = Map.Transient.of();
+    private final IRelation2.Transient<BUEnvKey<S, L>, CriticalEdge> openEdges = HashTrieRelation2.Transient.of();
     private final Deque<InterruptibleRunnable> worklist = Queues.newArrayDeque();
     private final MultiSet.Transient<BUEnvKey<S, L>> pendingChanges = MultiSet.Transient.of();
     private final Graph<BUEnvKey<S, L>> depGraph = new Graph<>();
     private final IncSCCAlg<BUEnvKey<S, L>> sccGraph = new IncSCCAlg<>(depGraph);
-    private IRelation3.Transient<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges =
+    private final IRelation3.Transient<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges =
             HashTrieRelation3.Transient.of();
-    private IRelation3.Transient<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports =
+    private final IRelation3.Transient<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports =
             HashTrieRelation3.Transient.of();
 
     private Collection<IResolutionPath<S, L, O>> resolveRef(O ref)
@@ -177,12 +181,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
         if(env.wf.isAccepting()) {
             if(isOpen.test(env.scope, dataLabel)) {
-                // FIXME mark env/dataLabel open
+                openEdges.put(env, CriticalEdge.of(env.scope, dataLabel));
                 logger.warn("ignoring open edge {}/{}", env.scope, dataLabel);
             } else {
-                for(O d : scopeGraph.getDecls().inverse().get(env.scope)) {
-                    declPaths.__insert(Paths.decl(Paths.<S, L, O>empty(env.scope), d));
-                }
+                initData(env, declPaths);
             }
         }
         for(L l : edgeLabels) {
@@ -191,21 +193,52 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 continue;
             }
             if(isOpen.test(env.scope, l)) {
-                // FIXME mark env/l open
+                openEdges.put(env, CriticalEdge.of(env.scope, l));
                 logger.warn("ignoring open edge {}/{}", env.scope, l);
             } else {
-                for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
-                    final BUEnvKey<S, L> srcEnv = new BUEnvKey<>(env.kind, scope, nextWf);
-                    init(srcEnv);
-                    addBackEdge(srcEnv, Paths.direct(env.scope, l, srcEnv.scope), env);
-                }
-                for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
-                    addBackImport(ref, l, nextWf, env);
-                }
+                initEdge(env, l, nextWf);
             }
         }
         queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
         return _env;
+    }
+
+    @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges)
+            throws InterruptedException {
+        for(CriticalEdge ce : criticalEdges) {
+            if(isOpen.test((S) ce.scope(), (L) ce.label())) {
+                continue;
+            }
+            for(BUEnvKey<S, L> env : openEdges.removeValue(ce)) {
+                final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
+                if(ce.label().equals(dataLabel)) {
+                    initData(env, declPaths);
+                } else {
+                    initEdge(env, (L) ce.label(), env.wf.match((L) ce.label()));
+                }
+                queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
+            }
+        }
+        while(!worklist.isEmpty()) {
+            worklist.pop().run();
+        }
+    }
+
+    private void initData(BUEnvKey<S, L> env, Set.Transient<IDeclPath<S, L, O>> declPaths) {
+        for(O d : scopeGraph.getDecls().inverse().get(env.scope)) {
+            declPaths.__insert(Paths.decl(Paths.<S, L, O>empty(env.scope), d));
+        }
+    }
+
+    private void initEdge(BUEnvKey<S, L> env, L l, IRegExpMatcher<L> nextWf) {
+        for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
+            final BUEnvKey<S, L> srcEnv = new BUEnvKey<>(env.kind, scope, nextWf);
+            init(srcEnv);
+            addBackEdge(srcEnv, Paths.direct(env.scope, l, srcEnv.scope), env);
+        }
+        for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
+            addBackImport(ref, l, nextWf, env);
+        }
     }
 
     private void queueChanges(BUEnvKey<S, L> env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes) {
@@ -310,17 +343,29 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         // check if there are pending changes for any environment in the component, and if any backimports are unresolved
         for(BUEnvKey<S, L> cenv : sccGraph.sccs.getPartition(rep)) {
-            if(pendingChanges.contains(cenv) || backimports.inverse().contains(cenv)) {
+            if(pendingChanges.contains(cenv) || openEdges.containsKey(cenv) || backimports.inverse().contains(cenv)) {
                 return false;
             }
         }
         return true;
     }
 
-    private void throwIfIncomplete(BUEnvKey<S, L> env) throws StuckException {
+    private void throwIfIncomplete(BUEnvKey<S, L> env) throws StuckException, CriticalEdgeException {
         if(!pendingChanges.isEmpty()) {
             throw new IllegalStateException("pending changes should be empty");
         }
+
+        // check for critical edges
+        final Set.Transient<CriticalEdge> ces = Set.Transient.of();
+        ces.__insertAll(openEdges.get(env));
+        for(BUEnvKey<S, L> reachEnv : depGraph.getTargetNodes(env)) {
+            ces.__insertAll(openEdges.get(reachEnv));
+        }
+        if(!ces.isEmpty()) {
+            throw new CriticalEdgeException(ces.freeze());
+        }
+
+        // check for stuckness
         final BUEnvKey<S, L> rep = sccGraph.getRepresentative(env);
         for(BUEnvKey<S, L> reachRep : sccGraph.getAllReachableTargets(rep)) {
             if(sccGraph.hasOutgoingEdges(reachRep)) {

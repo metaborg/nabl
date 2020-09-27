@@ -1,5 +1,6 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.List;
 import java.util.Map;
 
 import org.metaborg.util.Ref;
@@ -17,6 +18,7 @@ import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.ScopeGraphReducer;
+import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
@@ -105,7 +107,9 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             final Set.Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
             if(!vars.isEmpty()) {
                 try {
-                    r.resolveCriticalEdges(scopeGraphReducer.update(vars));
+                    final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);
+                    nameResolution.update(criticalEdges);
+                    r.resolveCriticalEdges(criticalEdges);
                 } catch(InterruptedException ex) {
                     // ignore here
                 }
