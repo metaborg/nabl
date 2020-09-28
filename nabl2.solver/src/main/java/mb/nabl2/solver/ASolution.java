@@ -14,6 +14,7 @@ import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
+import mb.nabl2.scopegraph.esop.bottomup.BUNameResolution;
 import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
@@ -57,7 +58,7 @@ public abstract class ASolution implements ISolution {
     }
 
     @Override public IEsopNameResolution<Scope, Label, Occurrence> nameResolution() {
-        final EsopNameResolution<Scope, Label, Occurrence> nr = EsopNameResolution.of(config().getResolutionParams(),
+        final IEsopNameResolution<Scope, Label, Occurrence> nr = BUNameResolution.of(config().getResolutionParams(),
                 scopeGraph(), (s, l) -> true, nameResolutionCache());
         return nr;
     }
@@ -80,8 +81,8 @@ public abstract class ASolution implements ISolution {
     @Value.Parameter @Override public abstract java.util.Set<IConstraint> constraints();
 
     public static ISolution of(SolverConfig config) {
-        return Solution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
-                Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
+        return Solution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(), Properties.Immutable.of(),
+                VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
                 mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(), Collections.emptySet());
     }
 

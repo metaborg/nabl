@@ -18,7 +18,7 @@ import mb.nabl2.scopegraph.ScopeGraphReducer;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
+import mb.nabl2.scopegraph.esop.bottomup.BUNameResolution;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
@@ -69,7 +69,7 @@ public class SingleFileSolver extends BaseSolver {
         // more shared
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
+                BUNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
         final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // solver components

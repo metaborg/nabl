@@ -28,7 +28,8 @@ public class SG_get_ref_resolution extends AnalysisPrimitive {
 
     @Override public Optional<? extends ITerm> call(ISolution solution, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        return Occurrence.matcher().match(term, solution.unifier()).<ITerm>flatMap(ref -> {
+        final Optional<Occurrence> maybeRef = Occurrence.matcher().match(term, solution.unifier());
+        return maybeRef.<ITerm>flatMap(ref -> {
             try {
                 final Collection<IResolutionPath<Scope, Label, Occurrence>> paths =
                         solution.nameResolution().resolve(ref);

@@ -71,12 +71,12 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
             throw new InterpreterException(ex);
         }
 
-        if(!BUVerifier.verify(solution)) {
-            final IMessages.Transient messages = solution.messages().melt();
-            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
-                    Actions.sourceTerm("")));
-            solution = solution.withMessages(messages.freeze());
-        }
+//        if(!BUVerifier.verify(solution)) {
+//            final IMessages.Transient messages = solution.messages().melt();
+//            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
+//                    Actions.sourceTerm("")));
+//            solution = solution.withMessages(messages.freeze());
+//        }
 
         final List<IConstraint> constraints = Stream.concat(initialResult.constraints().stream(),
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());

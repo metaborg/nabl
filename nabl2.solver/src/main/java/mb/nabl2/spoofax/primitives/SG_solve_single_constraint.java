@@ -77,12 +77,12 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
             throw new InterpreterException(ex);
         }
 
-        if(!BUVerifier.verify(solution)) {
-            final IMessages.Transient messages = solution.messages().melt();
-            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
-                    Actions.sourceTerm("")));
-            solution = solution.withMessages(messages.freeze());
-        }
+//        if(!BUVerifier.verify(solution)) {
+//            final IMessages.Transient messages = solution.messages().melt();
+//            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
+//                    Actions.sourceTerm("")));
+//            solution = solution.withMessages(messages.freeze());
+//        }
 
 
         final IResult result = SingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
