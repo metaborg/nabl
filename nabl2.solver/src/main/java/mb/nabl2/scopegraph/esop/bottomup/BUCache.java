@@ -1,6 +1,10 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
+import java.io.IOException;
 import java.io.Serializable;
+
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -25,11 +29,15 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution.IResolutionCache<S, L, O>, Serializable {
     private static final long serialVersionUID = 1L;
 
-    protected final Map.Immutable<BUEnvKey<S, L>, SetMultimap.Immutable<SpacedName, IDeclPath<S, L, O>>> envs;
-    protected final Set.Immutable<BUEnvKey<S, L>> completed;
-    protected final IRelation3.Immutable<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges;
-    protected final IRelation3.Immutable<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports;
-    protected final IRelation2.Immutable<BUEnvKey<S, L>, CriticalEdge> openEdges;
+    private static final ILogger log = LoggerUtils.logger(BUCache.class);
+
+    // fields cannot be final, because of readObject
+
+    protected /*final*/ Map.Immutable<BUEnvKey<S, L>, SetMultimap.Immutable<SpacedName, IDeclPath<S, L, O>>> envs;
+    protected /*final*/ Set.Immutable<BUEnvKey<S, L>> completed;
+    protected /*final*/ IRelation3.Immutable<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges;
+    protected /*final*/ IRelation3.Immutable<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports;
+    protected /*final*/ IRelation2.Immutable<BUEnvKey<S, L>, CriticalEdge> openEdges;
 
     BUCache(Map.Immutable<BUEnvKey<S, L>, SetMultimap.Immutable<SpacedName, IDeclPath<S, L, O>>> envs,
             Set.Immutable<BUEnvKey<S, L>> completed,
@@ -57,6 +65,18 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
         this.backimports = HashTrieRelation3.Immutable
                 .<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>>of().putAll(backimports);
         this.openEdges = HashTrieRelation2.Immutable.<BUEnvKey<S, L>, CriticalEdge>of().putAll(openEdges);
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        log.warn("Name resolution cache not serialized, because slow serialization.");
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        this.envs = Map.Immutable.of();
+        this.completed = Set.Immutable.of();
+        this.backedges = HashTrieRelation3.Immutable.of();
+        this.backimports = HashTrieRelation3.Immutable.of();
+        this.openEdges = HashTrieRelation2.Immutable.of();
     }
 
 }

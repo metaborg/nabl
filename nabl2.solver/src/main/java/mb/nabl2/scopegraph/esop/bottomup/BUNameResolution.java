@@ -292,8 +292,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             throw new IllegalStateException();
         }
         pendingChanges.remove(env);
-        final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = envs.get(env).apply(changes);
-        if(!newChanges.isEmpty()) {
+        final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(env);
+        _env.apply(changes);
+        if(_env.hasChanges() && !pendingChanges.contains(env)) {
+            final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = _env.commit();
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();

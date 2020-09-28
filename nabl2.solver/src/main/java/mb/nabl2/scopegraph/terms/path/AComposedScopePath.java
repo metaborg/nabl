@@ -66,6 +66,10 @@ abstract class AComposedScopePath<S extends IScope, L extends ILabel, O extends 
         return getLeft().getLabels().append(getRight().getLabels());
     }
 
+    @Override public L getFirstLabel(L dataLabel) {
+        return getLeft().getFirstLabel(dataLabel);
+    }
+
     @Value.Lazy @Override public int hashCode() {
         return getLeft().hashCode() + (IntMath.pow(31, getLeft().size()) * getRight().hashCode());
     }

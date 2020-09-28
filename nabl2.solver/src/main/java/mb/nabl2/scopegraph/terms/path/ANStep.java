@@ -46,6 +46,10 @@ abstract class ANStep<S extends IScope, L extends ILabel, O extends IOccurrence>
         return ConsList.of(getLabel());
     }
 
+    @Override public L getFirstLabel(L dataLabel) {
+        return getLabel();
+    }
+
     @Override public <T> T match(IStep.ICases<S, L, O, T> cases) {
         return cases.caseN(getSource(), getLabel(), getImportPath(), getTarget());
     }

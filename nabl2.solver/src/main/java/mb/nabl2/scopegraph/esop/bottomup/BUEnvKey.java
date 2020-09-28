@@ -21,8 +21,15 @@ class BUEnvKey<S, L> implements Serializable {
         }
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(kind, scope, wf.regexp());
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(kind, scope, wf.regexp());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object obj) {

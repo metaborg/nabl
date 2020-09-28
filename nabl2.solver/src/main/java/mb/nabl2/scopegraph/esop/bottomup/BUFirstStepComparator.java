@@ -1,7 +1,5 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
-import java.util.Iterator;
-
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
@@ -9,7 +7,6 @@ import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
-import mb.nabl2.scopegraph.path.IStep;
 
 public class BUFirstStepComparator<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
@@ -54,10 +51,8 @@ public class BUFirstStepComparator<S extends IScope, L extends ILabel, O extends
             // paths with different sources are unordered
             return null;
         }
-        final Iterator<IStep<S, L, O>> it1 = path1.iterator();
-        final Iterator<IStep<S, L, O>> it2 = path2.iterator();
-        final L l1 = it1.hasNext() ? it1.next().getLabel() : labelD;
-        final L l2 = it2.hasNext() ? it2.next().getLabel() : labelD;
+        final L l1 = path1.getFirstLabel(labelD);
+        final L l2 = path2.getFirstLabel(labelD);
         return compare(l1, l2);
     }
 

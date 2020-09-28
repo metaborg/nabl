@@ -14,6 +14,7 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.terms.SpacedName;
+import mb.nabl2.util.CapsuleUtil;
 
 public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
@@ -21,6 +22,9 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
 
     private final Function2<P, P, Integer> compare;
     private final SetMultimap.Transient<SpacedName, P> paths;
+
+    private Set.Transient<P> addedPaths = Set.Transient.of();
+    private Set.Transient<P> removedPaths = Set.Transient.of();
 
     public BUEnv(Function2<P, P, Integer> compare) {
         this(compare, SetMultimap.Transient.of());
@@ -47,43 +51,35 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
         return paths.get(name);
     }
 
-    public BUChanges<S, L, O, P> apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
-        final Set.Transient<P> addedPaths = Set.Transient.of();
-        final Set.Transient<P> removedPaths = Set.Transient.of();
+    public void apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
         for(P path : changes.removedPaths()) {
-            removePath(path, removedPaths);
+            removePath(path);
         }
         for(P path : changes.addedPaths()) {
-            addPath(path, addedPaths, removedPaths);
+            addPath(path);
         }
-        return new BUChanges<>(addedPaths.freeze(), removedPaths.freeze());
     }
 
-    private void removePath(P oldPath, Set.Transient<P> removed) throws InterruptedException {
+    private void removePath(P oldPath) throws InterruptedException {
         final SpacedName name = oldPath.getDeclaration().getSpacedName();
         for(P path : paths.get(name)) {
-            if(Thread.interrupted()) {
-                throw new InterruptedException();
-            }
             if(paths.__remove(name, path)) {
-                removed.__insert(path);
+                removedPaths.__insert(path);
             }
         }
     }
 
-    private void addPath(P newPath, Set.Transient<P> added, Set.Transient<P> removed) throws InterruptedException {
+    private void addPath(P newPath) throws InterruptedException {
         final SpacedName name = newPath.getDeclaration().getSpacedName();
         for(P path : paths.get(name)) {
-            if(Thread.interrupted()) {
-                throw new InterruptedException();
-            }
             final Integer result = compare.apply(newPath, path);
             if(result != null) {
                 // paths are comparable
                 if(result < 0) {
                     // the candidate is smaller than an earlier selected path
                     paths.__remove(name, path);
-                    removed.__insert(path);
+                    addedPaths.__remove(path);
+                    removedPaths.__insert(path);
                 }
                 if(result > 0) {
                     // the candidate is larger than an earlier selected path
@@ -91,10 +87,22 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
                 }
             }
         }
-        // there are no smaller selected paths
+        // there are no smaller pre-existing paths
         if(paths.__insert(name, newPath)) {
-            added.__insert(newPath);
+            addedPaths.__insert(newPath);
         }
+    }
+
+    public BUChanges<S, L, O, P> commit() throws InterruptedException {
+        final BUChanges<S, L, O, P> changes =
+                new BUChanges<>(addedPaths.freeze(), removedPaths.freeze());
+        addedPaths = Set.Transient.of();
+        removedPaths = Set.Transient.of();
+        return changes;
+    }
+
+    public boolean hasChanges() {
+        return !addedPaths.isEmpty() || !removedPaths.isEmpty();
     }
 
     public void write(String prefix, Writer out) throws IOException {

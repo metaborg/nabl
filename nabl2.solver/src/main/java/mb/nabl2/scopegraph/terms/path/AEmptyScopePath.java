@@ -49,6 +49,10 @@ abstract class AEmptyScopePath<S extends IScope, L extends ILabel, O extends IOc
         return ConsList.of();
     }
 
+    @Override public L getFirstLabel(L dataLabel) {
+        return dataLabel;
+    }
+
     @Override public int hashCode() {
         return 0;
     }
