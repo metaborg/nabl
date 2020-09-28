@@ -23,7 +23,7 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
     }
 
     public boolean isEmpty() {
-        return addedPaths.isEmpty();
+        return addedPaths.isEmpty() && removedPaths.isEmpty();
     }
 
     public Set.Immutable<P> addedPaths() {
@@ -41,6 +41,11 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
         final Set.Immutable<Q> mappedRemovedPaths =
                 removedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
         return new BUChanges<>(mappedAddedPaths, mappedRemovedPaths);
+    }
+
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
+            BUChanges<S, L, O, IDeclPath<S, L, O>> of() {
+        return new BUChanges<>(Set.Immutable.of(), Set.Immutable.of());
     }
 
 }

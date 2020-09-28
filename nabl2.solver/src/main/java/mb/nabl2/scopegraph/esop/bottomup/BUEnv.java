@@ -20,11 +20,15 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
     @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(BUEnv.class);
 
     private final Function2<P, P, Integer> compare;
-
-    private final SetMultimap.Transient<SpacedName, P> paths = SetMultimap.Transient.of();
+    private final SetMultimap.Transient<SpacedName, P> paths;
 
     public BUEnv(Function2<P, P, Integer> compare) {
+        this(compare, SetMultimap.Transient.of());
+    }
+
+    BUEnv(Function2<P, P, Integer> compare, SetMultimap.Transient<SpacedName, P> paths) {
         this.compare = compare;
+        this.paths = paths;
     }
 
     public java.util.Set<SpacedName> nameSet() {
@@ -35,12 +39,15 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
         return paths.values();
     }
 
+    SetMultimap<SpacedName, P> paths() {
+        return paths;
+    }
+
     public Set.Immutable<P> get(SpacedName name) {
         return paths.get(name);
     }
 
     public BUChanges<S, L, O, P> apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
-        //        logger.info("adding {} paths to {} names, {} paths env", paths.size(), env.keySet().size(), env.values().size());
         final Set.Transient<P> addedPaths = Set.Transient.of();
         final Set.Transient<P> removedPaths = Set.Transient.of();
         for(P path : changes.removedPaths()) {
@@ -54,7 +61,6 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
 
     private void removePath(P oldPath, Set.Transient<P> removed) throws InterruptedException {
         final SpacedName name = oldPath.getDeclaration().getSpacedName();
-        //        logger.info("adding path to {} env", env.get(name).size());
         for(P path : paths.get(name)) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();
@@ -67,7 +73,6 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
 
     private void addPath(P newPath, Set.Transient<P> added, Set.Transient<P> removed) throws InterruptedException {
         final SpacedName name = newPath.getDeclaration().getSpacedName();
-        //        logger.info("adding path to {} env", env.get(name).size());
         for(P path : paths.get(name)) {
             if(Thread.interrupted()) {
                 throw new InterruptedException();

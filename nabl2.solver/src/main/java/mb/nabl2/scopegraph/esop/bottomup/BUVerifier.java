@@ -1,7 +1,6 @@
 package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.util.Collection;
-import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.metaborg.util.log.ILogger;
@@ -11,11 +10,14 @@ import org.metaborg.util.time.AggregateTimer;
 import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.CriticalEdgeException;
 import mb.nabl2.scopegraph.StuckException;
+import mb.nabl2.scopegraph.esop.IEsopNameResolution;
+import mb.nabl2.scopegraph.esop.IEsopScopeGraph.Immutable;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.CapsuleUtil;
 
 public class BUVerifier {
@@ -27,60 +29,61 @@ public class BUVerifier {
         try {
             logger.info("resolving with bottom-up resolution");
             AggregateTimer timer = new AggregateTimer(false);
-            final BUNameResolution<Scope, Label, Occurrence> nameResolution = BUNameResolution
-                    .of(solution.config().getResolutionParams(), solution.scopeGraph(), (s, l) -> false);
-            logger.info("verifying {} resolve entries", solution.nameResolutionCache().resolutionEntries().size());
-            for(Entry<Occurrence, Collection<IResolutionPath<Scope, Label, Occurrence>>> entry : solution
-                    .nameResolutionCache().resolutionEntries().entrySet()) {
+            final IEsopNameResolution<Scope, Label, Occurrence> nameResolution = solution.nameResolution();
+            final Immutable<Scope, Label, Occurrence, ITerm> scopeGraph = solution.scopeGraph();
+            final BUNameResolution<Scope, Label, Occurrence> buNameResolution =
+                    BUNameResolution.of(solution.config().getResolutionParams(), scopeGraph, (s, l) -> false);
+            logger.info("verifying {} references", scopeGraph.getAllRefs().size());
+            for(Occurrence ref : scopeGraph.getAllRefs()) {
                 try {
+                    final Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
                     timer.start();
-                    final Collection<IResolutionPath<Scope, Label, Occurrence>> result =
-                            nameResolution.resolve(entry.getKey());
+                    final Collection<IResolutionPath<Scope, Label, Occurrence>> result = buNameResolution.resolve(ref);
                     timer.stop();
-                    success &= verifyEquals("resolve " + entry.getKey(), entry.getValue(), result, nameResolution);
+                    success &= verifyEquals("resolve " + ref, paths, result, buNameResolution);
                 } catch(CriticalEdgeException ex) {
                     timer.stop();
-                    logger.error("[resolve {}] incomplete", ex, entry.getKey());
+                    logger.error("[resolve {}] incomplete", ex, ref);
                     success &= false;
                 } catch(StuckException ex) {
                     timer.stop();
-                    logger.error("[resolve {}] stuck", ex, entry.getKey());
+                    logger.error("[resolve {}] stuck", ex, ref);
                     success &= false;
                 }
             }
-            logger.info("verifying {} visible entries", solution.nameResolutionCache().visibilityEntries().size());
-            for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().visibilityEntries()
-                    .entrySet()) {
+            logger.info("verifying {} visible", scopeGraph.getAllScopes().size());
+            for(Scope scope : scopeGraph.getAllScopes()) {
                 try {
+                    final Collection<Occurrence> decls = nameResolution.visible(scope);
                     timer.start();
-                    final Collection<Occurrence> result = nameResolution.visible(entry.getKey());
+                    final Collection<Occurrence> result = buNameResolution.visible(scope);
                     timer.stop();
-                    success &= verifyEquals("visible " + entry.getKey(), entry.getValue(), result, nameResolution);
+                    success &= verifyEquals("visible " + scope, decls, result, buNameResolution);
                 } catch(CriticalEdgeException ex) {
                     timer.stop();
-                    logger.error("[visible {}] incomplete", ex, entry.getKey());
+                    logger.error("[visible {}] incomplete", ex, scope);
                     success &= false;
                 } catch(StuckException ex) {
                     timer.stop();
-                    logger.error("[visible {}] stuck", entry.getKey());
+                    logger.error("[visible {}] stuck", scope);
                     success &= false;
                 }
             }
-            logger.info("verifying {} reachable entries", solution.nameResolutionCache().reachabilityEntries().size());
-            for(Entry<Scope, Collection<Occurrence>> entry : solution.nameResolutionCache().reachabilityEntries()
-                    .entrySet()) {
+            logger.info("verifying {} reachable", scopeGraph.getAllScopes());
+            for(Scope scope : scopeGraph.getAllScopes()) {
                 try {
+                    final Collection<Occurrence> decls = nameResolution.reachable(scope);
                     timer.start();
-                    final Collection<Occurrence> result = nameResolution.reachable(entry.getKey());
+                    final Collection<Occurrence> result = buNameResolution.reachable(scope);
                     timer.stop();
-                    success &= verifyEquals("reachable " + entry.getKey(), entry.getValue(), result, nameResolution);
+                    success &= verifyEquals("reachable " + scope, decls, result, buNameResolution);
                 } catch(CriticalEdgeException ex) {
                     timer.stop();
-                    logger.error("[reachable {}] incomplete", ex, entry.getKey());
+                    logger.error("[reachable {}] incomplete", ex, scope);
                     success &= false;
                 } catch(StuckException ex) {
                     timer.stop();
-                    logger.error("[reachable {}] stuck", entry.getKey());
+                    logger.error("[reachable {}] stuck", scope);
                     success &= false;
                 }
             }

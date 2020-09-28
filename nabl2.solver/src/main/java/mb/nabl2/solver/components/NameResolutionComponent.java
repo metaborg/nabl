@@ -198,7 +198,7 @@ public class NameResolutionComponent extends ASolver {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-        @Value.Parameter public abstract IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
+        @Value.Parameter public abstract IEsopNameResolution.IResolutionCache<Scope, Label, Occurrence>
                 resolutionCache();
 
         @Value.Parameter public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();

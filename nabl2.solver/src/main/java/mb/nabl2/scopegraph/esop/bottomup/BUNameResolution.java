@@ -33,7 +33,6 @@ import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IStep;
@@ -77,8 +76,21 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> BUNameResolution<S, L, O> of(
             IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isClosed,
-            IEsopNameResolution.ResolutionCache<S, L, O> cache) {
-        return new BUNameResolution<>(params, scopeGraph, isClosed);
+            IEsopNameResolution.IResolutionCache<S, L, O> cache) {
+        final BUNameResolution<S, L, O> nr = new BUNameResolution<>(params, scopeGraph, isClosed);
+        if(cache instanceof BUCache) {
+            final BUCache<S, L, O> _cache = (BUCache<S, L, O>) cache;
+            _cache.envs.forEach(
+                    (env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind)::compare, ps.asTransient())));
+            nr.envs.keySet().forEach(e -> nr.depGraph.insertNode(e));
+            nr.completed.__insertAll(_cache.completed);
+            nr.backedges.putAll(_cache.backedges);
+            nr.backedges.stream().forEach(be -> nr.depGraph.insertEdge(be._3(), be._1()));
+            nr.backimports.putAll(_cache.backimports);
+            nr.backimports.stream().forEach(be -> nr.depGraph.insertEdge(be._3(), be._1()));
+            nr.openEdges.putAll(_cache.openEdges);
+        }
+        return nr;
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> BUNameResolution<S, L, O>
@@ -124,12 +136,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     // IEsopNameResolution
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public boolean addCached(ResolutionCache<S, L, O> cache) {
+    @Override public boolean addCached(IResolutionCache<S, L, O> cache) {
         return false;
     }
 
-    @Override public ResolutionCache<S, L, O> toCache() {
-        return EsopNameResolution.ResolutionCache.of();
+    @Override public IResolutionCache<S, L, O> toCache() {
+        return new BUCache<>(envs, completed, backedges, backimports, openEdges);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -137,15 +149,17 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     ///////////////////////////////////////////////////////////////////////////
 
     private final Map.Transient<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs = Map.Transient.of();
+    private final Set.Transient<BUEnvKey<S, L>> completed = Set.Transient.of();
     private final IRelation2.Transient<BUEnvKey<S, L>, CriticalEdge> openEdges = HashTrieRelation2.Transient.of();
-    private final Deque<InterruptibleRunnable> worklist = Queues.newArrayDeque();
-    private final MultiSet.Transient<BUEnvKey<S, L>> pendingChanges = MultiSet.Transient.of();
-    private final Graph<BUEnvKey<S, L>> depGraph = new Graph<>();
-    private final IncSCCAlg<BUEnvKey<S, L>> sccGraph = new IncSCCAlg<>(depGraph);
     private final IRelation3.Transient<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges =
             HashTrieRelation3.Transient.of();
     private final IRelation3.Transient<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports =
             HashTrieRelation3.Transient.of();
+
+    private final Deque<InterruptibleRunnable> worklist = Queues.newArrayDeque();
+    private final MultiSet.Transient<BUEnvKey<S, L>> pendingChanges = MultiSet.Transient.of();
+    private final Graph<BUEnvKey<S, L>> depGraph = new Graph<>();
+    private final IncSCCAlg<BUEnvKey<S, L>> sccGraph = new IncSCCAlg<>(depGraph);
 
     private Collection<IResolutionPath<S, L, O>> resolveRef(O ref)
             throws InterruptedException, CriticalEdgeException, StuckException {
@@ -177,12 +191,40 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
      */
     private BUEnv<S, L, O, IDeclPath<S, L, O>> getOrCompute(BUEnvKey<S, L> env)
             throws InterruptedException, CriticalEdgeException, StuckException {
+        //        logger.info("compute {}", env);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = init(env);
-        while(!worklist.isEmpty()) {
-            worklist.pop().run();
-        }
+        work();
         throwIfIncomplete(env);
         return _env;
+    }
+
+    @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges)
+            throws InterruptedException {
+        //        logger.info("update {}", criticalEdges);
+        for(CriticalEdge ce : criticalEdges) {
+            if(!isClosed((S) ce.scope(), (L) ce.label())) {
+                continue;
+            }
+            for(BUEnvKey<S, L> env : openEdges.removeValue(ce)) {
+                final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
+                if(ce.label().equals(dataLabel)) {
+                    initData(env, declPaths);
+                } else {
+                    initEdge(env, (L) ce.label(), env.wf.match((L) ce.label()));
+                }
+                queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
+            }
+        }
+        work();
+    }
+
+    private void work() throws InterruptedException {
+        int work = 0;
+        while(!worklist.isEmpty()) {
+            work++;
+            worklist.pop().run();
+        }
+        //        logger.info("worked {} tasks", work);
     }
 
     private BUEnv<S, L, O, IDeclPath<S, L, O>> init(BUEnvKey<S, L> env) {
@@ -212,28 +254,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             }
         }
         queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
+        queueCheckComplete(env);
         return _env;
-    }
-
-    @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges)
-            throws InterruptedException {
-        for(CriticalEdge ce : criticalEdges) {
-            if(!isClosed((S) ce.scope(), (L) ce.label())) {
-                continue;
-            }
-            for(BUEnvKey<S, L> env : openEdges.removeValue(ce)) {
-                final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
-                if(ce.label().equals(dataLabel)) {
-                    initData(env, declPaths);
-                } else {
-                    initEdge(env, (L) ce.label(), env.wf.match((L) ce.label()));
-                }
-                queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
-            }
-        }
-        while(!worklist.isEmpty()) {
-            worklist.pop().run();
-        }
     }
 
     private void initData(BUEnvKey<S, L> env, Set.Transient<IDeclPath<S, L, O>> declPaths) {
@@ -254,34 +276,60 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     }
 
     private void queueChanges(BUEnvKey<S, L> env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes) {
+        if(completed.contains(env)) {
+            throw new IllegalStateException();
+        }
+        if(changes.isEmpty()) {
+            return;
+        }
         pendingChanges.add(env);
         worklist.add(() -> processChanges(env, changes));
     }
 
     private void processChanges(BUEnvKey<S, L> env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes)
             throws InterruptedException {
+        if(completed.contains(env)) {
+            throw new IllegalStateException();
+        }
         pendingChanges.remove(env);
         final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = envs.get(env).apply(changes);
-        for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
-            final BUEnvKey<S, L> dstEnv = entry.getValue();
-            final IStep<S, L, O> step = entry.getKey();
-            final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
-                    newChanges.flatMap(p -> ofOpt(Paths.append(step, p)), p -> ofOpt(Paths.append(step, p)));
-            queueChanges(dstEnv, envChanges);
-        }
-        if(isComplete(env)) {
+        if(!newChanges.isEmpty()) {
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
-                depGraph.deleteEdgeThatExists(dstEnv, env);
+                final IStep<S, L, O> step = entry.getKey();
+                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
+                        newChanges.flatMap(p -> ofOpt(Paths.append(step, p)), p -> ofOpt(Paths.append(step, p)));
+                queueChanges(dstEnv, envChanges);
             }
-            for(Entry<Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> entry : backimports.get(env)) {
+        }
+        checkComplete(env);
+    }
+
+    private void queueCheckComplete(BUEnvKey<S, L> env) {
+        if(completed.contains(env)) {
+            return;
+        }
+        worklist.add(() -> checkComplete(env));
+    }
+
+    private void checkComplete(BUEnvKey<S, L> env) throws InterruptedException {
+        if(completed.contains(env)) {
+            return;
+        }
+        if(isComplete(env)) {
+            completed.__insert(env);
+            for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.remove(env).entrySet()) {
+                final BUEnvKey<S, L> dstEnv = entry.getValue();
+                depGraph.deleteEdgeThatExists(dstEnv, env);
+                queueCheckComplete(dstEnv);
+            }
+            for(Entry<Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> entry : backimports.remove(env).entrySet()) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final Tuple3<L, O, IRegExpMatcher<L>> _st = entry.getKey();
                 addImportBackEdges(env, _st, dstEnv);
                 depGraph.deleteEdgeThatExists(dstEnv, env);
+                queueCheckComplete(dstEnv);
             }
-            backedges.remove(env);
-            backimports.remove(env);
         }
     }
 

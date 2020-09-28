@@ -82,11 +82,15 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         this.stagedEnv_L = Maps.newHashMap();
     }
 
-    @Override public boolean addCached(IEsopNameResolution.ResolutionCache<S, L, O> cache) {
+    @Override public boolean addCached(IEsopNameResolution.IResolutionCache<S, L, O> cache) {
+        if(!(cache instanceof ResolutionCache)) {
+            return false;
+        }
+        final ResolutionCache<S, L, O> _cache = (ResolutionCache<S, L, O>) cache;
         boolean change = false;
-        change |= resolution.__putAll(cache.resolutionEntries());
-        change |= visibility.__putAll(cache.visibilityEntries());
-        change |= reachability.__putAll(cache.reachabilityEntries());
+        change |= resolution.__putAll(_cache.resolutionEntries());
+        change |= visibility.__putAll(_cache.visibilityEntries());
+        change |= reachability.__putAll(_cache.reachabilityEntries());
         return change;
     }
 
@@ -331,13 +335,20 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution<S, L, O> of(
             IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed,
-            IEsopNameResolution.ResolutionCache<S, L, O> cache) {
-        return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, cache.resolutionEntries().asTransient(),
-                cache.visibilityEntries().asTransient(), cache.reachabilityEntries().asTransient());
+            IEsopNameResolution.IResolutionCache<S, L, O> cache) {
+        if(cache instanceof ResolutionCache) {
+            final ResolutionCache<S, L, O> _cache = (ResolutionCache<S, L, O>) cache;
+            return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, _cache.resolutionEntries().asTransient(),
+                    _cache.visibilityEntries().asTransient(), _cache.reachabilityEntries().asTransient());
+        } else {
+            return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, Map.Transient.of(), Map.Transient.of(),
+                    Map.Transient.of());
+        }
+
     }
 
-    public static class ResolutionCache<S extends IScope, L extends ILabel, O extends IOccurrence>
-            implements IEsopNameResolution.ResolutionCache<S, L, O>, Serializable {
+    private static class ResolutionCache<S extends IScope, L extends ILabel, O extends IOccurrence>
+            implements IEsopNameResolution.IResolutionCache<S, L, O>, Serializable {
 
         private static final long serialVersionUID = 42L;
 
@@ -352,20 +363,16 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             this.reachabilityCache = reachabilityCache;
         }
 
-        @Override public Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionEntries() {
+        public Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionEntries() {
             return resolutionCache;
         }
 
-        @Override public Map.Immutable<S, Collection<O>> visibilityEntries() {
+        public Map.Immutable<S, Collection<O>> visibilityEntries() {
             return visibilityCache;
         }
 
-        @Override public Map.Immutable<S, Collection<O>> reachabilityEntries() {
+        public Map.Immutable<S, Collection<O>> reachabilityEntries() {
             return reachabilityCache;
-        }
-
-        public static <S extends IScope, L extends ILabel, O extends IOccurrence> ResolutionCache<S, L, O> of() {
-            return new ResolutionCache<>(Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
         }
 
     }

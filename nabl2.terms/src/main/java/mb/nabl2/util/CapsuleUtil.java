@@ -6,8 +6,8 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 
 import io.usethesource.capsule.Map;
-import io.usethesource.capsule.Map.Immutable;
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 
 public final class CapsuleUtil {
 
@@ -108,7 +108,7 @@ public final class CapsuleUtil {
     @SuppressWarnings("unchecked") public static <K, V> Map.Immutable<K, V>
             toMap(java.util.Map<? extends K, ? extends V> map) {
         if(map instanceof Map.Immutable) {
-            return (Immutable<K, V>) map;
+            return (Map.Immutable<K, V>) map;
         }
         return (Map.Immutable<K, V>) Map.Immutable.of().__putAll(map);
     }
@@ -117,6 +117,16 @@ public final class CapsuleUtil {
         final Map.Transient<K, V> map = Map.Transient.of();
         entries.forEach(e -> map.__put(e.getKey(), e.getValue()));
         return map.freeze();
+    }
+
+    @SuppressWarnings("unchecked") public static <K, V> SetMultimap.Immutable<K, V>
+            toSetMultimap(SetMultimap<? extends K, ? extends V> map) {
+        if(map instanceof SetMultimap.Immutable) {
+            return (SetMultimap.Immutable<K, V>) map;
+        }
+        final SetMultimap.Transient<K, V> multimap = SetMultimap.Transient.of();
+        map.entrySet().forEach(e -> multimap.__insert(e.getKey(), e.getValue()));
+        return multimap.freeze();
     }
 
 }

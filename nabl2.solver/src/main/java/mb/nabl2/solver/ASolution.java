@@ -15,7 +15,6 @@ import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.bottomup.BUNameResolution;
-import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -63,9 +62,9 @@ public abstract class ASolution implements ISolution {
         return nr;
     }
 
-    @Value.Default @Override public IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
+    @Value.Default @Override public IEsopNameResolution.IResolutionCache<Scope, Label, Occurrence>
             nameResolutionCache() {
-        return EsopNameResolution.ResolutionCache.of();
+        return IEsopNameResolution.IResolutionCache.empty();
     }
 
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
