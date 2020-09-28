@@ -27,8 +27,8 @@ public class BUVerifier {
         try {
             logger.info("resolving with bottom-up resolution");
             AggregateTimer timer = new AggregateTimer(false);
-            final BUNameResolution<Scope, Label, Occurrence> nameResolution = BUNameResolution.of(solution.scopeGraph(),
-                    solution.config().getResolutionParams(), (s, l) -> false);
+            final BUNameResolution<Scope, Label, Occurrence> nameResolution = BUNameResolution
+                    .of(solution.config().getResolutionParams(), solution.scopeGraph(), (s, l) -> false);
             logger.info("verifying {} resolve entries", solution.nameResolutionCache().resolutionEntries().size());
             for(Entry<Occurrence, Collection<IResolutionPath<Scope, Label, Occurrence>>> entry : solution
                     .nameResolutionCache().resolutionEntries().entrySet()) {

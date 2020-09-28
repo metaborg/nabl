@@ -19,7 +19,6 @@ import com.google.common.collect.Streams;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
-import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.relations.IRelation;
@@ -27,19 +26,17 @@ import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.scopegraph.CriticalEdgeException;
 import mb.nabl2.scopegraph.ILabel;
-import mb.nabl2.scopegraph.INameResolution;
 import mb.nabl2.scopegraph.IOccurrence;
+import mb.nabl2.scopegraph.IResolutionParameters;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
+import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
+import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IStep;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.ResolutionParameters;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
@@ -50,7 +47,7 @@ import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
 
 public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
-        implements INameResolution<S, L, O> {
+        implements IEsopNameResolution<S, L, O> {
 
     @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(BUNameResolution.class);
 
@@ -59,29 +56,34 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private final Iterable<L> edgeLabels;
     private final IRegExpMatcher<L> wf;
     private final ImmutableMap<BUEnvKind, BUFirstStepComparator<S, L, O>> orders;
-    private final Predicate2<S, L> isOpen;
+    private final Predicate2<S, L> isClosed;
 
 
-    public BUNameResolution(IEsopScopeGraph<S, L, O, ?> scopeGraph, Iterable<L> edgeLabels, L dataLabel, IRegExp<L> wf,
-            IRelation<L> order, Predicate2<S, L> isOpen) {
+    public BUNameResolution(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
+            Predicate2<S, L> isClosed) {
         this.scopeGraph = scopeGraph;
-        this.edgeLabels = edgeLabels;
-        this.dataLabel = dataLabel;
-        this.wf = RegExpMatcher.create(wf);
+        this.edgeLabels = params.getLabels();
+        this.dataLabel = params.getLabelD();
+        this.wf = RegExpMatcher.create(params.getPathWf());
         final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         // @formatter:off
         this.orders = ImmutableMap.of(
-            BUEnvKind.VISIBLE,   new BUFirstStepComparator<>(dataLabel, order),
+            BUEnvKind.VISIBLE,   new BUFirstStepComparator<>(dataLabel, params.getSpecificityOrder()),
             BUEnvKind.REACHABLE, new BUFirstStepComparator<>(dataLabel, noOrder)
         );
         // @formatter:on
-        this.isOpen = isOpen;
+        this.isClosed = isClosed;
     }
 
-    public static BUNameResolution<Scope, Label, Occurrence> of(IEsopScopeGraph<Scope, Label, Occurrence, ?> scopeGraph,
-            ResolutionParameters params, Predicate2<Scope, Label> isOpen) {
-        return new BUNameResolution<>(scopeGraph, params.getLabels(), params.getLabelD(), params.getPathWf(),
-                params.getSpecificityOrder(), isOpen);
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> BUNameResolution<S, L, O> of(
+            IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isClosed,
+            IEsopNameResolution.ResolutionCache<S, L, O> cache) {
+        return new BUNameResolution<>(params, scopeGraph, isClosed);
+    }
+
+    public static <S extends IScope, L extends ILabel, O extends IOccurrence> BUNameResolution<S, L, O>
+            of(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isClosed) {
+        return new BUNameResolution<>(params, scopeGraph, isClosed);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -116,6 +118,18 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     @Override public Collection<Map.Entry<O, Collection<IResolutionPath<S, L, O>>>> resolutionEntries() {
         throw new UnsupportedOperationException();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IEsopNameResolution
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public boolean addCached(ResolutionCache<S, L, O> cache) {
+        return false;
+    }
+
+    @Override public ResolutionCache<S, L, O> toCache() {
+        return EsopNameResolution.ResolutionCache.of();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -180,11 +194,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         depGraph.insertNode(env);
         final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
         if(env.wf.isAccepting()) {
-            if(isOpen.test(env.scope, dataLabel)) {
-                openEdges.put(env, CriticalEdge.of(env.scope, dataLabel));
-                logger.warn("ignoring open edge {}/{}", env.scope, dataLabel);
-            } else {
+            if(isClosed(env.scope, dataLabel)) {
                 initData(env, declPaths);
+            } else {
+                openEdges.put(env, CriticalEdge.of(env.scope, dataLabel));
             }
         }
         for(L l : edgeLabels) {
@@ -192,11 +205,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             if(nextWf.isEmpty()) {
                 continue;
             }
-            if(isOpen.test(env.scope, l)) {
-                openEdges.put(env, CriticalEdge.of(env.scope, l));
-                logger.warn("ignoring open edge {}/{}", env.scope, l);
-            } else {
+            if(isClosed(env.scope, l)) {
                 initEdge(env, l, nextWf);
+            } else {
+                openEdges.put(env, CriticalEdge.of(env.scope, l));
             }
         }
         queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
@@ -206,7 +218,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges)
             throws InterruptedException {
         for(CriticalEdge ce : criticalEdges) {
-            if(isOpen.test((S) ce.scope(), (L) ce.label())) {
+            if(!isClosed((S) ce.scope(), (L) ce.label())) {
                 continue;
             }
             for(BUEnvKey<S, L> env : openEdges.removeValue(ce)) {
@@ -335,8 +347,22 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     }
 
 
+    private boolean isClosed(S scope, L label) {
+        return isClosed.test(scope, label) && !scopeGraph.isOpen(scope, label);
+    }
+
+
     private boolean isComplete(BUEnvKey<S, L> env) {
         final BUEnvKey<S, L> rep = sccGraph.getRepresentative(env);
+        // check for critical edges
+        if(openEdges.containsKey(env)) {
+            return false;
+        }
+        for(BUEnvKey<S, L> reachEnv : sccGraph.getAllReachableTargets(env)) {
+            if(openEdges.containsKey(reachEnv)) {
+                return false;
+            }
+        }
         // check if the component still depends on other components
         if(sccGraph.hasOutgoingEdges(rep)) {
             return false;
@@ -358,7 +384,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         // check for critical edges
         final Set.Transient<CriticalEdge> ces = Set.Transient.of();
         ces.__insertAll(openEdges.get(env));
-        for(BUEnvKey<S, L> reachEnv : depGraph.getTargetNodes(env)) {
+        for(BUEnvKey<S, L> reachEnv : sccGraph.getAllReachableTargets(env)) {
             ces.__insertAll(openEdges.get(reachEnv));
         }
         if(!ces.isEmpty()) {
@@ -372,10 +398,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 continue;
             }
             java.util.Set<BUEnvKey<S, L>> scc = sccGraph.sccs.getPartition(reachRep);
+            boolean hasImports = false;
             for(BUEnvKey<S, L> cenv : scc) {
-                if(!backimports.inverse().contains(cenv)) {
-                    continue;
-                }
+                hasImports |= backimports.inverse().contains(cenv);
+            }
+            if(!hasImports) {
+                continue;
             }
             final Set.Immutable<Tuple3<BUEnvKey<S, L>, L, BUEnvKey<S, L>>> edges =
                     backedges.stream().filter(e -> scc.contains(e._3()))
