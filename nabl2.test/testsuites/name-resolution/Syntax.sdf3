@@ -50,7 +50,7 @@ context-free syntax
 
   Test.ResolveInParentWithNonResolvingImport = <resolve <X> to <X> in parent with non-resolving import <Y>>
 
-  Test.ResolveViaImportInSameScope = <resolve <X> via <Y> in same scope <Y> { <X> }>
+  Test.ResolveViaImportNotInSameScope = <resolve <X> via <Y> in different scope in <Y> { <X> }>
 
 context-free syntax
 
