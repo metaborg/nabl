@@ -47,10 +47,12 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final SolverConfig solverConfig = SolverConfig.matcher().match(configTerm)
                 .orElseThrow(() -> new InterpreterException("Term argument is not a solver config."));
 
-        final ICancel cancel = ScopeGraphMultiFileAnalysisPrimitive.getCancel(tvars[0]);
-        final IProgress progress = ScopeGraphMultiFileAnalysisPrimitive.getProgress(tvars[0]);
+        final IStrategoTerm constraintSTerm = ScopeGraphMultiFileAnalysisPrimitive.getActualCurrent(env.current());
+        final ICancel cancel = ScopeGraphMultiFileAnalysisPrimitive.getCancel(env.current());
+        final IProgress progress = ScopeGraphMultiFileAnalysisPrimitive.getProgress(env.current());
 
-        final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(env.current()));
+
+        final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(constraintSTerm));
         final List<IConstraint> constraints = Constraints.matchConstraintOrList().map(ImmutableList::of)
                 .match(constraintTerm).orElseThrow(() -> new InterpreterException("Current term is not a constraint."));
 
