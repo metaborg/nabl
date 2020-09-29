@@ -88,12 +88,12 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
     }
 
     private static IMatcher<Strategy> matchStrategy() {
-        return M.casesFix(m -> Iterables2.from(
         // @formatter:off
-                M.appl0("Search", (t) -> Strategy.SEARCH),
-                M.appl0("Emvironments", (t) -> Strategy.ENVIRONMENTS)
+        return M.cases(
+            M.appl0("Search", (t) -> Strategy.SEARCH),
+            M.appl0("Environments", (t) -> Strategy.ENVIRONMENTS)
+        );
         // @formatter:on
-        ));
     }
 
     private static IMatcher<Boolean> matchRelevance() {
