@@ -1,0 +1,78 @@
+module api
+
+language NaBL2Test
+
+test false has errors [[
+  false
+]] run false-has-errors
+
+// ------------------------
+
+test get ast type succeeds [[
+  x has a type
+]] run get-ast-type-succeeds
+
+test get ast type fails [[
+  x has no type
+]] run get-ast-type-fails
+
+
+test get no ast decls [[
+  x has no declarations
+]] run get-ast-decls to 0
+
+test get one ast decls [[
+  x has one declaration
+]] run get-ast-decls to 1
+
+test get two ast decls [[
+  x has two declarations
+]] run get-ast-decls to 2
+
+
+test get no ast refs [[
+  x has no references
+]] run get-ast-refs to 0
+
+test get one ast refs [[
+  x has one reference
+]] run get-ast-refs to 1
+
+test get two ast refs [[
+  x has two references
+]] run get-ast-refs to 2
+
+
+test get ast custom prop succeeds [[
+  x has a custom prop
+]] run get-ast-custom-prop-succeeds
+
+test get ast custom prop fails [[
+  x has no custom prop
+]] run get-ast-custom-prop-fails
+
+// ------------------------
+
+test get all decls (0) [[
+  get all decls
+]] run get-all-decls to 0
+
+test get all decls (1) [[
+  get all x decls
+]] run get-all-decls to 1
+
+test get all decls (3) [[
+  get all x x x decls
+]] run get-all-decls to 3
+
+test get direct edges [[
+  get direct edges from x to x
+]] run get-direct-edges
+
+test get import edges [[
+  get import edges from x to x
+]] run get-import-edges
+
+test get assoc edges [[
+  get assoc edges from x to x
+]] run get-assoc-edges

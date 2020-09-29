@@ -1,0 +1,35 @@
+module nabl2testenvs
+
+imports
+  
+  nabl2/api
+  nabl2/runtime
+  testsuites/nabl2testenvs
+  pp
+
+rules // Analysis
+
+  editor-analyze = nabl2-analyze(id)
+
+  nabl2-custom-analysis-init-hook:
+    _ -> ()
+
+  nabl2-custom-analysis-unit-hook:
+    (_, ast, _) -> ast
+
+  nabl2-custom-analysis-final-hook(|a):
+    (_, _, [ast]) -> <nabl2test-custom-hook(|a)> ast
+
+  nabl2test-custom-hook(|a) = fail
+
+rules // Debugging
+  
+  // Prints the abstract syntax ATerm of a selection.
+  debug-show-aterm: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"aterm")> path
+       ; result   := ast
+
+  // Prints the analyzed annotated abstract syntax ATerm of a selection.
+  debug-show-analyzed: (_, _, ast, path, project-path) -> (filename, result)
+    with filename := <guarantee-extension(|"analyzed.aterm")> path
+       ; result   := ast

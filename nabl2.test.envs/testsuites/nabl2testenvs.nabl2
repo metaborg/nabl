@@ -1,0 +1,59 @@
+module testsuites/nabl2testenvs
+
+imports
+
+  testsuites/api/-
+  testsuites/base/-
+  testsuites/constraint-generation/-
+  testsuites/relations-functions/-
+  testsuites/name-resolution/-
+  testsuites/name-sets/-
+  testsuites/polymorphism/-
+  testsuites/unification/-
+
+signature
+
+  sorts
+    Test
+
+  constructors
+    Test0 : Test
+    Test1 : Test -> Test
+    Test3 : Test * Test * Test -> Test
+
+  namespaces
+    Ns1
+    Ns2
+
+  name resolution
+    labels P // lexical parents
+           I // transitive imports
+           J // non-transitive imports
+    order  D < P,
+           D < I, I < P,
+           D < J, J < P
+    well-formedness P* (I* | J)
+    strategy environments
+
+  relations
+    reflexive, transitive, anti-symmetric sub : a * a {
+      [+sub]
+    }
+
+  functions
+  
+    projectFirst: term -> term {
+      (fst, _) -> fst
+    }
+
+    projectSecond: term -> term {
+      (_, snd) -> snd
+    }
+
+    listHead: list(()) -> () {
+      [t|_] -> t
+    }
+
+rules
+
+  init.

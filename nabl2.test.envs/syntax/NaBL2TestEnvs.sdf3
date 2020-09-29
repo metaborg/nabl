@@ -1,0 +1,17 @@
+module NaBL2TestEnvs
+
+imports
+
+  Layout
+
+  testsuites/api/Syntax
+  testsuites/base/Syntax
+  testsuites/constraint-generation/Syntax
+  testsuites/relations-functions/Syntax
+  testsuites/name-resolution/Syntax
+  testsuites/name-sets/Syntax
+  testsuites/unification/Syntax
+
+context-free start-symbols
+  
+  Test

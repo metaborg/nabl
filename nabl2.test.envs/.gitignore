@@ -1,0 +1,9 @@
+## NOTE: .gitignore of repository root also applies
+
+*.constraints
+*.scope-graph
+*.name-resolution
+*.unifier
+*.symbolic
+
+*.nabl2test

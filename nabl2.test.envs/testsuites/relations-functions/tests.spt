@@ -1,0 +1,57 @@
+module relations-functions
+
+language NaBL2Test
+
+//-------------------------------
+
+test pair projection function [[
+  pair projection function
+]] 0 error
+
+test missing function case [[
+  missing function case
+]] > 0 errors
+
+test non-ground function argument [[
+  non-ground function argument
+]] > 0 errors
+
+//-------------------------------
+
+test sub relation is reflexive [[
+  sub relation is reflexive
+]] 0 errors
+
+test sub relation is transitive [[
+  sub relation is transitive
+]] 0 errors
+
+test sub relation is anti-symmetric [[
+  sub relation is anti-symmetric
+]] > 0 errors
+
+test sub relation has covariant lists [[
+  sub relation has covariant lists
+]] 0 errors
+
+test sub relation has lub [[
+  sub relation has lub
+]] 0 errors
+
+test sub relation has glb [[
+  sub relation has glb
+]] 0 errors
+
+//-------------------------------
+
+test equal in external reflexive relation succeeds [[
+  X and X in external reflexive relation
+]] 0 errors
+
+test different in external reflexive relation fails [[
+  X and Y in external reflexive relation
+]] > 0 errors
+
+test external concat function succeeds [[
+  external concat function
+]] 0 errors
