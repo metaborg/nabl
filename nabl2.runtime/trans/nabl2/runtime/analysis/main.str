@@ -14,10 +14,13 @@ imports
   nabl2/runtime/prelude/-
   nabl2/runtime/transform/-
 
+signature
+  constructors
+    WithCancelProgress : Term * Cancel * Progress -> WithCancelProgress
 
 rules
 
-  nabl2--solve-constraint(|config, cancel, progress) = prim("SG_solve_single_constraint", config, cancel, progress)
+  nabl2--solve-constraint(|config) = <prim("SG_solve_single_constraint", config, cancel, progress)> WithCancelProgress(<id>, cancel, progress)
 
   nabl2--analyze-ast(|resource): ast -> (ast', analysis, error*, warning*, note*)
     with config := <nabl2--analysis-config>;
@@ -69,7 +72,7 @@ rules // multi file analysis
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
          nabl2--collection-info-msg(|$[Initializing [resource]]);
          (params, C) := <nabl2--generate-constraint-init(|resource)> resource';
-         initial-analysis := <prim("SG_solve_multi_initial_constraint", config, cancel, progress)> (params, C);
+         initial-analysis := <prim("SG_solve_multi_initial_constraint", config)> WithCancelProgress((params, C), cancel, progress);
          if initial-custom := <nabl2-custom-analysis-init-hook> (resource, resource') then
            initial-analysis' :=  <nabl2--set-custom-analysis(|initial-analysis)> initial-custom
          else
@@ -85,7 +88,7 @@ rules // multi file analysis
          ast' := <pre;nabl2--index-ast(|resource)> ast;
          nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          C := <nabl2--generate-constraint-file(|resource, params)> ast';
-         unit-analysis := <prim("SG_solve_multi_unit_constraint", cancel, progress)> (initial-analysis, C);
+         unit-analysis := <prim("SG_solve_multi_unit_constraint")> WithCancelProgress((initial-analysis, C), cancel, progress);
          if unit-custom := <nabl2-custom-analysis-unit-hook> (resource, ast', initial-custom) then
            unit-analysis' :=  <nabl2--set-custom-analysis(|unit-analysis)> unit-custom
          else
@@ -99,7 +102,7 @@ rules // multi file analysis
          unit-custom* := <filter(nabl2--get-custom-analysis)> unit-analysis*
     with nabl2--collection-info-msg(|$[Solving constraints [resource]]);
          (final-analysis, constraint-error*, constraint-warning*, constraint-note*) :=
-             <prim("SG_solve_multi_final_constraint", cancel, progress)> (initial-analysis, unit-analysis*);
+             <prim("SG_solve_multi_final_constraint")> WithCancelProgress((initial-analysis, unit-analysis*), cancel, progress);
          if (custom-error*, custom-warning*, custom-note*, final-custom) :=
                <nabl2-custom-analysis-final-hook(|final-analysis)> (resource, initial-custom, unit-custom*) then
            final-analysis' :=  <nabl2--set-custom-analysis(|final-analysis)> final-custom

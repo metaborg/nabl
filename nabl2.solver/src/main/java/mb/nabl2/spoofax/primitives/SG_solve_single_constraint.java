@@ -5,14 +5,11 @@ import java.util.Optional;
 
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-import org.metaborg.util.task.NullCancel;
-import org.metaborg.util.task.NullProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
-import org.spoofax.terms.util.TermUtils;
 
 import com.google.common.collect.ImmutableList;
 
@@ -39,19 +36,19 @@ import mb.nabl2.terms.unification.Unifiers;
 public class SG_solve_single_constraint extends AbstractPrimitive {
 
     public SG_solve_single_constraint() {
-        super(SG_solve_single_constraint.class.getSimpleName(), 0, 3);
+        super(SG_solve_single_constraint.class.getSimpleName(), 0, 1);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
 
-        final IStrategoTerm configSTerm = tvars[0];
+        final IStrategoTerm configSTerm = ScopeGraphMultiFileAnalysisPrimitive.getActualCurrent(tvars[0]);
         final ITerm configTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(configSTerm));
         final SolverConfig solverConfig = SolverConfig.matcher().match(configTerm)
                 .orElseThrow(() -> new InterpreterException("Term argument is not a solver config."));
 
-        final ICancel cancel = getCancel(tvars[1]);
-        final IProgress progress = getProgress(tvars[2]);
+        final ICancel cancel = ScopeGraphMultiFileAnalysisPrimitive.getCancel(tvars[0]);
+        final IProgress progress = ScopeGraphMultiFileAnalysisPrimitive.getProgress(tvars[0]);
 
         final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(env.current()));
         final List<IConstraint> constraints = Constraints.matchConstraintOrList().map(ImmutableList::of)
@@ -92,24 +89,6 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final IStrategoTerm resultTerm = env.getFactory().makeTuple(new StrategoBlob(result), errors, warnings, notes);
         env.setCurrent(resultTerm);
         return true;
-    }
-
-    static IProgress getProgress(IStrategoTerm progressTerm) throws InterpreterException {
-        if(TermUtils.isTuple(progressTerm, 0)) {
-            return new NullProgress();
-        } else {
-            return StrategoBlob.match(progressTerm, IProgress.class)
-                    .orElseThrow(() -> new InterpreterException("Expected progress."));
-        }
-    }
-
-    static ICancel getCancel(IStrategoTerm cancelTerm) throws InterpreterException {
-        if(TermUtils.isTuple(cancelTerm, 0)) {
-            return new NullCancel();
-        } else {
-            return StrategoBlob.match(cancelTerm, ICancel.class)
-                    .orElseThrow(() -> new InterpreterException("Expected cancel."));
-        }
     }
 
 }

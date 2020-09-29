@@ -11,6 +11,9 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -18,6 +21,7 @@ import org.spoofax.interpreter.stratego.SDefT;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.util.TermUtils;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.solver.solvers.CallExternal;
@@ -25,6 +29,7 @@ import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.primitives.StrategyCalls.CallableStrategy;
 import mb.nabl2.stratego.ConstraintTerms;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.StrategoBlob;
 import mb.nabl2.terms.stratego.StrategoTerms;
 
 public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
@@ -32,21 +37,21 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     private static ILogger logger = LoggerUtils.logger(ScopeGraphMultiFileAnalysisPrimitive.class);
 
     public ScopeGraphMultiFileAnalysisPrimitive(String name, int tvars) {
-        super(name, 0, tvars + 2);
+        super(name, 0, tvars);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
 
-        final List<IStrategoTerm> argSTerms = Arrays.asList(Arrays.copyOf(tvars, tvars.length - 2));
+        final List<IStrategoTerm> argSTerms = Arrays.asList(tvars);
         final List<ITerm> argTerms = argSTerms.stream()
                 .map(t -> ConstraintTerms.specialize(strategoTerms.fromStratego(t))).collect(Collectors.toList());
 
-        final IStrategoTerm currentSTerm = env.current();
+        final IStrategoTerm currentSTerm = ScopeGraphMultiFileAnalysisPrimitive.getActualCurrent(env.current());
         final ITerm currentTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(currentSTerm));
 
-        final ICancel cancel = SG_solve_single_constraint.getCancel(tvars[tvars.length - 1]);
-        final IProgress progress = SG_solve_single_constraint.getProgress(tvars[tvars.length - 2]);
+        final ICancel cancel = ScopeGraphMultiFileAnalysisPrimitive.getCancel(env.current());
+        final IProgress progress = ScopeGraphMultiFileAnalysisPrimitive.getProgress(env.current());
 
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get the debug level?
         final SemiIncrementalMultiFileSolver solver =
@@ -93,6 +98,47 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
             }
         }
         return factory.makeTuple(argTerms);
+    }
+
+    // the methods below support wrapping the current term in a special constructor to pass cancellation tokens
+    // these cannot be passed as term arguments, since older versions of NaBL2 are used, and crash if we change the interface
+
+    private static final String WITH_CANCEL_PROGRESS_OP = "WithCancelProgress";
+
+    static IStrategoTerm getActualCurrent(IStrategoTerm current) throws InterpreterException {
+        if(TermUtils.isAppl(current, WITH_CANCEL_PROGRESS_OP, 3)) {
+            return current.getSubterm(0);
+        } else {
+            return current;
+        }
+    }
+
+    static IProgress getProgress(IStrategoTerm current) throws InterpreterException {
+        if(TermUtils.isAppl(current, WITH_CANCEL_PROGRESS_OP, 3)) {
+            final IStrategoTerm progressTerm = current.getSubterm(2);
+            if(TermUtils.isTuple(progressTerm, 0)) {
+                return new NullProgress();
+            } else {
+                return StrategoBlob.match(progressTerm, IProgress.class)
+                        .orElseThrow(() -> new InterpreterException("Expected progress."));
+            }
+        } else {
+            return new NullProgress();
+        }
+    }
+
+    static ICancel getCancel(IStrategoTerm current) throws InterpreterException {
+        if(TermUtils.isAppl(current, WITH_CANCEL_PROGRESS_OP, 3)) {
+            final IStrategoTerm cancelTerm = current.getSubterm(1);
+            if(TermUtils.isTuple(cancelTerm, 0)) {
+                return new NullCancel();
+            } else {
+                return StrategoBlob.match(cancelTerm, ICancel.class)
+                        .orElseThrow(() -> new InterpreterException("Expected cancel."));
+            }
+        } else {
+            return new ThreadCancel();
+        }
     }
 
 }
