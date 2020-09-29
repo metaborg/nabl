@@ -11,8 +11,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-import org.metaborg.util.task.NullProgress;
-import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -34,21 +32,21 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     private static ILogger logger = LoggerUtils.logger(ScopeGraphMultiFileAnalysisPrimitive.class);
 
     public ScopeGraphMultiFileAnalysisPrimitive(String name, int tvars) {
-        super(name, 0, tvars);
+        super(name, 0, tvars + 2);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
 
-        final List<IStrategoTerm> argSTerms = Arrays.asList(tvars);
+        final List<IStrategoTerm> argSTerms = Arrays.asList(Arrays.copyOf(tvars, tvars.length - 2));
         final List<ITerm> argTerms = argSTerms.stream()
                 .map(t -> ConstraintTerms.specialize(strategoTerms.fromStratego(t))).collect(Collectors.toList());
 
         final IStrategoTerm currentSTerm = env.current();
         final ITerm currentTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(currentSTerm));
 
-        final ICancel cancel = new ThreadCancel();
-        final IProgress progress = new NullProgress();
+        final ICancel cancel = SG_solve_single_constraint.getCancel(tvars[tvars.length - 1]);
+        final IProgress progress = SG_solve_single_constraint.getProgress(tvars[tvars.length - 2]);
 
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get the debug level?
         final SemiIncrementalMultiFileSolver solver =

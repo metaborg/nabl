@@ -17,7 +17,7 @@ imports
 
 rules
 
-  nabl2--solve-constraint(|config) = prim("SG_solve_single_constraint", config)
+  nabl2--solve-constraint(|config, cancel, progress) = prim("SG_solve_single_constraint", config, cancel, progress)
 
   nabl2--analyze-ast(|resource): ast -> (ast', analysis, error*, warning*, note*)
     with config := <nabl2--analysis-config>;
@@ -28,7 +28,7 @@ rules
          nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          C2 := <nabl2--generate-constraint-file(|resource, params)> ast';
          nabl2--collection-info-msg(|$[Solving constraints [resource]]);
-         (analysis, error*, warning*, note*) := <nabl2--solve-constraint(|config)> CConj(C1, C2);
+         (analysis, error*, warning*, note*) := <nabl2--solve-constraint(|config, (), ())> CConj(C1, C2);
          nabl2--collection-info-msg(|$[Finished analyzing [resource]])
 
 rules // single file analysis
@@ -36,7 +36,7 @@ rules // single file analysis
   nabl2--analyze(pre) = constraint-analysis-compat(nabl2--analyze-compat(pre))
 
   nabl2--analyze-compat(pre):
-      AnalyzeUnit(resource, ast) -> UnitResult(ast', a', error*, warning*, note*)
+      AnalyzeUnit(resource, ast, cancel, progress) -> UnitResult(ast', a', error*, warning*, note*)
     with config := <nabl2--analysis-config>;
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
          nabl2--collection-info-msg(|$[Initializing [resource]]);
@@ -49,7 +49,7 @@ rules // single file analysis
          file-custom := <nabl2-custom-analysis-unit-hook <+ !None()> (resource, ast', initial-custom);
          nabl2--collection-info-msg(|$[Solving constraints [resource]]);
          (a, constraint-error*, constraint-warning*, constraint-note*) :=
-             <nabl2--solve-constraint(|config)> CConj(initial-C, file-C);
+             <nabl2--solve-constraint(|config, cancel, progress)> CConj(initial-C, file-C);
          if (custom-error*, custom-warning*, custom-note*, final-custom) :=
                 <nabl2-custom-analysis-final-hook(|a)> (resource, initial-custom, [file-custom]) then
            a' :=  <nabl2--set-custom-analysis(|a)> final-custom
@@ -64,12 +64,12 @@ rules // single file analysis
 rules // multi file analysis
 
   nabl2--analyze-compat(pre):
-      AnalyzeInitial(resource) -> InitialResult(initial-result)
+      AnalyzeInitial(resource, cancel, progress) -> InitialResult(initial-result)
     with config := <nabl2--analysis-config>;
          resource' := <nabl2--set-ast-index(|TermIndex(resource, 0))> resource;
          nabl2--collection-info-msg(|$[Initializing [resource]]);
          (params, C) := <nabl2--generate-constraint-init(|resource)> resource';
-         initial-analysis := <prim("SG_solve_multi_initial_constraint", config)> (params, C);
+         initial-analysis := <prim("SG_solve_multi_initial_constraint", config, cancel, progress)> (params, C);
          if initial-custom := <nabl2-custom-analysis-init-hook> (resource, resource') then
            initial-analysis' :=  <nabl2--set-custom-analysis(|initial-analysis)> initial-custom
          else
@@ -78,14 +78,14 @@ rules // multi file analysis
          initial-result := (params, initial-analysis')
 
   nabl2--analyze-compat(pre):
-      AnalyzeUnit(resource, ast, initial-result) -> UnitResult(ast', unit-analysis')
+      AnalyzeUnit(resource, ast, initial-result, cancel, progress) -> UnitResult(ast', unit-analysis')
     with (params, initial-analysis) := initial-result;
          initial-custom := <nabl2--get-custom-analysis <+ !None()> initial-analysis
     with nabl2--collection-info-msg(|$[Preprocessing AST [resource]]);
          ast' := <pre;nabl2--index-ast(|resource)> ast;
          nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          C := <nabl2--generate-constraint-file(|resource, params)> ast';
-         unit-analysis := <prim("SG_solve_multi_unit_constraint")> (initial-analysis, C);
+         unit-analysis := <prim("SG_solve_multi_unit_constraint", cancel, progress)> (initial-analysis, C);
          if unit-custom := <nabl2-custom-analysis-unit-hook> (resource, ast', initial-custom) then
            unit-analysis' :=  <nabl2--set-custom-analysis(|unit-analysis)> unit-custom
          else
@@ -93,13 +93,13 @@ rules // multi file analysis
          end
 
   nabl2--analyze-compat(pre):
-      AnalyzeFinal(resource, initial-result, unit-analysis*) -> FinalResult(final-analysis', error*, warning*, note*)
+      AnalyzeFinal(resource, initial-result, unit-analysis*, cancel, progress) -> FinalResult(final-analysis', error*, warning*, note*)
     with (params, initial-analysis) := initial-result;
          initial-custom := <nabl2--get-custom-analysis <+ !None()> initial-analysis;
          unit-custom* := <filter(nabl2--get-custom-analysis)> unit-analysis*
     with nabl2--collection-info-msg(|$[Solving constraints [resource]]);
          (final-analysis, constraint-error*, constraint-warning*, constraint-note*) :=
-             <prim("SG_solve_multi_final_constraint")> (initial-analysis, unit-analysis*);
+             <prim("SG_solve_multi_final_constraint", cancel, progress)> (initial-analysis, unit-analysis*);
          if (custom-error*, custom-warning*, custom-note*, final-custom) :=
                <nabl2-custom-analysis-final-hook(|final-analysis)> (resource, initial-custom, unit-custom*) then
            final-analysis' :=  <nabl2--set-custom-analysis(|final-analysis)> final-custom
@@ -118,7 +118,9 @@ rules
     with labels := <nabl2--labels>;
          wf := <nabl2--labels-wf>;
          order := <nabl2--label-order>;
-         res-params := (labels,wf,order);
+         strategy := <nabl2--strategy>;
+         path-relevance := <nabl2--path-relevance>;
+         res-params := (labels,wf,order,strategy,path-relevance);
          rel* := <nabl2--relations>;
          fun* := <nabl2--functions>;
          config := (res-params, rel*, fun*)

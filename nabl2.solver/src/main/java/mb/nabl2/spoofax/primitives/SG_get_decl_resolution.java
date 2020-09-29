@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -34,7 +36,8 @@ public class SG_get_decl_resolution extends AnalysisPrimitive {
             List<ITerm> entries = Lists.newArrayList();
             for(Occurrence ref : solution.scopeGraph().getAllRefs()) {
                 try {
-                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths =
+                            nameResolution.resolve(ref, new ThreadCancel(), new NullProgress());
                     paths.stream().filter(path -> path.getDeclaration().equals(decl))
                             .map(p -> B.newTuple(ref, Paths.toTerm(p))).forEach(entries::add);
                 } catch(CriticalEdgeException | StuckException | InterruptedException e) {

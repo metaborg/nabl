@@ -60,7 +60,7 @@ rules // ###### Analysis execution ######
    * @param config:AnalysisConfig
    * @type Constraint -> (Analysis, errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage))
    */
-  nabl2-solve-constraint(|config) = nabl2--solve-constraint(|config)
+  nabl2-solve-constraint(|config) = nabl2--solve-constraint(|config, (), ())
 
   /**
    * Get the config of the NaBL2 spec.

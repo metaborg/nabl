@@ -23,6 +23,8 @@ context-free syntax
   NaBL2-NameResolutionParam.WF            = <well-formedness <NaBL2-LabelRE>>
   NaBL2-NameResolutionParam.DefaultELabel = <default edge label <NaBL2-PathLabel>>
   NaBL2-NameResolutionParam.DefaultNLabel = <default named label <NaBL2-PathLabel>>
+  NaBL2-NameResolutionParam.Strategy      = <strategy <NaBL2-Strategy>>
+  NaBL2-NameResolutionParam.PathRelevance = <paths <NaBL2-Relevance>>
 
 context-free syntax
 

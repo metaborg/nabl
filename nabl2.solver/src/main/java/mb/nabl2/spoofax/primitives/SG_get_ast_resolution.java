@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
@@ -33,8 +35,8 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
             try {
                 for(Occurrence ref : refs) {
                     try {
-                        final List<Occurrence> decls =
-                                Paths.resolutionPathsToDecls(solution.nameResolution().resolve(ref));
+                        final List<Occurrence> decls = Paths.resolutionPathsToDecls(
+                                solution.nameResolution().resolve(ref, new ThreadCancel(), new NullProgress()));
                         decls.stream().forEach(decl -> {
                             entriesBuilder.add(B.newTuple(ref, decl.getName()));
                         });

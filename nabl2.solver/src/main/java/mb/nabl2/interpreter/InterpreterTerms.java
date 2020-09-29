@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -85,7 +87,7 @@ public class InterpreterTerms {
         try {
             for(Occurrence ref : refs) {
                 try {
-                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref, new NullCancel(), new NullProgress());
                     if(paths.size() == 1) {
                         IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
                         ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));

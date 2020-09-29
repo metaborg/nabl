@@ -5,23 +5,20 @@ import java.util.Optional;
 
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
-import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.terms.util.TermUtils;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.constraints.messages.MessageInfo;
-import mb.nabl2.constraints.messages.MessageKind;
-import mb.nabl2.scopegraph.esop.bottomup.BUVerifier;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
@@ -30,7 +27,6 @@ import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.solvers.BaseSolution;
 import mb.nabl2.solver.solvers.GraphSolution;
 import mb.nabl2.solver.solvers.SingleFileSolver;
-import mb.nabl2.spoofax.analysis.Actions;
 import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.spoofax.analysis.SingleUnitResult;
 import mb.nabl2.stratego.ConstraintTerms;
@@ -43,7 +39,7 @@ import mb.nabl2.terms.unification.Unifiers;
 public class SG_solve_single_constraint extends AbstractPrimitive {
 
     public SG_solve_single_constraint() {
-        super(SG_solve_single_constraint.class.getSimpleName(), 0, 1);
+        super(SG_solve_single_constraint.class.getSimpleName(), 0, 3);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
@@ -54,6 +50,8 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final SolverConfig solverConfig = SolverConfig.matcher().match(configTerm)
                 .orElseThrow(() -> new InterpreterException("Term argument is not a solver config."));
 
+        final ICancel cancel = getCancel(tvars[1]);
+        final IProgress progress = getProgress(tvars[2]);
 
         final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(env.current()));
         final List<IConstraint> constraints = Constraints.matchConstraintOrList().map(ImmutableList::of)
@@ -62,8 +60,6 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get debug configuration in here?
         final Fresh.Transient fresh = Fresh.Transient.of();
 
-        final ICancel cancel = new ThreadCancel();
-        final IProgress progress = new NullProgress();
         final SingleFileSolver solver = new SingleFileSolver(debugConfig,
                 ScopeGraphMultiFileAnalysisPrimitive.callExternal(env, strategoTerms));
         /*final*/ ISolution solution;
@@ -77,12 +73,12 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
             throw new InterpreterException(ex);
         }
 
-//        if(!BUVerifier.verify(solution)) {
-//            final IMessages.Transient messages = solution.messages().melt();
-//            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
-//                    Actions.sourceTerm("")));
-//            solution = solution.withMessages(messages.freeze());
-//        }
+        //        if(!BUVerifier.verify(solution)) {
+        //            final IMessages.Transient messages = solution.messages().melt();
+        //            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
+        //                    Actions.sourceTerm("")));
+        //            solution = solution.withMessages(messages.freeze());
+        //        }
 
 
         final IResult result = SingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
@@ -96,6 +92,24 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
         final IStrategoTerm resultTerm = env.getFactory().makeTuple(new StrategoBlob(result), errors, warnings, notes);
         env.setCurrent(resultTerm);
         return true;
+    }
+
+    static IProgress getProgress(IStrategoTerm progressTerm) throws InterpreterException {
+        if(TermUtils.isTuple(progressTerm, 0)) {
+            return new NullProgress();
+        } else {
+            return StrategoBlob.match(progressTerm, IProgress.class)
+                    .orElseThrow(() -> new InterpreterException("Expected progress."));
+        }
+    }
+
+    static ICancel getCancel(IStrategoTerm cancelTerm) throws InterpreterException {
+        if(TermUtils.isTuple(cancelTerm, 0)) {
+            return new NullCancel();
+        } else {
+            return StrategoBlob.match(cancelTerm, ICancel.class)
+                    .orElseThrow(() -> new InterpreterException("Expected cancel."));
+        }
     }
 
 }

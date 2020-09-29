@@ -7,9 +7,11 @@ imports
 
 rules // name resolution
 
-  nabl2--labels      = (nabl2--custom-labels <+ nabl2--default-labels); ![D()|<id>]
-  nabl2--label-order = nabl2--custom-label-order <+ nabl2--default-label-order
-  nabl2--labels-wf   = nabl2--custom-labels-wf <+ nabl2--default-labels-wf
+  nabl2--labels         = (nabl2--custom-labels <+ nabl2--default-labels); ![D()|<id>]
+  nabl2--label-order    = nabl2--custom-label-order <+ nabl2--default-label-order
+  nabl2--labels-wf      = nabl2--custom-labels-wf <+ nabl2--default-labels-wf
+  nabl2--strategy       = nabl2--custom-strategy <+ nabl2--default-strategy
+  nabl2--path-relevance = nabl2--custom-path-relevance <+ nabl2--default-path-relevance
 
   nabl2--custom-labels  = fail
   nabl2--default-labels = ![P(),I()]
@@ -23,6 +25,12 @@ rules // name resolution
   
   nabl2--custom-labels-wf  = fail
   nabl2--default-labels-wf = !Concat(Closure(P()),Closure(I()))
+
+  nabl2--custom-strategy  = fail
+  nabl2--default-strategy = !Search()
+
+  nabl2--custom-path-relevance  = fail
+  nabl2--default-path-relevance = !Relevant()
 
 rules
 

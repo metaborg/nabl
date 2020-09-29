@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.functions.CheckedFunction0;
-import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -30,6 +30,8 @@ import mb.nabl2.scopegraph.IResolutionParameters;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
+import mb.nabl2.scopegraph.esop.lazy.EsopEnvs.EnvProvider;
+import mb.nabl2.scopegraph.esop.lazy.EsopEnvs.LazyEnv;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -102,13 +104,14 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         return Collections.unmodifiableSet(resolution.keySet());
     }
 
-    @Override public Collection<IResolutionPath<S, L, O>> resolve(O ref) throws CriticalEdgeException {
+    @Override public Collection<IResolutionPath<S, L, O>> resolve(O ref, ICancel cancel, IProgress progress)
+            throws CriticalEdgeException, InterruptedException {
         if(resolution.containsKey(ref)) {
             return resolution.get(ref);
         } else {
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = pendingResolution.computeIfAbsent(ref,
                     r -> resolveEnv(io.usethesource.capsule.Set.Immutable.of(), ref));
-            Collection<IResolutionPath<S, L, O>> result = env.get();
+            Collection<IResolutionPath<S, L, O>> result = env.get(cancel);
             resolution.put(ref, result);
             pendingResolution.remove(ref);
             return result;
@@ -135,13 +138,14 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }
     }
 
-    @Override public Collection<O> visible(S scope) throws CriticalEdgeException {
+    @Override public Collection<O> visible(S scope, ICancel cancel, IProgress progress)
+            throws CriticalEdgeException, InterruptedException {
         if(visibility.containsKey(scope)) {
             return visibility.get(scope);
         } else {
             final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                     pendingVisibility.computeIfAbsent(scope, s -> visibleEnv(scope));
-            Collection<IDeclPath<S, L, O>> result = env.get();
+            Collection<IDeclPath<S, L, O>> result = env.get(cancel);
             ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
             result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
             final Collection<O> decls = declsBuilder.build();
@@ -151,13 +155,14 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         }
     }
 
-    @Override public Collection<O> reachable(S scope) throws CriticalEdgeException {
+    @Override public Collection<O> reachable(S scope, ICancel cancel, IProgress progress)
+            throws CriticalEdgeException, InterruptedException {
         if(reachability.containsKey(scope)) {
             return reachability.get(scope);
         } else {
             final IEsopEnv<S, L, O, IDeclPath<S, L, O>> env =
                     pendingReachability.computeIfAbsent(scope, s -> reachableEnv(scope));
-            Collection<IDeclPath<S, L, O>> result = env.get();
+            Collection<IDeclPath<S, L, O>> result = env.get(cancel);
             ImmutableSet.Builder<O> declsBuilder = ImmutableSet.builder();
             result.stream().map(IDeclPath::getDeclaration).forEach(declsBuilder::add);
             final Collection<O> decls = declsBuilder.build();
@@ -193,14 +198,14 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     @SuppressWarnings("unchecked") private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_l(
             io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
-            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
-        return EsopEnvs.guarded((CheckedFunction0<IEsopEnv<S, L, O, P>, CriticalEdgeException> & Serializable) () -> {
+            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter, ICancel cancel) {
+        return EsopEnvs.guarded((EnvProvider<S, L, O, P> & Serializable) () -> {
             final S s = path.getTarget();
             if(scopeGraph.isOpen(s, l) || !isEdgeClosed.test(s, l)) {
                 throw new CriticalEdgeException(s, l);
             } else {
-                final IEsopEnv<S, L, O, P> env =
-                        l.equals(labelD) ? env_D(re, path, filter) : env_nonD(seenImports, lt, re, l, path, filter);
+                final IEsopEnv<S, L, O, P> env = l.equals(labelD) ? env_D(re, path, filter)
+                        : env_nonD(seenImports, lt, re, l, path, filter, cancel);
                 return env;
             }
         });
@@ -221,13 +226,13 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     private <P extends IPath<S, L, O>> IEsopEnv<S, L, O, P> env_nonD(
             io.usethesource.capsule.Set.Immutable<O> seenImports, IRelation<L> lt, IRegExpMatcher<L> re, L l,
-            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter) {
+            IScopePath<S, L, O> path, IEsopEnv.Filter<S, L, O, P> filter, ICancel cancel) {
         @SuppressWarnings("unchecked") Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter =
                 (Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> & Serializable) p -> {
                     return env(seenImports, lt, re.match(l), p, filter);
                 };
-        return EsopEnvs
-                .union(Iterables.concat(directScopes(l, path, getter), importScopes(seenImports, l, path, getter)));
+        return EsopEnvs.union(
+                Iterables.concat(directScopes(l, path, getter), importScopes(seenImports, l, path, getter, cancel)));
     }
 
     private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> directScopes(L l, IScopePath<S, L, O> path,
@@ -241,25 +246,24 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     @SuppressWarnings("unchecked") private <P extends IPath<S, L, O>> Iterable<IEsopEnv<S, L, O, P>> importScopes(
             io.usethesource.capsule.Set.Immutable<O> seenImports, L l, IScopePath<S, L, O> path,
-            Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter) {
+            Function1<IScopePath<S, L, O>, IEsopEnv<S, L, O, P>> getter, ICancel cancel) {
         List<IEsopEnv<S, L, O, P>> envs = Lists.newArrayList();
         for(O ref : scopeGraph.getImportEdges().get(path.getTarget(), l)) {
             if(seenImports.contains(ref)) {
                 continue;
             }
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = resolveEnv(seenImports, ref);
-            envs.add(EsopEnvs
-                    .guarded((CheckedFunction0<IEsopEnv<S, L, O, P>, CriticalEdgeException> & Serializable) () -> {
-                        Collection<IResolutionPath<S, L, O>> paths = env.get();
-                        List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
-                        for(IResolutionPath<S, L, O> importPath : paths) {
-                            for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
-                                Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope))
-                                        .map(getter::apply).ifPresent(importEnvs::add);
-                            }
-                        }
-                        return EsopEnvs.union(importEnvs);
-                    }));
+            envs.add(EsopEnvs.guarded((EnvProvider<S, L, O, P> & Serializable) () -> {
+                Collection<IResolutionPath<S, L, O>> paths = env.get(cancel);
+                List<IEsopEnv<S, L, O, P>> importEnvs = Lists.newArrayList();
+                for(IResolutionPath<S, L, O> importPath : paths) {
+                    for(S nextScope : scopeGraph.getExportEdges().get(importPath.getDeclaration(), l)) {
+                        Paths.append(path, Paths.named(path.getTarget(), l, importPath, nextScope)).map(getter::apply)
+                                .ifPresent(importEnvs::add);
+                    }
+                }
+                return EsopEnvs.union(importEnvs);
+            }));
 
         }
         return envs;
@@ -282,8 +286,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
                         io.usethesource.capsule.Set.Immutable<O> seenI, IRegExpMatcher<L> re, IScopePath<S, L, O> path,
                         IEsopEnv.Filter<S, L, O, P> filter, java.util.Map<L, IEsopEnv<S, L, O, P>> env_lCache) {
                     @SuppressWarnings("unchecked") final IEsopEnv<S, L, O, P> env_l =
-                            EsopEnvs.lazy((Function0<IEsopEnv<S, L, O, P>> & Serializable) () -> {
-                                return env_lCache.computeIfAbsent(l, ll -> env_l(seenI, lt, re, l, path, filter));
+                            EsopEnvs.lazy((LazyEnv<S, L, O, P> & Serializable) (cancel) -> {
+                                return env_lCache.computeIfAbsent(l,
+                                        ll -> env_l(seenI, lt, re, l, path, filter, cancel));
                             });
                     return EsopEnvs.shadow(filter, smallerEnv.apply(seenI, re, path, filter, env_lCache), env_l);
                 }

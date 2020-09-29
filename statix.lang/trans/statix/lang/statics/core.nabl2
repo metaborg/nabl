@@ -32,6 +32,8 @@ signature
     Sort   // sort
 
   name resolution
+    strategy environments
+    paths irrelevant
     labels
       P  // lexical parent
       I  // module interface (qualified, non-transitively imported)

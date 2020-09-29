@@ -11,6 +11,8 @@ import org.eclipse.viatra.query.runtime.base.itc.graphimpl.Graph;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Queues;
@@ -50,6 +52,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(BUNameResolution.class);
 
+    private final IResolutionParameters<L> params;
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final L dataLabel;
     private final Iterable<L> edgeLabels;
@@ -60,9 +63,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     public BUNameResolution(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
             Predicate2<S, L> isClosed) {
+        this.params = params;
         this.scopeGraph = scopeGraph;
-        this.edgeLabels = params.getLabels();
-        this.dataLabel = params.getLabelD();
+        this.edgeLabels = this.params.getLabels();
+        this.dataLabel = this.params.getLabelD();
         this.wf = RegExpMatcher.create(params.getPathWf());
         final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         // @formatter:off
@@ -105,9 +109,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         throw new UnsupportedOperationException();
     }
 
-    @Override public Collection<IResolutionPath<S, L, O>> resolve(O ref)
+    @Override public Collection<IResolutionPath<S, L, O>> resolve(O ref, ICancel cancel, IProgress progress)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        return resolveRef(ref);
+        return resolveRef(ref, cancel);
     }
 
     @Override public Collection<O> decls(S scope) {
@@ -118,13 +122,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         return scopeGraph.getRefs().inverse().get(scope);
     }
 
-    @Override public Collection<O> visible(S scope) throws InterruptedException, CriticalEdgeException, StuckException {
-        return Paths.declPathsToDecls(visibleEnv(scope));
+    @Override public Collection<O> visible(S scope, ICancel cancel, IProgress progress)
+            throws InterruptedException, CriticalEdgeException, StuckException {
+        return Paths.declPathsToDecls(visibleEnv(scope, cancel));
     }
 
-    @Override public Collection<O> reachable(S scope)
+    @Override public Collection<O> reachable(S scope, ICancel cancel, IProgress progress)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        return Paths.declPathsToDecls(reachableEnv(scope));
+        return Paths.declPathsToDecls(reachableEnv(scope, cancel));
     }
 
     @Override public Collection<Map.Entry<O, Collection<IResolutionPath<S, L, O>>>> resolutionEntries() {
@@ -160,45 +165,48 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private final Graph<BUEnvKey<S, L>> depGraph = new Graph<>();
     private final IncSCCAlg<BUEnvKey<S, L>> sccGraph = new IncSCCAlg<>(depGraph);
 
-    private Collection<IResolutionPath<S, L, O>> resolveRef(O ref)
+    private Collection<IResolutionPath<S, L, O>> resolveRef(O ref, ICancel cancel)
             throws InterruptedException, CriticalEdgeException, StuckException {
         final S scope;
         if((scope = scopeGraph.getRefs().get(ref).orElse(null)) == null) {
             return Set.Immutable.of();
         }
         final BUEnvKey<S, L> key = new BUEnvKey<>(BUEnvKind.VISIBLE, scope, wf);
-        final BUEnv<S, L, O, IDeclPath<S, L, O>> env = getOrCompute(key);
+        final BUEnv<S, L, O, IDeclPath<S, L, O>> env = getOrCompute(key, cancel);
         return env.paths(ref.getSpacedName()).stream().flatMap(p -> ofOpt(Paths.resolve(ref, p)))
                 .collect(CapsuleCollectors.toSet());
     }
 
-    private Collection<IDeclPath<S, L, O>> visibleEnv(S scope)
+    private Collection<IDeclPath<S, L, O>> visibleEnv(S scope, ICancel cancel)
             throws InterruptedException, CriticalEdgeException, StuckException {
         final BUEnvKey<S, L> key = new BUEnvKey<>(BUEnvKind.VISIBLE, scope, wf);
-        return getOrCompute(key).paths();
+        return getOrCompute(key, cancel).paths();
     }
 
-    private Collection<IDeclPath<S, L, O>> reachableEnv(S scope)
+    private Collection<IDeclPath<S, L, O>> reachableEnv(S scope, ICancel cancel)
             throws InterruptedException, CriticalEdgeException, StuckException {
         final BUEnvKey<S, L> key = new BUEnvKey<>(BUEnvKind.REACHABLE, scope, wf);
-        return getOrCompute(key).paths();
+        return getOrCompute(key, cancel).paths();
     }
 
     /**
      * Get or compute the complete environment for the given key. If the environment is incomplete, throws a critical
      * edge exception.
+     * 
+     * @param cancel
+     *            TODO
      */
-    private BUEnv<S, L, O, IDeclPath<S, L, O>> getOrCompute(BUEnvKey<S, L> env)
+    private BUEnv<S, L, O, IDeclPath<S, L, O>> getOrCompute(BUEnvKey<S, L> env, ICancel cancel)
             throws InterruptedException, CriticalEdgeException, StuckException {
         //        logger.info("compute {}", env);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = init(env);
-        work();
+        work(cancel);
         throwIfIncomplete(env);
         return _env;
     }
 
-    @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges)
-            throws InterruptedException {
+    @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges, ICancel cancel,
+            IProgress progress) throws InterruptedException {
         //        logger.info("update {}", criticalEdges);
         for(CriticalEdge ce : criticalEdges) {
             if(!isClosed((S) ce.scope(), (L) ce.label())) {
@@ -214,12 +222,13 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 queueChanges(env, new BUChanges<>(declPaths.freeze(), BUPathSet.Immutable.of()));
             }
         }
-        work();
+        work(cancel);
     }
 
-    private void work() throws InterruptedException {
+    private void work(ICancel cancel) throws InterruptedException {
         while(!worklist.isEmpty()) {
-            worklist.pop().run();
+            cancel.throwIfCancelled();
+            worklist.pop().run(cancel);
         }
     }
 
@@ -279,7 +288,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             return;
         }
         pendingChanges.add(env);
-        worklist.add(() -> processChanges(env, changes));
+        worklist.add((cancel) -> processChanges(env, changes));
     }
 
     private void processChanges(BUEnvKey<S, L> env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes)
@@ -289,16 +298,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         pendingChanges.remove(env);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(env);
-        //        logger.info("{}: adding {}, removing {}", env, changes.addedPaths().paths(), changes.removedPaths().paths());
         _env.apply(changes);
         if(true && _env.hasChanges() && !pendingChanges.contains(env)) {
             final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = _env.commit();
-            //            logger.info("{}: added {}, removed {}", env, newChanges.addedPaths().paths(), newChanges.removedPaths().paths());
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
-                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
-                        newChanges.flatMap(p -> ofOpt(Paths.append(step, p))
+                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges
+                        .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
                                 .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
                 queueChanges(dstEnv, envChanges);
             }
@@ -310,7 +317,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         if(completed.contains(env)) {
             return;
         }
-        worklist.add(() -> checkComplete(env));
+        worklist.add((cancel) -> checkComplete(env));
     }
 
     private void checkComplete(BUEnvKey<S, L> env) throws InterruptedException {
@@ -334,10 +341,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
     }
 
-    private void addBackEdge(BUEnvKey<S, L> srcEnv, IStep<S, L, O> st, BUEnvKey<S, L> dstEnv) {
-        logger.trace("add back edge {}<~{}~{}", dstEnv, st, srcEnv);
+    private void addBackEdge(BUEnvKey<S, L> srcEnv, IStep<S, L, O> step, BUEnvKey<S, L> dstEnv) {
+        logger.trace("add back edge {}<~{}~{}", dstEnv, step, srcEnv);
         if(!isComplete(srcEnv)) {
-            if(backedges.put(srcEnv, st, dstEnv)) {
+            if(backedges.put(srcEnv, step, dstEnv)) {
                 depGraph.insertEdge(dstEnv, srcEnv);
                 logger.trace(" * new edge");
             } else {
@@ -348,9 +355,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             logger.trace(" * complete edge");
         }
 
-        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
-                envs.get(srcEnv).asChanges().flatMap(p -> ofOpt(Paths.append(st, p))
-                        .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), st.getLabel(), p2)));
+        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes = envs.get(srcEnv).asChanges()
+                .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
+                        .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
+
         logger.trace(" * paths {}", changes);
         queueChanges(dstEnv, changes);
     }

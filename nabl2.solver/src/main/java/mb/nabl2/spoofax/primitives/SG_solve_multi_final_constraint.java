@@ -20,7 +20,6 @@ import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.constraints.messages.MessageKind;
-import mb.nabl2.scopegraph.esop.bottomup.BUVerifier;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.exceptions.SolverException;

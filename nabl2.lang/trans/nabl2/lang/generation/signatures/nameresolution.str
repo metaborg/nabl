@@ -48,6 +48,18 @@ rules
          else
            n-labelstr* := []
          end
+    with if strategy := <getfirst(?Strategy(<id>))> param* then
+           strategyterm := <explode(injection-to-term)> strategy;
+           strategystr* := [ |[ nabl2--custom-strategy = ~strategyterm ]| ]
+         else
+           strategystr* := []
+         end
+    with if path-relevance := <getfirst(?PathRelevance(<id>))> param* then
+           path-relevanceterm := <explode(injection-to-term)> path-relevance;
+           path-relevancestr* := [ |[ nabl2--custom-path-relevance = ~path-relevanceterm ]| ]
+         else
+           path-relevancestr* := []
+         end
 
  
   signature-to-str:

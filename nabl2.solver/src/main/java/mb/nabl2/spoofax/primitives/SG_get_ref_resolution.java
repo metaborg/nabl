@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
@@ -32,7 +34,7 @@ public class SG_get_ref_resolution extends AnalysisPrimitive {
         return maybeRef.<ITerm>flatMap(ref -> {
             try {
                 final Collection<IResolutionPath<Scope, Label, Occurrence>> paths =
-                        solution.nameResolution().resolve(ref);
+                        solution.nameResolution().resolve(ref, new ThreadCancel(), new NullProgress());
                 List<ITerm> pathTerms = Lists.newArrayListWithExpectedSize(paths.size());
                 for(IResolutionPath<Scope, Label, Occurrence> path : paths) {
                     pathTerms.add(B.newTuple(path.getDeclaration(), Paths.toTerm(path)));

@@ -11,6 +11,14 @@ template options
 
 context-free syntax
 
+  NaBL2-Strategy.Search       = <search>
+  NaBL2-Strategy.Environments = <environments>
+
+  NaBL2-Relevance.Relevant   = <relevant>
+  NaBL2-Relevance.Irrelevant = <irrelevant>
+
+context-free syntax
+
   NaBL2-Label.Label = NaBL2-LabelId
  
   NaBL2-PathLabel   = NaBL2-Label

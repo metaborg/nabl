@@ -100,7 +100,7 @@ public class NameResolutionComponent extends ASolver {
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
         final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
-            paths = nameResolution.resolve(ref);
+            paths = nameResolution.resolve(ref, cancel, progress);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         } catch(CriticalEdgeException e) {
@@ -193,7 +193,7 @@ public class NameResolutionComponent extends ASolver {
     }
 
     @Value.Immutable
-    @Serial.Version(42l)
+    @Serial.Version(value = 42L)
     public static abstract class ANameResolutionResult {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();

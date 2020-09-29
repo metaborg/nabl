@@ -6,6 +6,10 @@ import mb.nabl2.relations.IRelation;
 
 public interface IResolutionParameters<L extends ILabel> {
 
+    enum Strategy {
+        SEARCH, ENVIRONMENTS
+    }
+
     L getLabelD();
 
     L getLabelR();
@@ -15,5 +19,9 @@ public interface IResolutionParameters<L extends ILabel> {
     IRegExp<L> getPathWf();
 
     IRelation.Immutable<L> getSpecificityOrder();
+
+    Strategy getStrategy();
+
+    boolean getPathRelevance();
 
 }

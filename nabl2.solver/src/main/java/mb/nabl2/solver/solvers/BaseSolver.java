@@ -61,7 +61,7 @@ public class BaseSolver {
         final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // solver components
-        final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal);
+        final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal, cancel, progress);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -113,7 +113,7 @@ public class BaseSolver {
     }
 
     @Value.Immutable
-    @Serial.Version(42l)
+    @Serial.Version(value = 42L)
     public static abstract class ABaseSolution {
 
         @Value.Parameter public abstract SolverConfig config();
@@ -125,7 +125,7 @@ public class BaseSolver {
     }
 
     @Value.Immutable
-    @Serial.Version(42l)
+    @Serial.Version(value = 42L)
     public static abstract class AGraphSolution {
 
         @Value.Parameter public abstract SolverConfig config();

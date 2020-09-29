@@ -3,6 +3,8 @@ package mb.nabl2.spoofax.primitives;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.scopegraph.terms.NameResolutionTerms;
@@ -23,7 +25,7 @@ public class SG_debug_name_resolution extends AnalysisPrimitive {
         }
         final ISolution sol = result.solution();
         try {
-            return Optional.of(NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution()));
+            return Optional.of(NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution(), new ThreadCancel(), new NullProgress()));
 //          return result.solution().filter(sol -> unit.isPrimary()).map(sol -> {
 //              return TermSimplifier.focus(unit.resource(),
 //                    NameResolutionTerms.build(sol.scopeGraph(), sol.nameResolution()));

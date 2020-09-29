@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
 import org.metaborg.util.time.AggregateTimer;
 
 import io.usethesource.capsule.Set;
@@ -24,7 +26,7 @@ public class BUVerifier {
 
     private static ILogger logger = LoggerUtils.logger(BUVerifier.class);
 
-    public static boolean verify(ISolution solution) {
+    public static boolean verify(ISolution solution, ICancel cancel, IProgress progress) {
         boolean success = true;
         try {
             logger.info("resolving with bottom-up resolution");
@@ -36,9 +38,9 @@ public class BUVerifier {
             logger.info("verifying {} references", scopeGraph.getAllRefs().size());
             for(Occurrence ref : scopeGraph.getAllRefs()) {
                 try {
-                    final Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                    final Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref, cancel, progress);
                     timer.start();
-                    final Collection<IResolutionPath<Scope, Label, Occurrence>> result = buNameResolution.resolve(ref);
+                    final Collection<IResolutionPath<Scope, Label, Occurrence>> result = buNameResolution.resolve(ref, cancel, progress);
                     timer.stop();
                     success &= verifyEquals("resolve " + ref, paths, result, buNameResolution);
                 } catch(CriticalEdgeException ex) {
@@ -54,9 +56,9 @@ public class BUVerifier {
             logger.info("verifying {} visible", scopeGraph.getAllScopes().size());
             for(Scope scope : scopeGraph.getAllScopes()) {
                 try {
-                    final Collection<Occurrence> decls = nameResolution.visible(scope);
+                    final Collection<Occurrence> decls = nameResolution.visible(scope, cancel, progress);
                     timer.start();
-                    final Collection<Occurrence> result = buNameResolution.visible(scope);
+                    final Collection<Occurrence> result = buNameResolution.visible(scope, cancel, progress);
                     timer.stop();
                     success &= verifyEquals("visible " + scope, decls, result, buNameResolution);
                 } catch(CriticalEdgeException ex) {
@@ -72,9 +74,9 @@ public class BUVerifier {
             logger.info("verifying {} reachable", scopeGraph.getAllScopes());
             for(Scope scope : scopeGraph.getAllScopes()) {
                 try {
-                    final Collection<Occurrence> decls = nameResolution.reachable(scope);
+                    final Collection<Occurrence> decls = nameResolution.reachable(scope, cancel, progress);
                     timer.start();
-                    final Collection<Occurrence> result = buNameResolution.reachable(scope);
+                    final Collection<Occurrence> result = buNameResolution.reachable(scope, cancel, progress);
                     timer.stop();
                     success &= verifyEquals("reachable " + scope, decls, result, buNameResolution);
                 } catch(CriticalEdgeException ex) {

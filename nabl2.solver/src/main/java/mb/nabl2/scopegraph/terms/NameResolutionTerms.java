@@ -4,6 +4,9 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
 
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -19,11 +22,15 @@ public final class NameResolutionTerms {
 
     private final IScopeGraph<Scope, Label, Occurrence> scopeGraph;
     private final INameResolution<Scope, Label, Occurrence> nameResolution;
+    private final ICancel cancel;
+    private final IProgress progress;
 
     private NameResolutionTerms(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
-            INameResolution<Scope, Label, Occurrence> nameResolution) {
+            INameResolution<Scope, Label, Occurrence> nameResolution, ICancel cancel, IProgress progress) {
         this.scopeGraph = scopeGraph;
         this.nameResolution = nameResolution;
+        this.cancel = cancel;
+        this.progress = progress;
     }
 
     private ITerm build() throws InterruptedException {
@@ -37,7 +44,8 @@ public final class NameResolutionTerms {
     private ITerm buildRef(Occurrence ref) throws InterruptedException {
         List<ITerm> paths;
         try {
-            paths = nameResolution.resolve(ref).stream().map(this::buildPath).collect(ImmutableList.toImmutableList());
+            paths = nameResolution.resolve(ref, cancel, progress).stream().map(this::buildPath)
+                    .collect(ImmutableList.toImmutableList());
         } catch(CriticalEdgeException | StuckException e) {
             paths = ImmutableList.of();
         }
@@ -55,8 +63,9 @@ public final class NameResolutionTerms {
     }
 
     public static ITerm build(IScopeGraph<Scope, Label, Occurrence> scopeGraph,
-            INameResolution<Scope, Label, Occurrence> nameResolution) throws InterruptedException {
-        return new NameResolutionTerms(scopeGraph, nameResolution).build();
+            INameResolution<Scope, Label, Occurrence> nameResolution, ICancel cancel, IProgress progress)
+            throws InterruptedException {
+        return new NameResolutionTerms(scopeGraph, nameResolution, cancel, progress).build();
     }
 
 }
