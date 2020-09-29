@@ -20,7 +20,7 @@ signature
 
 rules
 
-  nabl2--solve-constraint(|config) = <prim("SG_solve_single_constraint", config, cancel, progress)> WithCancelProgress(<id>, cancel, progress)
+  nabl2--solve-constraint(|config, cancel, progress) = <prim("SG_solve_single_constraint", config, cancel, progress)> WithCancelProgress(<id>, cancel, progress)
 
   nabl2--analyze-ast(|resource): ast -> (ast', analysis, error*, warning*, note*)
     with config := <nabl2--analysis-config>;
