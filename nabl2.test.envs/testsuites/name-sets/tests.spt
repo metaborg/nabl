@@ -1,6 +1,6 @@
 module name-sets
 
-language NaBL2Test
+language NaBL2TestEnvs
 
 test eval empty set [[
   eval empty set

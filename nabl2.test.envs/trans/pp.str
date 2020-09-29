@@ -4,26 +4,26 @@ imports
 
   libstratego-gpp
   libspoofax/sdf/pp
-  pp/NaBL2Test-parenthesize
-  pp/NaBL2Test-pp
+  pp/NaBL2TestEnvs-parenthesize
+  pp/NaBL2TestEnvs-pp
 
 rules
   
-  pp-NaBL2Test-string =
-    parenthesize-NaBL2Test
-    ; prettyprint-NaBL2Test-start-symbols
+  pp-NaBL2TestEnvs-string =
+    parenthesize-NaBL2TestEnvs
+    ; prettyprint-NaBL2TestEnvs-start-symbols
     ; !V([], <id>)
     ; box2text-string(|120)
       
-  pp-partial-NaBL2Test-string =
-    parenthesize-NaBL2Test
-    ; prettyprint-NaBL2Test
+  pp-partial-NaBL2TestEnvs-string =
+    parenthesize-NaBL2TestEnvs
+    ; prettyprint-NaBL2TestEnvs
     ; !V([], <id>)
     ; box2text-string(|120)
     
-  pp-partial-NaBL2Test-string(|sort) =
-    parenthesize-NaBL2Test
-    ; prettyprint-NaBL2Test(|sort)
+  pp-partial-NaBL2TestEnvs-string(|sort) =
+    parenthesize-NaBL2TestEnvs
+    ; prettyprint-NaBL2TestEnvs(|sort)
     ; !V([], <id>)
     ; box2text-string(|120)  
  

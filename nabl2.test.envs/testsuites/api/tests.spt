@@ -1,6 +1,6 @@
 module api
 
-language NaBL2Test
+language NaBL2TestEnvs
 
 test false has errors [[
   false

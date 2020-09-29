@@ -1,6 +1,6 @@
 module relations-functions
 
-language NaBL2Test
+language NaBL2TestEnvs
 
 //-------------------------------
 

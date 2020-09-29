@@ -1,6 +1,6 @@
 module base
 
-language NaBL2Test
+language NaBL2TestEnvs
 
 //-------------------------------
 

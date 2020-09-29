@@ -1,6 +1,6 @@
 module name-resolution
 
-language NaBL2Test
+language NaBL2TestEnvs
 
 //-------------------------------
 

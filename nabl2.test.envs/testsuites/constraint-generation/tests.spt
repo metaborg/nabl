@@ -1,6 +1,6 @@
 module constraint-generation
 
-language NaBL2Test
+language NaBL2TestEnvs
 
 //-------------------------------
 
