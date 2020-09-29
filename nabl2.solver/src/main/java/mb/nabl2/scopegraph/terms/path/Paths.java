@@ -14,7 +14,6 @@ import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
-import mb.nabl2.scopegraph.path.IOpenPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
 import mb.nabl2.scopegraph.path.IStep;
@@ -70,11 +69,6 @@ public final class Paths {
         return append(left, right.getPath()).map(p -> DeclPath.of(p, right.getDeclaration()));
     }
 
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IOpenPath<S, L, O>>
-            append(IScopePath<S, L, O> left, IOpenPath<S, L, O> right) {
-        return append(left, right.getPath()).map(p -> OpenPath.of(p, right.getLabel()));
-    }
-
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>>
             resolve(O reference, IScopePath<S, L, O> path, O declaration) {
         return Optional.ofNullable(ResolutionPath.of(reference, path, declaration));
@@ -83,11 +77,6 @@ public final class Paths {
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> Optional<IResolutionPath<S, L, O>>
             resolve(O reference, IDeclPath<S, L, O> path) {
         return Optional.ofNullable(ResolutionPath.of(reference, path.getPath(), path.getDeclaration()));
-    }
-
-    public static <S extends IScope, L extends ILabel, O extends IOccurrence> IOpenPath<S, L, O>
-            open(IScopePath<S, L, O> path, L label) {
-        return OpenPath.of(path, label);
     }
 
     // -------------------------------------------
