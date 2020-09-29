@@ -1,0 +1,174 @@
+module name-resolution
+
+language NaBL2TestEnvs
+
+//-------------------------------
+
+test scope occurrences are equal [[
+  scope occurrences of x and x are equal
+]] 0 errors
+
+test occurrence indexed in var scope fails [[
+  occurrence of x in var scope
+]] analysis fails
+
+test resolve to scope occurrence succeeds [[
+  resolve [[x]] to scope occurrence [[x]]
+]] 0 errors
+   //resolve #1 to #2 // editor resolution does not work because
+                      // references are indexed on the term index, but
+                      // here we only have a scope index
+
+//-------------------------------
+
+test resolve same name in same scope [[
+  resolve [[x]] to [[x]] in same scope
+]] 0 errors
+   resolve #1 to #2 
+
+test resolve different names in same scope [[
+  resolve x to y in same scope
+]] 1 error
+   error like "does not resolve"
+
+test resolve same name different namespace in same scope [[
+  resolve ns1 x to ns2 x in same scope
+]] 1 error
+   error like "does not resolve"
+
+test resolve ambiguous in same scope [[
+  resolve x to x or x in same scope
+]] 1 error
+   error like "ambiguous"
+
+//-------------------------------
+
+test resolve in parent scope [[
+  resolve [[x]] to [[x]] in parent scope
+]] 0 errors
+   resolve #1 to #2
+
+test resolve ambiguous in parent scopes [[
+  resolve x to x and x in parent scopes
+]] 1 error
+   error like "ambiguous"
+
+test resolve import over parent [[
+  resolve [[x]] to [[x]] in import scope over x parent scope
+]] 0 errors
+   resolve #1 to #2
+
+test resolve ambiguous with unordered labels [[
+  resolve x to x in I parent or x in J parent
+]] 1 error
+   error like "ambiguous"
+
+test resolve via longer more specific path [[
+  resolve [[x]] to [[x]] via longer more specific path over x via less specific path
+]] 0 errors
+   resolve #1 to #2
+
+test resolve via parent after import fails [[
+  resolve x to x via import after parent
+]] 1 error
+
+test resolve via non-transitive import fails [[
+  resolve x to x via non-transitive import
+]] 1 error
+
+//-------------------------------
+
+test resolve in imported scope  [[
+  resolve [[x]] via y in y { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+test resolve in transitively imported scope  [[
+  resolve [[x]] via y where y imports z in z { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+test resolve via ambiguous import [[
+  resolve x via y in y { x } or y { x }
+]] 1 error
+   error like "ambiguous"
+
+test resolve via unordered imports [[
+  resolve x via y in y { x } or via y in y { x }
+]] 1 error
+   error like "ambiguous"
+
+test resolve in parent with non-resolving import [[
+  resolve [[x]] to [[x]] in parent with non-resolving import y
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+test resolve via scope in type [[
+  resolve [[y]] via type of x in x { [[y]] } 
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+test resolve with direct cycle [[
+  direct cycle [[x]] to [[x]]
+]] 0 errors
+   resolve #1 to #2
+
+test resolve with import cycle [[
+  resolve [[x]] via y in y imports z { } and z imports y { [[x]] }
+]] 0 errors
+   resolve #1 to #2
+
+test do not resolve with self as import [[
+  resolve [[x]] via itself to [[x]] { x }
+]] 0 errors
+   resolve #1 to #2
+
+//-------------------------------
+
+// the tests in this block are all supported by the PEPM'16 resolution algorithm,
+// but get stuck in the environment based resolution algorithm.
+
+test import via reference in same scope [[
+  resolve [[x]] via y in same scope y { [[x]] }
+]] > 0 errors
+
+test import into nested module with same name [[
+  resolve [[x]] via y and y in y { y { [[x]] } }
+]] > 0 errors
+
+test import anomaly [[
+  anomaly {
+    mod A {
+      mod [[B]] {
+        def [[x]] = 1
+      }
+    }
+    mod B {
+      mod [[A]] {
+        def [[y]] = 2
+      }
+    }
+    mod C {
+      import [[A]]
+      import [[B]]
+      def z = [[x]] + [[y]]
+    }
+  }
+]] > 0 errors
+
+//-------------------------------
+
+test resolve compound name with explicit position [[
+  resolve compound [[x]] to [[x]] with explicit position
+]] 0 errors
+   resolve #1 to #2
+
+test resolve compound names from ast [[
+   resolve ast compound wrapped [[x]] to [[wrapped x]]
+]] 0 errors
+   resolve #1 to #2
+

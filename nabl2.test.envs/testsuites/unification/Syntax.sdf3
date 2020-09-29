@@ -1,0 +1,13 @@
+module testsuites/unification/Syntax
+
+imports
+
+  Identifiers
+
+context-free syntax
+
+  Test.CannotUnifyRecursive = <cannot unify recursive>
+
+  Test.NestedTailsAreNil = <nested tails are nil>
+
+  Test.CompareLists = <compare lists <{A " "}*> and <{A " "}*>>

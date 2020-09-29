@@ -1,5 +1,6 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.List;
 import java.util.Map;
 
 import org.metaborg.util.Ref;
@@ -17,9 +18,9 @@ import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.ScopeGraphReducer;
+import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
@@ -64,7 +65,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Ref<IUnifier.Immutable> unifier = new Ref<>(initial.unifier());
         final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph = initial.scopeGraph().melt();
         final IEsopNameResolution<Scope, Label, Occurrence> nameResolution =
-                EsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
+                IEsopNameResolution.of(config.getResolutionParams(), scopeGraph, (s, l) -> true);
         final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // constraint set properties
@@ -74,7 +75,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         final Predicate1<String> isRelationComplete = r -> !hasRelationBuildConstraints.contains(r);
 
         // solver components
-        final SolverCore core = new SolverCore(config, unifier, fresh, callExternal);
+        final SolverCore core = new SolverCore(config, unifier, fresh, callExternal, cancel, progress);
         final AstComponent astSolver = new AstComponent(core, initial.astProperties().melt());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -105,7 +106,9 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             final Set.Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
             if(!vars.isEmpty()) {
                 try {
-                    r.resolveCriticalEdges(scopeGraphReducer.update(vars));
+                    final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);
+                    nameResolution.update(criticalEdges, cancel, progress);
+                    r.resolveCriticalEdges(criticalEdges);
                 } catch(InterruptedException ex) {
                     // ignore here
                 }

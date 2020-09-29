@@ -29,6 +29,9 @@ public abstract class Relation<T> implements IRelation<T> {
     protected Relation() {
     }
 
+    @Override public boolean isEmpty() {
+        return entries().isEmpty();
+    }
 
     @Override public Set.Immutable<T> smaller(T t) {
         Set.Transient<T> ts = Set.Transient.of();

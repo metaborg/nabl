@@ -11,6 +11,8 @@ public interface IRelation<T> {
 
     RelationDescription getDescription();
 
+    boolean isEmpty();
+
     Set.Immutable<T> smaller(T t);
 
     Set.Immutable<T> larger(T t);

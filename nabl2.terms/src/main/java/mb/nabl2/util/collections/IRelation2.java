@@ -34,8 +34,9 @@ public interface IRelation2<K, V> {
 
     interface Immutable<K, V> extends IRelation2<K, V> {
 
-        @Override
-        IRelation2.Immutable<V, K> inverse();
+        IRelation2.Immutable<K, V> putAll(IRelation2<K, V> other);
+
+        @Override IRelation2.Immutable<V, K> inverse();
 
         IRelation2.Transient<K, V> melt();
 
@@ -43,8 +44,7 @@ public interface IRelation2<K, V> {
 
     interface Transient<K, V> extends IRelation2<K, V> {
 
-        @Override
-        IRelation2.Transient<V, K> inverse();
+        @Override IRelation2.Transient<V, K> inverse();
 
         boolean put(K key, V value);
 

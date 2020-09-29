@@ -1,0 +1,11 @@
+module testsuites/base/util
+
+imports
+
+  signatures/testsuites/base/-
+
+rules
+
+  nabl2test-custom-hook(|a):
+      CustomErrorsOnSameTerms(xs) -> (errors, [], [], None())
+    with errors := <map(\ x -> (x, "Custom error") \)> xs

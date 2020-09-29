@@ -14,7 +14,7 @@ rules
     NameResolution(_) -> []
 
   sections-to-nameresolution-str:
-    section* -> [Rules([labelstr*, orderstr*, wfstr*,e-labelstr*,n-labelstr*])]
+    section* -> [Rules([labelstr*, orderstr*, wfstr*,e-labelstr*,n-labelstr*,strategystr*,path-relevancestr*])]
     with param* := <filter(?Signature(<id>));concat;
                     filter(?NameResolution(<id>));concat> section*
     with if label*@[_|_] := <filter(?Labels(<id>));concat> param* then
@@ -38,15 +38,27 @@ rules
          end
     with if e-label := <getfirst(?DefaultELabel(<id>))> param* then
            e-labelterm := <explode(injection-to-term)> e-label;
-           e-labelstr* := [ |[ nabl2--custom-default-edge-label = ~e-labelterm ]| ]
+           e-labelstr* := [ |[ nabl2--custom-default-edge-label = !~e-labelterm ]| ]
          else
            e-labelstr* := []
          end
     with if n-label := <getfirst(?DefaultNLabel(<id>))> param* then
            n-labelterm := <explode(injection-to-term)> n-label;
-           n-labelstr* := [ |[ nabl2--custom-default-named-label = ~n-labelterm ]| ]
+           n-labelstr* := [ |[ nabl2--custom-default-named-label = !~n-labelterm ]| ]
          else
            n-labelstr* := []
+         end
+    with if strategy := <getfirst(?Strategy(<id>))> param* then
+           strategyterm := <explode(injection-to-term)> strategy;
+           strategystr* := [ |[ nabl2--custom-strategy = !~strategyterm ]| ]
+         else
+           strategystr* := []
+         end
+    with if path-relevance := <getfirst(?PathRelevance(<id>))> param* then
+           path-relevanceterm := <explode(injection-to-term)> path-relevance;
+           path-relevancestr* := [ |[ nabl2--custom-path-relevance = !~path-relevanceterm ]| ]
+         else
+           path-relevancestr* := []
          end
 
  

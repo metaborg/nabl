@@ -6,11 +6,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
 
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.OccurrenceIndex;
 import mb.nabl2.scopegraph.terms.path.Paths;
@@ -32,12 +35,12 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
             try {
                 for(Occurrence ref : refs) {
                     try {
-                        final List<Occurrence> decls =
-                                Paths.resolutionPathsToDecls(solution.nameResolution().resolve(ref));
+                        final List<Occurrence> decls = Paths.resolutionPathsToDecls(
+                                solution.nameResolution().resolve(ref, new ThreadCancel(), new NullProgress()));
                         decls.stream().forEach(decl -> {
                             entriesBuilder.add(B.newTuple(ref, decl.getName()));
                         });
-                    } catch(CriticalEdgeException e) {
+                    } catch(CriticalEdgeException | StuckException e) {
                         // ignore
                     }
                 }

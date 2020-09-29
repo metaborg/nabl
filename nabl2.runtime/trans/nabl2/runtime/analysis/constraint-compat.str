@@ -66,6 +66,8 @@ signature
 
     AnalyzeUnit : String    // resource
                 * Term      // ast
+                * Cancel
+                * Progress
                -> AnalysisAction
     UnitResult  : Term                   // analyzed ast
                 * Term                   // analysis
@@ -78,6 +80,8 @@ signature
   constructors // multi file analysis
 
     AnalyzeInitial : String    // project resource
+                   * Cancel
+                   * Progress
                   -> AnalysisAction
     InitialResult  : Term    // initial analysis
                   -> AnalysisResult
@@ -85,6 +89,8 @@ signature
     AnalyzeUnit : String    // file resource
                 * Term      // ast
                 * Term      // initial analysis
+                * Cancel
+                * Progress
                -> AnalysisAction
     UnitResult  : Term    // analyzed ast
                 * Term    // file analysis
@@ -93,6 +99,8 @@ signature
     AnalyzeFinal : String        // project resource
                  * Term          // initial analysis
                  * List(Term)    // file analyses
+                 * Cancel
+                 * Progress
                 -> AnalysisAction
     FinalResult  : Term                   // final analysis
                  * List(EditorMessage)    // errors
@@ -114,9 +122,10 @@ rules
       AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
     with
       ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; unit-result* := <map({ ?(resource, ast)
+    ; unit-result* := <map({ resource, ast, ast', a', error*, warning*, note*:
+                             ?(resource, ast)
                            ; ( UnitResult(ast', a', error*, warning*, note*) :=
-                                   <analyze> AnalyzeUnit(resource, ast)
+                                   <analyze> AnalyzeUnit(resource, ast, cancel, progress)
                              < !(resource, Full(ast', CompatUnitAnalysis(a', a'), error*, warning*, note*))
                              + !(resource, Failed())
                              )
@@ -128,7 +137,7 @@ rules
     with
       switch !project-change
         case ?Added(_) + ?Changed(_, _):
-          InitialResult(project-initial-analysis) := <analyze> AnalyzeInitial(project-resource)
+          InitialResult(project-initial-analysis) := <analyze> AnalyzeInitial(project-resource, cancel, progress)
         case ?Cached(CompatProjectAnalysis(project-initial-analysis, _)):
           id
         otherwise:
@@ -138,7 +147,7 @@ rules
     ; unit-initial-result* := <map({ unit-resource, unit-ast, unit-ast', unit-analysis:
                                      ?(unit-resource, unit-ast)
                                    ; ( UnitResult(unit-ast', unit-analysis) :=
-                                           <analyze> AnalyzeUnit(unit-resource, unit-ast, project-initial-analysis)
+                                           <analyze> AnalyzeUnit(unit-resource, unit-ast, project-initial-analysis, cancel, progress)
                                      < !(unit-resource, Full(unit-ast', CompatUnitAnalysis(unit-analysis, None()), [], [], []))
                                      + !(unit-resource, Failed())
                                      )
@@ -150,7 +159,7 @@ rules
         <fatal-err(|"Context is in inconsistent state. Clean the project to reset the context. This can happen when a context is written in one environment (e.g., Eclipse) and later read in another (e.g., Maven).")> project-analysis-cached*
       end
     ; FinalResult(final-analysis, error*, warning*, note*) :=
-          <analyze> AnalyzeFinal(project-resource, project-initial-analysis, unit-initial-analysis*)
+          <analyze> AnalyzeFinal(project-resource, project-initial-analysis, unit-initial-analysis*, cancel, progress)
     ; project-analysis := CompatProjectAnalysis(project-initial-analysis, final-analysis)
     ; unit-result* := <map((id, try(Full(id, CompatUnitAnalysis(id, !final-analysis), id, id, id))))> unit-initial-result*
     ; switch !project-change

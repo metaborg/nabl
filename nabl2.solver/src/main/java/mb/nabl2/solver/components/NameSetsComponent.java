@@ -39,11 +39,11 @@ public class NameSetsComponent extends ASolver {
                 return makeSet(refs, ns);
             }),
             M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
-                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.visible(scope);
+                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.visible(scope, cancel, progress);
                 return makeSet(decls, ns);
             }),
             M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
-                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.reachable(scope);
+                Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.reachable(scope, cancel, progress);
                 return makeSet(decls, ns);
             })
         );

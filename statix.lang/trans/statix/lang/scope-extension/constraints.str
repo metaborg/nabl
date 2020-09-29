@@ -13,11 +13,6 @@ imports
 
 rules
 
-  ext-get-barrier(|name): t -> b
-    with i := <nabl2-get-ast-index> t
-       ; b := <nabl2-copy-ast-index(|t)> ExtTerm(name, i)
-
-
   ext-get-constraint-ref: x -> ExtRef(<nabl2-mk-occurrence(|"C")> x)
 
   ext-get-var-ref: x -> ExtRef(<nabl2-mk-occurrence(|"Var")> x)
@@ -27,30 +22,22 @@ rules
 
 rules
 
-  explicate-ext-constraints(|a): c* -> c'''*
-    with (b*, c'*) := <partition(ext-explicate-barrier(|a))> c*
-       ; <ext-log(prettyprint-Statix-ExtBarriers|"barriers:")> b*
-       ; c''* := <map(try(ext-escape-constraint(|a, b*)))> c'*
-       ; c'''* := <map(topdown(try(ext-explicate-set(|a))))> c''*
+  explicate-ext-constraints(|a): c* -> c''*
+    with c'* := <map(try(ext-escape-constraint(|a)))> c*
+       ; c''* := <map(topdown(try(ext-explicate-set(|a))))> c'*
 
 
-  ext-explicate-barrier(|a): ExtBarrier(b) -> s
-    with s := <nabl2-get-ast-property(|a,"scope")> b
+  ext-escape-constraint(|a): ExtProvides(v, s, o) -> ExtProvidesEsc(v, s, o)
+    where <ext-var-escapes(|a)> v
 
+  ext-escape-constraint(|a): ExtRequires(v, s, o) -> ExtRequiresEsc(v, s, o)
+    where <ext-var-escapes(|a)> v
 
-  ext-escape-constraint(|a, b*): ExtProvides(v, s, o) -> ExtProvidesEsc(v, s, o)
-    where <ext-var-escapes(|a, b*)> v
-
-  ext-escape-constraint(|a, b*): ExtRequires(v, s, o) -> ExtRequiresEsc(v, s, o)
-    where <ext-var-escapes(|a, b*)> v
-
-  ext-var-escapes(|a, b*): ExtVar(ExtRef(r)) -> <id>
-    with if (d, p) := <nabl2-get-resolved-name(|a)> r then
-           s* := <ext-path-scopes> p
-         else
-           s* := []
-         end
-    where [_|_] := <isect> (s*, b*)
+  ext-var-escapes(|a): ExtVar(ExtRef(r)) -> <id>
+    where (d, _) := <nabl2-get-resolved-name(|a)> r
+        ; s_r := <nabl2-get-property(|a, "barrier")> r
+        ; s_d := <nabl2-get-property(|a, "barrier")> d
+        ; <not(eq)> (s_r, s_d)
 
   ext-path-scopes = nabl2-get-path-scopes; init
 

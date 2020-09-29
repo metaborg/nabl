@@ -1,0 +1,78 @@
+module testsuites/api/rules
+
+imports
+
+  signatures/testsuites/api/-
+
+rules
+
+  [[ AstWithType(x) ^ () ]] :=
+    AstWithType[[ x ^ () : ty ]].
+  AstWithType[[ x ^ () : () ]].
+
+  [[ AstWithoutType(x) ^ () ]] :=
+    AstWithoutType[[ x ^ () ]].
+  AstWithoutType[[ x ^ () ]].
+
+
+  [[ AstWithNoDecls(x) ^ () ]] :=
+    AstWithNoDecls[[ x ^ () ]].
+  AstWithNoDecls[[ x ^ () ]].
+
+  [[ AstWithOneDecl(x) ^ () ]] :=
+    AstWithOneDecl[[ x ^ () ]].
+  AstWithOneDecl[[ x ^ () ]] :=
+    new s, Ns1{x} <- s.
+
+  [[ AstWithTwoDecls(x) ^ () ]] :=
+    AstWithTwoDecls[[ x ^ () ]].
+  AstWithTwoDecls[[ x ^ () ]] :=
+    new s, Ns1{x} <- s, Ns2{x} <- s.
+
+
+  [[ AstWithNoRefs(x) ^ () ]] :=
+    AstWithNoRefs[[ x ^ () ]].
+  AstWithNoRefs[[ x ^ () ]].
+
+  [[ AstWithOneRef(x) ^ () ]] :=
+    AstWithOneRef[[ x ^ () ]].
+  AstWithOneRef[[ x ^ () ]] :=
+    new s, Ns1{x} -> s.
+
+  [[ AstWithTwoRefs(x) ^ () ]] :=
+    AstWithTwoRefs[[ x ^ () ]].
+  AstWithTwoRefs[[ x ^ () ]] :=
+    new s, Ns1{x} -> s, Ns2{x} -> s.
+
+
+  [[ AstWithCustomProp(x) ^ () ]] :=
+    @x.customProp := ().
+
+  [[ AstWithoutCustomProp(x) ^ () ]].
+
+rules
+
+  [[ GetAllDecls(xs) ^ () ]] :=
+    new s,
+    Map1(GetAllDecls)[[ xs ^ (s) ]].
+  GetAllDecls[[ x ^ (s) ]] :=
+    {x} <- s.
+
+  [[ GetDirectEdges(x1,x2) ^ () ]] :=
+    new s1 s2,
+    s2 ---> s1,
+    GetDirectEdges[[ x1 ^ (s1) ]],
+    GetDirectEdges[[ x2 ^ (s2) ]].
+  GetDirectEdges[[ _ ^ (s) ]].
+
+  [[ GetImportEdges(xs,xi) ^ () ]] :=
+    new s,
+    {xi} <=== s,
+    GetImportEdges[[ xs ^ (s) ]].
+  GetImportEdges[[ _ ^ (s) ]].
+
+  [[ GetAssocEdges(xs,xi) ^ () ]] :=
+    new s,
+    {xi} ===> s,
+    GetAssocEdges[[ xs ^ (s) ]].
+  GetAssocEdges[[ _ ^ (s) ]].

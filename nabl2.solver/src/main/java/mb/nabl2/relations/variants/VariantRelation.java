@@ -25,6 +25,9 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
 
     protected abstract IRelation<T> baseRelation();
 
+    @Override public boolean isEmpty() {
+        return baseRelation().isEmpty();
+    }
 
     @Override public Set.Immutable<T> smaller(T t) {
         return baseRelation().smaller(t);

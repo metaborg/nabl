@@ -36,6 +36,7 @@ import mb.nabl2.util.collections.IndexedBag.RemovalPolicy;
 
 public class FixedPointSolver {
 
+    @SuppressWarnings("unused")
     private static final ILogger log = LoggerUtils.logger(FixedPointSolver.class);
 
     private final PublishSubject<Step> stepSubject;

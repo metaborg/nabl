@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -16,8 +18,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.constraints.namebinding.DeclProperties;
+import mb.nabl2.scopegraph.CriticalEdgeException;
 import mb.nabl2.scopegraph.IScopeGraph;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.Label;
@@ -84,7 +87,7 @@ public class InterpreterTerms {
         try {
             for(Occurrence ref : refs) {
                 try {
-                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref);
+                    Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref, new NullCancel(), new NullProgress());
                     if(paths.size() == 1) {
                         IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
                         ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));
@@ -92,7 +95,7 @@ public class InterpreterTerms {
                     } else {
                         logger.warn("Can only convert a single path, but {} has {}.", ref, paths.size());
                     }
-                } catch(CriticalEdgeException e) {
+                } catch(CriticalEdgeException | StuckException e) {
                     logger.warn("Could not convert unresolvable {}.", ref);
                 }
             }

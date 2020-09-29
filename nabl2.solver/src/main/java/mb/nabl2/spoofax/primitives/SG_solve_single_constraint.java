@@ -5,8 +5,6 @@ import java.util.Optional;
 
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-import org.metaborg.util.task.NullProgress;
-import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -44,33 +42,43 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
         final StrategoTerms strategoTerms = new StrategoTerms(env.getFactory());
 
-        final IStrategoTerm configSTerm = tvars[0];
+        final IStrategoTerm configSTerm = ScopeGraphMultiFileAnalysisPrimitive.getActualCurrent(tvars[0]);
         final ITerm configTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(configSTerm));
         final SolverConfig solverConfig = SolverConfig.matcher().match(configTerm)
                 .orElseThrow(() -> new InterpreterException("Term argument is not a solver config."));
 
+        final IStrategoTerm constraintSTerm = ScopeGraphMultiFileAnalysisPrimitive.getActualCurrent(env.current());
+        final ICancel cancel = ScopeGraphMultiFileAnalysisPrimitive.getCancel(env.current());
+        final IProgress progress = ScopeGraphMultiFileAnalysisPrimitive.getProgress(env.current());
 
-        final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(env.current()));
+
+        final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(constraintSTerm));
         final List<IConstraint> constraints = Constraints.matchConstraintOrList().map(ImmutableList::of)
                 .match(constraintTerm).orElseThrow(() -> new InterpreterException("Current term is not a constraint."));
 
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get debug configuration in here?
         final Fresh.Transient fresh = Fresh.Transient.of();
 
-        final ICancel cancel = new ThreadCancel();
-        final IProgress progress = new NullProgress();
         final SingleFileSolver solver = new SingleFileSolver(debugConfig,
                 ScopeGraphMultiFileAnalysisPrimitive.callExternal(env, strategoTerms));
-        final ISolution solution;
+        /*final*/ ISolution solution;
         try {
-            GraphSolution graphSolution = solver.solveGraph(
-                    BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
-                    cancel, progress);
+            GraphSolution graphSolution =
+                    solver.solveGraph(BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of()), fresh::fresh,
+                            cancel, progress);
             ISolution constraintSolution = solver.solve(graphSolution, fresh::fresh, cancel, progress);
             solution = constraintSolution;
         } catch(InterruptedException | SolverException ex) {
             throw new InterpreterException(ex);
         }
+
+        //        if(!BUVerifier.verify(solution)) {
+        //            final IMessages.Transient messages = solution.messages().melt();
+        //            messages.add(MessageInfo.of(MessageKind.ERROR, MessageContent.of("BU verification failed"),
+        //                    Actions.sourceTerm("")));
+        //            solution = solution.withMessages(messages.freeze());
+        //        }
+
 
         final IResult result = SingleUnitResult.of(constraints, solution, Optional.empty(), fresh.freeze());
         final IMessages.Immutable messages = solution.messagesAndUnsolvedErrors();

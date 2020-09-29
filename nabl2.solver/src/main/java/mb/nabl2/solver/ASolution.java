@@ -1,5 +1,6 @@
 package mb.nabl2.solver;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
@@ -14,7 +15,6 @@ import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
@@ -31,7 +31,7 @@ import mb.nabl2.util.collections.IProperties;
 import mb.nabl2.util.collections.Properties;
 
 @Value.Immutable(builder = true)
-@Serial.Version(value = 1L)
+@Serial.Version(value = 42L)
 public abstract class ASolution implements ISolution {
 
     @Value.Parameter @Override public abstract SolverConfig config();
@@ -57,14 +57,14 @@ public abstract class ASolution implements ISolution {
     }
 
     @Override public IEsopNameResolution<Scope, Label, Occurrence> nameResolution() {
-        final EsopNameResolution<Scope, Label, Occurrence> nr = EsopNameResolution.of(config().getResolutionParams(),
+        final IEsopNameResolution<Scope, Label, Occurrence> nr = IEsopNameResolution.of(config().getResolutionParams(),
                 scopeGraph(), (s, l) -> true, nameResolutionCache());
         return nr;
     }
 
-    @Value.Default @Override public IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
+    @Value.Default @Override public IEsopNameResolution.IResolutionCache<Scope, Label, Occurrence>
             nameResolutionCache() {
-        return EsopNameResolution.ResolutionCache.of();
+        return IEsopNameResolution.IResolutionCache.empty();
     }
 
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
@@ -80,9 +80,17 @@ public abstract class ASolution implements ISolution {
     @Value.Parameter @Override public abstract java.util.Set<IConstraint> constraints();
 
     public static ISolution of(SolverConfig config) {
-        return Solution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(),
-                Properties.Immutable.of(), VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
+        return Solution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(), Properties.Immutable.of(),
+                VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
                 mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(), Collections.emptySet());
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
     }
 
 }

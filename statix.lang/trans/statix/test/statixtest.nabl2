@@ -10,6 +10,7 @@ rules
 
   [[ t@Test(c, sections) ^ (s) ]] :=
     new s_test, s_test -P-> s, @t.scope := s_test,
+    Barrier{()} <- s_test, Barrier{()} =B=> s_test,
     new s_syn, s_test -LS-> s_syn,
     Sections[[ sections ^ (s_test, s_syn, s) ]],
     Constraint[[ c ^ (s_test) ]],

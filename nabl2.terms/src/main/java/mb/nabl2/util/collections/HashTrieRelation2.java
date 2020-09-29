@@ -83,6 +83,12 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
             return new HashTrieRelation2.Immutable<>(bwd, fwd);
         }
 
+        @Override public IRelation2.Immutable<K, V> putAll(IRelation2<K, V> other) {
+            final IRelation2.Transient<K, V> that = melt();
+            that.putAll(other);
+            return that.freeze();
+        }
+
         @Override public HashTrieRelation2.Transient<K, V> melt() {
             return new HashTrieRelation2.Transient<>(fwd.asTransient(), bwd.asTransient());
         }
@@ -110,7 +116,7 @@ public abstract class HashTrieRelation2<K, V> implements IRelation2<K, V> {
                 return false;
             return true;
         }
-    
+
         public static <K, V> HashTrieRelation2.Immutable<K, V> of() {
             return new HashTrieRelation2.Immutable<>(SetMultimap.Immutable.of(), SetMultimap.Immutable.of());
         }

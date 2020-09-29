@@ -20,7 +20,8 @@ import mb.nabl2.constraints.nameresolution.CAssoc;
 import mb.nabl2.constraints.nameresolution.CDeclProperty;
 import mb.nabl2.constraints.nameresolution.CResolve;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
+import mb.nabl2.scopegraph.CriticalEdgeException;
+import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -99,11 +100,15 @@ public class NameResolutionComponent extends ASolver {
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
         final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
-            paths = nameResolution.resolve(ref);
+            paths = nameResolution.resolve(ref, cancel, progress);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         } catch(CriticalEdgeException e) {
             throw new CriticalEdgeDelayException(e);
+        } catch(StuckException e) {
+            IMessageInfo message = r.getMessageInfo().withDefaultContent(
+                    MessageContent.builder().append("Resolution of ").append(ref).append(" is stuck.").build());
+            return SolveResult.messages(message);
         }
         final Set<Occurrence> declarations = Sets.newHashSet(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;
@@ -188,12 +193,12 @@ public class NameResolutionComponent extends ASolver {
     }
 
     @Value.Immutable
-    @Serial.Version(42l)
+    @Serial.Version(value = 42L)
     public static abstract class ANameResolutionResult {
 
         @Value.Parameter public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-        @Value.Parameter public abstract IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence>
+        @Value.Parameter public abstract IEsopNameResolution.IResolutionCache<Scope, Label, Occurrence>
                 resolutionCache();
 
         @Value.Parameter public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();

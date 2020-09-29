@@ -38,7 +38,7 @@ public interface ISolution {
 
     IEsopNameResolution<Scope, Label, Occurrence> nameResolution();
 
-    IEsopNameResolution.ResolutionCache<Scope, Label, Occurrence> nameResolutionCache();
+    IEsopNameResolution.IResolutionCache<Scope, Label, Occurrence> nameResolutionCache();
 
     IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 

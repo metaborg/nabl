@@ -1,0 +1,28 @@
+module testsuites/assert
+
+rules
+
+  assert-succeeds(s): input -> result
+    with result := <s;strip-annos> input
+      <+ fatal-err(|$[Expected succes, but strategy failed on input [<write-to-string> input]])
+
+  assert-fails(s): input -> input
+    with result := <s;strip-annos> input
+       < fatal-err(|$[Expected failure, but strategy succeeded with result [<write-to-string> result] on imput [<write-to-string> input]])
+       + id
+
+  assert-equals(s|expected): input -> result
+    with ( result := <s;strip-annos> input;
+           ( <strip-annos> expected => result
+          <+ fatal-err(|$[Expected [<write-to-string> expected] but got [<write-to-string> result] on input [<write-to-string> input]])
+           )
+        <+ fatal-err(|$[Strategy failed on input [<write-to-string> input]])
+         )
+
+  assert-match(s,match): input -> result
+    with ( result := <s;strip-annos> input;
+           ( <match> result
+          <+ fatal-err(|$[Match failed on result [<write-to-string> result] on input [<write-to-string> input]])
+           )
+        <+ fatal-err(|$[Strategy failed on input [<write-to-string> input]])
+         )

@@ -20,18 +20,21 @@ signature
     DerivedC  : CKind
 
   namespaces
-    C      // constraint
-    Rule   // rule
-    Rel    // data label
-    Edge   // edge label
-    Mod    // module
-    This   // current module
-    Ns     // namespace
-    NsQ    // namespace query
-    Op     // term constructor
-    Sort   // sort
+    C       // constraint
+    Rule    // rule
+    Rel     // data label
+    Edge    // edge label
+    Mod     // module
+    This    // current module
+    Ns      // namespace
+    NsQ     // namespace query
+    Op      // term constructor
+    Sort    // sort
+    Barrier // barrier
 
   name resolution
+    strategy environments
+    paths irrelevant
     labels
       P  // lexical parent
       I  // module interface (qualified, non-transitively imported)
@@ -69,7 +72,7 @@ rules
 
   [[ m@Module(x, sections) ^ (s) ]] :=
     // define module
-    new s_mod, s_mod -P-> s, @m.scope := s_mod,
+    new s_mod, s_mod -P-> s,
     Mod{x} <- s, Mod{x} =I=> s_mod,
     // syntax part of the interface
     new s_syn, s_mod -LS-> s_syn,
@@ -148,7 +151,8 @@ rules
   Ind[[ CoinductiveC() ]] := false | error "Co-inductive constraints are not yet supported.".
 
   DeclOrRule[[ r@Rule(_, h, body) ^ (s, s_syn) ]] :=
-    new s_rule, s_rule -P-> s, @r.scope := s_rule,
+    new s_rule, s_rule -P-> s,
+    Barrier{()} <- s_rule, Barrier{()} =B=> s_rule,
     distinct/name D(s_rule)/Var | error $[Duplicate variable [NAME]] @NAMES,
     RuleHead[[ h ^ (s_rule, s_syn) : _ ]],
     Constraint[[ body ^ (s_rule) ]].
@@ -170,6 +174,7 @@ rules
 
   HoConstraint[[ l@LLam(ps, c) ^ (s) : PRED(tys) ]] :=
     new s', s' -P-> s, @l.scope := s',
+    Barrier{()} <- s', Barrier{()} =B=> s',
     Map1T(Match)[[ ps ^ (s') : tys ]],
     (D(s')/Var lsect/name V(s)/Var) subseteq 0 | warning $[Shadowing variable [NAME]] @NAMES,
     Constraint[[ c ^ (s') ]].
@@ -210,6 +215,7 @@ rules
 
   Constraint[[ t@CTry(c, msg) ^ (s) ]] :=
     new s', s' -P-> s, @t.scope := s',
+    Barrier{()} <- s', Barrier{()} =B=> s',
     Constraint[[ c ^ (s') ]],
     Message(TryKind)[[ msg ^ (s) ]].
 
@@ -447,19 +453,22 @@ rules
 
   NonUniqueVarDecl[[ Var(x) ^ (s) : ty ]] :=
     Var{x @s} <- s, @x.decl := Var{x @s},
-    Var{x @s} : ty !.
+    Var{x @s} : ty !,
+    Barrier{() @s} -> s, Barrier{() @s} |-> b, b ?=B=> s_b, Var{x @s}.barrier := s_b.
 
   NonUniqueVarDecl[[ Wld() ^ (_) : _ ]].
 
   VarDecl[[ Var(x) ^ (s) : ty ]] :=
     Var{x} <- s, @x.decl := Var{x},
-    Var{x} : ty !.
+    Var{x} : ty !,
+    Barrier{()} -> s, Barrier{()} |-> b, b ?=B=> s_b, Var{x}.barrier := s_b.
 
   VarDecl[[ Wld() ^ (_) : _ ]].
 
   VarRef[[ Var(x) ^ (s) : ty ]] :=
     Var{x} -> s, Var{x} |-> d | error $[Unresolved variable [x]] @x, @x.ref := Var{x}, @x.decl := d,
-    d : ty.
+    d : ty,
+    Barrier{()} -> s, Barrier{()} |-> b, b ?=B=> s_b, Var{x}.barrier := s_b.
 
   VarRef[[ Wld() ^ (_) : _ ]].
 

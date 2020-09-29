@@ -1,5 +1,6 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.List;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
@@ -15,6 +16,7 @@ import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.scopegraph.ScopeGraphReducer;
+import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
@@ -59,7 +61,7 @@ public class BaseSolver {
         final ScopeGraphReducer scopeGraphReducer = new ScopeGraphReducer(scopeGraph, unifier);
 
         // solver components
-        final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal);
+        final SolverCore core = new SolverCore(initial.config(), unifier, fresh, callExternal, cancel, progress);
         final AstComponent astSolver = new AstComponent(core, Properties.Transient.of());
         final BaseComponent baseSolver = new BaseComponent(core);
         final EqualityComponent equalitySolver = new EqualityComponent(core, unifier);
@@ -84,7 +86,8 @@ public class BaseSolver {
                 final Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
                 if(!vars.isEmpty()) {
                     try {
-                        r.resolveCriticalEdges(scopeGraphReducer.update(vars));
+                        final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);
+                        r.resolveCriticalEdges(criticalEdges);
                     } catch(InterruptedException ex) {
                         // ignore here
                     }
@@ -110,7 +113,7 @@ public class BaseSolver {
     }
 
     @Value.Immutable
-    @Serial.Version(42l)
+    @Serial.Version(value = 42L)
     public static abstract class ABaseSolution {
 
         @Value.Parameter public abstract SolverConfig config();
@@ -122,7 +125,7 @@ public class BaseSolver {
     }
 
     @Value.Immutable
-    @Serial.Version(42l)
+    @Serial.Version(value = 42L)
     public static abstract class AGraphSolution {
 
         @Value.Parameter public abstract SolverConfig config();

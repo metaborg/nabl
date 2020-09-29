@@ -1,0 +1,21 @@
+module testsuites/name-sets/rules
+
+imports
+
+  signatures/testsuites/name-sets/-
+
+rules
+
+  [[ EvalEmptySet() ^ () ]] :=
+    new s, [] is set D(s).
+
+  [[ EvalSingletonSet() ^ () ]] :=
+    new s, Var{1} <- s,
+    [_] is set D(s).
+
+  [[ ErrorsOnNames(xs) ^ () ]] :=
+    new s,
+    distinct/name D(s) | error $[Duplicate [NAME]] @NAMES,
+    Map1(ErrorsOnNames)[[ xs ^ (s) ]].
+  ErrorsOnNames[[ x ^ (s) ]] :=
+    {x} <- s.

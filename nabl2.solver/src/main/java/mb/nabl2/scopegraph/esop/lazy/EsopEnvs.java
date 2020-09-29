@@ -8,17 +8,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.util.functions.CheckedFunction0;
-import org.metaborg.util.functions.Function0;
+import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.NullCancel;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.scopegraph.CriticalEdgeException;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
-import mb.nabl2.scopegraph.esop.CriticalEdgeException;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
@@ -33,21 +33,21 @@ public class EsopEnvs {
 
     // guarded delegation
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
-            IEsopEnv<S, L, O, P> guarded(CheckedFunction0<IEsopEnv<S, L, O, P>, CriticalEdgeException> provider) {
+            IEsopEnv<S, L, O, P> guarded(EnvProvider<S, L, O, P> provider) {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
             private IEsopEnv<S, L, O, P> env = null;
 
-            private IEsopEnv<S, L, O, P> env() throws CriticalEdgeException {
+            private IEsopEnv<S, L, O, P> env() throws CriticalEdgeException, InterruptedException {
                 if(env == null) {
                     env = provider.apply();
                 }
                 return env;
             }
 
-            @Override public Collection<P> get() throws CriticalEdgeException {
-                return env().get();
+            @Override public Collection<P> get(ICancel cancel) throws CriticalEdgeException, InterruptedException {
+                return env().get(cancel);
             }
 
             @Override public String toString() {
@@ -55,7 +55,7 @@ public class EsopEnvs {
                 sb.append("#");
                 try {
                     sb.append(env().toString());
-                } catch(CriticalEdgeException e) {
+                } catch(CriticalEdgeException | InterruptedException e) {
                     sb.append("?");
                 }
                 return sb.toString();
@@ -64,33 +64,46 @@ public class EsopEnvs {
         };
     }
 
+    interface EnvProvider<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> {
+        IEsopEnv<S, L, O, P> apply() throws CriticalEdgeException, InterruptedException;
+    }
+
     // lazy delegation
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
-            IEsopEnv<S, L, O, P> lazy(Function0<IEsopEnv<S, L, O, P>> provider) {
+            IEsopEnv<S, L, O, P> lazy(LazyEnv<S, L, O, P> provider) {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
             private IEsopEnv<S, L, O, P> env = null;
 
-            private IEsopEnv<S, L, O, P> env() {
+            private IEsopEnv<S, L, O, P> env(ICancel cancel) throws InterruptedException, CriticalEdgeException {
                 if(env == null) {
-                    env = provider.apply();
+                    env = provider.apply(cancel);
                 }
                 return env;
             }
 
-            @Override public Collection<P> get() throws CriticalEdgeException {
-                return env().get();
+            @Override public Collection<P> get(ICancel cancel) throws CriticalEdgeException, InterruptedException {
+                return env(cancel).get(cancel);
             }
 
             @Override public String toString() {
                 StringBuilder sb = new StringBuilder();
                 sb.append("~");
-                sb.append(env());
+                try {
+                    sb.append(env(new NullCancel()));
+                } catch(CriticalEdgeException | InterruptedException e) {
+                    sb.append("?");
+                }
                 return sb.toString();
             }
 
         };
+    }
+
+    interface LazyEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>> {
+        IEsopEnv<S, L, O, P> apply(ICancel cancel) throws CriticalEdgeException, InterruptedException;
+
     }
 
     // initialize with paths
@@ -101,7 +114,7 @@ public class EsopEnvs {
 
             private Collection<P> _paths = CapsuleUtil.toSet(paths);
 
-            @Override public Collection<P> get() {
+            @Override public Collection<P> get(ICancel cancel) throws InterruptedException {
                 return _paths;
             }
 
@@ -122,21 +135,24 @@ public class EsopEnvs {
             private final Set.Transient<P> _paths = Set.Transient.of();
             private Collection<P> paths = null;
 
-            private Collection<P> env() throws CriticalEdgeException {
+            private Collection<P> env(ICancel cancel) throws CriticalEdgeException, InterruptedException {
                 if(paths != null) {
                     return paths;
                 }
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
+                    cancel.throwIfCancelled();
                     IEsopEnv<S, L, O, P> env = it.next();
-                    Collection<P> pts = env.get();
+                    Collection<P> pts = env.get(cancel);
                     // be careful not to self-shadow, therefore first add paths, then add shadow tokens
                     for(P p : pts) {
+                        cancel.throwIfCancelled();
                         if(!_shadowed.contains(filter.matchToken(p))) {
                             _paths.__insert(p);
                         }
                     }
                     for(P p : pts) {
+                        cancel.throwIfCancelled();
                         _shadowed.add(filter.matchToken(p));
                     }
                     it.remove();
@@ -148,8 +164,8 @@ public class EsopEnvs {
                 return paths;
             }
 
-            @Override public Collection<P> get() throws CriticalEdgeException {
-                return env();
+            @Override public Collection<P> get(ICancel cancel) throws CriticalEdgeException, InterruptedException {
+                return env(cancel);
             }
 
             @Override public String toString() {
@@ -176,7 +192,7 @@ public class EsopEnvs {
             private final Set.Transient<P> _paths = Set.Transient.of();
             private Collection<P> paths = null;
 
-            private Collection<P> env() throws CriticalEdgeException {
+            private Collection<P> env(ICancel cancel) throws CriticalEdgeException, InterruptedException {
                 if(paths != null) {
                     return paths;
                 }
@@ -185,7 +201,7 @@ public class EsopEnvs {
                 while(it.hasNext()) {
                     final IEsopEnv<S, L, O, P> env = it.next();
                     try {
-                        Collection<P> pts = env.get();
+                        Collection<P> pts = env.get(cancel);
                         for(P p : pts) {
                             _paths.__insert(p);
                         }
@@ -201,8 +217,8 @@ public class EsopEnvs {
                 return paths;
             }
 
-            @Override public Collection<P> get() throws CriticalEdgeException {
-                return env();
+            @Override public Collection<P> get(ICancel cancel) throws CriticalEdgeException, InterruptedException {
+                return env(cancel);
             }
 
             @Override public String toString() {
@@ -226,7 +242,7 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            @Override public Collection<P> get() {
+            @Override public Collection<P> get(ICancel cancel) throws InterruptedException {
                 return Collections.emptyList();
             }
 

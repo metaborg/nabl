@@ -2,6 +2,8 @@ package mb.nabl2.scopegraph.terms;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.io.IOException;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
@@ -35,16 +37,20 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
 
     @Value.Parameter @Override public abstract IRelation.Immutable<Label> getSpecificityOrder();
 
+    @Value.Parameter @Override public abstract Strategy getStrategy();
+
+    @Value.Parameter @Override public abstract boolean getPathRelevance();
+
     @Value.Check protected void check() {
         Preconditions.checkArgument(getLabels().contains(getLabelD()));
     }
 
     public static IMatcher<ResolutionParameters> matcher() {
-        return (term, unifier) -> IMatcher
-                .flatten(M.tuple3(matchLabels(), M.term(), matchOrder(), (t, labels, wfTerm, order) -> {
+        return (term, unifier) -> IMatcher.flatten(M.tuple5(matchLabels(), M.term(), matchOrder(), matchStrategy(),
+                matchRelevance(), (t, labels, wfTerm, order, strategy, relevance) -> {
                     RegExpBuilder<Label> builder = new RegExpBuilder<>();
                     return matchWf(builder).match(wfTerm, unifier).<ResolutionParameters>map(
-                            wf -> ResolutionParameters.of(labels, Label.D, Label.R, wf, order));
+                            wf -> ResolutionParameters.of(labels, Label.D, Label.R, wf, order, strategy, relevance));
                 })).match(term, unifier);
     }
 
@@ -81,6 +87,25 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
         ));
     }
 
+    private static IMatcher<Strategy> matchStrategy() {
+        // @formatter:off
+        return M.cases(
+            M.appl0("Search", (t) -> Strategy.SEARCH),
+            M.appl0("Environments", (t) -> Strategy.ENVIRONMENTS)
+        );
+        // @formatter:on
+    }
+
+    private static IMatcher<Boolean> matchRelevance() {
+        return M.casesFix(m -> Iterables2.from(
+        // @formatter:off
+                M.appl0("Relevant", (t) -> true),
+                M.appl0("Irrelevant", (t) -> false)
+        // @formatter:on
+        ));
+    }
+
+
     public static ResolutionParameters getDefault() {
         IAlphabet<Label> labels = new FiniteAlphabet<>(Label.D, Label.P, Label.I);
         RegExpBuilder<Label> R = new RegExpBuilder<>();
@@ -93,7 +118,16 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
         } catch(RelationException e) {
             throw new IllegalStateException(e);
         }
-        return ResolutionParameters.of(labels, Label.D, Label.R, wf, order.freeze());
+        return ResolutionParameters.of(labels, Label.D, Label.R, wf, order.freeze(), Strategy.SEARCH, true);
+    }
+
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
     }
 
 }

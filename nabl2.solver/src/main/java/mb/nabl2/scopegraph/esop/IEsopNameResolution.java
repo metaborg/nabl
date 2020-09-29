@@ -1,32 +1,56 @@
 package mb.nabl2.scopegraph.esop;
 
-import java.util.Collection;
+import org.metaborg.util.functions.Predicate2;
 
 import com.google.common.annotations.Beta;
 
-import io.usethesource.capsule.Map;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.INameResolution;
 import mb.nabl2.scopegraph.IOccurrence;
+import mb.nabl2.scopegraph.IResolutionParameters;
 import mb.nabl2.scopegraph.IScope;
-import mb.nabl2.scopegraph.path.IResolutionPath;
+import mb.nabl2.scopegraph.esop.bottomup.BUNameResolution;
+import mb.nabl2.scopegraph.esop.lazy.EsopNameResolution;
 
 @Beta
 public interface IEsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         extends INameResolution<S, L, O> {
 
-    boolean addCached(ResolutionCache<S, L, O> cache);
+    boolean addCached(IResolutionCache<S, L, O> cache);
 
-    ResolutionCache<S, L, O> toCache();
+    IResolutionCache<S, L, O> toCache();
 
-    interface ResolutionCache<S extends IScope, L extends ILabel, O extends IOccurrence> {
+    interface IResolutionCache<S extends IScope, L extends ILabel, O extends IOccurrence> {
 
-        Map.Immutable<O, Collection<IResolutionPath<S, L, O>>> resolutionEntries();
+        static <S extends IScope, L extends ILabel, O extends IOccurrence> IResolutionCache<S, L, O> empty() {
+            return new IResolutionCache<S, L, O>() {};
+        }
 
-        Map.Immutable<S, Collection<O>> visibilityEntries();
+    }
 
-        Map.Immutable<S, Collection<O>> reachabilityEntries();
+    static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopNameResolution<S, L, O>
+            of(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isClosed) {
+        switch(params.getStrategy()) {
+            case ENVIRONMENTS:
+                return BUNameResolution.of(params, scopeGraph, isClosed);
+            case SEARCH:
+                return EsopNameResolution.of(params, scopeGraph, isClosed);
+            default:
+                throw new IllegalArgumentException("Unknown strategy " + params.getStrategy());
+        }
+    }
 
+    static <S extends IScope, L extends ILabel, O extends IOccurrence> IEsopNameResolution<S, L, O> of(
+            IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isClosed,
+            IResolutionCache<S, L, O> cache) {
+        switch(params.getStrategy()) {
+            case ENVIRONMENTS:
+                return BUNameResolution.of(params, scopeGraph, isClosed, cache);
+            case SEARCH:
+                return EsopNameResolution.of(params, scopeGraph, isClosed, cache);
+            default:
+                throw new IllegalArgumentException("Unknown strategy " + params.getStrategy());
+        }
     }
 
 }
