@@ -54,7 +54,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private final L dataLabel;
     private final Iterable<L> edgeLabels;
     private final IRegExpMatcher<L> wf;
-    private final ImmutableMap<BUEnvKind, BUFirstStepComparator<S, L, O>> orders;
+    private final ImmutableMap<BUEnvKind, BULabelOrder<L>> orders;
     private final Predicate2<S, L> isClosed;
 
 
@@ -67,8 +67,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         // @formatter:off
         this.orders = ImmutableMap.of(
-            BUEnvKind.VISIBLE,   new BUFirstStepComparator<>(dataLabel, params.getSpecificityOrder()),
-            BUEnvKind.REACHABLE, new BUFirstStepComparator<>(dataLabel, noOrder)
+            BUEnvKind.VISIBLE,   new BULabelOrder<>(params.getSpecificityOrder()),
+            BUEnvKind.REACHABLE, new BULabelOrder<>(noOrder)
         );
         // @formatter:on
         this.isClosed = isClosed;
@@ -80,8 +80,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUNameResolution<S, L, O> nr = new BUNameResolution<>(params, scopeGraph, isClosed);
         if(cache instanceof BUCache) {
             final BUCache<S, L, O> _cache = (BUCache<S, L, O>) cache;
-            _cache.envs.forEach(
-                    (env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind)::compare, ps.asTransient())));
+            _cache.envs.forEach((env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind), ps.melt())));
             nr.envs.keySet().forEach(e -> nr.depGraph.insertNode(e));
             nr.completed.__insertAll(_cache.completed);
             nr.backedges.putAll(_cache.backedges);
@@ -169,20 +168,20 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         final BUEnvKey<S, L> key = new BUEnvKey<>(BUEnvKind.VISIBLE, scope, wf);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> env = getOrCompute(key);
-        return env.get(ref.getSpacedName()).stream().flatMap(p -> ofOpt(Paths.resolve(ref, p)))
+        return env.paths(ref.getSpacedName()).stream().flatMap(p -> ofOpt(Paths.resolve(ref, p)))
                 .collect(CapsuleCollectors.toSet());
     }
 
     private Collection<IDeclPath<S, L, O>> visibleEnv(S scope)
             throws InterruptedException, CriticalEdgeException, StuckException {
         final BUEnvKey<S, L> key = new BUEnvKey<>(BUEnvKind.VISIBLE, scope, wf);
-        return getOrCompute(key).pathSet();
+        return getOrCompute(key).paths();
     }
 
     private Collection<IDeclPath<S, L, O>> reachableEnv(S scope)
             throws InterruptedException, CriticalEdgeException, StuckException {
         final BUEnvKey<S, L> key = new BUEnvKey<>(BUEnvKind.REACHABLE, scope, wf);
-        return getOrCompute(key).pathSet();
+        return getOrCompute(key).paths();
     }
 
     /**
@@ -206,35 +205,32 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 continue;
             }
             for(BUEnvKey<S, L> env : openEdges.removeValue(ce)) {
-                final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
+                final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of();
                 if(ce.label().equals(dataLabel)) {
                     initData(env, declPaths);
                 } else {
                     initEdge(env, (L) ce.label(), env.wf.match((L) ce.label()));
                 }
-                queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
+                queueChanges(env, new BUChanges<>(declPaths.freeze(), BUPathSet.Immutable.of()));
             }
         }
         work();
     }
 
     private void work() throws InterruptedException {
-        int work = 0;
         while(!worklist.isEmpty()) {
-            work++;
             worklist.pop().run();
         }
-        //        logger.info("worked {} tasks", work);
     }
 
     private BUEnv<S, L, O, IDeclPath<S, L, O>> init(BUEnvKey<S, L> env) {
-        if(envs.containsKey(env)) {
-            return envs.get(env);
+        BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(env);
+        if(_env != null) {
+            return _env;
         }
-        final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = new BUEnv<>(orders.get(env.kind)::compare);
-        envs.__put(env, _env);
+        envs.__put(env, _env = new BUEnv<>(orders.get(env.kind)));
         depGraph.insertNode(env);
-        final Set.Transient<IDeclPath<S, L, O>> declPaths = Set.Transient.of();
+        final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of();
         if(env.wf.isAccepting()) {
             if(isClosed(env.scope, dataLabel)) {
                 initData(env, declPaths);
@@ -253,14 +249,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 openEdges.put(env, CriticalEdge.of(env.scope, l));
             }
         }
-        queueChanges(env, new BUChanges<>(declPaths.freeze(), Set.Immutable.of()));
+        queueChanges(env, new BUChanges<>(declPaths.freeze(), BUPathSet.Immutable.of()));
         queueCheckComplete(env);
         return _env;
     }
 
-    private void initData(BUEnvKey<S, L> env, Set.Transient<IDeclPath<S, L, O>> declPaths) {
+    private void initData(BUEnvKey<S, L> env, BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths) {
         for(O d : scopeGraph.getDecls().inverse().get(env.scope)) {
-            declPaths.__insert(Paths.decl(Paths.<S, L, O>empty(env.scope), d));
+            declPaths.add(d.getSpacedName(), dataLabel, Paths.decl(Paths.<S, L, O>empty(env.scope), d));
         }
     }
 
@@ -293,14 +289,17 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         pendingChanges.remove(env);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(env);
+        //        logger.info("{}: adding {}, removing {}", env, changes.addedPaths().paths(), changes.removedPaths().paths());
         _env.apply(changes);
-        if(_env.hasChanges() && !pendingChanges.contains(env)) {
+        if(true && _env.hasChanges() && !pendingChanges.contains(env)) {
             final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = _env.commit();
+            //            logger.info("{}: added {}, removed {}", env, newChanges.addedPaths().paths(), newChanges.removedPaths().paths());
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
                 final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges =
-                        newChanges.flatMap(p -> ofOpt(Paths.append(step, p)), p -> ofOpt(Paths.append(step, p)));
+                        newChanges.flatMap(p -> ofOpt(Paths.append(step, p))
+                                .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
                 queueChanges(dstEnv, envChanges);
             }
         }
@@ -348,10 +347,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         } else {
             logger.trace(" * complete edge");
         }
-        final Set.Immutable<IDeclPath<S, L, O>> paths = envs.get(srcEnv).pathSet().stream()
-                .flatMap(p -> ofOpt(Paths.append(st, p))).collect(CapsuleCollectors.toSet());
-        logger.trace(" * paths {}", paths);
-        queueChanges(dstEnv, new BUChanges<>(paths, Set.Immutable.of()));
+
+        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
+                envs.get(srcEnv).asChanges().flatMap(p -> ofOpt(Paths.append(st, p))
+                        .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), st.getLabel(), p2)));
+        logger.trace(" * paths {}", changes);
+        queueChanges(dstEnv, changes);
     }
 
     private void addBackImport(O ref, L l, IRegExpMatcher<L> wf, BUEnvKey<S, L> dstEnv) {
@@ -382,7 +383,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final O ref = _st._2();
         final IRegExpMatcher<L> wf = _st._3();
         final Set.Immutable<IResolutionPath<S, L, O>> paths =
-                envs.get(refEnv).get(ref.getSpacedName()).stream().flatMap(p -> {
+                envs.get(refEnv).paths(ref.getSpacedName()).stream().flatMap(p -> {
                     return ofOpt(Paths.resolve(ref, p));
                 }).collect(CapsuleCollectors.toSet());
         logger.trace(" * paths {}", paths);

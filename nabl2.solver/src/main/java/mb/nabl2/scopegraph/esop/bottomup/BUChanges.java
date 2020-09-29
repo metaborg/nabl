@@ -4,20 +4,19 @@ import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Function1;
 
-import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
-import mb.nabl2.scopegraph.path.IOpenPath;
+import mb.nabl2.scopegraph.terms.SpacedName;
+import mb.nabl2.util.Tuple3;
 
 public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
-    private final Set.Immutable<P> addedPaths;
-    private final Set.Immutable<P> removedPaths;
+    private final BUPathSet.Immutable<S, L, O, P> addedPaths;
+    private final BUPathSet.Immutable<S, L, O, P> removedPaths;
 
-    BUChanges(Set.Immutable<P> addedPaths, Set.Immutable<P> removedPaths) {
+    BUChanges(BUPathSet.Immutable<S, L, O, P> addedPaths, BUPathSet.Immutable<S, L, O, P> removedPaths) {
         this.addedPaths = addedPaths;
         this.removedPaths = removedPaths;
     }
@@ -26,26 +25,30 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
         return addedPaths.isEmpty() && removedPaths.isEmpty();
     }
 
-    public Set.Immutable<P> addedPaths() {
+    public BUPathSet.Immutable<S, L, O, P> addedPaths() {
         return addedPaths;
     }
 
-    public Set.Immutable<P> removedPaths() {
+    public BUPathSet.Immutable<S, L, O, P> removedPaths() {
         return removedPaths;
     }
 
-    public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q> flatMap(Function1<P, Stream<Q>> pathMapper,
-            Function1<IOpenPath<S, L, O>, Stream<IOpenPath<S, L, O>>> openMapper) {
-        final Set.Immutable<Q> mappedAddedPaths =
-                addedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
-        final Set.Immutable<Q> mappedRemovedPaths =
-                removedPaths.stream().flatMap(pathMapper::apply).collect(CapsuleCollectors.toSet());
-        return new BUChanges<>(mappedAddedPaths, mappedRemovedPaths);
+    public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q>
+            flatMap(Function1<P, Stream<Tuple3<SpacedName, L, Q>>> pathMapper) {
+        final BUPathSet.Transient<S, L, O, Q> mappedAddedPaths = BUPathSet.Transient.of();
+        for(P ap : addedPaths.paths()) {
+            pathMapper.apply(ap).forEach(e -> mappedAddedPaths.add(e._1(), e._2(), e._3()));
+        }
+        final BUPathSet.Transient<S, L, O, Q> mappedRemovedPaths = BUPathSet.Transient.of();
+        for(P rp : removedPaths.paths()) {
+            pathMapper.apply(rp).forEach(e -> mappedRemovedPaths.add(e._1(), e._2(), e._3()));
+        }
+        return new BUChanges<>(mappedAddedPaths.freeze(), mappedRemovedPaths.freeze());
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
             BUChanges<S, L, O, IDeclPath<S, L, O>> of() {
-        return new BUChanges<>(Set.Immutable.of(), Set.Immutable.of());
+        return new BUChanges<>(BUPathSet.Immutable.of(), BUPathSet.Immutable.of());
     }
 
 }

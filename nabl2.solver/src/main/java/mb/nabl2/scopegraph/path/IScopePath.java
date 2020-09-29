@@ -22,11 +22,4 @@ public interface IScopePath<S extends IScope, L extends ILabel, O extends IOccur
         return new PathIterator<>(this);
     }
 
-    /**
-     * Get first label of this path, or the given default.
-     * 
-     * Optimization for BUFirstStepComparator, so it doesn't need to create an iterator.
-     */
-    L getFirstLabel(L dataLabel);
-
 }

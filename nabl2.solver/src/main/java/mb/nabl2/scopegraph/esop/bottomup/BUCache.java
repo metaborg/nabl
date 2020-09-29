@@ -8,7 +8,6 @@ import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
@@ -17,7 +16,6 @@ import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IStep;
-import mb.nabl2.scopegraph.terms.SpacedName;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple3;
 import mb.nabl2.util.collections.HashTrieRelation2;
@@ -33,13 +31,13 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
 
     // fields cannot be final, because of readObject
 
-    protected /*final*/ Map.Immutable<BUEnvKey<S, L>, SetMultimap.Immutable<SpacedName, IDeclPath<S, L, O>>> envs;
+    protected /*final*/ Map.Immutable<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> envs;
     protected /*final*/ Set.Immutable<BUEnvKey<S, L>> completed;
     protected /*final*/ IRelation3.Immutable<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges;
     protected /*final*/ IRelation3.Immutable<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports;
     protected /*final*/ IRelation2.Immutable<BUEnvKey<S, L>, CriticalEdge> openEdges;
 
-    BUCache(Map.Immutable<BUEnvKey<S, L>, SetMultimap.Immutable<SpacedName, IDeclPath<S, L, O>>> envs,
+    BUCache(Map.Immutable<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> envs,
             Set.Immutable<BUEnvKey<S, L>> completed,
             IRelation3.Immutable<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges,
             IRelation3.Immutable<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports,
@@ -55,9 +53,9 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
             IRelation3<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges,
             IRelation3<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports,
             IRelation2<BUEnvKey<S, L>, CriticalEdge> openEdges) {
-        final Map.Transient<BUEnvKey<S, L>, SetMultimap.Immutable<SpacedName, IDeclPath<S, L, O>>> _envs =
+        final Map.Transient<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> _envs =
                 Map.Transient.of();
-        envs.forEach((e, ps) -> _envs.__put(e, CapsuleUtil.toSetMultimap(ps.paths())));
+        envs.forEach((e, ps) -> _envs.__put(e, ps.asChanges().addedPaths()));
         this.envs = _envs.freeze();
         this.completed = CapsuleUtil.toSet(completed);
         this.backedges =
