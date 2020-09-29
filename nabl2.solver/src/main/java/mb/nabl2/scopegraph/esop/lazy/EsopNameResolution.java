@@ -41,6 +41,7 @@ import mb.nabl2.scopegraph.terms.path.Paths;
 public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution<S, L, O> {
 
+    private final IResolutionParameters<L> params;
     private final IEsopScopeGraph<S, L, O, ?> scopeGraph;
     private final Set<L> labels;
     private final L labelD;
@@ -63,6 +64,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             Predicate2<S, L> isEdgeClosed, Map.Transient<O, Collection<IResolutionPath<S, L, O>>> resolution,
             Map.Transient<S, Collection<O>> visibility, Map.Transient<S, Collection<O>> reachability) {
 
+        this.params = params;
         this.scopeGraph = scopeGraph;
         this.labels = ImmutableSet.copyOf(params.getLabels());
         this.labelD = params.getLabelD();
@@ -218,7 +220,9 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
         } else {
             List<P> paths = Lists.newArrayList();
             for(O decl : scopeGraph.getDecls().inverse().get(path.getTarget())) {
-                filter.test(Paths.decl(path, decl)).ifPresent(paths::add);
+                final IDeclPath<S, L, O> p = params.getPathRelevance() ? Paths.decl(path, decl)
+                        : Paths.decl(Paths.empty(path.getTarget()), decl);
+                filter.test(p).ifPresent(paths::add);
             }
             return EsopEnvs.init(paths);
         }
