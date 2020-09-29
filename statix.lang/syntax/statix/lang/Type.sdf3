@@ -45,7 +45,6 @@ context-free syntax
   ExtConstraint.ExtProvides  = [[ExtSet] ! [ExtSet][ExtOrigin]]
   ExtConstraint.ExtRequires  = [[ExtSet] ? [ExtSet][ExtOrigin]]
   ExtConstraint.ExtIsCovered = [[ExtSet] is closed[ExtOrigin]]
-  ExtConstraint.ExtBarrier   = [[ExtBarrier] is barrier]
   ExtConstraint.ExtProvidesEsc  = [[ExtSet] ^! [ExtSet][ExtOrigin]]
   ExtConstraint.ExtRequiresEsc  = [[ExtSet] ^? [ExtSet][ExtOrigin]]
 
@@ -57,12 +56,6 @@ context-free syntax
   ExtSet.ExtLit   = [{[{ExtLabel ", "}*]}]
   ExtSet.ExtAll   = "*"
   ExtSet.ExtNone  = "0"
-
-
-  ExtBarriers = <| <{ExtBarrier "\n"}*>>
-
-  ExtBarrier.ExtTerm  = <<ID><NaBL2TermIndex>>
-  ExtBarrier = NaBL2Scope
 
 
   ExtId.ExtRef  = <ref <NaBL2Occurrence>>
