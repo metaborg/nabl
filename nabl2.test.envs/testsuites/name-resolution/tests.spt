@@ -122,15 +122,14 @@ test resolve with import cycle [[
 ]] 0 errors
    resolve #1 to #2
 
-test do not resolve with self as import [[
-  resolve [[x]] via itself to [[x]] { x }
-]] 0 errors
-   resolve #1 to #2
-
 //-------------------------------
 
 // the tests in this block are all supported by the PEPM'16 resolution algorithm,
 // but get stuck in the environment based resolution algorithm.
+
+test do not resolve with self as import [[
+  resolve [[x]] via itself to [[x]] { x }
+]] > 0 errors
 
 test import via reference in same scope [[
   resolve [[x]] via y in same scope y { [[x]] }
