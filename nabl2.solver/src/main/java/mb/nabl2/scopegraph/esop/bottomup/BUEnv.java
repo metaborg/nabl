@@ -68,7 +68,7 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
                     // the candidate is more specific than an earlier selected path
                     final Collection<P> otherPaths = paths.remove(name, otherLabel);
                     addedPaths.remove(name, otherLabel, otherPaths);
-                    removedPaths.remove(name, otherLabel, otherPaths);
+                    removedPaths.add(name, otherLabel, otherPaths);
                 }
                 if(result > 0) {
                     // the candidate is less specific than an earlier selected path

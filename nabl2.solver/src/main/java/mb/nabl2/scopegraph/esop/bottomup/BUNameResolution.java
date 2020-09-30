@@ -198,7 +198,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
      */
     private BUEnv<S, L, O, IDeclPath<S, L, O>> getOrCompute(BUEnvKey<S, L> env, ICancel cancel)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        //        logger.info("compute {}", env);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = init(env);
         work(cancel);
         throwIfIncomplete(env);
@@ -207,7 +206,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     @SuppressWarnings("unchecked") @Override public void update(Iterable<CriticalEdge> criticalEdges, ICancel cancel,
             IProgress progress) throws InterruptedException {
-        //        logger.info("update {}", criticalEdges);
         for(CriticalEdge ce : criticalEdges) {
             if(!isClosed((S) ce.scope(), (L) ce.label())) {
                 continue;
@@ -237,6 +235,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         if(_env != null) {
             return _env;
         }
+        logger.trace("init {}", env);
         envs.__put(env, _env = new BUEnv<>(orders.get(env.kind)));
         depGraph.insertNode(env);
         final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of();
@@ -258,18 +257,22 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 openEdges.put(env, CriticalEdge.of(env.scope, l));
             }
         }
+        logger.trace("queued init changes {} added {}", env, declPaths.names());
         queueChanges(env, new BUChanges<>(declPaths.freeze(), BUPathSet.Immutable.of()));
         queueCheckComplete(env);
         return _env;
     }
 
     private void initData(BUEnvKey<S, L> env, BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths) {
+        logger.trace("init data {}", env);
         for(O d : scopeGraph.getDecls().inverse().get(env.scope)) {
             declPaths.add(d.getSpacedName(), dataLabel, Paths.decl(Paths.<S, L, O>empty(env.scope), d));
         }
+        logger.trace("inited data {}", env);
     }
 
     private void initEdge(BUEnvKey<S, L> env, L l, IRegExpMatcher<L> nextWf) {
+        logger.trace("init edges {} label {} next wf {}", env, l, nextWf);
         for(S scope : scopeGraph.getDirectEdges().get(env.scope, l)) {
             final BUEnvKey<S, L> srcEnv = new BUEnvKey<>(env.kind, scope, nextWf);
             init(srcEnv);
@@ -278,6 +281,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         for(O ref : scopeGraph.getImportEdges().get(env.scope, l)) {
             addBackImport(ref, l, nextWf, env);
         }
+        logger.trace("inited edge {} next wf {}", env, nextWf);
     }
 
     private void queueChanges(BUEnvKey<S, L> env, BUChanges<S, L, O, IDeclPath<S, L, O>> changes) {
@@ -297,9 +301,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             throw new IllegalStateException();
         }
         pendingChanges.remove(env);
+        logger.trace("process changes {} added {} removed {}", env, changes.addedPaths(), changes.removedPaths());
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(env);
         _env.apply(changes);
-        if(true && _env.hasChanges() && !pendingChanges.contains(env)) {
+        if(_env.hasChanges() && !pendingChanges.contains(env)) {
             final BUChanges<S, L, O, IDeclPath<S, L, O>> newChanges = _env.commit();
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
@@ -307,6 +312,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges
                         .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
                                 .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
+                logger.trace("queued fwd changes {} to {} added {} removed {}", env, dstEnv,
+                        envChanges.addedPaths().paths(), envChanges.removedPaths().paths());
                 queueChanges(dstEnv, envChanges);
             }
         }
@@ -326,6 +333,11 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         if(isComplete(env)) {
             completed.__insert(env);
+            final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(env);
+            logger.trace("completed {} {}", env, _env.paths());
+            if(_env.hasChanges()) {
+                throw new IllegalStateException();
+            }
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.remove(env).entrySet()) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 depGraph.deleteEdgeThatExists(dstEnv, env);
@@ -342,8 +354,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     }
 
     private void addBackEdge(BUEnvKey<S, L> srcEnv, IStep<S, L, O> step, BUEnvKey<S, L> dstEnv) {
-        logger.trace("add back edge {}<~{}~{}", dstEnv, step, srcEnv);
-        if(!isComplete(srcEnv)) {
+        logger.trace("add back edge {} {} {}", dstEnv, step, srcEnv);
+        if(!completed.contains(srcEnv)) {
             if(backedges.put(srcEnv, step, dstEnv)) {
                 depGraph.insertEdge(dstEnv, srcEnv);
                 logger.trace(" * new edge");
@@ -355,12 +367,14 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             logger.trace(" * complete edge");
         }
 
-        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes = envs.get(srcEnv).asChanges()
-                .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
+        final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(srcEnv);
+        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
+                _env.asChanges().flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
                         .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
-
-        logger.trace(" * paths {}", changes);
+        logger.trace("queued back changes {} to {} added {} removed {}", srcEnv, dstEnv, changes.addedPaths().paths(),
+                changes.removedPaths().paths());
         queueChanges(dstEnv, changes);
+        logger.trace("added back edge {} {} {}", dstEnv, step, srcEnv);
     }
 
     private void addBackImport(O ref, L l, IRegExpMatcher<L> wf, BUEnvKey<S, L> dstEnv) {
@@ -371,8 +385,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUEnvKey<S, L> refEnv = new BUEnvKey<>(BUEnvKind.VISIBLE, refScope, this.wf);
         init(refEnv);
         final Tuple3<L, O, IRegExpMatcher<L>> _st = Tuple3.of(l, ref, wf);
-        logger.trace("add back import {}<~{}~{}", dstEnv, _st, refEnv);
-        if(!isComplete(refEnv)) {
+        logger.trace("add back import {} {} {}", dstEnv, _st, refEnv);
+        if(!completed.contains(refEnv)) {
             if(backimports.put(refEnv, _st, dstEnv)) {
                 depGraph.insertEdge(dstEnv, refEnv);
                 logger.trace(" * new import");
@@ -383,19 +397,25 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             logger.trace(" * complete import");
             addImportBackEdges(refEnv, _st, dstEnv);
         }
+        logger.trace("added back import {} {} {}", dstEnv, _st, refEnv);
     }
 
     private void addImportBackEdges(BUEnvKey<S, L> refEnv, Tuple3<L, O, IRegExpMatcher<L>> _st, BUEnvKey<S, L> dstEnv) {
-        logger.trace("add import back edges {}<~{}~{}", dstEnv, _st, refEnv);
+        if(!completed.contains(refEnv)) {
+            throw new IllegalStateException();
+        }
+        logger.trace("add import back edges {} {} {}", dstEnv, _st, refEnv);
         final L l = _st._1();
         final O ref = _st._2();
         final IRegExpMatcher<L> wf = _st._3();
-        final Set.Immutable<IResolutionPath<S, L, O>> paths =
-                envs.get(refEnv).paths(ref.getSpacedName()).stream().flatMap(p -> {
-                    return ofOpt(Paths.resolve(ref, p));
-                }).collect(CapsuleCollectors.toSet());
-        logger.trace(" * paths {}", paths);
-        for(IResolutionPath<S, L, O> p : paths) {
+        final Collection<IDeclPath<S, L, O>> declPaths = envs.get(refEnv).paths(ref.getSpacedName());
+        logger.trace("import back edges {} decl paths {}", dstEnv, declPaths);
+        final Set.Immutable<IResolutionPath<S, L, O>> resPaths = declPaths.stream().flatMap(p -> {
+            return ofOpt(Paths.resolve(ref, p));
+        }).collect(CapsuleCollectors.toSet());
+        logger.trace("import back edges {} res paths {}", dstEnv, declPaths);
+        logger.trace(" * paths {}", resPaths);
+        for(IResolutionPath<S, L, O> p : resPaths) {
             scopeGraph.getExportEdges().get(p.getDeclaration(), l).forEach(ss -> {
                 final BUEnvKey<S, L> srcEnv = new BUEnvKey<>(dstEnv.kind, ss, wf);
                 init(srcEnv);
@@ -403,6 +423,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 addBackEdge(srcEnv, st, dstEnv);
             });
         }
+        logger.trace("added import back edges {} {} {}", dstEnv, _st, refEnv);
     }
 
 
@@ -413,15 +434,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     private boolean isComplete(BUEnvKey<S, L> env) {
         final BUEnvKey<S, L> rep = sccGraph.getRepresentative(env);
-        // check for critical edges
-        if(openEdges.containsKey(env)) {
-            return false;
-        }
-        for(BUEnvKey<S, L> reachEnv : sccGraph.getAllReachableTargets(env)) {
-            if(openEdges.containsKey(reachEnv)) {
-                return false;
-            }
-        }
         // check if the component still depends on other components
         if(sccGraph.hasOutgoingEdges(rep)) {
             return false;
@@ -441,9 +453,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         // check for critical edges
+        final java.util.Set<BUEnvKey<S, L>> reachableEnvs = sccGraph.getAllReachableTargets(env);
         final Set.Transient<CriticalEdge> ces = Set.Transient.of();
         ces.__insertAll(openEdges.get(env));
-        for(BUEnvKey<S, L> reachEnv : sccGraph.getAllReachableTargets(env)) {
+        for(BUEnvKey<S, L> reachEnv : reachableEnvs) {
             ces.__insertAll(openEdges.get(reachEnv));
         }
         if(!ces.isEmpty()) {
@@ -451,8 +464,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         // check for stuckness
-        final BUEnvKey<S, L> rep = sccGraph.getRepresentative(env);
-        for(BUEnvKey<S, L> reachRep : sccGraph.getAllReachableTargets(rep)) {
+        final java.util.Set<BUEnvKey<S, L>> reachableReps =
+                reachableEnvs.stream().map(sccGraph::getRepresentative).collect(CapsuleCollectors.toSet());
+        for(BUEnvKey<S, L> reachRep : reachableReps) {
             if(sccGraph.hasOutgoingEdges(reachRep)) {
                 continue;
             }
