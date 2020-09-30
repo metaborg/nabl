@@ -2,8 +2,6 @@ package mb.nabl2.scopegraph.terms;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.io.IOException;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
@@ -119,15 +117,6 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
             throw new IllegalStateException(e);
         }
         return ResolutionParameters.of(labels, Label.D, Label.R, wf, order.freeze(), Strategy.SEARCH, true);
-    }
-
-
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
     }
 
 }

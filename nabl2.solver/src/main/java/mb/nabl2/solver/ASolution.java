@@ -1,6 +1,5 @@
 package mb.nabl2.solver;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
@@ -83,14 +82,6 @@ public abstract class ASolution implements ISolution {
         return Solution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
                 mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(), Collections.emptySet());
-    }
-
-    private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-    }
-
-    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
     }
 
 }

@@ -66,7 +66,7 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        log.warn("Name resolution cache not serialized, because slow serialization.");
+        log.debug("Name resolution cache not serialized.");
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
