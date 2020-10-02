@@ -18,16 +18,16 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
     @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(BUEnv.class);
 
     private final BULabelOrder<L> compare;
-    private final BUPathSet.Transient<S, L, O, P> paths;
+    private BUPathSet.Immutable<S, L, O, P> paths;
 
     private BUPathSet.Transient<S, L, O, P> addedPaths = BUPathSet.Transient.of();
     private BUPathSet.Transient<S, L, O, P> removedPaths = BUPathSet.Transient.of();
 
     public BUEnv(BULabelOrder<L> compare) {
-        this(compare, BUPathSet.Transient.of());
+        this(compare, BUPathSet.Immutable.of());
     }
 
-    BUEnv(BULabelOrder<L> compare, BUPathSet.Transient<S, L, O, P> paths) {
+    BUEnv(BULabelOrder<L> compare, BUPathSet.Immutable<S, L, O, P> paths) {
         this.compare = compare;
         this.paths = paths;
     }
@@ -41,25 +41,31 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
     }
 
     public void apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
-        for(SpacedName name : changes.removedPaths().names()) {
-            for(L label : changes.removedPaths().labels(name)) {
-                removePaths(name, label, changes.removedPaths().paths(name, label));
+        final BUPathSet.Transient<S, L, O, P> paths = this.paths.melt();
+        final BUPathSet.Immutable<S, L, O, P> removePaths = changes.removedPaths();
+        for(SpacedName name : removePaths.names()) {
+            for(L label : removePaths.labels(name)) {
+                removePaths(name, label, paths, removePaths.paths(name, label));
             }
         }
-        for(SpacedName name : changes.addedPaths().names()) {
-            for(L label : changes.addedPaths().labels(name)) {
-                addPaths(name, label, changes.addedPaths().paths(name, label));
+        final BUPathSet.Immutable<S, L, O, P> addPaths = changes.addedPaths();
+        for(SpacedName name : addPaths.names()) {
+            for(L label : addPaths.labels(name)) {
+                addPaths(name, label, paths, addPaths.paths(name, label));
             }
         }
+        this.paths = paths.freeze();
     }
 
-    private void removePaths(SpacedName name, L label, Collection<P> oldPaths) throws InterruptedException {
+    private void removePaths(SpacedName name, L label, BUPathSet.Transient<S, L, O, P> paths, Collection<P> oldPaths)
+            throws InterruptedException {
         oldPaths = paths.remove(name, label, oldPaths);
         addedPaths.remove(name, label, oldPaths);
         removedPaths.add(name, label, oldPaths);
     }
 
-    private void addPaths(SpacedName name, L label, Collection<P> newPaths) throws InterruptedException {
+    private void addPaths(SpacedName name, L label, BUPathSet.Transient<S, L, O, P> paths, Collection<P> newPaths)
+            throws InterruptedException {
         for(L otherLabel : paths.labels(name)) {
             final Integer result = compare.test(label, otherLabel);
             if(result != null) {
@@ -93,7 +99,7 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
     }
 
     public BUChanges<S, L, O, P> asChanges() {
-        return new BUChanges<>(paths.copy(), BUPathSet.Immutable.of());
+        return new BUChanges<>(paths, BUPathSet.Immutable.of());
     }
 
     public void write(String prefix, Writer out) throws IOException {

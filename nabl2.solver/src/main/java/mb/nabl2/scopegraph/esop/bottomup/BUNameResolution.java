@@ -84,7 +84,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUNameResolution<S, L, O> nr = new BUNameResolution<>(params, scopeGraph, isClosed);
         if(cache instanceof BUCache) {
             final BUCache<S, L, O> _cache = (BUCache<S, L, O>) cache;
-            _cache.envs.forEach((env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind), ps.melt())));
+            _cache.envs.forEach((env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind), ps)));
             nr.envs.keySet().forEach(e -> nr.depGraph.insertNode(e));
             nr.completed.__insertAll(_cache.completed);
             nr.backedges.putAll(_cache.backedges);

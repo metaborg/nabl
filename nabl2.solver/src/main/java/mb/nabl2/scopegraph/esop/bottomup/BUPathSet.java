@@ -148,18 +148,6 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
         }
 
 
-        public Immutable<S, L, O, P> copy() {
-            final SetMultimap.Transient<SpacedName, L> keys = SetMultimap.Transient.of();
-            final SetMultimap.Transient<Tuple2<SpacedName, L>, P> paths = SetMultimap.Transient.of();
-            for(SpacedName name : this.keys.keySet()) {
-                keys.__insert(name, this.keys.get(name));
-            }
-            for(Tuple2<SpacedName, L> key : this.paths.keySet()) {
-                paths.__insert(key, this.paths.get(key));
-            }
-            return new Immutable<>(keys.freeze(), paths.freeze());
-        }
-
         public Immutable<S, L, O, P> freeze() {
             return new Immutable<>(keys.freeze(), paths.freeze());
         }
