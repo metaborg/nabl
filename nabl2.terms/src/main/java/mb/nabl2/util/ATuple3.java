@@ -4,7 +4,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Function3;
 
-@Value.Immutable
+@Value.Immutable(builder = false, copy = true, lazyhash = true)
 @Serial.Version(value = 42L)
 public abstract class ATuple3<T1, T2, T3> {
 
