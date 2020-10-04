@@ -133,7 +133,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
             // solve constraints
             scopeGraphReducer.updateAll();
-            hasRelationBuildConstraints.addAll(initial.constraints());
+            hasRelationBuildConstraints.addAll(constraints);
             SolveResult solveResult = solver.solve(constraints, unifier);
             messages.addAll(solveResult.messages());
 
