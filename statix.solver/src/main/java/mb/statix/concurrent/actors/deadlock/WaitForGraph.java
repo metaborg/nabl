@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import org.eclipse.viatra.query.runtime.base.itc.alg.incscc.IncSCCAlg;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -13,6 +12,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
+import mb.nabl2.util.graph.alg.incscc.IncSCCAlg;
 
 /**
  * A data structure to detect deadlock. Maintains a wait-for graph with tokens.

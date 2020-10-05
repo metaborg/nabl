@@ -2,14 +2,13 @@ package mb.statix.concurrent.actors.deadlock;
 
 import java.util.Set;
 
-import org.eclipse.viatra.query.runtime.base.itc.graphimpl.Graph;
-import org.eclipse.viatra.query.runtime.base.itc.igraph.IBiDirectionalGraphDataSource;
-import org.eclipse.viatra.query.runtime.base.itc.igraph.IGraphDataSource;
-import org.eclipse.viatra.query.runtime.base.itc.igraph.IGraphObserver;
-import org.eclipse.viatra.query.runtime.matchers.util.IMemoryView;
-
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.MultiSetMap;
+import mb.nabl2.util.graph.alg.misc.memory.IMemoryView;
+import mb.nabl2.util.graph.graphimpl.Graph;
+import mb.nabl2.util.graph.igraph.IBiDirectionalGraphDataSource;
+import mb.nabl2.util.graph.igraph.IGraphDataSource;
+import mb.nabl2.util.graph.igraph.IGraphObserver;
 
 public class LabeledGraph<V, L> implements IGraphDataSource<V>, IBiDirectionalGraphDataSource<V> {
 

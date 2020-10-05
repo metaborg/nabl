@@ -1,6 +1,7 @@
 package mb.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.usethesource.capsule.Map;
@@ -38,6 +39,10 @@ public abstract class MultiSetMap<K, V> {
 
     public MultiSet.Immutable<V> get(K key) {
         return toMap().getOrDefault(key, MultiSet.Immutable.of());
+    }
+
+    public Set<K> keySet() {
+        return toMap().keySet();
     }
 
     public static class Immutable<K, V> extends MultiSetMap<K, V> implements Serializable {
@@ -84,6 +89,16 @@ public abstract class MultiSetMap<K, V> {
             final int n = values.add(value);
             entries.__put(key, values.freeze());
             return n;
+        }
+
+        public int put(K key, V value, int n) {
+            if(n < 0) {
+                throw new IllegalArgumentException("Negative count");
+            }
+            final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
+            final int m = values.add(value, n);
+            entries.__put(key, values.freeze());
+            return m;
         }
 
         public void putAll(K key, Iterable<V> values) {

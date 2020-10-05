@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.usethesource.capsule.Map;
+import mb.nabl2.util.CapsuleUtil;
 
 public abstract class MultiSet<E> implements Iterable<E> {
 
@@ -38,6 +39,10 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
     @Override public Iterator<E> iterator() {
         return new MultiSetIterator();
+    }
+
+    public Map.Immutable<E, Integer> toMap() {
+        return CapsuleUtil.toMap(elements());
     }
 
     public static class Immutable<E> extends MultiSet<E> implements Serializable {
