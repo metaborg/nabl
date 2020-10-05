@@ -327,6 +327,7 @@ context-free syntax
   SortRef                = <(<SortRef>)> {bracket}
 
   OpDecl.OpDecl  = <<OpId> : <OpSort>>
+  OpDecl.InjDecl = [: [Sort] => [Sort]]
 
   OpSort.ConstOp = Sort
   OpSort.ArrowOp = [[{SortRef " * "}+] -> [Sort]]
@@ -364,7 +365,7 @@ context-free syntax
   Term.Tuple0     = <( )>
   Term.TupleN     = <(<Term>, <{Term ", "}+>)>
   Term.As         = <<Var>@<Term>>
-  Term.Ascribe    = <<Term> : <SortRef>>
+  Term.Cast       = <<Term> : <SortRef>>
   Term            = <(<Term>)> {bracket}
 
   CommaTerms = <<{Term ", "}*>>
@@ -373,7 +374,7 @@ context-free syntax
 context-free priorities
 
     Term.As
-  > Term.Ascribe
+  > Term.Cast
 
 syntax
 

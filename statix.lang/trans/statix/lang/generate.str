@@ -83,6 +83,6 @@ rules
 rules
 
   eliminate-all =
-    eliminate-ascribe
+    eliminate-cast
 
-  eliminate-ascribe = topdown(try(\ Ascribe(t, _) -> t \))
+  eliminate-cast = topdown(try(\ Cast(t, _) -> t \))

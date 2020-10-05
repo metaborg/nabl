@@ -19,6 +19,9 @@ signature
     DeclaredC : CKind
     DerivedC  : CKind
 
+    UserOp : OpKind
+    InjOp  : OpKind
+
   namespaces
     C       // constraint
     Rule    // rule
@@ -51,6 +54,12 @@ signature
       D < S,
       LS < S
 
+  relations
+     reflexive, transitive, anti-symmetric inj : TYPE * TYPE {
+//       (-sub, +sub),
+//       [+sub]
+     }
+     
 rules
 
   init ^ (s) :=
@@ -331,11 +340,11 @@ rules
     EdgeRef[[ lbl ^ (s) ]],
     Build[[ t2 ^ (s) : SCOPE() ]].
 
-  Term(V)[[ StxOccurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
+  Term(V,A)[[ StxOccurrence(ns, ts, pos) ^ (s) : OCCURRENCE() ]] :=
     Ns{ns} -> s, Ns{ns} |-> d | error $[Unresolved namespace [ns]] @ns, @ns.ref := Ns{ns}, @ns.decl := d,
     d : NS(tys),
-    Map1T(Term(V))[[ ts ^ (s) : tys ]],
-    OccurrencePos(Term(V))[[ pos ^ (s) : _ ]],
+    Map1T(Term(V,A))[[ ts ^ (s) : tys ]],
+    OccurrencePos(Term(V,A))[[ pos ^ (s) : _ ]],
     Ns{ns}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   // only call this with a wildcard for ty
@@ -343,13 +352,13 @@ rules
   OccurrencePos(T)[[ WithId(t) ^ (s) : AST_ID() ]] :=
     TermOrId(T)[[ t ^ (s) : ty ]].
 
-  Term(V)[[ PathEmpty(st) ^ (s) : PATH() ]] :=
-    Term(V)[[ st ^ (s) : SCOPE() ]].
+  Term(V,A)[[ PathEmpty(st) ^ (s) : PATH() ]] :=
+    Term(V,A)[[ st ^ (s) : SCOPE() ]].
 
-  Term(V)[[ PathStep(pt, lt, st) ^ (s) : PATH() ]] :=
-    Term(V)[[ pt ^ (s) : PATH() ]],
-    Term(V)[[ lt ^ (s) : LABEL() ]],
-    Term(V)[[ st ^ (s) : SCOPE() ]].
+  Term(V,A)[[ PathStep(pt, lt, st) ^ (s) : PATH() ]] :=
+    Term(V,A)[[ pt ^ (s) : PATH() ]],
+    Term(V,A)[[ lt ^ (s) : LABEL() ]],
+    Term(V,A)[[ st ^ (s) : SCOPE() ]].
 
 
 /******************************************************************
@@ -405,8 +414,20 @@ rules
     x' is `op-name` of (x, sort),
     Op{x'@x} <- s_syn, @x.decl := Op{x'@x},
     Op{x'@x} : ty !!,
+    Op{x'@x}.kind := UserOp(),
     OpSort[[ sort ^ (s) : ty ]],
     Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
+
+  OpDecl[[ i@InjDecl(sort', sort) ^ (s, s_syn) ]] :=
+    SortRef[[ sort' ^ (s) : ty' ]],
+    RealSortRef[[ sort ^ (s) : ty ]],
+    ty' <inj! ty,
+    // implicit constructor declaration
+    x' is `inj-op-name` of (sort', sort),
+    Op{x'@i} <- s_syn,
+    Op{x'@i} : OP([ty'], ty) !!,
+    Op{x'@i}.kind := InjOp(),
+    Op{x'@i}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
 
   OpSort[[ ConstOp(sort) ^ (s) : OP([], ty) ]] :=
     RealSortRef[[ sort ^ (s) : ty ]].
@@ -446,10 +467,11 @@ rules
  ******************************************************************/
 
   Match[[ t ^ (s) : ty ]] :=
-    Term(NonUniqueVarDecl)[[ t ^ (s) : ty ]].
+    Term(NonUniqueVarDecl,MatchCast)[[ t ^ (s) : ty ]].
 
   Build[[ t ^ (s) : ty ]] :=
-    Term(VarRef)[[ t ^ (s) : ty ]].
+    Term(VarRef,BuildCast)[[ t ^ (s) : ty ]].
+
 
   NonUniqueVarDecl[[ Var(x) ^ (s) : ty ]] :=
     Var{x @s} <- s, @x.decl := Var{x @s},
@@ -465,6 +487,7 @@ rules
 
   VarDecl[[ Wld() ^ (_) : _ ]].
 
+
   VarRef[[ Var(x) ^ (s) : ty ]] :=
     Var{x} -> s, Var{x} |-> d | error $[Unresolved variable [x]] @x, @x.ref := Var{x}, @x.decl := d,
     d : ty,
@@ -472,30 +495,42 @@ rules
 
   VarRef[[ Wld() ^ (_) : _ ]].
 
-  Term(V)[[ v@Var(_) ^ (s) : ty ]] :=
+
+  MatchCast(V,A)[[ Cast(t, sort) ^ (s) : ty ]] :=
+    Term(V,A)[[ t ^ (s) : ty' ]],
+    SortRef[[ sort ^ (s) : ty' ]],
+    ty' <inj? ty.
+
+  BuildCast(V,A)[[ Cast(t, sort) ^ (s) : ty ]] :=
+    Term(V,A)[[ t ^ (s) : ty' ]],
+    SortRef[[ sort ^ (s) : ty ]],
+    ty' <inj? ty.
+
+
+  Term(V,A)[[ v@Var(_) ^ (s) : ty ]] :=
     V[[ v ^ (s) : ty ]].
-  Term(V)[[ Wld() ^ (_) : ty ]].
-  Term(V)[[ List(ts) ^ (s): LIST(ty) ]] :=
-    Map1t(Term(V))[[ ts ^ (s) : ty ]].
-  Term(V)[[ ListTail(ts, t) ^ (s) : LIST(ty) ]] :=
-    Map1t(Term(V))[[ ts ^ (s) : ty ]],
-    Term(V)[[ t ^ (s) : LIST(ty) ]].
-  Term(V)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
-    Map1T(Term(V))[[ ts ^ (s) : tys ]].
-  Term(V)[[ Op(x, args) ^ (s) : ty ]] :=
+  Term(V,A)[[ Wld() ^ (_) : ty ]].
+  Term(V,A)[[ List(ts) ^ (s): LIST(ty) ]] :=
+    Map1t(Term(V,A))[[ ts ^ (s) : ty ]].
+  Term(V,A)[[ ListTail(ts, t) ^ (s) : LIST(ty) ]] :=
+    Map1t(Term(V,A))[[ ts ^ (s) : ty ]],
+    Term(V,A)[[ t ^ (s) : LIST(ty) ]].
+  Term(V,A)[[ Tuple(ts) ^ (s) : TUPLE(tys) ]] :=
+    Map1T(Term(V,A))[[ ts ^ (s) : tys ]].
+  Term(V,A)[[ Op(x, args) ^ (s) : ty ]] :=
     x' is `op-name` of (x, args),
     Op{x'@x} -> s, Op{x'@x} |-> d | error $[Unresolved constructor [x']] @x, @x.ref := Op{x'@x}, @x.decl := d,
     d : OP(tys, ty),
-    Map1T(Term(V))[[ args ^ (s) : tys ]],
+    Map1T(Term(V,A))[[ args ^ (s) : tys ]],
+    d.kind := k, k <`same-name`? UserOp() | warning $[Use _:T syntax, instead of referring to the implicit constructor.],
     Op{x'@x}.qname := qname, This{()} -> s, This{()} |-> d_this, d_this.qname := qname.
-  Term(V)[[ Str(_) ^ (_) : STRING() ]].
-  Term(V)[[ Int(_) ^ (_) : INT() ]].
-  Term(V)[[ As(v, t) ^ (s) : ty ]] :=
+  Term(V,A)[[ Str(_) ^ (_) : STRING() ]].
+  Term(V,A)[[ Int(_) ^ (_) : INT() ]].
+  Term(V,A)[[ As(v, t) ^ (s) : ty ]] :=
     V[[ v ^ (s) : ty ]],
-    Term(V)[[ t ^ (s) : ty ]].
-  Term(V)[[ Ascribe(t, sort) ^ (s) : ty ]] :=
-    SortRef[[ sort ^ (s) : ty ]],
-    Term(V)[[ t ^ (s) : ty ]].
+    Term(V,A)[[ t ^ (s) : ty ]].
+  Term(V,A)[[ cast@Cast(_, _) ^ (s) : ty ]] :=
+    A(V,A)[[ cast ^ (s) : ty ]].
 
 
 /******************************************************************
@@ -505,47 +540,47 @@ rules
 rules
 
   Constraint[[ CArith(ae1, op, ae2, msg) ^ (s) ]] :=
-    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
-    ArithExp(VarRef)[[ ae1 ^ (s) : INT() ]],
+    ArithExp(VarRef,BuildCast)[[ ae1 ^ (s) : INT() ]],
+    ArithExp(VarRef,BuildCast)[[ ae1 ^ (s) : INT() ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
 
-  ArithExp(V)[[ e@Int(_) ^ (s) : INT() ]] :=
-    Term(V)[[ e ^ (s) : INT() ]].
+  ArithExp(V,A)[[ e@Int(_) ^ (s) : INT() ]] :=
+    Term(V,A)[[ e ^ (s) : INT() ]].
 
-  ArithExp(V)[[ e@Wld() ^ (s) : INT() ]] :=
+  ArithExp(V,A)[[ e@Wld() ^ (s) : INT() ]] :=
     V[[ e ^ (s) : INT() ]].
 
-  ArithExp(V)[[ e@Var(_) ^ (s) : INT() ]] :=
+  ArithExp(V,A)[[ e@Var(_) ^ (s) : INT() ]] :=
     V[[ e ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Add(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Add(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Mul(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Mul(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Sub(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Sub(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Min(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Min(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Max(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Max(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Mod(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Mod(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
-  ArithExp(V)[[ Div(e1, e2) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ e1 ^ (s) : INT() ]],
-    ArithExp(V)[[ e2 ^ (s) : INT() ]].
+  ArithExp(V,A)[[ Div(e1, e2) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ e1 ^ (s) : INT() ]],
+    ArithExp(V,A)[[ e2 ^ (s) : INT() ]].
 
 
 /******************************************************************

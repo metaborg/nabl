@@ -21,6 +21,12 @@ rules
 
 rules
 
+  inj-op-name: (SimpleSort(x), SimpleSort(y)) -> $[[x]2[y]/1]
+
+  inj-name: (SimpleSort(x), SimpleSort(y)) -> $[[x]2[y]]
+
+rules
+
   inout-type = inout-types; tys-to-ty
   inout-types: PRED(tys)          -> tys
   inout-types: FUN(intys, outty) -> <conc> (intys, [outty])

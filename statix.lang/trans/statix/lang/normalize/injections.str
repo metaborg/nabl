@@ -1,0 +1,59 @@
+module statix/lang/normalize/injections
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+
+  nabl2/shared/vars
+  nabl2/api
+
+  signatures/statix/lang/-
+  statix/lang/statics/-
+  statix/lang/util
+  statix/lang/normalize/util
+
+rules
+
+  normalize-injections =
+    nabl2-custom-analysis-info-msg(|"| Normalize injections...")
+  ; bottomup(try(normalize-inj-decl))
+  ; bottomup(try(normalize-cast))
+
+
+  normalize-inj-decl:
+      InjDecl(sort', sort){a*} -> OpDecl(x, ArrowOp([sort'], sort)){a*}
+    with x := <inj-name> (sort', sort)
+
+
+
+  normalize-cast =
+    // this is quite sensitive to order:
+    // 1. functional heads must be normalized already, or the output is replaced incorrectly
+    // 2. we assume matches only appear in heads, and after that all other casts are builds
+    replace-in-heads(normalize-match-cast)
+  ; bottomup(try(normalize-build-cast))
+
+  normalize-match-cast:
+      cast@Cast(t, sort){a*} -> t'
+    with ty' := <norm-get-ast-type> cast
+       ; ty := <norm-get-ast-type> sort
+       ; if <raw-eq> (ty', ty) then
+           t' := t
+         else
+           sort' := <type-to-sort> ty'
+         ; x := <inj-name> (sort, sort')
+         ; t'{a*} := Op(x, [t])
+         end
+
+  normalize-build-cast:
+      cast@Cast(t, sort){a*} -> t'
+    with ty' := <norm-get-ast-type> cast
+       ; ty := <norm-get-ast-type> sort
+       ; if <raw-eq> (ty', ty) then
+           t' := t
+         else
+           sort' := <type-to-sort> ty'
+         ; x := <inj-name> (sort', sort)
+         ; t' := Op(x, [t]){a*}
+         end

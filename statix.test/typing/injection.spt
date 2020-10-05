@@ -7,113 +7,86 @@ fixture [[
   signature
     sorts A constructors
       A : A
-    //    B => A
+        : B => A
     sorts B constructors
       B : B
   [[...]]
 ]]
 
-test equating variable with variable of injected sort fails [[
+test equating variable with variable of implicitly injected sort fails [[
   rules
     p : A * B
     p(a, b) :- a == b.
-]] // analysis fails
+]] analysis fails
 
-test equating variable with injected constructor succeeds [[
+test equating variable with variable of explicitly injected sort succeeds [[
+  rules
+    p : A * B
+    p(a, b) :- a == b:A.
+]] analysis succeeds
+
+test equating variable with implicitly injected constructor fails [[
   rules
     p : A
     p(a) :- a == B().
-]] // analysis succeeds
+]] analysis fails
 
-test variable argument of injected sort fails [[
+test equating variable with explicitly injected constructor succeeds [[
+  rules
+    p : A
+    p(a) :- a == B():A.
+]] analysis succeeds
+
+test variable argument of implicitly injected sort fails [[
   rules
     p : B
     p(b) :- q(b).
   rules
     q : A
-]] // analysis fails
+]] analysis fails
 
-test constructed argument of injected sort succeeds [[
+test variable argument of explicitly injected sort succeeds [[
+  rules
+    p : B
+    p(b) :- q(b:A).
+  rules
+    q : A
+]] analysis succeeds
+
+test constructed argument of implicitly injected sort fails [[
   rules
     p :
     p() :- q(B()).
   rules
     q : A
-]] // analysis succeeds
+]] analysis fails
 
-test variable argument of injected sort resulting from constructor match succeeds [[
+test constructed argument of explicitly injected sort succeeds [[
   rules
-    p : A
-    p(a@B()) :- q(a).
+    p :
+    p() :- q(B():A).
   rules
     q : A
-]] // analysis succeeds
+]] analysis succeeds
 
-test variable argument of same sort resulting from injected constructor match succeeds [[
+test variable parameter of explicitly injected sort succeeds [[
   rules
     p : A
-    p(a@B()) :- p(a).
-  rules
-    q : A
-]] // analysis succeeds
-
-test variable resulting from injected constructor match used as both same sort and injected sort succeeds [[
-  rules
-    p : A
-    p(a@B()) :- p(a), q(a).
-  rules
-    q : A
-]] // analysis succeeds
-
-test variable unified with injected constructor used as injected sort ??? [[
-  rules
-    p : A
-    p(a) :- a == B(), q(a).
+    p(b:B) :- q(b).
   rules
     q : B
-]] // analysis ???
+]] analysis succeeds
 
-test variable used as injected sort in predicate that has concrete matches only ??? [[
+test constructed parameter of explicitly injected sort succeeds [[
   rules
     p : A
-    p(a) :- q(a).
+    p(B():B).
   rules
     q : B
-    q(B()).
-]] // analysis ???
+]] analysis succeeds
 
-test variable used as injected sort in predicate that unifies with a constructor ??? [[
+test functional predicate with explicitly injected output succeeds [[
   rules
-    p : A
-    p(a) :- q(a).
-  rules
-    q : B
-    q(b) :- b == B().
-]] // analysis ???
-
-test variable used as injected sort in predicate that has afree rule fails [[
-  rules
-    p : A
-    p(a) :- q(a).
-  rules
-    q : B
-    q(b).
-]] // analysis fails
-
-test functional predicate that has concrete outputs only used as injecting sort ??? [[
-  rules
-    p : A
-    p(a) :- a == q().
-  rules
-    q : -> B
-    q() = B().
-]] // analysis ???
-
-test functional predicate that has free outputs used as injecting sort fails [[
-  rules
-    p : A
-    p(a) :- a == q().
-  rules
-    q : -> B
-    q() = _.
-]] // analysis fails
+    q : -> A
+    q() = B():A.
+]] analysis succeeds

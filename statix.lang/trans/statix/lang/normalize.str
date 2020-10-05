@@ -18,6 +18,7 @@ rules
   ; normalize-queries
   ; normalize-functional-relations
   ; normalize-lambda-patterns
+  ; normalize-injections
   ; normalize-terms
   ; nabl2-custom-analysis-info-msg(|"| Done.")
 

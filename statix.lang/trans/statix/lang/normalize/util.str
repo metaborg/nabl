@@ -40,7 +40,7 @@ rules
 
   norm-get-ast-type =
     nabl2-get-anno-type
- <+ fail-warn-msg(|"Missing AST type")
+ <+ fail-warn(|"Missing AST type")
 
   norm-set-ast-type(|ty) =
     nabl2-set-anno-type(|ty)
@@ -50,14 +50,14 @@ rules
 
   norm-get-ast-property(|a,prop) =
     not(nabl2-get-ast-index)
-  < fail-warn-msg(|"Missing AST index")
+  < fail-warn(|"Missing AST index")
   + nabl2-get-ast-property(|a,prop)
   ; nabl2--is-ground
  <+ fail-warn(|"Property is not ground")
 
   norm-get-ast-decl(|a) =
     not(nabl2-get-ast-index)
-  < fail-warn-msg(|"Missing AST index")
+  < fail-warn(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
   ; nabl2--is-ground
  <+ fail-warn(|"Property is not ground")
@@ -68,7 +68,7 @@ rules
 
   norm-get-ast-decl-property(|a,prop) =
     not(nabl2-get-ast-index)
-  < fail-warn-msg(|"Missing AST index")
+  < fail-warn(|"Missing AST index")
   + nabl2-get-ast-property(|a,"decl")
   ; nabl2-get-property(|a,prop)
   ; nabl2--is-ground
@@ -138,6 +138,20 @@ rules
   replaceconcat-in-signature(replace):
       Constructors(opdecl*) -> (Constructors(opdecl'*), maps)
     with (opdecl'*, maps) := <replaceconcat(replace)> opdecl*
+
+
+rules
+
+  replace-in-heads(replace) =
+    topdown-om(replace-in-head(bottomup(try(replace))))
+    
+  replace-in-head(replace):
+      Rule(lbl, head, body){a*} -> Rule(lbl, head', body){a*}
+    with head' := <replace> head
+      
+  replace-in-head(replace):
+      LLam(ts, body){a*} -> LLam(ts', body){a*}
+    with ts' := <replace> ts
 
 
 rules

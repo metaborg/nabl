@@ -57,14 +57,14 @@ rules
     intys is `in-types` of ty,
     outty is `out-type` of ty,
     Map1T(Match)[[ inargs ^ (s_rule) : intys ]],
-    Match[[ outarg ^ (s_rule) : outty ]].
+    Output[[ outarg ^ (s_rule) : outty ]].
 
-  Term(V)[[ COp(x, args) ^ (s) : outty ]] :=
+  Term(V,A)[[ COp(x, args) ^ (s) : outty ]] :=
     C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty, ty != PRED(_) | error "Inline notation can only be used for functional constraints.",
     intys is `in-types` of ty,
     outty is `out-type` of ty,
-    Map1T(Term(V))[[ args ^ (s) : intys ]].
+    Map1T(Term(V,A))[[ args ^ (s) : intys ]].
 
   HoConstraint[[ LC(x) ^ (s) : ty ]] :=
     C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
@@ -79,15 +79,15 @@ rules
 
   HoConstraint[[ LFalse() ^ (_) : PRED(_) ]].
 
-  Term(V)[[ NewOp() ^ (s) : SCOPE() ]].
+  Term(V,A)[[ NewOp() ^ (s) : SCOPE() ]].
 
 
 /******************************************************************
  * AST Constraints                                                *
  ******************************************************************/
 
-  Term(V)[[ AstIdOp(t) ^ (s) : AST_ID() ]] :=
-    Term(V)[[ t ^ (s) : _ ]].
+  Term(V,A)[[ AstIdOp(t) ^ (s) : AST_ID() ]] :=
+    Term(V,A)[[ t ^ (s) : _ ]].
 
 
 /******************************************************************
@@ -104,12 +104,12 @@ rules
     Map1T(Build)[[ ts ^ (s): tys ]],
     Build[[ st ^ (s) : SCOPE() ]].
 
-  Term(V)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
+  Term(V,A)[[ AskRelOp(rel, ts, st) ^ (s) : outty ]] :=
     RelRef[[ rel ^ (s) : ty ]], ty != PRED(_) | error "Use predicate notation for non-functional relations.",
     intys is `in-types` of ty,
     outty is `out-type` of ty,
-    Map1T(Term(V))[[ ts ^ (s) : intys ]],
-    Term(V)[[ st ^ (s) : SCOPE() ]].
+    Map1T(Term(V,A))[[ ts ^ (s) : intys ]],
+    Term(V,A)[[ st ^ (s) : SCOPE() ]].
 
 
 /******************************************************************
@@ -161,6 +161,10 @@ rules
  * Terms                                                          *
  ******************************************************************/
 
+  Output[[ t ^ (s) : ty ]] :=
+    // declares variables like a match,
+    // but requires type annotations like a build
+    Term(NonUniqueVarDecl,BuildCast)[[ t ^ (s) : ty ]].
 
 /******************************************************************
  * Arithmetic                                                     *
@@ -168,5 +172,5 @@ rules
 
 rules
 
-  Term(V)[[ ArithOp(ae) ^ (s) : INT() ]] :=
-    ArithExp(V)[[ ae ^ (s) : INT() ]].
+  Term(V,A)[[ ArithOp(ae) ^ (s) : INT() ]] :=
+    ArithExp(V,A)[[ ae ^ (s) : INT() ]].
