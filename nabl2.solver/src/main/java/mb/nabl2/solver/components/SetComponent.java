@@ -6,18 +6,17 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
@@ -74,8 +73,8 @@ public class SetComponent extends ASolver {
         if(!(maybeLeftSet.isPresent() && maybeRightSet.isPresent())) {
             return SolveResult.empty();
         }
-        final Set<IElement<ITerm>> leftSet;
-        final Set<IElement<ITerm>> rightSet;
+        final Set.Immutable<IElement<ITerm>> leftSet;
+        final Set.Immutable<IElement<ITerm>> rightSet;
         try {
             leftSet = maybeLeftSet.get().apply();
             rightSet = maybeRightSet.get().apply();
@@ -88,18 +87,21 @@ public class SetComponent extends ASolver {
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         }
-        Multimap<Object, IElement<ITerm>> leftProj = SetEvaluator.project(leftSet, constraint.getProjection());
-        Multimap<Object, IElement<ITerm>> rightProj = SetEvaluator.project(rightSet, constraint.getProjection());
-        Multimap<Object, IElement<ITerm>> result = HashMultimap.create();
-        result.putAll(leftProj);
-        result.keySet().removeAll(rightProj.keySet());
+        SetMultimap.Immutable<Object, IElement<ITerm>> leftProj = SetEvaluator.project(leftSet, constraint.getProjection());
+        SetMultimap.Immutable<Object, IElement<ITerm>> rightProj = SetEvaluator.project(rightSet, constraint.getProjection());
+        SetMultimap.Transient<Object, IElement<ITerm>> result = SetMultimap.Transient.of();
+        for(Object key : leftProj.keySet()) {
+            if(!rightProj.containsKey(key)) {
+                result.__insert(key, leftProj.get(key));
+            }
+        }
         if(result.isEmpty()) {
             return SolveResult.empty();
         } else {
             MessageContent content =
                     MessageContent.builder().append(B.newAppl(NAME_OP)).append(" not in ").append(right).build();
             Iterable<IMessageInfo> messages =
-                    makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.values());
+                    makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.freeze().values());
             return SolveResult.messages(messages);
         }
     }
@@ -125,7 +127,7 @@ public class SetComponent extends ASolver {
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         }
-        Multimap<Object, IElement<ITerm>> proj = SetEvaluator.project(set, constraint.getProjection());
+        SetMultimap.Immutable<Object, IElement<ITerm>> proj = SetEvaluator.project(set, constraint.getProjection());
         List<IElement<ITerm>> duplicates = Lists.newArrayList();
         for(Object key : proj.keySet()) {
             Collection<IElement<ITerm>> values = proj.get(key);

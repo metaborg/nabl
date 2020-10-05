@@ -32,11 +32,7 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
     }
 
     public Collection<P> paths() {
-        final Set.Transient<P> paths = Set.Transient.of();
-        for(Tuple2<SpacedName, L> key : _paths().keySet()) {
-            paths.__insertAll(_paths().get(key));
-        }
-        return paths.freeze();
+        return _paths().values();
     }
 
     public Collection<P> paths(SpacedName name) {

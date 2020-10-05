@@ -4,8 +4,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Namespace;
@@ -50,14 +49,14 @@ public class NameSetsComponent extends ASolver {
         // @formatter:on
     }
 
-    private java.util.Set<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
-        java.util.Set<IElement<ITerm>> result = Sets.newHashSet();
+    private Set.Immutable<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
+        Set.Transient<IElement<ITerm>> result = Set.Transient.of();
         for(Occurrence occurrence : occurrences) {
             if(namespace.getName().isEmpty() || namespace.equals(occurrence.getNamespace())) {
-                result.add(new OccurrenceElement(occurrence));
+                result.__insert(new OccurrenceElement(occurrence));
             }
         }
-        return result;
+        return result.freeze();
     }
 
     private static class OccurrenceElement implements IElement<ITerm> {

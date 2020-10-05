@@ -3,14 +3,11 @@ package mb.nabl2.sets;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class SetEvaluator {
@@ -19,49 +16,55 @@ public class SetEvaluator {
         // @formatter:off
         return M.<ISetProducer<T>>casesFix(m -> Iterables2.from(
             elemMatcher,
-            M.appl0("EmptySet", (t) -> () -> Sets.newHashSet()),
+            M.appl0("EmptySet", (t) -> () -> Set.Immutable.of()),
             M.appl2("Union", m, m, (t, leftSet, rightSet) -> () -> {
-                Set<IElement<T>> result = Sets.newHashSet();
-                result.addAll(leftSet.apply());
-                result.addAll(rightSet.apply());
-                return (Set<IElement<T>>)result;
+                return Set.Immutable.union(leftSet.apply(), rightSet.apply());
             }),
             M.appl3("Isect", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> () -> {
-                Multimap<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
-                Multimap<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
-                Multimap<Object,IElement<T>> result = HashMultimap.create();
-                result.putAll(leftProj);
-                result.putAll(rightProj);
-                result.keySet().retainAll(rightProj.keySet());
-                result.keySet().retainAll(leftProj.keySet());
-                return (Set<IElement<T>>)Sets.newHashSet(result.values());
+                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
+                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
+                Set.Transient<IElement<T>> result = Set.Transient.of();
+                for(Object key : leftProj.keySet()) {
+                    if(rightProj.containsKey(key)) {
+                        result.__insertAll(leftProj.get(key));
+                        result.__insertAll(rightProj.get(key));
+                    }
+                }
+                return result.freeze();
             }),
             M.appl3("Lsect", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> () -> {
-                Multimap<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
-                Multimap<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
-                Multimap<Object,IElement<T>> result = HashMultimap.create();
-                result.putAll(leftProj);
-                result.keySet().retainAll(rightProj.keySet());
-                return (Set<IElement<T>>)Sets.newHashSet(result.values());
+                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
+                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
+                Set.Transient<IElement<T>> result = Set.Transient.of();
+                for(Object key : leftProj.keySet()) {
+                    if(rightProj.containsKey(key)) {
+                        result.__insertAll(leftProj.get(key));
+                    }
+                }
+                return result.freeze();
             }),
             M.appl3("Diff", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> () -> {
-                Multimap<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
-                Multimap<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
-                Multimap<Object,IElement<T>> result = HashMultimap.create();
-                result.putAll(leftProj);
-                result.keySet().removeAll(rightProj.keySet());
-                return (Set<IElement<T>>)Sets.newHashSet(result.values());
+                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
+                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
+                Set.Transient<IElement<T>> result = Set.Transient.of();
+                for(Object key : leftProj.keySet()) {
+                    if(!rightProj.containsKey(key)) {
+                        result.__insertAll(rightProj.get(key));
+                    }
+                }
+                return result.freeze();
             })
         ));
         // @formatter:on
     }
 
-    public static <T> Multimap<Object, IElement<T>> project(Set<IElement<T>> elems, Optional<String> proj) {
-        Multimap<Object, IElement<T>> result = HashMultimap.create();
+    public static <T> SetMultimap.Immutable<Object, IElement<T>> project(Set<IElement<T>> elems,
+            Optional<String> proj) {
+        SetMultimap.Transient<Object, IElement<T>> result = SetMultimap.Transient.of();
         for(IElement<T> elem : elems) {
-            result.put(proj.map(p -> elem.project(p)).orElseGet(() -> elem.getValue()), elem);
+            result.__insert(proj.map(p -> elem.project(p)).orElseGet(() -> elem.getValue()), elem);
         }
-        return result;
+        return result.freeze();
     }
 
 }
