@@ -13,23 +13,28 @@ import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.terms.SpacedName;
 
-public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
+class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
     @SuppressWarnings("unused") private static final ILogger logger = LoggerUtils.logger(BUEnv.class);
 
     private final BULabelOrder<L> compare;
+    private final BUPathKeyFactory<L> keyFactory;
+
     private BUPathSet.Immutable<S, L, O, P> paths;
 
-    private BUPathSet.Transient<S, L, O, P> addedPaths = BUPathSet.Transient.of();
-    private BUPathSet.Transient<S, L, O, P> removedPaths = BUPathSet.Transient.of();
+    private BUPathSet.Transient<S, L, O, P> addedPaths;
+    private BUPathSet.Transient<S, L, O, P> removedPaths;
 
-    public BUEnv(BULabelOrder<L> compare) {
-        this(compare, BUPathSet.Immutable.of());
+    public BUEnv(BULabelOrder<L> compare, BUPathKeyFactory<L> keyFactory) {
+        this(compare, keyFactory, BUPathSet.Immutable.of());
     }
 
-    BUEnv(BULabelOrder<L> compare, BUPathSet.Immutable<S, L, O, P> paths) {
+    BUEnv(BULabelOrder<L> compare, BUPathKeyFactory<L> keyFactory, BUPathSet.Immutable<S, L, O, P> paths) {
         this.compare = compare;
+        this.keyFactory = keyFactory;
         this.paths = paths;
+        this.addedPaths = BUPathSet.Transient.of(keyFactory);
+        this.removedPaths = BUPathSet.Transient.of(keyFactory);
     }
 
     public Collection<P> paths() {
@@ -41,7 +46,7 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
     }
 
     public void apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
-        final BUPathSet.Transient<S, L, O, P> paths = this.paths.melt();
+        final BUPathSet.Transient<S, L, O, P> paths = this.paths.melt(keyFactory);
         final BUPathSet.Immutable<S, L, O, P> removePaths = changes.removedPaths();
         for(SpacedName name : removePaths.names()) {
             for(L label : removePaths.labels(name)) {
@@ -89,8 +94,8 @@ public class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P 
 
     public BUChanges<S, L, O, P> commit() throws InterruptedException {
         final BUChanges<S, L, O, P> changes = new BUChanges<>(addedPaths.freeze(), removedPaths.freeze());
-        addedPaths = BUPathSet.Transient.of();
-        removedPaths = BUPathSet.Transient.of();
+        addedPaths = BUPathSet.Transient.of(keyFactory);
+        removedPaths = BUPathSet.Transient.of(keyFactory);
         return changes;
     }
 

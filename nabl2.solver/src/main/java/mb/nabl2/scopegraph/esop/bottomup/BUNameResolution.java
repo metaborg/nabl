@@ -12,6 +12,8 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
@@ -60,6 +62,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private final ImmutableMap<BUEnvKind, BULabelOrder<L>> orders;
     private final Predicate2<S, L> isClosed;
 
+    private final BUPathKeyFactory<L> keyFactory = new BUPathKeyFactory<>();
+    private final Cache<S, Collection<O>> visibles = CacheBuilder.newBuilder().build();
+    private final Cache<S, Collection<O>> reachables = CacheBuilder.newBuilder().build();
 
     public BUNameResolution(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
             Predicate2<S, L> isClosed) {
@@ -84,7 +89,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUNameResolution<S, L, O> nr = new BUNameResolution<>(params, scopeGraph, isClosed);
         if(cache instanceof BUCache) {
             final BUCache<S, L, O> _cache = (BUCache<S, L, O>) cache;
-            _cache.envs.forEach((env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind), ps)));
+            _cache.envs
+                    .forEach((env, ps) -> nr.envs.__put(env, new BUEnv<>(nr.orders.get(env.kind), nr.keyFactory, ps)));
             nr.envs.keySet().forEach(e -> nr.depGraph.insertNode(e));
             nr.completed.__insertAll(_cache.completed);
             nr.backedges.putAll(_cache.backedges);
@@ -124,12 +130,22 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     @Override public Collection<O> visible(S scope, ICancel cancel, IProgress progress)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        return Paths.declPathsToDecls(visibleEnv(scope, cancel));
+        Collection<O> decls = visibles.getIfPresent(scope);
+        if(decls == null) {
+            decls = Paths.declPathsToDecls(visibleEnv(scope, cancel));
+            visibles.put(scope, decls);
+        }
+        return decls;
     }
 
     @Override public Collection<O> reachable(S scope, ICancel cancel, IProgress progress)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        return Paths.declPathsToDecls(reachableEnv(scope, cancel));
+        Collection<O> decls = reachables.getIfPresent(scope);
+        if(decls == null) {
+            decls = Paths.declPathsToDecls(reachableEnv(scope, cancel));
+            reachables.put(scope, decls);
+        }
+        return decls;
     }
 
     @Override public Collection<Map.Entry<O, Collection<IResolutionPath<S, L, O>>>> resolutionEntries() {
@@ -211,7 +227,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 continue;
             }
             for(BUEnvKey<S, L> env : openEdges.removeValue(ce)) {
-                final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of();
+                final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of(keyFactory);
                 if(ce.label().equals(dataLabel)) {
                     initData(env, declPaths);
                 } else {
@@ -236,9 +252,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             return _env;
         }
         logger.trace("init {}", env);
-        envs.__put(env, _env = new BUEnv<>(orders.get(env.kind)));
+        envs.__put(env, _env = new BUEnv<>(orders.get(env.kind), keyFactory));
         depGraph.insertNode(env);
-        final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of();
+        final BUPathSet.Transient<S, L, O, IDeclPath<S, L, O>> declPaths = BUPathSet.Transient.of(keyFactory);
         if(env.wf.isAccepting()) {
             if(isClosed(env.scope, dataLabel)) {
                 initData(env, declPaths);
@@ -309,9 +325,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
-                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges
-                        .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
-                                .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
+                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges.flatMap(
+                        p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
+                                .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)),
+                        keyFactory);
                 logger.trace("queued fwd changes {} to {} added {} removed {}", env, dstEnv,
                         envChanges.addedPaths().paths(), envChanges.removedPaths().paths());
                 queueChanges(dstEnv, envChanges);
@@ -369,8 +386,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(srcEnv);
         final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
-                _env.asChanges().flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
-                        .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)));
+                _env.asChanges().flatMap(
+                        p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
+                                .map(p2 -> Tuple3.of(p.getDeclaration().getSpacedName(), step.getLabel(), p2)),
+                        keyFactory);
         logger.trace("queued back changes {} to {} added {} removed {}", srcEnv, dstEnv, changes.addedPaths().paths(),
                 changes.removedPaths().paths());
         queueChanges(dstEnv, changes);

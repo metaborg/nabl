@@ -12,7 +12,7 @@ import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.terms.SpacedName;
 import mb.nabl2.util.Tuple2;
 
-public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
+abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
     protected abstract SetMultimap<SpacedName, L> _keys();
 
@@ -48,7 +48,7 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
     }
 
 
-    public static class Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
+    static class Immutable<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
             extends BUPathSet<S, L, O, P> implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -70,8 +70,8 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
         }
 
 
-        public Transient<S, L, O, P> melt() {
-            return new Transient<>(keys.asTransient(), paths.asTransient());
+        public Transient<S, L, O, P> melt(BUPathKeyFactory<L> keyFactory) {
+            return new Transient<>(keyFactory, keys.asTransient(), paths.asTransient());
         }
 
 
@@ -82,14 +82,16 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
 
     }
 
-    public static class Transient<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
+    static class Transient<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
             extends BUPathSet<S, L, O, P> {
 
+        private final BUPathKeyFactory<L> keyFactory;
         private final SetMultimap.Transient<SpacedName, L> keys;
         private final SetMultimap.Transient<Tuple2<SpacedName, L>, P> paths;
 
-        private Transient(SetMultimap.Transient<SpacedName, L> keys,
+        private Transient(BUPathKeyFactory<L> keyFactory, SetMultimap.Transient<SpacedName, L> keys,
                 SetMultimap.Transient<Tuple2<SpacedName, L>, P> paths) {
+            this.keyFactory = keyFactory;
             this.keys = keys;
             this.paths = paths;
         }
@@ -106,7 +108,7 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
         public Collection<P> add(SpacedName name, L label, Collection<P> paths) {
             final Set.Transient<P> added = Set.Transient.of();
             keys.__insert(name, label);
-            final Tuple2<SpacedName, L> key = Tuple2.of(name, label);
+            final Tuple2<SpacedName, L> key = keyFactory.build(name, label);
             for(P path : paths) {
                 if(this.paths.__insert(key, path)) {
                     added.__insert(path);
@@ -117,11 +119,11 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
 
         public boolean add(SpacedName name, L label, P path) {
             keys.__insert(name, label);
-            return this.paths.__insert(Tuple2.of(name, label), path);
+            return this.paths.__insert(keyFactory.build(name, label), path);
         }
 
         public Collection<P> remove(SpacedName name, L label) {
-            final Tuple2<SpacedName, L> key = Tuple2.of(name, label);
+            final Tuple2<SpacedName, L> key = keyFactory.build(name, label);
             final Set.Immutable<P> removed = this.paths.get(key);
             this.paths.__remove(key);
             keys.__remove(name, label);
@@ -130,7 +132,7 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
 
         public Collection<P> remove(SpacedName name, L label, Collection<P> paths) {
             final Set.Transient<P> removed = Set.Transient.of();
-            final Tuple2<SpacedName, L> key = Tuple2.of(name, label);
+            final Tuple2<SpacedName, L> key = keyFactory.build(name, label);
             for(P path : paths) {
                 if(this.paths.__remove(key, path)) {
                     removed.__insert(path);
@@ -150,8 +152,8 @@ public abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IO
 
 
         public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>>
-                Transient<S, L, O, P> of() {
-            return new Transient<>(SetMultimap.Transient.of(), SetMultimap.Transient.of());
+                Transient<S, L, O, P> of(BUPathKeyFactory<L> keyFactory) {
+            return new Transient<>(keyFactory, SetMultimap.Transient.of(), SetMultimap.Transient.of());
         }
 
     }

@@ -34,12 +34,12 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
     }
 
     public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q>
-            flatMap(Function1<P, Stream<Tuple3<SpacedName, L, Q>>> pathMapper) {
-        final BUPathSet.Transient<S, L, O, Q> mappedAddedPaths = BUPathSet.Transient.of();
+            flatMap(Function1<P, Stream<Tuple3<SpacedName, L, Q>>> pathMapper, BUPathKeyFactory<L> keyFactory) {
+        final BUPathSet.Transient<S, L, O, Q> mappedAddedPaths = BUPathSet.Transient.of(keyFactory);
         for(P ap : addedPaths.paths()) {
             pathMapper.apply(ap).forEach(e -> mappedAddedPaths.add(e._1(), e._2(), e._3()));
         }
-        final BUPathSet.Transient<S, L, O, Q> mappedRemovedPaths = BUPathSet.Transient.of();
+        final BUPathSet.Transient<S, L, O, Q> mappedRemovedPaths = BUPathSet.Transient.of(keyFactory);
         for(P rp : removedPaths.paths()) {
             pathMapper.apply(rp).forEach(e -> mappedRemovedPaths.add(e._1(), e._2(), e._3()));
         }

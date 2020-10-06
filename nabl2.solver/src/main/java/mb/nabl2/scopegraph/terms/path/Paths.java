@@ -2,11 +2,9 @@ package mb.nabl2.scopegraph.terms.path;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.metaborg.util.iterators.Iterables2;
 
 import com.google.common.collect.Lists;
 
@@ -108,12 +106,20 @@ public final class Paths {
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> List<O>
             declPathsToDecls(Iterable<IDeclPath<S, L, O>> paths) {
-        return Iterables2.stream(paths).map(IDeclPath::getDeclaration).collect(Collectors.toList());
+        final List<O> decls = new ArrayList<>();
+        for(IDeclPath<S, L, O> path : paths) {
+            decls.add(path.getDeclaration());
+        }
+        return decls;
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> List<O>
             resolutionPathsToDecls(Iterable<IResolutionPath<S, L, O>> paths) {
-        return Iterables2.stream(paths).map(IResolutionPath::getDeclaration).collect(Collectors.toList());
+        final List<O> decls = new ArrayList<>();
+        for(IDeclPath<S, L, O> path : paths) {
+            decls.add(path.getDeclaration());
+        }
+        return decls;
     }
 
 }
