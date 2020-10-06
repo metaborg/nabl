@@ -8,8 +8,7 @@ import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
-import mb.nabl2.scopegraph.terms.SpacedName;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple2;
 
 public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 
@@ -33,15 +32,15 @@ public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence
         return removedPaths;
     }
 
-    public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q>
-            flatMap(Function1<P, Stream<Tuple3<SpacedName, L, Q>>> pathMapper, BUPathKeyFactory<L> keyFactory) {
-        final BUPathSet.Transient<S, L, O, Q> mappedAddedPaths = BUPathSet.Transient.of(keyFactory);
+    public <Q extends IDeclPath<S, L, O>> BUChanges<S, L, O, Q> flatMap(
+            Function1<P, Stream<Tuple2<BUPathKey<L>, Q>>> pathMapper) {
+        final BUPathSet.Transient<S, L, O, Q> mappedAddedPaths = BUPathSet.Transient.of();
         for(P ap : addedPaths.paths()) {
-            pathMapper.apply(ap).forEach(e -> mappedAddedPaths.add(e._1(), e._2(), e._3()));
+            pathMapper.apply(ap).forEach(e -> mappedAddedPaths.add(e._1(), e._2()));
         }
-        final BUPathSet.Transient<S, L, O, Q> mappedRemovedPaths = BUPathSet.Transient.of(keyFactory);
+        final BUPathSet.Transient<S, L, O, Q> mappedRemovedPaths = BUPathSet.Transient.of();
         for(P rp : removedPaths.paths()) {
-            pathMapper.apply(rp).forEach(e -> mappedRemovedPaths.add(e._1(), e._2(), e._3()));
+            pathMapper.apply(rp).forEach(e -> mappedRemovedPaths.add(e._1(), e._2()));
         }
         return new BUChanges<>(mappedAddedPaths.freeze(), mappedRemovedPaths.freeze());
     }
