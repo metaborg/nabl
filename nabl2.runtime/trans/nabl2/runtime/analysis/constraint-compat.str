@@ -143,25 +143,33 @@ rules
         otherwise:
           fatal-err(|"Unexpected change on project")
       end
-    ; ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; unit-initial-result* := <map({ unit-resource, unit-ast, unit-ast', unit-analysis:
-                                     ?(unit-resource, unit-ast)
-                                   ; ( UnitResult(unit-ast', unit-analysis) :=
-                                           <analyze> AnalyzeUnit(unit-resource, unit-ast, project-initial-analysis, cancel, progress)
-                                     < !(unit-resource, Full(unit-ast', CompatUnitAnalysis(unit-analysis, None()), [], [], []))
-                                     + !(unit-resource, Failed())
-                                     )
-                                   })> ast*
-    ; unit-initial-analysis-new* := <filter(?(_, Full(_, CompatUnitAnalysis(<id>, _), _, _, _)))> unit-initial-result*
-    ; unit-initial-analysis-cached* := <filter(?(_, Cached(CompatUnitAnalysis(<id>, _))))> change*
-    ; unit-initial-analysis* := [unit-initial-analysis-new*, unit-initial-analysis-cached*]
+    ; changed-ast*   := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+
+    ; unit-initial-result-changed* := <map({ unit-resource, unit-ast, unit-ast', unit-analysis:
+                                             ?(unit-resource, unit-ast)
+                                           ; ( UnitResult(unit-ast', unit-analysis) :=
+                                                   <analyze> AnalyzeUnit(unit-resource, unit-ast, project-initial-analysis, cancel, progress)
+                                             < !(unit-resource, Full(unit-ast', CompatUnitAnalysis(unit-analysis, None()), [], [], []))
+                                             + !(unit-resource, Failed())
+                                             )
+                                           })> changed-ast*
+    ; unit-initial-analysis-changed* := <filter(?(_, Full(_, CompatUnitAnalysis(<id>, _), _, _, _)))> unit-initial-result-changed*
+
+    ; unit-initial-result-cached* := <filter(\ (unit-resource, Cached(CompatUnitAnalysis(unit-analysis, _)))
+                                                -> (unit-resource, Update(CompatUnitAnalysis(unit-analysis, None()), [], [], []))
+                                         \)> change*
+    ; unit-initial-analysis-cached* := <filter(?(_, Update(CompatUnitAnalysis(<id>, _), _, _, _)))> unit-initial-result-cached*
+
+    ; unit-initial-analysis* := [unit-initial-analysis-changed*, unit-initial-analysis-cached*]
     ; if project-analysis-cached*@[_|_] := <filter(?(<id>, Cached(CompatProjectAnalysis(_, _))))> change* then
         <fatal-err(|"Context is in inconsistent state. Clean the project to reset the context. This can happen when a context is written in one environment (e.g., Eclipse) and later read in another (e.g., Maven).")> project-analysis-cached*
       end
     ; FinalResult(final-analysis, error*, warning*, note*) :=
           <analyze> AnalyzeFinal(project-resource, project-initial-analysis, unit-initial-analysis*, cancel, progress)
     ; project-analysis := CompatProjectAnalysis(project-initial-analysis, final-analysis)
-    ; unit-result* := <map((id, try(Full(id, CompatUnitAnalysis(id, !final-analysis), id, id, id))))> unit-initial-result*
+    ; unit-result-changed* := <map((id, Full(id, CompatUnitAnalysis(id, !final-analysis), id, id, id) + ?Failed()))> unit-initial-result-changed*
+    ; unit-result-cached* := <map((id, Update(CompatUnitAnalysis(id, !final-analysis), id, id, id)))> unit-initial-result-cached*
+    ; unit-result* := [unit-result-changed*, unit-result-cached*]
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
