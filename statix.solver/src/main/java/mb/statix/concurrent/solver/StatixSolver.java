@@ -526,13 +526,13 @@ public class StatixSolver {
                         } catch(ResolutionDelayException rde) {
                             //                            final Delay delay = rde.getCause();
                             //                            return delay(c, state, delay, fuel);
-                            debug.error("query {} delayed (unsupported)", c.toString(state.unifier()::toString));
+                            debug.error("delayed query (unsupported) {} delayed", c.toString(state.unifier()::toString));
                             return fail(c);
                         } catch(DeadlockException dle) {
-                            debug.error("query {} deadlocked", c.toString(state.unifier()::toString));
+                            debug.error("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
                             return fail(c);
                         } catch(Throwable t) {
-                            debug.error("query {} failed", t, c.toString(state.unifier()::toString));
+                            debug.debug("failed query {}", t, c.toString(state.unifier()::toString));
                             return fail(c);
                         }
                     } else {
