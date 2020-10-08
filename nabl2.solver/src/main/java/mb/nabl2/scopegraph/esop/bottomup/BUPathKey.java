@@ -40,4 +40,8 @@ class BUPathKey<L extends ILabel> {
         return this == obj;
     }
 
+    @Override public String toString() {
+        return name + "/" + label;
+    }
+
 }

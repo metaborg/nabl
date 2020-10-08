@@ -45,16 +45,16 @@ class BUEnv<S extends IScope, L extends ILabel, O extends IOccurrence, P extends
 
     public void apply(BUChanges<S, L, O, P> changes) throws InterruptedException {
         final BUPathSet.Transient<S, L, O, P> paths = this.paths.melt();
-        final BUPathSet.Immutable<S, L, O, P> removePaths = changes.removedPaths();
-        for(SpacedName name : removePaths.names()) {
-            for(BUPathKey<L> key : removePaths.keys(name)) {
-                removePaths(name, key, paths, removePaths.paths(key));
-            }
-        }
         final BUPathSet.Immutable<S, L, O, P> addPaths = changes.addedPaths();
         for(SpacedName name : addPaths.names()) {
             for(BUPathKey<L> key : addPaths.keys(name)) {
                 addPaths(name, key, paths, addPaths.paths(key));
+            }
+        }
+        final BUPathSet.Immutable<S, L, O, P> removePaths = changes.removedPaths();
+        for(SpacedName name : removePaths.names()) {
+            for(BUPathKey<L> key : removePaths.keys(name)) {
+                removePaths(name, key, paths, removePaths.paths(key));
             }
         }
         this.paths = paths.freeze();
