@@ -57,6 +57,11 @@ public abstract class AState implements IState.Immutable {
         // @formatter:on
     }
 
+    @Override public Immutable subState() {
+        State self = (State) this;
+        return self.with__scopes(Set.Immutable.of()).with__vars(Set.Immutable.of());
+    }
+
     // --- variables ---
 
     @Value.Default int __varCounter() {

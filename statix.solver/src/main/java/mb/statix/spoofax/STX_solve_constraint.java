@@ -60,7 +60,7 @@ public class STX_solve_constraint extends StatixPrimitive {
 
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(spec, state, constraint, debug, progress, cancel);
+            resultConfig = Solver.solve(spec, state, constraint, debug, cancel, progress);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

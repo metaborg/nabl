@@ -40,6 +40,11 @@ public interface IState {
 
         @Override Set.Immutable<Scope> scopes();
 
+        /**
+         * Return a state with the scopes and variables cleared, to be used as the initial state for entailment.
+         */
+        IState.Immutable subState();
+
         @Override IUniDisunifier.Immutable unifier();
 
         IState.Immutable withUnifier(IUniDisunifier.Immutable unifier);

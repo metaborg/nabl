@@ -37,6 +37,7 @@ import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -411,7 +412,7 @@ public class StatixSolver {
                 IUniDisunifier.Immutable unifier = state.unifier();
                 try {
                     final IUniDisunifier.Result<IUnifier.Immutable> result;
-                    if((result = unifier.unify(term1, term2).orElse(null)) != null) {
+                    if((result = unifier.unify(term1, term2, v -> isRigid(v, state)).orElse(null)) != null) {
                         if(debug.isEnabled(Level.Info)) {
                             debug.debug("Unification succeeded: {}", result.result());
                         }
@@ -431,6 +432,8 @@ public class StatixSolver {
                         debug.debug("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
                     }
                     return fail(c);
+                } catch(RigidException e) {
+                    return delay(c, state, Delay.ofVars(e.vars()), fuel);
                 }
             }
 
@@ -458,21 +461,26 @@ public class StatixSolver {
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 final IUniDisunifier.Immutable unifier = state.unifier();
-                final IUniDisunifier.Result<Optional<Diseq>> result;
-                if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
-                    if(debug.isEnabled(Level.Info)) {
-                        debug.debug("Disunification succeeded: {}", result);
+                try {
+                    final IUniDisunifier.Result<Optional<Diseq>> result;
+                    if((result = unifier.disunify(c.universals(), term1, term2, v -> isRigid(v, state))
+                            .orElse(null)) != null) {
+                        if(debug.isEnabled(Level.Info)) {
+                            debug.debug("Disunification succeeded: {}", result);
+                        }
+                        final IState.Immutable newState = state.withUnifier(result.unifier());
+                        final Set<ITermVar> updatedVars =
+                                result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(Set.Immutable.of());
+                        return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
+                                ImmutableMap.of(), fuel);
+                    } else {
+                        if(debug.isEnabled(Level.Info)) {
+                            debug.debug("Disunification failed");
+                        }
+                        return fail(c);
                     }
-                    final IState.Immutable newState = state.withUnifier(result.unifier());
-                    final Set<ITermVar> updatedVars =
-                            result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(Set.Immutable.of());
-                    return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(),
-                            fuel);
-                } else {
-                    if(debug.isEnabled(Level.Info)) {
-                        debug.debug("Disunification failed");
-                    }
-                    return fail(c);
+                } catch(RigidException e) {
+                    return delay(c, state, Delay.ofVars(e.vars()), fuel);
                 }
             }
 
@@ -526,7 +534,8 @@ public class StatixSolver {
                         } catch(ResolutionDelayException rde) {
                             //                            final Delay delay = rde.getCause();
                             //                            return delay(c, state, delay, fuel);
-                            debug.error("delayed query (unsupported) {} delayed", c.toString(state.unifier()::toString));
+                            debug.error("delayed query (unsupported) {} delayed",
+                                    c.toString(state.unifier()::toString));
                             return fail(c);
                         } catch(DeadlockException dle) {
                             debug.error("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
@@ -560,6 +569,9 @@ public class StatixSolver {
                 final Scope source =
                         AScope.matcher().match(sourceTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected source scope, got " + unifier.toString(sourceTerm)));
+                if(isClosed(source, state)) {
+                    return fail(c);
+                }
                 final Scope target =
                         AScope.matcher().match(targetTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected target scope, got " + unifier.toString(targetTerm)));
@@ -641,7 +653,7 @@ public class StatixSolver {
             @Override public Unit caseTry(CTry c) throws InterruptedException {
                 final IDebugContext subDebug = debug.subContext();
                 final ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> subContext = scopeGraph.subContext("try");
-                final IState.Immutable subState = state.withResource(subContext.id());
+                final IState.Immutable subState = state.subState().withResource(subContext.id());
                 final StatixSolver subSolver = new StatixSolver(c.constraint(), spec, subState, completeness, subDebug,
                         progress, cancel, subContext);
                 final IFuture<SolverResult> subResult = subSolver.entail();
@@ -653,7 +665,7 @@ public class StatixSolver {
                         try {
                             // check entailment w.r.t. the initial substate, not the current state: otherwise,
                             // some variables may be treated as external while they are not
-                            if(Solver.entails(subState, r, subDebug)) {
+                            if(Solver.entailed(subState, r, subDebug)) {
                                 debug.debug("constraint {} entailed", c.toString(state.unifier()::toString));
                                 return success(c, state, fuel);
                             } else {
@@ -783,6 +795,18 @@ public class StatixSolver {
             f.completeExceptionally(ex);
         }
         return f;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // rigidness
+    ///////////////////////////////////////////////////////////////////////////
+
+    private boolean isRigid(ITermVar var, IState state) {
+        return !state.vars().contains(var);
+    }
+
+    private boolean isClosed(Scope scope, IState state) {
+        return !state.scopes().contains(scope);
     }
 
     ///////////////////////////////////////////////////////////////////////////

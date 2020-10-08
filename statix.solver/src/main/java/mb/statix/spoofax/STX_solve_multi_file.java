@@ -72,7 +72,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
         };
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(spec, state, constraint, isComplete, debug, progress, cancel);
+            resultConfig = Solver.solve(spec, state, constraint, isComplete, debug, cancel, progress);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

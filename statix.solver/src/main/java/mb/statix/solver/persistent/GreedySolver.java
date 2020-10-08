@@ -30,6 +30,7 @@ import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -295,7 +296,7 @@ class GreedySolver {
                 IUniDisunifier.Immutable unifier = state.unifier();
                 try {
                     final IUniDisunifier.Result<IUnifier.Immutable> result;
-                    if((result = unifier.unify(term1, term2).orElse(null)) != null) {
+                    if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
                         if(debug.isEnabled(Level.Info)) {
                             debug.debug("Unification succeeded: {}", result.result());
                         }
@@ -315,6 +316,8 @@ class GreedySolver {
                         debug.debug("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
                     }
                     return fail(c, state);
+                } catch(RigidException e) {
+                    return successDelay(c, state, Delay.ofVars(e.vars()), fuel);
                 }
             }
 
@@ -343,21 +346,26 @@ class GreedySolver {
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
                 final IUniDisunifier.Immutable unifier = state.unifier();
-                final IUniDisunifier.Result<Optional<Diseq>> result;
-                if((result = unifier.disunify(c.universals(), term1, term2).orElse(null)) != null) {
-                    if(debug.isEnabled(Level.Info)) {
-                        debug.debug("Disunification succeeded: {}", result);
+                try {
+                    final IUniDisunifier.Result<Optional<Diseq>> result;
+                    if((result = unifier.disunify(c.universals(), term1, term2, v -> params.isRigid(v, state))
+                            .orElse(null)) != null) {
+                        if(debug.isEnabled(Level.Info)) {
+                            debug.debug("Disunification succeeded: {}", result);
+                        }
+                        final IState.Immutable newState = state.withUnifier(result.unifier());
+                        final Set<ITermVar> updatedVars =
+                                result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(ImmutableSet.of());
+                        return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
+                                ImmutableMap.of(), fuel);
+                    } else {
+                        if(debug.isEnabled(Level.Info)) {
+                            debug.debug("Disunification failed");
+                        }
+                        return fail(c, state);
                     }
-                    final IState.Immutable newState = state.withUnifier(result.unifier());
-                    final Set<ITermVar> updatedVars =
-                            result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(ImmutableSet.of());
-                    return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(),
-                            fuel);
-                } else {
-                    if(debug.isEnabled(Level.Info)) {
-                        debug.debug("Disunification failed");
-                    }
-                    return fail(c, state);
+                } catch(RigidException e) {
+                    return successDelay(c, state, Delay.ofVars(e.vars()), fuel);
                 }
             }
 

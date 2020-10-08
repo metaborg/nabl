@@ -1,17 +1,13 @@
 package mb.statix.solver.persistent;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-
-import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -24,6 +20,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.IState.Immutable;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
@@ -35,12 +32,12 @@ public class Solver {
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IDebugContext debug, IProgress progress, ICancel cancel) throws InterruptedException {
-        return solve(spec, state, constraint, (s, l, st) -> true, debug, progress, cancel);
+            final IDebugContext debug, ICancel cancel, IProgress progress) throws InterruptedException {
+        return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress);
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IsComplete isComplete, final IDebugContext debug, IProgress progress, final ICancel cancel)
+            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress)
             throws InterruptedException {
         return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel).solve();
     }
@@ -60,14 +57,18 @@ public class Solver {
             debug.debug("Checking entailment of {}", toString(constraint, unifier));
         }
 
+        final Immutable subState = state.subState();
         final SolverResult result =
-                Solver.solve(spec, state, constraint, isComplete, debug.subContext(), progress, cancel);
-        return Solver.entails(state, result, debug);
+                Solver.solve(spec, subState, constraint, isComplete, debug.subContext(), cancel, progress);
+        return Solver.entailed(subState, result, debug);
     }
 
-    public static boolean entails(IState.Immutable initialState, SolverResult result, final IDebugContext debug)
+    public static boolean entailed(IState.Immutable initialState, SolverResult result, final IDebugContext debug)
             throws Delay {
-        final IUniDisunifier.Immutable unifier = initialState.unifier();
+        if(!initialState.vars().isEmpty() || !initialState.scopes().isEmpty()) {
+            throw new IllegalArgumentException("Incurrent initial state: create with IState::subState.");
+        }
+
         if(debug.isEnabled(Level.Info)) {
             debug.debug("Checking entailment");
         }
@@ -79,8 +80,8 @@ public class Solver {
         }
 
         final IState.Immutable newState = result.state();
-        final Set<ITermVar> newVars = Sets.difference(newState.vars(), initialState.vars());
-        final Set<Scope> newScopes = Sets.difference(newState.scopes(), initialState.scopes());
+        final Set<ITermVar> newVars = newState.vars();
+        final Set<Scope> newScopes = newState.scopes();
 
         if(!result.delays().isEmpty()) {
             final Delay delay = result.delay().removeAll(newVars, newScopes);
@@ -91,37 +92,6 @@ public class Solver {
                 debug.debug("Cannot decide constraint entailment: unsolved constraints");
                 throw delay;
             }
-        }
-
-        // NOTE The removeAll operation is important because it may change
-        //      representatives, which can be local to newUnifier.
-        //      After the removeAll, newUnifier.varSet should not intersect with newVars.
-        final IUniDisunifier.Immutable newUnifier = newState.unifier().removeAll(newVars).unifier();
-        if(!Sets.intersection(newUnifier.freeVarSet(), newVars).isEmpty()) {
-            debug.debug("Constraints not entailed: internal variables leak");
-            return false;
-        }
-
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
-        // FIXME This test assumes the newUnifier is an extension of the old one.
-        //       Without this assumption, we should use the more expensive test
-        //       `newUnifier.equals(state.unifier())`
-        if(!unifiedVars.isEmpty()) {
-            debug.debug("Cannot decide constraint entailment: unified rigid vars)");
-            throw Delay.ofVars(unifiedVars);
-        }
-
-        // check that all (remaining) disequalities are implied (i.e., not unifiable) in the original unifier,
-        // which is the case if disunify succeeds with no remaining disequality
-        // @formatter:off
-        final List<ITermVar> disunifiedVars = newUnifier.disequalities().stream()
-                .filter(diseq -> diseq.toTuple().apply(unifier::disunify).map(r -> r.result().isPresent()).orElse(true))
-                .flatMap(diseq -> diseq.varSet().stream())
-                .collect(Collectors.toList());
-        // @formatter:on
-        if(!disunifiedVars.isEmpty()) {
-            debug.debug("Cannot decide constraint entailment: disunified rigid vars)");
-            throw Delay.ofVars(disunifiedVars);
         }
 
         debug.debug("Constraints entailed");
