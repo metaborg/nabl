@@ -4,12 +4,15 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.metaborg.util.functions.Predicate1;
+
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -244,41 +247,47 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.disequalities();
         }
 
-        @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(term1, term2);
+        @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(term1, term2, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<? extends IUnifier.Immutable> unify(IUnifier other) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other);
+        @Override public Optional<? extends IUnifier.Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<IUnifier.Immutable> unify(IUniDisunifier other) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other);
+        @Override public Optional<IUnifier.Immutable> unify(IUniDisunifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<IUnifier.Immutable>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(equalities);
+        @Override public Optional<IUnifier.Immutable> unify(
+                Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(equalities, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2) {
-            final Optional<IUniDisunifier.Result<Optional<Diseq>>> result = unifier.disunify(universal, term1, term2);
+        @Override public Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2,
+                Predicate1<ITermVar> isRigid) throws RigidException {
+            final Optional<IUniDisunifier.Result<Optional<Diseq>>> result =
+                    unifier.disunify(universal, term1, term2, isRigid);
             return result.map(ud -> {
                 unifier = ud.unifier();
                 return ud.result();

@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.metaborg.util.functions.Predicate1;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
@@ -15,6 +17,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
 
@@ -75,43 +78,53 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right)
-                throws OccursException {
-            return unifier.unify(left, right).flatMap(r -> {
-                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
-                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
-                    return new ImmutableResult<>(r.result(), ud);
-                });
+        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            if((r = unifier.unify(left, right, isRigid).orElse(null)) == null) {
+                return Optional.empty();
+            }
+            return disunifyAll(r.unifier(), disequalities, isRigid).map(diseqs -> {
+                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                return new ImmutableResult<>(r.result(), ud);
+            });
+        }
+
+        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(
+                Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            if((r = unifier.unify(equalities, isRigid).orElse(null)) == null) {
+                return Optional.empty();
+            }
+            return disunifyAll(r.unifier(), disequalities, isRigid).map(diseqs -> {
+                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                return new ImmutableResult<>(r.result(), ud);
             });
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            return unifier.unify(equalities).flatMap(r -> {
-                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
-                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
-                    return new ImmutableResult<>(r.result(), ud);
-                });
+                unify(mb.nabl2.terms.unification.u.IUnifier other, Predicate1<ITermVar> isRigid)
+                        throws OccursException, RigidException {
+            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            if((r = unifier.unify(other, isRigid).orElse(null)) == null) {
+                return Optional.empty();
+            }
+            return disunifyAll(r.unifier(), disequalities, isRigid).map(diseqs -> {
+                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                return new ImmutableResult<>(r.result(), ud);
             });
         }
 
-        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>>
-                unify(mb.nabl2.terms.unification.u.IUnifier other) throws OccursException {
-            return unifier.unify(other).flatMap(r -> {
-                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
-                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
-                    return new ImmutableResult<>(r.result(), ud);
-                });
-            });
-        }
-
-        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other)
-                throws OccursException {
-            return unifier.unify(other.equalityMap().entrySet()).flatMap(r -> {
-                return disunifyAll(r.unifier(), disequalities).map(diseqs -> {
-                    final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
-                    return new ImmutableResult<>(r.result(), ud);
-                });
+        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            if((r = unifier.unify(other, isRigid).orElse(null)) == null) {
+                return Optional.empty();
+            }
+            return disunifyAll(r.unifier(), disequalities, isRigid).map(diseqs -> {
+                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+                return new ImmutableResult<>(r.result(), ud);
             });
         }
 
@@ -132,10 +145,10 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universals,
-                ITerm left, ITerm right) {
+                ITerm left, ITerm right, Predicate1<ITermVar> isRigid) throws RigidException {
             final IUnifier.Transient diseqs = PersistentUnifier.Immutable.of(isFinite()).melt();
             try {
-                if(!diseqs.unify(left, right).isPresent()) {
+                if(!diseqs.unify(left, right, isRigid).isPresent()) {
                     // terms are not equal
                     return Optional.of(new ImmutableResult<>(Optional.empty(), this));
                 }
@@ -150,7 +163,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             }
 
             final Optional<Diseq> reducedDiseq;
-            if((reducedDiseq = disunify(this, diseq).orElse(null)) == null) {
+            if((reducedDiseq = disunify(this, diseq, isRigid).orElse(null)) == null) {
                 // disunify failed, terms are equal
                 return Optional.empty();
             }
@@ -168,13 +181,13 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          * Simplify disequalities for an updated unifier
          */
         private static Optional<Set.Immutable<Diseq>> disunifyAll(IUnifier.Immutable unifier,
-                Set.Immutable<Diseq> disequalities) {
+                Set.Immutable<Diseq> disequalities, Predicate1<ITermVar> isRigid) throws RigidException {
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
 
             // reduce all
             for(Diseq diseq : disequalities) {
                 final Optional<Diseq> reducedDiseq;
-                if((reducedDiseq = disunify(unifier, diseq).orElse(null)) == null) {
+                if((reducedDiseq = disunify(unifier, diseq, isRigid).orElse(null)) == null) {
                     // disunify failed
                     return Optional.empty();
                 }
@@ -195,10 +208,11 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced map of disequalities, or
          * none if the disequality is satisfied.
          */
-        private static Optional<Optional<Diseq>> disunify(IUnifier.Immutable unifier, Diseq diseq) {
+        private static Optional<Optional<Diseq>> disunify(IUnifier.Immutable unifier, Diseq diseq,
+                Predicate1<ITermVar> isRigid) throws RigidException {
             final Optional<? extends IUnifier.Result<? extends IUnifier.Immutable>> unifyResult;
             try {
-                unifyResult = unifier.unify(diseq.disequalities());
+                unifyResult = unifier.unify(diseq.disequalities(), isRigid);
             } catch(OccursException e) {
                 // unify failed, terms are unequal
                 return Optional.of(Optional.empty());
