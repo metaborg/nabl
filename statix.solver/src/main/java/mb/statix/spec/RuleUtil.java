@@ -37,6 +37,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
