@@ -10,6 +10,8 @@ import mb.nabl2.terms.ITermVar;
 
 public interface IRenaming {
 
+    boolean isEmpty();
+
     Set<ITermVar> keySet();
 
     Set<ITermVar> valueSet();

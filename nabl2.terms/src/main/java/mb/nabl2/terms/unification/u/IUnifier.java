@@ -9,6 +9,7 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
@@ -227,9 +228,14 @@ public interface IUnifier {
 
         /**
          * Return a unifier with the given variables removed from the domain. Returns a substitution to eliminate the
-         * variable from terms.
+         * variable from terms. Note that removal never unifies terms or variables that were not already unified before.
          */
         Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars);
+
+        /**
+         * Apply a variable renaming to this unifier.
+         */
+        IUnifier.Immutable rename(IRenaming renaming);
 
         /**
          * Return transient version of this unifier.

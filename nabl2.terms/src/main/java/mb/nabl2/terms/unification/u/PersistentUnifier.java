@@ -23,6 +23,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
@@ -290,11 +291,11 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(leftRigid && rightRigid) {
                     throw new RigidException(leftRep, rightRep);
                 } else if(leftRigid) {
-                    var = leftRep;
-                    rep = rightRep;
-                } else if(rightRigid) {
                     var = rightRep;
                     rep = leftRep;
+                } else if(rightRigid) {
+                    var = leftRep;
+                    rep = rightRep;
                 } else {
                     final boolean swap = leftRank > rightRank;
                     var = swap ? rightRep : leftRep; // the eliminated variable
@@ -414,7 +415,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 final ListMultimap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
-                    if((rep = removeRep(var)) != null) { // var |-> rep
+                    if((rep = removeRep(var)) != null) { // Case 1. Var _has_ a rep; var |-> rep
                         invReps.remove(rep, var);
                         subst.compose(var, rep);
                         for(ITermVar notRep : invReps.get(var)) {
@@ -423,7 +424,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                         }
                     } else {
                         final Collection<ITermVar> newReps = invReps.removeAll(var);
-                        if(!newReps.isEmpty()) { // rep |-> var
+                        if(!newReps.isEmpty()) { // Case 2. Var _is_ a rep; rep |-> var
                             rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);
                             invReps.remove(rep, var);
@@ -438,7 +439,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             if((term = removeTerm(var)) != null) { // var |-> term
                                 putTerm(rep, term);
                             }
-                        } else {
+                        } else { // Case 3. Var neither _is_ nor _has_ a rep
                             final ITerm term;
                             if((term = removeTerm(var)) != null) { // var |-> term
                                 subst.compose(var, term);
@@ -454,6 +455,29 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 return subst.freeze();
             }
 
+        }
+
+        ///////////////////////////////////////////
+        // rename(IRenaming)
+        ///////////////////////////////////////////
+
+        @Override public IUnifier.Immutable rename(IRenaming renaming) {
+            if(renaming.isEmpty()) {
+                return this;
+            }
+            final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+            for(Entry<ITermVar, ITermVar> e : this.reps.get().entrySet()) {
+                reps.__put(renaming.rename(e.getKey()), renaming.rename(e.getValue()));
+            }
+            final Map.Transient<ITermVar, Integer> ranks = Map.Transient.of();
+            for(Entry<ITermVar, Integer> e : this.ranks.entrySet()) {
+                ranks.__put(renaming.rename(e.getKey()), e.getValue());
+            }
+            final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+            for(Entry<ITermVar, ITerm> e : this.terms.entrySet()) {
+                terms.__put(renaming.rename(e.getKey()), renaming.apply(e.getValue()));
+            }
+            return new PersistentUnifier.Immutable(finite, reps.freeze(), ranks.freeze(), terms.freeze());
         }
 
         ///////////////////////////////////////////

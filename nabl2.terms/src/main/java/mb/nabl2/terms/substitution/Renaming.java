@@ -24,6 +24,10 @@ public class Renaming implements IRenaming {
         this.renaming = renaming;
     }
 
+    @Override public boolean isEmpty() {
+        return renaming.isEmpty();
+    }
+
     @Override public Set<ITermVar> keySet() {
         return renaming.keySet();
     }
