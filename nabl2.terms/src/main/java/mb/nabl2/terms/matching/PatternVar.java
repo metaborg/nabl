@@ -58,11 +58,13 @@ class PatternVar extends Pattern {
         if(isWildcard()) {
             return true;
         } else if(subst.contains(var)) {
-            final Optional<? extends IUnifier.Immutable> diff = unifier.diff(subst.apply(var), term);
-            if(!diff.isPresent()) {
+            final IUnifier.Immutable diff;
+            if((diff = unifier.diff(subst.apply(var), term).orElse(null)) == null) {
                 return false;
             }
-            diff.get().equalityMap().forEach(eqs::add);
+            for(ITermVar var : diff.domainSet()) {
+                eqs.add(var, diff.findTerm(var));
+            }
             return true;
         } else {
             subst.put(var, term);
@@ -87,16 +89,16 @@ class PatternVar extends Pattern {
         return isWildcard() ? "_" : var.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        PatternVar that = (PatternVar)o;
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        PatternVar that = (PatternVar) o;
         return Objects.equals(var, that.var);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(var);
     }
 }

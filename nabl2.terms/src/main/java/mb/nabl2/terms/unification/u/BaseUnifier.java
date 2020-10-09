@@ -37,13 +37,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     protected abstract Map.Immutable<ITermVar, ITerm> terms();
 
-    @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
-        final Map.Transient<ITermVar, ITerm> map = Map.Transient.of();
-        map.__putAll(reps());
-        map.__putAll(terms());
-        return map.freeze();
-    }
-
     ///////////////////////////////////////////
     // unifier functions
     ///////////////////////////////////////////
@@ -604,10 +597,6 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
         @Override public String toString(ITerm term, int n) {
             return unifier.toString(term, n);
-        }
-
-        @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
-            return unifier.equalityMap();
         }
 
         @Override public Optional<? extends IUnifier.Immutable> unify(ITerm term1, ITerm term2,

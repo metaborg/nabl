@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate1;
 
-import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -21,10 +20,6 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     private static final long serialVersionUID = 42L;
 
     protected abstract IUnifier.Immutable unifier();
-
-    @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
-        return unifier().equalityMap();
-    }
 
     ///////////////////////////////////////////
     // unifier functions
@@ -247,10 +242,6 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
 
         @Override public String toString(ITerm term, int n) {
             return unifier.toString(term, n);
-        }
-
-        @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
-            return unifier.equalityMap();
         }
 
         @Override public Set.Immutable<Diseq> disequalities() {

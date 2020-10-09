@@ -2,7 +2,6 @@ package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate1;
@@ -76,10 +75,10 @@ public class Diseq {
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {
         ImmutableList.Builder<ITerm> lefts = ImmutableList.builder();
         ImmutableList.Builder<ITerm> rights = ImmutableList.builder();
-        diseqs.equalityMap().forEach((v, t) -> {
-            lefts.add(v);
-            rights.add(t);
-        });
+        for(ITermVar var : diseqs.domainSet()) {
+            lefts.add(var);
+            rights.add(diseqs.findTerm(var));
+        }
         return Tuple3.of(universals, B.newTuple(lefts.build()), B.newTuple(rights.build()));
     }
 
@@ -100,9 +99,9 @@ public class Diseq {
         }
 
         final IUnifier.Transient newDiseqs = PersistentUnifier.Immutable.of(diseq.diseqs.isFinite()).melt();
-        for(Entry<ITermVar, ITerm> entry : diseq.diseqs.equalityMap().entrySet()) {
+        for(ITermVar var : diseq.diseqs.domainSet()) {
             try {
-                if(!newDiseqs.unify(localSubst.apply(entry.getKey()), localSubst.apply(entry.getValue())).isPresent()) {
+                if(!newDiseqs.unify(localSubst.apply(var), localSubst.apply(diseq.diseqs.findTerm(var))).isPresent()) {
                     return Optional.empty();
                 }
             } catch(OccursException e) {

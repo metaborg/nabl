@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate1;
 
-import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -155,12 +154,6 @@ public interface IUnifier {
      * unifier.
      */
     Optional<? extends IUnifier.Immutable> diff(ITerm term1, ITerm term2);
-
-    ///////////////////////////////////////////
-    // asMap()
-    ///////////////////////////////////////////
-
-    Map.Immutable<ITermVar, ITerm> equalityMap();
 
 
     public interface Immutable extends IUnifier {
