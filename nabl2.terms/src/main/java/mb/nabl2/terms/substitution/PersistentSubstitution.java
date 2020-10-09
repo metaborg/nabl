@@ -12,6 +12,7 @@ import org.metaborg.util.iterators.Iterables2;
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -31,8 +32,12 @@ public abstract class PersistentSubstitution implements ISubstitution {
         return subst().containsKey(var);
     }
 
-    @Override public Set<ITermVar> varSet() {
+    @Override public Set<ITermVar> domainSet() {
         return subst().keySet();
+    }
+
+    @Override public Set<ITermVar> rangeSet() {
+        return subst().values().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
     @Override public Set<Entry<ITermVar, ITerm>> entrySet() {

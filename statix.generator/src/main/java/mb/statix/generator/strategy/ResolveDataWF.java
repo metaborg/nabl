@@ -59,24 +59,30 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
-        completeness.updateAll(applyResult.diff().varSet(), applyState.unifier());
+        completeness.updateAll(applyResult.diff().domainSet(), applyState.unifier());
         completeness.add(applyConstraint, applyState.unifier());
 
-        // NOTE This method is almost a duplicate of Solver::entails and should be
+        // NOTE This part is almost a duplicate of Solver::entails and should be
         //      kept in sync
 
-        // solve rule constraint
+        // no substate is used here, as we allow variables from the context to be unified
         final SolverResult result =
                 Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
                         completeness.freeze(), new NullDebugContext(), new NullProgress(), new NullCancel());
+
+        // NOTE This part is almost a duplicate of Solver::entailed and should be
+        //      kept in sync
+
         if(result.hasErrors()) {
-            return Optional.empty();
-        }
-        if(!result.delays().isEmpty()) {
             return Optional.empty();
         }
 
         final IState.Immutable newState = result.state();
+
+        if(!result.delays().isEmpty()) {
+            return Optional.empty();
+        }
+
         // NOTE The retain operation is important because it may change
         //      representatives, which can be local to newUnifier.
         final IUniDisunifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
@@ -85,14 +91,14 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // @formatter:off
         final List<ITermVar> disunifiedVars = newUnifier.disequalities().stream()
                 .filter(diseq -> diseq.toTuple().apply(unifier::disunify).map(r -> r.result().isPresent()).orElse(true))
-                .flatMap(diseq -> diseq.varSet().stream())
+                .flatMap(diseq -> diseq.domainSet().stream())
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {
             return Optional.empty();
         }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.domainSet(), unifier.domainSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`

@@ -57,7 +57,7 @@ public class Solver {
             debug.debug("Checking entailment of {}", toString(constraint, unifier));
         }
 
-        final Immutable subState = state.subState();
+        final IState.Immutable subState = state.subState();
         final SolverResult result =
                 Solver.solve(spec, subState, constraint, isComplete, debug.subContext(), cancel, progress);
         return Solver.entailed(subState, result, debug);

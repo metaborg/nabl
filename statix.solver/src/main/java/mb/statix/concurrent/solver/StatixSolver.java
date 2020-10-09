@@ -417,7 +417,7 @@ public class StatixSolver {
                             debug.debug("Unification succeeded: {}", result.result());
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
-                        final Set<ITermVar> updatedVars = result.result().varSet();
+                        final Set<ITermVar> updatedVars = result.result().domainSet();
                         return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
                                 ImmutableMap.of(), fuel);
                     } else {
@@ -470,7 +470,7 @@ public class StatixSolver {
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars =
-                                result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(Set.Immutable.of());
+                                result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(Set.Immutable.of());
                         return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
                                 ImmutableMap.of(), fuel);
                     } else {
@@ -569,9 +569,6 @@ public class StatixSolver {
                 final Scope source =
                         AScope.matcher().match(sourceTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected source scope, got " + unifier.toString(sourceTerm)));
-                if(isClosed(source, state)) {
-                    return fail(c);
-                }
                 final Scope target =
                         AScope.matcher().match(targetTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected target scope, got " + unifier.toString(targetTerm)));
@@ -697,11 +694,11 @@ public class StatixSolver {
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
-                    return success(c, applyResult.state(), applyResult.diff().varSet(), disjoin(applyResult.body()),
+                    return success(c, applyResult.state(), applyResult.diff().domainSet(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
-                            .flatMap(g -> g.varSet().stream()).collect(CapsuleCollectors.toSet());
+                            .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return delay(c, state, Delay.ofVars(stuckVars), fuel);
                 }
@@ -803,10 +800,6 @@ public class StatixSolver {
 
     private boolean isRigid(ITermVar var, IState state) {
         return !state.vars().contains(var);
-    }
-
-    private boolean isClosed(Scope scope, IState state) {
-        return !state.scopes().contains(scope);
     }
 
     ///////////////////////////////////////////////////////////////////////////

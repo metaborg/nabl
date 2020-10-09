@@ -64,7 +64,7 @@ public class TermMultisetTest {
         assertEquals(1, terms.varSet().size());
 
         IUnifier.Immutable result = unifier.unify(v1, t1).orElseThrow(() -> new IllegalStateException());
-        terms.update(result.varSet(), unifier);
+        terms.update(result.domainSet(), unifier);
 
         assertTrue(terms.contains(t2, unifier));
         assertTrue(terms.contains(unifier.findTerm(t2), unifier));

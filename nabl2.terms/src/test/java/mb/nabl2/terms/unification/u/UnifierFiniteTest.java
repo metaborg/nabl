@@ -114,9 +114,9 @@ public class UnifierFiniteTest {
         reps.__put(b, c);
         terms.__put(d, B.newAppl(f, a));
         IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
-        assertTrue(phi.varSet().contains(b));
+        assertTrue(phi.domainSet().contains(b));
         phi.remove(b);
-        assertFalse(phi.varSet().contains(b));
+        assertFalse(phi.domainSet().contains(b));
         assertTrue(phi.diff(a, c).orElseThrow(() -> new RuntimeException()).isEmpty());
         assertTrue(phi.diff(d, B.newAppl(f, c)).orElseThrow(() -> new RuntimeException()).isEmpty());
     }
@@ -128,7 +128,7 @@ public class UnifierFiniteTest {
         reps.__put(b, c);
         IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
         phi.remove(c);
-        assertFalse(phi.varSet().contains(c));
+        assertFalse(phi.domainSet().contains(c));
         assertTrue(phi.diff(a, b).orElseThrow(() -> new RuntimeException()).isEmpty());
         assertFalse(phi.diff(b, c).orElseThrow(() -> new RuntimeException()).isEmpty());
     }
@@ -139,9 +139,9 @@ public class UnifierFiniteTest {
         reps.__put(a, b);
         terms.__put(b, B.newAppl(f, c));
         IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
-        assertTrue(phi.varSet().contains(b));
+        assertTrue(phi.domainSet().contains(b));
         phi.remove(b);
-        assertFalse(phi.varSet().contains(b));
+        assertFalse(phi.domainSet().contains(b));
         assertTrue(phi.diff(a, B.newAppl(f, c)).orElseThrow(() -> new RuntimeException()).isEmpty());
     }
 
@@ -152,11 +152,11 @@ public class UnifierFiniteTest {
         reps.__put(b, c);
         terms.__put(c, B.newAppl(f, d));
         IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
-        assertTrue(phi.varSet().contains(a));
-        assertTrue(phi.varSet().contains(b));
+        assertTrue(phi.domainSet().contains(a));
+        assertTrue(phi.domainSet().contains(b));
         phi.removeAll(Arrays.asList(a, b));
-        assertFalse(phi.varSet().contains(a));
-        assertFalse(phi.varSet().contains(b));
+        assertFalse(phi.domainSet().contains(a));
+        assertFalse(phi.domainSet().contains(b));
         assertTrue(phi.diff(c, B.newAppl(f, d)).orElseThrow(() -> new RuntimeException()).isEmpty());
     }
 

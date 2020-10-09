@@ -114,7 +114,7 @@ public class FixedPointSolver {
                     throw new IllegalStateException(e);
                 }
 
-                result.unifierDiff().varSet().forEach(v -> {
+                result.unifierDiff().domainSet().forEach(v -> {
                     constraints.addAll(variableDelays.reindex(v, unifier.get()::getVars));
                 });
 

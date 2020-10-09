@@ -31,7 +31,7 @@ public class UnifierInfiniteTest {
     @Test(timeout = 10000) public void testCyclicVarFree() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
         phi.unify(a, B.newAppl(f, a)).orElseThrow(() -> new IllegalArgumentException());
-        assertFalse(phi.freeVarSet().contains(a));
+        assertFalse(phi.rangeSet().contains(a));
     }
 
     @Test(timeout = 10000) public void testCyclicSize() throws OccursException {

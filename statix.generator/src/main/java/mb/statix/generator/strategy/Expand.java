@@ -146,7 +146,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
 
         // update completeness
         final ICompleteness.Transient completeness = input.completeness().melt();
-        completeness.updateAll(result.diff().varSet(), applyUnifier);
+        completeness.updateAll(result.diff().domainSet(), applyUnifier);
         completeness.add(applyConstraint, applyUnifier);
         java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyUnifier);
 

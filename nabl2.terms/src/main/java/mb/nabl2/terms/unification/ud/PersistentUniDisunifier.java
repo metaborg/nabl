@@ -4,7 +4,10 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Predicate1;
+import org.spoofax.terms.util.NotImplementedException;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -166,9 +169,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 return Optional.empty();
             }
 
+            final Function0<FreshVars> fvProvider = freshVarProvider(this);
+
             // check if diseq is implied -- ignore rigid vars here
             final Optional<Diseq> reducedDiseqNoRigid;
-            if((reducedDiseqNoRigid = normalizeDiseq(this, diseq, Predicate1.never()).orElse(null)) != null) {
+            if((reducedDiseqNoRigid =
+                    normalizeDiseq(this, fvProvider, diseq, Predicate1.never()).orElse(null)) != null) {
                 if(reducedDiseqNoRigid.isPresent()) {
                     for(Diseq otherDiseq : disequalities) {
                         if(otherDiseq.implies(reducedDiseqNoRigid.get())) {
@@ -184,7 +190,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
             // build the normalized diseq -- respecting rigid vars
             final Optional<Diseq> reducedDiseq;
-            if((reducedDiseq = normalizeDiseq(this, diseq, isRigid).orElse(null)) == null) {
+            if((reducedDiseq = normalizeDiseq(this, fvProvider, diseq, isRigid).orElse(null)) == null) {
                 // disunify failed, terms are equal
                 return Optional.empty();
             }
@@ -205,10 +211,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 Set.Immutable<Diseq> disequalities, Predicate1<ITermVar> isRigid) throws RigidException {
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
 
+            final Function0<FreshVars> fvProvider = freshVarProvider(unifier);
+
             // reduce all
             for(Diseq diseq : disequalities) {
                 final Optional<Diseq> normalizedDiseq;
-                if((normalizedDiseq = normalizeDiseq(unifier, diseq, isRigid).orElse(null)) == null) {
+                if((normalizedDiseq = normalizeDiseq(unifier, fvProvider, diseq, isRigid).orElse(null)) == null) {
                     // disunify failed
                     return Optional.empty();
                 }
@@ -223,16 +231,34 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             return Optional.of(newDisequalities.freeze());
         }
 
+        private static Function0<FreshVars> freshVarProvider(IUnifier.Immutable unifier) {
+            final Ref<FreshVars> fv = new Ref<>();
+            final Function0<FreshVars> fvProvider = () -> {
+                FreshVars result = fv.get();
+                if(result == null) {
+                    result = new FreshVars(unifier.varSet());
+                    fv.set(result);
+                }
+                return result;
+            };
+            return fvProvider;
+        }
+
         /**
          * Disunify the given disequality.
          * 
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced disequality, or none if
          * the disequality is satisfied.
          */
-        private static Optional<Optional<Diseq>> normalizeDiseq(IUnifier.Immutable unifier, Diseq diseq,
-                Predicate1<ITermVar> isRigid) throws RigidException {
-            final FreshVars fv = new FreshVars(Set.Immutable.union(unifier.varSet(), unifier.freeVarSet()));
-            diseq = diseq.rename(fv.fresh(diseq.universals()));
+        private static Optional<Optional<Diseq>> normalizeDiseq(IUnifier.Immutable unifier,
+                Function0<FreshVars> fvProvider, Diseq diseq, Predicate1<ITermVar> isRigid) throws RigidException {
+            if(!diseq.universals().isEmpty()) {
+                //                final FreshVars fv = new FreshVars(Set.Immutable.union(unifier.varSet(), unifier.freeVarSet()));
+                final FreshVars fv = fvProvider.apply();
+                fv.add(diseq.freeVarSet());
+                diseq = diseq.rename(fv.fresh(diseq.universals()));
+                fv.reset();
+            }
 
             final Optional<? extends IUnifier.Result<? extends IUnifier.Immutable>> unifyResult;
             try {
@@ -269,7 +295,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Sets.difference(varSet(), ImmutableSet.copyOf(vars)));
+            return removeAll(Sets.difference(domainSet(), ImmutableSet.copyOf(vars)));
         }
 
         ///////////////////////////////////////////
@@ -283,8 +309,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final IUnifier.Result<ISubstitution.Immutable> r = unifier.removeAll(vars);
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
-            disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result()).removeAll(vars)))
-                    .forEach(newDisequalities::__insert);
+            disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result())))
+                    .map(diseq -> diseq.removeAll(vars)).forEach(newDisequalities::__insert);
+            if(newDisequalities.stream().anyMatch(Diseq::isEmpty)) {
+                // FIXME disequalities may become empty, and therefore false!
+                throw new NotImplementedException("removal made disequality false, unhandled");
+            }
             final IUniDisunifier.Immutable ud =
                     new PersistentUniDisunifier.Immutable(r.unifier(), newDisequalities.freeze());
             return new ImmutableResult<>(r.result(), ud);

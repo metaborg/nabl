@@ -56,14 +56,14 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return reps().containsKey(var) || terms().containsKey(var);
     }
 
-    @Override public Set.Immutable<ITermVar> varSet() {
+    @Override public Set.Immutable<ITermVar> domainSet() {
         final Set.Transient<ITermVar> varSet = Set.Transient.of();
         varSet.__insertAll(reps().keySet());
         varSet.__insertAll(terms().keySet());
         return varSet.freeze();
     }
 
-    @Override public Set.Immutable<ITermVar> freeVarSet() {
+    @Override public Set.Immutable<ITermVar> rangeSet() {
         final Set.Transient<ITermVar> freeVarSet = Set.Transient.of();
         reps().values().stream().filter(var -> !contains(var)).forEach(freeVarSet::__insert);
         terms().values().stream().flatMap(term -> term.getVars().elementSet().stream()).filter(var -> !contains(var))
@@ -71,8 +71,17 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return freeVarSet.freeze();
     }
 
+    @Override public Set.Immutable<ITermVar> varSet() {
+        final Set.Transient<ITermVar> varSet = Set.Transient.of();
+        reps().keySet().stream().forEach(varSet::__insert);
+        reps().values().stream().forEach(varSet::__insert);
+        terms().keySet().stream().forEach(varSet::__insert);
+        terms().values().stream().flatMap(term -> term.getVars().elementSet().stream()).forEach(varSet::__insert);
+        return varSet.freeze();
+    }
+
     @Override public boolean isCyclic() {
-        return isCyclic(varSet());
+        return isCyclic(domainSet());
     }
 
     ///////////////////////////////////////////
@@ -541,12 +550,16 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.contains(var);
         }
 
-        @Override public Set.Immutable<ITermVar> varSet() {
-            return unifier.varSet();
+        @Override public Set.Immutable<ITermVar> domainSet() {
+            return unifier.domainSet();
         }
 
-        @Override public Set.Immutable<ITermVar> freeVarSet() {
-            return unifier.freeVarSet();
+        @Override public Set.Immutable<ITermVar> rangeSet() {
+            return unifier.rangeSet();
+        }
+
+        @Override public Set.Immutable<ITermVar> varSet() {
+            return unifier.varSet();
         }
 
         @Override public boolean isCyclic() {

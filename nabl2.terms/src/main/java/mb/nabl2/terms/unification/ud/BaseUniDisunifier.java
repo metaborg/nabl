@@ -39,17 +39,23 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
         return unifier().contains(var);
     }
 
-    @Override public Set.Immutable<ITermVar> varSet() {
+    @Override public Set.Immutable<ITermVar> domainSet() {
         // disequalities do not contribute to the domain
         // as a consequence, this.isEmpty() != this.varSet().isEmpty()
-        return unifier().varSet();
+        return unifier().domainSet();
     }
 
-    @Override public Set.Immutable<ITermVar> freeVarSet() {
-        final Set.Transient<ITermVar> freeVarSet = unifier().freeVarSet().asTransient();
+    @Override public Set.Immutable<ITermVar> rangeSet() {
+        final Set.Transient<ITermVar> freeVarSet = unifier().rangeSet().asTransient();
         disequalities().stream().flatMap(diseq -> diseq.freeVarSet().stream()).filter(v -> !unifier().contains(v))
                 .forEach(freeVarSet::__insert);
         return freeVarSet.freeze();
+    }
+
+    @Override public io.usethesource.capsule.Set.Immutable<ITermVar> varSet() {
+        final Set.Transient<ITermVar> varSet = unifier().varSet().asTransient();
+        disequalities().stream().flatMap(diseq -> diseq.freeVarSet().stream()).forEach(varSet::__insert);
+        return varSet.freeze();
     }
 
     @Override public boolean isCyclic() {
@@ -187,12 +193,16 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.contains(var);
         }
 
-        @Override public Set.Immutable<ITermVar> varSet() {
-            return unifier.varSet();
+        @Override public Set.Immutable<ITermVar> domainSet() {
+            return unifier.domainSet();
         }
 
-        @Override public Set.Immutable<ITermVar> freeVarSet() {
-            return unifier.freeVarSet();
+        @Override public Set.Immutable<ITermVar> rangeSet() {
+            return unifier.rangeSet();
+        }
+
+        @Override public Set.Immutable<ITermVar> varSet() {
+            return unifier.varSet();
         }
 
         @Override public boolean isCyclic() {

@@ -122,7 +122,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             public Unify(PersistentUnifier.Immutable unifier, IUnifier other, Predicate1<ITermVar> isRigid) {
                 super(unifier);
                 this.isRigid = isRigid;
-                other.varSet().forEach(v -> {
+                other.domainSet().forEach(v -> {
                     worklist.push(Tuple2.of(v, other.findTerm(v)));
                 });
             }
@@ -263,13 +263,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(term instanceof ITermVar) {
                     throw new IllegalStateException();
                 }
-                if(isRigid.test(var)) {
-                    throw new RigidException(var);
-                }
                 final ITerm repTerm = getTerm(rep); // term for the representative
                 if(repTerm != null) {
                     worklist.push(Tuple2.of(repTerm, term));
                 } else {
+                    if(isRigid.test(var)) {
+                        throw new RigidException(var);
+                    }
                     putTerm(rep, term);
                     result.add(rep);
                 }
@@ -375,7 +375,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Set.Immutable.subtract(varSet(), CapsuleUtil.toSet(vars)));
+            return removeAll(Set.Immutable.subtract(domainSet(), CapsuleUtil.toSet(vars)));
         }
 
         ///////////////////////////////////////////

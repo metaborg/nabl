@@ -301,7 +301,7 @@ class GreedySolver {
                             debug.debug("Unification succeeded: {}", result.result());
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
-                        final Set<ITermVar> updatedVars = result.result().varSet();
+                        final Set<ITermVar> updatedVars = result.result().domainSet();
                         return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
                                 ImmutableMap.of(), fuel);
                     } else {
@@ -355,7 +355,7 @@ class GreedySolver {
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars =
-                                result.result().<Set<ITermVar>>map(Diseq::varSet).orElse(ImmutableSet.of());
+                                result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(ImmutableSet.of());
                         return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
                                 ImmutableMap.of(), fuel);
                     } else {
@@ -566,11 +566,11 @@ class GreedySolver {
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
-                    return success(c, applyResult.state(), applyResult.diff().varSet(), disjoin(applyResult.body()),
+                    return success(c, applyResult.state(), applyResult.diff().domainSet(), disjoin(applyResult.body()),
                             ImmutableMap.of(), ImmutableMap.of(), fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
-                            .flatMap(g -> g.varSet().stream()).collect(Collectors.toSet());
+                            .flatMap(g -> g.domainSet().stream()).collect(Collectors.toSet());
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
                 }

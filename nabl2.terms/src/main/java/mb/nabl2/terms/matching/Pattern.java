@@ -78,7 +78,7 @@ public abstract class Pattern implements Serializable {
      * Fresh variables are generated for unmatched variables in the patterns. As a result, the resulting substitution
      * has entries for all the variables in the patterns, and no pattern variables escape in the equalities.
      */
-    public Optional<AMatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier,
+    public Optional<MatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
         // substitution from pattern variables to unifier variables
         final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
@@ -104,7 +104,7 @@ public abstract class Pattern implements Serializable {
         }
 
         // generate fresh unifier variables for unmatched pattern variables
-        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.varSet()).immutableCopy();
+        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.domainSet()).immutableCopy();
         freeVars.forEach(v -> _subst.put(v, fresh.apply(Optional.of(v))));
         final ISubstitution.Immutable subst = _subst.freeze();
 
@@ -126,7 +126,7 @@ public abstract class Pattern implements Serializable {
             allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }
 
-        return Optional.of(MatchResult.of(subst, stuckVars.build(), allEqs.build()));
+        return Optional.of(new MatchResult(subst, stuckVars.build(), allEqs.build()));
     }
 
     protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,

@@ -65,14 +65,19 @@ public interface IUnifier {
     boolean contains(ITermVar var);
 
     /**
-     * Return the domain of this unifier.
+     * Return the domain of this unifier, i.e., all bound variables.
      */
-    Set.Immutable<ITermVar> varSet();
+    Set.Immutable<ITermVar> domainSet();
 
     /**
-     * Return the set of free variables appearing in this unifier.
+     * Return the range of this unifier, i.e., all free variables.
      */
-    Set.Immutable<ITermVar> freeVarSet();
+    Set.Immutable<ITermVar> rangeSet();
+
+    /**
+     * Return the set of all variables appearing in this unifier.
+     */
+    Set.Immutable<ITermVar> varSet();
 
     /**
      * Test if the unifier contains any cycles.

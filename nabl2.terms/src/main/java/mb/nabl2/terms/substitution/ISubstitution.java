@@ -15,7 +15,9 @@ public interface ISubstitution {
 
     boolean contains(ITermVar var);
 
-    Set<ITermVar> varSet();
+    Set<ITermVar> domainSet();
+
+    Set<ITermVar> rangeSet();
 
     Set<Entry<ITermVar, ITerm>> entrySet();
 

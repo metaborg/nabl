@@ -103,7 +103,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
         solver.step().subscribe(r -> {
             hasRelationBuildConstraints.addAll(r.result.constraints());
             r.resolveRelations(hasRelationBuildConstraints.remove(r.constraint));
-            final Set.Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
+            final Set.Immutable<ITermVar> vars = r.result.unifierDiff().domainSet();
             if(!vars.isEmpty()) {
                 try {
                     final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);

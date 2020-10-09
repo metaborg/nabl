@@ -98,7 +98,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component);
 
         solver.step().subscribe(r -> {
-            Set.Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
+            Set.Immutable<ITermVar> vars = r.result.unifierDiff().domainSet();
             if(!vars.isEmpty()) {
                 try {
                     final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);
