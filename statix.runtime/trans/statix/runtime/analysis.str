@@ -207,10 +207,10 @@ rules // multi file analysis
       //
       // 5. Compute scope graph diff
       //
-    ; if Cached(ProjectAnalysis(_, _, _, final-project-state')) := project-change then
-        diff := <stx--diff-scopegraphs(|global-scope)> (final-project-state, final-project-state')
-      ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
-      end
+    //; if Cached(ProjectAnalysis(_, _, _, final-project-state')) := project-change then
+    //    diff := <stx--diff-scopegraphs(|global-scope)> (final-project-state, final-project-state')
+    //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+    //  end
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
       AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
