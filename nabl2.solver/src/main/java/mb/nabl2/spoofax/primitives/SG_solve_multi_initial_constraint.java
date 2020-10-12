@@ -15,6 +15,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.scopegraph.terms.Scope;
@@ -53,13 +54,12 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final ITerm params = input._1();
         final List<IConstraint> constraints = ImmutableList.of(input._2());
 
-        final Collection<ITermVar> globalVars = params.getVars();
+        final Set.Immutable<ITermVar> globalVars = params.getVars();
         final Fresh.Transient globalFresh = Fresh.Transient.of();
 
         final ISolution solution;
         try {
-            BaseSolution baseSolution =
-                    BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of());
+            BaseSolution baseSolution = BaseSolution.of(solverConfig, constraints, Unifiers.Immutable.of());
             GraphSolution preSolution = solver.solveGraph(baseSolution, globalFresh::fresh, cancel, progress);
             solution = solver.solveIntra(preSolution, globalVars, null, globalFresh::fresh, cancel, progress);
         } catch(InterruptedException | SolverException ex) {
@@ -69,8 +69,8 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final Collection<Scope> globalScopes =
                 T.collecttd(t -> Scope.matcher().match(t, solution.unifier())).apply(params);
 
-        final IResult result = MultiInitialResult.of(constraints, solution, Optional.empty(), globalVars,
-                globalScopes, globalFresh.freeze());
+        final IResult result = MultiInitialResult.of(constraints, solution, Optional.empty(), globalVars, globalScopes,
+                globalFresh.freeze());
         return Optional.of(B.newBlob(result));
     }
 

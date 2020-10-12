@@ -3,7 +3,6 @@ package mb.statix.constraints;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -16,9 +15,9 @@ import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.CapsuleUtil;
@@ -599,10 +598,10 @@ public final class Constraints {
         }
     }
 
-    public static Set<ITermVar> freeVars(IConstraint constraint) {
-        ImmutableSet.Builder<ITermVar> freeVars = ImmutableSet.builder();
-        freeVars(constraint, freeVars::add);
-        return freeVars.build();
+    public static Set.Immutable<ITermVar> freeVars(IConstraint constraint) {
+        Set.Transient<ITermVar> freeVars = Set.Transient.of();
+        freeVars(constraint, freeVars::__insert);
+        return freeVars.freeze();
     }
 
     public static void freeVars(IConstraint constraint, Action1<ITermVar> onVar) {
@@ -679,10 +678,10 @@ public final class Constraints {
 
     }
 
-    public static Set<ITermVar> vars(IConstraint constraint) {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-        vars(constraint, vars::add);
-        return vars.build();
+    public static Set.Immutable<ITermVar> vars(IConstraint constraint) {
+        Set.Transient<ITermVar> vars = Set.Transient.of();
+        vars(constraint, vars::__insert);
+        return vars.freeze();
     }
 
     public static void vars(IConstraint constraint, Action1<ITermVar> onVar) {

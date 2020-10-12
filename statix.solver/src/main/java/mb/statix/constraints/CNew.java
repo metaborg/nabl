@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -58,11 +56,8 @@ public class CNew implements IConstraint, Serializable {
         return new CNew(scopeTerm, datumTerm, cause);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(scopeTerm.getVars());
-        vars.addAll(datumTerm.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(scopeTerm.getVars(), datumTerm.getVars());
     }
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
@@ -86,18 +81,17 @@ public class CNew implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CNew cNew = (CNew)o;
-        return Objects.equals(scopeTerm, cNew.scopeTerm) &&
-            Objects.equals(datumTerm, cNew.datumTerm) &&
-            Objects.equals(cause, cNew.cause);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CNew cNew = (CNew) o;
+        return Objects.equals(scopeTerm, cNew.scopeTerm) && Objects.equals(datumTerm, cNew.datumTerm)
+                && Objects.equals(cause, cNew.cause);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(scopeTerm, datumTerm, cause);
     }
 }

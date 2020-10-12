@@ -5,16 +5,15 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
@@ -28,7 +27,7 @@ class ApplPattern extends Pattern {
     private final String op;
     private final List<Pattern> args;
 
-    public ApplPattern(String op, Iterable<? extends Pattern> args, ImmutableClassToInstanceMap<Object> attachments) {
+    public ApplPattern(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
         super(attachments);
         this.op = op;
         this.args = ImmutableList.copyOf(args);
@@ -43,11 +42,11 @@ class ApplPattern extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
+        Set.Transient<ITermVar> vars = Set.Transient.of();
         for(Pattern arg : args) {
-            vars.addAll(arg.getVars());
+            vars.__insertAll(arg.getVars());
         }
-        return vars.build();
+        return vars.freeze();
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
@@ -93,17 +92,16 @@ class ApplPattern extends Pattern {
         return sb.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        ApplPattern that = (ApplPattern)o;
-        return Objects.equals(op, that.op) &&
-            Objects.equals(args, that.args);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        ApplPattern that = (ApplPattern) o;
+        return Objects.equals(op, that.op) && Objects.equals(args, that.args);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(op, args);
     }
 }

@@ -8,9 +8,8 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -75,12 +74,12 @@ public class CUser implements IConstraint, Serializable {
         return cases.caseUser(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        for (ITerm a : args) {
-            vars.addAll(a.getVars());
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        for(ITerm a : args) {
+            vars.__insertAll(a.getVars());
         }
-        return vars.build();
+        return vars.freeze();
     }
 
     @Override public CUser apply(ISubstitution.Immutable subst) {
@@ -104,19 +103,17 @@ public class CUser implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CUser cUser = (CUser)o;
-        return Objects.equals(name, cUser.name) &&
-            Objects.equals(args, cUser.args) &&
-            Objects.equals(cause, cUser.cause) &&
-            Objects.equals(message, cUser.message);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CUser cUser = (CUser) o;
+        return Objects.equals(name, cUser.name) && Objects.equals(args, cUser.args)
+                && Objects.equals(cause, cUser.cause) && Objects.equals(message, cUser.message);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(name, args, cause, message);
     }
 }

@@ -6,8 +6,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -42,7 +41,7 @@ class TermExpr implements ArithExpr, Serializable {
         return Optional.of(term);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return term.getVars();
     }
 

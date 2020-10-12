@@ -1,7 +1,5 @@
 package mb.nabl2.terms;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 public interface IConsTerm extends IListTerm {
 
     ITerm getHead();
@@ -9,6 +7,6 @@ public interface IConsTerm extends IListTerm {
     IListTerm getTail();
 
     @Override
-    IConsTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+    IConsTerm withAttachments(IAttachments value);
 
 }

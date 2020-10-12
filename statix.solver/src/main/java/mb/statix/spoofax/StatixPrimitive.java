@@ -214,7 +214,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())
             .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
-            .map(t -> B.EMPTY_TUPLE.withAttachments(t.getAttachments()));
+            .map(t -> B.newTuple(ImmutableList.of(), t.getAttachments()));
         // @formatter:on
     }
 

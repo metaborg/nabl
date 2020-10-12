@@ -15,12 +15,12 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -33,13 +33,13 @@ import mb.nabl2.util.Tuple2;
 public abstract class Pattern implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableClassToInstanceMap<Object> attachments;
+    private final IAttachments attachments;
 
-    protected Pattern(ImmutableClassToInstanceMap<Object> attachments) {
+    protected Pattern(IAttachments attachments) {
         this.attachments = attachments;
     }
 
-    public ImmutableClassToInstanceMap<Object> getAttachments() {
+    public IAttachments getAttachments() {
         return attachments;
     }
 

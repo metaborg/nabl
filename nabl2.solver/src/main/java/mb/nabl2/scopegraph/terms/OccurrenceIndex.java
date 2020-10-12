@@ -6,11 +6,10 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.IOccurrenceIndex;
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -38,15 +37,15 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.isGround();
     }
 
-    @Override public Multiset<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return term.getVars();
     }
 
-    @Override public ImmutableClassToInstanceMap<Object> getAttachments() {
+    @Override public IAttachments getAttachments() {
         return term.getAttachments();
     }
 
-    @Override public OccurrenceIndex withAttachments(ImmutableClassToInstanceMap<Object> value) {
+    @Override public OccurrenceIndex withAttachments(IAttachments value) {
         return new OccurrenceIndex(resource, term.withAttachments(value));
     }
 
@@ -77,8 +76,10 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
     }
 
     @Override public boolean equals(Object other, boolean compareAttachments) {
-        if (this == other) return true;
-        if (!(other instanceof ITerm)) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof ITerm))
+            return false;
         // @formatter:off
         return equals(other)
             && (!compareAttachments || Objects.equals(this.getAttachments(), ((ITerm)other).getAttachments()));

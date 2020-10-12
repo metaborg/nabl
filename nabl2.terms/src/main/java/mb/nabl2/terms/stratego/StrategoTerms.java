@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -18,15 +20,15 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.IStrategoTuple;
 import org.spoofax.interpreter.terms.ITermFactory;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.ImmutableClassToInstanceMap.Builder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.build.Attachments;
 
 public class StrategoTerms {
 
@@ -67,7 +69,7 @@ public class StrategoTerms {
 
     private IStrategoTerm toStrategoList(IListTerm list) {
         final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
-        final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
+        final LinkedList<IAttachments> attachments = Lists.newLinkedList();
         while(list != null) {
             attachments.push(list.getAttachments());
             // @formatter:off
@@ -94,7 +96,11 @@ public class StrategoTerms {
         return strategoList;
     }
 
-    private <T extends IStrategoTerm> T putAttachments(T term, ImmutableClassToInstanceMap<Object> attachments) {
+    private <T extends IStrategoTerm> T putAttachments(T term, IAttachments attachments) {
+        if(attachments.isEmpty()) {
+            return term;
+        }
+
         Optional<TermOrigin> origin = TermOrigin.get(attachments);
         if(origin.isPresent()) {
             origin.get().put(term);
@@ -105,8 +111,8 @@ public class StrategoTerms {
             term = StrategoTermIndices.put(index.get(), term, termFactory);
         }
 
-        AStrategoAnnotations annotations = attachments.getInstance(AStrategoAnnotations.class);
-        if(annotations != null) {
+        @Nullable StrategoAnnotations annotations = attachments.get(StrategoAnnotations.class);
+        if(annotations != null && !annotations.isEmpty()) {
             @SuppressWarnings({ "unchecked" }) T result = (T) termFactory.copyAttachments(term,
                     termFactory.annotateTerm(term, termFactory.makeList(annotations.getAnnotationList())));
             term = result;
@@ -118,7 +124,7 @@ public class StrategoTerms {
     // from
 
     public ITerm fromStratego(IStrategoTerm sterm) {
-        ImmutableClassToInstanceMap<Object> attachments = getAttachments(sterm);
+        @Nullable IAttachments attachments = getAttachments(sterm);
         // @formatter:off
         ITerm term = match(sterm, StrategoTerms.cases(
             appl -> {
@@ -141,7 +147,7 @@ public class StrategoTerms {
 
     private IListTerm fromStrategoList(IStrategoList list) {
         final LinkedList<ITerm> terms = Lists.newLinkedList();
-        final LinkedList<ImmutableClassToInstanceMap<Object>> attachments = Lists.newLinkedList();
+        final LinkedList<IAttachments> attachments = Lists.newLinkedList();
         while(!list.isEmpty()) {
             terms.add(fromStratego(list.head()));
             attachments.push(getAttachments(list));
@@ -151,8 +157,8 @@ public class StrategoTerms {
         return B.newList(terms, attachments);
     }
 
-    public static ImmutableClassToInstanceMap<Object> getAttachments(IStrategoTerm term) {
-        Builder<Object> b = ImmutableClassToInstanceMap.builder();
+    public static IAttachments getAttachments(IStrategoTerm term) {
+        final Attachments.Builder b = Attachments.Builder.of();
 
         TermOrigin.get(term).ifPresent(origin -> {
             b.put(TermOrigin.class, origin);
@@ -162,7 +168,10 @@ public class StrategoTerms {
             b.put(TermIndex.class, termIndex);
         });
 
-        b.put(AStrategoAnnotations.class, StrategoAnnotations.of(term.getAnnotations()));
+        final IStrategoList annos = term.getAnnotations();
+        if(!annos.isEmpty()) {
+            b.put(StrategoAnnotations.class, StrategoAnnotations.of(annos));
+        }
 
         return b.build();
     }

@@ -4,9 +4,9 @@ import java.util.Objects;
 
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -26,12 +26,16 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return getArgs().stream().allMatch(ITerm::isGround);
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
         for(ITerm arg : getArgs()) {
-            vars.addAll(arg.getVars());
+            vars.__insertAll(arg.getVars());
         }
-        return vars.build();
+        return vars.freeze();
+    }
+
+    @Override public IApplTerm withAttachments(IAttachments value) {
+        return (IApplTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(Cases<T> cases) {

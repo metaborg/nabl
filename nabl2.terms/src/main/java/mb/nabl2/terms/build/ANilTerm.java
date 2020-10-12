@@ -3,8 +3,8 @@ package mb.nabl2.terms.build;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
-
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
@@ -22,8 +22,12 @@ abstract class ANilTerm extends AbstractTerm implements INilTerm {
         return true;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of();
+    }
+
+    @Override public INilTerm withAttachments(IAttachments value) {
+        return (INilTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
@@ -47,10 +51,13 @@ abstract class ANilTerm extends AbstractTerm implements INilTerm {
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof INilTerm)) return false;
-        INilTerm that = (INilTerm)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof INilTerm))
+            return false;
+        INilTerm that = (INilTerm) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return true;
         // @formatter:on

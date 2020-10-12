@@ -4,15 +4,13 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
@@ -23,12 +21,12 @@ import mb.nabl2.terms.unification.u.IUnifier;
 class NilPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
-    public NilPattern(ImmutableClassToInstanceMap<Object> attachments) {
+    public NilPattern(IAttachments attachments) {
         super(attachments);
     }
 
     @Override public Set<ITermVar> getVars() {
-        return ImmutableSet.of();
+        return Set.Immutable.of();
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {

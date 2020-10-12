@@ -7,10 +7,9 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
@@ -80,8 +79,7 @@ public abstract class AState implements IState.Immutable {
         return freshVar("_", null);
     }
 
-    private Tuple2<ITermVar, IState.Immutable> freshVar(String name,
-            @Nullable ImmutableClassToInstanceMap<Object> attachments) {
+    private Tuple2<ITermVar, IState.Immutable> freshVar(String name, @Nullable IAttachments attachments) {
         final int i = __varCounter() + 1;
         final String newName = name.replaceAll("-", "_") + "-" + i;
         final ITermVar newVar = B.newVar(resource(), newName, attachments);

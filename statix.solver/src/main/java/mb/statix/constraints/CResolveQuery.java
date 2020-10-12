@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -89,13 +87,13 @@ public class CResolveQuery implements IConstraint, Serializable {
         return cases.caseResolveQuery(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(filter.getVars());
-        vars.addAll(min.getVars());
-        vars.addAll(scopeTerm.getVars());
-        vars.addAll(resultTerm.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        vars.__insertAll(filter.getVars());
+        vars.__insertAll(min.getVars());
+        vars.__insertAll(scopeTerm.getVars());
+        vars.__insertAll(resultTerm.getVars());
+        return vars.freeze();
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {

@@ -8,10 +8,10 @@ import java.util.Objects;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -32,7 +32,7 @@ abstract class ASpecializedAppl extends AbstractApplTerm {
         return ImmutableList.of(B.newString(getFirstArg()), B.newInt(getSecondArg()));
     }
 
-    @Override public IApplTerm withAttachments(ImmutableClassToInstanceMap<Object> value) {
+    @Override public IApplTerm withAttachments(IAttachments value) {
         return SpecializedAppl.copyOf(this).withAttachments(value);
     }
 

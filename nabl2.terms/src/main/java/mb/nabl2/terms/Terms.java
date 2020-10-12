@@ -4,14 +4,9 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 public class Terms {
 
     public static final String TUPLE_OP = "";
-
-    public static final ImmutableClassToInstanceMap<Object> NO_ATTACHMENTS =
-            ImmutableClassToInstanceMap.builder().build();
 
     // SAFE
 

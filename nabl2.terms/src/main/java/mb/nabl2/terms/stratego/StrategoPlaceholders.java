@@ -10,9 +10,8 @@ import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.terms.util.TermUtils;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -159,8 +158,8 @@ public final class StrategoPlaceholders {
      * @param attachments the attachments of the term
      * @return the placeholder term; or {@code null} when not found
      */
-    private static @Nullable ITerm getPlaceholderFromAttachments(ImmutableClassToInstanceMap<Object> attachments) {
-        @Nullable AStrategoAnnotations annotations = (AStrategoAnnotations)attachments.get(AStrategoAnnotations.class);
+    private static @Nullable ITerm getPlaceholderFromAttachments(IAttachments attachments) {
+        @Nullable StrategoAnnotations annotations = attachments.get(StrategoAnnotations.class);
         if (annotations == null) return null;
         return getPlaceholderFromAnnotations(annotations.getAnnotationList());
     }

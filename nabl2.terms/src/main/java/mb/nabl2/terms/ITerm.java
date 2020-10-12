@@ -1,17 +1,16 @@
 package mb.nabl2.terms;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.Multiset;
+import io.usethesource.capsule.Set;
 
 public interface ITerm {
 
     boolean isGround();
 
-    Multiset<ITermVar> getVars();
+    Set.Immutable<ITermVar> getVars();
 
-    ImmutableClassToInstanceMap<Object> getAttachments();
+    IAttachments getAttachments();
 
-    ITerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+    ITerm withAttachments(IAttachments value);
 
     boolean equals(Object other, boolean compareAttachments);
 

@@ -4,15 +4,13 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
@@ -25,7 +23,7 @@ class StringPattern extends Pattern {
 
     private final String value;
 
-    public StringPattern(String value, ImmutableClassToInstanceMap<Object> attachments) {
+    public StringPattern(String value, IAttachments attachments) {
         super(attachments);
         this.value = value;
     }
@@ -35,7 +33,7 @@ class StringPattern extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        return ImmutableSet.of();
+        return Set.Immutable.of();
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
@@ -70,16 +68,16 @@ class StringPattern extends Pattern {
         return "\"" + value + "\"";
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        StringPattern that = (StringPattern)o;
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        StringPattern that = (StringPattern) o;
         return Objects.equals(value, that.value);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(value);
     }
 }

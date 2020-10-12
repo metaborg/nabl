@@ -2,7 +2,6 @@ package mb.nabl2.terms.matching;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -11,11 +10,10 @@ import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
@@ -32,19 +30,19 @@ class PatternAs extends Pattern {
     }
 
     public PatternAs(ITermVar var, Pattern pattern) {
-        super(ImmutableClassToInstanceMap.of());
+        super(Attachments.empty());
         this.var = new PatternVar(var);
         this.pattern = pattern;
     }
 
     PatternAs(PatternVar var, Pattern pattern) {
-        super(ImmutableClassToInstanceMap.of());
+        super(Attachments.empty());
         this.var = var;
         this.pattern = pattern;
     }
 
     PatternAs(Pattern pattern) {
-        super(ImmutableClassToInstanceMap.of());
+        super(Attachments.empty());
         this.var = new PatternVar();
         this.pattern = pattern;
     }
@@ -58,10 +56,10 @@ class PatternAs extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-        vars.addAll(var.getVars());
-        vars.addAll(pattern.getVars());
-        return vars.build();
+        Set.Transient<ITermVar> vars = Set.Transient.of();
+        vars.__insertAll(var.getVars());
+        vars.__insertAll(pattern.getVars());
+        return vars.freeze();
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
@@ -89,17 +87,16 @@ class PatternAs extends Pattern {
         return var.toString() + "@" + pattern.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        PatternAs patternAs = (PatternAs)o;
-        return Objects.equals(var, patternAs.var) &&
-            Objects.equals(pattern, patternAs.pattern);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        PatternAs patternAs = (PatternAs) o;
+        return Objects.equals(var, patternAs.var) && Objects.equals(pattern, patternAs.pattern);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(var, pattern);
     }
 }

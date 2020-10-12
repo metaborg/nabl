@@ -5,8 +5,8 @@ import java.util.Objects;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
-
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -20,8 +20,12 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
         return true;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of();
+    }
+
+    @Override public IBlobTerm withAttachments(IAttachments value) {
+        return (IBlobTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(Cases<T> cases) {
@@ -33,16 +37,17 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
     }
 
     @Override public int hashCode() {
-        return Objects.hash(
-            getValue()
-        );
+        return Objects.hash(getValue());
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof IBlobTerm)) return false;
-        IBlobTerm that = (IBlobTerm)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof IBlobTerm))
+            return false;
+        IBlobTerm that = (IBlobTerm) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return Objects.equals(this.getValue(), that.getValue());
         // @formatter:on

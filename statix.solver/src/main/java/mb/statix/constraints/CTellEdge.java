@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -64,11 +62,8 @@ public class CTellEdge implements IConstraint, Serializable {
         return cases.caseTellEdge(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(sourceTerm.getVars());
-        vars.addAll(targetTerm.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(sourceTerm.getVars(), targetTerm.getVars());
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
@@ -93,19 +88,17 @@ public class CTellEdge implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CTellEdge cTellEdge = (CTellEdge)o;
-        return Objects.equals(sourceTerm, cTellEdge.sourceTerm) &&
-            Objects.equals(label, cTellEdge.label) &&
-            Objects.equals(targetTerm, cTellEdge.targetTerm) &&
-            Objects.equals(cause, cTellEdge.cause);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CTellEdge cTellEdge = (CTellEdge) o;
+        return Objects.equals(sourceTerm, cTellEdge.sourceTerm) && Objects.equals(label, cTellEdge.label)
+                && Objects.equals(targetTerm, cTellEdge.targetTerm) && Objects.equals(cause, cTellEdge.cause);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(sourceTerm, label, targetTerm, cause);
     }
 }

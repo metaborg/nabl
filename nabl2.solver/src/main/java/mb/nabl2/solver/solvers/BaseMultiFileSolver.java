@@ -55,7 +55,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         super(nabl2Debug, callExternal);
     }
 
-    public ISolution solveIntra(GraphSolution initial, Collection<ITermVar> intfVars,
+    public ISolution solveIntra(GraphSolution initial, Iterable<ITermVar> intfVars,
             @Nullable Collection<Scope> intfScopes, Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
         final SolverConfig config = initial.config();

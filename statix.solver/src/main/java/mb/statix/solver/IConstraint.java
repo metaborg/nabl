@@ -5,8 +5,7 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -45,7 +44,7 @@ public interface IConstraint {
 
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
-    Multiset<ITermVar> getVars();
+    Set.Immutable<ITermVar> getVars();
 
     IConstraint apply(ISubstitution.Immutable subst);
 

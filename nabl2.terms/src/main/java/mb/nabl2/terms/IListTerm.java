@@ -3,8 +3,6 @@ package mb.nabl2.terms;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 public interface IListTerm extends ITerm {
 
     /** Gets the minimum size of the list. This is the size of the list if the list does not contain a variable term as a tail. */
@@ -45,6 +43,6 @@ public interface IListTerm extends ITerm {
     }
 
     @Override
-    IListTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+    IListTerm withAttachments(IAttachments value);
 
 }

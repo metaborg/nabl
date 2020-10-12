@@ -6,7 +6,6 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -17,9 +16,9 @@ import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
@@ -48,8 +47,8 @@ public abstract class ARule {
 
     @Value.Parameter public abstract List<Pattern> params();
 
-    @Value.Lazy public Set<ITermVar> paramVars() {
-        return params().stream().flatMap(t -> t.getVars().stream()).collect(ImmutableSet.toImmutableSet());
+    @Value.Lazy public Set.Immutable<ITermVar> paramVars() {
+        return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
     @Value.Parameter public abstract IConstraint body();
@@ -82,12 +81,12 @@ public abstract class ARule {
         }
     }
 
-    public Set<ITermVar> freeVars() {
-        return Sets.difference(Constraints.freeVars(body()), paramVars());
+    public Set.Immutable<ITermVar> freeVars() {
+        return Set.Immutable.subtract(Constraints.freeVars(body()), paramVars());
     }
 
-    public Set<ITermVar> varSet() {
-        return Sets.union(Constraints.vars(body()), paramVars());
+    public Set.Immutable<ITermVar> varSet() {
+        return Set.Immutable.union(Constraints.vars(body()), paramVars());
     }
 
     public Rule apply(ISubstitution.Immutable subst) {

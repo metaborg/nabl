@@ -184,7 +184,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public boolean isCyclic(final ITerm term) {
-        return isCyclic(term.getVars().elementSet(), Sets.newHashSet(), Maps.newHashMap());
+        return isCyclic(term.getVars(), Sets.newHashSet(), Maps.newHashMap());
     }
 
     protected boolean isCyclic(final java.util.Set<ITermVar> vars) {
@@ -204,7 +204,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             stack.add(rep);
             visited.put(rep, null);
             final ITerm term = terms().get(rep);
-            cyclic = term != null ? isCyclic(term.getVars().elementSet(), stack, visited) : false;
+            cyclic = term != null ? isCyclic(term.getVars(), stack, visited) : false;
             visited.put(rep, cyclic);
             stack.remove(rep);
         } else if(stack.contains(rep)) {
@@ -220,7 +220,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public boolean isGround(final ITerm term) {
-        return isGround(term.getVars().elementSet(), Sets.newHashSet(), Maps.newHashMap());
+        return isGround(term.getVars(), Sets.newHashSet(), Maps.newHashMap());
     }
 
     private boolean isGround(final java.util.Set<ITermVar> vars, final java.util.Set<ITermVar> stack,
@@ -236,7 +236,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             stack.add(rep);
             visited.put(rep, null);
             final ITerm term = terms().get(rep);
-            ground = term != null ? isGround(term.getVars().elementSet(), stack, visited) : false;
+            ground = term != null ? isGround(term.getVars(), stack, visited) : false;
             visited.put(rep, ground);
             stack.remove(rep);
         } else if(stack.contains(rep)) {
@@ -253,7 +253,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars(final ITerm term) {
         final Set.Transient<ITermVar> vars = Set.Transient.of();
-        getVars(term.getVars().elementSet(), Lists.newLinkedList(), Sets.newHashSet(), vars);
+        getVars(term.getVars(), Lists.newLinkedList(), Sets.newHashSet(), vars);
         return vars.freeze();
     }
 
@@ -270,7 +270,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             stack.push(rep);
             final ITerm term = terms().get(rep);
             if(term != null) {
-                getVars(term.getVars().elementSet(), stack, visited, vars);
+                getVars(term.getVars(), stack, visited, vars);
             } else {
                 vars.__insert(rep);
             }

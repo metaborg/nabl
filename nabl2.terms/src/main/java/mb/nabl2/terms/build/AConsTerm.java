@@ -7,8 +7,8 @@ import java.util.Objects;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
-
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -31,11 +31,12 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
         return getHead().isGround() && getTail().isGround();
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(getHead().getVars());
-        vars.addAll(getTail().getVars());
-        return vars.build();
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(getHead().getVars(), getTail().getVars());
+    }
+
+    @Override public IConsTerm withAttachments(IAttachments value) {
+        return (IConsTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
@@ -55,17 +56,17 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
     }
 
     @Override public int hashCode() {
-        return Objects.hash(
-            getHead(),
-            getTail()
-        );
+        return Objects.hash(getHead(), getTail());
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof IConsTerm)) return false;
-        IConsTerm that = (IConsTerm)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof IConsTerm))
+            return false;
+        IConsTerm that = (IConsTerm) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return Objects.equals(this.getHead(), that.getHead())
             && Objects.equals(this.getTail(), that.getTail());

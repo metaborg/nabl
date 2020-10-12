@@ -6,8 +6,9 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMultiset;
 
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -33,8 +34,12 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return false;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        return ImmutableMultiset.of(this);
+    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of(this);
+    }
+
+    @Override public ITermVar withAttachments(IAttachments value) {
+        return (ITermVar) super.withAttachments(value);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
@@ -54,17 +59,17 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
     }
 
     @Value.Lazy @Override public int hashCode() {
-        return Objects.hash(
-            getResource(),
-            getName()
-        );
+        return Objects.hash(getResource(), getName());
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof ITermVar)) return false;
-        ITermVar that = (ITermVar)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof ITermVar))
+            return false;
+        ITermVar that = (ITermVar) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return Objects.equals(this.getResource(), that.getResource())
             && Objects.equals(this.getName(), that.getName());

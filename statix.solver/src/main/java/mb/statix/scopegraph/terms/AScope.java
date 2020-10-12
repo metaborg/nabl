@@ -12,6 +12,7 @@ import org.immutables.value.Value;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -45,6 +46,10 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
 
     @Override protected AScope check() {
         return this;
+    }
+
+    @Override public Scope withAttachments(IAttachments value) {
+        return (Scope) super.withAttachments(value);
     }
 
     // Object implementation

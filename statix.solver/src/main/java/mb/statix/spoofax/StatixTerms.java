@@ -18,7 +18,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.optionals.Optionals;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -32,12 +31,14 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.substitution.FreshVars;
@@ -382,13 +383,13 @@ public class StatixTerms {
         return M.casesFix(m -> Iterables2.from(
             varTerm(),
             M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
-                final List<ImmutableClassToInstanceMap<Object>> as = Lists.newArrayList();
+                final List<IAttachments> as = Lists.newArrayList();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 as.add(t.getAttachments());
                 return B.newList(elems, as);
             }),
             M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
-                final List<ImmutableClassToInstanceMap<Object>> as = Lists.newArrayList();
+                final List<IAttachments> as = Lists.newArrayList();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 return B.newListTail(elems, tail, as).withAttachments(t.getAttachments());
             })
@@ -398,7 +399,7 @@ public class StatixTerms {
 
     public static IMatcher<ITermVar> varTerm() {
         return M.preserveAttachments(M.appl1("Var", M.stringValue(), (t, name) -> {
-            return B.newVar("", name).withAttachments(t.getAttachments());
+            return B.newVar("", name, t.getAttachments());
         }));
     }
 
@@ -535,27 +536,27 @@ public class StatixTerms {
                         final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
                         final ITerm pos = explicatePosition(appl.getArgs().get(2));
-                        return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
+                        return B.newAppl(appl.getOp(), ImmutableList.of(ns, B.newList(args), pos), term.getAttachments());
                     }
                     default: {
                         final List<ITerm> args = explicate(appl.getArgs());
-                        return B.newAppl("Op", B.newString(appl.getOp()), B.newList(args));
+                        return B.newAppl("Op", ImmutableList.of(B.newString(appl.getOp()), B.newList(args)), term.getAttachments());
                     }
                 }
             },
             list -> explicate(list),
-            string -> B.newAppl("Str", string),
-            integer -> B.newAppl("Int", B.newString(integer.toString())),
-            blob -> B.newString(blob.toString()),
+            string -> B.newAppl("Str", ImmutableList.of(string), term.getAttachments()),
+            integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
+            blob -> B.newString(blob.toString(), term.getAttachments()),
             var -> explicate(var)
-        )).withAttachments(term.getAttachments());
+        ));
         // @formatter:on
     }
 
     private static ITerm explicate(IListTerm list) {
         // @formatter:off
         final List<ITerm> terms = Lists.newArrayList();
-        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final List<IAttachments> attachments = Lists.newArrayList();
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
@@ -570,7 +571,7 @@ public class StatixTerms {
                 },
                 var -> {
                     varTail.set(explicate(var));
-                    attachments.add(ImmutableClassToInstanceMap.builder().build());
+                    attachments.add(Attachments.empty());
                     return null;
                 }
             ));

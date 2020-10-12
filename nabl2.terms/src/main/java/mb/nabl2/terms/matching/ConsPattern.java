@@ -5,16 +5,14 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -29,7 +27,7 @@ class ConsPattern extends Pattern {
     private final Pattern head;
     private final Pattern tail;
 
-    public ConsPattern(Pattern head, Pattern tail, ImmutableClassToInstanceMap<Object> attachments) {
+    public ConsPattern(Pattern head, Pattern tail, IAttachments attachments) {
         super(attachments);
         this.head = head;
         this.tail = tail;
@@ -44,10 +42,10 @@ class ConsPattern extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-        vars.addAll(head.getVars());
-        vars.addAll(tail.getVars());
-        return vars.build();
+        Set.Transient<ITermVar> vars = Set.Transient.of();
+        vars.__insertAll(head.getVars());
+        vars.__insertAll(tail.getVars());
+        return vars.freeze();
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {

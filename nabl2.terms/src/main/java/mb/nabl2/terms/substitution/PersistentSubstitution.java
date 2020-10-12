@@ -37,7 +37,8 @@ public abstract class PersistentSubstitution implements ISubstitution {
     }
 
     @Override public Set<ITermVar> rangeSet() {
-        return subst().values().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
+        return subst().values().stream().flatMap(t -> t.getVars().stream())
+                .collect(CapsuleCollectors.toSet());
     }
 
     @Override public Set<Entry<ITermVar, ITerm>> entrySet() {

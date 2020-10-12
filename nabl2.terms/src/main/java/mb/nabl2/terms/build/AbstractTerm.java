@@ -4,28 +4,38 @@ import java.util.Objects;
 
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.Terms;
 
 public abstract class AbstractTerm implements ITerm {
 
-    @Override
-    @Value.Auxiliary @Value.Default public ImmutableClassToInstanceMap<Object> getAttachments() {
-        return Terms.NO_ATTACHMENTS;
+    @Override public IAttachments getAttachments() {
+        return __attachments();
     }
+
+    @Override public ITerm withAttachments(IAttachments value) {
+        return value == __attachments() ? this : with__attachments(value);
+    }
+
+    @Value.Auxiliary @Value.Default public IAttachments __attachments() {
+        return Attachments.empty();
+    }
+
+    public abstract ITerm with__attachments(IAttachments value);
 
     @Override public abstract int hashCode();
 
     @Override public abstract boolean equals(Object other);
 
     @Override public boolean equals(Object other, boolean compareAttachments) {
-        if (this == other) return true;
-        if (!(other instanceof ITerm)) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof ITerm))
+            return false;
         // @formatter:off
         return equals(other)
             && (!compareAttachments || Objects.equals(this.getAttachments(), ((ITerm)other).getAttachments()));
         // @formatter:on
     }
+
 }

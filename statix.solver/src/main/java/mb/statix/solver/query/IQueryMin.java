@@ -1,7 +1,6 @@
 package mb.statix.solver.query;
 
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -17,7 +16,7 @@ public interface IQueryMin {
 
     Rule getDataEquiv();
 
-    Multiset<ITermVar> getVars();
+    Set.Immutable<ITermVar> getVars();
 
     IQueryMin apply(ISubstitution.Immutable subst);
 

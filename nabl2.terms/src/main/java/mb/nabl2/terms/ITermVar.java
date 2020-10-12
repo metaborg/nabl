@@ -1,7 +1,5 @@
 package mb.nabl2.terms;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 public interface ITermVar extends ITerm, IListTerm {
 
     String getResource();
@@ -9,6 +7,6 @@ public interface ITermVar extends ITerm, IListTerm {
     String getName();
 
     @Override
-    ITermVar withAttachments(ImmutableClassToInstanceMap<Object> value);
+    ITermVar withAttachments(IAttachments value);
 
 }

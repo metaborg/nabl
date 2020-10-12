@@ -15,7 +15,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multiset;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -569,9 +568,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             for(Entry<ITermVar, ITerm> e : terms.entrySet()) {
                 domainSetCache.__insert(e.getKey());
                 varSetCache.__insert(e.getKey());
-                for(Multiset.Entry<ITermVar> te : e.getValue().getVars().entrySet()) {
-                    repAndTermVarsCache.add(te.getElement(), te.getCount());
-                    varSetCache.__insert(te.getElement());
+                for(ITermVar tv : e.getValue().getVars()) {
+                    repAndTermVarsCache.add(tv);
+                    varSetCache.__insert(tv);
                 }
             }
 
@@ -693,12 +692,12 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             if(oldTerm == null) {
                 addDomainVar(rep);
             } else {
-                for(Multiset.Entry<ITermVar> var : oldTerm.getVars().entrySet()) {
-                    removeRangeVar(var.getElement(), var.getCount());
+                for(ITermVar var : oldTerm.getVars()) {
+                    removeRangeVar(var, 1);
                 }
             }
-            for(Multiset.Entry<ITermVar> var : term.getVars().entrySet()) {
-                addRangeVar(var.getElement(), var.getCount());
+            for(ITermVar var : term.getVars()) {
+                addRangeVar(var, 1);
             }
         }
 
@@ -706,8 +705,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             final ITerm term = terms.__remove(rep);
             if(term != null) {
                 removeDomainVar(rep);
-                for(Multiset.Entry<ITermVar> var : term.getVars().entrySet()) {
-                    removeRangeVar(var.getElement(), var.getCount());
+                for(ITermVar var : term.getVars()) {
+                    removeRangeVar(var, 1);
                 }
             }
             return term;

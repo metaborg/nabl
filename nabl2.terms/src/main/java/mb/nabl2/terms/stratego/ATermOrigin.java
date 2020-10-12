@@ -9,9 +9,7 @@ import org.spoofax.jsglr.client.imploder.IToken;
 import org.spoofax.jsglr.client.imploder.ImploderAttachment;
 import org.spoofax.terms.attachments.OriginAttachment;
 
-import com.google.common.collect.ClassToInstanceMap;
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -32,17 +30,8 @@ public abstract class ATermOrigin {
         return getImploderAttachment().getRightToken();
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" }) public ITerm put(ITerm term) {
-        final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
-        // builder does not allow overwriting entries, so we need to filter out
-        // the term origin, in case it is already there
-        // @formatter:off
-        term.getAttachments().entrySet().stream()
-            .filter(e -> !TermOrigin.class.equals(e.getKey()))
-            .forEach(e -> {
-                attachments.put((Class)e.getKey(), e.getValue());
-            });
-        // @formatter:on
+    public ITerm put(ITerm term) {
+        final IAttachments.Builder attachments = term.getAttachments().toBuilder();
         attachments.put(TermOrigin.class, (TermOrigin) this);
         return term.withAttachments(attachments.build());
     }
@@ -71,8 +60,8 @@ public abstract class ATermOrigin {
         return get(src).map(o -> o.put(dst)).orElse(dst);
     }
 
-    public static Optional<TermOrigin> get(ClassToInstanceMap<Object> attachments) {
-        return Optional.ofNullable(attachments.getInstance(TermOrigin.class));
+    public static Optional<TermOrigin> get(IAttachments attachments) {
+        return Optional.ofNullable(attachments.get(TermOrigin.class));
     }
 
     // Stratego term interaction

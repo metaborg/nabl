@@ -11,6 +11,9 @@ import mb.nabl2.util.CapsuleUtil;
 
 public abstract class MultiSet<E> implements Iterable<E> {
 
+    @SuppressWarnings("rawtypes") private static final MultiSet.Immutable EMPTY =
+            new MultiSet.Immutable<>(Map.Immutable.of());
+
     protected abstract Map<E, Integer> elements();
 
     public boolean isEmpty() {
@@ -27,6 +30,15 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
     public boolean contains(E e) {
         return elements().containsKey(e);
+    }
+
+    public boolean containsAll(Iterable<E> es) {
+        for(E e : es) {
+            if(contains(e)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public Set<Entry<E, Integer>> entrySet() {
@@ -119,8 +131,25 @@ public abstract class MultiSet<E> implements Iterable<E> {
             return new MultiSet.Transient<>(elements.asTransient());
         }
 
-        public static <E> MultiSet.Immutable<E> of() {
-            return new MultiSet.Immutable<>(Map.Immutable.of());
+        @SuppressWarnings("unchecked") public static <E> MultiSet.Immutable<E> of() {
+            return EMPTY;
+        }
+
+        public static <E> MultiSet.Immutable<E> of(E var) {
+            return new MultiSet.Immutable<>(Map.Immutable.of(var, 1));
+        }
+
+        @SuppressWarnings("unchecked") public static <E> MultiSet.Immutable<E> union(MultiSet.Immutable<E> set1,
+                MultiSet.Immutable<E> set2) {
+            if(set1.isEmpty() && set2.isEmpty()) {
+                return EMPTY;
+            } else if(set1.isEmpty()) {
+                return set2;
+            } else if(set2.isEmpty()) {
+                return set1;
+            } else {
+                return set1.addAll(set2);
+            }
         }
 
     }
@@ -248,8 +277,8 @@ public abstract class MultiSet<E> implements Iterable<E> {
             return c;
         }
 
-        public MultiSet.Immutable<E> freeze() {
-            return new MultiSet.Immutable<>(elements.freeze());
+        @SuppressWarnings("unchecked") public MultiSet.Immutable<E> freeze() {
+            return elements.isEmpty() ? EMPTY : new MultiSet.Immutable<>(elements.freeze());
         }
 
         public static <E> MultiSet.Transient<E> of() {

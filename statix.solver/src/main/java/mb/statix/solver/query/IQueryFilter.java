@@ -1,7 +1,6 @@
 package mb.statix.solver.query;
 
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -16,7 +15,7 @@ public interface IQueryFilter {
 
     Rule getDataWF();
 
-    Multiset<ITermVar> getVars();
+    Set.Immutable<ITermVar> getVars();
 
     IQueryFilter apply(ISubstitution.Immutable subst);
 
