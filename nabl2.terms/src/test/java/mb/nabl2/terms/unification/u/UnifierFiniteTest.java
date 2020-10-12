@@ -13,10 +13,12 @@ import java.util.Optional;
 import org.junit.Test;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.TermSize;
+import mb.nabl2.util.CapsuleUtil;
 
 @SuppressWarnings("unused")
 public class UnifierFiniteTest {
@@ -270,6 +272,44 @@ public class UnifierFiniteTest {
     @Test(timeout = 10000, expected = OccursException.class) public void testRecursive7() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         phi.unify(B.newTuple(B.newAppl(f, a), a), B.newTuple(b, B.newAppl(f, b)));
+    }
+
+    @Test(timeout = 10000) public void testVarSets1() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+
+        assertPresent(phi.unify(a, B.newAppl(f, b)));
+        assertEquals(Set.Immutable.of(a, b), phi.varSet());
+        assertEquals(Set.Immutable.of(a), phi.domainSet());
+        assertEquals(Set.Immutable.of(b), phi.rangeSet());
+
+        assertPresent(phi.unify(b, B.newAppl(f, c)));
+        assertEquals(CapsuleUtil.toSet(a, b, c), phi.varSet());
+        assertEquals(Set.Immutable.of(a, b), phi.domainSet());
+        assertEquals(Set.Immutable.of(c), phi.rangeSet());
+
+        phi.remove(b);
+        assertEquals(Set.Immutable.of(a, c), phi.varSet());
+        assertEquals(Set.Immutable.of(a), phi.domainSet());
+        assertEquals(Set.Immutable.of(c), phi.rangeSet());
+    }
+
+    @Test(timeout = 10000) public void testVarSets2() throws OccursException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+
+        assertPresent(phi.unify(a, B.newAppl(f, b)));
+        assertEquals(Set.Immutable.of(a, b), phi.varSet());
+        assertEquals(Set.Immutable.of(a), phi.domainSet());
+        assertEquals(Set.Immutable.of(b), phi.rangeSet());
+
+        assertPresent(phi.unify(c, B.newAppl(f, d)));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(a, c), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(b, d), phi.rangeSet());
+
+        assertPresent(phi.unify(b, d));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertTrue((phi.domainSet().contains(b) && phi.rangeSet().contains(d))
+                || (phi.domainSet().contains(d) && phi.rangeSet().contains(b)));
     }
 
     private static <X> void assertPresent(Optional<X> opt) {

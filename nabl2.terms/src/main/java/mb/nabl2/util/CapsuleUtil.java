@@ -105,6 +105,14 @@ public final class CapsuleUtil {
         return set.freeze();
     }
 
+    @SuppressWarnings("unchecked") public static <V> Set.Immutable<V> toSet(V... values) {
+        final Set.Transient<V> set = Set.Transient.of();
+        for(V v : values) {
+            set.__insert(v);
+        }
+        return set.freeze();
+    }
+
     @SuppressWarnings("unchecked") public static <K, V> Map.Immutable<K, V>
             toMap(java.util.Map<? extends K, ? extends V> map) {
         if(map instanceof Map.Immutable) {

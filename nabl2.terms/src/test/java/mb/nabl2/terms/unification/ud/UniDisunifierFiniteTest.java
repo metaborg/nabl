@@ -19,6 +19,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
+import mb.nabl2.util.CapsuleUtil;
 
 @SuppressWarnings("unused")
 public class UniDisunifierFiniteTest {
@@ -27,6 +28,9 @@ public class UniDisunifierFiniteTest {
     private final ITermVar b = B.newVar("", "b");
     private final ITermVar c = B.newVar("", "c");
     private final ITermVar d = B.newVar("", "d");
+    private final ITermVar u = B.newVar("", "u");
+    private final ITermVar v = B.newVar("", "v");
+    private final ITermVar w = B.newVar("", "w");
 
     private final String f = "f";
     private final String g = "g";
@@ -374,27 +378,50 @@ public class UniDisunifierFiniteTest {
         assertPresent(phi.disunify(b, B.newList(x), rigidVars::contains));
     }
 
-    @Test(timeout = 10000) public void testDiseqVarsInSets() throws OccursException, RigidException {
+    @Test(timeout = 10000) public void testDiseqVarSets1() throws OccursException, RigidException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
         assertPresent(phi.disunify(Set.Immutable.of(a), b, B.newList(a)));
-        assertFalse(phi.rangeSet().contains(a));
-        assertTrue(phi.rangeSet().contains(b));
+        assertEquals(CapsuleUtil.toSet(b), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(b), phi.rangeSet());
     }
 
-    @Test(timeout = 10000) public void testDiseqVarsInSetsDisappears() throws OccursException, RigidException {
+    @Test(timeout = 10000) public void testDiseqVarSets2() throws OccursException, RigidException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
         assertPresent(phi.disunify(Set.Immutable.of(), B.newTuple(a, b), B.newTuple(c, d)));
-        assertTrue(phi.rangeSet().contains(a));
-        assertTrue(phi.rangeSet().contains(b));
-        assertTrue(phi.rangeSet().contains(c));
-        assertTrue(phi.rangeSet().contains(d));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.rangeSet());
+
         assertPresent(phi.unify(a, B.newInt(1)));
-        assertFalse(phi.rangeSet().contains(a));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(a), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(b, c, d), phi.rangeSet());
+
         assertPresent(phi.unify(c, B.newInt(2)));
-        assertFalse(phi.rangeSet().contains(a));
-        assertFalse(phi.rangeSet().contains(b));
-        assertFalse(phi.rangeSet().contains(c));
-        assertFalse(phi.rangeSet().contains(d));
+        assertEquals(CapsuleUtil.toSet(a, c), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(a, c), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(), phi.rangeSet());
+    }
+
+    @Test(timeout = 10000) public void testDiseqVarSets3() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
+        assertPresent(phi.disunify(B.newTuple(a, b), B.newTuple(c, d)));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.rangeSet());
+
+        assertPresent(phi.unify(a, c));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertTrue(phi.rangeSet().contains(b));
+        assertTrue(phi.rangeSet().contains(d));
+
+        assertPresent(phi.disunify(B.newTuple(b, u), B.newTuple(d, v))); // implied
+        assertFalse(phi.rangeSet().contains(u));
+        assertFalse(phi.rangeSet().contains(v));
     }
 
 
