@@ -23,6 +23,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.u.BaseUnifier;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
 
@@ -49,16 +50,16 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
         private static final long serialVersionUID = 42L;
 
-        private final IUnifier.Immutable unifier;
+        private final PersistentUnifier.Immutable unifier;
         private final Set.Immutable<Diseq> disequalities;
 
         Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms,
                 Set.Immutable<Diseq> disequalities) {
-            this(new PersistentUnifier.Immutable(finite, reps, ranks, terms), disequalities);
+            this(PersistentUnifier.Immutable.of(finite, reps, ranks, terms), disequalities);
         }
 
-        Immutable(final IUnifier.Immutable unifier, Set.Immutable<Diseq> disequalities) {
+        Immutable(final PersistentUnifier.Immutable unifier, Set.Immutable<Diseq> disequalities) {
             this.unifier = unifier;
             this.disequalities = disequalities;
         }
@@ -80,17 +81,32 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         ///////////////////////////////////////////
+        // unifier functions
+        ///////////////////////////////////////////
+
+        @Override public Set.Immutable<ITermVar> domainSet() {
+            return unifier.domainSet();
+        }
+
+        @Override public Set.Immutable<ITermVar> rangeSet() {
+            return unifier.rangeSet();
+        }
+
+        @Override public Set.Immutable<ITermVar> varSet() {
+            return unifier.varSet();
+        }
+
+        ///////////////////////////////////////////
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(ITerm left, ITerm right,
                 Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
-            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            final BaseUnifier.ImmutableResult<? extends IUnifier.Immutable> r;
             if((r = unifier.unify(left, right, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(diseqs -> {
-                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(ud -> {
                 return new ImmutableResult<>(r.result(), ud);
             });
         }
@@ -98,37 +114,33 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(
                 Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
                 throws OccursException, RigidException {
-            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            final BaseUnifier.ImmutableResult<? extends IUnifier.Immutable> r;
             if((r = unifier.unify(equalities, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(diseqs -> {
-                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(ud -> {
                 return new ImmutableResult<>(r.result(), ud);
             });
         }
 
-        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>>
-                unify(mb.nabl2.terms.unification.u.IUnifier other, Predicate1<ITermVar> isRigid)
-                        throws OccursException, RigidException {
-            final IUnifier.Result<? extends IUnifier.Immutable> r;
+        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUnifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            final BaseUnifier.ImmutableResult<? extends IUnifier.Immutable> r;
             if((r = unifier.unify(other, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(diseqs -> {
-                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(ud -> {
                 return new ImmutableResult<>(r.result(), ud);
             });
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other,
                 Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
-            final IUnifier.Result<? extends IUnifier.Immutable> r;
+            final BaseUnifier.ImmutableResult<? extends IUnifier.Immutable> r;
             if((r = unifier.unify(other, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(diseqs -> {
-                final IUniDisunifier.Immutable ud = new PersistentUniDisunifier.Immutable(r.unifier(), diseqs);
+            return normalizeDiseqs(r.unifier(), disequalities, isRigid).map(ud -> {
                 return new ImmutableResult<>(r.result(), ud);
             });
         }
@@ -173,8 +185,8 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
             // check if diseq is implied -- ignore rigid vars here
             final Optional<Diseq> reducedDiseqNoRigid;
-            if((reducedDiseqNoRigid =
-                    normalizeDiseq(this, fvProvider, diseq, Predicate1.never()).orElse(null)) != null) {
+            if((reducedDiseqNoRigid = normalizeDiseq(this, fvProvider, diseq, Predicate1.never(),
+                    new PersistentUnifier.Transient(unifier)).orElse(null)) != null) {
                 if(reducedDiseqNoRigid.isPresent()) {
                     for(Diseq otherDiseq : disequalities) {
                         if(otherDiseq.implies(reducedDiseqNoRigid.get())) {
@@ -190,7 +202,9 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
             // build the normalized diseq -- respecting rigid vars
             final Optional<Diseq> reducedDiseq;
-            if((reducedDiseq = normalizeDiseq(this, fvProvider, diseq, isRigid).orElse(null)) == null) {
+            final PersistentUnifier.Transient updateableUnifier = new PersistentUnifier.Transient(unifier);
+            if((reducedDiseq =
+                    normalizeDiseq(unifier, fvProvider, diseq, isRigid, updateableUnifier).orElse(null)) == null) {
                 // disunify failed, terms are equal
                 return Optional.empty();
             }
@@ -199,24 +213,26 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 return Optional.of(new ImmutableResult<>(Optional.empty(), this));
             }
 
-            final IUniDisunifier.Immutable newUnifier =
-                    new PersistentUniDisunifier.Immutable(unifier, disequalities.__insert(reducedDiseq.get()));
+            final PersistentUniDisunifier.Immutable newUnifier = new PersistentUniDisunifier.Immutable(
+                    updateableUnifier.freeze(), disequalities.__insert(reducedDiseq.get()));
             return Optional.of(new ImmutableResult<>(reducedDiseq, newUnifier));
         }
 
         /**
          * Simplify disequalities for an updated unifier
          */
-        private static Optional<Set.Immutable<Diseq>> normalizeDiseqs(IUnifier.Immutable unifier,
+        private static Optional<PersistentUniDisunifier.Immutable> normalizeDiseqs(PersistentUnifier.Immutable unifier,
                 Set.Immutable<Diseq> disequalities, Predicate1<ITermVar> isRigid) throws RigidException {
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
 
             final Function0<FreshVars> fvProvider = freshVarProvider(unifier);
+            final PersistentUnifier.Transient updateableUnifier = new PersistentUnifier.Transient(unifier);
 
             // reduce all
             for(Diseq diseq : disequalities) {
                 final Optional<Diseq> normalizedDiseq;
-                if((normalizedDiseq = normalizeDiseq(unifier, fvProvider, diseq, isRigid).orElse(null)) == null) {
+                if((normalizedDiseq =
+                        normalizeDiseq(unifier, fvProvider, diseq, isRigid, updateableUnifier).orElse(null)) == null) {
                     // disunify failed
                     return Optional.empty();
                 }
@@ -228,7 +244,8 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 newDisequalities.__insert(normalizedDiseq.get());
             }
 
-            return Optional.of(newDisequalities.freeze());
+            return Optional
+                    .of(new PersistentUniDisunifier.Immutable(updateableUnifier.freeze(), newDisequalities.freeze()));
         }
 
         private static Function0<FreshVars> freshVarProvider(IUnifier.Immutable unifier) {
@@ -249,15 +266,21 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          * 
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced disequality, or none if
          * the disequality is satisfied.
+         * 
+         * @param updateableUnifier
+         *            TODO
          */
         private static Optional<Optional<Diseq>> normalizeDiseq(IUnifier.Immutable unifier,
-                Function0<FreshVars> fvProvider, Diseq diseq, Predicate1<ITermVar> isRigid) throws RigidException {
+                Function0<FreshVars> fvProvider, Diseq diseq, Predicate1<ITermVar> isRigid,
+                PersistentUnifier.Transient updateableUnifier) throws RigidException {
             if(!diseq.universals().isEmpty()) {
-                //                final FreshVars fv = new FreshVars(Set.Immutable.union(unifier.varSet(), unifier.freeVarSet()));
                 final FreshVars fv = fvProvider.apply();
                 fv.add(diseq.freeVarSet());
                 diseq = diseq.rename(fv.fresh(diseq.universals()));
                 fv.reset();
+            }
+            for(ITermVar var : diseq.freeVarSet()) {
+                updateableUnifier.removeRangeVar(var, 1);
             }
 
             final Optional<? extends IUnifier.Result<? extends IUnifier.Immutable>> unifyResult;
@@ -283,6 +306,9 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 return Optional.empty();
             }
 
+            for(ITermVar var : newDiseq.freeVarSet()) {
+                updateableUnifier.addRangeVar(var, 1);
+            }
             return Optional.of(Optional.of(newDiseq));
         }
 
@@ -307,7 +333,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
-            final IUnifier.Result<ISubstitution.Immutable> r = unifier.removeAll(vars);
+            final BaseUnifier.ImmutableResult<ISubstitution.Immutable> r = unifier.removeAll(vars);
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
             disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result())))
                     .map(diseq -> diseq.removeAll(vars)).forEach(newDisequalities::__insert);
@@ -315,7 +341,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 // FIXME disequalities may become empty, and therefore false!
                 throw new NotImplementedException("removal made disequality false, unhandled");
             }
-            final IUniDisunifier.Immutable ud =
+            final PersistentUniDisunifier.Immutable ud =
                     new PersistentUniDisunifier.Immutable(r.unifier(), newDisequalities.freeze());
             return new ImmutableResult<>(r.result(), ud);
         }
@@ -328,7 +354,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             if(renaming.isEmpty()) {
                 return this;
             }
-            final IUnifier.Immutable unifier = this.unifier.rename(renaming);
+            final PersistentUnifier.Immutable unifier = this.unifier.rename(renaming);
             final Set.Immutable<Diseq> disequalities =
                     this.disequalities.stream().map(diseq -> diseq.rename(renaming)).collect(CapsuleCollectors.toSet());
             return new PersistentUniDisunifier.Immutable(unifier, disequalities);

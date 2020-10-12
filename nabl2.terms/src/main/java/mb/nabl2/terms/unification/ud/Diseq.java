@@ -35,9 +35,14 @@ public class Diseq {
     private final Set.Immutable<ITermVar> universals;
     private final IUnifier.Immutable diseqs;
 
+    private final Set.Immutable<ITermVar> domainSetCache;
+    private final Set.Immutable<ITermVar> freeVarSetCache;
+
     private Diseq(Set.Immutable<ITermVar> universals, IUnifier.Immutable diseqs) {
         this.universals = CapsuleUtil.toSet(universals);
         this.diseqs = diseqs;
+        this.domainSetCache = this.diseqs.domainSet().__removeAll(this.universals);
+        this.freeVarSetCache = this.diseqs.varSet().__removeAll(this.universals);
     }
 
     /**
@@ -55,7 +60,7 @@ public class Diseq {
      * Free variables in this disequality.
      */
     public Set.Immutable<ITermVar> freeVarSet() {
-        return Set.Immutable.subtract(diseqs.varSet(), universals);
+        return freeVarSetCache;
     }
 
     /**
@@ -69,7 +74,7 @@ public class Diseq {
      * Domain of this disequality, i.e., all variables restricted by the disequality.
      */
     public Set.Immutable<ITermVar> domainSet() {
-        return Set.Immutable.subtract(diseqs.domainSet(), universals);
+        return domainSetCache;
     }
 
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {

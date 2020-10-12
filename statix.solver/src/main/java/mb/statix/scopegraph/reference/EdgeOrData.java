@@ -1,7 +1,6 @@
 package mb.statix.scopegraph.reference;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -40,7 +39,7 @@ public abstract class EdgeOrData<L> implements Serializable {
         }
 
         @Override public int hashCode() {
-            return Objects.hash();
+            return 7;
         }
 
         @Override public boolean equals(Object obj) {
@@ -78,8 +77,15 @@ public abstract class EdgeOrData<L> implements Serializable {
             return onEdge.apply(label);
         }
 
+        private volatile int hashCode;
+
         @Override public int hashCode() {
-            return Objects.hash(label);
+            int result = hashCode;
+            if(result == 0) {
+                result = label.hashCode();
+                hashCode = result;
+            }
+            return result;
         }
 
         @Override public boolean equals(Object obj) {

@@ -113,7 +113,8 @@ public class UnifierFiniteTest {
         reps.__put(a, b);
         reps.__put(b, c);
         terms.__put(d, B.newAppl(f, a));
-        IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
+        IUnifier.Transient phi =
+                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(b));
         phi.remove(b);
         assertFalse(phi.domainSet().contains(b));
@@ -126,7 +127,8 @@ public class UnifierFiniteTest {
         Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         reps.__put(b, c);
-        IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
+        IUnifier.Transient phi =
+                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
         phi.remove(c);
         assertFalse(phi.domainSet().contains(c));
         assertTrue(phi.diff(a, b).orElseThrow(() -> new RuntimeException()).isEmpty());
@@ -138,7 +140,8 @@ public class UnifierFiniteTest {
         Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
         terms.__put(b, B.newAppl(f, c));
-        IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
+        IUnifier.Transient phi =
+                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(b));
         phi.remove(b);
         assertFalse(phi.domainSet().contains(b));
@@ -151,7 +154,8 @@ public class UnifierFiniteTest {
         reps.__put(a, b);
         reps.__put(b, c);
         terms.__put(c, B.newAppl(f, d));
-        IUnifier.Transient phi = new PersistentUnifier.Transient(true, reps, Map.Transient.of(), terms).freeze().melt();
+        IUnifier.Transient phi =
+                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(a));
         assertTrue(phi.domainSet().contains(b));
         phi.removeAll(Arrays.asList(a, b));
@@ -204,11 +208,9 @@ public class UnifierFiniteTest {
 
     @Test(timeout = 10000) public void testEquivalenceClasses() throws OccursException {
         final IUnifier.Immutable phi =
-                new PersistentUnifier.Transient(true, Map.Transient.of(a, b), Map.Transient.of(), Map.Transient.of())
-                        .freeze();
+                PersistentUnifier.Immutable.of(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of());
         final IUnifier.Immutable theta =
-                new PersistentUnifier.Transient(true, Map.Transient.of(b, a), Map.Transient.of(), Map.Transient.of())
-                        .freeze();
+                PersistentUnifier.Immutable.of(true, Map.Immutable.of(b, a), Map.Immutable.of(), Map.Immutable.of());
         assertSame(phi, theta);
     }
 

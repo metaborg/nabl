@@ -374,6 +374,29 @@ public class UniDisunifierFiniteTest {
         assertPresent(phi.disunify(b, B.newList(x), rigidVars::contains));
     }
 
+    @Test(timeout = 10000) public void testDiseqVarsInSets() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(Set.Immutable.of(a), b, B.newList(a)));
+        assertFalse(phi.rangeSet().contains(a));
+        assertTrue(phi.rangeSet().contains(b));
+    }
+
+    @Test(timeout = 10000) public void testDiseqVarsInSetsDisappears() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(Set.Immutable.of(), B.newTuple(a, b), B.newTuple(c, d)));
+        assertTrue(phi.rangeSet().contains(a));
+        assertTrue(phi.rangeSet().contains(b));
+        assertTrue(phi.rangeSet().contains(c));
+        assertTrue(phi.rangeSet().contains(d));
+        assertPresent(phi.unify(a, B.newInt(1)));
+        assertFalse(phi.rangeSet().contains(a));
+        assertPresent(phi.unify(c, B.newInt(2)));
+        assertFalse(phi.rangeSet().contains(a));
+        assertFalse(phi.rangeSet().contains(b));
+        assertFalse(phi.rangeSet().contains(c));
+        assertFalse(phi.rangeSet().contains(d));
+    }
+
 
     private static <X> void assertPresent(Optional<X> opt) {
         assertTrue(opt.isPresent());

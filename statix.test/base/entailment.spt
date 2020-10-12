@@ -17,10 +17,10 @@ test entailment requires all parts to be equal [[
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
-test var equality does not entails existential sub-var equality [[
+test var equality entails existential sub-var equality [[
   resolve {x y} x == [y], try { x == [_] }
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to SUCCEEDS()
 
 test no constraints do not entail disequality [[
   resolve {x y} try { x != y }

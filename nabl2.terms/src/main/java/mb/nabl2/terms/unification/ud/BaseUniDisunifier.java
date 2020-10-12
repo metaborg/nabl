@@ -34,25 +34,6 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
         return unifier().contains(var);
     }
 
-    @Override public Set.Immutable<ITermVar> domainSet() {
-        // disequalities do not contribute to the domain
-        // as a consequence, this.isEmpty() != this.varSet().isEmpty()
-        return unifier().domainSet();
-    }
-
-    @Override public Set.Immutable<ITermVar> rangeSet() {
-        final Set.Transient<ITermVar> freeVarSet = unifier().rangeSet().asTransient();
-        disequalities().stream().flatMap(diseq -> diseq.freeVarSet().stream()).filter(v -> !unifier().contains(v))
-                .forEach(freeVarSet::__insert);
-        return freeVarSet.freeze();
-    }
-
-    @Override public io.usethesource.capsule.Set.Immutable<ITermVar> varSet() {
-        final Set.Transient<ITermVar> varSet = unifier().varSet().asTransient();
-        disequalities().stream().flatMap(diseq -> diseq.freeVarSet().stream()).forEach(varSet::__insert);
-        return varSet.freeze();
-    }
-
     @Override public boolean isCyclic() {
         return unifier().isCyclic();
     }
@@ -147,9 +128,9 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     protected static class ImmutableResult<T> implements IUniDisunifier.Result<T> {
 
         private final T result;
-        private final IUniDisunifier.Immutable unifier;
+        private final PersistentUniDisunifier.Immutable unifier;
 
-        public ImmutableResult(T result, IUniDisunifier.Immutable unifier) {
+        public ImmutableResult(T result, PersistentUniDisunifier.Immutable unifier) {
             this.result = result;
             this.unifier = unifier;
         }
@@ -158,7 +139,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return result;
         }
 
-        @Override public IUniDisunifier.Immutable unifier() {
+        @Override public PersistentUniDisunifier.Immutable unifier() {
             return unifier;
         }
 
