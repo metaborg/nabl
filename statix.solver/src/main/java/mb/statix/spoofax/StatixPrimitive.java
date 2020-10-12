@@ -161,7 +161,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
         // use empty origin if none was found
         if(originTerm == null) {
-            originTerm = B.EMPTY_TUPLE;
+            originTerm = B.newTuple();
         }
 
         // add constraint message
