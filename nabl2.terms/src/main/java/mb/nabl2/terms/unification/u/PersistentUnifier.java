@@ -322,7 +322,14 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 final ITermVar var; // the eliminated variable
                 final ITermVar rep; // the new representative
                 if(leftRigid && rightRigid) {
-                    throw new RigidException(leftRep, rightRep);
+                    final ITerm leftTerm = getTerm(leftRep);
+                    final ITerm rightTerm = getTerm(rightRep);
+                    if(leftTerm != null && rightTerm != null) {
+                        worklist.push(Tuple2.of(leftTerm, rightTerm));
+                        return true;
+                    } else {
+                        throw new RigidException(leftRep, rightRep);
+                    }
                 } else if(leftRigid) {
                     var = rightRep;
                     rep = leftRep;
