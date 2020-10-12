@@ -315,20 +315,21 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(leftRep.equals(rightRep)) {
                     return true;
                 }
-                final ITerm leftTerm = getTerm(leftRep);
-                final ITerm rightTerm = getTerm(rightRep);
-                // If the variable has an associated term, it is safe to unify even if it is rigid.
-                // The variable is already bound, and unifying the variable only serves as an internal
-                // optimization: next time the two variables are compared, there is no need to compare
-                // the terms anymore.
-                final boolean leftRigid = leftTerm == null && isRigid.test(leftRep);
-                final boolean rightRigid = rightTerm == null && isRigid.test(rightRep);
+                final boolean leftRigid = isRigid.test(leftRep);
+                final boolean rightRigid = isRigid.test(rightRep);
                 final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
                 final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
                 final ITermVar var; // the eliminated variable
                 final ITermVar rep; // the new representative
                 if(leftRigid && rightRigid) {
-                    throw new RigidException(leftRep, rightRep);
+                    final ITerm leftTerm = getTerm(leftRep);
+                    final ITerm rightTerm = getTerm(rightRep);
+                    if(leftTerm != null && rightTerm != null) {
+                        worklist.push(Tuple2.of(leftTerm, rightTerm));
+                        return true;
+                    } else {
+                        throw new RigidException(leftRep, rightRep);
+                    }
                 } else if(leftRigid) {
                     var = rightRep;
                     rep = leftRep;
