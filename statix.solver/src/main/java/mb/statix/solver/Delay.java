@@ -18,6 +18,15 @@ public class Delay extends Throwable {
         this.criticalEdges = CapsuleUtil.toSet(criticalEdges);
     }
 
+    @Override public String getMessage() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("delayed on ");
+        sb.append("vars ").append(vars);
+        sb.append(" and ");
+        sb.append("criticalEdges ").append(criticalEdges);
+        return sb.toString();
+    }
+
     public Set.Immutable<ITermVar> vars() {
         return vars;
     }
