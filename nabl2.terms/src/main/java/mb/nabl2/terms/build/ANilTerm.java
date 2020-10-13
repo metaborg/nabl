@@ -21,7 +21,7 @@ abstract class ANilTerm extends AbstractTerm implements INilTerm {
         return true;
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
     }
 

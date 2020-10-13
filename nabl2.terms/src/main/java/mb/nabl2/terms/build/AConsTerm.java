@@ -30,7 +30,7 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
         return getHead().isGround() && getTail().isGround();
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(getHead().getVars(), getTail().getVars());
     }
 

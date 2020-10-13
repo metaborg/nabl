@@ -17,7 +17,7 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
 
     @Value.Parameter @Override public abstract String getOp();
 
-    @Value.Lazy @Override public int getArity() {
+    @Override public int getArity() {
         return getArgs().size();
     }
 
@@ -25,7 +25,7 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return getArgs().stream().allMatch(ITerm::isGround);
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         final Set.Transient<ITermVar> vars = Set.Transient.of();
         for(ITerm arg : getArgs()) {
             vars.__insertAll(arg.getVars());

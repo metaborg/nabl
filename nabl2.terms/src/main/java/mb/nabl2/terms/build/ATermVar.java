@@ -33,7 +33,7 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return false;
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of(this);
     }
 

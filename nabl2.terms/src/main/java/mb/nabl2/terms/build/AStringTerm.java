@@ -19,7 +19,7 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
         return true;
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
     }
 

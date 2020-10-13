@@ -19,7 +19,7 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
         return true;
     }
 
-    @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
+    @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
     }
 
