@@ -9,19 +9,9 @@ import mb.nabl2.terms.ITerm;
 
 public abstract class AbstractTerm implements ITerm {
 
-    @Override public IAttachments getAttachments() {
-        return __attachments();
-    }
-
-    @Override public ITerm withAttachments(IAttachments value) {
-        return value == __attachments() ? this : with__attachments(value);
-    }
-
-    @Value.Auxiliary @Value.Default public IAttachments __attachments() {
+    @Override @Value.Auxiliary @Value.Default public IAttachments getAttachments() {
         return Attachments.empty();
     }
-
-    public abstract ITerm with__attachments(IAttachments value);
 
     @Override public abstract int hashCode();
 

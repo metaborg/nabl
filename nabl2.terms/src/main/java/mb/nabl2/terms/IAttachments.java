@@ -1,12 +1,10 @@
 package mb.nabl2.terms;
 
-import javax.annotation.Nullable;
-
 public interface IAttachments {
 
     boolean isEmpty();
 
-    <T> @Nullable T get(Class<T> cls);
+    <T> T get(Class<T> cls);
 
     Builder toBuilder();
 

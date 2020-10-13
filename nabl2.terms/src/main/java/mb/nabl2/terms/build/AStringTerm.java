@@ -6,7 +6,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -22,10 +21,6 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
 
     @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
-    }
-
-    @Override public IStringTerm withAttachments(IAttachments value) {
-        return (IStringTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(Cases<T> cases) {

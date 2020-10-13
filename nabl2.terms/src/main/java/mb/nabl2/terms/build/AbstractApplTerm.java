@@ -6,7 +6,6 @@ import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IApplTerm;
-import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -32,10 +31,6 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
             vars.__insertAll(arg.getVars());
         }
         return vars.freeze();
-    }
-
-    @Override public IApplTerm withAttachments(IAttachments value) {
-        return (IApplTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(Cases<T> cases) {

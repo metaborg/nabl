@@ -45,7 +45,7 @@ public class ConstraintTerms {
             integer -> integer,
             blob -> blob,
             var -> { throw new IllegalArgumentException("Term is already specialized."); }
-        ));
+        )).withAttachments(term.getAttachments());
         // @formatter:on
         // @formatter:off
         newTerm = M.preserveAttachments(M.<ITerm>cases(
@@ -57,7 +57,7 @@ public class ConstraintTerms {
                     B.newListTail(xs, (IListTerm) ys))
         )).match(newTerm).orElse(newTerm);
         // @formatter:on
-        return term;
+        return newTerm;
     }
 
     private static IListTerm specializeList(IListTerm list) {
@@ -110,7 +110,7 @@ public class ConstraintTerms {
             integer -> integer,
             blob -> blob,
             var -> explicate(var)
-        ));
+        )).withAttachments(term.getAttachments());
         // @formatter:on
     }
 

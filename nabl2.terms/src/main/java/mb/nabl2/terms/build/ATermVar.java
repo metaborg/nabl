@@ -8,7 +8,6 @@ import org.immutables.value.Value;
 import com.google.common.base.Preconditions;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -36,10 +35,6 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
 
     @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of(this);
-    }
-
-    @Override public ITermVar withAttachments(IAttachments value) {
-        return (ITermVar) super.withAttachments(value);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

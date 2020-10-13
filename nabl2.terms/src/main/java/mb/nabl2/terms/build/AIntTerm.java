@@ -6,7 +6,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.ITermVar;
 
@@ -22,10 +21,6 @@ abstract class AIntTerm extends AbstractTerm implements IIntTerm {
 
     @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
-    }
-
-    @Override public IIntTerm withAttachments(IAttachments value) {
-        return (IIntTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(Cases<T> cases) {

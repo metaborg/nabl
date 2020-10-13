@@ -549,7 +549,7 @@ public class StatixTerms {
             integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
             blob -> B.newString(blob.toString(), term.getAttachments()),
             var -> explicate(var)
-        ));
+        )).withAttachments(term.getAttachments());
         // @formatter:on
     }
 

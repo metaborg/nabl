@@ -55,10 +55,6 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
         return (TermIndex) this;
     }
 
-    @Override public TermIndex withAttachments(IAttachments value) {
-        return (TermIndex) super.withAttachments(value);
-    }
-
     // Object implementation
 
     @Override public int hashCode() {

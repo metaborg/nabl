@@ -8,7 +8,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -33,10 +32,6 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
 
     @Value.Lazy @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(getHead().getVars(), getTail().getVars());
-    }
-
-    @Override public IConsTerm withAttachments(IAttachments value) {
-        return (IConsTerm) super.withAttachments(value);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

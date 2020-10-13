@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.scopegraph.INamespace;
 import mb.nabl2.terms.IApplTerm;
-import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -49,10 +48,6 @@ public abstract class ANamespace extends AbstractApplTerm implements INamespace,
 
     @Override protected ANamespace check() {
         return this;
-    }
-
-    @Override public Namespace withAttachments(IAttachments value) {
-        return (Namespace) super.withAttachments(value);
     }
 
     // Object implementation

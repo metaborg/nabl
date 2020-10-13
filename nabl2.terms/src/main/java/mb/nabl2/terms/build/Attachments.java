@@ -1,9 +1,12 @@
 package mb.nabl2.terms.build;
 
+import java.io.Serializable;
+
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IAttachments;
 
-public class Attachments implements IAttachments {
+public class Attachments implements IAttachments, Serializable {
+    private static final long serialVersionUID = 1L;
 
     private static final Attachments EMPTY = new Attachments(Map.Immutable.of());
 

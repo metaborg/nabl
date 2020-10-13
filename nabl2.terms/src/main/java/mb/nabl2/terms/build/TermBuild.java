@@ -21,13 +21,17 @@ public class TermBuild {
 
     public static class B implements ITermBuild {
 
+        // Hash-consing is used to improve sharing between simple terms. Terms are interned if:
+        // 1. They have no attachments.
+        // 2. The have no subterms (because their subterms may have attachments, even if the outer term does not).
+        // In practice this means mostly nil, strings, ints, and variables are shared.
         private static final WeakHashMap<ITerm, ITerm> cache = new WeakHashMap<>();
 
         @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable IAttachments attachments) {
             final IApplTerm term = ApplTerm.of(op, args);
             if((attachments == null || attachments.isEmpty())) {
-                return (IApplTerm) cache.computeIfAbsent(term, t -> term);
+                return term.getArity() == 0 ? (IApplTerm) cache.computeIfAbsent(term, t -> term) : term;
             } else {
                 return term.withAttachments(attachments);
             }
@@ -44,8 +48,8 @@ public class TermBuild {
 
         @Override public IConsTerm newCons(ITerm head, IListTerm tail, @Nullable IAttachments attachments) {
             final IConsTerm term = ConsTerm.of(head, tail);
-            if((attachments == null || attachments.isEmpty())) {
-                return (IConsTerm) cache.computeIfAbsent(term, t -> term);
+            if(attachments == null || attachments.isEmpty()) {
+                return term;
             } else {
                 return term.withAttachments(attachments);
             }
@@ -71,8 +75,8 @@ public class TermBuild {
 
         @Override public IBlobTerm newBlob(Object value, @Nullable IAttachments attachments) {
             final IBlobTerm term = BlobTerm.of(value);
-            if((attachments == null || attachments.isEmpty())) {
-                return (IBlobTerm) cache.computeIfAbsent(term, t -> term);
+            if(attachments == null || attachments.isEmpty()) {
+                return term;
             } else {
                 return term.withAttachments(attachments);
             }
