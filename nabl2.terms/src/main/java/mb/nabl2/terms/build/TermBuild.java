@@ -1,7 +1,5 @@
 package mb.nabl2.terms.build;
 
-import java.util.WeakHashMap;
-
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.IApplTerm;
@@ -14,6 +12,7 @@ import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.collections.ConcurrentWeakCache;
 
 public class TermBuild {
 
@@ -21,17 +20,17 @@ public class TermBuild {
 
     public static class B implements ITermBuild {
 
-        // Hash-consing is used to improve sharing between simple terms. Terms are interned if:
+        // FIXME Use hash-consing to improve sharing between simple terms. Terms could be shared if:
         // 1. They have no attachments.
         // 2. The have no subterms (because their subterms may have attachments, even if the outer term does not).
         // In practice this means mostly nil, strings, ints, and variables are shared.
-        private static final WeakHashMap<ITerm, ITerm> cache = new WeakHashMap<>();
+        final ConcurrentWeakCache<ITerm, ITerm> cache = new ConcurrentWeakCache<>();
 
         @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable IAttachments attachments) {
             final IApplTerm term = ApplTerm.of(op, args);
             if((attachments == null || attachments.isEmpty())) {
-                return term.getArity() == 0 ? (IApplTerm) cache.computeIfAbsent(term, t -> term) : term;
+                return term.getArity() == 0 ? (IApplTerm) cache.getOrPut(term, term) : term;
             } else {
                 return term.withAttachments(attachments);
             }
@@ -40,7 +39,7 @@ public class TermBuild {
         @Override public INilTerm newNil(@Nullable IAttachments attachments) {
             final INilTerm term = NilTerm.of();
             if((attachments == null || attachments.isEmpty())) {
-                return (INilTerm) cache.computeIfAbsent(term, t -> term);
+                return (INilTerm) cache.getOrPut(term, term);
             } else {
                 return term.withAttachments(attachments);
             }
@@ -58,7 +57,7 @@ public class TermBuild {
         @Override public IStringTerm newString(String value, @Nullable IAttachments attachments) {
             final IStringTerm term = StringTerm.of(value);
             if((attachments == null || attachments.isEmpty())) {
-                return (IStringTerm) cache.computeIfAbsent(term, t -> term);
+                return (IStringTerm) cache.getOrPut(term, term);
             } else {
                 return term.withAttachments(attachments);
             }
@@ -67,7 +66,7 @@ public class TermBuild {
         @Override public IIntTerm newInt(int value, @Nullable IAttachments attachments) {
             final IIntTerm term = IntTerm.of(value);
             if((attachments == null || attachments.isEmpty())) {
-                return (IIntTerm) cache.computeIfAbsent(term, t -> term);
+                return (IIntTerm) cache.getOrPut(term, term);
             } else {
                 return term.withAttachments(attachments);
             }
@@ -85,7 +84,7 @@ public class TermBuild {
         @Override public ITermVar newVar(String resource, String name, @Nullable IAttachments attachments) {
             final ITermVar term = TermVar.of(resource, name);
             if((attachments == null || attachments.isEmpty())) {
-                return (ITermVar) cache.computeIfAbsent(term, t -> term);
+                return (ITermVar) cache.getOrPut(term, term);
             } else {
                 return term.withAttachments(attachments);
             }
