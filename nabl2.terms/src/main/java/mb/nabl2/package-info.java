@@ -4,7 +4,7 @@
     typeImmutable = "*",
     get = { "is*", "get*" },
     with = "with*",
-    defaults = @Value.Immutable(builder = false, copy = true),
+    defaults = @Value.Immutable(builder = false, copy = true, lazyhash = true),
     // prevent generation of javax.annotation.*; bogus entry, because empty list = allow all
     allowedClasspathAnnotations = {Override.class}
 )
