@@ -538,16 +538,27 @@ public class StatixSolver {
                         try {
                             throw ex;
                         } catch(ResolutionDelayException rde) {
-                            debug.error("delayed query (unsupported) {} delayed",
-                                    c.toString(state.unifier()::toString));
-                            return fail(c);
+                            final Delay d = rde.getCause();
+                            if(!d.criticalEdges().isEmpty()) {
+                                debug.error("delayed query (unsupported) {}", rde,
+                                        c.toString(state.unifier()::toString));
+                                return fail(c);
+                            } else {
+                                final Set.Immutable<ITermVar> foreignVars =
+                                        Set.Immutable.subtract(d.vars(), state.vars());
+                                if(!foreignVars.isEmpty()) {
+                                    debug.error("delayed query (unsupported) {}", rde,
+                                            c.toString(state.unifier()::toString));
+                                    return fail(c);
+                                } else {
+                                    return delay(c, state, d, fuel);
+                                }
+                            }
                         } catch(DeadlockException dle) {
-                            debug.error("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
+                            debug.error("deadlocked query (spec error) {}", dle, c.toString(state.unifier()::toString));
                             return fail(c);
                         } catch(Throwable t) {
-                            if(debug.isEnabled(Level.Debug)) {
-                                debug.debug("failed query {}", t, c.toString(state.unifier()::toString));
-                            }
+                            debug.error("failed query {}", t, c.toString(state.unifier()::toString));
                             return fail(c);
                         }
                     } else {
