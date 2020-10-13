@@ -158,8 +158,10 @@ class GreedySolver {
         final Map<IConstraint, Delay> delayed = constraints.delayed();
         debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
-        for(Delay delayedConstraint : delayed.values()) {
-            debug.debug(" * {}", delayedConstraint.toString());
+        if(debug.isEnabled(Level.Debug)) {
+            for(Delay delayedConstraint : delayed.values()) {
+                debug.debug(" * {}", delayedConstraint.toString());
+            }
         }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
@@ -183,7 +185,7 @@ class GreedySolver {
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
         completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
-        if(subDebug.isEnabled(Level.Info) && !newConstraints.isEmpty()) {
+        if(subDebug.isEnabled(Level.Debug) && !newConstraints.isEmpty()) {
             subDebug.debug("Simplified to:");
             for(IConstraint newConstraint : newConstraints) {
                 subDebug.debug(" * {}", Solver.toString(newConstraint, unifier));
@@ -193,7 +195,7 @@ class GreedySolver {
         // add delayed constraints
         delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
         completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
-        if(subDebug.isEnabled(Level.Info) && !delayedConstraints.isEmpty()) {
+        if(subDebug.isEnabled(Level.Debug) && !delayedConstraints.isEmpty()) {
             subDebug.debug("Delayed:");
             for(IConstraint delayedConstraint : delayedConstraints.values()) {
                 subDebug.debug(" * {}", Solver.toString(delayedConstraint, unifier));
@@ -250,7 +252,7 @@ class GreedySolver {
             return queue(constraint, state);
         }
 
-        if(debug.isEnabled(Level.Info)) {
+        if(debug.isEnabled(Level.Debug)) {
             debug.debug("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
         }
 
@@ -297,7 +299,7 @@ class GreedySolver {
                 try {
                     final IUniDisunifier.Result<IUnifier.Immutable> result;
                     if((result = unifier.unify(term1, term2, v -> params.isRigid(v, state)).orElse(null)) != null) {
-                        if(debug.isEnabled(Level.Info)) {
+                        if(debug.isEnabled(Level.Debug)) {
                             debug.debug("Unification succeeded: {}", result.result());
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
@@ -305,14 +307,14 @@ class GreedySolver {
                         return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
                                 ImmutableMap.of(), fuel);
                     } else {
-                        if(debug.isEnabled(Level.Info)) {
+                        if(debug.isEnabled(Level.Debug)) {
                             debug.debug("Unification failed: {} != {}", unifier.toString(term1),
                                     unifier.toString(term2));
                         }
                         return fail(c, state);
                     }
                 } catch(OccursException e) {
-                    if(debug.isEnabled(Level.Info)) {
+                    if(debug.isEnabled(Level.Debug)) {
                         debug.debug("Unification failed: {} != {}", unifier.toString(term1), unifier.toString(term2));
                     }
                     return fail(c, state);
@@ -350,7 +352,7 @@ class GreedySolver {
                     final IUniDisunifier.Result<Optional<Diseq>> result;
                     if((result = unifier.disunify(c.universals(), term1, term2, v -> params.isRigid(v, state))
                             .orElse(null)) != null) {
-                        if(debug.isEnabled(Level.Info)) {
+                        if(debug.isEnabled(Level.Debug)) {
                             debug.debug("Disunification succeeded: {}", result);
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
@@ -359,9 +361,7 @@ class GreedySolver {
                         return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
                                 ImmutableMap.of(), fuel);
                     } else {
-                        if(debug.isEnabled(Level.Info)) {
-                            debug.debug("Disunification failed");
-                        }
+                        debug.debug("Disunification failed");
                         return fail(c, state);
                     }
                 } catch(RigidException e) {
@@ -536,6 +536,7 @@ class GreedySolver {
             }
 
             @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
+                final IDebugContext debug = params.debug();
                 try {
                     if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext(),
                             progress.subProgress(1), cancel)) {
@@ -544,7 +545,7 @@ class GreedySolver {
                         return fail(c, state);
                     }
                 } catch(Delay e) {
-                    params.debug().debug("Try delayed: {}", e.getMessage());
+                    debug.debug("Try delayed: {}", e.getMessage());
                     return successDelay(c, state, e, fuel);
                 }
             }

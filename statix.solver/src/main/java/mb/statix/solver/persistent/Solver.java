@@ -52,7 +52,7 @@ public class Solver {
             final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
             throws Delay, InterruptedException {
         final IUniDisunifier.Immutable unifier = state.unifier();
-        if(debug.isEnabled(Level.Info)) {
+        if(debug.isEnabled(Level.Debug)) {
             debug.debug("Checking entailment of {}", toString(constraint, unifier));
         }
 
@@ -68,9 +68,7 @@ public class Solver {
             throw new IllegalArgumentException("Incurrent initial state: create with IState::subState.");
         }
 
-        if(debug.isEnabled(Level.Info)) {
-            debug.debug("Checking entailment");
-        }
+        debug.debug("Checking entailment");
 
         if(result.hasErrors()) {
             // no entailment if errors
