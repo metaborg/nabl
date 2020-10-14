@@ -128,7 +128,12 @@ abstract class NameResolution<S, L, D> {
         final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
-                if(labelOrder.lt(l1, l2)) {
+                try {
+                    if(labelOrder.lt(l1, l2)) {
+                        continue outer;
+                    }
+                } catch(Throwable t) {
+                    logger.error("Unexpected exception in labelOrder", t);
                     continue outer;
                 }
             }
@@ -161,7 +166,12 @@ abstract class NameResolution<S, L, D> {
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
         logger.trace("env_data {} {}: datum {}", path, re, datum);
         final IFuture<Env<S, L, D>> env = datum.thenApply(d -> {
-            if(!d.isPresent() || !dataWF.wf(d.get())) {
+            try {
+                if(!d.isPresent() || !dataWF.wf(d.get())) {
+                    return Env.empty();
+                }
+            } catch(Throwable t) {
+                logger.error("Unexpected exception in dataWf", t);
                 return Env.empty();
             }
             logger.trace("env_data {} {}: datum {}", path, re, d.get());
@@ -215,8 +225,13 @@ abstract class NameResolution<S, L, D> {
         env.addAll(env1);
         outer: for(IResolutionPath<S, L, D> p2 : env2) {
             for(IResolutionPath<S, L, D> p1 : env1) {
-                if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
-                    continue outer; // skip
+                try {
+                    if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
+                        continue outer; // skip
+                    }
+                } catch(Throwable t) {
+                    logger.error("Unexpected exception in dataEquiv", t);
+                    continue outer;
                 }
             }
             env.add(p2);
