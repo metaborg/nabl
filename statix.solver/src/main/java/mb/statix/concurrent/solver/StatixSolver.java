@@ -538,8 +538,7 @@ public class StatixSolver {
                         try {
                             throw ex;
                         } catch(ResolutionDelayException rde) {
-                            debug.error("delayed query (unsupported) {} delayed",
-                                    c.toString(state.unifier()::toString));
+                            debug.error("delayed query (unsupported) {}", rde, c.toString(state.unifier()::toString));
                             return fail(c);
                         } catch(DeadlockException dle) {
                             debug.error("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
