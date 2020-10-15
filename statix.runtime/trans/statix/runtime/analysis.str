@@ -180,13 +180,9 @@ rules // multi file analysis
       // 3. Partially solve file constraints
       //
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; warn-msg(|"Indexing AST's") 
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
-    ; warn-msg(|"Indexed AST's")
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
-    ; warn-msg(|"Solving file constraints")
     ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
-    ; warn-msg(|"Solved file constraints")
     ; initial-file-result* := <zip({ file-state', ast'', file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast'', file-analysis, [], [], []))
@@ -197,12 +193,8 @@ rules // multi file analysis
       // 4. Combine and solve all partial solution
       //
     ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _))))> change*
-    ; warn-msg(|"Solving project constraints")
     ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
-    ; warn-msg(|"Solved project constraints")
-    ; warn-msg(|"Extracting messages")
     ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> final-project-state
-    ; warn-msg(|"Extracted messages")
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
     ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state), id, id, id)))> initial-file-result*
     ; switch !project-change
