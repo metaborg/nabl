@@ -17,6 +17,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
 import mb.nabl2.util.CapsuleUtil;
 
@@ -310,6 +311,40 @@ public class UnifierFiniteTest {
         assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
         assertTrue((phi.domainSet().contains(b) && phi.rangeSet().contains(d))
                 || (phi.domainSet().contains(d) && phi.rangeSet().contains(b)));
+    }
+
+    @Test(timeout = 10000) public void testUnifyFreeRigidVarFreeVar() throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertPresent(phi.unify(a, b, Set.Immutable.of(a)::contains));
+    }
+
+    @Test(expected = RigidException.class, timeout = 10000) public void testUnifyFreeRigidVarFreeRigidVar()
+            throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+    }
+
+    @Test(expected = RigidException.class, timeout = 10000) public void testUnifyFreeRigidVarBoundRigidVar()
+            throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertPresent(phi.unify(b, x));
+        phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+    }
+
+    @Test(timeout = 10000) public void testUnifyBoundRigidVarBoundRigidVar() throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertPresent(phi.unify(a, x));
+        assertPresent(phi.unify(b, x));
+        assertPresent(phi.unify(a, b, Set.Immutable.of(a, b)::contains));
+
+    }
+
+    @Test(timeout = 10000) public void testUnifyBoundVarBoundRigidVar() throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
+        assertPresent(phi.unify(a, x));
+        assertPresent(phi.unify(b, x));
+        assertPresent(phi.unify(a, b, Set.Immutable.of(b)::contains));
+
     }
 
     private static <X> void assertPresent(Optional<X> opt) {

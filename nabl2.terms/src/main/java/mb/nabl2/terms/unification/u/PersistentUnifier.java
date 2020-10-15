@@ -316,23 +316,22 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 }
                 final boolean leftRigid = isRigid.test(leftRep);
                 final boolean rightRigid = isRigid.test(rightRep);
+                final ITerm leftTerm = getTerm(leftRep);
+                final ITerm rightTerm = getTerm(rightRep);
                 final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
                 final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
                 final ITermVar var; // the eliminated variable
                 final ITermVar rep; // the new representative
-                if(leftRigid && rightRigid) {
-                    final ITerm leftTerm = getTerm(leftRep);
-                    final ITerm rightTerm = getTerm(rightRep);
-                    if(leftTerm != null && rightTerm != null) {
-                        worklist.push(Tuple2.of(leftTerm, rightTerm));
-                        return true;
-                    } else {
-                        throw new RigidException(leftRep, rightRep);
-                    }
-                } else if(leftRigid) {
+                if(leftRigid && rightRigid && leftTerm == null && rightTerm == null) {
+                    throw new RigidException(leftRep, rightRep);
+                } else if(leftRigid && rightRigid && leftTerm == null) {
+                    throw new RigidException(leftRep);
+                } else if(leftRigid && rightRigid && rightTerm == null) {
+                    throw new RigidException(rightRep);
+                } else if(leftRigid && leftTerm == null) {
                     var = rightRep;
                     rep = leftRep;
-                } else if(rightRigid) {
+                } else if(rightRigid && rightTerm == null) {
                     var = leftRep;
                     rep = rightRep;
                 } else {
