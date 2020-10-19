@@ -64,7 +64,7 @@ context-free syntax
   DataEntry.None =
   DataEntry.Some = < : <Term>>
 
-  EdgeEntry = <<Label> : <EntryValues>>
+  EdgeEntry = <<RelRef> : <EntryValues>>
 
   EntryValues = {Term "\n"}*
 
