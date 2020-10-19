@@ -125,6 +125,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 analysis.set(r);
             }
             granted(result, self);
+            tryFinish();
         });
 
         return unitResult;
@@ -279,6 +280,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(sharing) {
             waitFor(CloseScope.of(scope), sender);
         }
+        tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -294,6 +296,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(scope), sender);
+        tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -309,6 +312,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(scope, edge), sender);
+        tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -356,6 +360,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                             return Optional.of(result.whenComplete((r, ex) -> {
                                 logger.debug("got answer from {}", sender);
                                 granted(wf, owner);
+                                tryFinish();
                             }));
                         }
                     }
@@ -375,6 +380,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                                 return externalRep.thenApply(rep -> {
                                     logger.debug("got external rep {} for {}", rep, datum.get());
                                     granted(token, self);
+                                    tryFinish();
                                     return Optional.of(rep);
                                 });
                             } else {
@@ -408,9 +414,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
         context.granted(token, unit);
-        tryFinish();
     }
 
+    /**
+     * Checks if the unit is finished, or still waiting on something. Must be called after all grants. Note that if a
+     * wait-for is granted, and others are introduced, this method must be called after all have been processed, or it
+     * may conclude prematurely that the unit is done.
+     */
     private void tryFinish() {
         assertInState(UnitState.INIT, UnitState.ACTIVE);
         if(!context.isWaiting()) {
@@ -479,9 +489,15 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void
-            _deadlocked(SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+    @Override public void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock,
+            SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+        if(!this.clock.equals(clock)) {
+            logger.error("stale deadlock");
+            return;
+        }
+        this.clock = this.clock.sent(self).delivered(self); // increase local clock to ensure deadlock detection after this
         if(!failDelays(waitFors)) {
+            failDelays(waitFors);
             if(waitFors.keySet().size() == 1 && waitFors.containsKey(self)) {
                 failAll(waitFors);
             }
@@ -562,6 +578,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 }
             ));
             // @formatter:on
+            tryFinish();
         }
     }
 
@@ -582,7 +599,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void suspended(IActor<?> self) {
-        context.suspended(state, clock);
+        context.suspended(clock);
     }
 
     ///////////////////////////////////////////////////////////////////////////

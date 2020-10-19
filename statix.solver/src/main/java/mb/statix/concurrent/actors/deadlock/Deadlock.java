@@ -6,12 +6,12 @@ import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.MultiSetMap;
 
-public class Deadlock<N, S, T> {
+public class Deadlock<N, T> {
 
-    private final Map.Immutable<N, S> nodes;
+    private final Map.Immutable<N, Clock<N>> nodes;
     private final MultiSetMap.Immutable<Tuple2<N, N>, T> edges;
 
-    Deadlock(Map.Immutable<N, S> nodes, MultiSetMap.Immutable<Tuple2<N, N>, T> edges) {
+    Deadlock(Map.Immutable<N, Clock<N>> nodes, MultiSetMap.Immutable<Tuple2<N, N>, T> edges) {
         this.nodes = nodes;
         this.edges = edges;
     }
@@ -20,7 +20,7 @@ public class Deadlock<N, S, T> {
         return nodes.isEmpty();
     }
 
-    public Map.Immutable<N, S> nodes() {
+    public Map.Immutable<N, Clock<N>> nodes() {
         return nodes;
     }
 
@@ -37,7 +37,7 @@ public class Deadlock<N, S, T> {
                 .collect(CapsuleCollectors.toSetMultimap(e -> e._1(), e -> e._2()));
     }
 
-    static <N, S, T> Deadlock<N, S, T> empty() {
+    static <N, T> Deadlock<N, T> empty() {
         return new Deadlock<>(Map.Immutable.of(), MultiSetMap.Immutable.of());
     }
 

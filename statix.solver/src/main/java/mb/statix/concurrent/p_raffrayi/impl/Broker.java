@@ -1,6 +1,7 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -40,7 +41,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private final ICancel cancel;
 
     private final ActorSystem system;
-    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>, UnitState, IWaitFor<S, L, D>>> dlm;
+    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>, IWaitFor<S, L, D>>> dlm;
 
     private final Object lock = new Object();
     private final Map<String, IActor<IUnit<S, L, D, R>>> units;
@@ -109,10 +110,13 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     }
 
     private void handleDeadlock(IActor<?> dlm,
-            Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, UnitState, IWaitFor<S, L, D>> deadlock) {
-        for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
+            Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> deadlock) {
+        for(Entry<IActorRef<? extends IUnit<S, L, D, R>>, Clock<IActorRef<? extends IUnit<S, L, D, R>>>> entry : deadlock
+                .nodes().entrySet()) {
+            final IActorRef<? extends IUnit<S, L, D, R>> unit = entry.getKey();
+            final Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock = entry.getValue();
             logger.error("deadlock detected: {}", deadlock);
-            dlm.async(unit)._deadlocked(deadlock.outgoingWaitFors(unit));
+            dlm.async(unit)._deadlocked(clock, deadlock.outgoingWaitFors(unit));
         }
     }
 
@@ -147,7 +151,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private class UnitContext implements IUnitContext<S, L, D, R> {
 
         private final IActor<? extends IUnit<S, L, D, R>> self;
-        private final DeadlockBatcher<IUnit<S, L, D, R>, UnitState, IWaitFor<S, L, D>> udlm;
+        private final DeadlockBatcher<IUnit<S, L, D, R>, IWaitFor<S, L, D>> udlm;
 
         public UnitContext(IActor<? extends IUnit<S, L, D, R>> self) {
             this.self = self;
@@ -195,8 +199,8 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             return udlm.isWaitingFor(token);
         }
 
-        @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
-            udlm.suspended(state, clock);
+        @Override public void suspended(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
+            udlm.suspended(clock);
         }
 
     }

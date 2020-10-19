@@ -15,18 +15,18 @@ import mb.statix.concurrent.actors.IActorRef;
  * Actors can use this class to locally batch wait-for/grant operations and only send them to the deadlock monitor on
  * suspend, thereby reducing messages.
  */
-public class DeadlockBatcher<N, S, T> implements IDeadlockMonitor<N, S, T> {
+public class DeadlockBatcher<N, T> implements IDeadlockMonitor<N, T> {
 
     private static final ILogger logger = LoggerUtils.logger(DeadlockBatcher.class);
 
     private final IActor<? extends N> self;
-    private final IActorRef<? extends IDeadlockMonitor<N, S, T>> dlm;
+    private final IActorRef<? extends IDeadlockMonitor<N, T>> dlm;
 
     private final MultiSetMap.Transient<IActorRef<? extends N>, T> committedWaitFors;
     private final MultiSetMap.Transient<IActorRef<? extends N>, T> pendingWaitFors;
     private final MultiSetMap.Transient<IActorRef<? extends N>, T> pendingGrants;
 
-    public DeadlockBatcher(IActor<? extends N> self, IActorRef<? extends IDeadlockMonitor<N, S, T>> dlm) {
+    public DeadlockBatcher(IActor<? extends N> self, IActorRef<? extends IDeadlockMonitor<N, T>> dlm) {
         this.self = self;
         this.dlm = dlm;
 
@@ -67,10 +67,10 @@ public class DeadlockBatcher<N, S, T> implements IDeadlockMonitor<N, S, T> {
         }
     }
 
-    @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock,
-            Immutable<IActorRef<? extends N>, T> waitFors, Immutable<IActorRef<? extends N>, T> grants) {
+    @Override public void suspended(Clock<IActorRef<? extends N>> clock, Immutable<IActorRef<? extends N>, T> waitFors,
+            Immutable<IActorRef<? extends N>, T> grants) {
         processBatchedWaitFors(waitFors, grants);
-        self.async(dlm).suspended(state, clock, commitWaitFors(), pendingGrants.clear());
+        self.async(dlm).suspended(clock, commitWaitFors(), pendingGrants.clear());
     }
 
     private void processBatchedWaitFors(MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,

@@ -8,6 +8,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
@@ -16,7 +17,7 @@ import mb.nabl2.util.graph.alg.incscc.IncSCCAlg;
 /**
  * A data structure to detect deadlock. Maintains a wait-for graph with tokens.
  */
-public class WaitForGraph<N, S, T> {
+public class WaitForGraph<N, T> {
 
     private static final ILogger logger = LoggerUtils.logger(WaitForGraph.class);
 
@@ -26,13 +27,13 @@ public class WaitForGraph<N, S, T> {
     private final Map.Transient<N, Clock<N>> clocks = Map.Transient.of();
     private final Map.Transient<N, MultiSet.Immutable<N>> knownMessagesTo = Map.Transient.of(); // per actor, messages sent to it by others
 
-    private final Map.Transient<N, S> waitingNodes = Map.Transient.of();
+    private final Set.Transient<N> waitingNodes = Set.Transient.of();
 
     public WaitForGraph() {
     }
 
     public boolean isWaiting(N node) {
-        return waitingNodes.containsKey(node);
+        return waitingNodes.contains(node);
     }
 
     /**
@@ -54,12 +55,12 @@ public class WaitForGraph<N, S, T> {
     /**
      * Suspend a node. Return deadlocked tokens on the given node.
      */
-    public Deadlock<N, S, T> suspend(N node, S state, Clock<N> clock) {
-        logger.debug("{}[{}] suspended {}", node, state, clock);
+    public Deadlock<N, T> suspend(N node, Clock<N> clock) {
+        logger.debug("{} suspended {}", node, clock);
         if(!processClock(node, clock)) {
             return Deadlock.empty();
         }
-        waitingNodes.__put(node, state);
+        waitingNodes.__insert(node);
         return detectDeadlock(node);
     }
 
@@ -71,6 +72,10 @@ public class WaitForGraph<N, S, T> {
     private boolean processClock(final N node, final Clock<N> clock) {
         if(clocks.containsKey(node) && clocks.get(node).equals(clock)) {
             logger.debug("{} stale event {}", node, clock);
+            // It is important to ignore stale events, as suspends may happen even
+            // if no progress is made, e.g., as a result of processing an earlier
+            // deadlock messages. Not ignoring it could lead to non-termination, if
+            // empty deadlocks are also reported to the unit that suspends.
             return false;
         }
         clocks.__put(node, clock);
@@ -84,7 +89,7 @@ public class WaitForGraph<N, S, T> {
             final int received = receiverClock.count(node);
             if(sent > received) {
                 this.knownMessagesTo.put(receiver, receiverClock.set(node, sent));
-                if(waitingNodes.__remove(receiver) != null) {
+                if(waitingNodes.__remove(receiver)) {
                     logger.debug("{} activates {} (sent {} > received {})", node, receiver, sent, received);
                 }
             }
@@ -108,7 +113,7 @@ public class WaitForGraph<N, S, T> {
         return atleast;
     }
 
-    private Deadlock<N, S, T> detectDeadlock(N node) {
+    private Deadlock<N, T> detectDeadlock(N node) {
         final N rep = sccGraph.getRepresentative(node);
         if(rep == null) {
             // node has no in- or outgoing edges
@@ -120,11 +125,11 @@ public class WaitForGraph<N, S, T> {
         }
         final java.util.Set<N> scc =
                 Optional.ofNullable(sccGraph.sccs.getPartition(rep)).orElse(Collections.singleton(node));
-        if(!scc.stream().allMatch(waitingNodes::containsKey)) {
+        if(!scc.stream().allMatch(waitingNodes::contains)) {
             // not all units are waiting yet
             return Deadlock.empty();
         }
-        final Map.Transient<N, S> nodes = Map.Transient.of();
+        final Map.Transient<N, Clock<N>> nodes = Map.Transient.of();
         final MultiSetMap.Transient<Tuple2<N, N>, T> edges = MultiSetMap.Transient.of();
         for(N source : scc) {
             for(Entry<N, MultiSet.Immutable<T>> entry : waitForGraph.getOutgoingEdges(source).toMap().entrySet()) {
@@ -138,7 +143,7 @@ public class WaitForGraph<N, S, T> {
         }
         if(!edges.isEmpty()) {
             for(N source : scc) {
-                nodes.__put(source, waitingNodes.get(source));
+                nodes.__put(source, clocks.get(source));
             }
         }
         return new Deadlock<>(nodes.freeze(), edges.freeze());

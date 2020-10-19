@@ -34,6 +34,6 @@ public interface IUnitContext<S, L, D, R> {
 
     void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 
-    void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
+    void suspended(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
 
 }

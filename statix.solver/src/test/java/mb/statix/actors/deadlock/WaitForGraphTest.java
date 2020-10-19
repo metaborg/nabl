@@ -1,7 +1,5 @@
 package mb.statix.actors.deadlock;
 
-import static org.metaborg.util.unit.Unit.unit;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -12,7 +10,6 @@ import java.util.stream.Collectors;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.functions.Action1;
-import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.Lists;
 
@@ -453,7 +450,7 @@ public class WaitForGraphTest {
             steps.add((wfg, clock, markers, logger) -> {
                 // FIXME these can be optional
                 logger.apply(node + " suspended");
-                final Deadlock<Integer, Unit, String> suspend = wfg.suspend(node, unit, clock);
+                final Deadlock<Integer, String> suspend = wfg.suspend(node, clock);
                 if(!suspend.isEmpty()) {
                     throw new AssertionError("Unexpected deadlock: " + suspend.edges());
                 }
@@ -465,7 +462,7 @@ public class WaitForGraphTest {
             markers = markers.add(marker);
             steps.add((wfg, clock, markers, logger) -> {
                 logger.apply(node + " suspended");
-                final Deadlock<Integer, Unit, String> suspend = wfg.suspend(node, unit, clock);
+                final Deadlock<Integer, String> suspend = wfg.suspend(node, clock);
                 if(!suspend.isEmpty()) {
                     if(!markers.contains(marker)) {
                         throw new AssertionError("Deadlock reported twice.");
@@ -485,8 +482,8 @@ public class WaitForGraphTest {
 
     private interface Step {
 
-        Clock<Integer> step(WaitForGraph<Integer, Unit, String> wfg, Clock<Integer> clock,
-                MultiSet.Transient<Object> markers, Action1<String> logger);
+        Clock<Integer> step(WaitForGraph<Integer, String> wfg, Clock<Integer> clock, MultiSet.Transient<Object> markers,
+                Action1<String> logger);
 
     }
 
@@ -505,7 +502,7 @@ public class WaitForGraphTest {
         final LinkedList<Clock<Integer>> clocks =
                 nodes.stream().map(tr -> Clock.<Integer>of()).collect(Collectors.toCollection(LinkedList::new));
 
-        final WaitForGraph<Integer, Unit, String> wfg = new WaitForGraph<>();
+        final WaitForGraph<Integer, String> wfg = new WaitForGraph<>();
         final List<String> log = Lists.newArrayList();
 
         final Random rnd = new Random();

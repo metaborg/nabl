@@ -12,19 +12,19 @@ import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 
-public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
+public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, T> {
 
     private static final ILogger logger = LoggerUtils.logger(DeadlockMonitor.class);
 
     private final TypeTag<? extends N> TYPE = TypeTag.of(Object.class);
 
-    private final IActor<? extends IDeadlockMonitor<N, S, T>> self;
+    private final IActor<? extends IDeadlockMonitor<N, T>> self;
 
-    private final WaitForGraph<IActorRef<? extends N>, S, T> wfg = new WaitForGraph<>();
-    private Action2<IActor<?>, Deadlock<IActorRef<? extends N>, S, T>> handler;
+    private final WaitForGraph<IActorRef<? extends N>, T> wfg = new WaitForGraph<>();
+    private Action2<IActor<?>, Deadlock<IActorRef<? extends N>, T>> handler;
 
-    public DeadlockMonitor(IActor<? extends IDeadlockMonitor<N, S, T>> self,
-            Action2<IActor<?>, Deadlock<IActorRef<? extends N>, S, T>> handler) {
+    public DeadlockMonitor(IActor<? extends IDeadlockMonitor<N, T>> self,
+            Action2<IActor<?>, Deadlock<IActorRef<? extends N>, T>> handler) {
         this.self = self;
         this.handler = handler;
     }
@@ -39,11 +39,11 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
         wfg.granted(self.sender(TYPE), token, actor);
     }
 
-    @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock,
+    @Override public void suspended(Clock<IActorRef<? extends N>> clock,
             MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
             MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
         processBatchedWaitFors(waitFors, grants);
-        final Deadlock<IActorRef<? extends N>, S, T> deadlock = wfg.suspend(self.sender(TYPE), state, clock);
+        final Deadlock<IActorRef<? extends N>, T> deadlock = wfg.suspend(self.sender(TYPE), clock);
         if(!deadlock.isEmpty()) {
             logger.debug("{} deadlocked: {}", self.sender(TYPE), deadlock);
             handler.apply(self, deadlock);
