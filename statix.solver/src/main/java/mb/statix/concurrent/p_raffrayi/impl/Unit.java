@@ -585,10 +585,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         context.suspended(state, clock);
     }
 
-    @Override public void failed(IActor<?> self, Throwable ex) {
-        unitResult.completeExceptionally(ex);
-    }
-
     ///////////////////////////////////////////////////////////////////////////
     // Assertions
     ///////////////////////////////////////////////////////////////////////////

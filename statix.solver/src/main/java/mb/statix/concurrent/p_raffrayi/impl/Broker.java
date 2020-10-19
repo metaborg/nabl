@@ -31,7 +31,7 @@ import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
-public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
+public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
@@ -55,11 +55,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         this.system = new ActorSystem();
         this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
                 self -> new DeadlockMonitor<>(self, this::handleDeadlock));
-        dlm.addMonitor(new IActorMonitor() {
-            @Override public void failed(mb.statix.concurrent.actors.IActor<?> self, Throwable ex) {
-                fail(ex);
-            };
-        });
+        dlm.addMonitor(this);
 
         this.units = Maps.newHashMap();
         this.results = Maps.newHashMap();
@@ -75,6 +71,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             ITypeChecker<S, L, D, R> unitChecker) {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new Unit<>(self, parent, new UnitContext(self), unitChecker, edgeLabels));
+        unit.addMonitor(this);
         synchronized(lock) {
             units.put(id, unit);
         }
@@ -99,7 +96,12 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         }
     }
 
+    @Override public void failed(IActor<?> self, Throwable ex) {
+        fail(ex);
+    }
+
     private void fail(Throwable ex) {
+        logger.error("Unit failed.", ex);
         synchronized(lock) {
             result.completeExceptionally(ex);
             system.stop();
