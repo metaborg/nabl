@@ -4,9 +4,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -19,9 +17,10 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Queues;
 
+import io.usethesource.capsule.Set;
+import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
@@ -45,10 +44,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private final Object lock;
     private volatile ActorState state;
     private final Deque<IMessage<T>> messages;
-    private final Set<IReturn<?>> returns;
+    private final Set.Transient<IReturn<?>> returns;
 
     private final ReadWriteLock monitorsLock;
-    private final Set<IActorMonitor> monitors;
+    private final Set.Transient<IActorMonitor> monitors;
 
     final T asyncSystem;
     final T asyncActor;
@@ -72,10 +71,10 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         this.lock = new Object();
         this.state = ActorState.INITIAL;
         this.messages = Queues.newArrayDeque();
-        this.returns = new HashSet<>();
+        this.returns = Set.Transient.of();
 
         this.monitorsLock = new ReentrantReadWriteLock();
-        this.monitors = new HashSet<>();
+        this.monitors = Set.Transient.of();
 
         this.asyncSystem = newAsyncSystem();
         this.asyncActor = newAsyncActor();
@@ -143,7 +142,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                         message = new Invoke(sender, method, args, ret);
                         returnValue = result;
                         synchronized(lock) {
-                            returns.add(ret);
+                            returns.__insert(ret);
                         }
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -330,7 +329,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
     @Override public void addMonitor(IActorMonitor monitor) {
         try(IClosableLock lock = new ClosableLock(monitorsLock.writeLock())) {
-            monitors.add(monitor);
+            monitors.__insert(monitor);
         }
     }
 
@@ -341,8 +340,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     private Set<String> tags(Method method) {
-        return Optional.ofNullable(method.getAnnotation(MessageTags.class))
-                .map(tags -> ImmutableSet.copyOf(tags.value())).orElse(ImmutableSet.of());
+        return Optional.ofNullable(method.getAnnotation(MessageTags.class)).map(tags -> CapsuleUtil.toSet(tags.value()))
+                .orElse(Set.Immutable.of());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -440,7 +439,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         ///////////////////////////////////////////////////////////////////////
 
         @Override public void complete(U value, Throwable ex) throws ActorStoppedException {
-            if(!returns.remove(this)) {
+            if(!returns.__remove(this)) {
                 throw new IllegalStateException("Dangling return?");
             }
 
