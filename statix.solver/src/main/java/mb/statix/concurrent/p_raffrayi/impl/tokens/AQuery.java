@@ -3,12 +3,12 @@ package mb.statix.concurrent.p_raffrayi.impl.tokens;
 import org.immutables.value.Value;
 
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
 
 @Value.Immutable(prehash = true)
 public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {

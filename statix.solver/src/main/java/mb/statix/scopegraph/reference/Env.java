@@ -2,15 +2,16 @@ package mb.statix.scopegraph.reference;
 
 import java.util.Iterator;
 
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
 import mb.statix.scopegraph.path.IResolutionPath;
 
 public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
 
-    private final ImmutableSet<IResolutionPath<S, L, D>> paths;
+    @SuppressWarnings("rawtypes") private static final Env EMPTY = new Env<>(Set.Immutable.of());
 
-    private Env(ImmutableSet<IResolutionPath<S, L, D>> paths) {
+    private final Set.Immutable<IResolutionPath<S, L, D>> paths;
+
+    private Env(Set.Immutable<IResolutionPath<S, L, D>> paths) {
         this.paths = paths;
     }
 
@@ -22,12 +23,12 @@ public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
         return paths.iterator();
     }
 
-    public static <S, L, D> Env<S, L, D> empty() {
-        return new Env<>(ImmutableSet.of());
+    @SuppressWarnings("unchecked") public static <S, L, D> Env<S, L, D> empty() {
+        return EMPTY;
     }
 
     public static <S, L, D> Env<S, L, D> of(IResolutionPath<S, L, D> path) {
-        return new Env<>(ImmutableSet.of(path));
+        return new Env<>(Set.Immutable.of(path));
     }
 
     public static <S, L, D> Builder<S, L, D> builder() {
@@ -36,10 +37,10 @@ public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
 
     public static class Builder<S, L, D> {
 
-        private final ImmutableSet.Builder<IResolutionPath<S, L, D>> paths;
+        private final Set.Transient<IResolutionPath<S, L, D>> paths;
 
         private Builder() {
-            this.paths = ImmutableSet.builder();
+            this.paths = Set.Transient.of();
         }
 
         public void add(IResolutionPath<S, L, D> path) {
@@ -47,11 +48,11 @@ public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
         }
 
         public void addAll(Iterable<? extends IResolutionPath<S, L, D>> paths) {
-            this.paths.addAll(paths);
+            paths.forEach(this.paths::__insert);
         }
 
         public Env<S, L, D> build() {
-            return new Env<>(paths.build());
+            return paths.isEmpty() ? empty() : new Env<>(paths.freeze());
         }
 
     }

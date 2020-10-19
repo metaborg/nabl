@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -110,7 +109,7 @@ public class WaitForGraphTest {
         trace1.delivered(NODE_1);
         trace1.granted(RES_A, NODE_1);
 
-        trace1.suspendDeadlocked(new Object());
+        trace1.suspendNotDeadlocked();
 
         runInterleavedSet(SETS, trace1);
     }
@@ -134,9 +133,9 @@ public class WaitForGraphTest {
         trace1.delivered(NODE_2);
         trace1.granted(RES_A, NODE_2);
 
-        trace1.suspendDeadlocked(new Object());
+        trace1.suspendNotDeadlocked();
 
-        trace2.suspendDeadlocked(new Object());
+        trace2.suspendNotDeadlocked();
 
         runInterleavedSet(SETS, trace1, trace2);
     }
@@ -162,12 +161,12 @@ public class WaitForGraphTest {
         trace2.delivered(NODE_1);
         trace2.sent(NODE_1);
 
-        trace2.suspendDeadlocked(new Object());
+        trace2.suspendNotDeadlocked();
 
         trace1.delivered(NODE_2);
         trace1.granted(RES_A, NODE_2);
 
-        trace1.suspendDeadlocked(new Object());
+        trace1.suspendNotDeadlocked();
 
         runInterleavedSet(SETS, trace1, trace2);
     }
@@ -195,12 +194,12 @@ public class WaitForGraphTest {
         trace1.delivered(NODE_2);
         trace1.granted(RES_A, NODE_2);
 
-        trace1.suspendDeadlocked(new Object());
+        trace1.suspendNotDeadlocked();
 
         trace2.delivered(NODE_1);
         trace2.granted(RES_B, NODE_1);
 
-        trace2.suspendDeadlocked(new Object());
+        trace2.suspendNotDeadlocked();
 
         runInterleavedSet(SETS, trace1, trace2);
     }
@@ -352,11 +351,11 @@ public class WaitForGraphTest {
         /* 1.ii */
         trace3.granted(RES_A, NODE_1);
 
-        trace1.suspendDeadlocked(new Object());
+        trace1.suspendNotDeadlocked();
 
-        trace2.suspendDeadlocked(new Object());
+        trace2.suspendNotDeadlocked();
 
-        trace3.suspendDeadlocked(new Object());
+        trace3.suspendNotDeadlocked();
 
         runInterleavedSet(SETS, trace1, trace2, trace3);
     }
@@ -378,7 +377,7 @@ public class WaitForGraphTest {
         trace2.suspendNotDeadlocked();
 
         trace3.sent(NODE_2);
-        trace3.suspendDeadlocked(new Object());
+        trace3.suspendNotDeadlocked();
 
         trace1.suspendNotDeadlocked();
 
@@ -386,12 +385,12 @@ public class WaitForGraphTest {
         trace2.granted(RES_A, NODE_3);
 
         trace2.sent(NODE_1);
-        trace2.suspendDeadlocked(new Object());
+        trace2.suspendNotDeadlocked();
 
         trace1.delivered(NODE_2);
         trace1.granted(RES_A, NODE_2);
 
-        trace1.suspendDeadlocked(new Object());
+        trace1.suspendNotDeadlocked();
 
         runInterleavedSet(SETS, trace1, trace2, trace3);
     }
@@ -454,10 +453,9 @@ public class WaitForGraphTest {
             steps.add((wfg, clock, markers, logger) -> {
                 // FIXME these can be optional
                 logger.apply(node + " suspended");
-                final Optional<Optional<Deadlock<Integer, Unit, String>>> suspend = wfg.suspend(node, unit, clock);
-                final boolean isDeadlocked = suspend.isPresent() && suspend.get().isPresent();
-                if(isDeadlocked) {
-                    throw new AssertionError("Unexpected deadlock");
+                final Deadlock<Integer, Unit, String> suspend = wfg.suspend(node, unit, clock);
+                if(!suspend.isEmpty()) {
+                    throw new AssertionError("Unexpected deadlock: " + suspend.edges());
                 }
                 return clock;
             });
@@ -467,9 +465,8 @@ public class WaitForGraphTest {
             markers = markers.add(marker);
             steps.add((wfg, clock, markers, logger) -> {
                 logger.apply(node + " suspended");
-                final Optional<Optional<Deadlock<Integer, Unit, String>>> suspend = wfg.suspend(node, unit, clock);
-                final boolean isDeadlocked = suspend.isPresent() && suspend.get().isPresent();
-                if(isDeadlocked) {
+                final Deadlock<Integer, Unit, String> suspend = wfg.suspend(node, unit, clock);
+                if(!suspend.isEmpty()) {
                     if(!markers.contains(marker)) {
                         throw new AssertionError("Deadlock reported twice.");
                     } else {
@@ -477,8 +474,7 @@ public class WaitForGraphTest {
                     }
                 } else {
                     if(markers.contains(marker) && markers.remove(marker) == 0) {
-                        throw new AssertionError(
-                                "Expected deadlock, got " + (!suspend.isPresent() ? "active" : "waiting"));
+                        throw new AssertionError("Expected deadlock");
                     }
                 }
                 return clock;

@@ -1,5 +1,6 @@
 package mb.statix.concurrent.actors.futures;
 
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.functions.CheckedAction1;
@@ -20,6 +21,8 @@ public interface IFuture<T> {
     IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler);
 
     T get() throws ExecutionException, InterruptedException;
+
+    T getNow() throws CompletionException, InterruptedException;
 
     boolean isDone();
 

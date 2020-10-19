@@ -35,6 +35,10 @@ public class DeadlockBatcher<N, S, T> implements IDeadlockMonitor<N, S, T> {
         this.pendingGrants = MultiSetMap.Transient.of();
     }
 
+    public boolean isWaiting() {
+        return !pendingWaitFors.isEmpty() || !committedWaitFors.isEmpty();
+    }
+
     public boolean isWaitingFor(IActorRef<? extends N> actor, T token) {
         return pendingWaitFors.contains(actor, token) || committedWaitFors.contains(actor, token);
     }
@@ -67,12 +71,6 @@ public class DeadlockBatcher<N, S, T> implements IDeadlockMonitor<N, S, T> {
             Immutable<IActorRef<? extends N>, T> waitFors, Immutable<IActorRef<? extends N>, T> grants) {
         processBatchedWaitFors(waitFors, grants);
         self.async(dlm).suspended(state, clock, commitWaitFors(), pendingGrants.clear());
-    }
-
-    @Override public void stopped(Clock<IActorRef<? extends N>> clock, Immutable<IActorRef<? extends N>, T> waitFors,
-            Immutable<IActorRef<? extends N>, T> grants) {
-        processBatchedWaitFors(waitFors, grants);
-        self.async(dlm).stopped(clock, commitWaitFors(), pendingGrants.clear());
     }
 
     private void processBatchedWaitFors(MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,

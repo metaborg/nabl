@@ -23,7 +23,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.p_raffrayi.IBroker;
-import mb.statix.concurrent.p_raffrayi.IResult;
+import mb.statix.concurrent.p_raffrayi.IBrokerResult;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
@@ -70,7 +70,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final List<ITerm> results = Lists.newArrayList();
         try {
-            final IResult<Scope, ITerm, ITerm, SolverResult> solveResult = broker.result().get();
+            final IBrokerResult<Scope, ITerm, ITerm, SolverResult> solveResult = broker.result().get();
 
             final double dt = System.currentTimeMillis() - t0;
             logger.info("Files analyzed in {} s", (dt / 1_000d));

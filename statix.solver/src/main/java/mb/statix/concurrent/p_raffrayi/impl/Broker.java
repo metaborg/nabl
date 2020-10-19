@@ -10,7 +10,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import mb.statix.concurrent.actors.IActor;
@@ -26,7 +25,7 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
 import mb.statix.concurrent.p_raffrayi.IBroker;
-import mb.statix.concurrent.p_raffrayi.IResult;
+import mb.statix.concurrent.p_raffrayi.IBrokerResult;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -46,7 +45,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
     private final Object lock = new Object();
     private final Map<String, IActor<IUnit<S, L, D, R>>> units;
     private final Map<String, IUnitResult<S, L, D, R>> results;
-    private final CompletableFuture<IResult<S, L, D, R>> result;
+    private final CompletableFuture<IBrokerResult<S, L, D, R>> result;
 
     public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         this.scopeImpl = scopeImpl;
@@ -88,11 +87,15 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
                 fail(ex);
             } else {
                 results.put(id, unitResult);
-                if(results.size() == units.size()) {
-                    result.complete(Result.of(results));
-                    system.stop();
-                }
+                checkResults();
             }
+        }
+    }
+
+    private void checkResults() {
+        if(results.size() == units.size()) {
+            result.complete(BrokerResult.of(results));
+            system.stop();
         }
     }
 
@@ -105,19 +108,15 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
     private void handleDeadlock(IActor<?> dlm,
             Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, UnitState, IWaitFor<S, L, D>> deadlock) {
-        if(deadlock.edges().isEmpty()) {
-            final IActorRef<? extends IUnit<S, L, D, R>> unit = Iterables.getOnlyElement(deadlock.nodes().keySet());
-            dlm.async(unit)._done();
-        } else {
+        for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
             logger.error("deadlock detected: {}", deadlock);
-            for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
-                dlm.async(unit)._deadlocked(deadlock.waitingFor(unit));
-            }
+            dlm.async(unit)._deadlocked(deadlock.outgoingWaitFors(unit));
         }
     }
 
     @Override public void run() {
         system.start();
+        checkResults();
 
         // start cancel watcher
         final Thread watcher = new Thread(() -> {
@@ -139,7 +138,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         watcher.start();
     }
 
-    @Override public IFuture<IResult<S, L, D, R>> result() {
+    @Override public IFuture<IBrokerResult<S, L, D, R>> result() {
         return result;
     }
 
@@ -182,6 +181,10 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             udlm.granted(unit, token);
         }
 
+        @Override public boolean isWaiting() {
+            return udlm.isWaiting();
+        }
+
         @Override public boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
             return udlm.isWaitingFor(unit, token);
         }
@@ -192,10 +195,6 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
 
         @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
             udlm.suspended(state, clock);
-        }
-
-        @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
-            udlm.stopped(clock);
         }
 
     }

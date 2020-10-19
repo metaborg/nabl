@@ -26,6 +26,8 @@ public interface IUnitContext<S, L, D, R> {
 
     void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 
+    boolean isWaiting();
+
     boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 
     boolean isWaitingFor(IWaitFor<S, L, D> token);
@@ -33,7 +35,5 @@ public interface IUnitContext<S, L, D, R> {
     void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 
     void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
-
-    void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock);
 
 }

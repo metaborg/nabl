@@ -16,13 +16,16 @@ public interface IWaitFor<S, L, D> {
 
         void on(Query<S, L, D> query);
 
+        void on(TypeCheckerResult<S, L, D> result);
+
         void on(ExternalRep<S, L, D> externalRep);
 
     }
 
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
             Action1<CloseScope<S, L, D>> onCloseScope, Action1<CloseLabel<S, L, D>> onCloseLabel,
-            Action1<Query<S, L, D>> onQuery, Action1<ExternalRep<S, L, D>> onExternalRep) {
+            Action1<Query<S, L, D>> onQuery, Action1<TypeCheckerResult<S, L, D>> onResult,
+            Action1<ExternalRep<S, L, D>> onExternalRep) {
         return new Cases<S, L, D>() {
 
             @Override public void on(InitScope<S, L, D> initScope) {
@@ -39,6 +42,10 @@ public interface IWaitFor<S, L, D> {
 
             @Override public void on(Query<S, L, D> query) {
                 onQuery.apply(query);
+            }
+
+            @Override public void on(TypeCheckerResult<S, L, D> result) {
+                onResult.apply(result);
             }
 
             @Override public void on(ExternalRep<S, L, D> externalRep) {

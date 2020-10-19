@@ -1,4 +1,4 @@
-package mb.statix.actors;
+package mb.statix.concurrent.actors;
 
 import java.util.concurrent.ExecutionException;
 
@@ -6,10 +6,6 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.statix.concurrent.actors.IActor;
-import mb.statix.concurrent.actors.IActorMonitor;
-import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.deadlock.Deadlock;
 import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
@@ -84,10 +80,6 @@ public class DeadlockTest {
 
         @Override public void suspended(IActor<?> self) {
             self.async(dlm).suspended(null, clock);
-        }
-
-        @Override public void stopped(IActor<?> self) {
-            self.async(dlm).stopped(clock);
         }
 
     }

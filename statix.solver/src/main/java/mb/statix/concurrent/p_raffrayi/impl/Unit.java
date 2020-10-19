@@ -14,10 +14,10 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
@@ -28,7 +28,6 @@ import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
@@ -40,15 +39,16 @@ import mb.statix.concurrent.p_raffrayi.impl.tokens.ExternalRep;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerResult;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.path.Paths;
 
@@ -66,12 +66,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
     private UnitState state;
 
-    private final CompletableFuture<R> typeCheckerResult;
-    private final CompletableFuture<IUnitResult<S, L, D, R>> unitResult;
+    private final Ref<R> analysis;
+    private final List<Throwable> failures;
+    private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     private final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     private final Set.Transient<S> scopes;
-    private final IRelation3.Transient<S, EdgeOrData<L>, ICompletable<Void>> delays;
+    private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
@@ -85,7 +86,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.clock = Clock.of();
         this.state = UnitState.INIT;
 
-        this.typeCheckerResult = new CompletableFuture<>();
+        this.analysis = new Ref<>();
+        this.failures = Lists.newArrayList();
         this.unitResult = new CompletableFuture<>();
 
         this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of(edgeLabels));
@@ -112,64 +114,20 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         // run() after inits are initialized before run, since unitChecker
         // can immediately call methods, that are executed synchronously
 
-        this.typeChecker.run(this, root).whenComplete(this::handleResult);
+        final ICompletableFuture<R> typeCheckerResult = new CompletableFuture<>();
+        final TypeCheckerResult<S, L, D> result = TypeCheckerResult.of(typeCheckerResult);
+        waitFor(result, self);
+        self.schedule(this.typeChecker.run(this, root)).whenComplete(typeCheckerResult::complete);
+        typeCheckerResult.whenComplete((r, ex) -> {
+            if(ex != null) {
+                failures.add(ex);
+            } else {
+                analysis.set(r);
+            }
+            granted(result, self);
+        });
 
         return unitResult;
-    }
-
-    private void handleResult(R result, Throwable ex) {
-        assertInState(UnitState.INIT, UnitState.ACTIVE);
-        state = UnitState.DONE;
-        if(ex != null) {
-            unitResult.completeExceptionally(ex);
-        } else {
-            typeCheckerResult.complete(result, ex);
-        }
-    }
-
-    @Override public void _done() {
-        assertInState(UnitState.DONE);
-
-        // CHECK does state == DONE imply that typeCheckerResult is
-        //       always present?
-        typeCheckerResult.whenComplete((analysis, ex) -> {
-            if(ex != null) {
-                unitResult.completeExceptionally(ex);
-            } else {
-                unitResult.complete(UnitResult.of(analysis, scopeGraph.get()));
-            }
-        });
-    }
-
-    @Override public void _deadlocked(Iterable<IWaitFor<S, L, D>> waitFors) {
-        final Set.Transient<ICompletable<?>> deadlocked = Set.Transient.of();
-        for(IWaitFor<S, L, D> wf : waitFors) {
-            // @formatter:off
-            wf.visit(IWaitFor.cases(
-                initScope -> {
-                    Iterables.addAll(deadlocked, delays.remove(initScope.scope()).values());
-                },
-                closeScope -> {
-                    Iterables.addAll(deadlocked, delays.remove(closeScope.scope()).values());
-                },
-                closeLabel -> {
-                    deadlocked.__insertAll(delays.remove(closeLabel.scope(), closeLabel.label()));
-                },
-                query -> {},
-                externalRep -> {
-                    // FIXME This assumes these are always local loops,
-                    //       such that we always wait for self.
-                    deadlocked.__insert(externalRep.future());
-                }
-            ));
-            // @formatter:on
-        }
-        for(ICompletable<?> dl : deadlocked) {
-            // progress clock, to ensure deadlock detection is done after this
-            // deadlock is handled, or else _done can be missed
-            clock = clock.sent(self).delivered(self);
-            self.complete(dl, null, new DeadlockException());
-        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -256,10 +214,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         final IScopePath<S, L> path = Paths.empty(scope);
         final IFuture<Env<S, L, D>> result = doQuery(self, path, labelWF, dataWF, labelOrder, dataEquiv);
         final Query<S, L, D> wf = Query.of(path, labelWF, dataWF, labelOrder, dataEquiv, result);
-        context.waitFor(wf, self);
+        waitFor(wf, self);
 
         return self.schedule(result).whenComplete((env, ex) -> {
-            context.granted(wf, self);
+            granted(wf, self);
         }).thenApply(CapsuleUtil::toSet);
     }
 
@@ -298,7 +256,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         scopes.__insert(scope);
-        context.waitFor(InitScope.of(scope), sender);
+        waitFor(InitScope.of(scope), sender);
     }
 
     private final void doAddShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
@@ -314,12 +272,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             Iterable<EdgeOrData<L>> edges, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
-        context.granted(InitScope.of(scope), sender);
+        granted(InitScope.of(scope), sender);
         for(EdgeOrData<L> edge : edges) {
-            context.waitFor(CloseLabel.of(scope, edge), sender);
+            waitFor(CloseLabel.of(scope, edge), sender);
         }
         if(sharing) {
-            context.waitFor(CloseScope.of(scope), sender);
+            waitFor(CloseScope.of(scope), sender);
         }
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
@@ -335,7 +293,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final void doCloseScope(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
-        context.granted(CloseScope.of(scope), sender);
+        granted(CloseScope.of(scope), sender);
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -350,7 +308,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
-        context.granted(CloseLabel.of(scope, edge), sender);
+        granted(CloseLabel.of(scope, edge), sender);
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -394,16 +352,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                             final IFuture<Env<S, L, D>> result =
                                     self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
                             final Query<S, L, D> wf = Query.of(path, re, dataWF, labelOrder, dataEquiv, result);
-                            context.waitFor(wf, owner);
+                            waitFor(wf, owner);
                             return Optional.of(result.whenComplete((r, ex) -> {
                                 logger.debug("got answer from {}", sender);
-                                context.granted(wf, owner);
+                                granted(wf, owner);
                             }));
                         }
                     }
 
                     @Override protected IFuture<Optional<D>> getDatum(S scope) {
-                        return isComplete(scope, EdgeOrData.data()).thenCompose(__ -> {
+                        return isComplete(scope, EdgeOrData.data(), sender).thenCompose(__ -> {
                             final Optional<D> datum;
                             if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
                                 return CompletableFuture.completedFuture(Optional.empty());
@@ -413,10 +371,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                                 final ICompletableFuture<D> externalRep = new CompletableFuture<>();
                                 typeChecker.getExternalRepresentation(datum.get()).whenComplete(externalRep::complete);
                                 final IWaitFor<S, L, D> token = ExternalRep.of(datum.get(), externalRep);
-                                context.waitFor(token, self);
+                                waitFor(token, self);
                                 return externalRep.thenApply(rep -> {
                                     logger.debug("got external rep {} for {}", rep, datum.get());
-                                    context.granted(token, self);
+                                    granted(token, self);
                                     return Optional.of(rep);
                                 });
                             } else {
@@ -426,7 +384,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     }
 
                     @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
-                        return isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+                        return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
                             return scopeGraph.get().getEdges(scope, label);
                         });
                     }
@@ -441,26 +399,47 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // Wait fors & finalization
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+        context.waitFor(token, unit);
+    }
+
+    private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+        context.granted(token, unit);
+        tryFinish();
+    }
+
+    private void tryFinish() {
+        assertInState(UnitState.INIT, UnitState.ACTIVE);
+        if(!context.isWaiting()) {
+            state = UnitState.DONE;
+            unitResult.complete(UnitResult.of(scopeGraph.get(), analysis.get(), failures));
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     // Resolution & delays
     ///////////////////////////////////////////////////////////////////////////
 
     private void releaseDelays(S scope) {
-        for(Entry<EdgeOrData<L>, ICompletable<Void>> entry : delays.get(scope)) {
+        for(Entry<EdgeOrData<L>, Delay> entry : delays.get(scope)) {
             final EdgeOrData<L> edge = entry.getKey();
             if(!context.isWaitingFor(CloseLabel.of(scope, edge))) {
-                final ICompletable<Void> future = entry.getValue();
-                logger.debug("released {} on {}(/{})", future, scope, edge);
-                delays.remove(scope, edge, future);
-                self.complete(future, null, null);
+                final Delay delay = entry.getValue();
+                logger.debug("released {} on {}(/{})", delay.future, scope, edge);
+                delays.remove(scope, edge, delay);
+                self.complete(delay.future, org.metaborg.util.unit.Unit.unit, null);
             }
         }
     }
 
     private void releaseDelays(S scope, EdgeOrData<L> edge) {
-        for(ICompletable<Void> future : delays.get(scope, edge)) {
-            logger.debug("released {} on {}/{}", future, scope, edge);
-            delays.remove(scope, edge, future);
-            self.complete(future, null, null);
+        for(Delay delay : delays.get(scope, edge)) {
+            logger.debug("released {} on {}/{}", delay.future, scope, edge);
+            delays.remove(scope, edge, delay);
+            self.complete(delay.future, org.metaborg.util.unit.Unit.unit, null);
         }
     }
 
@@ -472,20 +451,119 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         return isScopeInitialized(scope) && !context.isWaitingFor(CloseLabel.of(scope, edge));
     }
 
-    private IFuture<Void> isComplete(S scope, EdgeOrData<L> edge) {
-        final CompletableFuture<Void> result = new CompletableFuture<>();
+    private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
+            IActorRef<? extends IUnit<S, L, D, R>> sender) {
         if(isEdgeClosed(scope, edge)) {
-            result.complete(null);
+            return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
         } else {
+            final CompletableFuture<org.metaborg.util.unit.Unit> result = new CompletableFuture<>();
             logger.debug("delayed {} on {}/{}", result, scope, edge);
-            delays.put(scope, edge, result);
+            delays.put(scope, edge, new Delay(result, sender));
+            return result;
         }
-        return result;
+    }
+
+    private class Delay {
+
+        public final ICompletableFuture<org.metaborg.util.unit.Unit> future;
+        public final IActorRef<? extends IUnit<S, L, D, R>> sender;
+
+        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, R>> sender) {
+            this.future = future;
+            this.sender = sender;
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void
+            _deadlocked(SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+        if(!failDelays(waitFors)) {
+            if(waitFors.keySet().size() == 1 && waitFors.containsKey(self)) {
+                failAll(waitFors);
+            }
+        }
+    }
+
+    /**
+     * Fail delays that are part of the deadlock.
+     */
+    private boolean
+            failDelays(SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+        final Set.Transient<Delay> deadlocked = Set.Transient.of();
+        for(IWaitFor<S, L, D> wf : waitFors.values()) {
+            // @formatter:off
+            wf.visit(IWaitFor.cases(
+                initScope -> {
+                    delays.get(initScope.scope()).stream().map(Entry::getValue).filter(d -> waitFors.containsKey(d.sender)).forEach(deadlocked::__insert);
+                },
+                closeScope -> {
+                    delays.get(closeScope.scope()).stream().map(Entry::getValue).filter(d -> waitFors.containsKey(d.sender)).forEach(deadlocked::__insert);
+                },
+                closeLabel -> {
+                    delays.get(closeLabel.scope(), closeLabel.label()).stream().filter(d -> waitFors.containsKey(d.sender)).forEach(deadlocked::__insert);
+                },
+                query -> {},
+                result  -> {},
+                externalRep -> {}
+            ));
+            // @formatter:on
+        }
+
+        for(Delay dl : deadlocked) {
+            delays.inverse().remove(dl);
+            self.complete(dl.future, null, new DeadlockException("Type checker deadlocked."));
+        }
+        return !deadlocked.isEmpty();
+    }
+
+    private void failAll(SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+        // Grants are process immediately, while the result failure is scheduled.
+        // This ensures that all labels are closed by the time the result failure is processed.
+        for(IWaitFor<S, L, D> wf : waitFors.values()) {
+            // @formatter:off
+            wf.visit(IWaitFor.cases(
+                initScope -> {
+                    failures.add(new DeadlockException(initScope.toString()));
+                    granted(initScope, self);
+                    if(!context.owner(initScope.scope()).equals(self)) {
+                        self.async(parent)._initShare(initScope.scope(), Set.Immutable.of(), false);
+                    }
+                    releaseDelays(initScope.scope());
+                },
+                closeScope -> {
+                    failures.add(new DeadlockException(closeScope.toString()));
+                    granted(closeScope, self);
+                    if(!context.owner(closeScope.scope()).equals(self)) {
+                        self.async(parent)._doneSharing(closeScope.scope());
+                    }
+                    releaseDelays(closeScope.scope());
+                },
+                closeLabel -> {
+                    failures.add(new DeadlockException(closeLabel.toString()));
+                    granted(closeLabel, self);
+                    if(!context.owner(closeLabel.scope()).equals(self)) {
+                        self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
+                    }
+                    releaseDelays(closeLabel.scope(), closeLabel.label());
+                },
+                query -> {
+                    logger.error("Unexpected remaining queries.");
+                    throw new IllegalStateException("Unexpected remaining queries.");
+                },
+                result  -> {
+                    self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
+                },
+                externalRep -> {
+                    self.complete(externalRep.future(), null, new DeadlockException(externalRep.toString()));
+                }
+            ));
+            // @formatter:on
+        }
+    }
 
     @SuppressWarnings("unchecked") @Override public void sent(IActor<?> self, IActorRef<?> target,
             java.util.Set<String> tags) {
@@ -504,22 +582,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void suspended(IActor<?> self) {
-        if(state.equals(UnitState.INIT)) {
-            return;
-        }
-        // even when DONE it is important to report suspend, to
-        // have correct deadlock detection of querying units
-
         context.suspended(state, clock);
-    }
-
-    @Override public void stopped(IActor<?> self) {
-        context.stopped(clock);
     }
 
     @Override public void failed(IActor<?> self, Throwable ex) {
         unitResult.completeExceptionally(ex);
-        context.stopped(clock);
     }
 
     ///////////////////////////////////////////////////////////////////////////

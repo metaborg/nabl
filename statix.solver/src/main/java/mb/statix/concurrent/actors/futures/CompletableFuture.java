@@ -1,5 +1,6 @@
 package mb.statix.concurrent.actors.futures;
 
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.functions.CheckedAction1;
@@ -44,8 +45,18 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return result;
     }
 
+    /**
+     * Get the result of this future. Wait if the result if not yet available.
+     */
     @Override public T get() throws ExecutionException, InterruptedException {
         return future.get();
+    }
+
+    /**
+     * Get the result of this future, or null if it has no result yet.
+     */
+    @Override public T getNow() throws CompletionException, InterruptedException {
+        return future.getNow(null);
     }
 
     @Override public void complete(T value, Throwable ex) {

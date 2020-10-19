@@ -1,4 +1,4 @@
-package mb.statix.actors;
+package mb.statix.concurrent.actors;
 
 import java.util.concurrent.ExecutionException;
 

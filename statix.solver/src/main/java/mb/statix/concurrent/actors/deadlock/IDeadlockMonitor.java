@@ -17,11 +17,4 @@ public interface IDeadlockMonitor<N, S, T> {
             MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
             MultiSetMap.Immutable<IActorRef<? extends N>, T> grants);
 
-    default void stopped(Clock<IActorRef<? extends N>> clock) {
-        stopped(clock, MultiSetMap.Immutable.of(), MultiSetMap.Immutable.of());
-    }
-
-    void stopped(Clock<IActorRef<? extends N>> clock, MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
-            MultiSetMap.Immutable<IActorRef<? extends N>, T> grants);
-
 }

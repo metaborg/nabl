@@ -11,6 +11,6 @@ public interface IBroker<S, L, D, R> {
 
     void run();
 
-    IFuture<IResult<S, L, D, R>> result();
+    IFuture<IBrokerResult<S, L, D, R>> result();
 
 }

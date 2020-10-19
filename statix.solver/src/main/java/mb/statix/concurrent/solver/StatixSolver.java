@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.CheckedAction0;
+import org.metaborg.util.functions.CheckedFunction0;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -46,6 +47,12 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.impl.RegExpLabelWF;
+import mb.statix.concurrent.p_raffrayi.impl.RelationLabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.concurrent.util.VarIndexedCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -64,14 +71,9 @@ import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
 import mb.statix.scopegraph.terms.AScope;
 import mb.statix.scopegraph.terms.Scope;
-import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -87,7 +89,6 @@ import mb.statix.solver.persistent.BagTermProperty;
 import mb.statix.solver.persistent.SingletonTermProperty;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.persistent.query.ConstraintQueries;
 import mb.statix.solver.query.IQueryFilter;
 import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -304,12 +305,7 @@ public class StatixSolver {
         } else {
             final Set.Immutable<ITermVar> vars = delay.vars().stream().flatMap(v -> state.unifier().getVars(v).stream())
                     .collect(CapsuleCollectors.toSet());
-            final Set.Immutable<ITermVar> foreignVars = Set.Immutable.subtract(vars, state.vars());
-            if(!foreignVars.isEmpty()) {
-                debug.error("FIXME: query failed on foreign vars {}: {}", foreignVars,
-                        c.toString(state.unifier()::toString));
-                return fail(c);
-            } else if(vars.isEmpty()) {
+            if(vars.isEmpty()) {
                 if(debug.isEnabled(Level.Debug)) {
                     debug.debug("query delayed on no vars, rescheduling: {}", c.toString(state.unifier()::toString));
                 }
@@ -523,15 +519,14 @@ public class StatixSolver {
                 final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
-                final ConstraintContext params = new ConcurrentConstraintContext(debug);
-                final ConstraintQueries cq = new ConstraintQueries(spec, state, params, progress, cancel);
-                final LabelWF<ITerm> labelWF = cq.getLabelWF(filter.getLabelWF());
-                final DataWF<ITerm> dataWF = cq.getDataWF(filter.getDataWF());
-                final LabelOrder<ITerm> labelOrder = cq.getLabelOrder(min.getLabelOrder());
-                final DataLeq<ITerm> dataEquiv = cq.getDataEquiv(min.getDataEquiv());
+                final LabelWF<ITerm> labelWF = new RegExpLabelWF(filter.getLabelWF());
+                final DataWF<ITerm> dataWF = new ConstraintDataWF(filter.getDataWF());
+                final LabelOrder<ITerm> labelOrder = new RelationLabelOrder(min.getLabelOrder());
+                final DataLeq<ITerm> dataEquiv = new ConstraintDataEquiv(min.getDataEquiv());
 
                 final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future =
                         scopeGraph.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
+
                 final K<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel) -> {
                     if(ex != null) {
                         // pattern matching for the brave and stupid
@@ -718,6 +713,59 @@ public class StatixSolver {
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // entailment
+    ///////////////////////////////////////////////////////////////////////////
+
+    private IFuture<Boolean> entails(IConstraint constraint) {
+        final IDebugContext subDebug = debug.subContext();
+        final ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> subContext = scopeGraph.subContext("try");
+        final IState.Immutable subState = state.subState().withResource(subContext.id());
+        final StatixSolver subSolver =
+                new StatixSolver(constraint, spec, subState, completeness, subDebug, progress, cancel, subContext);
+        final IFuture<SolverResult> subResult = subSolver.entail();
+        return subResult.thenCompose(r -> {
+            return absorbDelays(() -> {
+                // check entailment w.r.t. the initial substate, not the current state: otherwise,
+                // some variables may be treated as external while they are not
+                final boolean result;
+                if(Solver.entailed(subState, r, subDebug)) {
+                    if(debug.isEnabled(Level.Debug)) {
+                        debug.debug("constraint {} entailed", constraint.toString(state.unifier()::toString));
+                    }
+                    result = true;
+                } else {
+                    if(debug.isEnabled(Level.Debug)) {
+                        debug.debug("constraint {} not entailed", constraint.toString(state.unifier()::toString));
+                    }
+                    result = false;
+                }
+                return CompletableFuture.completedFuture(result);
+            });
+        });
+    }
+
+    private <T> IFuture<T> absorbDelays(CheckedFunction0<IFuture<T>, Delay> f) {
+        try {
+            return f.apply();
+        } catch(Delay delay) {
+            if(!delay.criticalEdges().isEmpty()) {
+                debug.error("unsuported critical edges {}", delay);
+                throw new IllegalStateException();
+            }
+            final CompletableFuture<T> result = new CompletableFuture<>();
+            try {
+                delayAction(() -> {
+                    absorbDelays(f).whenComplete(result::complete);
+                }, delay.vars());
+            } catch(InterruptedException ex) {
+                result.completeExceptionally(ex);
+            }
+            return result;
+        }
+
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     // Open edges & delayed closes
     ///////////////////////////////////////////////////////////////////////////
 
@@ -805,6 +853,69 @@ public class StatixSolver {
             f.completeExceptionally(ex);
         }
         return f;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // data wf & leq
+    ///////////////////////////////////////////////////////////////////////////
+
+    private class ConstraintDataWF implements DataWF<ITerm> {
+
+        private final Rule constraint;
+
+        public ConstraintDataWF(Rule constraint) {
+            this.constraint = constraint;
+        }
+
+        @Override public IFuture<Boolean> wf(ITerm datum) throws InterruptedException {
+            return absorbDelays(() -> {
+                final IUniDisunifier.Immutable unifier = state.unifier();
+                final IConstraint result;
+                if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
+                    return CompletableFuture.completedFuture(false);
+                }
+                return entails(result);
+            });
+        }
+
+        @Override public String toString() {
+            return constraint.toString(state.unifier()::toString);
+        }
+
+    }
+
+    class ConstraintDataEquiv implements DataLeq<ITerm> {
+
+        private final Rule constraint;
+
+        private volatile Boolean alwaysTrue;
+
+        public ConstraintDataEquiv(Rule constraint) {
+            this.constraint = constraint;
+        }
+
+        @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2) throws InterruptedException {
+            return absorbDelays(() -> {
+                final IUniDisunifier.Immutable unifier = state.unifier();
+                final IConstraint result;
+                if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+                    return CompletableFuture.completedFuture(false);
+                }
+                return entails(result);
+            });
+        }
+
+        @Override public boolean alwaysTrue() throws InterruptedException {
+            if(alwaysTrue != null)
+                return alwaysTrue.booleanValue();
+
+            return alwaysTrue = constraint.isAlways(spec).orElse(false);
+        }
+
+        @Override public String toString() {
+            return constraint.toString(state.unifier()::toString);
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////

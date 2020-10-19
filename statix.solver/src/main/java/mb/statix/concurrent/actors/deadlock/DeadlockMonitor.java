@@ -43,24 +43,16 @@ public class DeadlockMonitor<N, S, T> implements IDeadlockMonitor<N, S, T> {
             MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
             MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
         processBatchedWaitFors(waitFors, grants);
-        wfg.suspend(self.sender(TYPE), state, clock).flatMap(o -> o).ifPresent(deadlock -> {
+        final Deadlock<IActorRef<? extends N>, S, T> deadlock = wfg.suspend(self.sender(TYPE), state, clock);
+        if(!deadlock.isEmpty()) {
             logger.debug("{} deadlocked: {}", self.sender(TYPE), deadlock);
-            logger.debug("wfg: {}", wfg);
             handler.apply(self, deadlock);
-        });
-    }
-
-    @Override public void stopped(Clock<IActorRef<? extends N>> clock,
-            MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
-            MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
-        processBatchedWaitFors(waitFors, grants);
-        wfg.remove(self.sender(TYPE), clock);
-        logger.debug("{} stopped", self.sender(TYPE));
+        }
     }
 
     private void processBatchedWaitFors(MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
             MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
-        // Process batch waitFors and grantes. Process waitFors first, in case the client
+        // Process batch waitFors and grants. Process waitFors first, in case the client
         // does not discharge waitFors locally, but really only batches.
         for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> waitForEntry : waitFors.toMap().entrySet()) {
             for(T waitFor : waitForEntry.getValue()) {

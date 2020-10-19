@@ -2,6 +2,7 @@ package mb.statix.concurrent.actors.futures;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.functions.CheckedAction1;
@@ -80,6 +81,10 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
 
     @Override public List<T> get() throws ExecutionException, InterruptedException {
         return result.get();
+    }
+
+    @Override public List<T> getNow() throws CompletionException, InterruptedException {
+        return result.getNow();
     }
 
     @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super List<T>, ? extends U, ?> handler) {

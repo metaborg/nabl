@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.Lists;
 
@@ -13,17 +14,17 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.Futures;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.scopegraph.terms.path.Paths;
 
 abstract class NameResolution<S, L, D> {
@@ -62,47 +63,41 @@ abstract class NameResolution<S, L, D> {
         final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
         logger.trace("env {}", path);
         final Set.Transient<EdgeOrData<L>> labels = Set.Transient.of();
-        try {
-            if(re.accepting()) {
-                labels.__insert(dataLabel);
-            }
-            for(L l : edgeLabels) {
-                if(re.step(l).isPresent()) {
-                    labels.__insert(EdgeOrData.edge(l));
-                }
-            }
-            externalEnv(path, re, labelOrder, dataWF, dataEquiv)
-                    .orElseGet(() -> env_L(path, re, labels.freeze(), cancel)).whenComplete(result::complete);
-        } catch(InterruptedException | ResolutionException ex) {
-            result.completeExceptionally(ex);
+        if(re.accepting()) {
+            labels.__insert(dataLabel);
         }
+        for(L l : edgeLabels) {
+            if(re.step(l).isPresent()) {
+                labels.__insert(EdgeOrData.edge(l));
+            }
+        }
+        externalEnv(path, re, labelOrder, dataWF, dataEquiv).orElseGet(() -> env_L(path, re, labels.freeze(), cancel))
+                .whenComplete(result::complete);
         return result;
     }
 
     private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWF<L> re, Set.Immutable<EdgeOrData<L>> L,
             ICancel cancel) {
         logger.trace("env_L {} {} {}", path, re, L);
-        try {
-            cancel.throwIfCancelled();
-            final Set<EdgeOrData<L>> max_L = max(L);
-            final List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
-            for(EdgeOrData<L> l : max_L) {
-                envs.add(env_lL(path, re, l, smaller(L, l), cancel));
-            }
-            final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
-            logger.trace("env_L {} {} {}: listEnv: {}", path, re, L, listEnv);
-            listEnv.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: listResult {}", path, re, L, listEnv));
-            final IFuture<Env<S, L, D>> env = listEnv.thenApply((es) -> {
-                final Env.Builder<S, L, D> envBuilder = Env.builder();
-                es.forEach(envBuilder::addAll);
-                return envBuilder.build();
-            });
-            logger.trace("env_L {} {} {}: env: {}", path, re, L, env);
-            env.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result {}", path, re, L, env));
-            return env;
-        } catch(ResolutionException | InterruptedException ex) {
-            return CompletableFuture.completedExceptionally(ex);
+        if(cancel.cancelled()) {
+            return CompletableFuture.completedExceptionally(new InterruptedException());
         }
+        final Set<EdgeOrData<L>> max_L = max(L);
+        final List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
+        for(EdgeOrData<L> l : max_L) {
+            envs.add(env_lL(path, re, l, smaller(L, l), cancel));
+        }
+        final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
+        logger.trace("env_L {} {} {}: listEnv: {}", path, re, L, listEnv);
+        listEnv.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: listResult {}", path, re, L, listEnv));
+        final IFuture<Env<S, L, D>> env = listEnv.thenApply((es) -> {
+            final Env.Builder<S, L, D> envBuilder = Env.builder();
+            es.forEach(envBuilder::addAll);
+            return envBuilder.build();
+        });
+        logger.trace("env_L {} {} {}: env: {}", path, re, L, env);
+        env.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result {}", path, re, L, env));
+        return env;
     }
 
     private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l,
@@ -117,14 +112,13 @@ abstract class NameResolution<S, L, D> {
             final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
             logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
             env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
-            return env2.thenApply(e2 -> {
+            return env2.thenCompose(e2 -> {
                 return shadows(e1, e2);
             });
         });
     }
 
-    private Set.Immutable<EdgeOrData<L>> max(Set.Immutable<EdgeOrData<L>> L)
-            throws ResolutionException, InterruptedException {
+    private Set.Immutable<EdgeOrData<L>> max(Set.Immutable<EdgeOrData<L>> L) {
         final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
@@ -142,8 +136,7 @@ abstract class NameResolution<S, L, D> {
         return max.freeze();
     }
 
-    private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
-            throws ResolutionException, InterruptedException {
+    private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1) {
         final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
@@ -156,7 +149,7 @@ abstract class NameResolution<S, L, D> {
     private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
             return l.matchInResolution(() -> env_data(path, re), lbl -> env_edges(path, re, lbl, cancel));
-        } catch(ResolutionException | InterruptedException e) {
+        } catch(Exception e) {
             throw new IllegalStateException("Should not happen.");
         }
     }
@@ -165,18 +158,18 @@ abstract class NameResolution<S, L, D> {
         logger.trace("env_data {} {}", path, re);
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
         logger.trace("env_data {} {}: datum {}", path, re, datum);
-        final IFuture<Env<S, L, D>> env = datum.thenApply(d -> {
-            try {
-                if(!d.isPresent() || !dataWF.wf(d.get())) {
+        final IFuture<Env<S, L, D>> env = datum.thenCompose(d -> {
+            if(!d.isPresent()) {
+                return CompletableFuture.completedFuture(Env.empty());
+            }
+            return dataWF.wf(d.get()).thenApply(wf -> {
+                if(!wf) {
                     return Env.empty();
                 }
-            } catch(Throwable t) {
-                logger.error("Unexpected exception in dataWf", t);
-                return Env.empty();
-            }
-            logger.trace("env_data {} {}: datum {}", path, re, d.get());
-            final IResolutionPath<S, L, D> resPath = Paths.resolve(path, d.get());
-            return Env.of(resPath);
+                logger.trace("env_data {} {}: datum {}", path, re, d.get());
+                final IResolutionPath<S, L, D> resPath = Paths.resolve(path, d.get());
+                return Env.of(resPath);
+            });
         });
         logger.trace("env_data {} {}: env {}", path, re, env);
         env.whenComplete((r, ex) -> logger.trace("env_data {} {}: result {}", path, re, env));
@@ -185,58 +178,46 @@ abstract class NameResolution<S, L, D> {
 
     private IFuture<Env<S, L, D>> env_edges(IScopePath<S, L> path, LabelWF<L> re, L l, ICancel cancel) {
         logger.trace("env_edges {} {} {}", path, re, l);
-        try {
-            final LabelWF<L> newRe = re.step(l).get();
-            final IFuture<Iterable<S>> scopes = getEdges(path.getTarget(), l);
-            logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
-            return scopes.thenCompose(ss -> {
-                List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
-                for(S nextScope : ss) {
-                    final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
-                    if(p.isPresent()) {
-                        envs.add(env(p.get(), newRe, cancel));
-                    }
+        final LabelWF<L> newRe = re.step(l).get();
+        final IFuture<Iterable<S>> scopes = getEdges(path.getTarget(), l);
+        logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
+        return scopes.thenCompose(ss -> {
+            List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
+            for(S nextScope : ss) {
+                final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
+                if(p.isPresent()) {
+                    envs.add(env(p.get(), newRe, cancel));
                 }
-                final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
-                logger.trace("env_edges {} {} {}: listEnv {}", path, re, l, listEnv);
-                listEnv.whenComplete(
-                        (r, ex) -> logger.trace("env_edges {} {} {}: listResult {}", path, re, l, listEnv));
-                final IFuture<Env<S, L, D>> env = listEnv.thenApply(es -> {
-                    final Env.Builder<S, L, D> envBuilder = Env.builder();
-                    es.forEach(envBuilder::addAll);
-                    return envBuilder.build();
-                });
-                logger.trace("env_edges {} {} {}: env {}", path, re, l, env);
-                env.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: result {}", path, re, l, env));
-                return env;
+            }
+            final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
+            logger.trace("env_edges {} {} {}: listEnv {}", path, re, l, listEnv);
+            listEnv.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: listResult {}", path, re, l, listEnv));
+            final IFuture<Env<S, L, D>> env = listEnv.thenApply(es -> {
+                final Env.Builder<S, L, D> envBuilder = Env.builder();
+                es.forEach(envBuilder::addAll);
+                return envBuilder.build();
             });
-        } catch(ResolutionException | InterruptedException ex) {
-            return CompletableFuture.completedExceptionally(ex);
-        }
+            logger.trace("env_edges {} {} {}: env {}", path, re, l, env);
+            env.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: result {}", path, re, l, env));
+            return env;
+        });
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // environments                                                          //
     ///////////////////////////////////////////////////////////////////////////
 
-    private Env<S, L, D> shadows(Env<S, L, D> env1, Env<S, L, D> env2)
-            throws ResolutionException, InterruptedException {
+    private IFuture<Env<S, L, D>> shadows(Env<S, L, D> env1, Env<S, L, D> env2) {
         final Env.Builder<S, L, D> env = Env.builder();
         env.addAll(env1);
-        outer: for(IResolutionPath<S, L, D> p2 : env2) {
-            for(IResolutionPath<S, L, D> p1 : env1) {
-                try {
-                    if(dataEquiv.leq(p2.getDatum(), p1.getDatum())) {
-                        continue outer; // skip
-                    }
-                } catch(Throwable t) {
-                    logger.error("Unexpected exception in dataEquiv", t);
-                    continue outer;
+        return Futures.reduce(Unit.unit, env2, (u, p2) -> {
+            return Futures.noneMatch(env1, p1 -> dataEquiv.leq(p2.getDatum(), p1.getDatum())).thenApply(noneMatch -> {
+                if(noneMatch) {
+                    env.add(p2);
                 }
-            }
-            env.add(p2);
-        }
-        return env.build();
+                return Unit.unit;
+            });
+        }).thenApply(u -> env.build());
     }
 
 }

@@ -1,5 +1,6 @@
 package mb.statix.concurrent.actors.futures;
 
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.functions.CheckedAction1;
@@ -37,6 +38,10 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
 
     @Override public T get() throws ExecutionException {
         throw new ExecutionException(ex);
+    }
+
+    @Override public T getNow() throws CompletionException, InterruptedException {
+        throw new CompletionException(ex);
     }
 
     @Override public void complete(T value, Throwable ex) {
