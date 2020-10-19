@@ -52,6 +52,9 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         if(ex != null) {
             future.completeExceptionally(ex);
         } else {
+            if(value == null) {
+                throw new IllegalArgumentException("null values are not supported");
+            }
             future.complete(value);
         }
     }
@@ -110,15 +113,11 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
     }
 
     public static <T> IFuture<T> completedFuture(T value) {
-        final java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
-        future.complete(value);
-        return new CompletableFuture<>(future);
+        return new CompletedFuture<>(value);
     }
 
     public static <T> IFuture<T> completedExceptionally(Throwable ex) {
-        final java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
-        future.completeExceptionally(ex);
-        return new CompletableFuture<>(future);
+        return new CompletedExceptionallyFuture<>(ex);
     }
 
 }
