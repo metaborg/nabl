@@ -18,11 +18,15 @@ public class SetEvaluator {
             elemMatcher,
             M.appl0("EmptySet", (t) -> () -> Set.Immutable.of()),
             M.appl2("Union", m, m, (t, leftSet, rightSet) -> () -> {
-                return Set.Immutable.union(leftSet.apply(), rightSet.apply());
+                final Set.Immutable<IElement<T>> _leftSet = leftSet.apply();
+                final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
+                return Set.Immutable.union(_leftSet, _rightSet);
             }),
             M.appl3("Isect", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> () -> {
-                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
-                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
+                final Set.Immutable<IElement<T>> _leftSet = leftSet.apply();
+                final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
+                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(_leftSet, proj);
+                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(_rightSet, proj);
                 Set.Transient<IElement<T>> result = Set.Transient.of();
                 for(Object key : leftProj.keySet()) {
                     if(rightProj.containsKey(key)) {
@@ -33,8 +37,10 @@ public class SetEvaluator {
                 return result.freeze();
             }),
             M.appl3("Lsect", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> () -> {
-                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
-                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
+                final Set.Immutable<IElement<T>> _leftSet = leftSet.apply();
+                final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
+                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(_leftSet, proj);
+                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(_rightSet, proj);
                 Set.Transient<IElement<T>> result = Set.Transient.of();
                 for(Object key : leftProj.keySet()) {
                     if(rightProj.containsKey(key)) {
@@ -44,12 +50,14 @@ public class SetEvaluator {
                 return result.freeze();
             }),
             M.appl3("Diff", m, SetTerms.projectionMatcher(), m, (t, leftSet, proj, rightSet) -> () -> {
-                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(leftSet.apply(), proj);
-                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(rightSet.apply(), proj);
+                final Set.Immutable<IElement<T>> _leftSet = leftSet.apply();
+                final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
+                SetMultimap.Immutable<Object,IElement<T>> leftProj = project(_leftSet, proj);
+                SetMultimap.Immutable<Object,IElement<T>> rightProj = project(_rightSet, proj);
                 Set.Transient<IElement<T>> result = Set.Transient.of();
                 for(Object key : leftProj.keySet()) {
                     if(!rightProj.containsKey(key)) {
-                        result.__insertAll(rightProj.get(key));
+                        result.__insertAll(leftProj.get(key));
                     }
                 }
                 return result.freeze();
