@@ -1,5 +1,8 @@
 package mb.nabl2.terms;
 
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
+
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
@@ -274,6 +277,71 @@ public class Terms {
             };
         }
 
+    }
+
+    public static String escapeString(String text) {
+        final StringBuilder sb = new StringBuilder();
+        final StringCharacterIterator it = new StringCharacterIterator(text);
+        while(it.current() != CharacterIterator.DONE) {
+            char c = it.current();
+            switch(c) {
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                case '"':
+                case '\\':
+                    sb.append('\\').append(c);
+                    break;
+                default:
+                    sb.append(c);
+                    break;
+            }
+            it.next();
+        }
+        return sb.toString();
+    }
+
+    public static String unescapeString(String text) {
+        final StringBuilder sb = new StringBuilder();
+        final StringCharacterIterator it = new StringCharacterIterator(text);
+        while(it.current() != CharacterIterator.DONE) {
+            char c1 = it.current();
+            if(c1 == '\\') {
+                char c2 = it.next();
+                if(c2 != CharacterIterator.DONE) {
+                    switch(c2) {
+                        case 'n':
+                            sb.append('\n');
+                            break;
+                        case 'r':
+                            sb.append('\r');
+                            break;
+                        case 't':
+                            sb.append('\t');
+                            break;
+                        case '"':
+                        case '\\':
+                            sb.append(c2);
+                            break;
+                        default:
+                            sb.append(c1).append(c2);
+                            break;
+                    }
+                } else {
+                    sb.append(c1);
+                }
+            } else {
+                sb.append(c1);
+            }
+            it.next();
+        }
+        return sb.toString();
     }
 
 }

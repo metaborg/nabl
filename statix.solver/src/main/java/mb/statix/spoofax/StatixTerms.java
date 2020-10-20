@@ -4,6 +4,8 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -339,7 +341,7 @@ public class StatixTerms {
                 return B.newTuple(args, t.getAttachments());
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
-                return B.newString(string, t.getAttachments());
+                return B.newString(Terms.unescapeString(string), t.getAttachments());
             }),
             intTerm(),
             listTerm(),
@@ -423,7 +425,7 @@ public class StatixTerms {
                 return P.newListTail(elems, tail, t.getAttachments());
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
-                return P.newString(string, t.getAttachments());
+                return P.newString(Terms.unescapeString(string), t.getAttachments());
             }),
             M.appl1("Int", M.stringValue(), (t, integer) -> {
                 return P.newInt(Integer.parseInt(integer), t.getAttachments());
@@ -484,7 +486,7 @@ public class StatixTerms {
     public static IMatcher<List<IMessagePart>> messageContent() {
         // @formatter:off
         return M.cases(
-            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(text))),
+            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(Terms.unescapeString(text)))),
             M.appl1("Formatted", M.listElems(messagePart()), (t, parts) -> parts)
         );
         // @formatter:on
@@ -493,10 +495,48 @@ public class StatixTerms {
     public static IMatcher<IMessagePart> messagePart() {
         // @formatter:off
         return M.cases(
-            M.appl1("Text", M.stringValue(), (t, text) -> new TextPart(text)),
+            M.appl1("Text", M.stringValue(), (t, text) -> new TextPart(unescapeMessageText(text))),
             M.appl1("Term", term(), (t, term) -> new TermPart(term))
         );
         // @formatter:on
+    }
+
+    private static String unescapeMessageText(String text) {
+        final StringBuilder sb = new StringBuilder();
+        final StringCharacterIterator it = new StringCharacterIterator(text);
+        while(it.current() != CharacterIterator.DONE) {
+            char c1 = it.current();
+            if(c1 == '\\') {
+                char c2 = it.next();
+                if(c2 != CharacterIterator.DONE) {
+                    switch(c2) {
+                        case 'n':
+                            sb.append('\n');
+                            break;
+                        case 'r':
+                            sb.append('\r');
+                            break;
+                        case 't':
+                            sb.append('\t');
+                            break;
+                        case '[':
+                        case ']':
+                        case '\\':
+                            sb.append(c2);
+                            break;
+                        default:
+                            sb.append(c1).append(c2);
+                            break;
+                    }
+                } else {
+                    sb.append(c1);
+                }
+            } else {
+                sb.append(c1);
+            }
+            it.next();
+        }
+        return sb.toString();
     }
 
     public static IMatcher<MessageKind> messageKind() {
@@ -545,7 +585,7 @@ public class StatixTerms {
                 }
             },
             list -> explicate(list),
-            string -> B.newAppl("Str", ImmutableList.of(string), term.getAttachments()),
+            string -> B.newAppl("Str", ImmutableList.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
             integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
             blob -> B.newString(blob.toString(), term.getAttachments()),
             var -> explicate(var)
