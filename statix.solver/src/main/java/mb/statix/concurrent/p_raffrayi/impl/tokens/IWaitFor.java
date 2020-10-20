@@ -18,14 +18,14 @@ public interface IWaitFor<S, L, D> {
 
         void on(TypeCheckerResult<S, L, D> result);
 
-        void on(ExternalRep<S, L, D> externalRep);
+        void on(TypeCheckerState<S, L, D> typeCheckerState);
 
     }
 
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
             Action1<CloseScope<S, L, D>> onCloseScope, Action1<CloseLabel<S, L, D>> onCloseLabel,
             Action1<Query<S, L, D>> onQuery, Action1<TypeCheckerResult<S, L, D>> onResult,
-            Action1<ExternalRep<S, L, D>> onExternalRep) {
+            Action1<TypeCheckerState<S, L, D>> onTypeCheckerState) {
         return new Cases<S, L, D>() {
 
             @Override public void on(InitScope<S, L, D> initScope) {
@@ -48,8 +48,8 @@ public interface IWaitFor<S, L, D> {
                 onResult.apply(result);
             }
 
-            @Override public void on(ExternalRep<S, L, D> externalRep) {
-                onExternalRep.apply(externalRep);
+            @Override public void on(TypeCheckerState<S, L, D> typeCheckerState) {
+                onTypeCheckerState.apply(typeCheckerState);
             }
         };
     }
