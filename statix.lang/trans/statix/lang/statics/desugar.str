@@ -13,6 +13,10 @@ imports
 
   statix/runtime/constraints
 
+signature
+  sorts Marker constructors
+    DesugaredAxiomRule : Marker
+
 rules
 
   desugar-all =
@@ -27,7 +31,7 @@ rules
 rules
 
   desugar-rules = bottomup(try(desugar-rule))
-  desugar-rule: AxiomRule(lbl, h) -> Rule(lbl, h, CTrue())
+  desugar-rule: AxiomRule(lbl, h) -> Rule(lbl, h, CTrue()){DesugaredAxiomRule()}
 
 rules
 

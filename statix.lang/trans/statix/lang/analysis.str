@@ -23,7 +23,7 @@ imports
 
 signature
   sorts CustomAnalysis constructors
-    CustomUnitAnalysis : List(Error) * Extensions -> CustomAnalysis
+    CustomUnitAnalysis : List(Error) * List(Warning) * Extensions -> CustomAnalysis
     CustomAnalysis : Extensions -> CustomAnalysis
 
 rules // Analysis
@@ -31,32 +31,36 @@ rules // Analysis
   editor-analyze = nabl2-analyze(desugar-all)
 
   nabl2-custom-analysis-unit-hook:
-      (resource, ast, _) -> CustomUnitAnalysis(e*, ext-c*)
+      (resource, ast, _) -> CustomUnitAnalysis(e*, w*, ext-c*)
     with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
        ; n-e* := <check-module-name(|resource)> ast
        ; nabl2-custom-analysis-info-msg(|"| collecting scope extensions...")
        ; ext-c* := <collect-ext-constraints> ast
+       ; nabl2-custom-analysis-info-msg(|"| detecting accidental axioms...")
+       ; ax-w* := <check-accidental-axioms> ast
        ; nabl2-custom-analysis-info-msg(|"| Done.")
        ; e* := n-e*
+       ; w* := ax-w*
 
   nabl2-custom-analysis-final-hook(|a):
       (resource, _, units) -> result
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
-       ; unit-e* := <map(?CustomUnitAnalysis(<id>, _));concat> units
+       ; unit-e* := <map(?CustomUnitAnalysis(<id>, _, _));concat> units
+       ; unit-w* := <map(?CustomUnitAnalysis(_, <id>, _));concat> units
        ; if <nabl2-analysis-has-errors> a then
             // FIXME Change custom analysis to work as well as possible on results with errors
             (e*, ca) := <empty-custom-analysis>
           else
             (e*, ca) := <nabl2-custom-analysis-final-hook'(|a)> units
           end
-        ; result := ([unit-e*, e*], [], [], ca)
+        ; result := ([unit-e*, e*], [unit-w*], [], ca)
         ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   nabl2-custom-analysis-final-hook'(|a):
       units -> (e*, ca)
     with nabl2-custom-analysis-info-msg(|"| detecting overlapping rules...")
        ; or-e* := <detect-overlapping-rules(|a)>
-       ; ext-c* := <map(?CustomUnitAnalysis(_, <id>));concat> units
+       ; ext-c* := <map(?CustomUnitAnalysis(_, _, <id>));concat> units
        ; nabl2-custom-analysis-info-msg(|"| explicate scope extensions...")
        ; ext-c'* := <explicate-ext-constraints(|a)> ext-c*
        ; <ext-log(prettyprint-Statix-ExtConstraints|"Extension constraints:")> ext-c'*

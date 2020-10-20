@@ -1,0 +1,35 @@
+module statix/lang/accidental-axioms
+
+imports
+
+  libspoofax/term/annotation
+  libspoofax/term/origin
+  
+  signatures/statix/lang/-
+
+  statix/lang/statics/-
+
+rules
+
+  check-accidental-axioms = collect-all(check-accidental-axiom-rules); flatten-list
+
+  check-accidental-axiom-rules:
+      Rules(rs) -> <zip;filter(check-accidental-axiom)> (<init> rs, <Tl> rs)
+
+  check-accidental-axiom: (r1@Rule(_, _, c), r2@Rule(_, _, _)) -> warning
+    where <get-annotation(?DesugaredAxiomRule())> r2;
+          c* := <primitive-constraints> c;
+          max-line := <map(origin-line);list-max> c*;
+          min-col := <origin-column> r1;
+          next-line := <origin-line> r2;
+          next-col := <origin-column> r2;
+          ( <leq> (next-line, max-line)
+          + <gt> (next-col, min-col)
+          )
+    with warning := <debug> (r2, $[Indentation suggests this is a constraint, but preceding full-stop makes it an axiom.])
+
+  primitive-constraints = rec x(
+    ?CExists(_, c); <x> c
+ <+ ?CConj(c1, c2); <conc> (<x> c1, <x> c2)
+ <+ MkSingleton
+  )
