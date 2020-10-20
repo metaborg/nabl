@@ -4,7 +4,9 @@ import java.util.Set;
 
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -58,8 +60,14 @@ public interface ITypeCheckerContext<S, L, D, R> {
     /**
      * Execute scope graph query in the given scope.
      */
-    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
+    default IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
+            LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv) {
+        return query(scope, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+    }
+
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+            DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
+            DataLeqInternal<D> dataEquivInternal);
 
     default ITypeCheckerContext<S, L, D, R> subContext(String subId) {
         final ITypeCheckerContext<S, L, D, R> outer = this;
@@ -100,8 +108,9 @@ public interface ITypeCheckerContext<S, L, D, R> {
             }
 
             @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
-                    DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-                return outer.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
+                    LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
+                    DataLeqInternal<D> dataEquivInternal) {
+                return outer.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
             }
 
         };

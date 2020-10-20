@@ -48,7 +48,7 @@ public class UnitTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Solver
         return solver.solve(root);
     }
 
-    @Override public IFuture<ITerm> getExternalRepresentation(ITerm datum) {
+    @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
         return solver.getExternalRepresentation(datum);
     }
 

@@ -12,7 +12,7 @@ public interface ITypeChecker<S, L, D, R> {
 
     IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, @Nullable S root);
 
-    default IFuture<D> getExternalRepresentation(D datum) {
+    default IFuture<D> getExternalDatum(D datum) {
         return CompletableFuture.completedFuture(datum);
     }
 

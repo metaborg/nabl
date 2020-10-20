@@ -54,9 +54,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
 
     private T impl;
 
+    private volatile Thread thread = null;
     static final ThreadLocal<Actor<?>> current = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get current actor.");
     });
+
 
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get sender when not in message processing context.");
@@ -202,17 +204,25 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @Override public <U> void complete(ICompletable<U> completable, U value, Throwable ex) {
-        try {
-            put(new Complete<>(completable, value, ex), false);
-        } catch(ActorStoppedException e) {
-            completable.completeExceptionally(e);
-        }
+        complete(completable, value, ex, true);
     }
 
     @Override public <U> IFuture<U> schedule(IFuture<U> future) {
         final CompletableFuture<U> completable = new CompletableFuture<>();
-        future.whenComplete((value, ex) -> complete(completable, value, ex));
+        future.whenComplete((value, ex) -> complete(completable, value, ex, true));
         return completable;
+    }
+
+    public <U> void complete(ICompletable<U> completable, U value, Throwable ex, boolean forceSchedule) {
+        if(!forceSchedule && current.get().equals(this)) {
+            completable.complete(value, ex);
+        } else {
+            try {
+                put(new Complete<>(completable, value, ex), false);
+            } catch(ActorStoppedException e) {
+                completable.completeExceptionally(e);
+            }
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -248,6 +258,11 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
      */
     private void run() {
         try {
+            if(thread != null) {
+                logger.error("Actor already running on another thread.");
+                throw new IllegalStateException("Actor already running on another thread.");
+            }
+            thread = Thread.currentThread();
             current.set(this);
             LoggerUtils.setContextId("act:" + id);
 
@@ -279,8 +294,9 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             logger.error("failed", ex);
             doStop(ex);
         } finally {
-            current.remove();
             LoggerUtils.clearContextId();
+            current.remove();
+            thread = null;
         }
     }
 
@@ -383,6 +399,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         }
 
         @Override public void dispatch(T impl) throws ActorException {
+            assertOnActorThread();
+
             final Object returnValue;
             try {
                 Actor.sender.set(sender);
@@ -439,6 +457,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         ///////////////////////////////////////////////////////////////////////
 
         @Override public void complete(U value, Throwable ex) throws ActorStoppedException {
+            assertOnActorThread();
+
             if(!returns.__remove(this)) {
                 throw new IllegalStateException("Dangling return?");
             }
@@ -460,6 +480,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         ///////////////////////////////////////////////////////////////////////
 
         @Override public void dispatch(Object impl) {
+            invoker.assertOnActorThread();
+
             // impl is ignored, since the future does not dispatch on the
             // object directly, instead just calling the handler(s).
             try {
@@ -471,8 +493,6 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 invoker.forEachMonitor(monitor -> {
                     monitor.delivered(invoker, Actor.this, tags);
                 });
-
-
             } finally {
                 Actor.sender.remove();
             }
@@ -501,6 +521,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         ///////////////////////////////////////////////////////////////////////
 
         @Override public void dispatch(Object impl) {
+            assertOnActorThread();
+
             // impl is ignored, since the future does not dispatch on the
             // object directly, instead just calling the handler(s).
             try {
@@ -520,6 +542,8 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private class Stop implements IMessage<T> {
 
         @Override public void dispatch(T impl) throws StopException {
+            assertOnActorThread();
+
             throw new StopException();
         }
 
@@ -527,6 +551,24 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
             return "stop";
         }
 
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Thread correctness
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void assertOnActorThread() {
+        if(thread == null) {
+            logger.error("Actor {} is not running.", this);
+            throw new IllegalStateException("Actor " + this + " is not running.");
+        } else if(thread != Thread.currentThread()) {
+            logger.error("Actor {} is running on a different thread. (This thread is actor {}).", this, current.get());
+            throw new IllegalStateException("Actor " + this
+                    + " is running on a different thread. (This thread is actor " + current.get() + ").");
+        } else if(!current.get().equals(this)) {
+            logger.error("Actor {} is running, but thread and current are inconsistent.", this);
+            throw new IllegalStateException("Actor " + this + " is running, but thread and current are inconsistent.");
+        }
     }
 
 }

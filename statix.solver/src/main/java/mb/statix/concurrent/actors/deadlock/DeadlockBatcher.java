@@ -48,20 +48,20 @@ public class DeadlockBatcher<N, T> implements IDeadlockMonitor<N, T> {
     }
 
     @Override public void waitFor(IActorRef<? extends N> actor, T token) {
-        logger.debug("wait for {}/{}", actor, token);
+        logger.debug("{} wait for {}/{}", self, actor, token);
         pendingWaitFors.put(actor, token);
     }
 
     @Override public void granted(IActorRef<? extends N> actor, T token) {
         if(pendingWaitFors.contains(actor, token)) {
-            logger.debug("locally granted {}/{}", actor, token);
+            logger.debug("{} locally granted {}/{}", self, actor, token);
             pendingWaitFors.remove(actor, token);
         } else {
             if(!committedWaitFors.contains(actor, token)) {
-                logger.error("not waiting for granted {}/{}", actor, token);
+                logger.error("{} not waiting for granted {}/{}", self, actor, token);
                 throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
             }
-            logger.debug("granted {}/{}", actor, token);
+            logger.debug("{} granted {}/{}", self, actor, token);
             committedWaitFors.remove(actor, token);
             pendingGrants.put(actor, token);
         }
@@ -75,7 +75,7 @@ public class DeadlockBatcher<N, T> implements IDeadlockMonitor<N, T> {
 
     private void processBatchedWaitFors(MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
             MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
-        // Process batch waitFors and grantes. Process waitFors first, in case the client
+        // Process batch waitFors and grants. Process waitFors first, in case the client
         // does not discharge waitFors locally, but really only batches.
         for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> waitForEntry : waitFors.toMap().entrySet()) {
             for(T waitFor : waitForEntry.getValue()) {

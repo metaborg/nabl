@@ -4,7 +4,7 @@ import org.immutables.value.Value;
 
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.path.IScopePath;
@@ -17,7 +17,7 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     // @Value.Parameter public abstract LabelWF<L> labelWF();
 
-    @Value.Parameter public abstract DataWF<D> dataWF();
+    @Value.Parameter public abstract DataWf<D> dataWF();
 
     // @Value.Parameter public abstract LabelOrder<L> labelOrder();
 
@@ -29,7 +29,7 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
         cases.on((Query<S, L, D>) this);
     }
 
-    public static <S, L, D> Query<S, L, D> of(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
+    public static <S, L, D> Query<S, L, D> of(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv, IFuture<Env<S, L, D>> future) {
         return Query.of(path, dataWF, future);
     }

@@ -49,11 +49,15 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private final CompletableFuture<IBrokerResult<S, L, D, R>> result;
 
     public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
+        this(scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors());
+    }
+
+    public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism) {
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
 
-        this.system = new ActorSystem();
+        this.system = new ActorSystem(parallelism);
         this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
                 self -> new DeadlockMonitor<>(self, this::handleDeadlock));
         dlm.addMonitor(this);
@@ -115,7 +119,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
                 .nodes().entrySet()) {
             final IActorRef<? extends IUnit<S, L, D, R>> unit = entry.getKey();
             final Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock = entry.getValue();
-            logger.error("deadlock detected: {}", deadlock);
+            logger.debug("deadlock detected: {}", deadlock);
             dlm.async(unit)._deadlocked(clock, deadlock.outgoingWaitFors(unit));
         }
     }

@@ -17,8 +17,6 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.Futures;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.path.IResolutionPath;
@@ -36,26 +34,25 @@ abstract class NameResolution<S, L, D> {
 
     private final LabelOrder<L> labelOrder;
 
-    private final DataWF<D> dataWF;
-    private final DataLeq<D> dataEquiv;
-
-    public NameResolution(Iterable<L> edgeLabels, LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
+    public NameResolution(Iterable<L> edgeLabels, LabelOrder<L> labelOrder) {
         this.dataLabel = EdgeOrData.data();
         this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
 
         this.labelOrder = labelOrder;
-        this.dataWF = dataWF;
-        this.dataEquiv = dataEquiv;
     }
 
     ///////////////////////////////////////////////////////////////////////////
 
     protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
-            LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv);
+            LabelOrder<L> labelOrder);
 
     protected abstract IFuture<Optional<D>> getDatum(S scope);
 
     protected abstract IFuture<Iterable<S>> getEdges(S scope, L label);
+
+    protected abstract IFuture<Boolean> dataWf(D datum, ICancel cancel) throws InterruptedException;
+
+    protected abstract IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException;
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -71,7 +68,7 @@ abstract class NameResolution<S, L, D> {
                 labels.__insert(EdgeOrData.edge(l));
             }
         }
-        externalEnv(path, re, labelOrder, dataWF, dataEquiv).orElseGet(() -> env_L(path, re, labels.freeze(), cancel))
+        externalEnv(path, re, labelOrder).orElseGet(() -> env_L(path, re, labels.freeze(), cancel))
                 .whenComplete(result::complete);
         return result;
     }
@@ -106,14 +103,14 @@ abstract class NameResolution<S, L, D> {
         logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
         env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
         return env1.thenCompose(e1 -> {
-            if(!e1.isEmpty() && dataEquiv.alwaysTrue()) {
-                return CompletableFuture.completedFuture(e1);
-            }
+            //if(!e1.isEmpty() && dataEquiv.alwaysTrue()) {
+            //    return CompletableFuture.completedFuture(e1);
+            //}
             final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
             logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
             env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
             return env2.thenCompose(e2 -> {
-                return shadows(e1, e2);
+                return shadows(e1, e2, cancel);
             });
         });
     }
@@ -148,13 +145,13 @@ abstract class NameResolution<S, L, D> {
 
     private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
-            return l.matchInResolution(() -> env_data(path, re), lbl -> env_edges(path, re, lbl, cancel));
+            return l.matchInResolution(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
         } catch(Exception e) {
             throw new IllegalStateException("Should not happen.");
         }
     }
 
-    private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWF<L> re) {
+    private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
         logger.trace("env_data {} {}", path, re);
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
         logger.trace("env_data {} {}: datum {}", path, re, datum);
@@ -162,7 +159,7 @@ abstract class NameResolution<S, L, D> {
             if(!d.isPresent()) {
                 return CompletableFuture.completedFuture(Env.empty());
             }
-            return dataWF.wf(d.get()).thenApply(wf -> {
+            return dataWf(d.get(), cancel).thenApply(wf -> {
                 if(!wf) {
                     return Env.empty();
                 }
@@ -207,11 +204,11 @@ abstract class NameResolution<S, L, D> {
     // environments                                                          //
     ///////////////////////////////////////////////////////////////////////////
 
-    private IFuture<Env<S, L, D>> shadows(Env<S, L, D> env1, Env<S, L, D> env2) {
+    private IFuture<Env<S, L, D>> shadows(Env<S, L, D> env1, Env<S, L, D> env2, ICancel cancel) {
         final Env.Builder<S, L, D> env = Env.builder();
         env.addAll(env1);
         return Futures.reduce(Unit.unit, env2, (u, p2) -> {
-            return Futures.noneMatch(env1, p1 -> dataEquiv.leq(p2.getDatum(), p1.getDatum())).thenApply(noneMatch -> {
+            return Futures.noneMatch(env1, p1 -> dataLeq(p2.getDatum(), p1.getDatum(), cancel)).thenApply(noneMatch -> {
                 if(noneMatch) {
                     env.add(p2);
                 }

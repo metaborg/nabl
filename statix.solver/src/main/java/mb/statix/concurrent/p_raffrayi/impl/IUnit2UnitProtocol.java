@@ -3,7 +3,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 import mb.statix.concurrent.actors.MessageTags;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.path.IScopePath;
@@ -25,7 +25,7 @@ public interface IUnit2UnitProtocol<S, L, D, R> {
 
     @MessageTags("stuckness") void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    @MessageTags("stuckness") IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
+    @MessageTags("stuckness") IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
 
 }

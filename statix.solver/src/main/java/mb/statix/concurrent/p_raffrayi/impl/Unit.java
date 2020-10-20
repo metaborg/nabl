@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.Ref;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.Lists;
 
@@ -42,7 +43,9 @@ import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerState;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.scopegraph.IScopeGraph;
@@ -209,12 +212,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         doCloseScope(self, scope);
     }
 
-    @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+    @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+            DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
+            DataLeqInternal<D> dataEquivInternal) {
         assertInState(UnitState.ACTIVE);
 
         final IScopePath<S, L> path = Paths.empty(scope);
-        final IFuture<Env<S, L, D>> result = doQuery(self, path, labelWF, dataWF, labelOrder, dataEquiv);
+        final IFuture<Env<S, L, D>> result =
+                doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final Query<S, L, D> wf = Query.of(path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(wf, self);
         return self.schedule(result).whenComplete((env, ex) -> {
@@ -246,9 +251,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
-    @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
+    @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-        return doQuery(self.sender(TYPE), path, labelWF, dataWF, labelOrder, dataEquiv);
+        return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -337,98 +342,100 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, R>> sender, IScopePath<S, L> path,
-            LabelWF<L> labelWF, DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+            LabelWF<L> labelWF, LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv,
+            DataWfInternal<D> dataWfInternal, DataLeqInternal<D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
 
-        // wrap predicates to register wait-fors
-        final DataWF<D> _dataWF = new DataWF<D>() {
+        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(scopeGraph.get().getEdgeLabels(), labelOrder) {
 
-            @Override public IFuture<Boolean> wf(D d) throws InterruptedException {
-                final ICompletableFuture<Boolean> result = new CompletableFuture<>();
-                dataWF.wf(d).whenComplete(result::complete);
-                final TypeCheckerState<S, L, D> token = TypeCheckerState.of(d, result);
-                waitFor(token, self);
-                return result.whenComplete((r, ex) -> {
-                    granted(token, self);
+            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
+                    LabelOrder<L> labelOrder) {
+                final S scope = path.getTarget();
+                final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+                if(owner.equals(self)) {
+                    logger.debug("local env {}", scope);
+                    return Optional.empty();
+                } else {
+                    logger.debug("remote env {} at {}", scope, owner);
+                    // this code mirrors query(...)
+                    final IFuture<Env<S, L, D>> result =
+                            self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                    final Query<S, L, D> wf = Query.of(path, re, dataWF, labelOrder, dataEquiv, result);
+                    waitFor(wf, owner);
+                    return Optional.of(result.whenComplete((r, ex) -> {
+                        logger.debug("got answer from {}", sender);
+                        granted(wf, owner);
+                        tryFinish();
+                    }));
+                }
+            }
+
+            @Override protected IFuture<Optional<D>> getDatum(S scope) {
+                return isComplete(scope, EdgeOrData.data(), sender).thenCompose(__ -> {
+                    final Optional<D> datum;
+                    if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
+                        return CompletableFuture.completedFuture(Optional.empty());
+                    }
+                    if(external) {
+                        logger.debug("require external rep for {}", datum.get());
+                        final ICompletableFuture<D> externalRep = new CompletableFuture<>();
+                        typeChecker.getExternalDatum(datum.get()).whenComplete(externalRep::complete);
+                        final IWaitFor<S, L, D> token = TypeCheckerState.of(datum.get(), externalRep);
+                        waitFor(token, self);
+                        return externalRep.whenComplete((rep, ex) -> {
+                            self.assertOnActorThread();
+                            granted(token, self);
+                            tryFinish();
+                        }).thenApply(rep -> {
+                            logger.debug("got external rep {} for {}", rep, datum.get());
+                            return Optional.of(rep);
+                        });
+                    } else {
+                        return CompletableFuture.completedFuture(datum);
+                    }
                 });
             }
 
-        };
-        final DataLeq<D> _dataEquiv = new DataLeq<D>() {
-
-            @Override public IFuture<Boolean> leq(D d1, D d2) throws InterruptedException {
-                final ICompletableFuture<Boolean> result = new CompletableFuture<>();
-                dataEquiv.leq(d1, d2).whenComplete(result::complete);
-                final TypeCheckerState<S, L, D> token = TypeCheckerState.of(d1/*FIXME d2*/, result);
-                waitFor(token, self);
-                return result.whenComplete((r, ex) -> {
-                    granted(token, self);
+            @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
+                return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
+                    return scopeGraph.get().getEdges(scope, label);
                 });
             }
 
-            @Override public boolean alwaysTrue() throws InterruptedException {
-                return dataEquiv.alwaysTrue();
+            @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
+                if(external || dataWfInternal == null) {
+                    return CompletableFuture.completedFuture(dataWF.wf(d, cancel));
+                } else {
+                    final ICompletableFuture<Boolean> result = new CompletableFuture<>();
+                    dataWfInternal.wf(d, cancel).whenComplete(result::complete);
+                    final TypeCheckerState<S, L, D> token = TypeCheckerState.of(d, result);
+                    waitFor(token, self);
+                    return result.whenComplete((r, ex) -> {
+                        self.assertOnActorThread();
+                        granted(token, self);
+                        tryFinish();
+                    });
+                }
+            }
+
+            @Override protected IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+                if(external || dataEquivInternal == null) {
+                    return CompletableFuture.completedFuture(dataEquiv.leq(d1, d2, cancel));
+                } else {
+                    final ICompletableFuture<Boolean> result = new CompletableFuture<>();
+                    dataEquivInternal.leq(d1, d2, cancel).whenComplete(result::complete);
+                    final TypeCheckerState<S, L, D> token = TypeCheckerState.of(d1/*FIXME d2*/, result);
+                    waitFor(token, self);
+                    return result.whenComplete((r, ex) -> {
+                        self.assertOnActorThread();
+                        granted(token, self);
+                        tryFinish();
+                    });
+                }
             }
 
         };
-
-        final NameResolution<S, L, D> nr =
-                new NameResolution<S, L, D>(scopeGraph.get().getEdgeLabels(), labelOrder, _dataWF, _dataEquiv) {
-
-                    @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
-                            LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv) {
-                        final S scope = path.getTarget();
-                        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
-                        if(owner.equals(self)) {
-                            logger.debug("local env {}", scope);
-                            return Optional.empty();
-                        } else {
-                            logger.debug("remote env {} at {}", scope, owner);
-                            // this code mirrors query(...)
-                            final IFuture<Env<S, L, D>> result =
-                                    self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
-                            final Query<S, L, D> wf = Query.of(path, re, dataWF, labelOrder, dataEquiv, result);
-                            waitFor(wf, owner);
-                            return Optional.of(result.whenComplete((r, ex) -> {
-                                logger.debug("got answer from {}", sender);
-                                granted(wf, owner);
-                                tryFinish();
-                            }));
-                        }
-                    }
-
-                    @Override protected IFuture<Optional<D>> getDatum(S scope) {
-                        return isComplete(scope, EdgeOrData.data(), sender).thenCompose(__ -> {
-                            final Optional<D> datum;
-                            if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
-                                return CompletableFuture.completedFuture(Optional.empty());
-                            }
-                            if(external) {
-                                logger.debug("require external rep for {}", datum.get());
-                                final ICompletableFuture<D> externalRep = new CompletableFuture<>();
-                                typeChecker.getExternalRepresentation(datum.get()).whenComplete(externalRep::complete);
-                                final IWaitFor<S, L, D> token = TypeCheckerState.of(datum.get(), externalRep);
-                                waitFor(token, self);
-                                return externalRep.whenComplete((rep, ex) -> {
-                                    granted(token, self);
-                                }).thenApply(rep -> {
-                                    logger.debug("got external rep {} for {}", rep, datum.get());
-                                    return Optional.of(rep);
-                                });
-                            } else {
-                                return CompletableFuture.completedFuture(datum);
-                            }
-                        });
-                    }
-
-                    @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
-                        return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
-                            return scopeGraph.get().getEdges(scope, label);
-                        });
-                    }
-
-                };
 
         final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
         result.whenComplete((env, ex) -> {
@@ -442,12 +449,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     private void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-        logger.info("{} wait for {}/{} ", self, unit, token);
         context.waitFor(token, unit);
     }
 
     private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-        logger.info("{} was granted {}/{} ", self, unit, token);
         context.granted(token, unit);
     }
 
@@ -499,15 +504,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
             IActorRef<? extends IUnit<S, L, D, R>> sender) {
         if(isEdgeClosed(scope, edge)) {
-            logger.info("immediate {}/{}", scope, edge);
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
         } else {
             final CompletableFuture<org.metaborg.util.unit.Unit> result = new CompletableFuture<>();
-            logger.info("delayed {} on {}/{}", result, scope, edge);
             delays.put(scope, edge, new Delay(result, sender));
-            return result.whenComplete((r, ex) -> {
-                logger.info("released {} on {}/{}", result, scope, edge);
-            });
+            return result;
         }
     }
 
@@ -533,16 +534,17 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     @Override public void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock,
             SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+        self.assertOnActorThread();
+
         if(!this.clock.equals(clock)) {
             // Deadlock is detected even when not all units are suspended---only the component is enough.
             // This means the unit could receive messages between suspend and the deadlock. However, they
             // should not influence the deadlocked state, as received queries from other units (even when
             // forwarded, thus creating a wait-for), do not cause progress on this unit. Eventually, we deadlock
             // would be there again.
-            logger.warn("stale deadlock");
+            logger.debug("stale deadlock");
             return;
         }
-        logger.info("delays {}", delays);
         this.clock = this.clock.sent(self).delivered(self); // increase local clock to ensure deadlock detection after this
         if(waitFors.keySet().size() == 1 && waitFors.containsKey(self)) {
             if(!failDelays(waitFors) && !failInternalState(waitFors)) {
@@ -712,6 +714,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(isEdgeClosed(scope, edge)) {
             throw new IllegalArgumentException("Label " + scope + "/" + edge + " is not open on " + self + ".");
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // toString
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public String toString() {
+        return "Unit{" + self.id() + "}";
     }
 
 }

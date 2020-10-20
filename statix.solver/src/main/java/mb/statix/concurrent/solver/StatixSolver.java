@@ -19,6 +19,7 @@ import org.metaborg.util.functions.CheckedFunction0;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
@@ -50,7 +51,9 @@ import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.impl.RegExpLabelWF;
 import mb.statix.concurrent.p_raffrayi.impl.RelationLabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
-import mb.statix.concurrent.p_raffrayi.nameresolution.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
 import mb.statix.concurrent.util.VarIndexedCollection;
@@ -85,6 +88,7 @@ import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.BagTermProperty;
 import mb.statix.solver.persistent.SingletonTermProperty;
 import mb.statix.solver.persistent.Solver;
@@ -520,12 +524,14 @@ public class StatixSolver {
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
                 final LabelWF<ITerm> labelWF = new RegExpLabelWF(filter.getLabelWF());
-                final DataWF<ITerm> dataWF = new ConstraintDataWF(filter.getDataWF());
                 final LabelOrder<ITerm> labelOrder = new RelationLabelOrder(min.getLabelOrder());
-                final DataLeq<ITerm> dataEquiv = new ConstraintDataEquiv(min.getDataEquiv());
+                final DataWf<ITerm> dataWF = new ConstraintDataWF(spec, state, filter.getDataWF());
+                final DataLeq<ITerm> dataEquiv = new ConstraintDataEquiv(spec, state, min.getDataEquiv());
+                final DataWfInternal<ITerm> dataWFInternal = new ConstraintDataWFInternal(filter.getDataWF());
+                final DataLeqInternal<ITerm> dataEquivInternal = new ConstraintDataEquivInternal(min.getDataEquiv());
 
-                final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future =
-                        scopeGraph.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
+                final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future = scopeGraph
+                        .query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
 
                 final K<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel) -> {
                     if(ex != null) {
@@ -533,10 +539,15 @@ public class StatixSolver {
                         try {
                             throw ex;
                         } catch(ResolutionDelayException rde) {
-                            debug.error("delayed query (unsupported) {}", rde, c.toString(state.unifier()::toString));
+                            if(debug.isEnabled(Level.Debug)) {
+                                debug.debug("delayed query (unsupported) {}", rde,
+                                        c.toString(state.unifier()::toString));
+                            }
                             return fail(c);
                         } catch(DeadlockException dle) {
-                            debug.error("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
+                            if(debug.isEnabled(Level.Debug)) {
+                                debug.debug("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
+                            }
                             return fail(c);
                         } catch(Throwable t) {
                             if(debug.isEnabled(Level.Debug)) {
@@ -859,15 +870,47 @@ public class StatixSolver {
     // data wf & leq
     ///////////////////////////////////////////////////////////////////////////
 
-    private class ConstraintDataWF implements DataWF<ITerm> {
+    private static class ConstraintDataWF implements DataWf<ITerm> {
 
+        private final Spec spec;
+        private final IState.Immutable state;
         private final Rule constraint;
 
-        public ConstraintDataWF(Rule constraint) {
+        public ConstraintDataWF(Spec spec, IState.Immutable state, Rule constraint) {
+            this.spec = spec;
+            this.state = state;
             this.constraint = constraint;
         }
 
-        @Override public IFuture<Boolean> wf(ITerm datum) throws InterruptedException {
+        @Override public boolean wf(ITerm datum, ICancel cancel) throws InterruptedException {
+            try {
+                final IUniDisunifier.Immutable unifier = state.unifier();
+                final IConstraint result;
+                if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
+                    return false;
+                }
+                return Solver.entails(spec, state, result, (s, l, st) -> true, new NullDebugContext(),
+                        new NullProgress(), cancel);
+            } catch(Delay e) {
+                throw new IllegalStateException("Unexpected delay.", e);
+            }
+        }
+
+        @Override public String toString() {
+            return constraint.toString(state.unifier()::toString);
+        }
+
+    }
+
+    private class ConstraintDataWFInternal implements DataWfInternal<ITerm> {
+
+        private final Rule constraint;
+
+        public ConstraintDataWFInternal(Rule constraint) {
+            this.constraint = constraint;
+        }
+
+        @Override public IFuture<Boolean> wf(ITerm datum, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 final IUniDisunifier.Immutable unifier = state.unifier();
                 final IConstraint result;
@@ -884,17 +927,47 @@ public class StatixSolver {
 
     }
 
-    class ConstraintDataEquiv implements DataLeq<ITerm> {
+    private static class ConstraintDataEquiv implements DataLeq<ITerm> {
 
+        private final Spec spec;
+        private final IState.Immutable state;
         private final Rule constraint;
 
-        private volatile Boolean alwaysTrue;
-
-        public ConstraintDataEquiv(Rule constraint) {
+        public ConstraintDataEquiv(Spec spec, IState.Immutable state, Rule constraint) {
+            this.spec = spec;
+            this.state = state;
             this.constraint = constraint;
         }
 
-        @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2) throws InterruptedException {
+        @Override public boolean leq(ITerm datum1, ITerm datum2, ICancel cancel) throws InterruptedException {
+            try {
+                final IUniDisunifier.Immutable unifier = state.unifier();
+                final IConstraint result;
+                if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+                    return false;
+                }
+                return Solver.entails(spec, state, result, (s, l, st) -> true, new NullDebugContext(),
+                        new NullProgress(), cancel);
+            } catch(Delay e) {
+                throw new IllegalStateException("Unexpected delay.", e);
+            }
+        }
+
+        @Override public String toString() {
+            return constraint.toString(state.unifier()::toString);
+        }
+
+    }
+
+    private class ConstraintDataEquivInternal implements DataLeqInternal<ITerm> {
+
+        private final Rule constraint;
+
+        public ConstraintDataEquivInternal(Rule constraint) {
+            this.constraint = constraint;
+        }
+
+        @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 final IUniDisunifier.Immutable unifier = state.unifier();
                 final IConstraint result;
@@ -903,13 +976,6 @@ public class StatixSolver {
                 }
                 return entails(result);
             });
-        }
-
-        @Override public boolean alwaysTrue() throws InterruptedException {
-            if(alwaysTrue != null)
-                return alwaysTrue.booleanValue();
-
-            return alwaysTrue = constraint.isAlways(spec).orElse(false);
         }
 
         @Override public String toString() {

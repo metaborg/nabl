@@ -29,8 +29,12 @@ public class ActorSystem implements IActorSystem {
     private final IActorContext context;
 
     public ActorSystem() {
+        this(Runtime.getRuntime().availableProcessors());
+    }
+
+    public ActorSystem(int parallelism) {
         this.actors = Maps.newHashMap();
-        this.executorService = Executors.newWorkStealingPool();
+        this.executorService = Executors.newWorkStealingPool(parallelism);
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
