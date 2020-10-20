@@ -29,7 +29,7 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
     @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler) {
         try {
             handler.apply(result, null);
-            return this;
+            return CompletableFuture.completedFuture(result);
         } catch(Throwable ex) {
             return CompletableFuture.completedExceptionally(ex);
         }

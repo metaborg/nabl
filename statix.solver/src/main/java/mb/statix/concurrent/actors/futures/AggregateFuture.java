@@ -41,33 +41,43 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
                 whenComplete(j, r, ex);
             });
         }
-        synchronized(lock) {
-            fireIfComplete();
-        }
+        fireIfComplete();
     }
 
     private void whenComplete(int i, T r, Throwable ex) {
         // INVARIANT count > 0
         synchronized(lock) {
-            if(ex != null) {
-                logger.trace("{} completed {}: exception", this, i);
-                remaining = -1; // count will never be 0 and trigger completion
-                result.completeExceptionally(ex);
-            } else {
-                logger.trace("{} completed {}: value", this, i);
-                remaining -= 1;
-                results[i] = r;
+            if(remaining > 0) {
+                if(ex != null) {
+                    logger.trace("{} completed {}: exception", this, i);
+                    remaining = -1; // count will never be 0 and trigger completion
+                } else if(remaining > 0) {
+                    logger.trace("{} completed {}: value", this, i);
+                    remaining -= 1;
+                    results[i] = r;
+                }
             }
+        }
+        if(ex != null) {
+            result.completeExceptionally(ex);
+        } else {
             fireIfComplete();
         }
     }
 
     private void fireIfComplete() {
-        if(remaining == 0) {
-            logger.trace("{} done: completed all", this);
-            result.complete(Arrays.asList(results));
-        } else {
-            logger.trace("{} open: {} remaining", this, remaining);
+        final List<T> results;
+        synchronized(lock) {
+            if(remaining == 0) {
+                logger.trace("{} done: completed all", this);
+                results = Arrays.asList(this.results);
+            } else {
+                logger.trace("{} open: {} remaining", this, remaining);
+                results = null;
+            }
+        }
+        if(results != null) {
+            result.complete(results);
         }
     }
 

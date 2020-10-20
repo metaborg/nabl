@@ -30,7 +30,7 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
     @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler) {
         try {
             handler.apply(null, ex);
-            return this;
+            return CompletableFuture.completedExceptionally(ex);
         } catch(Throwable ex) {
             return CompletableFuture.completedExceptionally(ex);
         }
