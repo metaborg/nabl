@@ -22,11 +22,15 @@ public class ActorSystem implements IActorSystem {
 
     private static final ILogger logger = LoggerUtils.logger(ActorSystem.class);
 
+    @SuppressWarnings("unused") private static final int PREEMPT_FACTOR = 3;
+    @SuppressWarnings("unused") private static final int RESCHEDULE_FACTOR = 7;
+
     private final Object lock = new Object();
     private final Map<String, Actor<?>> actors;
-    private final ExecutorService executorService;
+    private final ExecutorService executor;
     private volatile ActorSystemState state;
     private final IActorContext context;
+
 
     public ActorSystem() {
         this(Runtime.getRuntime().availableProcessors());
@@ -34,7 +38,7 @@ public class ActorSystem implements IActorSystem {
 
     public ActorSystem(int parallelism) {
         this.actors = Maps.newHashMap();
-        this.executorService = Executors.newWorkStealingPool(parallelism);
+        this.executor = Executors.newWorkStealingPool(parallelism);
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
@@ -94,7 +98,7 @@ public class ActorSystem implements IActorSystem {
             for(Actor<?> actor : actors.values()) {
                 actor.stop();
             }
-            executorService.shutdown();
+            executor.shutdown();
         }
     }
 
@@ -104,7 +108,7 @@ public class ActorSystem implements IActorSystem {
                 throw new IllegalStateException("Actor system not started.");
             }
             state = ActorSystemState.STOPPED;
-            executorService.shutdownNow();
+            executor.shutdownNow();
         }
     }
 
@@ -126,8 +130,38 @@ public class ActorSystem implements IActorSystem {
             return (T) ((Actor) receiver).asyncActor;
         }
 
-        @Override public ExecutorService executor() {
-            return executorService;
+        @Override public ActorTask schedule(Actor<?> actor, int priority) {
+            final ActorTask task = new ActorTask(actor, priority);
+            executor.execute(task);
+            return task;
+        }
+
+        @Override public ActorTask reschedule(ActorTask oldTask, int newPriority) {
+            return oldTask;
+        }
+
+        @Override public boolean preempt(int priority) {
+            return false;
+        }
+
+    }
+
+    static class ActorTask implements Runnable, Comparable<ActorTask> {
+
+        private final Runnable runnable;
+        private final int priority;
+
+        ActorTask(Runnable runnable, int priority) {
+            this.runnable = runnable;
+            this.priority = priority;
+        }
+
+        @Override public void run() {
+            runnable.run();
+        }
+
+        @Override public int compareTo(ActorTask o) {
+            return priority - o.priority;
         }
 
     }

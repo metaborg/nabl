@@ -1,12 +1,11 @@
 package mb.statix.concurrent.actors.impl;
 
-import java.util.concurrent.ExecutorService;
-
 import org.metaborg.util.functions.Function1;
 
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
+import mb.statix.concurrent.actors.impl.ActorSystem.ActorTask;
 
 interface IActorContext {
 
@@ -14,6 +13,10 @@ interface IActorContext {
 
     <T> T async(IActorRef<T> receiver);
 
-    ExecutorService executor();
+    ActorTask schedule(Actor<?> actor, int priority);
+
+    ActorTask reschedule(ActorTask oldTask, int newPriority);
+
+    boolean preempt(int priority);
 
 }

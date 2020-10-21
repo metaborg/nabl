@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,8 +32,9 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.actors.impl.ActorSystem.ActorTask;
 
-class Actor<T> implements IActorRef<T>, IActor<T> {
+class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
 
     private static final ILogger logger = LoggerUtils.logger(Actor.class);
 
@@ -58,7 +60,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     static final ThreadLocal<Actor<?>> current = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get current actor.");
     });
-
+    private volatile ActorTask scheduledTask = null;
 
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
         throw new IllegalStateException("Cannot get sender when not in message processing context.");
@@ -95,18 +97,23 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
         return context.add(id, type, supplier);
     }
 
-    private void put(IMessage<T> message, boolean priority) throws ActorStoppedException {
+    private void put(IMessage<T> message, boolean prioritize) throws ActorStoppedException {
         synchronized(lock) {
             if(state.equals(ActorState.STOPPED)) {
                 logger.debug("{} received message when already stopped", id);
                 throw new ActorStoppedException("Actor " + this + " not running.");
             }
-            if(priority) {
+            if(prioritize) {
                 messages.addFirst(message);
             } else {
                 messages.addLast(message);
             }
-            if(state.equals(ActorState.WAITING)) {
+            final int priority = messages.size();
+            if(state.equals(ActorState.RUNNING)) {
+                if(scheduledTask != null) {
+                    scheduledTask = context.reschedule(scheduledTask, priority);
+                }
+            } else if(state.equals(ActorState.WAITING)) {
                 logger.debug("resume {}", this);
 
                 state = ActorState.RUNNING;
@@ -115,7 +122,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     monitor.resumed(this);
                 });
 
-                context.executor().submit(() -> this.run());
+                scheduledTask = context.schedule(this, priority);
             }
         }
     }
@@ -180,7 +187,7 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
                         message = new Invoke(null, method, args,
-                                IReturn.of(new AsyncCompletable<>(this.context.executor(), result)));
+                                IReturn.of(new AsyncCompletable<>(ForkJoinPool.commonPool(), result)));
                         returnValue = result;
                     } else {
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -249,22 +256,27 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                 monitor.started(this);
             });
 
-            context.executor().submit(() -> this.run());
+            final int priority = messages.size();
+            scheduledTask = context.schedule(this, priority);
         }
     }
 
     /**
      * Actor main loop.
      */
-    private void run() {
+    @Override public void run() {
         try {
-            if(thread != null) {
-                logger.error("Actor already running on another thread.");
-                throw new IllegalStateException("Actor already running on another thread.");
+            synchronized(lock) {
+                scheduledTask = null;
+
+                if(thread != null) {
+                    logger.error("Actor already running on another thread.");
+                    throw new IllegalStateException("Actor already running on another thread.");
+                }
+                thread = Thread.currentThread();
+                current.set(this);
+                LoggerUtils.setContextId("act:" + id);
             }
-            thread = Thread.currentThread();
-            current.set(this);
-            LoggerUtils.setContextId("act:" + id);
 
             while(true) {
                 final IMessage<T> message;
@@ -278,25 +290,48 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
                             monitor.suspended(this);
                         });
 
-                        break;
+                        LoggerUtils.clearContextId();
+                        current.remove();
+                        thread = null;
+                        return;
                     } else {
                         message = messages.remove();
                     }
                 }
                 logger.debug("deliver message {}", message);
                 message.dispatch(impl); // responsible for setting sender, and calling monitor!
+
+                synchronized(lock) {
+                    final int priority = messages.size();
+                    if(context.preempt(priority)) {
+                        scheduledTask = context.schedule(this, priority);
+
+                        LoggerUtils.clearContextId();
+                        current.remove();
+                        thread = null;
+                        return;
+                    }
+                }
             }
 
         } catch(StopException ex) {
             logger.debug("stopped");
             doStop(null);
+            synchronized(lock) {
+                LoggerUtils.clearContextId();
+                current.remove();
+                thread = null;
+                return;
+            }
         } catch(Throwable ex) {
             logger.error("failed", ex);
             doStop(ex);
-        } finally {
-            LoggerUtils.clearContextId();
-            current.remove();
-            thread = null;
+            synchronized(lock) {
+                LoggerUtils.clearContextId();
+                current.remove();
+                thread = null;
+                return;
+            }
         }
     }
 
@@ -358,6 +393,21 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     private Set<String> tags(Method method) {
         return Optional.ofNullable(method.getAnnotation(MessageTags.class)).map(tags -> CapsuleUtil.toSet(tags.value()))
                 .orElse(Set.Immutable.of());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // hashCode
+    ///////////////////////////////////////////////////////////////////////////
+
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = System.identityHashCode(this);
+            hashCode = result;
+        }
+        return result;
     }
 
     ///////////////////////////////////////////////////////////////////////////
