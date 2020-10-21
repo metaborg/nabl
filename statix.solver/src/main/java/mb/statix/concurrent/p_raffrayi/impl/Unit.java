@@ -365,7 +365,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     return Optional.of(result.whenComplete((r, ex) -> {
                         logger.debug("got answer from {}", sender);
                         granted(wf, owner);
-                        tryFinish();
                     }));
                 }
             }
@@ -385,7 +384,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                         return externalRep.whenComplete((rep, ex) -> {
                             self.assertOnActorThread();
                             granted(token, self);
-                            tryFinish();
                         }).thenApply(rep -> {
                             logger.debug("got external rep {} for {}", rep, datum.get());
                             return Optional.of(rep);
@@ -413,7 +411,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     return result.whenComplete((r, ex) -> {
                         self.assertOnActorThread();
                         granted(token, self);
-                        tryFinish();
                     });
                 }
             }
@@ -429,7 +426,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     return result.whenComplete((r, ex) -> {
                         self.assertOnActorThread();
                         granted(token, self);
-                        tryFinish();
                     });
                 }
             }
