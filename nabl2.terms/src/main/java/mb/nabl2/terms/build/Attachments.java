@@ -8,7 +8,7 @@ import mb.nabl2.terms.IAttachments;
 public class Attachments implements IAttachments, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private static final Attachments EMPTY = new Attachments(Map.Immutable.of());
+    private static final IAttachments EMPTY = new EmptyAttachments();
 
     private final Map.Immutable<Class<?>, Object> attachments;
 
@@ -43,7 +43,7 @@ public class Attachments implements IAttachments, Serializable {
         return other.attachments.equals(attachments);
     }
 
-    public static Attachments empty() {
+    public static IAttachments empty() {
         return EMPTY;
     }
 
@@ -55,28 +55,48 @@ public class Attachments implements IAttachments, Serializable {
         return new Attachments(Map.Immutable.of(cls1, value1, cls2, value2));
     }
 
+    private static class EmptyAttachments implements IAttachments, Serializable {
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean isEmpty() {
+            return true;
+        }
+
+        @Override public <T> T get(Class<T> cls) {
+            return null;
+        }
+
+        @Override public Builder toBuilder() {
+            return new Attachments.Builder(null);
+        }
+
+    }
+
     public static class Builder implements IAttachments.Builder {
 
-        private final Map.Transient<Class<?>, Object> attachments;
+        private Map.Transient<Class<?>, Object> attachments;
 
         private Builder(Map.Transient<Class<?>, Object> attachments) {
             this.attachments = attachments;
         }
 
         @Override public <T> void put(Class<T> key, T value) {
+            if(attachments == null) {
+                attachments = Map.Transient.of();
+            }
             attachments.__put(key, value);
         }
 
         @Override public boolean isEmpty() {
-            return attachments.isEmpty();
+            return attachments == null || attachments.isEmpty();
         }
 
-        @Override public Attachments build() {
-            return attachments.isEmpty() ? EMPTY : new Attachments(attachments.freeze());
+        @Override public IAttachments build() {
+            return isEmpty() ? EMPTY : new Attachments(attachments.freeze());
         }
 
         public static Builder of() {
-            return new Builder(Map.Transient.of());
+            return new Builder(null);
         }
 
     }
