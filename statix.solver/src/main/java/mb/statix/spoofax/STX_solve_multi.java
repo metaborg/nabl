@@ -70,6 +70,8 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final List<ITerm> results = Lists.newArrayList();
         try {
+            logger.info("Analyzing files");
+
             final IBrokerResult<Scope, ITerm, ITerm, SolverResult> solveResult = broker.result().get();
 
             final double dt = System.currentTimeMillis() - t0;
