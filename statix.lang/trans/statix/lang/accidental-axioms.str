@@ -26,7 +26,7 @@ rules
           ( <leq> (next-line, max-line)
           + <gt> (next-col, min-col)
           )
-    with warning := <debug> (r2, $[Indentation suggests this is a constraint, but preceding full-stop makes it an axiom.])
+    with warning := (r2, $[Indentation suggests this is a constraint, but preceding full-stop makes it an axiom.])
 
   primitive-constraints = rec x(
     ?CExists(_, c); <x> c
