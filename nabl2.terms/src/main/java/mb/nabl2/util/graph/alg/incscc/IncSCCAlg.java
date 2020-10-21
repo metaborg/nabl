@@ -234,7 +234,7 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
             counting.detachObserver(countingListener);
         } else {
             // get the graph for the scc whose root is sourceRoot
-            Graph<V> g = GraphHelper.getSubGraph(sccs.getPartition(sourceRoot), gds);
+            IBiDirectionalGraphDataSource<V> g = GraphHelper.getSubGraph(sccs.getPartition(sourceRoot), gds);
 
             // if source is not reachable from target anymore
             if (!BFS.isReachable(source, target, g)) {
