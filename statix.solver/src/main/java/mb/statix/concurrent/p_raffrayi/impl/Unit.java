@@ -2,7 +2,6 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -694,13 +693,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Assertions
     ///////////////////////////////////////////////////////////////////////////
 
-    private void assertInState(UnitState... states) {
-        for(UnitState s : states) {
-            if(state.equals(s)) {
-                return;
-            }
+    private void assertInState(UnitState s) {
+        if(!state.equals(s)) {
+            throw new IllegalStateException("Expected state " + s + ", was " + state);
         }
-        throw new IllegalStateException("Expected state " + Arrays.toString(states) + ", was " + state);
+    }
+
+    private void assertInState(UnitState s1, UnitState s2) {
+        if(!state.equals(s1) && !state.equals(s2)) {
+            throw new IllegalStateException("Expected state " + s1 + " or " + s2 + ", was " + state);
+        }
     }
 
     private void assertOwnOrSharedScope(S scope) {
@@ -714,6 +716,21 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(isEdgeClosed(scope, edge)) {
             throw new IllegalArgumentException("Label " + scope + "/" + edge + " is not open on " + self + ".");
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // hashCode
+    ///////////////////////////////////////////////////////////////////////////
+
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = System.identityHashCode(this);
+            hashCode = result;
+        }
+        return result;
     }
 
     ///////////////////////////////////////////////////////////////////////////
