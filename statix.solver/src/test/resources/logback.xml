@@ -11,5 +11,5 @@
   <root level="info">
     <appender-ref ref="stdout" />
   </root>
-  <logger name="mb.statix.concurrent.actors.deadlock" level="debug" />
+  <!--logger name="mb.statix.concurrent.actors.deadlock" level="debug" /-->
 </configuration>
