@@ -89,6 +89,12 @@ public class WaitForGraph<N, T> {
             final int received = receiverClock.count(node);
             if(sent > received) {
                 this.knownMessagesTo.put(receiver, receiverClock.set(node, sent));
+                if(receiver.equals(node)) {
+                    // Do not activate the node this clock belongs to, but leave that to the next part of this method.
+                    // If we activate the node here, it may be activated if it sent itself a message that it already received, since
+                    // the received count is not yet updated here.
+                    continue;
+                }
                 if(waitingNodes.__remove(receiver)) {
                     logger.debug("{} activates {} (sent {} > received {})", node, receiver, sent, received);
                 }
