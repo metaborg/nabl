@@ -189,9 +189,12 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(null, method, args,
-                                IReturn.of(new AsyncCompletable<>(ForkJoinPool.commonPool(), result)));
+                        final IReturn<?> ret = IReturn.of(new AsyncCompletable<>(ForkJoinPool.commonPool(), result));
+                        message = new Invoke(null, method, args, ret);
                         returnValue = result;
+                        synchronized(lock) {
+                            returns.__insert(ret);
+                        }
                     } else {
                         logger.error("Unsupported method called: {}", method);
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -514,9 +517,11 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
         @Override public void complete(U value, Throwable ex) throws ActorStoppedException {
             assertOnActorThread();
 
-            if(!returns.__remove(this)) {
-                logger.error("Dangling return?");
-                throw new IllegalStateException("Dangling return?");
+            synchronized(lock) {
+                if(!returns.__remove(this)) {
+                    logger.error("Dangling return?");
+                    throw new IllegalStateException("Dangling return?");
+                }
             }
 
             this.value = value;
