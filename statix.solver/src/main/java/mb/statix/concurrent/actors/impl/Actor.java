@@ -58,11 +58,13 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
 
     private volatile Thread thread = null;
     static final ThreadLocal<Actor<?>> current = ThreadLocal.withInitial(() -> {
+        logger.error("Cannot get current actor.");
         throw new IllegalStateException("Cannot get current actor.");
     });
     private volatile ActorTask scheduledTask = null;
 
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
+        logger.error("Cannot get sender when not in message processing context.");
         throw new IllegalStateException("Cannot get sender when not in message processing context.");
     });
 
@@ -154,6 +156,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                             returns.__insert(ret);
                         }
                     } else {
+                        logger.error("Unsupported method called: {}", method);
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
@@ -190,6 +193,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                                 IReturn.of(new AsyncCompletable<>(ForkJoinPool.commonPool(), result)));
                         returnValue = result;
                     } else {
+                        logger.error("Unsupported method called: {}", method);
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
 
@@ -239,6 +243,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
     void start() {
         synchronized(lock) {
             if(!state.equals(ActorState.INITIAL)) {
+                logger.error("Actor already started and/or stopped.");
                 throw new IllegalStateException("Actor already started and/or stopped.");
             }
 
@@ -510,6 +515,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
             assertOnActorThread();
 
             if(!returns.__remove(this)) {
+                logger.error("Dangling return?");
                 throw new IllegalStateException("Dangling return?");
             }
 
