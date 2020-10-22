@@ -76,4 +76,8 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
         return true;
     }
 
+    @Override public String toString() {
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    }
+
 }

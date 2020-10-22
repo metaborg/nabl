@@ -131,4 +131,8 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return new CompletedExceptionallyFuture<>(ex);
     }
 
+    @Override public String toString() {
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    }
+
 }
