@@ -550,9 +550,7 @@ public class StatixSolver {
                             }
                             return fail(c);
                         } catch(Throwable t) {
-                            if(debug.isEnabled(Level.Debug)) {
-                                debug.debug("failed query {}", t, c.toString(state.unifier()::toString));
-                            }
+                            debug.error("failed query {}", t, c.toString(state.unifier()::toString));
                             return fail(c);
                         }
                     } else {

@@ -13,6 +13,8 @@ public interface IBroker2UnitProtocol<S, L, D, R> {
 
     IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root);
 
-    void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock, SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors);
+    void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock,
+            java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes,
+            SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors);
 
 }

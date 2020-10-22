@@ -88,6 +88,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             if(ex != null) {
                 fail(ex);
             } else {
+                logger.info("Unit {} finished.", id);
                 results.put(id, unitResult);
                 checkResults();
             }
@@ -96,6 +97,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
 
     private void checkResults() {
         if(results.size() == units.size()) {
+            logger.info("All units finished.");
             result.complete(BrokerResult.of(results));
             system.stop();
         }
@@ -120,7 +122,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             final IActorRef<? extends IUnit<S, L, D, R>> unit = entry.getKey();
             final Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock = entry.getValue();
             logger.debug("deadlock detected: {}", deadlock);
-            dlm.async(unit)._deadlocked(clock, deadlock.outgoingWaitFors(unit));
+            dlm.async(unit)._deadlocked(clock, deadlock.nodes().keySet(), deadlock.outgoingWaitFors(unit));
         }
     }
 
