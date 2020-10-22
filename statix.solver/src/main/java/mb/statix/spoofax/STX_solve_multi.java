@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,6 +33,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
@@ -56,7 +56,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final IMatcher<Tuple2<String, Rule>> constraintMatcher =
                 M.tuple2(M.stringValue(), StatixTerms.hoconstraint(), (t, r, c) -> Tuple2.of(r, c));
-        final Map<String, Rule> units = M.listElems(constraintMatcher).match(term)
+        final java.util.Map<String, Rule> units = M.listElems(constraintMatcher).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints.")).stream()
                 .collect(Collectors.toMap(Tuple2::_1, Tuple2::_2));
 
@@ -79,10 +79,16 @@ public class STX_solve_multi extends StatixPrimitive {
 
             for(Entry<String, IUnitResult<Scope, ITerm, ITerm, SolverResult>> entry : solveResult.unitResults()
                     .entrySet()) {
-                final SolverResult fileResult = entry.getValue().analysis();
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> fileScopeGraph = entry.getValue().scopeGraph();
-                final IState.Immutable updatedFileState = fileResult.state().withScopeGraph(fileScopeGraph);
-                final SolverResult updatedFileResult = fileResult.withState(updatedFileState);
+                final SolverResult fileResult = entry.getValue().analysis();
+                final SolverResult updatedFileResult;
+                if(fileResult != null) {
+                    final IState.Immutable updatedFileState = fileResult.state().withScopeGraph(fileScopeGraph);
+                    updatedFileResult = fileResult.withState(updatedFileState);
+                } else {
+                    final IState.Immutable updatedFileState = State.of(spec).withScopeGraph(fileScopeGraph);
+                    updatedFileResult = SolverResult.of(spec).withState(updatedFileState);
+                }
                 results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(updatedFileResult)));
             }
         } catch(Throwable e) {
