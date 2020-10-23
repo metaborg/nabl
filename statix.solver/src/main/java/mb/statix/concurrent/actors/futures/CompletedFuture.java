@@ -64,9 +64,19 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
         }
     }
 
-    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super T, ? extends IFuture<U>, ?> handler) {
+    @SuppressWarnings("unchecked") @Override public <U> IFuture<U>
+            thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ?> handler) {
         try {
-            return handler.apply(result);
+            return (IFuture<U>) handler.apply(result);
+        } catch(Throwable ex) {
+            return CompletableFuture.completedExceptionally(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked") @Override public <U> IFuture<U>
+            compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ?> handler) {
+        try {
+            return (IFuture<U>) handler.apply(result, null);
         } catch(Throwable ex) {
             return CompletableFuture.completedExceptionally(ex);
         }

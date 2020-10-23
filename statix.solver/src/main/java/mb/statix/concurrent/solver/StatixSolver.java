@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.CheckedAction0;
-import org.metaborg.util.functions.CheckedFunction0;
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -728,15 +728,14 @@ public class StatixSolver {
     private IFuture<Boolean> entails(IConstraint constraint) {
         final IDebugContext subDebug = debug.subContext();
         final ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> subContext = scopeGraph.subContext("try");
-        final IState.Immutable subState = state.subState().withResource(subContext.id());
-        final StatixSolver subSolver =
-                new StatixSolver(constraint, spec, subState, completeness, subDebug, progress, cancel, subContext);
-        final IFuture<SolverResult> subResult = subSolver.entail();
-        return subResult.thenCompose(r -> {
-            return absorbDelays(() -> {
+        return absorbDelays(() -> {
+            final IState.Immutable subState = state.subState().withResource(subContext.id());
+            final StatixSolver subSolver =
+                    new StatixSolver(constraint, spec, subState, completeness, subDebug, progress, cancel, subContext);
+            return subSolver.entail().thenCompose(r -> {
+                final boolean result;
                 // check entailment w.r.t. the initial substate, not the current state: otherwise,
                 // some variables may be treated as external while they are not
-                final boolean result;
                 if(Solver.entailed(subState, r, subDebug)) {
                     if(debug.isEnabled(Level.Debug)) {
                         debug.debug("constraint {} entailed", constraint.toString(state.unifier()::toString));
@@ -753,25 +752,36 @@ public class StatixSolver {
         });
     }
 
-    private <T> IFuture<T> absorbDelays(CheckedFunction0<IFuture<T>, Delay> f) {
-        try {
-            return f.apply();
-        } catch(Delay delay) {
-            if(!delay.criticalEdges().isEmpty()) {
-                debug.error("unsuported critical edges {}", delay);
-                throw new IllegalStateException();
+    private <T> IFuture<T> absorbDelays(Function0<IFuture<T>> f) {
+        return f.apply().compose((r, ex) -> {
+            if(ex != null) {
+                try {
+                    throw ex;
+                } catch(Delay delay) {
+                    if(!delay.criticalEdges().isEmpty()) {
+                        debug.error("unsupported delay with critical edges {}", delay);
+                        throw new IllegalStateException("unsupported delay with critical edges");
+                    }
+                    if(delay.vars().isEmpty()) {
+                        debug.error("unsupported delay without variables {}", delay);
+                        throw new IllegalStateException("unsupported delay without variables");
+                    }
+                    final CompletableFuture<T> result = new CompletableFuture<>();
+                    try {
+                        delayAction(() -> {
+                            absorbDelays(f).whenComplete(result::complete);
+                        }, delay.vars());
+                    } catch(InterruptedException ie) {
+                        result.completeExceptionally(ie);
+                    }
+                    return result;
+                } catch(Throwable t) {
+                    return CompletableFuture.completedExceptionally(t);
+                }
+            } else {
+                return CompletableFuture.completedFuture(r);
             }
-            final CompletableFuture<T> result = new CompletableFuture<>();
-            try {
-                delayAction(() -> {
-                    absorbDelays(f).whenComplete(result::complete);
-                }, delay.vars());
-            } catch(InterruptedException ex) {
-                result.completeExceptionally(ex);
-            }
-            return result;
-        }
-
+        });
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -910,12 +920,16 @@ public class StatixSolver {
 
         @Override public IFuture<Boolean> wf(ITerm datum, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
-                final IUniDisunifier.Immutable unifier = state.unifier();
-                final IConstraint result;
-                if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
-                    return CompletableFuture.completedFuture(false);
+                try {
+                    final IUniDisunifier.Immutable unifier = state.unifier();
+                    final IConstraint result;
+                    if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    return entails(result);
+                } catch(Delay delay) {
+                    return CompletableFuture.completedExceptionally(delay);
                 }
-                return entails(result);
             });
         }
 
@@ -967,12 +981,16 @@ public class StatixSolver {
 
         @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
-                final IUniDisunifier.Immutable unifier = state.unifier();
-                final IConstraint result;
-                if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
-                    return CompletableFuture.completedFuture(false);
+                try {
+                    final IUniDisunifier.Immutable unifier = state.unifier();
+                    final IConstraint result;
+                    if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    return entails(result);
+                } catch(Delay delay) {
+                    return CompletableFuture.completedExceptionally(delay);
                 }
-                return entails(result);
             });
         }
 

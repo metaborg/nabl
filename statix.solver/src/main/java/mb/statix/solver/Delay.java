@@ -63,10 +63,6 @@ public class Delay extends Throwable {
         return sb.toString();
     }
 
-    public static Delay of() {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of());
-    }
-
     public static Delay ofVar(ITermVar var) {
         return ofVars(Set.Immutable.of(var));
     }

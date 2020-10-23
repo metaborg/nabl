@@ -692,13 +692,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private void assertInState(UnitState s1, UnitState s2) {
-        if(!state.equals(s1) && !state.equals(s2)) {
-            logger.error("Expected state {} or {}, was {}", s1, s2, state);
-            throw new IllegalStateException("Expected state " + s1 + " or " + s2 + ", was " + state);
-        }
-    }
-
     private void assertOwnOrSharedScope(S scope) {
         if(!scopes.contains(scope)) {
             logger.error("Scope {} is not owned or shared.", scope);

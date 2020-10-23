@@ -105,8 +105,14 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.thenAccept(handler);
     }
 
-    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super List<T>, ? extends IFuture<U>, ?> handler) {
+    @Override public <U> IFuture<U>
+            thenCompose(CheckedFunction1<? super List<T>, ? extends IFuture<? extends U>, ?> handler) {
         return result.thenCompose(handler);
+    }
+
+    @Override public <U> IFuture<U>
+            compose(CheckedFunction2<? super List<T>, Throwable, ? extends IFuture<? extends U>, ?> handler) {
+        return result.compose(handler);
     }
 
     @Override public boolean isDone() {

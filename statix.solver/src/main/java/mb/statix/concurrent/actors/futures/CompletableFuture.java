@@ -103,7 +103,8 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return result;
     }
 
-    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super T, ? extends IFuture<U>, ?> handler) {
+    @Override public <U> IFuture<U>
+            thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ?> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             if(ex != null) {
@@ -114,6 +115,19 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
                 } catch(Throwable inner) {
                     result.completeExceptionally(inner);
                 }
+            }
+        });
+        return result;
+    }
+
+    @Override public <U> IFuture<U>
+            compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ?> handler) {
+        final CompletableFuture<U> result = new CompletableFuture<>();
+        future.whenComplete((r, ex) -> {
+            try {
+                handler.apply(r, ex).whenComplete(result::complete);
+            } catch(Throwable inner) {
+                result.completeExceptionally(inner);
             }
         });
         return result;
