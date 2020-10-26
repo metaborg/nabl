@@ -119,7 +119,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         // can immediately call methods, that are executed synchronously
 
         final ICompletableFuture<R> typeCheckerResult = new CompletableFuture<>();
-        final TypeCheckerResult<S, L, D> result = TypeCheckerResult.of(typeCheckerResult);
+        final TypeCheckerResult<S, L, D> result = TypeCheckerResult.of(self, typeCheckerResult);
         waitFor(result, self);
         self.schedule(this.typeChecker.run(this, root)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
@@ -220,7 +220,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         final IScopePath<S, L> path = Paths.empty(scope);
         final IFuture<Env<S, L, D>> result =
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
-        final Query<S, L, D> wf = Query.of(path, labelWF, dataWF, labelOrder, dataEquiv, result);
+        final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(wf, self);
         return self.schedule(result).whenComplete((env, ex) -> {
             granted(wf, self);
@@ -263,7 +263,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         scopes.__insert(scope);
-        waitFor(InitScope.of(scope), sender);
+        waitFor(InitScope.of(self, scope), sender);
     }
 
     private final void doAddShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
@@ -279,12 +279,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             Iterable<EdgeOrData<L>> edges, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
-        granted(InitScope.of(scope), sender);
+        granted(InitScope.of(self, scope), sender);
         for(EdgeOrData<L> edge : edges) {
-            waitFor(CloseLabel.of(scope, edge), sender);
+            waitFor(CloseLabel.of(self, scope, edge), sender);
         }
         if(sharing) {
-            waitFor(CloseScope.of(scope), sender);
+            waitFor(CloseScope.of(self, scope), sender);
         }
         tryFinish();
 
@@ -301,7 +301,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final void doCloseScope(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
-        granted(CloseScope.of(scope), sender);
+        granted(CloseScope.of(self, scope), sender);
         tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
@@ -317,7 +317,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
-        granted(CloseLabel.of(scope, edge), sender);
+        granted(CloseLabel.of(self, scope, edge), sender);
         tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
@@ -368,7 +368,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     // this code mirrors query(...)
                     final IFuture<Env<S, L, D>> result =
                             self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
-                    final Query<S, L, D> wf = Query.of(path, re, dataWF, labelOrder, dataEquiv, result);
+                    final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                     waitFor(wf, owner);
                     return Optional.of(result.whenComplete((r, ex) -> {
                         logger.debug("got answer from {}", sender);
@@ -486,7 +486,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void releaseDelays(S scope) {
         for(Entry<EdgeOrData<L>, Delay> entry : delays.get(scope)) {
             final EdgeOrData<L> edge = entry.getKey();
-            if(!context.isWaitingFor(CloseLabel.of(scope, edge))) {
+            if(!context.isWaitingFor(CloseLabel.of(self, scope, edge))) {
                 final Delay delay = entry.getValue();
                 logger.debug("released {} on {}(/{})", delay.future, scope, edge);
                 delays.remove(scope, edge, delay);
@@ -504,11 +504,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     private boolean isScopeInitialized(S scope) {
-        return !context.isWaitingFor(InitScope.of(scope)) && !context.isWaitingFor(CloseScope.of(scope));
+        return !context.isWaitingFor(InitScope.of(self, scope)) && !context.isWaitingFor(CloseScope.of(self, scope));
     }
 
     private boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
-        return isScopeInitialized(scope) && !context.isWaitingFor(CloseLabel.of(scope, edge));
+        return isScopeInitialized(scope) && !context.isWaitingFor(CloseLabel.of(self, scope, edge));
     }
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
@@ -574,7 +574,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         final Set.Transient<ICompletable<?>> deadlocked = Set.Transient.of();
         for(Delay delay : delays.inverse().keySet()) {
             if(nodes.contains(delay.sender)) {
-                logger.info("{} fail {}", self, delay);
+                logger.debug("{} fail {}", self, delay);
                 delays.inverse().remove(delay);
                 deadlocked.__insert(delay.future);
             }
@@ -589,7 +589,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 result  -> {},
                 typeCheckerState -> {
                     if(nodes.contains(typeCheckerState.origin())) {
-                        logger.info("{} fail {}", self, typeCheckerState);
+                        logger.debug("{} fail {}", self, typeCheckerState);
                         deadlocked.__insert(typeCheckerState.future());
                     }
                 }

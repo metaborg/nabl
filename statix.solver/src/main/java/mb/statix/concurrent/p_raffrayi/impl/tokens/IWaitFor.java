@@ -2,7 +2,12 @@ package mb.statix.concurrent.p_raffrayi.impl.tokens;
 
 import org.metaborg.util.functions.Action1;
 
+import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.p_raffrayi.impl.IUnit;
+
 public interface IWaitFor<S, L, D> {
+
+    IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
     void visit(Cases<S, L, D> cases);
 

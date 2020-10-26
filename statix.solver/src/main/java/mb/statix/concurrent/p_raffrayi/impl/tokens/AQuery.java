@@ -2,7 +2,9 @@ package mb.statix.concurrent.p_raffrayi.impl.tokens;
 
 import org.immutables.value.Value;
 
+import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.impl.IUnit;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
@@ -12,6 +14,8 @@ import mb.statix.scopegraph.reference.Env;
 
 @Value.Immutable(prehash = true)
 public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
+
+    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
     @Value.Parameter public abstract IScopePath<S, L> path();
 
@@ -29,9 +33,10 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
         cases.on((Query<S, L, D>) this);
     }
 
-    public static <S, L, D> Query<S, L, D> of(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv, IFuture<Env<S, L, D>> future) {
-        return Query.of(path, dataWF, future);
+    public static <S, L, D> Query<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?>> origin, IScopePath<S, L> path,
+            LabelWF<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv,
+            IFuture<Env<S, L, D>> future) {
+        return Query.of(origin, path, dataWF, future);
     }
 
 }

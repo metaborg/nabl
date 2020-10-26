@@ -11,7 +11,7 @@ import mb.statix.concurrent.p_raffrayi.impl.IUnit;
 @Value.Immutable(prehash = true)
 public abstract class ATypeCheckerState<S, L, D> implements IWaitFor<S, L, D> {
 
-    @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
+    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
     @Value.Parameter public abstract List<D> datums();
 
