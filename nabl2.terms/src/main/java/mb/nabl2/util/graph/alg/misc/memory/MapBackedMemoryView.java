@@ -9,10 +9,10 @@
 package mb.nabl2.util.graph.alg.misc.memory;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.BiConsumer;
+
+import io.usethesource.capsule.Map;
 
 /**
  * Wraps a Map<T, Integer> (mapping elements to non-zero multiplicities) into an {@link IMemoryView}.
@@ -22,14 +22,13 @@ import java.util.function.BiConsumer;
  */
 public class MapBackedMemoryView<T> implements IMemoryView<T> {
 
-    private Map<T, Integer> wrapped;
+    private Map.Immutable<T, Integer> wrapped;
 
     /**
      * @param wrapped
      *            an equivalent map from contained objects to multiplicities
      */
-    public MapBackedMemoryView(Map<T, Integer> wrapped) {
-        super();
+    public MapBackedMemoryView(Map.Immutable<T, Integer> wrapped) {
         this.wrapped = wrapped;
     }
 
@@ -66,11 +65,8 @@ public class MapBackedMemoryView<T> implements IMemoryView<T> {
         return wrapped.keySet();
     }
 
-
-    @Override public void forEachEntryWithMultiplicities(BiConsumer<T, Integer> entryConsumer) {
-        for(Entry<T, Integer> entry : wrapped.entrySet()) {
-            entryConsumer.accept(entry.getKey(), entry.getValue());
-        }
+    @Override public Map.Immutable<T, Integer> asMap() {
+        return wrapped;
     }
 
     @Override public Iterable<Entry<T, Integer>> entriesWithMultiplicities() {

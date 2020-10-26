@@ -13,11 +13,11 @@ import mb.nabl2.util.graph.igraph.IGraphObserver;
 public class LabeledGraph<V, L> implements IGraphDataSource<V>, IBiDirectionalGraphDataSource<V> {
 
     private final Graph<V> graph;
-    private final MultiSetMap.Transient<Tuple2<V, V>, L> edges;
+    private MultiSetMap.Immutable<Tuple2<V, V>, L> edges;
 
     public LabeledGraph() {
         this.graph = new Graph<>();
-        this.edges = MultiSetMap.Transient.of();
+        this.edges = MultiSetMap.Immutable.of();
     }
 
     public MultiSetMap.Immutable<V, L> getOutgoingEdges(V source) {
@@ -46,12 +46,12 @@ public class LabeledGraph<V, L> implements IGraphDataSource<V>, IBiDirectionalGr
         addNodeIfAbsent(source);
         addNodeIfAbsent(target);
         graph.insertEdge(source, target);
-        edges.put(Tuple2.of(source, target), label);
+        edges = edges.put(Tuple2.of(source, target), label);
     }
 
     public void removeEdge(V source, L label, V target) {
         graph.deleteEdgeThatExists(source, target);
-        edges.remove(Tuple2.of(source, target), label);
+        edges = edges.remove(Tuple2.of(source, target), label);
         removeNodeIfObsolete(source);
         removeNodeIfObsolete(target);
     }

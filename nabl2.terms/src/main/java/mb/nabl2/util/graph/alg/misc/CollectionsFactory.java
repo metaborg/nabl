@@ -34,15 +34,6 @@ public final class CollectionsFactory {
     }
 
     /**
-     * Instantiates a new map with the given initial contents.
-     * 
-     * @since 1.7
-     */
-    public static <K, V> Map<K, V> createMap(Map<K, V> initial) {
-        return Maps.newHashMap(initial);
-    }
-
-    /**
      * Instantiates a new empty set.
      * 
      * @since 1.7

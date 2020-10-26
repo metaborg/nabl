@@ -1,24 +1,22 @@
 package mb.nabl2.util.graph.alg.misc;
 
-import com.google.common.collect.Maps;
-
 import mb.nabl2.util.collections.MultiSetMap;
 import mb.nabl2.util.graph.alg.misc.memory.IMemoryView;
 import mb.nabl2.util.graph.alg.misc.memory.MapBackedMemoryView;
 
 public class MultiLookup<Key, Value> implements IMultiLookup<Key, Value> {
 
-    private final MultiSetMap.Transient<Key, Value> data;
+    private MultiSetMap.Immutable<Key, Value> data;
 
     public MultiLookup() {
-        this.data = MultiSetMap.Transient.of();
+        this.data = MultiSetMap.Immutable.of();
     }
 
     @Override public IMemoryView<Value> lookup(Key key) {
         if(!data.containsKey(key)) {
             return null;
         }
-        return new MapBackedMemoryView<>(Maps.newHashMap(data.get(key).toMap()));
+        return new MapBackedMemoryView<>(data.get(key).asMap());
     }
 
     @Override public Iterable<Key> distinctKeys() {
@@ -38,7 +36,7 @@ public class MultiLookup<Key, Value> implements IMultiLookup<Key, Value> {
         } else {
             change = ChangeGranularity.DUPLICATE;
         }
-        data.put(key, value);
+        data = data.put(key, value);
         return change;
     }
 
@@ -50,7 +48,7 @@ public class MultiLookup<Key, Value> implements IMultiLookup<Key, Value> {
         if(!data.contains(key, value)) {
             throw new IllegalStateException();
         }
-        data.remove(key, value);
+        data = data.remove(key, value);
         final ChangeGranularity change;
         if(!data.containsKey(key)) {
             change = ChangeGranularity.KEY;
@@ -71,12 +69,12 @@ public class MultiLookup<Key, Value> implements IMultiLookup<Key, Value> {
         } else {
             change = ChangeGranularity.DUPLICATE;
         }
-        data.put(key, value, count);
+        data = data.put(key, value, count);
         return change;
     }
 
     @Override public void clear() {
-        data.clear();
+        data = MultiSetMap.Immutable.of();
     }
 
 }

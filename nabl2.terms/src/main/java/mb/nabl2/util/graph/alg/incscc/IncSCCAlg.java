@@ -234,31 +234,22 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
             counting.detachObserver(countingListener);
         } else {
             // get the graph for the scc whose root is sourceRoot
+            // subgraph is lazy, but that is okay since it is not used after any destructive updates to the original graph
             IBiDirectionalGraphDataSource<V> g = GraphHelper.getSubGraph(sccs.getPartition(sourceRoot), gds);
 
             // if source is not reachable from target anymore
             if (!BFS.isReachable(source, target, g)) {
-                // create copies of the current state before destructive manipulation
-                Map<V, Integer> reachableSources = CollectionsFactory.createMap();
-                for (Entry<V, Integer> entry : reducedGraphIndexer.getSourceNodes(sourceRoot).entriesWithMultiplicities()) {
-                    reachableSources.put(entry.getKey(), entry.getValue());
-                }
-                Map<V, Integer> reachableTargets = CollectionsFactory.createMap();
-                for (Entry<V, Integer> entry : reducedGraphIndexer.getTargetNodes(sourceRoot).entriesWithMultiplicities()) {
-                    reachableTargets.put(entry.getKey(), entry.getValue());
-                }
-
                 SCCResult<V> _newSccs = SCC.computeSCC(g);
 
                 // delete scc node (and with its edges too)
-                for (Entry<V, Integer> entry : reachableSources.entrySet()) {
+                for (Entry<V, Integer> entry : reducedGraphIndexer.getSourceNodes(sourceRoot).entriesWithMultiplicities()) {
                     V s = entry.getKey();
                     for (int i = 0; i < entry.getValue(); i++) {
                         reducedGraph.deleteEdgeIfExists(s, sourceRoot);
                     }
                 }
 
-                for (Entry<V, Integer> entry : reachableTargets.entrySet()) {
+                for (Entry<V, Integer> entry : reducedGraphIndexer.getTargetNodes(sourceRoot).entriesWithMultiplicities()) {
                     V t = entry.getKey();
                     for (int i = 0; i < entry.getValue(); i++) {
                         reducedGraph.deleteEdgeIfExists(sourceRoot, t);

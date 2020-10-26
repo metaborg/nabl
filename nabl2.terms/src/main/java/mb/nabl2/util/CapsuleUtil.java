@@ -4,6 +4,7 @@ import java.util.Map.Entry;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate1;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -52,6 +53,18 @@ public final class CapsuleUtil {
             if(newKey != null) {
                 map.__remove(key);
                 map.__put(newKey, entry.getValue());
+            }
+        }
+    }
+
+    /**
+     * Filter the map by key.
+     */
+    public static <K, V> void filter(Map.Transient<K, V> map, Predicate1<K> filter) {
+        for(Entry<K, V> entry : map.entrySet()) {
+            final K key = entry.getKey();
+            if(!filter.test(key)) {
+                map.__remove(key);
             }
         }
     }

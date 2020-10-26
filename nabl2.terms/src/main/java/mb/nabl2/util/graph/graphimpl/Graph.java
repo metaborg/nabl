@@ -10,7 +10,6 @@
 package mb.nabl2.util.graph.graphimpl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -43,7 +42,7 @@ public class Graph<V> implements IGraphDataSource<V>, IBiDirectionalGraphDataSou
         outgoingEdges.addPair(source, target);
         incomingEdges.addPair(target, source);
 
-        for (IGraphObserver<V> go : observers) {
+        for(IGraphObserver<V> go : observers) {
             go.edgeInserted(source, target);
         }
     }
@@ -56,7 +55,7 @@ public class Graph<V> implements IGraphDataSource<V>, IBiDirectionalGraphDataSou
      */
     public void deleteEdgeIfExists(V source, V target) {
         boolean containedEdge = outgoingEdges.lookupOrEmpty(source).containsNonZero(target);
-        if (containedEdge) {
+        if(containedEdge) {
             deleteEdgeThatExists(source, target);
         }
     }
@@ -70,7 +69,7 @@ public class Graph<V> implements IGraphDataSource<V>, IBiDirectionalGraphDataSou
     public void deleteEdgeThatExists(V source, V target) {
         outgoingEdges.removePair(source, target);
         incomingEdges.removePair(target, source);
-        for (IGraphObserver<V> go : observers) {
+        for(IGraphObserver<V> go : observers) {
             go.edgeDeleted(source, target);
         }
     }
@@ -81,8 +80,7 @@ public class Graph<V> implements IGraphDataSource<V>, IBiDirectionalGraphDataSou
      *             delegates to the latter.
      * 
      */
-    @Deprecated
-    public void deleteEdge(V source, V target) {
+    @Deprecated public void deleteEdge(V source, V target) {
         deleteEdgeIfExists(source, target);
     }
 
@@ -90,90 +88,79 @@ public class Graph<V> implements IGraphDataSource<V>, IBiDirectionalGraphDataSou
      * Insert the given node into the graph.
      */
     public void insertNode(V node) {
-        if (nodes.add(node)) {
-            for (IGraphObserver<V> go : observers) {
+        if(nodes.add(node)) {
+            for(IGraphObserver<V> go : observers) {
                 go.nodeInserted(node);
             }
         }
     }
 
     /**
-     * Deletes the given node AND all of the edges going in and out from the node. 
+     * Deletes the given node AND all of the edges going in and out from the node.
      */
     public void deleteNode(V node) {
-        if (nodes.remove(node)) {
+        if(nodes.remove(node)) {
             IMemoryView<V> incomingView = incomingEdges.lookup(node);
-            if (incomingView != null) {
-                Map<V, Integer> incoming = CollectionsFactory.createMap(incomingView.asMap());
-
-                for (Entry<V, Integer> entry : incoming.entrySet()) {
-                    for (int i = 0; i < entry.getValue(); i++) {
+            if(incomingView != null) {
+                for(Entry<V, Integer> entry : incomingView.asMap().entrySet()) {
+                    for(int i = 0; i < entry.getValue(); i++) {
                         deleteEdgeThatExists(entry.getKey(), node);
                     }
                 }
             }
 
             IMemoryView<V> outgoingView = outgoingEdges.lookup(node);
-            if (outgoingView != null) {
-                Map<V, Integer> outgoing = CollectionsFactory.createMap(outgoingView.asMap());
-
-                for (Entry<V, Integer> entry : outgoing.entrySet()) {
-                    for (int i = 0; i < entry.getValue(); i++) {
+            if(outgoingView != null) {
+                for(Entry<V, Integer> entry : outgoingView.asMap().entrySet()) {
+                    for(int i = 0; i < entry.getValue(); i++) {
                         deleteEdgeThatExists(node, entry.getKey());
                     }
                 }
             }
 
-            for (IGraphObserver<V> go : observers) {
+            for(IGraphObserver<V> go : observers) {
                 go.nodeDeleted(node);
             }
         }
     }
 
-    @Override
-    public void attachObserver(IGraphObserver<V> go) {
+    @Override public void attachObserver(IGraphObserver<V> go) {
         observers.add(go);
     }
 
-    @Override
-    public void attachAsFirstObserver(IGraphObserver<V> observer) {
+    @Override public void attachAsFirstObserver(IGraphObserver<V> observer) {
         observers.add(0, observer);
     }
 
-    @Override
-    public void detachObserver(IGraphObserver<V> go) {
+    @Override public void detachObserver(IGraphObserver<V> go) {
         observers.remove(go);
     }
 
-    @Override
-    public Set<V> getAllNodes() {
+    @Override public Set<V> getAllNodes() {
         return nodes;
     }
 
-    @Override
-    public IMemoryView<V> getTargetNodes(V source) {
+    @Override public IMemoryView<V> getTargetNodes(V source) {
         return outgoingEdges.lookupOrEmpty(source);
     }
 
-    @Override
-    public IMemoryView<V> getSourceNodes(V target) {
+    @Override public IMemoryView<V> getSourceNodes(V target) {
         return incomingEdges.lookupOrEmpty(target);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("nodes = ");
-        for (V n : getAllNodes()) {
+        for(V n : getAllNodes()) {
             sb.append(n.toString());
             sb.append(" ");
         }
         sb.append(" edges = ");
-        for (V source : outgoingEdges.distinctKeys()) {
+        for(V source : outgoingEdges.distinctKeys()) {
             IMemoryView<V> targets = outgoingEdges.lookup(source);
-            for (V target : targets.distinctValues()) {
+            for(V target : targets.distinctValues()) {
                 int count = targets.getCount(target);
-                for (int i = 0; i < count; i++) {
+                for(int i = 0; i < count; i++) {
                     sb.append("(" + source + "," + target + ") ");
                 }
             }

@@ -1,11 +1,8 @@
 package mb.nabl2.util.graph.graphimpl;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.graph.alg.misc.memory.EmptyMemory;
@@ -18,8 +15,8 @@ public class LazySubGraph<V> implements IBiDirectionalGraphDataSource<V> {
 
     private final IBiDirectionalGraphDataSource<V> graph;
     private final Set.Immutable<V> nodesInSubGraph;
-    private final Map<V, IMemoryView<V>> targetNodes;
-    private final Map<V, IMemoryView<V>> sourceNodes;
+    private final java.util.Map<V, IMemoryView<V>> targetNodes;
+    private final java.util.Map<V, IMemoryView<V>> sourceNodes;
 
     public LazySubGraph(IBiDirectionalGraphDataSource<V> graph, Iterable<V> nodesInSubGraph) {
         this.graph = graph;
@@ -49,9 +46,9 @@ public class LazySubGraph<V> implements IBiDirectionalGraphDataSource<V> {
             return EmptyMemory.instance();
         }
         return targetNodes.computeIfAbsent(source, src -> {
-            return new MapBackedMemoryView<>(Streams.stream(graph.getTargetNodes(src).entriesWithMultiplicities())
-                    .filter(e -> nodesInSubGraph.contains(e.getKey()))
-                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+            final Map.Transient<V, Integer> targetNodes = graph.getTargetNodes(src).asMap().asTransient();
+            CapsuleUtil.filter(targetNodes, node -> nodesInSubGraph.contains(node));
+            return new MapBackedMemoryView<>(targetNodes.freeze());
         });
     }
 
@@ -59,10 +56,10 @@ public class LazySubGraph<V> implements IBiDirectionalGraphDataSource<V> {
         if(!nodesInSubGraph.contains(target)) {
             return EmptyMemory.instance();
         }
-        return sourceNodes.computeIfAbsent(target, src -> {
-            return new MapBackedMemoryView<>(Streams.stream(graph.getSourceNodes(src).entriesWithMultiplicities())
-                    .filter(e -> nodesInSubGraph.contains(e.getKey()))
-                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+        return sourceNodes.computeIfAbsent(target, tgt -> {
+            final Map.Transient<V, Integer> sourceNodes = graph.getSourceNodes(tgt).asMap().asTransient();
+            CapsuleUtil.filter(sourceNodes, node -> nodesInSubGraph.contains(node));
+            return new MapBackedMemoryView<>(sourceNodes.freeze());
         });
     }
 

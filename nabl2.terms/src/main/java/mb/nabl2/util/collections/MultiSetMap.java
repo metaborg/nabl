@@ -59,6 +59,28 @@ public abstract class MultiSetMap<K, V> {
             return entries;
         }
 
+        public Immutable<K, V> put(K key, V value) {
+            final MultiSet.Immutable<V> values = entries.getOrDefault(key, MultiSet.Immutable.of());
+            return new Immutable<>(entries.__put(key, values.add(value)));
+        }
+
+        public Immutable<K, V> put(K key, V value, int n) {
+            if(n < 0) {
+                throw new IllegalArgumentException("Negative count");
+            }
+            final MultiSet.Immutable<V> values = entries.getOrDefault(key, MultiSet.Immutable.of());
+            return new Immutable<>(entries.__put(key, values.add(value, n)));
+        }
+
+        public Immutable<K, V> removeKey(K key) {
+            return new Immutable<>(entries.__remove(key));
+        }
+
+        public Immutable<K, V> remove(K key, V value) {
+            final MultiSet.Immutable<V> values = entries.getOrDefault(key, MultiSet.Immutable.of());
+            return new Immutable<>(entries.__put(key, values.remove(value)));
+        }
+
         public MultiSetMap.Transient<K, V> melt() {
             return new Transient<>(entries.asTransient());
         }
