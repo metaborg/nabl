@@ -1,0 +1,82 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.metaborg</groupId>
+		<artifactId>parent.java</artifactId>
+		<version>2.6.0-SNAPSHOT</version>
+		<relativePath>../../releng/parent/java</relativePath>
+	</parent>
+	<artifactId>statix.benchmarks</artifactId>
+	<packaging>jar</packaging>
+
+	<properties>
+		<jmh.version>1.26</jmh.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.metaborg</groupId>
+			<artifactId>statix.solver</artifactId>
+			<version>${metaborg-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.usethesource</groupId>
+			<artifactId>capsule</artifactId>
+		</dependency>
+		<dependency>
+			<artifactId>jmh-core</artifactId>
+			<groupId>org.openjdk.jmh</groupId>
+			<version>${jmh.version}</version>
+		</dependency>
+		<dependency>
+			<artifactId>jmh-generator-annprocess</artifactId>
+			<groupId>org.openjdk.jmh</groupId>
+			<version>${jmh.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+		</dependency>
+		<!-- javax.annotation & jsr305 necessary for annotations in dependencies -->
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>jsr305</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.bsc.maven</groupId>
+				<artifactId>maven-processor-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<developers>
+		<developer>
+			<name>Hendrik van Antwerpen</name>
+			<email>h.vanantwerpen@tudelft.nl</email>
+			<organization>Delft University of Technology</organization>
+			<organizationUrl>http://www.ewi.tudelft.nl/en</organizationUrl>
+		</developer>
+	</developers>
+
+</project>
