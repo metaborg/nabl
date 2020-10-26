@@ -88,8 +88,8 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             if(ex != null) {
                 fail(ex);
             } else {
-                logger.info("Unit {} finished.", id);
                 results.put(id, unitResult);
+                logger.info("Unit {} finished ({}/{}).", id, results.size(), units.size());
                 checkResults();
             }
         }
