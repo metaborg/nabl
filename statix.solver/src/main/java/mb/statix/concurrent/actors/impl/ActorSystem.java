@@ -1,8 +1,9 @@
 package mb.statix.concurrent.actors.impl;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -27,7 +28,8 @@ public class ActorSystem implements IActorSystem {
 
     private final Object lock = new Object();
     private final Map<String, Actor<?>> actors;
-    private final ExecutorService executor;
+    private final PriorityBlockingQueue<Runnable> executorQueue;
+    private final ThreadPoolExecutor executor;
     private volatile ActorSystemState state;
     private final IActorContext context;
 
@@ -38,7 +40,8 @@ public class ActorSystem implements IActorSystem {
 
     public ActorSystem(int parallelism) {
         this.actors = Maps.newHashMap();
-        this.executor = Executors.newWorkStealingPool(parallelism);
+        this.executorQueue = new PriorityBlockingQueue<>();
+        this.executor = new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, executorQueue);
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
@@ -137,21 +140,26 @@ public class ActorSystem implements IActorSystem {
         }
 
         @Override public ActorTask reschedule(ActorTask oldTask, int newPriority) {
-            return oldTask;
+            if(oldTask.priority * RESCHEDULE_FACTOR < newPriority && executorQueue.remove(oldTask)) {
+                return schedule(oldTask.runnable, newPriority);
+            } else {
+                return oldTask;
+            }
         }
 
         @Override public boolean preempt(int priority) {
-            return false;
+            ActorTask top = (ActorTask) executorQueue.peek();
+            return top != null && (priority * PREEMPT_FACTOR < top.priority);
         }
 
     }
 
     static class ActorTask implements Runnable, Comparable<ActorTask> {
 
-        private final Runnable runnable;
+        private final Actor<?> runnable;
         private final int priority;
 
-        ActorTask(Runnable runnable, int priority) {
+        ActorTask(Actor<?> runnable, int priority) {
             this.runnable = runnable;
             this.priority = priority;
         }

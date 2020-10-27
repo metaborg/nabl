@@ -1,5 +1,5 @@
 [
-( "src/main/java/org/apache/commons/csv/ExtendedBufferedReader.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/ExtendedBufferedReader.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -696,7 +696,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/Assertions.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/Assertions.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -800,7 +800,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/package-info.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/package-info.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -811,7 +811,7 @@
   , []
   )
 ),
-( "src/main/java/org/apache/commons/csv/CSVFormat.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/CSVFormat.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -8987,7 +8987,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/CSVParser.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/CSVParser.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -11906,7 +11906,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/Lexer.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/Lexer.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -14301,7 +14301,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/Token.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/Token.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -14503,7 +14503,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/IOUtils.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/IOUtils.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -14894,7 +14894,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/Constants.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/Constants.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []
@@ -15167,7 +15167,7 @@
     ]
   )
 ),
-( "src/main/java/org/apache/commons/csv/CSVRecord.pre-analysis.aterm"
+( "src/main/java/org/apache/commons/csv/CSVRecord.jav"
 , CompilationUnit(
     [ PackageDeclaration(
         []

@@ -115,7 +115,11 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
             final int priority = messages.size();
             if(state.equals(ActorState.RUNNING)) {
                 if(scheduledTask != null) {
+                    final ActorTask oldTask = scheduledTask;
                     scheduledTask = context.reschedule(scheduledTask, priority);
+                    if(oldTask != scheduledTask) {
+                        stats.rescheduled += 1;
+                    }
                 }
             } else if(state.equals(ActorState.WAITING)) {
                 logger.debug("resume {}", this);
@@ -653,12 +657,13 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
 
         private int suspended = 0;
         private int preempted = 0;
+        private int rescheduled = 0;
         private int messages = 0;
         private int maxPendingMessages = 0;
 
         @Override public String toString() {
             return "ActorStats{messages=" + messages + ",maxPendingMessages=" + maxPendingMessages + ",suspended="
-                    + suspended + ",preempted=" + preempted + "}";
+                    + suspended + ",preempted=" + preempted + ",rescheduled=" + rescheduled + "}";
         }
 
     }
