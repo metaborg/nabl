@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -eu
+
+mvn exec:exec@run-quick-benchmarks -Dbenchmark=$1
