@@ -169,7 +169,7 @@ public class ActorSystem implements IActorSystem {
         }
 
         @Override public int compareTo(ActorTask o) {
-            return priority - o.priority;
+            return o.priority - priority;
         }
 
     }
