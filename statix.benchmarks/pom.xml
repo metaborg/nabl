@@ -13,6 +13,7 @@
 
   <properties>
     <jmh.version>1.26</jmh.version>
+    <maxMem>8G</maxMem>
   </properties>
 
   <dependencies>
@@ -82,12 +83,14 @@
               <arguments>
                 <argument>-classpath</argument>
                 <classpath/>
+                <argument>-jvmArgs</argument>
+                <argument>-Xmx${maxMem}</argument>
                 <argument>mb.statix.benchmarks.${benchmark}</argument>
               </arguments>
             </configuration>
           </execution>
           <execution>
-            <id>run-benchmarks</id>
+            <id>run-full-benchmarks</id>
             <goals>
               <goal>exec</goal>
             </goals>
@@ -98,6 +101,38 @@
                 <argument>-classpath</argument>
                 <classpath/>
                 <argument>org.openjdk.jmh.Main</argument>
+                <argument>-jvmArgs</argument>
+                <argument>-Xmx${maxMem}</argument>
+                <argument>-rff</argument>
+                <argument>${benchmark}-full-benchmarks.log</argument>
+                <argument>-wi</argument>
+                <argument>3</argument>
+                <argument>-i</argument>
+                <argument>5</argument>
+                <argument>${benchmark}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>run-quick-benchmarks</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <classpathScope>compile</classpathScope>
+              <executable>java</executable>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>org.openjdk.jmh.Main</argument>
+                <argument>-jvmArgs</argument>
+                <argument>-Xmx${maxMem}</argument>
+                <argument>-rff</argument>
+                <argument>${benchmark}-quick-benchmarks.log</argument>
+                <argument>-wi</argument>
+                <argument>1</argument>
+                <argument>-i</argument>
+                <argument>1</argument>
                 <argument>${benchmark}</argument>
               </arguments>
             </configuration>
