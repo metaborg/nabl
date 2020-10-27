@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import org.metaborg.util.task.ICancel;
 
+import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
@@ -28,9 +29,9 @@ public interface IUnitContext<S, L, D, R> {
 
     boolean isWaiting();
 
-    boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
-
     boolean isWaitingFor(IWaitFor<S, L, D> token);
+
+    MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, R>> unit);
 
     void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit);
 

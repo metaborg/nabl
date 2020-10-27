@@ -26,10 +26,6 @@ public class WaitForGraphTest {
     private static final Integer NODE_2 = 2;
     private static final Integer NODE_3 = 3;
 
-    private static final String RES_A = "A";
-    private static final String RES_B = "B";
-    private static final String RES_C = "C";
-
     ///////////////////////////////////////////////////////////////////////////
     // Single node scenarios
     ///////////////////////////////////////////////////////////////////////////
@@ -37,7 +33,7 @@ public class WaitForGraphTest {
     @Test public void testSelfDeadlock() {
         Trace trace1 = new Trace(NODE_1);
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.delivered(NODE_1);
@@ -50,10 +46,10 @@ public class WaitForGraphTest {
     @Test public void testSelfDeadlockTwoResources() {
         Trace trace1 = new Trace(NODE_1);
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
-        trace1.waitFor(RES_B, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.delivered(NODE_1);
@@ -68,10 +64,10 @@ public class WaitForGraphTest {
     @Test public void testSelfDeadlockResourceTwice() {
         Trace trace1 = new Trace(NODE_1);
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.delivered(NODE_1);
@@ -86,7 +82,7 @@ public class WaitForGraphTest {
     @Test public void testSelfSuspendBeforeDeliver() {
         Trace trace1 = new Trace(NODE_1);
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.suspendNotDeadlocked();
@@ -97,14 +93,14 @@ public class WaitForGraphTest {
     @Test public void testSelfGrantBeforeSuspend() {
         Trace trace1 = new Trace(NODE_1);
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.delivered(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.delivered(NODE_1);
-        trace1.granted(RES_A, NODE_1);
+        trace1.granted(NODE_1);
 
         trace1.suspendNotDeadlocked();
 
@@ -119,7 +115,7 @@ public class WaitForGraphTest {
         Trace trace1 = new Trace(NODE_1);
         Trace trace2 = new Trace(NODE_2);
 
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
 
         trace1.suspendNotDeadlocked();
@@ -128,7 +124,7 @@ public class WaitForGraphTest {
         trace2.sent(NODE_1);
 
         trace1.delivered(NODE_2);
-        trace1.granted(RES_A, NODE_2);
+        trace1.granted(NODE_2);
 
         trace1.suspendNotDeadlocked();
 
@@ -141,8 +137,8 @@ public class WaitForGraphTest {
         Trace trace1 = new Trace(NODE_1);
         Trace trace2 = new Trace(NODE_2);
 
-        trace1.waitFor(RES_A, NODE_2);
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
 
         trace1.suspendNotDeadlocked();
@@ -151,7 +147,7 @@ public class WaitForGraphTest {
         trace2.sent(NODE_1);
 
         trace1.delivered(NODE_2);
-        trace1.granted(RES_A, NODE_2);
+        trace1.granted(NODE_2);
 
         trace1.suspendNotDeadlocked();
 
@@ -161,7 +157,7 @@ public class WaitForGraphTest {
         trace2.suspendNotDeadlocked();
 
         trace1.delivered(NODE_2);
-        trace1.granted(RES_A, NODE_2);
+        trace1.granted(NODE_2);
 
         trace1.suspendNotDeadlocked();
 
@@ -172,11 +168,11 @@ public class WaitForGraphTest {
         final Trace trace1 = new Trace(NODE_1);
         final Trace trace2 = new Trace(NODE_2);
 
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
         trace1.suspendNotDeadlocked();
 
-        trace2.waitFor(RES_B, NODE_1);
+        trace2.waitFor(NODE_1);
         trace2.sent(NODE_1);
         trace2.suspendNotDeadlocked();
 
@@ -189,12 +185,12 @@ public class WaitForGraphTest {
         trace2.suspendNotDeadlocked();
 
         trace1.delivered(NODE_2);
-        trace1.granted(RES_A, NODE_2);
+        trace1.granted(NODE_2);
 
         trace1.suspendNotDeadlocked();
 
         trace2.delivered(NODE_1);
-        trace2.granted(RES_B, NODE_1);
+        trace2.granted(NODE_1);
 
         trace2.suspendNotDeadlocked();
 
@@ -206,11 +202,11 @@ public class WaitForGraphTest {
         final Trace trace2 = new Trace(NODE_2);
         final Object marker = new Object();
 
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
         trace1.suspendNotDeadlocked();
 
-        trace2.waitFor(RES_B, NODE_1);
+        trace2.waitFor(NODE_1);
         trace2.sent(NODE_1);
         trace2.suspendNotDeadlocked();
 
@@ -235,14 +231,14 @@ public class WaitForGraphTest {
 
         Object marker1 = new Object();
 
-        trace1.waitFor(RES_A, NODE_1);
+        trace1.waitFor(NODE_1);
         trace1.sent(NODE_1);
 
         trace1.delivered(NODE_1);
 
         trace1.suspendDeadlocked(marker1);
 
-        trace2.waitFor(RES_B, NODE_1);
+        trace2.waitFor(NODE_1);
         trace2.sent(NODE_1);
 
         trace2.suspendNotDeadlocked();
@@ -253,7 +249,7 @@ public class WaitForGraphTest {
         trace1.suspendDeadlocked(marker1);
 
         trace2.delivered(NODE_1);
-        trace2.granted(RES_B, NODE_1);
+        trace2.granted(NODE_1);
 
         trace2.suspendDeadlocked(new Object());
 
@@ -271,15 +267,15 @@ public class WaitForGraphTest {
         Object marker = new Object();
 
         /* 1.i */
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
 
         /* 2.i */
-        trace2.waitFor(RES_B, NODE_3);
+        trace2.waitFor(NODE_3);
         trace2.sent(NODE_3);
 
         /* 3.i */
-        trace3.waitFor(RES_C, NODE_1);
+        trace3.waitFor(NODE_1);
         trace3.sent(NODE_1);
 
         /* 3.i */
@@ -306,15 +302,15 @@ public class WaitForGraphTest {
         Trace trace3 = new Trace(NODE_3);
 
         /* 1.i  */
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
 
         /* 2.i  */
-        trace2.waitFor(RES_B, NODE_3);
+        trace2.waitFor(NODE_3);
         trace2.sent(NODE_3);
 
         /* 3.i  */
-        trace3.waitFor(RES_C, NODE_1);
+        trace3.waitFor(NODE_1);
         /* 3.i  */
         trace3.sent(NODE_1);
 
@@ -336,17 +332,17 @@ public class WaitForGraphTest {
         /* 2.ii */
         trace1.delivered(NODE_2);
         /* 2.ii */
-        trace1.granted(RES_A, NODE_2);
+        trace1.granted(NODE_2);
 
         /* 3.ii */
         trace2.delivered(NODE_3);
         /* 3.ii */
-        trace2.granted(RES_A, NODE_3);
+        trace2.granted(NODE_3);
 
         /* 1.ii */
         trace3.delivered(NODE_1);
         /* 1.ii */
-        trace3.granted(RES_A, NODE_1);
+        trace3.granted(NODE_1);
 
         trace1.suspendNotDeadlocked();
 
@@ -362,12 +358,12 @@ public class WaitForGraphTest {
         Trace trace2 = new Trace(NODE_2);
         Trace trace3 = new Trace(NODE_3);
 
-        trace2.waitFor(RES_A, NODE_3);
+        trace2.waitFor(NODE_3);
         trace2.sent(NODE_3);
 
         trace3.delivered(NODE_2);
 
-        trace1.waitFor(RES_A, NODE_2);
+        trace1.waitFor(NODE_2);
         trace1.sent(NODE_2);
 
         trace2.delivered(NODE_1);
@@ -379,13 +375,13 @@ public class WaitForGraphTest {
         trace1.suspendNotDeadlocked();
 
         trace2.delivered(NODE_3);
-        trace2.granted(RES_A, NODE_3);
+        trace2.granted(NODE_3);
 
         trace2.sent(NODE_1);
         trace2.suspendNotDeadlocked();
 
         trace1.delivered(NODE_2);
-        trace1.granted(RES_A, NODE_2);
+        trace1.granted(NODE_2);
 
         trace1.suspendNotDeadlocked();
 
@@ -430,18 +426,18 @@ public class WaitForGraphTest {
             });
         }
 
-        public void waitFor(String token, Integer other) {
+        public void waitFor(Integer other) {
             steps.add((wfg, clock, markers, logger) -> {
-                logger.apply(node + " waits for " + other + "/" + token);
-                wfg.waitFor(node, token, other);
+                logger.apply(node + " waits for " + other);
+                wfg.waitFor(node, other);
                 return clock;
             });
         }
 
-        public void granted(String token, Integer other) {
+        public void granted(Integer other) {
             steps.add((wfg, clock, markers, logger) -> {
-                logger.apply(node + " was granted " + other + "/" + token);
-                wfg.granted(node, token, other);
+                logger.apply(node + " was granted " + other);
+                wfg.granted(node, other);
                 return clock;
             });
         }
@@ -450,9 +446,9 @@ public class WaitForGraphTest {
             steps.add((wfg, clock, markers, logger) -> {
                 // FIXME these can be optional
                 logger.apply(node + " suspended");
-                final Deadlock<Integer, String> suspend = wfg.suspend(node, clock);
+                final Deadlock<Integer> suspend = wfg.suspend(node, clock);
                 if(!suspend.isEmpty()) {
-                    throw new AssertionError("Unexpected deadlock: " + suspend.edges());
+                    throw new AssertionError("Unexpected deadlock: " + suspend.nodes());
                 }
                 return clock;
             });
@@ -462,7 +458,7 @@ public class WaitForGraphTest {
             markers = markers.add(marker);
             steps.add((wfg, clock, markers, logger) -> {
                 logger.apply(node + " suspended");
-                final Deadlock<Integer, String> suspend = wfg.suspend(node, clock);
+                final Deadlock<Integer> suspend = wfg.suspend(node, clock);
                 if(!suspend.isEmpty()) {
                     if(!markers.contains(marker)) {
                         throw new AssertionError("Deadlock reported twice.");
@@ -482,7 +478,7 @@ public class WaitForGraphTest {
 
     private interface Step {
 
-        Clock<Integer> step(WaitForGraph<Integer, String> wfg, Clock<Integer> clock, MultiSet.Transient<Object> markers,
+        Clock<Integer> step(WaitForGraph<Integer> wfg, Clock<Integer> clock, MultiSet.Transient<Object> markers,
                 Action1<String> logger);
 
     }
@@ -502,7 +498,7 @@ public class WaitForGraphTest {
         final LinkedList<Clock<Integer>> clocks =
                 nodes.stream().map(tr -> Clock.<Integer>of()).collect(Collectors.toCollection(LinkedList::new));
 
-        final WaitForGraph<Integer, String> wfg = new WaitForGraph<>();
+        final WaitForGraph<Integer> wfg = new WaitForGraph<>();
         final List<String> log = Lists.newArrayList();
 
         final Random rnd = new Random();

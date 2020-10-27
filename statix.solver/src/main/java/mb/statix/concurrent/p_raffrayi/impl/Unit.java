@@ -18,7 +18,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
@@ -552,8 +551,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock,
-            java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes,
-            SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+            java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
         self.assertOnActorThread();
 
         if(!this.clock.equals(clock)) {
@@ -567,19 +565,18 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
         this.clock = this.clock.sent(self).delivered(self); // increase local clock to ensure deadlock detection after this
         if(nodes.size() == 1 && nodes.contains(self)) {
-            if(!failDelays(nodes, waitFors)) {
-                failAll(nodes, waitFors);
+            if(!failDelays(nodes)) {
+                failAll(nodes);
             }
         } else {
-            failDelays(nodes, waitFors);
+            failDelays(nodes);
         }
     }
 
     /**
      * Fail delays that are part of the deadlock.
      */
-    private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes,
-            SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+    private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
         final Set.Transient<ICompletable<?>> deadlocked = Set.Transient.of();
         for(Delay delay : delays.inverse().keySet()) {
             if(nodes.contains(delay.sender)) {
@@ -588,7 +585,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 deadlocked.__insert(delay.future);
             }
         }
-        for(IWaitFor<S, L, D> wf : waitFors.values()) {
+        for(IActorRef<? extends IUnit<S, L, D, R>> node : nodes) {
+            for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
             // @formatter:off
             wf.visit(IWaitFor.cases(
                 initScope -> {},
@@ -604,6 +602,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 }
             ));
             // @formatter:on
+            }
         }
         for(ICompletable<?> future : deadlocked) {
             self.complete(future, null, new DeadlockException("Type checker deadlocked."));
@@ -611,11 +610,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         return !deadlocked.isEmpty();
     }
 
-    private void failAll(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes,
-            SetMultimap.Immutable<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> waitFors) {
+    private void failAll(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
         // Grants are processed immediately, while the result failure is scheduled.
         // This ensures that all labels are closed by the time the result failure is processed.
-        for(IWaitFor<S, L, D> wf : waitFors.values()) {
+        for(IActorRef<? extends IUnit<S, L, D, R>> node : nodes) {
+            for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
             // @formatter:off
             wf.visit(IWaitFor.cases(
                 initScope -> {
@@ -658,8 +657,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 }
             ));
             // @formatter:on
-            tryFinish();
+            }
         }
+        tryFinish();
     }
 
     @SuppressWarnings("unchecked") @Override public void sent(IActor<?> self, IActorRef<?> target,

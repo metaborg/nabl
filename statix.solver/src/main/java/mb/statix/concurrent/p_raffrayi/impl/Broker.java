@@ -13,6 +13,7 @@ import org.metaborg.util.task.ICancel;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
+import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
@@ -41,7 +42,7 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private final ICancel cancel;
 
     private final ActorSystem system;
-    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>, IWaitFor<S, L, D>>> dlm;
+    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>>> dlm;
 
     private final Object lock = new Object();
     private final Map<String, IActor<IUnit<S, L, D, R>>> units;
@@ -120,14 +121,13 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private void handleDeadlock(IActor<?> dlm,
-            Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, IWaitFor<S, L, D>> deadlock) {
+    private void handleDeadlock(IActor<?> dlm, Deadlock<IActorRef<? extends IUnit<S, L, D, R>>> deadlock) {
         for(Entry<IActorRef<? extends IUnit<S, L, D, R>>, Clock<IActorRef<? extends IUnit<S, L, D, R>>>> entry : deadlock
                 .nodes().entrySet()) {
             final IActorRef<? extends IUnit<S, L, D, R>> unit = entry.getKey();
             final Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock = entry.getValue();
             logger.debug("deadlock detected: {}", deadlock);
-            dlm.async(unit)._deadlocked(clock, deadlock.nodes().keySet(), deadlock.outgoingWaitFors(unit));
+            dlm.async(unit)._deadlocked(clock, deadlock.nodes().keySet());
         }
     }
 
@@ -202,12 +202,12 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             return udlm.isWaiting();
         }
 
-        @Override public boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            return udlm.isWaitingFor(unit, token);
-        }
-
         @Override public boolean isWaitingFor(IWaitFor<S, L, D> token) {
             return udlm.isWaitingFor(token);
+        }
+
+        @Override public MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, R>> unit) {
+            return udlm.getTokens(unit);
         }
 
         @Override public void suspended(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
