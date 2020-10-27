@@ -25,7 +25,7 @@ public class CommonsCSVBenchmark extends JavaBenchmark {
 
     private static final ILogger logger = LoggerUtils.logger(CommonsCSVBenchmark.class);
 
-    @Param({ "1", "2", "4", "8" }) public int parallelism;
+    @Param({ "0", "1", "2", "4", "8" }) public int parallelism;
 
     @Override protected String name() {
         return "commons-csv";

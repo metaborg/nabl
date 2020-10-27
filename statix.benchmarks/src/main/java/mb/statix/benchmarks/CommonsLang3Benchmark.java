@@ -25,7 +25,7 @@ public class CommonsLang3Benchmark extends JavaBenchmark {
 
     private static final ILogger logger = LoggerUtils.logger(CommonsLang3Benchmark.class);
 
-    @Param({ "1", "2", "4", "8" }) public int parallelism;
+    @Param({ "0", "1", "2", "4", "8" }) public int parallelism;
 
     @Override protected String name() {
         return "commons-lang3";
@@ -42,8 +42,9 @@ public class CommonsLang3Benchmark extends JavaBenchmark {
     public static void main(String[] args) throws Exception, InterruptedException {
         JavaBenchmark benchmark = new CommonsLang3Benchmark();
         benchmark.doSetup();
+        logger.info("Started.");
         final long t0 = System.currentTimeMillis();
-        benchmark.doRun(Runtime.getRuntime().availableProcessors());
+        benchmark.doRun(8);
         final long dt = System.currentTimeMillis() - t0;
         logger.info("Finished after {} s.", dt / 1_000d);
     }

@@ -10,8 +10,8 @@ import java.util.Map.Entry;
 
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
-import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
@@ -93,7 +93,7 @@ public class BenchmarkUtil {
     public static SolverResult runTraditional(Spec spec, IState.Immutable state,
             java.util.Map<String, IConstraint> units) throws Exception, InterruptedException {
 
-        final ICancel cancel = new ThreadCancel();
+        final ICancel cancel = new NullCancel();
         final IProgress progress = new NullProgress();
         final IDebugContext debug = new NullDebugContext();
 
@@ -115,7 +115,7 @@ public class BenchmarkUtil {
     public static IBrokerResult<Scope, ITerm, ITerm, SolverResult> runConcurrent(Spec spec,
             java.util.Map<String, Rule> units, int parallelism) throws Exception, InterruptedException {
 
-        final ICancel cancel = new ThreadCancel();
+        final ICancel cancel = new NullCancel();
         final IDebugContext debug = new NullDebugContext();
 
         final IScopeImpl<Scope> scopeImpl = new ScopeImpl();
