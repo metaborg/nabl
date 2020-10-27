@@ -290,6 +290,8 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                 thread = Thread.currentThread();
                 current.set(this);
                 LoggerUtils.setContextId("act:" + id);
+
+                stats.maxPendingMessagesOnActivate = Math.max(stats.maxPendingMessagesOnActivate, messages.size());
             }
 
             while(true) {
@@ -660,10 +662,12 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
         private int rescheduled = 0;
         private int messages = 0;
         private int maxPendingMessages = 0;
+        private int maxPendingMessagesOnActivate = 0;
 
         @Override public String toString() {
-            return "ActorStats{messages=" + messages + ",maxPendingMessages=" + maxPendingMessages + ",suspended="
-                    + suspended + ",preempted=" + preempted + ",rescheduled=" + rescheduled + "}";
+            return "ActorStats{messages=" + messages + ",maxPendingMessages=" + maxPendingMessages
+                    + ",maxPendingMessagesOnActivate=" + maxPendingMessagesOnActivate + ",suspended=" + suspended
+                    + ",preempted=" + preempted + ",rescheduled=" + rescheduled + "}";
         }
 
     }
