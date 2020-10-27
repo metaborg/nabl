@@ -26,6 +26,7 @@ import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.IActorStats;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.Clock;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
@@ -35,6 +36,7 @@ import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.IUnitStats;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseLabel;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
@@ -80,6 +82,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
+    private final Stats stats;
+
     Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
             IUnitContext<S, L, D, R> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
         this.self = self;
@@ -99,6 +103,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
+
+        this.stats = new Stats(self.stats());
 
         self.addMonitor(this);
     }
@@ -222,6 +228,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(wf, self);
+        stats.ownQueries += 1;
         return self.schedule(result).whenComplete((env, ex) -> {
             granted(wf, self);
             tryFinish();
@@ -254,6 +261,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+        stats.foreignQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
@@ -370,6 +378,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                             self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
                     final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                     waitFor(wf, owner);
+                    stats.forwardedQueries += 1;
                     return Optional.of(result.whenComplete((r, ex) -> {
                         logger.debug("got answer from {}", sender);
                         granted(wf, owner);
@@ -475,7 +484,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         boolean notDone = state.equals(UnitState.INIT) || state.equals(UnitState.ACTIVE);
         if(notDone && !context.isWaiting()) {
             state = UnitState.DONE;
-            unitResult.complete(UnitResult.of(scopeGraph.get(), analysis.get(), failures));
+            unitResult.complete(UnitResult.of(scopeGraph.get(), analysis.get(), failures, stats));
         }
     }
 
@@ -679,6 +688,33 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             return;
         }
         context.suspended(clock);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Stats
+    ///////////////////////////////////////////////////////////////////////////
+
+    private static class Stats implements IUnitStats {
+
+        private int ownQueries;
+        private int foreignQueries;
+        private int forwardedQueries;
+
+        private IActorStats actorStats;
+
+        private Stats(IActorStats actorStats) {
+            this.actorStats = actorStats;
+        }
+
+        @Override public IActorStats actorStats() {
+            return actorStats;
+        }
+
+        @Override public String toString() {
+            return "UnitStats{ownQueries=" + ownQueries + ",foreignQueries=" + foreignQueries + ",forwardedQueries="
+                    + forwardedQueries + "," + actorStats + "}";
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////

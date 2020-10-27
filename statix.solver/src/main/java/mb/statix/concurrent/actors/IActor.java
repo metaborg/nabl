@@ -58,4 +58,7 @@ public interface IActor<T> extends IActorRef<T> {
      * Assertion that checks it is executed on the actors thread.
      */
     void assertOnActorThread();
+
+    IActorStats stats();
+
 }

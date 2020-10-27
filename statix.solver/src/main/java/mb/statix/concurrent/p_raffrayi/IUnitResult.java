@@ -12,4 +12,6 @@ public interface IUnitResult<S, L, D, R> {
 
     List<Throwable> failures();
 
+    IUnitStats stats();
+
 }

@@ -98,6 +98,11 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private void checkResults() {
         if(results.size() == units.size()) {
             logger.info("All units finished.");
+            // FIXME This relies on the stats objects being pased be reference, so that
+            //       they are updated even after the result came in.
+            for(Entry<String, IUnitResult<S, L, D, R>> entry : results.entrySet()) {
+                logger.info("{}: {}", entry.getKey(), entry.getValue().stats());
+            }
             result.complete(BrokerResult.of(results));
             system.stop();
         }

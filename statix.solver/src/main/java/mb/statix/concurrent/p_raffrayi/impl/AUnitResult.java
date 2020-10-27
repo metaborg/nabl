@@ -8,6 +8,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.IUnitStats;
 import mb.statix.scopegraph.IScopeGraph;
 
 @Value.Immutable
@@ -19,5 +20,7 @@ abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R> {
     @Value.Parameter @Override public abstract @Nullable R analysis();
 
     @Value.Parameter @Override public abstract List<Throwable> failures();
+
+    @Value.Parameter @Override public abstract IUnitStats stats();
 
 }

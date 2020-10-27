@@ -25,6 +25,7 @@ import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.IActorStats;
 import mb.statix.concurrent.actors.MessageTags;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.futures.AsyncCompletable;
@@ -68,6 +69,8 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
         throw new IllegalStateException("Cannot get sender when not in message processing context.");
     });
 
+    private Stats stats = new Stats();
+
     Actor(IActorContext context, String id, TypeTag<T> type, Function1<IActor<T>, ? extends T> supplier) {
         this.context = context;
         this.id = id;
@@ -84,7 +87,6 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
 
         this.asyncSystem = newAsyncSystem();
         this.asyncActor = newAsyncActor();
-
     }
 
     @Override public String id() {
@@ -291,6 +293,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                 synchronized(lock) {
                     if(messages.isEmpty()) {
                         logger.debug("suspend");
+                        stats.suspended += 1;
 
                         state = ActorState.WAITING;
 
@@ -301,9 +304,12 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                         LoggerUtils.clearContextId();
                         current.remove();
                         thread = null;
+
                         return;
                     } else {
+                        stats.maxPendingMessages = Math.max(stats.maxPendingMessages, messages.size());
                         message = messages.remove();
+                        stats.messages += 1;
                     }
                 }
                 logger.debug("deliver message {}", message);
@@ -312,6 +318,9 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                 synchronized(lock) {
                     final int priority = messages.size();
                     if(context.preempt(priority)) {
+                        logger.debug("preempted");
+                        stats.preempted += 1;
+
                         scheduledTask = context.schedule(this, priority);
 
                         LoggerUtils.clearContextId();
@@ -630,6 +639,28 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
             logger.error("Actor {} is running, but thread and current are inconsistent.", this);
             throw new IllegalStateException("Actor " + this + " is running, but thread and current are inconsistent.");
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Stats
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public IActorStats stats() {
+        return stats;
+    }
+
+    private static class Stats implements IActorStats {
+
+        private int suspended = 0;
+        private int preempted = 0;
+        private int messages = 0;
+        private int maxPendingMessages = 0;
+
+        @Override public String toString() {
+            return "ActorStats{messages=" + messages + ",maxPendingMessages=" + maxPendingMessages + ",suspended="
+                    + suspended + ",preempted=" + preempted + "}";
+        }
+
     }
 
 }
