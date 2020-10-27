@@ -14,6 +14,11 @@
   <properties>
     <jmh.version>1.26</jmh.version>
     <maxMem>8G</maxMem>
+    <jprof.home>/Applications/jprofiler8</jprof.home>
+    <jprof.bin>${jprof.home}/bin</jprof.bin>
+    <jprof.lib>${jprof.bin}/macos</jprof.lib>
+    <jprof.port>8849</jprof.port>
+    <maven.build.timestamp.format>yyyyMMdd'T'HHmmss</maven.build.timestamp.format>
   </properties>
 
   <dependencies>
@@ -73,6 +78,25 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>run-jprofiler</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <classpathScope>compile</classpathScope>
+              <executable>java</executable>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>-Xmx${maxMem}</argument>
+                <argument>-Xint</argument>
+                <argument>-agentpath:${jprof.lib}/libjprofilerti.jnilib=port=${jprof.port}</argument>
+                <argument>-Xbootclasspath/a:${jprof.bin}/agent.jar</argument>
+                <argument>mb.statix.benchmarks.${benchmark}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
             <id>run-interactive</id>
             <goals>
               <goal>exec</goal>
@@ -83,7 +107,6 @@
               <arguments>
                 <argument>-classpath</argument>
                 <classpath/>
-                <argument>-jvmArgs</argument>
                 <argument>-Xmx${maxMem}</argument>
                 <argument>mb.statix.benchmarks.${benchmark}</argument>
               </arguments>
@@ -104,7 +127,7 @@
                 <argument>-jvmArgs</argument>
                 <argument>-Xmx${maxMem}</argument>
                 <argument>-rff</argument>
-                <argument>${benchmark}-full-benchmarks.log</argument>
+                <argument>results/${benchmark}-full-benchmarks-${maven.build.timestamp}.log</argument>
                 <argument>-wi</argument>
                 <argument>3</argument>
                 <argument>-i</argument>
@@ -128,7 +151,7 @@
                 <argument>-jvmArgs</argument>
                 <argument>-Xmx${maxMem}</argument>
                 <argument>-rff</argument>
-                <argument>${benchmark}-quick-benchmarks.log</argument>
+                <argument>results/${benchmark}-quick-benchmarks-${maven.build.timestamp}.log</argument>
                 <argument>-wi</argument>
                 <argument>1</argument>
                 <argument>-i</argument>
