@@ -15,6 +15,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
@@ -706,8 +707,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             this.actorStats = actorStats;
         }
 
-        @Override public IActorStats actorStats() {
-            return actorStats;
+        @Override public Iterable<String> csvHeaders() {
+            return Iterables.concat(ImmutableList.of("ownQueries", "incomingQueries", "outgoingQueries"),
+                    actorStats.csvHeaders());
+        }
+
+        @Override public Iterable<String> csvRow() {
+            return Iterables.concat(ImmutableList.of(Integer.toString(ownQueries), Integer.toString(foreignQueries),
+                    Integer.toString(forwardedQueries)), actorStats.csvRow());
         }
 
         @Override public String toString() {

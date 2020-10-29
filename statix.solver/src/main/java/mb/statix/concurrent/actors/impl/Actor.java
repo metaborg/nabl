@@ -5,19 +5,17 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.concurrent.ClosableLock;
-import org.metaborg.util.concurrent.IClosableLock;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 
 import io.usethesource.capsule.Set;
@@ -47,10 +45,8 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
     private final Object lock;
     private volatile ActorState state;
     private final Deque<IMessage<T>> messages;
-    private final Set.Transient<IReturn<?>> returns;
-
-    private final ReadWriteLock monitorsLock;
-    private final Set.Transient<IActorMonitor> monitors;
+    private final java.util.Set<IReturn<?>> returns;
+    private final java.util.Set<IActorMonitor> monitors;
 
     final T asyncSystem;
     final T asyncActor;
@@ -80,10 +76,9 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
         this.lock = new Object();
         this.state = ActorState.INITIAL;
         this.messages = Queues.newArrayDeque();
-        this.returns = Set.Transient.of();
+        this.returns = new ConcurrentHashMap<IReturn<?>, Boolean>().keySet(true);
 
-        this.monitorsLock = new ReentrantReadWriteLock();
-        this.monitors = Set.Transient.of();
+        this.monitors = new ConcurrentHashMap<IActorMonitor, Boolean>().keySet(true);
 
         this.asyncSystem = newAsyncSystem();
         this.asyncActor = newAsyncActor();
@@ -158,9 +153,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                         final Return<?> ret = new Return<>(sender, method, result);
                         message = new Invoke(sender, method, args, ret);
                         returnValue = result;
-                        synchronized(lock) {
-                            returns.__insert(ret);
-                        }
+                        returns.add(ret);
                     } else {
                         logger.error("Unsupported method called: {}", method);
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -198,9 +191,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
                         final IReturn<?> ret = IReturn.of(new AsyncCompletable<>(ForkJoinPool.commonPool(), result));
                         message = new Invoke(null, method, args, ret);
                         returnValue = result;
-                        synchronized(lock) {
-                            returns.__insert(ret);
-                        }
+                        returns.add(ret);
                     } else {
                         logger.error("Unsupported method called: {}", method);
                         throw new IllegalStateException("Unsupported method called: " + method);
@@ -402,15 +393,11 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void addMonitor(IActorMonitor monitor) {
-        try(IClosableLock lock = new ClosableLock(monitorsLock.writeLock())) {
-            monitors.__insert(monitor);
-        }
+        monitors.add(monitor);
     }
 
     void forEachMonitor(Action1<? super IActorMonitor> action) {
-        try(IClosableLock lock = new ClosableLock(monitorsLock.readLock())) {
-            monitors.forEach(action::apply);
-        }
+        monitors.forEach(action::apply);
     }
 
     private Set<String> tags(Method method) {
@@ -532,11 +519,9 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
         @Override public void complete(U value, Throwable ex) throws ActorStoppedException {
             assertOnActorThread();
 
-            synchronized(lock) {
-                if(!returns.__remove(this)) {
-                    logger.error("Dangling return?");
-                    throw new IllegalStateException("Dangling return?");
-                }
+            if(!returns.remove(this)) {
+                logger.error("Dangling return?");
+                throw new IllegalStateException("Dangling return?");
             }
 
             this.value = value;
@@ -663,6 +648,17 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
         private int messages = 0;
         private int maxPendingMessages = 0;
         private int maxPendingMessagesOnActivate = 0;
+
+        @Override public Iterable<String> csvHeaders() {
+            return ImmutableList.of("suspended", "preempted", "rescheduled", "messages", "maxPendingMessages",
+                    "maxPendingMessagesOnActivate");
+        }
+
+        @Override public Iterable<String> csvRow() {
+            return ImmutableList.of(Integer.toString(suspended), Integer.toString(preempted),
+                    Integer.toString(rescheduled), Integer.toString(messages), Integer.toString(maxPendingMessages),
+                    Integer.toString(maxPendingMessagesOnActivate));
+        }
 
         @Override public String toString() {
             return "ActorStats{messages=" + messages + ",maxPendingMessages=" + maxPendingMessages
