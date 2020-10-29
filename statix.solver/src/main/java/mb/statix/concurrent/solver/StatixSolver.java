@@ -364,7 +364,7 @@ public class StatixSolver {
 
     private Unit k(IConstraint constraint, int fuel) throws InterruptedException {
         // stop if thread is interrupted
-        if(cancel.cancelled() || Thread.interrupted()) {
+        if(cancel.cancelled()) {
             throw new InterruptedException();
         }
 
