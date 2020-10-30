@@ -4,4 +4,6 @@ interface IMessage<T> {
 
     void dispatch(T impl) throws ActorException;
 
+    void fail(ActorStoppedException ex);
+
 }

@@ -1,9 +1,6 @@
 package mb.statix.concurrent.actors.impl;
 
 import java.util.Map;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -23,16 +20,11 @@ public class ActorSystem implements IActorSystem {
 
     private static final ILogger logger = LoggerUtils.logger(ActorSystem.class);
 
-    @SuppressWarnings("unused") private static final int PREEMPT_FACTOR = 3;
-    @SuppressWarnings("unused") private static final int RESCHEDULE_FACTOR = 7;
-
     private final Object lock = new Object();
     private final Map<String, Actor<?>> actors;
-    private final PriorityBlockingQueue<Runnable> executorQueue;
-    private final ThreadPoolExecutor executor;
+    private final IActorScheduler scheduler;
     private volatile ActorSystemState state;
     private final IActorContext context;
-
 
     public ActorSystem() {
         this(Runtime.getRuntime().availableProcessors());
@@ -40,8 +32,7 @@ public class ActorSystem implements IActorSystem {
 
     public ActorSystem(int parallelism) {
         this.actors = Maps.newHashMap();
-        this.executorQueue = new PriorityBlockingQueue<>();
-        this.executor = new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, executorQueue);
+        this.scheduler = new PriorityThreadPoolScheduler(parallelism);
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
@@ -101,7 +92,7 @@ public class ActorSystem implements IActorSystem {
             for(Actor<?> actor : actors.values()) {
                 actor.stop();
             }
-            executor.shutdown();
+            scheduler.shutdown();
         }
     }
 
@@ -111,7 +102,7 @@ public class ActorSystem implements IActorSystem {
                 throw new IllegalStateException("Actor system not started.");
             }
             state = ActorSystemState.STOPPED;
-            executor.shutdownNow();
+            scheduler.shutdownNow();
         }
     }
 
@@ -133,43 +124,8 @@ public class ActorSystem implements IActorSystem {
             return (T) ((Actor) receiver).asyncActor;
         }
 
-        @Override public ActorTask schedule(Actor<?> actor, int priority) {
-            final ActorTask task = new ActorTask(actor, priority);
-            executor.execute(task);
-            return task;
-        }
-
-        @Override public ActorTask reschedule(ActorTask oldTask, int newPriority) {
-            if(oldTask.priority * RESCHEDULE_FACTOR < newPriority && executorQueue.remove(oldTask)) {
-                return schedule(oldTask.runnable, newPriority);
-            } else {
-                return oldTask;
-            }
-        }
-
-        @Override public boolean preempt(int priority) {
-            ActorTask top = (ActorTask) executorQueue.peek();
-            return top != null && (priority * PREEMPT_FACTOR < top.priority);
-        }
-
-    }
-
-    static class ActorTask implements Runnable, Comparable<ActorTask> {
-
-        private final Actor<?> runnable;
-        private final int priority;
-
-        ActorTask(Actor<?> runnable, int priority) {
-            this.runnable = runnable;
-            this.priority = priority;
-        }
-
-        @Override public void run() {
-            runnable.run();
-        }
-
-        @Override public int compareTo(ActorTask o) {
-            return o.priority - priority;
+        @Override public IActorScheduler scheduler() {
+            return scheduler;
         }
 
     }
