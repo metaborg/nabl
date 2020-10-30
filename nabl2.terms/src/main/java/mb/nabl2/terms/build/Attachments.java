@@ -5,6 +5,8 @@ import java.io.Serializable;
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IAttachments;
 
+import javax.annotation.Nullable;
+
 public class Attachments implements IAttachments, Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -16,7 +18,7 @@ public class Attachments implements IAttachments, Serializable {
         this.attachments = attachments;
     }
 
-    @SuppressWarnings("unchecked") @Override public <T> T get(Class<T> key) {
+    @SuppressWarnings("unchecked") @Override @Nullable public <T> T get(Class<T> key) {
         return (T) attachments.get(key);
     }
 
