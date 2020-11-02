@@ -92,7 +92,15 @@ public class CAstId implements IConstraint, Serializable {
                 && Objects.equals(cause, cAstId.cause);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(term, idTerm, cause);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(term, idTerm, cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

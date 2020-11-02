@@ -39,6 +39,14 @@ public abstract class ASolverResult {
 
     @Value.Parameter public abstract ICompleteness.Immutable completeness();
 
+    @Value.Default public int totalSolved() {
+        return 0;
+    }
+
+    @Value.Default public int totalCriticalEdges() {
+        return 0;
+    }
+
     public boolean hasErrors() {
         return messages().values().stream().anyMatch(m -> m.kind().equals(MessageKind.ERROR));
     }
@@ -59,7 +67,7 @@ public abstract class ASolverResult {
 
     public static SolverResult of(Spec spec) {
         return SolverResult.of(State.of(spec), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
-                ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of(spec));
+                ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of());
     }
 
 }

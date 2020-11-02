@@ -134,7 +134,15 @@ public class CInequal implements IConstraint, Serializable {
                 && Objects.equals(message, cInequal.message);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(universals, term1, term2, cause, message);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(universals, term1, term2, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

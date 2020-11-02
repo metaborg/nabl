@@ -1,33 +1,40 @@
 package mb.statix.solver.completeness;
 
 import java.io.Serializable;
-import java.util.Objects;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.CriticalEdge;
-import mb.statix.solver.IConstraint;
-import mb.statix.spec.Spec;
 
 public abstract class Completeness implements ICompleteness {
 
-    protected abstract MultiSetMap<ITerm, EdgeOrData<ITerm>> incomplete();
+    private static final Immutable EMPTY = new Immutable(MultiSetMap.Immutable.of());
+
+    protected abstract MultiSetMap<ITerm, EdgeOrData<ITerm>> asMap();
+
+    @Override public java.util.Set<Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>>> entrySet() {
+        return asMap().entrySet();
+    }
 
     @Override public boolean isEmpty() {
         // we assume there are no entries with empty values
-        return incomplete().isEmpty();
+        return asMap().isEmpty();
     }
 
     @Override public MultiSet<EdgeOrData<ITerm>> get(ITerm scopeOrVar, IUniDisunifier unifier) {
         return getVarOrScope(scopeOrVar, unifier).map(sOV -> {
-            return incomplete().get(sOV);
+            return asMap().get(sOV);
         }).orElse(MultiSet.Immutable.of());
     }
 
@@ -36,7 +43,7 @@ public abstract class Completeness implements ICompleteness {
             throw new IllegalArgumentException("Label must be ground, got " + label);
         }
         return getVarOrScope(scope, unifier).map(sOV -> {
-            return !(incomplete().containsKey(sOV) && incomplete().get(sOV).count(label) > 0);
+            return !(asMap().containsKey(sOV) && asMap().get(sOV).count(label) > 0);
         }).orElse(true);
     }
 
@@ -48,24 +55,34 @@ public abstract class Completeness implements ICompleteness {
 
         private static final long serialVersionUID = 1L;
 
-        private final Spec spec;
         private final MultiSetMap.Immutable<ITerm, EdgeOrData<ITerm>> incomplete;
 
-        private Immutable(Spec spec, MultiSetMap.Immutable<ITerm, EdgeOrData<ITerm>> incomplete) {
-            this.spec = spec;
+        private Immutable(MultiSetMap.Immutable<ITerm, EdgeOrData<ITerm>> incomplete) {
             this.incomplete = incomplete;
         }
 
-        @Override protected MultiSetMap<ITerm, EdgeOrData<ITerm>> incomplete() {
+        @Override protected MultiSetMap.Immutable<ITerm, EdgeOrData<ITerm>> asMap() {
             return incomplete;
         }
 
-        @Override public Completeness.Transient melt() {
-            return new Completeness.Transient(spec, incomplete.melt());
+        @Override public ICompleteness.Immutable apply(ISubstitution.Immutable subst) {
+            final Completeness.Transient _completeness = melt();
+            _completeness.apply(subst);
+            return _completeness.freeze();
         }
 
-        public static Completeness.Immutable of(Spec spec) {
-            return new Completeness.Immutable(spec, MultiSetMap.Immutable.of());
+        @Override public ICompleteness.Immutable apply(IRenaming subst) {
+            final Completeness.Transient _completeness = melt();
+            _completeness.apply(subst);
+            return _completeness.freeze();
+        }
+
+        @Override public Completeness.Transient melt() {
+            return new Completeness.Transient(incomplete.melt());
+        }
+
+        public static Completeness.Immutable of() {
+            return EMPTY;
         }
 
         @Override public boolean equals(Object o) {
@@ -74,46 +91,66 @@ public abstract class Completeness implements ICompleteness {
             if(o == null || getClass() != o.getClass())
                 return false;
             Completeness.Immutable immutable = (Completeness.Immutable) o;
-            return spec.equals(immutable.spec) && incomplete.equals(immutable.incomplete);
+            return incomplete.equals(immutable.incomplete);
         }
 
         @Override public int hashCode() {
-            return Objects.hash(spec, incomplete);
+            return incomplete.hashCode();
         }
+
     }
 
     public static class Transient extends Completeness implements ICompleteness.Transient {
 
-        private final Spec spec;
         private final MultiSetMap.Transient<ITerm, EdgeOrData<ITerm>> incomplete;
 
-        private Transient(Spec spec, MultiSetMap.Transient<ITerm, EdgeOrData<ITerm>> incomplete) {
-            this.spec = spec;
+        private Transient(MultiSetMap.Transient<ITerm, EdgeOrData<ITerm>> incomplete) {
             this.incomplete = incomplete;
         }
 
-        @Override protected MultiSetMap<ITerm, EdgeOrData<ITerm>> incomplete() {
+        @Override protected MultiSetMap<ITerm, EdgeOrData<ITerm>> asMap() {
             return incomplete;
         }
 
-        @Override public void add(IConstraint constraint, IUniDisunifier unifier) {
-            CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-                getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
-                    incomplete.put(scopeOrVar, label);
-                });
+        @Override public void add(ITerm scopeTerm, EdgeOrData<ITerm> label, IUniDisunifier unifier) {
+            getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
+                incomplete.put(scopeOrVar, label);
             });
         }
 
-        @Override public Set<CriticalEdge> remove(IConstraint constraint, IUniDisunifier unifier) {
+        @Override public void addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier) {
+            for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> varLabel : criticalEdges.entrySet()) {
+                getVarOrScope(varLabel.getKey(), unifier).ifPresent(scopeOrVar -> {
+                    incomplete.putAll(scopeOrVar, varLabel.getValue());
+                });
+            }
+        }
+
+        @Override public Set.Immutable<CriticalEdge> remove(ITerm scopeTerm, EdgeOrData<ITerm> label,
+                IUniDisunifier unifier) {
             final Set.Transient<CriticalEdge> removedEdges = Set.Transient.of();
-            CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
-                getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
-                    final int n = incomplete.remove(scopeOrVar, label);
-                    if(n == 0) {
-                        removedEdges.__insert(CriticalEdge.of(scopeOrVar, label));
+            getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
+                final int n = incomplete.remove(scopeOrVar, label);
+                if(n == 0) {
+                    removedEdges.__insert(CriticalEdge.of(scopeOrVar, label));
+                }
+            });
+            return removedEdges.freeze();
+        }
+
+        @Override public Set.Immutable<CriticalEdge> removeAll(ICompleteness.Immutable criticalEdges,
+                IUniDisunifier unifier) {
+            final Set.Transient<CriticalEdge> removedEdges = Set.Transient.of();
+            for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> varLabel : criticalEdges.entrySet()) {
+                getVarOrScope(varLabel.getKey(), unifier).ifPresent(scopeOrVar -> {
+                    for(Entry<EdgeOrData<ITerm>, Integer> labelCount : varLabel.getValue().entrySet()) {
+                        final int n = incomplete.remove(scopeOrVar, labelCount.getKey(), labelCount.getValue());
+                        if(n == 0) {
+                            removedEdges.__insert(CriticalEdge.of(scopeOrVar, labelCount.getKey()));
+                        }
                     }
                 });
-            });
+            }
             return removedEdges.freeze();
         }
 
@@ -127,18 +164,46 @@ public abstract class Completeness implements ICompleteness {
             });
         }
 
-        @Override public Completeness.Immutable freeze() {
-            return new Completeness.Immutable(spec, incomplete.freeze());
+        @Override public void apply(ISubstitution.Immutable subst) {
+            final MultiSetMap.Transient<ITerm, EdgeOrData<ITerm>> newEntries = MultiSetMap.Transient.of();
+            for(Entry<ITermVar, ITerm> varTerm : subst.entrySet()) {
+                final MultiSet.Immutable<EdgeOrData<ITerm>> updatedLabels = incomplete.removeKey(varTerm.getKey());
+                if(!updatedLabels.isEmpty()) {
+                    getVarOrScope(varTerm.getValue(), PersistentUniDisunifier.Immutable.of()).ifPresent(scopeOrVar -> {
+                        newEntries.putAll(scopeOrVar, updatedLabels);
+                    });
+                }
+            }
+            for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> varTerm : newEntries.asMap().entrySet()) {
+                incomplete.putAll(varTerm.getKey(), varTerm.getValue());
+            }
         }
 
-        public static Completeness.Transient of(Spec spec) {
-            return new Completeness.Transient(spec, MultiSetMap.Transient.of());
+        @Override public void apply(IRenaming renaming) {
+            final MultiSetMap.Transient<ITermVar, EdgeOrData<ITerm>> newEntries = MultiSetMap.Transient.of();
+            for(ITermVar var : renaming.keySet()) {
+                final MultiSet.Immutable<EdgeOrData<ITerm>> updatedLabels = incomplete.removeKey(var);
+                if(!updatedLabels.isEmpty()) {
+                    newEntries.putAll(renaming.rename(var), updatedLabels);
+                }
+            }
+            for(Entry<ITermVar, MultiSet.Immutable<EdgeOrData<ITerm>>> varTerm : newEntries.asMap().entrySet()) {
+                incomplete.putAll(varTerm.getKey(), varTerm.getValue());
+            }
+        }
+
+        @Override public Completeness.Immutable freeze() {
+            return incomplete.isEmpty() ? EMPTY : new Completeness.Immutable(incomplete.freeze());
+        }
+
+        public static Completeness.Transient of() {
+            return new Completeness.Transient(MultiSetMap.Transient.of());
         }
 
     }
 
     @Override public String toString() {
-        return incomplete().toString();
+        return asMap().toString();
     }
 
 }

@@ -109,7 +109,15 @@ public class CEqual implements IConstraint, Serializable {
                 && Objects.equals(cause, cEqual.cause) && Objects.equals(message, cEqual.message);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(term1, term2, cause, message);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(term1, term2, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

@@ -24,13 +24,13 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.Unifiers;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.State;
@@ -64,9 +64,12 @@ public abstract class ARule {
         // 2. Instantiate body
         final IConstraint instBody;
         try {
-            if((instBody = apply(args, Unifiers.Immutable.of()).orElse(null)) == null) {
+            final ApplyResult applyResult;
+            if((applyResult =
+                    RuleUtil.apply(State.of(spec), (Rule) this, args, null, ApplyMode.STRICT).orElse(null)) == null) {
                 return Optional.of(false);
             }
+            instBody = applyResult.body();
         } catch(Delay e) {
             return Optional.of(false);
         }
@@ -81,6 +84,10 @@ public abstract class ARule {
         }
     }
 
+    @Value.Default public @Nullable ICompleteness.Immutable bodyCriticalEdges() {
+        return null;
+    }
+
     public Set.Immutable<ITermVar> freeVars() {
         return Set.Immutable.subtract(Constraints.freeVars(body()), paramVars());
     }
@@ -90,32 +97,20 @@ public abstract class ARule {
     }
 
     public Rule apply(ISubstitution.Immutable subst) {
-        final IConstraint newBody = body().apply(subst.removeAll(paramVars()));
-        return Rule.of(name(), params(), newBody);
+        final Immutable localSubst = subst.removeAll(paramVars());
+        final IConstraint newBody = body().apply(localSubst);
+        final ICompleteness.Immutable newCriticalEdges =
+                bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(localSubst);
+        return Rule.of(name(), params(), newBody).withBodyCriticalEdges(newCriticalEdges);
     }
 
     public Rule apply(IRenaming subst) {
         final List<Pattern> newParams =
                 params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
         final IConstraint newBody = body().apply(subst);
-        return Rule.of(name(), newParams, newBody);
-    }
-
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier) throws Delay {
-        return apply(args, unifier, null);
-    }
-
-    public Optional<IConstraint> apply(List<? extends ITerm> args, IUniDisunifier.Immutable unifier,
-            @Nullable IConstraint cause) throws Delay {
-        final ISubstitution.Transient subst;
-        final Optional<ISubstitution.Immutable> matchResult =
-                P.match(params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars));
-        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
-            return Optional.empty();
-        }
-        final ISubstitution.Immutable isubst = subst.freeze();
-        final IConstraint newBody = body().apply(isubst);
-        return Optional.of(newBody.withCause(cause));
+        final ICompleteness.Immutable newCriticalEdges =
+                bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(subst);
+        return Rule.of(name(), newParams, newBody).withBodyCriticalEdges(newCriticalEdges);
     }
 
     public String toString(TermFormatter termToString) {

@@ -355,7 +355,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(new CConj(bottomup(f, recurseInLogicalScopes).apply(c.left()), bottomup(f, recurseInLogicalScopes).apply(c.right()), c.cause().orElse(null))),
             c -> f.apply(c),
-            c -> f.apply(new CExists(c.vars(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null))),
+            c -> f.apply(new CExists(c.vars(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), null)),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
@@ -386,7 +386,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> {
                 final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
-                return new CExists(c.vars(), body, c.cause().orElse(null));
+                return new CExists(c.vars(), body, c.cause().orElse(null), null);
             },
             c -> f.apply(c),
             c -> f.apply(c),
@@ -425,7 +425,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> {
                 final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
-                return body.map(b -> new CExists(c.vars(), b, c.cause().orElse(null)));
+                return body.map(b -> new CExists(c.vars(), b, c.cause().orElse(null), null));
             },
             c -> f.apply(c),
             c -> f.apply(c),
@@ -466,7 +466,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> {
                 return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
-                    return new CExists(c.vars(), b, c.cause().orElse(null));
+                    return new CExists(c.vars(), b, c.cause().orElse(null), null);
                 });
             },
             c -> f.apply(c),

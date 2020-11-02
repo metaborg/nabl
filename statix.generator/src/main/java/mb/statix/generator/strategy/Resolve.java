@@ -148,7 +148,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                                 .forEach(condition -> constraints
                                         .add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
                                                 condition.cause().orElse(null), condition.message().orElse(null))));
-                        final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
+                        final SearchState newState = input.update(ctx.spec(), constraints.build(), Iterables2.singleton(query));
                         return new SearchNode<>(ctx.nextNodeId(), newState, node,
                                 "resolve[" + (idx + 1) + "/" + count.get() + "]");
                     }));

@@ -11,11 +11,13 @@ import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -39,11 +41,17 @@ public class UnitTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Solver
             Scope root) {
         final IState.Immutable unitState = State.of(spec).withResource(context.id());
         final ApplyResult applyResult;
-        if((applyResult = RuleUtil.apply(unitState, rule, ImmutableList.of(root), null).orElse(null)) == null) {
-            return CompletableFuture
-                    .completedExceptionally(new IllegalArgumentException("Cannot apply initial rule to root scope."));
+        try {
+            if((applyResult = RuleUtil.apply(unitState, rule, ImmutableList.of(root), null, ApplyMode.STRICT)
+                    .orElse(null)) == null) {
+                return CompletableFuture.completedExceptionally(
+                        new IllegalArgumentException("Cannot apply initial rule to root scope."));
+            }
+        } catch(Delay delay) {
+            return CompletableFuture.completedExceptionally(
+                    new IllegalArgumentException("Cannot apply initial rule to root scope.", delay));
         }
-        solver = new StatixSolver(applyResult.body(), spec, applyResult.state(), Completeness.Immutable.of(spec), debug,
+        solver = new StatixSolver(applyResult.body(), spec, applyResult.state(), Completeness.Immutable.of(), debug,
                 new NullProgress(), new NullCancel(), context);
         return solver.solve(root);
     }

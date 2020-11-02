@@ -85,6 +85,7 @@ import mb.statix.solver.IState;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.ITermProperty.Multiplicity;
 import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.CompletenessUtil;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
@@ -93,10 +94,11 @@ import mb.statix.solver.persistent.BagTermProperty;
 import mb.statix.solver.persistent.SingletonTermProperty;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.solver.query.IQueryFilter;
-import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
+import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -104,6 +106,12 @@ import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 public class StatixSolver {
+
+    private static final ImmutableSet<ITermVar> NO_UPDATED_VARS = ImmutableSet.of();
+    private static final ImmutableList<IConstraint> NO_NEW_CONSTRAINTS = ImmutableList.of();
+    private static final mb.statix.solver.completeness.Completeness.Immutable NO_NEW_CRITICAL_EDGES =
+            Completeness.Immutable.of();
+    private static final ImmutableMap<ITermVar, ITermVar> NO_EXISTENTIALS = ImmutableMap.of();
 
     private static final int MAX_DEPTH = 32;
 
@@ -127,16 +135,23 @@ public class StatixSolver {
     public StatixSolver(IConstraint constraint, Spec spec, IState.Immutable state, ICompleteness.Immutable completeness,
             IDebugContext debug, IProgress progress, ICancel cancel,
             ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> scopeGraph) {
-        this.spec = spec;
+        if(spec.hasPrecomputedCriticalEdges()) {
+            this.spec = spec;
+        } else {
+            debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
+            this.spec = spec.precomputeCriticalEdges();
+        }
+        final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
+                CompletenessUtil.precomputeCriticalEdges(constraint, spec.scopeExtensions());
         this.constraints = new BaseConstraintStore(debug);
-        this.constraints.add(constraint);
+        this.constraints.add(initialConstraintAndCriticalEdges._1());
         this.debug = debug;
         this.progress = progress;
         this.cancel = cancel;
         this.scopeGraph = scopeGraph;
         this.state = state;
         final ICompleteness.Transient _completeness = completeness.melt();
-        _completeness.add(constraint, this.state.unifier());
+        _completeness.addAll(initialConstraintAndCriticalEdges._2(), this.state.unifier());
         this.completeness = _completeness.freeze();
         this.result = new CompletableFuture<>();
     }
@@ -221,7 +236,7 @@ public class StatixSolver {
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
         final java.util.Set<CriticalEdge> removedEdges = ImmutableSet.of();
-        final ICompleteness.Immutable completeness = Completeness.Immutable.of(spec);
+        final ICompleteness.Immutable completeness = Completeness.Immutable.of();
         final SolverResult result =
                 SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness);
         return result;
@@ -232,7 +247,7 @@ public class StatixSolver {
     ///////////////////////////////////////////////////////////////////////////
 
     private Unit success(IConstraint constraint, IState.Immutable newState, Collection<ITermVar> updatedVars,
-            Collection<IConstraint> newConstraints, Map<Delay, IConstraint> delayedConstraints,
+            Collection<IConstraint> newConstraints, ICompleteness.Immutable newCriticalEdges,
             Map<ITermVar, ITermVar> existentials, int fuel) throws InterruptedException {
         state = newState;
 
@@ -254,9 +269,9 @@ public class StatixSolver {
 
         // add new constraints
         if(!newConstraints.isEmpty()) {
-            // no constraints::addAll, instead recurse immediately below
+            // no constraints::addAll, instead recurse in tail position
             final ICompleteness.Transient _completeness = completeness.melt();
-            _completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
+            _completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
             this.completeness = _completeness.freeze();
             if(subDebug.isEnabled(Level.Debug) && !newConstraints.isEmpty()) {
                 subDebug.debug("Simplified to:");
@@ -265,20 +280,6 @@ public class StatixSolver {
                 }
             }
             ephemeralActiveConstraints.addAndGet(newConstraints.size());
-        }
-
-        // add delayed constraints
-        if(!delayedConstraints.isEmpty()) {
-            delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
-            final ICompleteness.Transient _completeness = completeness.melt();
-            _completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
-            this.completeness = _completeness.freeze();
-            if(subDebug.isEnabled(Level.Debug) && !delayedConstraints.isEmpty()) {
-                subDebug.debug("Delayed:");
-                for(IConstraint delayedConstraint : delayedConstraints.values()) {
-                    subDebug.debug(" * {}", Solver.toString(delayedConstraint, unifier));
-                }
-            }
         }
 
         removeCompleteness(constraint);
@@ -292,37 +293,33 @@ public class StatixSolver {
         return Unit.unit;
     }
 
-    private Unit success(IConstraint c, IState.Immutable newState, int fuel) throws InterruptedException {
-        return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(), fuel);
-    }
-
-    private Unit successNew(IConstraint c, IState.Immutable newState, Collection<IConstraint> newConstraints, int fuel)
+    private Unit delay(IConstraint constraint, IState.Immutable newState, Delay delay, int fuel)
             throws InterruptedException {
-        return success(c, newState, ImmutableSet.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of(), fuel);
-    }
-
-    private Unit delay(IConstraint c, IState.Immutable newState, Delay delay, int fuel) throws InterruptedException {
         if(!delay.criticalEdges().isEmpty()) {
             debug.error("FIXME: query failed on critical edges {}: {}", delay.criticalEdges(),
-                    c.toString(state.unifier()::toString));
-            return fail(c);
-        } else {
-            final Set.Immutable<ITermVar> vars = delay.vars().stream().flatMap(v -> state.unifier().getVars(v).stream())
-                    .collect(CapsuleCollectors.toSet());
-            if(vars.isEmpty()) {
-                if(debug.isEnabled(Level.Debug)) {
-                    debug.debug("query delayed on no vars, rescheduling: {}", c.toString(state.unifier()::toString));
-                }
-                return success(c, newState, ImmutableSet.of(), ImmutableList.of(c), ImmutableMap.of(delay, c),
-                        ImmutableMap.of(), fuel);
-            } else {
-                if(debug.isEnabled(Level.Debug)) {
-                    debug.debug("query delayed on vars {}: {}", vars, c.toString(state.unifier()::toString));
-                }
-                return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c),
-                        ImmutableMap.of(), fuel);
-            }
+                    constraint.toString(state.unifier()::toString));
+            return fail(constraint);
         }
+
+        final Set.Immutable<ITermVar> vars = delay.vars().stream().flatMap(v -> state.unifier().getVars(v).stream())
+                .collect(CapsuleCollectors.toSet());
+        if(vars.isEmpty()) {
+            debug.error("query delayed on no vars, rescheduling: {}", delay.criticalEdges(),
+                    constraint.toString(state.unifier()::toString));
+            return fail(constraint);
+        }
+
+        if(debug.isEnabled(Level.Debug)) {
+            debug.debug("query delayed on vars {}: {}", vars, constraint.toString(state.unifier()::toString));
+        }
+
+        final IDebugContext subDebug = debug.subContext();
+        constraints.delay(constraint, delay);
+        if(subDebug.isEnabled(Level.Debug)) {
+            subDebug.debug("Delayed: {}", Solver.toString(constraint, state.unifier()));
+        }
+
+        return Unit.unit;
     }
 
     private <R> Unit future(IConstraint c, IState.Immutable newState, IFuture<R> future, K<? super R> k, int fuel)
@@ -344,8 +341,12 @@ public class StatixSolver {
     }
 
     private void removeCompleteness(IConstraint constraint) throws InterruptedException {
+        if(!constraint.ownCriticalEdges().isPresent()) {
+            throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
+        }
         final ICompleteness.Transient _completeness = completeness.melt();
-        final java.util.Set<CriticalEdge> removedEdges = _completeness.remove(constraint, state.unifier());
+        final Set.Immutable<CriticalEdge> removedEdges =
+                _completeness.removeAll(constraint.ownCriticalEdges().get(), state.unifier());
         for(CriticalEdge criticalEdge : removedEdges) {
             closeEdge(criticalEdge);
         }
@@ -388,16 +389,19 @@ public class StatixSolver {
                     if(c.op().isEquals() && term1.isPresent()) {
                         int i2 = c.expr2().eval(unifier);
                         final IConstraint eq = new CEqual(term1.get(), B.newInt(i2), c);
-                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else if(c.op().isEquals() && term2.isPresent()) {
                         int i1 = c.expr1().eval(unifier);
                         final IConstraint eq = new CEqual(B.newInt(i1), term2.get(), c);
-                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         int i1 = c.expr1().eval(unifier);
                         int i2 = c.expr2().eval(unifier);
                         if(c.op().test(i1, i2)) {
-                            return success(c, state, fuel);
+                            return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                    NO_EXISTENTIALS, fuel);
                         } else {
                             return fail(c);
                         }
@@ -408,8 +412,7 @@ public class StatixSolver {
             }
 
             @Override public Unit caseConj(CConj c) throws InterruptedException {
-                final List<IConstraint> newConstraints = disjoin(c);
-                return successNew(c, state, newConstraints, fuel);
+                return success(c, state, NO_UPDATED_VARS, disjoin(c), NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS, fuel);
             }
 
             @Override public Unit caseEqual(CEqual c) throws InterruptedException {
@@ -424,8 +427,8 @@ public class StatixSolver {
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars = result.result().domainSet();
-                        return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
-                                ImmutableMap.of(), fuel);
+                        return success(c, newState, updatedVars, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         if(debug.isEnabled(Level.Debug)) {
                             debug.debug("Unification failed: {} != {}", unifier.toString(term1),
@@ -455,7 +458,12 @@ public class StatixSolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                return success(c, newState, ImmutableSet.of(), disjoin(newConstraint), ImmutableMap.of(), existentials,
+                if(!c.bodyCriticalEdges().isPresent()) {
+                    throw new IllegalArgumentException(
+                            "Solver only accepts constraints with pre-computed critical edges.");
+                }
+                final ICompleteness.Immutable newCriticalEdges = c.bodyCriticalEdges().get().apply(subst);
+                return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges, existentials,
                         fuel);
             }
 
@@ -477,8 +485,8 @@ public class StatixSolver {
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars =
                                 result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(Set.Immutable.of());
-                        return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
-                                ImmutableMap.of(), fuel);
+                        return success(c, newState, updatedVars, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         if(debug.isEnabled(Level.Debug)) {
                             debug.debug("Disunification failed");
@@ -499,13 +507,14 @@ public class StatixSolver {
                 final Scope scope = scopeGraph.freshScope(name, labels, true, false);
                 scopeGraph.setDatum(scope, datumTerm);
                 final IConstraint eq = new CEqual(scopeTerm, scope, c);
-                return successNew(c, state, ImmutableList.of(eq), fuel);
+                return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS,
+                        fuel);
             }
 
             @Override public Unit caseResolveQuery(CResolveQuery c) throws InterruptedException {
                 final ITerm scopeTerm = c.scopeTerm();
-                final IQueryFilter filter = c.filter();
-                final IQueryMin min = c.min();
+                final QueryFilter filter = c.filter();
+                final QueryMin min = c.min();
                 final ITerm resultTerm = c.resultTerm();
 
                 final IUniDisunifier unifier = state.unifier();
@@ -558,7 +567,8 @@ public class StatixSolver {
                                 paths.stream().map(p -> StatixTerms.explicate(p, spec.dataLabels()))
                                         .collect(ImmutableList.toImmutableList());
                         final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
-                        return successNew(c, state, ImmutableList.of(C), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(C), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     }
                 };
                 return future(c, state, future, k, fuel);
@@ -582,7 +592,8 @@ public class StatixSolver {
                         AScope.matcher().match(targetTerm, unifier).orElseThrow(() -> new IllegalArgumentException(
                                 "Expected target scope, got " + unifier.toString(targetTerm)));
                 scopeGraph.addEdge(source, label, target);
-                return success(c, state, fuel);
+                return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS,
+                        fuel);
             }
 
             @Override public Unit caseTermId(CAstId c) throws InterruptedException {
@@ -598,13 +609,15 @@ public class StatixSolver {
                 if(maybeScope.isPresent()) {
                     final AScope scope = maybeScope.get();
                     eq = new CEqual(idTerm, scope);
-                    return successNew(c, state, ImmutableList.of(eq), fuel);
+                    return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                            NO_EXISTENTIALS, fuel);
                 } else {
                     final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
                         final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
                         eq = new CEqual(idTerm, indexTerm);
-                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         return fail(c);
                     }
@@ -646,14 +659,16 @@ public class StatixSolver {
                     }
                     final IState.Immutable newState =
                             state.withTermProperties(state.termProperties().__put(key, property));
-                    return success(c, newState, fuel);
+                    return success(c, newState, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                            NO_EXISTENTIALS, fuel);
                 } else {
                     return fail(c);
                 }
             }
 
             @Override public Unit caseTrue(CTrue c) throws InterruptedException {
-                return success(c, state, fuel);
+                return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS,
+                        fuel);
             }
 
             @Override public Unit caseTry(CTry c) throws InterruptedException {
@@ -675,7 +690,8 @@ public class StatixSolver {
                                 if(debug.isEnabled(Level.Debug)) {
                                     debug.debug("constraint {} entailed", c.toString(state.unifier()::toString));
                                 }
-                                return success(c, state, fuel);
+                                return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                        NO_EXISTENTIALS, fuel);
                             } else {
                                 if(debug.isEnabled(Level.Debug)) {
                                     debug.debug("constraint {} not entailed", c.toString(state.unifier()::toString));
@@ -698,7 +714,8 @@ public class StatixSolver {
                 final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
                 final List<Rule> rules = spec.rules().getRules(name);
-                final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
+                final List<Tuple2<Rule, ApplyResult>> results =
+                        RuleUtil.applyOrderedAll(state, rules, args, c, ApplyMode.RELAXED);
                 if(results.isEmpty()) {
                     debug.debug("No rule applies");
                     return fail(c);
@@ -707,8 +724,12 @@ public class StatixSolver {
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
+                    if(applyResult.criticalEdges() == null) {
+                        throw new IllegalArgumentException(
+                                "Solver only accepts specs with pre-computed critical edges.");
+                    }
                     return success(c, applyResult.state(), applyResult.diff().domainSet(), disjoin(applyResult.body()),
-                            ImmutableMap.of(), ImmutableMap.of(), fuel);
+                            applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
@@ -892,12 +913,12 @@ public class StatixSolver {
 
         @Override public boolean wf(ITerm datum, ICancel cancel) throws InterruptedException {
             try {
-                final IUniDisunifier.Immutable unifier = state.unifier();
-                final IConstraint result;
-                if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
+                final ApplyResult result;
+                if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
+                        .orElse(null)) == null) {
                     return false;
                 }
-                return Solver.entails(spec, state, result, (s, l, st) -> true, new NullDebugContext(),
+                return Solver.entails(spec, result.state(), result.body(), (s, l, st) -> true, new NullDebugContext(),
                         new NullProgress(), cancel);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
@@ -921,12 +942,12 @@ public class StatixSolver {
         @Override public IFuture<Boolean> wf(ITerm datum, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 try {
-                    final IUniDisunifier.Immutable unifier = state.unifier();
-                    final IConstraint result;
-                    if((result = constraint.apply(ImmutableList.of(datum), unifier).orElse(null)) == null) {
+                    final ApplyResult result;
+                    if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
+                            .orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
-                    return entails(result);
+                    return entails(result.body());
                 } catch(Delay delay) {
                     return CompletableFuture.completedExceptionally(delay);
                 }
@@ -953,12 +974,12 @@ public class StatixSolver {
 
         @Override public boolean leq(ITerm datum1, ITerm datum2, ICancel cancel) throws InterruptedException {
             try {
-                final IUniDisunifier.Immutable unifier = state.unifier();
-                final IConstraint result;
-                if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+                final ApplyResult result;
+                if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
+                        .orElse(null)) == null) {
                     return false;
                 }
-                return Solver.entails(spec, state, result, (s, l, st) -> true, new NullDebugContext(),
+                return Solver.entails(spec, result.state(), result.body(), (s, l, st) -> true, new NullDebugContext(),
                         new NullProgress(), cancel);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
@@ -982,12 +1003,13 @@ public class StatixSolver {
         @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 try {
-                    final IUniDisunifier.Immutable unifier = state.unifier();
-                    final IConstraint result;
-                    if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+                    final ApplyResult result;
+                    if((result =
+                            RuleUtil.apply(state, constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
+                                    .orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
-                    return entails(result);
+                    return entails(result.body());
                 } catch(Delay delay) {
                     return CompletableFuture.completedExceptionally(delay);
                 }

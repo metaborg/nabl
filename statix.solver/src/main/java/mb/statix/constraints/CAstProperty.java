@@ -118,7 +118,15 @@ public class CAstProperty implements IConstraint, Serializable {
                 && Objects.equals(value, that.value) && Objects.equals(cause, that.cause);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(idTerm, property, op, value, cause);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(idTerm, property, op, value, cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

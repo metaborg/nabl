@@ -38,6 +38,7 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
@@ -69,12 +70,12 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
 
         final java.util.Map<Rule, Double> rules = getWeightedRules(ctx, predicate.name());
         final List<Tuple2<Rule, ApplyResult>> results =
-                RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate);
+                RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate, ApplyMode.RELAXED);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {
             final Rule rule = result._1();
-            final Optional<SearchState> output = updateSearchState(predicate, result._2(), input);
+            final Optional<SearchState> output = updateSearchState(ctx, predicate, result._2(), input);
             if(!output.isPresent()) {
                 return;
             }
@@ -134,7 +135,8 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         }
     }
 
-    private Optional<SearchState> updateSearchState(IConstraint predicate, ApplyResult result, SearchState input) {
+    private Optional<SearchState> updateSearchState(SearchContext ctx, IConstraint predicate, ApplyResult result,
+            SearchState input) {
         final IConstraint applyConstraint = result.body();
         final IState.Immutable applyState = result.state();
         final IUniDisunifier.Immutable applyUnifier = applyState.unifier();
@@ -147,8 +149,8 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         // update completeness
         final ICompleteness.Transient completeness = input.completeness().melt();
         completeness.updateAll(result.diff().domainSet(), applyUnifier);
-        completeness.add(applyConstraint, applyUnifier);
-        java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, applyUnifier);
+        completeness.add(applyConstraint, ctx.spec(), applyUnifier);
+        java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, ctx.spec(), applyUnifier);
 
         // update delays
         final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();

@@ -99,7 +99,15 @@ public class CTry implements IConstraint, Serializable {
                 && Objects.equals(message, cTry.message);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(constraint, cause, message);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(constraint, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

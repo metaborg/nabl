@@ -117,7 +117,15 @@ public class CArith implements IConstraint, Serializable {
                 && Objects.equals(message, cArith.message);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(expr1, op, expr2, cause, message);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(expr1, op, expr2, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

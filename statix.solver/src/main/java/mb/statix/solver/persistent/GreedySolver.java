@@ -67,16 +67,18 @@ import mb.statix.solver.IState;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.ITermProperty.Multiplicity;
 import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.CompletenessUtil;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.query.ConstraintQueries;
-import mb.statix.solver.query.IQueryFilter;
-import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
+import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -84,6 +86,12 @@ import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
 class GreedySolver {
+
+    private static final ImmutableSet<ITermVar> NO_UPDATED_VARS = ImmutableSet.of();
+    private static final ImmutableList<IConstraint> NO_NEW_CONSTRAINTS = ImmutableList.of();
+    private static final mb.statix.solver.completeness.Completeness.Immutable NO_NEW_CRITICAL_EDGES =
+            Completeness.Immutable.of();
+    private static final ImmutableMap<ITermVar, ITermVar> NO_EXISTENTIALS = ImmutableMap.of();
 
     private static final int CANCEL_RATE = 42;
     private static final int MAX_DEPTH = 32;
@@ -104,15 +112,25 @@ class GreedySolver {
     private final List<CriticalEdge> removedEdges = Lists.newArrayList();
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
+    private int solved = 0;
+    private int criticalEdges = 0;
+
     public GreedySolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug, IProgress progress, ICancel cancel) {
-        this.spec = spec;
+        if(spec.hasPrecomputedCriticalEdges()) {
+            this.spec = spec;
+        } else {
+            debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
+            this.spec = spec.precomputeCriticalEdges();
+        }
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
-        constraints.add(initialConstraint);
-        this.completeness = Completeness.Transient.of(spec);
-        completeness.add(initialConstraint, initialState.unifier());
+        final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
+                CompletenessUtil.precomputeCriticalEdges(initialConstraint, spec.scopeExtensions());
+        constraints.add(initialConstraintAndCriticalEdges._1());
+        this.completeness = Completeness.Transient.of();
+        completeness.addAll(initialConstraintAndCriticalEdges._2(), initialState.unifier());
         final IsComplete isComplete = (s, l, st) -> {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
@@ -164,13 +182,16 @@ class GreedySolver {
             }
         }
 
-        final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
-        return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze());
+        final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
+        return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze())
+                .withTotalSolved(solved).withTotalCriticalEdges(criticalEdges);
     }
 
     private IState.Immutable success(IConstraint constraint, IState.Immutable state, Collection<ITermVar> updatedVars,
-            Collection<IConstraint> newConstraints, Map<Delay, IConstraint> delayedConstraints,
+            Collection<IConstraint> newConstraints, ICompleteness.Immutable newCriticalEdges,
             Map<ITermVar, ITermVar> existentials, int fuel) throws InterruptedException {
+        solved += 1;
+
         final IDebugContext subDebug = debug.subContext();
         if(this.existentials == null) {
             this.existentials = existentials;
@@ -184,7 +205,7 @@ class GreedySolver {
 
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
-        completeness.addAll(newConstraints, unifier); // must come before ICompleteness::remove
+        completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
         if(subDebug.isEnabled(Level.Debug) && !newConstraints.isEmpty()) {
             subDebug.debug("Simplified to:");
             for(IConstraint newConstraint : newConstraints) {
@@ -192,20 +213,7 @@ class GreedySolver {
             }
         }
 
-        // add delayed constraints
-        delayedConstraints.forEach((d, c) -> constraints.delay(c, d));
-        completeness.addAll(delayedConstraints.values(), unifier); // must come before ICompleteness::remove
-        if(subDebug.isEnabled(Level.Debug) && !delayedConstraints.isEmpty()) {
-            subDebug.debug("Delayed:");
-            for(IConstraint delayedConstraint : delayedConstraints.values()) {
-                subDebug.debug(" * {}", Solver.toString(delayedConstraint, unifier));
-            }
-        }
-
-        // remove current constraint (duplicated in ::fail)
-        final Set<CriticalEdge> removedEdges = completeness.remove(constraint, unifier);
-        constraints.activateFromEdges(removedEdges, debug);
-        this.removedEdges.addAll(removedEdges);
+        removeCompleteness(constraint, state);
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
@@ -215,28 +223,31 @@ class GreedySolver {
         return state;
     }
 
-    private IState.Immutable success(IConstraint c, IState.Immutable newState, int fuel) throws InterruptedException {
-        return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of(), fuel);
-    }
-
-    private IState.Immutable successNew(IConstraint c, IState.Immutable newState,
-            Collection<IConstraint> newConstraints, int fuel) throws InterruptedException {
-        return success(c, newState, ImmutableSet.of(), newConstraints, ImmutableMap.of(), ImmutableMap.of(), fuel);
-    }
-
-    private IState.Immutable successDelay(IConstraint c, IState.Immutable newState, Delay delay, int fuel)
-            throws InterruptedException {
-        return success(c, newState, ImmutableSet.of(), ImmutableList.of(), ImmutableMap.of(delay, c), ImmutableMap.of(),
-                fuel);
+    private IState.Immutable delay(IConstraint constraint, IState.Immutable state, Delay delay) {
+        final IDebugContext subDebug = debug.subContext();
+        constraints.delay(constraint, delay);
+        if(subDebug.isEnabled(Level.Debug)) {
+            subDebug.debug("Delayed: {}", Solver.toString(constraint, state.unifier()));
+        }
+        return state;
     }
 
     private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
         failed.put(constraint, MessageUtil.findClosestMessage(constraint));
-        // remove current constraint (duplicated in ::success)
-        final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
+        removeCompleteness(constraint, state);
+        return state;
+    }
+
+    private void removeCompleteness(IConstraint constraint, IState.Immutable state) {
+        if(!constraint.ownCriticalEdges().isPresent()) {
+            throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
+        }
+        criticalEdges +=
+                constraint.ownCriticalEdges().get().entrySet().stream().mapToInt(e -> e.getValue().size()).sum();
+        final Set<CriticalEdge> removedEdges =
+                completeness.removeAll(constraint.ownCriticalEdges().get(), state.unifier());
         constraints.activateFromEdges(removedEdges, debug);
         this.removedEdges.addAll(removedEdges);
-        return state;
     }
 
     private IState.Immutable queue(IConstraint constraint, IState.Immutable state) {
@@ -267,28 +278,31 @@ class GreedySolver {
                     if(c.op().isEquals() && term1.isPresent()) {
                         int i2 = c.expr2().eval(unifier);
                         final IConstraint eq = new CEqual(term1.get(), B.newInt(i2), c);
-                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else if(c.op().isEquals() && term2.isPresent()) {
                         int i1 = c.expr1().eval(unifier);
                         final IConstraint eq = new CEqual(B.newInt(i1), term2.get(), c);
-                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         int i1 = c.expr1().eval(unifier);
                         int i2 = c.expr2().eval(unifier);
                         if(c.op().test(i1, i2)) {
-                            return success(c, state, fuel);
+                            return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                    NO_EXISTENTIALS, fuel);
                         } else {
                             return fail(c, state);
                         }
                     }
                 } catch(Delay d) {
-                    return successDelay(c, state, d, fuel);
+                    return delay(c, state, d);
                 }
             }
 
             @Override public IState.Immutable caseConj(CConj c) throws InterruptedException {
                 final List<IConstraint> newConstraints = disjoin(c);
-                return successNew(c, state, newConstraints, fuel);
+                return success(c, state, NO_UPDATED_VARS, newConstraints, NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS, fuel);
             }
 
             @Override public IState.Immutable caseEqual(CEqual c) throws InterruptedException {
@@ -304,8 +318,8 @@ class GreedySolver {
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars = result.result().domainSet();
-                        return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
-                                ImmutableMap.of(), fuel);
+                        return success(c, newState, updatedVars, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         if(debug.isEnabled(Level.Debug)) {
                             debug.debug("Unification failed: {} != {}", unifier.toString(term1),
@@ -319,7 +333,7 @@ class GreedySolver {
                     }
                     return fail(c, state);
                 } catch(RigidException e) {
-                    return successDelay(c, state, Delay.ofVars(e.vars()), fuel);
+                    return delay(c, state, Delay.ofVars(e.vars()));
                 }
             }
 
@@ -335,7 +349,12 @@ class GreedySolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                return success(c, newState, ImmutableSet.of(), disjoin(newConstraint), ImmutableMap.of(), existentials,
+                if(!c.bodyCriticalEdges().isPresent()) {
+                    throw new IllegalArgumentException(
+                            "Solver only accepts constraints with pre-computed critical edges.");
+                }
+                final ICompleteness.Immutable newCriticalEdges = c.bodyCriticalEdges().get().apply(subst);
+                return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges, existentials,
                         fuel);
             }
 
@@ -358,14 +377,14 @@ class GreedySolver {
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars =
                                 result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(ImmutableSet.of());
-                        return success(c, newState, updatedVars, ImmutableList.of(), ImmutableMap.of(),
-                                ImmutableMap.of(), fuel);
+                        return success(c, newState, updatedVars, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         debug.debug("Disunification failed");
                         return fail(c, state);
                     }
                 } catch(RigidException e) {
-                    return successDelay(c, state, Delay.ofVars(e.vars()), fuel);
+                    return delay(c, state, Delay.ofVars(e.vars()));
                 }
             }
 
@@ -385,19 +404,19 @@ class GreedySolver {
 
                 final IConstraint eq = new CEqual(scopeTerm, scope, c);
 
-                return success(c, newState, ImmutableList.of(), ImmutableList.of(eq), ImmutableMap.of(),
-                        ImmutableMap.of(), fuel);
+                return success(c, newState, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                        NO_EXISTENTIALS, fuel);
             }
 
             @Override public IState.Immutable caseResolveQuery(CResolveQuery c) throws InterruptedException {
-                final IQueryFilter filter = c.filter();
-                final IQueryMin min = c.min();
+                final QueryFilter filter = c.filter();
+                final QueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm resultTerm = c.resultTerm();
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(scopeTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(scopeTerm)));
                 }
                 final Scope scope;
                 if((scope = AScope.matcher().match(scopeTerm, unifier).orElse(null)) == null) {
@@ -421,13 +440,14 @@ class GreedySolver {
                             Streams.stream(paths).map(p -> StatixTerms.explicate(p, spec.dataLabels()))
                                     .collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
-                    return successNew(c, state, ImmutableList.of(C), fuel);
+                    return success(c, state, NO_UPDATED_VARS, ImmutableList.of(C), NO_NEW_CRITICAL_EDGES,
+                            NO_EXISTENTIALS, fuel);
                 } catch(IncompleteException e) {
                     params.debug().debug("Query resolution delayed: {}", e.getMessage());
-                    return successDelay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())), fuel);
+                    return delay(c, state, Delay.ofCriticalEdge(CriticalEdge.of(e.scope(), e.label())));
                 } catch(ResolutionDelayException e) {
                     params.debug().debug("Query resolution delayed: {}", e.getMessage());
-                    return successDelay(c, state, e.getCause(), fuel);
+                    return delay(c, state, e.getCause());
                 } catch(ResolutionException e) {
                     params.debug().debug("Query resolution failed: {}", e.getMessage());
                     return fail(c, state);
@@ -441,10 +461,10 @@ class GreedySolver {
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!unifier.isGround(sourceTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(sourceTerm)));
                 }
                 if(!unifier.isGround(targetTerm)) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(targetTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(targetTerm)));
                 }
                 final Scope source;
                 if((source = AScope.matcher().match(sourceTerm, unifier).orElse(null)) == null) {
@@ -461,7 +481,8 @@ class GreedySolver {
                 }
                 final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
                         state.scopeGraph().addEdge(source, label, target);
-                return success(c, state.withScopeGraph(scopeGraph), fuel);
+                return success(c, state.withScopeGraph(scopeGraph), NO_UPDATED_VARS, NO_NEW_CONSTRAINTS,
+                        NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS, fuel);
             }
 
             @Override public IState.Immutable caseTermId(CAstId c) throws InterruptedException {
@@ -470,20 +491,22 @@ class GreedySolver {
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!(unifier.isGround(term))) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(term)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(term)));
                 }
                 final CEqual eq;
                 final Optional<Scope> maybeScope = AScope.matcher().match(term, unifier);
                 if(maybeScope.isPresent()) {
                     final AScope scope = maybeScope.get();
                     eq = new CEqual(idTerm, scope);
-                    return successNew(c, state, ImmutableList.of(eq), fuel);
+                    return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                            NO_EXISTENTIALS, fuel);
                 } else {
                     final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
                         final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
                         eq = new CEqual(idTerm, indexTerm);
-                        return successNew(c, state, ImmutableList.of(eq), fuel);
+                        return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         return fail(c, state);
                     }
@@ -497,7 +520,7 @@ class GreedySolver {
 
                 final IUniDisunifier unifier = state.unifier();
                 if(!(unifier.isGround(idTerm))) {
-                    return successDelay(c, state, Delay.ofVars(unifier.getVars(idTerm)), fuel);
+                    return delay(c, state, Delay.ofVars(unifier.getVars(idTerm)));
                 }
                 final Optional<TermIndex> maybeIndex = TermIndex.matcher().match(idTerm, unifier);
                 if(maybeIndex.isPresent()) {
@@ -525,14 +548,16 @@ class GreedySolver {
                     }
                     final IState.Immutable newState =
                             state.withTermProperties(state.termProperties().__put(key, property));
-                    return success(c, newState, fuel);
+                    return success(c, newState, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                            NO_EXISTENTIALS, fuel);
                 } else {
                     return fail(c, state);
                 }
             }
 
             @Override public IState.Immutable caseTrue(CTrue c) throws InterruptedException {
-                return success(c, state, fuel);
+                return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS,
+                        fuel);
             }
 
             @Override public IState.Immutable caseTry(CTry c) throws InterruptedException {
@@ -540,13 +565,14 @@ class GreedySolver {
                 try {
                     if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext(),
                             progress.subProgress(1), cancel)) {
-                        return success(c, state, fuel);
+                        return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                NO_EXISTENTIALS, fuel);
                     } else {
                         return fail(c, state);
                     }
                 } catch(Delay e) {
                     debug.debug("Try delayed: {}", e.getMessage());
-                    return successDelay(c, state, e, fuel);
+                    return delay(c, state, e);
                 }
             }
 
@@ -558,7 +584,8 @@ class GreedySolver {
                 final IDebugContext debug = params.debug();
 
                 final List<Rule> rules = spec.rules().getRules(name);
-                final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyOrderedAll(state, rules, args, c);
+                final List<Tuple2<Rule, ApplyResult>> results =
+                        RuleUtil.applyOrderedAll(state, rules, args, c, ApplyMode.RELAXED);
                 if(results.isEmpty()) {
                     debug.debug("No rule applies");
                     return fail(c, state);
@@ -567,13 +594,17 @@ class GreedySolver {
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
+                    if(applyResult.criticalEdges() == null) {
+                        throw new IllegalArgumentException(
+                                "Solver only accepts specs with pre-computed critical edges.");
+                    }
                     return success(c, applyResult.state(), applyResult.diff().domainSet(), disjoin(applyResult.body()),
-                            ImmutableMap.of(), ImmutableMap.of(), fuel);
+                            applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.domainSet().stream()).collect(Collectors.toSet());
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
-                    return successDelay(c, state, Delay.ofVars(stuckVars), fuel);
+                    return delay(c, state, Delay.ofVars(stuckVars));
                 }
             }
 

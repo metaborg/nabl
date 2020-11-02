@@ -14,7 +14,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.spec.Rule;
 
-public class QueryFilter implements IQueryFilter, Serializable {
+public class QueryFilter implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IRegExpMatcher<ITerm> pathWf;
@@ -24,32 +24,32 @@ public class QueryFilter implements IQueryFilter, Serializable {
         this(RegExpMatcher.create(pathWf), dataConstraint);
     }
 
-    private QueryFilter(IRegExpMatcher<ITerm> pathWf, Rule dataConstraint) {
+    public QueryFilter(IRegExpMatcher<ITerm> pathWf, Rule dataConstraint) {
         this.pathWf = pathWf;
         this.dataWf = dataConstraint;
     }
 
-    @Override public IRegExpMatcher<ITerm> getLabelWF() {
+    public IRegExpMatcher<ITerm> getLabelWF() {
         return pathWf;
     }
 
-    @Override public Rule getDataWF() {
+    public Rule getDataWF() {
         return dataWf;
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
+    public Set.Immutable<ITermVar> getVars() {
         return dataWf.varSet();
     }
 
-    @Override public IQueryFilter apply(ISubstitution.Immutable subst) {
+    public QueryFilter apply(ISubstitution.Immutable subst) {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }
 
-    @Override public IQueryFilter apply(IRenaming subst) {
+    public QueryFilter apply(IRenaming subst) {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }
 
-    @Override public String toString(TermFormatter termToString) {
+    public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("filter ");
         sb.append(pathWf);

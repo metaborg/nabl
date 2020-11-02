@@ -9,13 +9,15 @@ public abstract class EdgeOrData<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("rawtypes") private static final EdgeOrData DATA = new Data<>();
+
     abstract public <R> R matchInResolution(OnData<R> onData, OnEdge<L, R> onEdge)
             throws ResolutionException, InterruptedException;
 
     public abstract <R> R match(Function0<R> onData, Function1<L, R> onEdge);
 
-    public static <L> EdgeOrData<L> data() {
-        return new Data<>();
+    @SuppressWarnings("unchecked") public static <L> EdgeOrData<L> data() {
+        return DATA;
     }
 
     public static <L> EdgeOrData<L> edge(L l) {

@@ -14,30 +14,30 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.query.IQueryFilter;
-import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
 
 public class CResolveQuery implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final IQueryFilter filter;
-    private final IQueryMin min;
+    private final QueryFilter filter;
+    private final QueryMin min;
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
 
-    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
+    public CResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm) {
         this(filter, min, scopeTerm, resultTerm, null, null);
     }
 
-    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IMessage message) {
         this(filter, min, scopeTerm, resultTerm, null, message);
     }
 
-    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IConstraint cause, @Nullable IMessage message) {
         this.filter = filter;
         this.min = min;
@@ -47,11 +47,11 @@ public class CResolveQuery implements IConstraint, Serializable {
         this.message = message;
     }
 
-    public IQueryFilter filter() {
+    public QueryFilter filter() {
         return filter;
     }
 
-    public IQueryMin min() {
+    public QueryMin min() {
         return min;
     }
 
@@ -134,7 +134,15 @@ public class CResolveQuery implements IConstraint, Serializable {
                 && Objects.equals(cause, that.cause) && Objects.equals(message, that.message);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(filter, min, scopeTerm, resultTerm, cause, message);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(filter, min, scopeTerm, resultTerm, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

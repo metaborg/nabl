@@ -28,6 +28,7 @@ import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -51,7 +52,8 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // apply rule
         final ApplyResult applyResult;
-        if((applyResult = RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null).orElse(null)) == null) {
+        if((applyResult =
+                RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED).orElse(null)) == null) {
             return Optional.empty();
         }
         final IState.Immutable applyState = applyResult.state();
@@ -60,7 +62,7 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
         completeness.updateAll(applyResult.diff().domainSet(), applyState.unifier());
-        completeness.add(applyConstraint, applyState.unifier());
+        completeness.add(applyConstraint, spec, applyState.unifier());
 
         // NOTE This part is almost a duplicate of Solver::entails and should be
         //      kept in sync

@@ -19,6 +19,9 @@ public abstract class MultiSet<E> implements Iterable<E> {
         return elements().isEmpty();
     }
 
+    /**
+     * Return number of elements in the set. This operation does not run in constant time.
+     */
     public int size() {
         return elements().values().stream().mapToInt(i -> i).sum();
     }

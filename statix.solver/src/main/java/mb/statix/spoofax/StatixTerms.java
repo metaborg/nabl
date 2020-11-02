@@ -75,8 +75,6 @@ import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.query.IQueryFilter;
-import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.Rule;
@@ -100,7 +98,7 @@ public class StatixTerms {
     public static IMatcher<Spec> spec() {
         return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
                 (t, edgeLabels, dataLabels, noRelationLabel, rules, ext) -> {
-                    return Spec.of(rules, edgeLabels, dataLabels, ext);
+                    return Spec.of(rules, edgeLabels, dataLabels, ext).precomputeCriticalEdges();
                 });
     }
 
@@ -171,8 +169,8 @@ public class StatixTerms {
                 }),
                 M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
                         (c, rel, filterTerm, minTerm, scope, result, msg) -> {
-                    final Optional<IQueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
-                    final Optional<IQueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                    final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                    final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
                     return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
                         return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
                     });
@@ -206,7 +204,7 @@ public class StatixTerms {
         return M.stringValue();
     }
 
-    public static IMatcher<IQueryFilter> queryFilter(ITerm rel) {
+    public static IMatcher<QueryFilter> queryFilter(ITerm rel) {
         final IRegExpBuilder<ITerm> builder = new RegExpBuilder<>();
         IMatcher<IRegExp<ITerm>> reMatcher = labelRE(builder);
         if(!isEOP(rel)) {
@@ -218,7 +216,7 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<IQueryMin> queryMin(ITerm rel) {
+    public static IMatcher<QueryMin> queryMin(ITerm rel) {
         IMatcher<IRelation.Immutable<EdgeOrData<ITerm>>> ltMatcher = labelLt();
         if(!isEOP(rel)) {
             // patch label order, replacing EOP with rel
@@ -557,6 +555,8 @@ public class StatixTerms {
         );
         // @formatter:on
     }
+
+    ///////////////////////////////////////////////////////////////////////////
 
     public static ITerm explicate(ITerm term) {
         // @formatter:off

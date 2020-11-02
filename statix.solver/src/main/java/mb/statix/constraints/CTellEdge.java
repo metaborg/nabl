@@ -13,6 +13,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.ICompleteness;
 
 public class CTellEdge implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
@@ -22,16 +23,19 @@ public class CTellEdge implements IConstraint, Serializable {
     private final ITerm targetTerm;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable ICompleteness.Immutable ownCriticalEdges;
 
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
-        this(sourceTerm, label, targetTerm, null);
+        this(sourceTerm, label, targetTerm, null, null);
     }
 
-    public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm, @Nullable IConstraint cause) {
+    public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm, @Nullable IConstraint cause,
+            @Nullable ICompleteness.Immutable ownCriticalEdges) {
         this.sourceTerm = sourceTerm;
         this.label = label;
         this.targetTerm = targetTerm;
         this.cause = cause;
+        this.ownCriticalEdges = ownCriticalEdges;
     }
 
     public ITerm sourceTerm() {
@@ -51,7 +55,15 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge withCause(@Nullable IConstraint cause) {
-        return new CTellEdge(sourceTerm, label, targetTerm, cause);
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, ownCriticalEdges);
+    }
+
+    @Override public Optional<ICompleteness.Immutable> ownCriticalEdges() {
+        return Optional.ofNullable(ownCriticalEdges);
+    }
+
+    @Override public CTellEdge withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, criticalEdges);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -67,11 +79,13 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
     @Override public CTellEdge apply(IRenaming subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause);
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
+                ownCriticalEdges.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -98,7 +112,15 @@ public class CTellEdge implements IConstraint, Serializable {
                 && Objects.equals(targetTerm, cTellEdge.targetTerm) && Objects.equals(cause, cTellEdge.cause);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(sourceTerm, label, targetTerm, cause);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(sourceTerm, label, targetTerm, cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

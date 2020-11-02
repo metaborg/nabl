@@ -9,6 +9,7 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.ICompleteness;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -20,7 +21,7 @@ public abstract class AApplyResult {
     @Value.Parameter public abstract IState.Immutable state();
 
     /**
-     * All variables that were instantiated by this application.
+     * All state variables that were instantiated by this application.
      */
     @Value.Parameter public abstract IUnifier.Immutable diff();
 
@@ -34,5 +35,10 @@ public abstract class AApplyResult {
      * The applied rule body.
      */
     @Value.Parameter public abstract IConstraint body();
+
+    /**
+     * Critical edges that are introduced by the application of this rule.
+     */
+    @Value.Parameter public abstract ICompleteness.Immutable criticalEdges();
 
 }

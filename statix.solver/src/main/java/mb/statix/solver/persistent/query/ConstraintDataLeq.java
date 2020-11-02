@@ -11,13 +11,15 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.scopegraph.reference.DataLeq;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
-import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
+import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
 class ConstraintDataLeq implements DataLeq<ITerm> {
@@ -45,11 +47,13 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
         final IUniDisunifier.Immutable unifier = state.unifier();
         try {
-            final IConstraint result;
-            if((result = constraint.apply(ImmutableList.of(datum1, datum2), unifier).orElse(null)) == null) {
+            final ApplyResult result;
+            if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
+                    .orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, result, isComplete, debug, progress.subProgress(1), cancel)) {
+            if(Solver.entails(spec, result.state(), result.body(), isComplete, debug, progress.subProgress(1),
+                    cancel)) {
                 if(debug.isEnabled(Level.Debug)) {
                     debug.debug("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }

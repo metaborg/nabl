@@ -90,7 +90,15 @@ public class CConj implements IConstraint, Serializable {
                 && Objects.equals(cause, cConj.cause);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(left, right, cause);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(left, right, cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

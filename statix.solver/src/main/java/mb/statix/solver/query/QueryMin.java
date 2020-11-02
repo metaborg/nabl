@@ -13,7 +13,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.spec.Rule;
 
-public class QueryMin implements IQueryMin, Serializable {
+public class QueryMin implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IRelation.Immutable<EdgeOrData<ITerm>> labelOrd;
@@ -24,27 +24,27 @@ public class QueryMin implements IQueryMin, Serializable {
         this.dataOrd = dataConstraint;
     }
 
-    @Override public IRelation<EdgeOrData<ITerm>> getLabelOrder() {
+    public IRelation.Immutable<EdgeOrData<ITerm>> getLabelOrder() {
         return labelOrd;
     }
 
-    @Override public Rule getDataEquiv() {
+    public Rule getDataEquiv() {
         return dataOrd;
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
+    public Set.Immutable<ITermVar> getVars() {
         return dataOrd.varSet();
     }
 
-    @Override public IQueryMin apply(ISubstitution.Immutable subst) {
+    public QueryMin apply(ISubstitution.Immutable subst) {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }
 
-    @Override public IQueryMin apply(IRenaming subst) {
+    public QueryMin apply(IRenaming subst) {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }
 
-    @Override public String toString(TermFormatter termToString) {
+    public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("min ");
         sb.append(labelOrd);

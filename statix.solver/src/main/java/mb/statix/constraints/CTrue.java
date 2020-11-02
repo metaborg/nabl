@@ -72,7 +72,15 @@ public class CTrue implements IConstraint, Serializable {
         return Objects.equals(cause, cTrue.cause);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(cause);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }
