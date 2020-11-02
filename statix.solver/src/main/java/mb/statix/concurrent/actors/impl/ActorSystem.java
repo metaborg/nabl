@@ -31,8 +31,12 @@ public class ActorSystem implements IActorSystem {
     }
 
     public ActorSystem(int parallelism) {
+        this(new PriorityBlockingQueueThreadPoolScheduler(parallelism));
+    }
+
+    public ActorSystem(IActorScheduler scheduler) {
         this.actors = Maps.newHashMap();
-        this.scheduler = new PriorityThreadPoolScheduler(parallelism);
+        this.scheduler = scheduler;
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }

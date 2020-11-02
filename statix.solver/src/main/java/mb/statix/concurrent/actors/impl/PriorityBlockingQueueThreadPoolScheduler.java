@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-public class PriorityThreadPoolScheduler implements IActorScheduler {
+public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler {
 
-    private static final ILogger logger = LoggerUtils.logger(PriorityThreadPoolScheduler.class);
+    private static final ILogger logger = LoggerUtils.logger(PriorityBlockingQueueThreadPoolScheduler.class);
 
     private static final int PREEMPT_FACTOR = 3;
     private static final int RESCHEDULE_FACTOR = 7;
@@ -22,7 +22,7 @@ public class PriorityThreadPoolScheduler implements IActorScheduler {
 
     // FIXME Rebuild queue when #rescheduled > #scheduled
 
-    public PriorityThreadPoolScheduler(int parallelism) {
+    public PriorityBlockingQueueThreadPoolScheduler(int parallelism) {
         this.executorQueue = new PriorityBlockingQueue<>();
         this.executor = new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, executorQueue);
     }
