@@ -81,11 +81,11 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         }
     }
 
-    @Override public <U> IFuture<U> handle(CheckedFunction2<? super List<T>, Throwable, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U> handle(CheckedFunction2<? super List<T>, Throwable, ? extends U, ?> handler) {
         return result.handle(handler);
     }
 
-    @Override public IFuture<List<T>> whenComplete(CheckedAction2<? super List<T>, Throwable, ? extends Throwable> handler) {
+    @Override public IFuture<List<T>> whenComplete(CheckedAction2<? super List<T>, Throwable, ?> handler) {
         return result.whenComplete(handler);
     }
 
@@ -97,15 +97,16 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.getNow();
     }
 
-    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super List<T>, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super List<T>, ? extends U, ?> handler) {
         return result.thenApply(handler);
     }
 
-    @Override public IFuture<Void> thenAccept(CheckedAction1<? super List<T>, ? extends Throwable> handler) {
+    @Override public IFuture<Void> thenAccept(CheckedAction1<? super List<T>, ?> handler) {
         return result.thenAccept(handler);
     }
 
-    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super List<T>, ? extends IFuture<U>, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U>
+            thenCompose(CheckedFunction1<? super List<T>, ? extends IFuture<? extends U>, ?> handler) {
         return result.thenCompose(handler);
     }
 

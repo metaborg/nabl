@@ -10,17 +10,17 @@ import org.metaborg.util.functions.CheckedFunction2;
 
 public interface IFuture<T> {
 
-    <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler);
+    <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ?> handler);
 
-    IFuture<Void> thenAccept(CheckedAction1<? super T, ? extends Throwable> handler);
+    IFuture<Void> thenAccept(CheckedAction1<? super T, ?> handler);
 
-    <U> IFuture<U> thenCompose(CheckedFunction1<? super T, ? extends IFuture<U>, ? extends Throwable> handler);
+    <U> IFuture<U> thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ?> handler);
 
-    <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler);
+    <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ?> handler);
 
-    <U> IFuture<U> compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler);
+    <U> IFuture<U> compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ?> handler);
 
-    IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ? extends Throwable> handler);
+    IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler);
 
     T get() throws ExecutionException, InterruptedException;
 
