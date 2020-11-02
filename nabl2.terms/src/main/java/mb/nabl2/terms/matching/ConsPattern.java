@@ -20,6 +20,7 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.util.CapsuleUtil;
 
 class ConsPattern extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -42,7 +43,7 @@ class ConsPattern extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        Set.Transient<ITermVar> vars = Set.Transient.of();
+        Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         vars.__insertAll(head.getVars());
         vars.__insertAll(tail.getVars());
         return vars.freeze();

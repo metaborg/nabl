@@ -16,6 +16,7 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
@@ -58,7 +59,7 @@ public abstract class AState implements IState.Immutable {
 
     @Override public Immutable subState() {
         State self = (State) this;
-        return self.with__scopes(Set.Immutable.of()).with__vars(Set.Immutable.of());
+        return self.with__scopes(CapsuleUtil.immutableSet()).with__vars(CapsuleUtil.immutableSet());
     }
 
     // --- variables ---
@@ -68,7 +69,7 @@ public abstract class AState implements IState.Immutable {
     }
 
     @Value.Default Set.Immutable<ITermVar> __vars() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public Tuple2<ITermVar, IState.Immutable> freshVar(ITermVar var) {
@@ -98,7 +99,7 @@ public abstract class AState implements IState.Immutable {
     }
 
     @Value.Default Set.Immutable<Scope> __scopes() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public Tuple2<Scope, IState.Immutable> freshScope(String base) {

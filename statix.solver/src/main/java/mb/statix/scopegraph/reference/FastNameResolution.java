@@ -11,6 +11,7 @@ import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -159,7 +160,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
 
     private Set.Immutable<EdgeOrData<L>> computeMax(Set.Immutable<EdgeOrData<L>> L)
             throws ResolutionException, InterruptedException {
-        final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> max = CapsuleUtil.transientSet();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
@@ -190,7 +191,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
 
     private Set.Immutable<EdgeOrData<L>> computeSmaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> smaller = CapsuleUtil.transientSet();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
                 smaller.__insert(l2);

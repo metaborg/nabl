@@ -7,6 +7,7 @@ import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.util.CapsuleUtil;
 
 public class VarIndexedCollection<V> {
 
@@ -31,7 +32,7 @@ public class VarIndexedCollection<V> {
     }
 
     public Set.Immutable<V> update(Iterable<ITermVar> indexVars, IUnifier unifier) {
-        final Set.Transient<V> done = Set.Transient.of();
+        final Set.Transient<V> done = CapsuleUtil.transientSet();
         for(ITermVar indexVar : indexVars) {
             update(indexVar, unifier, done);
         }
@@ -39,7 +40,7 @@ public class VarIndexedCollection<V> {
     }
 
     public Set.Immutable<V> update(ITermVar indexVar, IUnifier unifier) {
-        final Set.Transient<V> done = Set.Transient.of();
+        final Set.Transient<V> done = CapsuleUtil.transientSet();
         update(indexVar, unifier, done);
         return done.freeze();
     }

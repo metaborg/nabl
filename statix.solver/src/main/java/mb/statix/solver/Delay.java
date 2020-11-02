@@ -38,7 +38,7 @@ public class Delay extends Throwable {
     public Delay retainAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
         final Set.Immutable<ITermVar> retainedVars = this.vars.__retainAll(CapsuleUtil.toSet(vars));
         final Set.Immutable<ITerm> scopeSet = CapsuleUtil.toSet(scopes);
-        final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
+        final Set.Transient<CriticalEdge> retainedCriticalEdges = CapsuleUtil.transientSet();
         this.criticalEdges.stream().filter(ce -> scopeSet.contains(ce.scope()))
                 .forEach(retainedCriticalEdges::__insert);
         return new Delay(retainedVars, retainedCriticalEdges.freeze());
@@ -47,7 +47,7 @@ public class Delay extends Throwable {
     public Delay removeAll(Iterable<? extends ITermVar> vars, Iterable<? extends ITerm> scopes) {
         final Set.Immutable<ITermVar> retainedVars = this.vars.__removeAll(CapsuleUtil.toSet(vars));
         final Set.Immutable<ITerm> scopeSet = CapsuleUtil.toSet(scopes);
-        final Set.Transient<CriticalEdge> retainedCriticalEdges = Set.Transient.of();
+        final Set.Transient<CriticalEdge> retainedCriticalEdges = CapsuleUtil.transientSet();
         this.criticalEdges.stream().filter(ce -> !scopeSet.contains(ce.scope()))
                 .forEach(retainedCriticalEdges::__insert);
         return new Delay(retainedVars, retainedCriticalEdges.freeze());
@@ -64,15 +64,15 @@ public class Delay extends Throwable {
     }
 
     public static Delay ofVar(ITermVar var) {
-        return ofVars(Set.Immutable.of(var));
+        return ofVars(CapsuleUtil.immutableSet(var));
     }
 
     public static Delay ofVars(Iterable<ITermVar> vars) {
-        return new Delay(vars, Set.Immutable.of());
+        return new Delay(vars, CapsuleUtil.immutableSet());
     }
 
     public static Delay ofCriticalEdge(CriticalEdge edge) {
-        return new Delay(Set.Immutable.of(), Set.Immutable.of(edge));
+        return new Delay(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(edge));
     }
 
 }

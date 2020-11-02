@@ -17,6 +17,7 @@ import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.util.CapsuleUtil;
 
 class PatternVar extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -49,7 +50,7 @@ class PatternVar extends Pattern {
     }
 
     @Override public Set<ITermVar> getVars() {
-        return isWildcard() ? Set.Immutable.of() : Set.Immutable.of(var);
+        return isWildcard() ? CapsuleUtil.immutableSet() : CapsuleUtil.immutableSet(var);
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {

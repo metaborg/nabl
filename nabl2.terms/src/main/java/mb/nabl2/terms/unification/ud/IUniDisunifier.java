@@ -13,6 +13,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.util.CapsuleUtil;
 
 /**
  * Unification
@@ -139,12 +140,12 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
                 ITerm term2, Predicate1<ITermVar> isRigid) throws RigidException;
 
         default Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(ITerm term1, ITerm term2) {
-            return disunify(Set.Immutable.of(), term1, term2);
+            return disunify(CapsuleUtil.immutableSet(), term1, term2);
         }
 
         default Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(ITerm term1, ITerm term2,
                 Predicate1<ITermVar> isRigid) throws RigidException {
-            return disunify(Set.Immutable.of(), term1, term2, isRigid);
+            return disunify(CapsuleUtil.immutableSet(), term1, term2, isRigid);
         }
 
         /**
@@ -259,12 +260,12 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
                 Predicate1<ITermVar> isRigid) throws RigidException;
 
         default Optional<Optional<Diseq>> disunify(ITerm term1, ITerm term2) {
-            return disunify(Set.Immutable.of(), term1, term2);
+            return disunify(CapsuleUtil.immutableSet(), term1, term2);
         }
 
         default Optional<Optional<Diseq>> disunify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
                 throws RigidException {
-            return disunify(Set.Immutable.of(), term1, term2, isRigid);
+            return disunify(CapsuleUtil.immutableSet(), term1, term2, isRigid);
         }
 
         /**

@@ -150,4 +150,38 @@ public final class CapsuleUtil {
         return multimap.freeze();
     }
 
+    @SuppressWarnings("rawtypes") private static final Set.Immutable EMPTY_SET = Set.Immutable.of();
+
+    /**
+     * Constructor for Set.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Immutable<K> immutableSet() {
+        return EMPTY_SET;
+    }
+
+    /**
+     * Constructor for Set.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Immutable<K> immutableSet(K value) {
+        return EMPTY_SET.__insert(value);
+    }
+
+    /**
+     * Constructor for Set.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Immutable<K> immutableSet(K value1, K value2) {
+        return EMPTY_SET.__insert(value1).__insert(value2);
+    }
+
+    /**
+     * Constructor for Set.Transient that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Transient<K> transientSet() {
+        return EMPTY_SET.asTransient();
+    }
+
 }

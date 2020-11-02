@@ -59,7 +59,7 @@ abstract class NameResolution<S, L, D> {
     public ICompletableFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
         final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
         logger.trace("env {}", path);
-        final Set.Transient<EdgeOrData<L>> labels = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
         if(re.accepting()) {
             labels.__insert(dataLabel);
         }
@@ -116,7 +116,7 @@ abstract class NameResolution<S, L, D> {
     }
 
     private Set.Immutable<EdgeOrData<L>> max(Set.Immutable<EdgeOrData<L>> L) {
-        final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> max = CapsuleUtil.transientSet();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 try {
@@ -134,7 +134,7 @@ abstract class NameResolution<S, L, D> {
     }
 
     private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1) {
-        final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> smaller = CapsuleUtil.transientSet();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
                 smaller.__insert(l2);

@@ -28,6 +28,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
+import mb.nabl2.util.CapsuleUtil;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
@@ -252,7 +253,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public Set.Immutable<ITermVar> getVars(final ITerm term) {
-        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         getVars(term.getVars(), Lists.newLinkedList(), Sets.newHashSet(), vars);
         return vars.freeze();
     }

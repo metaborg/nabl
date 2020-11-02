@@ -26,6 +26,7 @@ import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.BaseUnifier;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
+import mb.nabl2.util.CapsuleUtil;
 
 public abstract class PersistentUniDisunifier extends BaseUniDisunifier implements Serializable {
 
@@ -33,10 +34,10 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
 
     private static final PersistentUniDisunifier.Immutable FINITE_EMPTY =
-            new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(true), Set.Immutable.of());
+            new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(true), CapsuleUtil.immutableSet());
 
     private static final PersistentUniDisunifier.Immutable INFINITE_EMPTY =
-            new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(false), Set.Immutable.of());
+            new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(false), CapsuleUtil.immutableSet());
 
 
     protected static ITermVar findRep(ITermVar var, Map.Transient<ITermVar, ITermVar> reps) {
@@ -233,7 +234,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          */
         private static Optional<PersistentUniDisunifier.Immutable> normalizeDiseqs(PersistentUnifier.Immutable unifier,
                 Set.Immutable<Diseq> disequalities, Predicate1<ITermVar> isRigid) throws RigidException {
-            final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
+            final Set.Transient<Diseq> newDisequalities = CapsuleUtil.transientSet();
 
             final Function0<FreshVars> fvProvider = freshVarProvider(unifier);
             final PersistentUnifier.Transient updateableUnifier = new PersistentUnifier.Transient(unifier);
@@ -334,7 +335,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retain(ITermVar var) {
-            return retainAll(Set.Immutable.of(var));
+            return retainAll(CapsuleUtil.immutableSet(var));
         }
 
         @Override public IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
@@ -346,12 +347,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         ///////////////////////////////////////////
 
         @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> remove(ITermVar var) {
-            return removeAll(Set.Immutable.of(var));
+            return removeAll(CapsuleUtil.immutableSet(var));
         }
 
         @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final BaseUnifier.ImmutableResult<ISubstitution.Immutable> r = unifier.removeAll(vars);
-            final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
+            final Set.Transient<Diseq> newDisequalities = CapsuleUtil.transientSet();
             disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result())))
                     .map(diseq -> diseq.removeAll(vars)).forEach(newDisequalities::__insert);
             if(newDisequalities.stream().anyMatch(Diseq::isEmpty)) {

@@ -19,6 +19,7 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.VoidException;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -30,7 +31,7 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
             IConstraint cause) throws VoidException {
         // create equality constraints
         final IState.Transient newState = state.melt();
-        final Set.Transient<ITermVar> _universalVars = Set.Transient.of();
+        final Set.Transient<ITermVar> _universalVars = CapsuleUtil.transientSet();
         final Function1<Optional<ITermVar>, ITermVar> fresh = v -> {
             final ITermVar f = v.map(newState::freshVar).orElseGet(newState::freshWld);
             _universalVars.__insert(f);

@@ -11,6 +11,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -128,7 +129,7 @@ public abstract class Completeness implements ICompleteness {
 
         @Override public Set.Immutable<CriticalEdge> remove(ITerm scopeTerm, EdgeOrData<ITerm> label,
                 IUniDisunifier unifier) {
-            final Set.Transient<CriticalEdge> removedEdges = Set.Transient.of();
+            final Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
             getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                 final int n = incomplete.remove(scopeOrVar, label);
                 if(n == 0) {
@@ -140,7 +141,7 @@ public abstract class Completeness implements ICompleteness {
 
         @Override public Set.Immutable<CriticalEdge> removeAll(ICompleteness.Immutable criticalEdges,
                 IUniDisunifier unifier) {
-            final Set.Transient<CriticalEdge> removedEdges = Set.Transient.of();
+            final Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
             for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> varLabel : criticalEdges.entrySet()) {
                 getVarOrScope(varLabel.getKey(), unifier).ifPresent(scopeOrVar -> {
                     for(Entry<EdgeOrData<ITerm>, Integer> labelCount : varLabel.getValue().entrySet()) {

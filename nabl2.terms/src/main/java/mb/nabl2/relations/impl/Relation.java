@@ -19,6 +19,7 @@ import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.SymmetryException;
 import mb.nabl2.relations.TransitivityException;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation2;
 import mb.nabl2.util.collections.IRelation2;
@@ -34,7 +35,7 @@ public abstract class Relation<T> implements IRelation<T> {
     }
 
     @Override public Set.Immutable<T> smaller(T t) {
-        Set.Transient<T> ts = Set.Transient.of();
+        Set.Transient<T> ts = CapsuleUtil.transientSet();
         smaller(t, ts, Sets.newHashSet());
         if(getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
             larger(t, ts, Sets.newHashSet());
@@ -59,7 +60,7 @@ public abstract class Relation<T> implements IRelation<T> {
 
 
     @Override public Set.Immutable<T> larger(T t) {
-        Set.Transient<T> ts = Set.Transient.of();
+        Set.Transient<T> ts = CapsuleUtil.transientSet();
         larger(t, ts, Sets.newHashSet());
         if(getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
             smaller(t, ts, Sets.newHashSet());

@@ -3,11 +3,12 @@ package mb.statix.scopegraph.reference;
 import java.util.Iterator;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.util.CapsuleUtil;
 import mb.statix.scopegraph.path.IResolutionPath;
 
 public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
 
-    @SuppressWarnings("rawtypes") private static final Env EMPTY = new Env<>(Set.Immutable.of());
+    @SuppressWarnings("rawtypes") private static final Env EMPTY = new Env<>(CapsuleUtil.immutableSet());
 
     private final Set.Immutable<IResolutionPath<S, L, D>> paths;
 
@@ -28,7 +29,7 @@ public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
     }
 
     public static <S, L, D> Env<S, L, D> of(IResolutionPath<S, L, D> path) {
-        return new Env<>(Set.Immutable.of(path));
+        return new Env<>(CapsuleUtil.immutableSet(path));
     }
 
     public static <S, L, D> Builder<S, L, D> builder() {
@@ -40,7 +41,7 @@ public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
         private final Set.Transient<IResolutionPath<S, L, D>> paths;
 
         private Builder() {
-            this.paths = Set.Transient.of();
+            this.paths = CapsuleUtil.transientSet();
         }
 
         public void add(IResolutionPath<S, L, D> path) {

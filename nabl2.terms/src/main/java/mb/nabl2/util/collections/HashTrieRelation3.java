@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 
 public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> {
@@ -206,7 +207,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
         }
 
         @Override public Set.Immutable<V> remove(K key, L label) {
-            final Set.Transient<V> removed = Set.Transient.of();
+            final Set.Transient<V> removed = CapsuleUtil.transientSet();
             java.util.Set<V> values;
             if(!(values = fwdKL.get(Tuple2.of(key, label))).isEmpty()) {
                 fwdKL.__remove(Tuple2.of(key, label));

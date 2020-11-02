@@ -82,7 +82,7 @@ public class CInequal implements IConstraint, Serializable {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         vars.__insertAll(universals);
         vars.__insertAll(term1.getVars());
         vars.__insertAll(term2.getVars());

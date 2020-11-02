@@ -10,6 +10,7 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.CapsuleUtil;
 
 @Value.Immutable(builder = true, copy = true, prehash = false)
 @Serial.Version(value = 42L)
@@ -24,7 +25,7 @@ abstract class ANilTerm extends AbstractTerm implements INilTerm {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {

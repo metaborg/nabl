@@ -404,7 +404,7 @@ class Actor<T> implements IActorRef<T>, IActor<T>, Runnable {
 
     private Set<String> tags(Method method) {
         return Optional.ofNullable(method.getAnnotation(MessageTags.class)).map(tags -> CapsuleUtil.toSet(tags.value()))
-                .orElse(Set.Immutable.of());
+                .orElse(CapsuleUtil.immutableSet());
     }
 
     ///////////////////////////////////////////////////////////////////////////

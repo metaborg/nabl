@@ -39,6 +39,7 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CConj;
@@ -371,7 +372,7 @@ public class RuleUtil {
     }
 
     public static Set.Immutable<ITermVar> freeVars(Rule rule) {
-        final Set.Transient<ITermVar> freeVars = Set.Transient.of();
+        final Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         freeVars(rule, freeVars::__insert);
         return freeVars.freeze();
     }

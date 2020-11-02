@@ -11,6 +11,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.MultiSet;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
@@ -58,7 +59,7 @@ public interface ICompleteness {
         Set.Immutable<CriticalEdge> remove(ITerm varOrScope, EdgeOrData<ITerm> label, IUniDisunifier unifier);
 
         default Set.Immutable<CriticalEdge> remove(IConstraint constraint, Spec spec, IUniDisunifier unifier) {
-            final Set.Transient<CriticalEdge> removedEdges = Set.Transient.of();
+            final Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
             CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
                 removedEdges.__insertAll(remove(scopeTerm, label, unifier));
             });

@@ -9,6 +9,7 @@ import org.immutables.value.Value;
 import com.google.common.collect.Iterators;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
@@ -36,7 +37,7 @@ abstract class AEmptyScopePath<S, L> implements IScopePath<S, L> {
     }
 
     @Value.Lazy @Override public Set.Immutable<S> scopeSet() {
-        return Set.Immutable.of(getScope());
+        return CapsuleUtil.immutableSet(getScope());
     }
 
     @Value.Lazy @Override public ConsList<L> labels() {

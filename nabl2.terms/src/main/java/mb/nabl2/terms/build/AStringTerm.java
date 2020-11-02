@@ -9,6 +9,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.util.CapsuleUtil;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -21,7 +22,7 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public <T> T match(Cases<T> cases) {

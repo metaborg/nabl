@@ -599,7 +599,7 @@ public final class Constraints {
     }
 
     public static Set.Immutable<ITermVar> freeVars(IConstraint constraint) {
-        Set.Transient<ITermVar> freeVars = Set.Transient.of();
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         freeVars(constraint, freeVars::__insert);
         return freeVars.freeze();
     }
@@ -679,7 +679,7 @@ public final class Constraints {
     }
 
     public static Set.Immutable<ITermVar> vars(IConstraint constraint) {
-        Set.Transient<ITermVar> vars = Set.Transient.of();
+        Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         vars(constraint, vars::__insert);
         return vars.freeze();
     }

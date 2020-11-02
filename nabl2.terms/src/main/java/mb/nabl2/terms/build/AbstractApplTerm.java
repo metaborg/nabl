@@ -8,6 +8,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.CapsuleUtil;
 
 public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm {
 
@@ -26,7 +27,7 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         for(ITerm arg : getArgs()) {
             vars.__insertAll(arg.getVars());
         }

@@ -578,7 +578,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
      * Fail delays that are part of the deadlock.
      */
     private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
-        final Set.Transient<ICompletable<?>> deadlocked = Set.Transient.of();
+        final Set.Transient<ICompletable<?>> deadlocked = CapsuleUtil.transientSet();
         for(Delay delay : delays.inverse().keySet()) {
             if(nodes.contains(delay.sender)) {
                 logger.debug("{} fail {}", self, delay);
@@ -622,7 +622,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     failures.add(new DeadlockException(initScope.toString()));
                     granted(initScope, self);
                     if(!context.owner(initScope.scope()).equals(self)) {
-                        self.async(parent)._initShare(initScope.scope(), Set.Immutable.of(), false);
+                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
                     }
                     releaseDelays(initScope.scope());
                 },

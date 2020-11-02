@@ -43,6 +43,7 @@ import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
@@ -484,7 +485,7 @@ public class StatixSolver {
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
                         final Set<ITermVar> updatedVars =
-                                result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(Set.Immutable.of());
+                                result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(CapsuleUtil.immutableSet());
                         return success(c, newState, updatedVars, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
                                 NO_EXISTENTIALS, fuel);
                     } else {
@@ -809,7 +810,7 @@ public class StatixSolver {
     // Open edges & delayed closes
     ///////////////////////////////////////////////////////////////////////////
 
-    private Set.Transient<CriticalEdge> delayedCloses = Set.Transient.of();
+    private Set.Transient<CriticalEdge> delayedCloses = CapsuleUtil.transientSet();
 
     private Set.Immutable<ITerm> getOpenEdges(ITerm varOrScope) {
         // we must include queued edge closes here, to ensure we registered the open

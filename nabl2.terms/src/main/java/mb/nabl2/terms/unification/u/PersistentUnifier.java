@@ -37,13 +37,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
     private static final long serialVersionUID = 42L;
 
 
-    private static final PersistentUnifier.Immutable FINITE_EMPTY =
-            new PersistentUnifier.Immutable(true, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(),
-                    MultiSet.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of());
+    private static final PersistentUnifier.Immutable FINITE_EMPTY = new PersistentUnifier.Immutable(true,
+            Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(), MultiSet.Immutable.of(),
+            CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
 
-    private static final PersistentUnifier.Immutable INFINITE_EMPTY =
-            new PersistentUnifier.Immutable(false, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(),
-                    MultiSet.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of());
+    private static final PersistentUnifier.Immutable INFINITE_EMPTY = new PersistentUnifier.Immutable(false,
+            Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(), MultiSet.Immutable.of(),
+            CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
 
 
     ///////////////////////////////////////////
@@ -419,7 +419,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         ///////////////////////////////////////////
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retain(ITermVar var) {
-            return retainAll(Set.Immutable.of(var));
+            return retainAll(CapsuleUtil.immutableSet(var));
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
@@ -431,7 +431,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         ///////////////////////////////////////////
 
         @Override public ImmutableResult<ISubstitution.Immutable> remove(ITermVar var) {
-            return removeAll(Set.Immutable.of(var));
+            return removeAll(CapsuleUtil.immutableSet(var));
         }
 
         @Override public ImmutableResult<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
@@ -529,15 +529,15 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             for(Entry<ITermVar, Integer> e : this.repAndTermVarsCache.get().entrySet()) {
                 repAndTermVarsCache.add(renaming.rename(e.getKey()), e.getValue());
             }
-            final Set.Transient<ITermVar> domainSetCache = Set.Transient.of();
+            final Set.Transient<ITermVar> domainSetCache = CapsuleUtil.transientSet();
             for(ITermVar var : this.domainSetCache) {
                 domainSetCache.__insert(renaming.rename(var));
             }
-            final Set.Transient<ITermVar> rangeSetCache = Set.Transient.of();
+            final Set.Transient<ITermVar> rangeSetCache = CapsuleUtil.transientSet();
             for(ITermVar var : this.rangeSetCache) {
                 rangeSetCache.__insert(renaming.rename(var));
             }
-            final Set.Transient<ITermVar> varSetCache = Set.Transient.of();
+            final Set.Transient<ITermVar> varSetCache = CapsuleUtil.transientSet();
             for(ITermVar var : this.varSetCache) {
                 varSetCache.__insert(renaming.rename(var));
             }
@@ -568,8 +568,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 return of(finite);
             }
             final MultiSet.Transient<ITermVar> repAndTermVarsCache = MultiSet.Transient.of();
-            final Set.Transient<ITermVar> domainSetCache = Set.Transient.of();
-            final Set.Transient<ITermVar> varSetCache = Set.Transient.of();
+            final Set.Transient<ITermVar> domainSetCache = CapsuleUtil.transientSet();
+            final Set.Transient<ITermVar> varSetCache = CapsuleUtil.transientSet();
             for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
                 domainSetCache.__insert(e.getKey());
                 varSetCache.__insert(e.getKey());
@@ -585,7 +585,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 }
             }
 
-            final Set.Transient<ITermVar> rangeSetCache = Set.Transient.of();
+            final Set.Transient<ITermVar> rangeSetCache = CapsuleUtil.transientSet();
             for(ITermVar var : repAndTermVarsCache.elementSet()) {
                 if(!domainSetCache.contains(var)) {
                     rangeSetCache.__insert(var);
@@ -617,7 +617,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
         Transient(boolean finite) {
             this(finite, Map.Transient.of(), Map.Transient.of(), Map.Transient.of(), MultiSet.Transient.of(),
-                    Set.Transient.of(), Set.Transient.of(), Set.Transient.of());
+                    CapsuleUtil.transientSet(), CapsuleUtil.transientSet(), CapsuleUtil.transientSet());
         }
 
         public Transient(PersistentUnifier.Immutable unifier) {

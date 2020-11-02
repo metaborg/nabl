@@ -8,6 +8,7 @@ import org.immutables.value.Value;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.CapsuleUtil;
 
 @Value.Immutable(builder = true, copy = true, prehash = false)
 @Serial.Version(value = 42L)
@@ -20,7 +21,7 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public <T> T match(Cases<T> cases) {
