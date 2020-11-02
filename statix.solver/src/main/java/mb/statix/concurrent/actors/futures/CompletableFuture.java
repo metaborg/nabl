@@ -19,7 +19,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         this.future = future;
     }
 
-    @Override public <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ?> handler) {
+    @Override public <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             try {
@@ -31,7 +31,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return result;
     }
 
-    @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler) {
+    @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ? extends Throwable> handler) {
         final CompletableFuture<T> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             try {
@@ -56,7 +56,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         }
     }
 
-    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ?> handler) {
+    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             if(ex != null) {
@@ -72,7 +72,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return result;
     }
 
-    @Override public IFuture<Void> thenAccept(CheckedAction1<? super T, ?> handler) {
+    @Override public IFuture<Void> thenAccept(CheckedAction1<? super T, ? extends Throwable> handler) {
         final CompletableFuture<Void> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             if(ex != null) {
@@ -89,7 +89,7 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return result;
     }
 
-    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super T, ? extends IFuture<U>, ?> handler) {
+    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super T, ? extends IFuture<U>, ? extends Throwable> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             if(ex != null) {
