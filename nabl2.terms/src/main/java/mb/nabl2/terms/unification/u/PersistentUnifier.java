@@ -36,6 +36,16 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
     private static final long serialVersionUID = 42L;
 
+
+    private static final PersistentUnifier.Immutable FINITE_EMPTY =
+            new PersistentUnifier.Immutable(true, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(),
+                    MultiSet.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of());
+
+    private static final PersistentUnifier.Immutable INFINITE_EMPTY =
+            new PersistentUnifier.Immutable(false, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(),
+                    MultiSet.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of());
+
+
     ///////////////////////////////////////////
     // class Immutable
     ///////////////////////////////////////////
@@ -500,7 +510,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         ///////////////////////////////////////////
 
         @Override public PersistentUnifier.Immutable rename(IRenaming renaming) {
-            if(renaming.isEmpty()) {
+            if(renaming.isEmpty() || this.isEmpty()) {
                 return this;
             }
             final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
@@ -545,16 +555,18 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         public static PersistentUnifier.Immutable of() {
-            return of(true);
+            return FINITE_EMPTY;
         }
 
         public static PersistentUnifier.Immutable of(boolean finite) {
-            return new PersistentUnifier.Immutable(finite, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(),
-                    MultiSet.Immutable.of(), Set.Immutable.of(), Set.Immutable.of(), Set.Immutable.of());
+            return finite ? FINITE_EMPTY : INFINITE_EMPTY;
         }
 
         public static PersistentUnifier.Immutable of(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
                 final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
+            if(reps.isEmpty() && ranks.isEmpty() && terms.isEmpty()) {
+                return of(finite);
+            }
             final MultiSet.Transient<ITermVar> repAndTermVarsCache = MultiSet.Transient.of();
             final Set.Transient<ITermVar> domainSetCache = Set.Transient.of();
             final Set.Transient<ITermVar> varSetCache = Set.Transient.of();
@@ -769,10 +781,18 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
 
         public PersistentUnifier.Immutable freeze() {
-            final PersistentUnifier.Immutable unifier = new PersistentUnifier.Immutable(finite, reps.freeze(),
-                    ranks.freeze(), terms.freeze(), repAndTermVarsCache.freeze(), domainSetCache.freeze(),
-                    rangeSetCache.freeze(), varSetCache.freeze());
-            return unifier;
+            // We also check if the variable caches are empty, since they are not
+            // only derived from reps/ranks/terms, but also updated based on
+            // disequalities in the UniDisunifier implementation.
+            if(reps.isEmpty() && ranks.isEmpty() && terms.isEmpty() && repAndTermVarsCache.isEmpty()
+                    && domainSetCache.isEmpty() && rangeSetCache.isEmpty() && varSetCache.isEmpty()) {
+                return Immutable.of(finite);
+            } else {
+                final PersistentUnifier.Immutable unifier = new PersistentUnifier.Immutable(finite, reps.freeze(),
+                        ranks.freeze(), terms.freeze(), repAndTermVarsCache.freeze(), domainSetCache.freeze(),
+                        rangeSetCache.freeze(), varSetCache.freeze());
+                return unifier;
+            }
         }
 
     }

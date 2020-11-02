@@ -31,6 +31,14 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
     private static final long serialVersionUID = 42L;
 
+
+    private static final PersistentUniDisunifier.Immutable FINITE_EMPTY =
+            new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(true), Set.Immutable.of());
+
+    private static final PersistentUniDisunifier.Immutable INFINITE_EMPTY =
+            new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(false), Set.Immutable.of());
+
+
     protected static ITermVar findRep(ITermVar var, Map.Transient<ITermVar, ITermVar> reps) {
         ITermVar rep = reps.get(var);
         if(rep == null) {
@@ -213,9 +221,11 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 return Optional.of(new ImmutableResult<>(Optional.empty(), this));
             }
 
-            final PersistentUniDisunifier.Immutable newUnifier = new PersistentUniDisunifier.Immutable(
-                    updateableUnifier.freeze(), disequalities.__insert(reducedDiseq.get()));
-            return Optional.of(new ImmutableResult<>(reducedDiseq, newUnifier));
+            final PersistentUnifier.Immutable newUnifier = updateableUnifier.freeze();
+            final Set.Immutable<Diseq> newDisequalities = disequalities.__insert(reducedDiseq.get());
+            final PersistentUniDisunifier.Immutable newUniDisunifier =
+                    new PersistentUniDisunifier.Immutable(newUnifier, newDisequalities);
+            return Optional.of(new ImmutableResult<>(reducedDiseq, newUniDisunifier));
         }
 
         /**
@@ -244,8 +254,15 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 newDisequalities.__insert(normalizedDiseq.get());
             }
 
-            return Optional
-                    .of(new PersistentUniDisunifier.Immutable(updateableUnifier.freeze(), newDisequalities.freeze()));
+            final PersistentUnifier.Immutable newUnifier = updateableUnifier.freeze();
+            final Set.Immutable<Diseq> _newDisequalities = newDisequalities.freeze();
+            final PersistentUniDisunifier.Immutable newUniDisunifier;
+            if(newUnifier.isEmpty() && _newDisequalities.isEmpty()) {
+                newUniDisunifier = of(unifier.isFinite());
+            } else {
+                newUniDisunifier = new PersistentUniDisunifier.Immutable(newUnifier, _newDisequalities);
+            }
+            return Optional.of(newUniDisunifier);
         }
 
         private static Function0<FreshVars> freshVarProvider(IUnifier.Immutable unifier) {
@@ -328,11 +345,11 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         // remove(ITermVar)
         ///////////////////////////////////////////
 
-        @Override public IUniDisunifier.Result<ISubstitution.Immutable> remove(ITermVar var) {
+        @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> remove(ITermVar var) {
             return removeAll(Set.Immutable.of(var));
         }
 
-        @Override public IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
+        @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final BaseUnifier.ImmutableResult<ISubstitution.Immutable> r = unifier.removeAll(vars);
             final Set.Transient<Diseq> newDisequalities = Set.Transient.of();
             disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result())))
@@ -350,8 +367,8 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         // rename(IRenaming)
         ///////////////////////////////////////////
 
-        @Override public IUniDisunifier.Immutable rename(IRenaming renaming) {
-            if(renaming.isEmpty()) {
+        @Override public PersistentUniDisunifier.Immutable rename(IRenaming renaming) {
+            if(renaming.isEmpty() || this.isEmpty()) {
                 return this;
             }
             final PersistentUnifier.Immutable unifier = this.unifier.rename(renaming);
@@ -368,12 +385,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             return new BaseUniDisunifier.Transient(this);
         }
 
-        public static IUniDisunifier.Immutable of() {
-            return of(true);
+        public static PersistentUniDisunifier.Immutable of() {
+            return FINITE_EMPTY;
         }
 
-        public static IUniDisunifier.Immutable of(boolean finite) {
-            return new PersistentUniDisunifier.Immutable(PersistentUnifier.Immutable.of(finite), Set.Immutable.of());
+        public static PersistentUniDisunifier.Immutable of(boolean finite) {
+            return finite ? FINITE_EMPTY : INFINITE_EMPTY;
         }
 
     }
