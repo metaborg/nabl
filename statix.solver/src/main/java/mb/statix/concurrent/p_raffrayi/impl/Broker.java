@@ -3,18 +3,15 @@ package mb.statix.concurrent.p_raffrayi.impl;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 
 import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.IActor;
@@ -102,23 +99,9 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private void checkResults() {
         if(results.size() == units.size()) {
             logger.info("All units finished.");
-            // FIXME This relies on the stats objects being pased be reference, so that
-            //       they are updated even after the result came in.
-            boolean first = true;
-            for(Entry<String, IUnitResult<S, L, D, R>> entry : results.entrySet()) {
-                if(first) {
-                    System.out.println(formatLine("unit", entry.getValue().stats().csvHeaders()));
-                    first = false;
-                }
-                System.out.println(formatLine(entry.getKey(), entry.getValue().stats().csvRow()));
-            }
             result.complete(BrokerResult.of(results));
             system.stop();
         }
-    }
-
-    private String formatLine(String id, Iterable<String> cells) {
-        return Streams.stream(Iterables2.cons(id, cells)).collect(Collectors.joining(","));
     }
 
     @Override public void failed(IActor<?> self, Throwable ex) {
