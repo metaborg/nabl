@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-set -eu
-
-mvn exec:exec@run-full-benchmarks -Dbenchmark=$1
