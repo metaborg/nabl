@@ -20,6 +20,8 @@ public class TermBuild {
 
     public static class B implements ITermBuild {
 
+        private static final INilTerm NIL = NilTerm.builder().build();
+
         // FIXME Use hash-consing to improve sharing between simple terms. Terms could be shared if:
         // 1. They have no attachments.
         // 2. The have no subterms (because their subterms may have attachments, even if the outer term does not).
@@ -28,65 +30,62 @@ public class TermBuild {
 
         @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable IAttachments attachments) {
-            final IApplTerm term = ApplTerm.of(op, args);
             if((attachments == null || attachments.isEmpty())) {
+                final IApplTerm term = ApplTerm.of(op, args);
                 return term.getArity() == 0 ? (IApplTerm) cache.getOrPut(term, term) : term;
             } else {
-                return term.withAttachments(attachments);
+                return ApplTerm.builder().op(op).args(args).attachments(attachments).build();
             }
         }
 
         @Override public INilTerm newNil(@Nullable IAttachments attachments) {
-            final INilTerm term = NilTerm.of();
             if((attachments == null || attachments.isEmpty())) {
-                return (INilTerm) cache.getOrPut(term, term);
+                return NIL;
             } else {
-                return term.withAttachments(attachments);
+                return NilTerm.builder().attachments(attachments).build();
             }
         }
 
         @Override public IConsTerm newCons(ITerm head, IListTerm tail, @Nullable IAttachments attachments) {
-            final IConsTerm term = ConsTerm.of(head, tail);
             if(attachments == null || attachments.isEmpty()) {
-                return term;
+                return ConsTerm.of(head, tail);
             } else {
-                return term.withAttachments(attachments);
+                return ConsTerm.builder().head(head).tail(tail).attachments(attachments).build();
             }
         }
 
         @Override public IStringTerm newString(String value, @Nullable IAttachments attachments) {
-            final IStringTerm term = StringTerm.of(value);
             if((attachments == null || attachments.isEmpty())) {
+                final IStringTerm term = StringTerm.of(value);
                 return (IStringTerm) cache.getOrPut(term, term);
             } else {
-                return term.withAttachments(attachments);
+                return StringTerm.builder().value(value).attachments(attachments).build();
             }
         }
 
         @Override public IIntTerm newInt(int value, @Nullable IAttachments attachments) {
-            final IIntTerm term = IntTerm.of(value);
             if((attachments == null || attachments.isEmpty())) {
+                final IIntTerm term = IntTerm.of(value);
                 return (IIntTerm) cache.getOrPut(term, term);
             } else {
-                return term.withAttachments(attachments);
+                return IntTerm.builder().value(value).attachments(attachments).build();
             }
         }
 
         @Override public IBlobTerm newBlob(Object value, @Nullable IAttachments attachments) {
-            final IBlobTerm term = BlobTerm.of(value);
             if(attachments == null || attachments.isEmpty()) {
-                return term;
+                return BlobTerm.of(value);
             } else {
-                return term.withAttachments(attachments);
+                return BlobTerm.builder().value(value).attachments(attachments).build();
             }
         }
 
         @Override public ITermVar newVar(String resource, String name, @Nullable IAttachments attachments) {
-            final ITermVar term = TermVar.of(resource, name);
             if((attachments == null || attachments.isEmpty())) {
+                final ITermVar term = TermVar.of(resource, name);
                 return (ITermVar) cache.getOrPut(term, term);
             } else {
-                return term.withAttachments(attachments);
+                return TermVar.builder().resource(resource).name(name).attachments(attachments).build();
             }
         }
 

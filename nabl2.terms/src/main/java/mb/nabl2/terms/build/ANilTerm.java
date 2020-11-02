@@ -1,5 +1,7 @@
 package mb.nabl2.terms.build;
 
+import java.util.Objects;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -9,7 +11,7 @@ import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable(builder = false, copy = true, prehash = false)
+@Value.Immutable(builder = true, copy = true, prehash = false)
 @Serial.Version(value = 42L)
 abstract class ANilTerm extends AbstractTerm implements INilTerm {
 
@@ -41,8 +43,15 @@ abstract class ANilTerm extends AbstractTerm implements INilTerm {
         return cases.caseNil(this);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return 1;
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash();
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {

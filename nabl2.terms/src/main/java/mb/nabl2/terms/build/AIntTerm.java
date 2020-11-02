@@ -31,8 +31,15 @@ abstract class AIntTerm extends AbstractTerm implements IIntTerm {
         return cases.caseInt(this);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(getValue());
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getValue());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {

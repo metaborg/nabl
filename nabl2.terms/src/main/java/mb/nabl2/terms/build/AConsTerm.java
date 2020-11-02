@@ -50,8 +50,15 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
         return cases.caseCons(this);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(getHead(), getTail());
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getHead(), getTail());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {
