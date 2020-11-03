@@ -2,6 +2,8 @@ package mb.statix.spec;
 
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -39,6 +41,6 @@ public abstract class AApplyResult {
     /**
      * Critical edges that are introduced by the application of this rule.
      */
-    @Value.Parameter public abstract ICompleteness.Immutable criticalEdges();
+    @Value.Parameter public abstract @Nullable ICompleteness.Immutable criticalEdges();
 
 }
