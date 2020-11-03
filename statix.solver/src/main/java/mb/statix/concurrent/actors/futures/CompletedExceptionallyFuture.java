@@ -19,7 +19,7 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
         this.ex = ex;
     }
 
-    @Override public <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ?> handler) {
+    @Override public <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
         try {
             return CompletableFuture.completedFuture(handler.apply(null, ex));
         } catch(Throwable ex) {
@@ -27,7 +27,7 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
         }
     }
 
-    @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ?> handler) {
+    @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ? extends Throwable> handler) {
         try {
             handler.apply(null, ex);
             return CompletableFuture.completedExceptionally(ex);
@@ -48,21 +48,21 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
         // ignore
     }
 
-    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ?> handler) {
+    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
         return CompletableFuture.completedExceptionally(ex);
     }
 
-    @Override public IFuture<Void> thenAccept(CheckedAction1<? super T, ?> handler) {
+    @Override public IFuture<Void> thenAccept(CheckedAction1<? super T, ? extends Throwable> handler) {
         return CompletableFuture.completedExceptionally(ex);
     }
 
     @Override public <U> IFuture<U>
-            thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ?> handler) {
+            thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         return CompletableFuture.completedExceptionally(ex);
     }
 
     @SuppressWarnings("unchecked") @Override public <U> IFuture<U>
-            compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ?> handler) {
+            compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         try {
             return (IFuture<U>) handler.apply(null, ex);
         } catch(Throwable inner) {
