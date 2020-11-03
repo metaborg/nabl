@@ -296,6 +296,8 @@ public class StatixSolver {
 
     private Unit delay(IConstraint constraint, IState.Immutable newState, Delay delay, int fuel)
             throws InterruptedException {
+        ephemeralActiveConstraints.decrementAndGet();
+
         if(!delay.criticalEdges().isEmpty()) {
             debug.error("FIXME: query failed on critical edges {}: {}", delay.criticalEdges(),
                     constraint.toString(state.unifier()::toString));
