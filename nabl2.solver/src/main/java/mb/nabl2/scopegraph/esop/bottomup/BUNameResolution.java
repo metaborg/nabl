@@ -2,8 +2,10 @@ package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.util.Collection;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Predicate2;
@@ -330,10 +332,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             for(Entry<IStep<S, L, O>, BUEnvKey<S, L>> entry : backedges.get(env)) {
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
-                // FIXME Group this by name, to reduce keyFactory invokes
-                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges
-                        .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p)).map(
-                                p2 -> Tuple2.of(pathKey(p.getDeclaration().getSpacedName(), step.getLabel()), p2)));
+                final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges.flatMap((k, ps) -> {
+                    final List<IDeclPath<S, L, O>> newPs = ps.stream()
+                            .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p)))
+                            .collect(Collectors.toList());
+                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs);
+                });
                 logger.trace("queued fwd changes {} to {} added {} removed {}", env, dstEnv,
                         envChanges.addedPaths().paths(), envChanges.removedPaths().paths());
                 queueChanges(dstEnv, envChanges);
@@ -387,10 +391,13 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
 
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(srcEnv);
-        // FIXME Group this by name, to reduce keyFactory invokes
-        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes = BUChanges.ofPaths(srcEnv, _env.pathSet())
-                .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p))
-                        .map(p2 -> Tuple2.of(pathKey(p.getDeclaration().getSpacedName(), step.getLabel()), p2)));
+        final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
+                BUChanges.ofPaths(srcEnv, _env.pathSet()).flatMap((k, ps) -> {
+                    final List<IDeclPath<S, L, O>> newPs = ps.stream()
+                            .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p)))
+                            .collect(Collectors.toList());
+                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs);
+                });
         logger.trace("queued back changes {} to {} added {} removed {}", srcEnv, dstEnv, changes.addedPaths().paths(),
                 changes.removedPaths().paths());
         queueChanges(dstEnv, changes);
