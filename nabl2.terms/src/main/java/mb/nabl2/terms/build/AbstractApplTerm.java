@@ -1,6 +1,7 @@
 package mb.nabl2.terms.build;
 
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
 
@@ -71,17 +72,8 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getOp());
-        sb.append("(");
-        boolean first = true;
-        for(ITerm arg : getArgs()) {
-            if(first) {
-                first = false;
-            } else {
-                sb.append(",");
-            }
-            sb.append(arg.toString());
-        }
-        sb.append(")");
+        sb.append("(").append(getArgs().stream().map(Object::toString).collect(Collectors.joining(",", "", "")))
+                .append(")");
         return sb.toString();
     }
 

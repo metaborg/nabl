@@ -5,6 +5,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
@@ -89,7 +90,8 @@ class ApplPattern extends Pattern {
 
     @Override public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append(op).append("(").append(args).append(")");
+        sb.append(op);
+        sb.append("(").append(args.stream().map(Object::toString).collect(Collectors.joining(",", "", ""))).append(")");
         return sb.toString();
     }
 
