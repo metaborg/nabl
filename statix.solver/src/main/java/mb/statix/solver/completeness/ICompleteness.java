@@ -35,6 +35,10 @@ public interface ICompleteness {
 
         Immutable apply(IRenaming renaming);
 
+        Immutable removeAll(Iterable<? extends ITerm> varOrScopes, IUniDisunifier unifier);
+
+        Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUniDisunifier unifier);
+
         ICompleteness.Transient melt();
 
     }

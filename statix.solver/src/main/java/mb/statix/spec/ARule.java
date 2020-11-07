@@ -25,6 +25,7 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
@@ -66,7 +67,8 @@ public abstract class ARule {
         try {
             final ApplyResult applyResult;
             if((applyResult =
-                    RuleUtil.apply(State.of(spec), (Rule) this, args, null, ApplyMode.STRICT).orElse(null)) == null) {
+                    RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null, ApplyMode.STRICT)
+                            .orElse(null)) == null) {
                 return Optional.of(false);
             }
             instBody = applyResult.body();

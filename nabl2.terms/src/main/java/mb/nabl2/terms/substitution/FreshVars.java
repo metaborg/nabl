@@ -53,6 +53,17 @@ public class FreshVars {
         return fresh;
     }
 
+    public ITermVar fresh(ITermVar var) {
+        final String base = var.getName().replaceAll("-?[0-9]*$", "");
+        ITermVar fresh = var;
+        int i = 0;
+        while(oldVars.contains(fresh) || newVars.contains(fresh)) {
+            fresh = B.newVar("", base + "-" + (i++));
+        }
+        newVars = newVars.__insert(fresh);
+        return fresh;
+    }
+
     /**
      * Generate variables with fresh names, ensuring generated names do not overlap with variables in the set of
      * freshened variables. Generated names are remembered. Returns a variable swapping.

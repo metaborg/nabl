@@ -52,16 +52,15 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // apply rule
         final ApplyResult applyResult;
-        if((applyResult =
-                RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED).orElse(null)) == null) {
+        if((applyResult = RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED)
+                .orElse(null)) == null) {
             return Optional.empty();
         }
-        final IState.Immutable applyState = applyResult.state();
+        final IState.Immutable applyState = state;
         final IConstraint applyConstraint = applyResult.body();
 
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
-        completeness.updateAll(applyResult.diff().domainSet(), applyState.unifier());
         completeness.add(applyConstraint, spec, applyState.unifier());
 
         // NOTE This part is almost a duplicate of Solver::entails and should be

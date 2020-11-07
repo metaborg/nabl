@@ -718,21 +718,20 @@ public class StatixSolver {
 
                 final List<Rule> rules = spec.rules().getRules(name);
                 final List<Tuple2<Rule, ApplyResult>> results =
-                        RuleUtil.applyOrderedAll(state, rules, args, c, ApplyMode.RELAXED);
+                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED);
                 if(results.isEmpty()) {
                     debug.debug("No rule applies");
                     return fail(c);
                 } else if(results.size() == 1) {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.debug("Rule accepted");
-                    proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
                     if(applyResult.criticalEdges() == null) {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
-                    return success(c, applyResult.state(), applyResult.diff().domainSet(), disjoin(applyResult.body()),
-                            applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
+                    return success(c, state, NO_UPDATED_VARS, disjoin(applyResult.body()), applyResult.criticalEdges(),
+                            NO_EXISTENTIALS, fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
@@ -917,11 +916,12 @@ public class StatixSolver {
         @Override public boolean wf(ITerm datum, ICancel cancel) throws InterruptedException {
             try {
                 final ApplyResult result;
-                if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
-                        .orElse(null)) == null) {
+                if((result =
+                        RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
+                                .orElse(null)) == null) {
                     return false;
                 }
-                return Solver.entails(spec, result.state(), result.body(), (s, l, st) -> true, new NullDebugContext(),
+                return Solver.entails(spec, state, result.body(), (s, l, st) -> true, new NullDebugContext(),
                         new NullProgress(), cancel);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
@@ -946,8 +946,9 @@ public class StatixSolver {
             return absorbDelays(() -> {
                 try {
                     final ApplyResult result;
-                    if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
-                            .orElse(null)) == null) {
+                    if((result =
+                            RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
+                                    .orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
                     return entails(result.body());
@@ -978,11 +979,12 @@ public class StatixSolver {
         @Override public boolean leq(ITerm datum1, ITerm datum2, ICancel cancel) throws InterruptedException {
             try {
                 final ApplyResult result;
-                if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
+                if((result = RuleUtil
+                        .apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
                         .orElse(null)) == null) {
                     return false;
                 }
-                return Solver.entails(spec, result.state(), result.body(), (s, l, st) -> true, new NullDebugContext(),
+                return Solver.entails(spec, state, result.body(), (s, l, st) -> true, new NullDebugContext(),
                         new NullProgress(), cancel);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
@@ -1007,9 +1009,8 @@ public class StatixSolver {
             return absorbDelays(() -> {
                 try {
                     final ApplyResult result;
-                    if((result =
-                            RuleUtil.apply(state, constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
-                                    .orElse(null)) == null) {
+                    if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
+                            ApplyMode.STRICT).orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
                     return entails(result.body());

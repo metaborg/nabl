@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableList;
@@ -30,8 +29,7 @@ public class TermPattern {
             return newAppl(op, Arrays.asList(args), Attachments.empty());
         }
 
-        public Pattern newAppl(String op, Iterable<? extends Pattern> args,
-                IAttachments attachments) {
+        public Pattern newAppl(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
             if(op.equals("")) {
                 throw new IllegalArgumentException();
             }
@@ -67,8 +65,7 @@ public class TermPattern {
             return newListTail(args, tail, Attachments.empty());
         }
 
-        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail,
-                IAttachments attachments) {
+        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail, IAttachments attachments) {
             Pattern list = tail;
             for(Pattern elem : ImmutableList.copyOf(args).reverse()) {
                 list = newCons(elem, list, attachments);
@@ -164,8 +161,7 @@ public class TermPattern {
         }
 
         public Optional<MatchResult> matchWithEqs(final Iterable<Pattern> patterns,
-                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier,
-                Function1<Optional<ITermVar>, ITermVar> fresh) {
+                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier, VarProvider fresh) {
             return TermPattern.P.newTuple(patterns).matchWithEqs(B.newTuple(terms), unifier, fresh);
         }
 

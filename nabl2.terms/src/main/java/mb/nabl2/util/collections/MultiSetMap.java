@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.usethesource.capsule.Map;
+import mb.nabl2.util.CapsuleUtil;
 
 public abstract class MultiSetMap<K, V> {
 
@@ -95,6 +96,18 @@ public abstract class MultiSetMap<K, V> {
         public Immutable<K, V> remove(K key, V value) {
             final MultiSet.Immutable<V> values = entries.getOrDefault(key, MultiSet.Immutable.of());
             return new Immutable<>(entries.__put(key, values.remove(value)));
+        }
+
+        public Immutable<K, V> removeAll(java.util.Set<K> keys) {
+            final Map.Transient<K, MultiSet.Immutable<V>> newEntries = this.entries.asTransient();
+            CapsuleUtil.filter(newEntries, k -> !keys.contains(k));
+            return new Immutable<>(newEntries.freeze());
+        }
+
+        public Immutable<K, V> retainAll(java.util.Set<K> keys) {
+            final Map.Transient<K, MultiSet.Immutable<V>> newEntries = this.entries.asTransient();
+            CapsuleUtil.filter(newEntries, k -> keys.contains(k));
+            return new Immutable<>(newEntries.freeze());
         }
 
         public MultiSetMap.Transient<K, V> melt() {

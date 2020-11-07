@@ -47,7 +47,6 @@ import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IState;
 import mb.statix.solver.StateUtil;
 
 public class RuleUtil {
@@ -71,7 +70,7 @@ public class RuleUtil {
      *         apply.
      */
     public static <E extends Throwable> Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(
-            IState.Immutable state, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
+            IUniDisunifier.Immutable state, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
             ApplyMode<E> mode) throws E {
         return applyOrdered(state, rules, args, cause, true, mode)
                 .map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
@@ -93,7 +92,7 @@ public class RuleUtil {
      *
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
-    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IState.Immutable state,
+    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IUniDisunifier.Immutable state,
             List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode) throws E {
         return applyOrdered(state, rules, args, cause, false, mode).get();
     }
@@ -102,15 +101,15 @@ public class RuleUtil {
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
      * rules that could be applied, or empty if onlyOne is true, and multiple matches were found.
      */
-    private static <E extends Throwable> Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state,
-            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne,
-            ApplyMode<E> mode) throws E {
+    private static <E extends Throwable> Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(
+            IUniDisunifier.Immutable unifier, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
+            boolean onlyOne, ApplyMode<E> mode) throws E {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
             // apply rule
             final ApplyResult applyResult;
-            if((applyResult = apply(state, rule, args, cause, mode).orElse(null)) == null) {
+            if((applyResult = apply(unifier, rule, args, cause, mode).orElse(null)) == null) {
                 // this rule does not apply, continue to next rules
                 continue;
             }
@@ -127,12 +126,12 @@ public class RuleUtil {
                 break;
             }
             final Optional<IUniDisunifier.Immutable> newUnifier =
-                    state.unifier().disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
+                    unifier.disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
             if(!newUnifier.isPresent()) {
                 // guards are equalities missing in the unifier, disunifying them should never fail
                 throw new IllegalStateException("Unexpected incompatible guard.");
             }
-            state = state.withUnifier(newUnifier.get());
+            unifier = newUnifier.get();
         }
         return Optional.of(results.build());
     }
@@ -141,15 +140,15 @@ public class RuleUtil {
      * Apply the given rule to the given arguments. Returns the result of application, or nothing of the rule cannot be
      * applied. The result may contain equalities that need to be satisfied for the application to be valid.
      */
-    public static <E extends Throwable> Optional<ApplyResult> apply(IState.Immutable state, Rule rule,
+    public static <E extends Throwable> Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule,
             List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode) throws E {
-        return mode.apply(state, rule, args, cause);
+        return mode.apply(unifier, rule, args, cause);
     }
 
     /**
      * Apply the given rules to the given arguments. Returns the results of application.
      */
-    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state,
+    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(IUniDisunifier.Immutable state,
             Collection<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode)
             throws E {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();

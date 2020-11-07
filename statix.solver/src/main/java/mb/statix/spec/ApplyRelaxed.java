@@ -5,77 +5,87 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
-
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchResult;
+import mb.nabl2.terms.matching.VarProvider;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.VoidException;
+import mb.statix.constraints.CExists;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IState;
+import mb.statix.solver.StateUtil;
 import mb.statix.solver.completeness.ICompleteness;
 
 class ApplyRelaxed extends ApplyMode<VoidException> {
 
-    @Override Optional<ApplyResult> apply(IState.Immutable state, Rule rule, List<? extends ITerm> args,
+    @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
             IConstraint cause) throws VoidException {
-        // create equality constraints
-        final IState.Transient newState = state.melt();
-        final Set.Transient<ITermVar> _universalVars = CapsuleUtil.transientSet();
-        final Function1<Optional<ITermVar>, ITermVar> fresh = v -> {
-            final ITermVar f = v.map(newState::freshVar).orElseGet(newState::freshWld);
-            _universalVars.__insert(f);
-            return f;
-        };
+        Immutable<ITermVar> freeVars = rule.freeVars();
+        for(ITerm arg : args) {
+            freeVars = freeVars.__insertAll(arg.getVars());
+        }
+
+        // match and create equality constraints
+        final FreshVars fresh = new FreshVars(freeVars);
+        final VarProvider fresh_ = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
         final MatchResult matchResult;
-        if((matchResult = P.matchWithEqs(rule.params(), args, state.unifier(), fresh).orElse(null)) == null) {
+        if((matchResult = P.matchWithEqs(rule.params(), args, unifier, fresh_).orElse(null)) == null) {
             return Optional.empty();
         }
 
-        final Set.Immutable<ITermVar> universalVars = _universalVars.freeze();
-        final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), universalVars);
-        final IConstraint newConstraint = rule.body().apply(matchResult.substitution()).withCause(cause);
-        final ICompleteness.Immutable newBodyCriticalEdges =
+        // newly generated variables
+        final Set.Immutable<ITermVar> generatedVars = fresh.reset();
+
+        // non-generated variables that are constrained by the match
+        final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), generatedVars);
+
+        final IConstraint appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+        final ICompleteness.Immutable appliedCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(matchResult.substitution());
 
-        final ApplyResult applyResult;
-        if(constrainedVars.isEmpty()) {
-            applyResult = ApplyResult.of(newState.freeze(), PersistentUnifier.Immutable.of(), Optional.empty(),
-                    newConstraint, newBodyCriticalEdges);
-        } else {
-            // simplify guard constraints
-            final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
-            try {
-                if((unifyResult = state.unifier().unify(matchResult.equalities()).orElse(null)) == null) {
-                    return Optional.empty();
-                }
-            } catch(OccursException e) {
+        // simplify guard constraints
+        final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
+        try {
+            if((unifyResult = unifier.unify(matchResult.equalities()).orElse(null)) == null) {
                 return Optional.empty();
             }
-            final IUniDisunifier.Immutable newUnifier = unifyResult.unifier();
-            final IUnifier.Immutable diff = unifyResult.result();
-
-            // construct guard
-            final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
-            if(guard.isEmpty()) {
-                throw new IllegalStateException("Guard not expected to be empty here.");
-            }
-            final Diseq diseq = Diseq.of(universalVars, guard);
-
-            // construct result
-            final IState.Immutable resultState = newState.freeze().withUnifier(newUnifier);
-            applyResult = ApplyResult.of(resultState, diff, Optional.of(diseq), newConstraint, newBodyCriticalEdges);
+        } catch(OccursException e) {
+            return Optional.empty();
         }
+        final IUnifier.Immutable diff = unifyResult.result();
+
+        // construct guard
+        final IConstraint newConstraint;
+        final ICompleteness.Immutable newCriticalEdges;
+        final Optional<Diseq> diseq;
+        final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
+        if(guard.isEmpty()) {
+            newConstraint = appliedBody;
+            newCriticalEdges = appliedCriticalEdges;
+            diseq = Optional.empty();
+        } else {
+            final ICompleteness.Immutable newConstraintCriticalEdges =
+                    appliedCriticalEdges == null ? null : appliedCriticalEdges.retainAll(generatedVars, unifier);
+            newConstraint = new CExists(generatedVars, Constraints.conjoin(StateUtil.asEqualities(diff), appliedBody),
+                    cause, newConstraintCriticalEdges);
+            newCriticalEdges =
+                    appliedCriticalEdges == null ? null : appliedCriticalEdges.removeAll(generatedVars, unifier);
+            diseq = Optional.of(Diseq.of(generatedVars, guard));
+        }
+
+        // construct result
+        final ApplyResult applyResult = ApplyResult.of(diseq, newConstraint, newCriticalEdges);
+
         return Optional.of(applyResult);
     }
 

@@ -49,12 +49,11 @@ class ConstraintDataWF implements DataWF<ITerm> {
         final IUniDisunifier.Immutable unifier = state.unifier();
         try {
             final ApplyResult result;
-            if((result = RuleUtil.apply(state, constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
+            if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
                     .orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, result.state(), result.body(), isComplete, debug, progress.subProgress(1),
-                    cancel)) {
+            if(Solver.entails(spec, state, result.body(), isComplete, debug, progress.subProgress(1), cancel)) {
                 if(debug.isEnabled(Level.Debug)) {
                     debug.debug("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }

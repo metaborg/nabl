@@ -3,6 +3,9 @@ package mb.statix.solver.completeness;
 import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -48,6 +51,12 @@ public abstract class Completeness implements ICompleteness {
         }).orElse(true);
     }
 
+    protected static java.util.Set<ITerm> getVarsOrScopes(Iterable<? extends ITerm> varOrScopes,
+            IUniDisunifier unifier) {
+        return Streams.stream(varOrScopes).flatMap(t -> Streams.stream(getVarOrScope(t, unifier)))
+                .collect(Collectors.toSet());
+    }
+
     protected static Optional<ITerm> getVarOrScope(ITerm scopeOrVar, IUniDisunifier unifier) {
         return CompletenessUtil.scopeOrVar().match(scopeOrVar, unifier);
     }
@@ -76,6 +85,16 @@ public abstract class Completeness implements ICompleteness {
             final Completeness.Transient _completeness = melt();
             _completeness.apply(subst);
             return _completeness.freeze();
+        }
+
+        @Override public ICompleteness.Immutable removeAll(Iterable<? extends ITerm> varOrScopes,
+                IUniDisunifier unifier) {
+            return new Completeness.Immutable(incomplete.removeAll(getVarsOrScopes(varOrScopes, unifier)));
+        }
+
+        @Override public ICompleteness.Immutable retainAll(Iterable<? extends ITerm> varOrScopes,
+                IUniDisunifier unifier) {
+            return new Completeness.Immutable(incomplete.retainAll(getVarsOrScopes(varOrScopes, unifier)));
         }
 
         @Override public Completeness.Transient melt() {

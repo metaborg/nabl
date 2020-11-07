@@ -69,8 +69,8 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         final CUser predicate = input.focus();
 
         final java.util.Map<Rule, Double> rules = getWeightedRules(ctx, predicate.name());
-        final List<Tuple2<Rule, ApplyResult>> results =
-                RuleUtil.applyAll(input.state(), rules.keySet(), predicate.args(), predicate, ApplyMode.RELAXED);
+        final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(input.state().unifier(), rules.keySet(),
+                predicate.args(), predicate, ApplyMode.RELAXED);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {
@@ -138,7 +138,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
     private Optional<SearchState> updateSearchState(SearchContext ctx, IConstraint predicate, ApplyResult result,
             SearchState input) {
         final IConstraint applyConstraint = result.body();
-        final IState.Immutable applyState = result.state();
+        final IState.Immutable applyState = input.state();
         final IUniDisunifier.Immutable applyUnifier = applyState.unifier();
 
         // update constraints
@@ -148,7 +148,6 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
 
         // update completeness
         final ICompleteness.Transient completeness = input.completeness().melt();
-        completeness.updateAll(result.diff().domainSet(), applyUnifier);
         completeness.add(applyConstraint, ctx.spec(), applyUnifier);
         java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, ctx.spec(), applyUnifier);
 

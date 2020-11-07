@@ -42,7 +42,7 @@ public class UnitTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Solver
         final IState.Immutable unitState = State.of(spec).withResource(context.id());
         final ApplyResult applyResult;
         try {
-            if((applyResult = RuleUtil.apply(unitState, rule, ImmutableList.of(root), null, ApplyMode.STRICT)
+            if((applyResult = RuleUtil.apply(unitState.unifier(), rule, ImmutableList.of(root), null, ApplyMode.STRICT)
                     .orElse(null)) == null) {
                 return CompletableFuture.completedExceptionally(
                         new IllegalArgumentException("Cannot apply initial rule to root scope."));
@@ -51,7 +51,7 @@ public class UnitTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, Solver
             return CompletableFuture.completedExceptionally(
                     new IllegalArgumentException("Cannot apply initial rule to root scope.", delay));
         }
-        solver = new StatixSolver(applyResult.body(), spec, applyResult.state(), Completeness.Immutable.of(), debug,
+        solver = new StatixSolver(applyResult.body(), spec, unitState, Completeness.Immutable.of(), debug,
                 new NullProgress(), new NullCancel(), context);
         return solver.solve(root);
     }

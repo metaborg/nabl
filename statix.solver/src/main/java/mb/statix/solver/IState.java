@@ -87,6 +87,11 @@ public interface IState {
             return state.scopes();
         }
 
+        public void subState() {
+            freezeTwiceShameOnYou();
+            state = state.subState();
+        }
+
         @Override public IUniDisunifier unifier() {
             freezeTwiceShameOnYou();
             return state.unifier();

@@ -585,21 +585,20 @@ class GreedySolver {
 
                 final List<Rule> rules = spec.rules().getRules(name);
                 final List<Tuple2<Rule, ApplyResult>> results =
-                        RuleUtil.applyOrderedAll(state, rules, args, c, ApplyMode.RELAXED);
+                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED);
                 if(results.isEmpty()) {
                     debug.debug("No rule applies");
                     return fail(c, state);
                 } else if(results.size() == 1) {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.debug("Rule accepted");
-                    proxyDebug.debug("| Implied equalities: {}", applyResult.diff());
                     proxyDebug.commit();
                     if(applyResult.criticalEdges() == null) {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
-                    return success(c, applyResult.state(), applyResult.diff().domainSet(), disjoin(applyResult.body()),
-                            applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
+                    return success(c, state, NO_UPDATED_VARS, disjoin(applyResult.body()), applyResult.criticalEdges(),
+                            NO_EXISTENTIALS, fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.domainSet().stream()).collect(Collectors.toSet());
