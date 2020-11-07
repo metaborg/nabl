@@ -1,154 +1,205 @@
 package mb.statix.spec;
 
-//import static mb.nabl2.terms.build.TermBuild.B;
-//import static mb.nabl2.terms.matching.TermPattern.P;
-//
-//import java.util.ArrayList;
-//import java.util.List;
-//import java.util.Optional;
-//import java.util.SortedSet;
-//import java.util.TreeSet;
-//
-//import javax.annotation.Nullable;
-//
-//import org.metaborg.util.log.ILogger;
-//import org.metaborg.util.log.LoggerUtils;
-//import org.metaborg.util.task.NullCancel;
-//import org.metaborg.util.task.NullProgress;
-//
-//import io.usethesource.capsule.Set.Immutable;
-//import mb.nabl2.terms.ITerm;
-//import mb.nabl2.terms.ITermVar;
-//import mb.nabl2.terms.matching.Pattern;
-//import mb.nabl2.terms.substitution.FreshVars;
-//import mb.nabl2.terms.substitution.IRenaming;
-//import mb.nabl2.terms.substitution.ISubstitution;
-//import mb.nabl2.terms.substitution.PersistentSubstitution;
-//import mb.nabl2.terms.substitution.Renaming;
-//import mb.nabl2.terms.unification.u.IUnifier;
-//import mb.nabl2.terms.unification.ud.IUniDisunifier;
-//import mb.statix.solver.Delay;
-//import mb.statix.solver.IConstraint;
-//import mb.statix.solver.IState;
-//import mb.statix.solver.log.NullDebugContext;
-//import mb.statix.solver.persistent.Solver;
-//import mb.statix.solver.persistent.SolverResult;
-//import mb.statix.solver.persistent.State;
-//
-//public class IndexedRuleApplication {
-//
-//    private static final ILogger logger = LoggerUtils.logger(IndexedRuleApplication.class);
-//
-//    /*
-//     * In the end we want something like equality: on the index key.
-//     * We want to have this two ways:
-//     * 1. Given the parameters to the rule, what is the key?
-//     * 2. Given an instantiation of the free variables, what is the key?
-//     * What if it is not a straight equivalence?
-//     * 1. Leftover constraints indicate that the context may rule out some initial matches.
-//     * 2. Leftover constraints indicate that the context is insufficiently instantiated? Delay!
-//     */
-//
-//
-//    private final List<Pattern> matchers;
-//    private final ITerm index;
-//    private final Spec spec;
-//    private final @Nullable IConstraint constraint;
-//
-//    private IndexedRuleApplication(List<Pattern> matchers, ITerm index, Spec spec, IConstraint constraint) {
-//        this.matchers = matchers;
-//        this.constraint = constraint;
-//        this.spec = spec;
-//        this.index = index;
-//    }
-//
-//    public Optional<ITerm> lookupIndex(IUnifier.Immutable unifier) throws Delay, InterruptedException {
-//        return Optional.empty();
-//
-//    }
-//
-//    public Optional<ITerm> argumentIndex(List<ITerm> args, IUnifier.Immutable unifier)
-//            throws Delay, InterruptedException {
-//        //        ISubstitution.Immutable subst;
-//        //        if((subst = P.match(matchers, args, unifier).orElse(null)) == null) {
-//        return Optional.empty();
-//        //        }
-//        //        if(constraint != null) {
-//        //            final List<IConstraint> eqs = subst.entrySet().stream().map(e -> new CEqual(e.getKey(), e.getValue()))
-//        //                    .collect(Collectors.toList());
-//        //            Solver.solve(spec, continuation.state(), eqs, continuation.delays(), continuation.completeness(),
-//        //                    new NullDebugContext(), new NullProgress(), new NullCancel());
-//        //        }
-//        //
-//        //        final ITerm index = subst.apply(this.index);
-//        //        return Optional.of(index);
-//
-//    }
-//
-//    public static Optional<IndexedRuleApplication> of(Spec spec, Rule _rule) throws InterruptedException {
-//        logger.info("_rule = {}", _rule);
-//        final Set.Immutable<ITermVar> freeVars = _rule.freeVars();
-//        final FreshVars fresh = new FreshVars();
-//
-//        // prepare rule and solver state
-//        // argument vars should be unifiable, but free vars probably not?
-//        final IState.Transient _state = State.of(spec).melt();
-//        final Renaming.Builder _renaming = Renaming.builder();
-//        for(ITermVar freeVar : freeVars) {
-//            _renaming.put(freeVar, _state.freshVar(freeVar));
-//        }
-//        _state.subState(); // previous variables must be considered rigid
-//        final List<ITermVar> args = new ArrayList<>();
-//        for(Pattern param : _rule.params()) {
-//            args.add(_state.freshVar(B.newVar("", "arg")));
-//        }
-//        final IState.Immutable state = _state.freeze();
-//        final IRenaming renaming = _renaming.build();
-//        final Rule rule = _rule.apply(renaming);
-//        logger.info("rule = {}", rule);
-//
-//        final ApplyResult applyResult;
-//        if((applyResult = RuleUtil.apply(state, rule, args, null, ApplyMode.RELAXED).orElse(null)) == null) {
-//            return Optional.empty();
-//        }
-//        final SolverResult solveResult = Solver.solve(spec, applyResult.state(), applyResult.body(),
-//                new NullDebugContext(), new NullCancel(), new NullProgress());
-//
-//        final IUniDisunifier.Immutable unifier = solveResult.state().unifier();
-//        logger.info("unifier = {}", unifier);
-//
-//        if(solveResult.hasErrors()) {
-//            return Optional.empty();
-//        }
-//
-//        final SortedSet<ITermVar> indexVars = new TreeSet<>();
-//        final List<Pattern> matchers = new ArrayList<>();
-//        final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
-//        for(int i = 0; i < args.size(); i++) {
-//            final ITermVar arg = args.get(i);
-//            final ITerm term = unifier.findRecursive(arg);
-//            // FIXME renaming is symmetric, should we only have new freeVars here?
-//            final Pattern matcher = P.fromTerm(term, v -> !renaming.valueSet().contains(v));
-//            indexVars.addAll(term.getVars().__retainAll(renaming.valueSet()));
-//            matchers.add(matcher);
-//            _subst.put(arg, term);
-//        }
-//        logger.info("matchers = {}", matchers);
-//        // FIXME We lost the original free vars!
-//        final ISubstitution.Immutable subst = _subst.freeze();
-//        final ITerm index = B.newTuple(indexVars);
-//        logger.info("index = {}", index);
-//
-//        final IConstraint constraint;
-//        if(solveResult.delays().isEmpty()) {
-//            constraint = null;
-//        } else {
-//            // FIXME Internal vars should be properly scopes!
-//            constraint = solveResult.delayed().apply(subst);
-//            logger.info("constraint = {}", constraint);
-//        }
-//        final IndexedRuleApplication ira = new IndexedRuleApplication(matchers, index, spec, constraint);
-//        return Optional.of(ira);
-//    }
-//
-//}
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermPattern.P;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
+
+import com.google.common.collect.Sets;
+
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.Renaming;
+import mb.statix.solver.Delay;
+import mb.statix.solver.IConstraint;
+import mb.statix.solver.IState;
+import mb.statix.solver.log.NullDebugContext;
+import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.State;
+
+/**
+ * A special rule application that supports indexing in its parameters. The index allows grouping based on which
+ * arguments match a constraint, and finding matching arguments using lookup.
+ * 
+ * The class throws Delay exceptions in the following cases:
+ * <ul>
+ * <li>If the initial application does not reduce enough, and the remaining constraint has free variables left. The free
+ * variables prevent computing the applyIndex without additional state information.
+ * <li>If the applyIndex has free variables. The index cannot be used for lookup, as index equality is modulo further
+ * instantiation of the free variables. the arguments, potentially putting terms in different buckets that should be in
+ * the same.
+ * <li>If the lookupIndex has free variables. The resulting index cannot be used for lookup, as index equality is modulo
+ * further instantiation of the variables.
+ * </ul>
+ */
+public class IndexedRuleApplication {
+
+    private static final ILogger logger = LoggerUtils.logger(IndexedRuleApplication.class);
+
+    private final Spec spec;
+    private final List<Pattern> params;
+    private final @Nullable IConstraint constraint;
+    private final ITerm index;
+
+    private IndexedRuleApplication(Spec spec, List<Pattern> params, @Nullable IConstraint constraint, ITerm index) {
+        this.spec = spec;
+        this.params = params;
+        this.constraint = constraint;
+        this.index = index;
+    }
+
+    private IndexedRuleApplication apply(IRenaming renaming) {
+        final List<Pattern> newParams = params.stream().map(p -> p.apply(renaming)).collect(Collectors.toList());
+        final IConstraint newConstraint = constraint == null ? null : constraint.apply(renaming);
+        return new IndexedRuleApplication(spec, newParams, newConstraint, renaming.apply(index));
+    }
+
+    /**
+     * Compute a lookup index for the given state. The state should be an extension of the state given in the
+     * construction of this object.
+     */
+    public ITerm lookupIndex(IState.Immutable state) throws Delay, InterruptedException {
+        final ITerm lookupIndex = state.unifier().findRecursive(index);
+        if(!lookupIndex.isGround()) {
+            throw Delay.ofVars(lookupIndex.getVars());
+        }
+        return lookupIndex;
+    }
+
+    public Optional<ITerm> applyIndex(ITerm... args) throws Delay, InterruptedException {
+        return applyIndex(Arrays.asList(args));
+    }
+
+    /**
+     * Compute an apply index for the given arguments.
+     */
+    public Optional<ITerm> applyIndex(List<ITerm> args) throws Delay, InterruptedException {
+        final ISubstitution.Immutable subst;
+        if((subst = P.match(params, args).orElse(null)) == null) {
+            return Optional.empty();
+        }
+        if(constraint != null) {
+            final State state = State.of(spec);
+            final NullDebugContext debug = new NullDebugContext();
+            final SolverResult solveResult =
+                    Solver.solve(spec, state, constraint, debug, new NullCancel(), new NullProgress());
+            try {
+                if(!Solver.entailed(state, solveResult, debug)) {
+                    return Optional.empty();
+                }
+            } catch(Delay d) {
+                logger.warn("Unexpected delay when computing apply index.", d);
+                return Optional.empty();
+            }
+        }
+        final ITerm applyIndex = subst.apply(index);
+        if(!applyIndex.isGround()) {
+            throw Delay.ofVars(applyIndex.getVars());
+        }
+        return Optional.of(applyIndex);
+    }
+
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("(").append(params.stream().map(Object::toString).collect(Collectors.joining(",", "", "")))
+                .append(")");
+        sb.append("[").append(index).append("]");
+        if(constraint != null) {
+            sb.append(" :- ").append(constraint);
+        }
+        sb.append(".");
+        return sb.toString();
+    }
+
+    public static Optional<IndexedRuleApplication> of(Spec spec, Rule rule) throws Delay, InterruptedException {
+        final IState.Transient state = State.of(spec).melt();
+        final Renaming.Builder _renaming = Renaming.builder();
+        for(ITermVar freeVar : rule.freeVars()) {
+            _renaming.put(freeVar, state.freshVar(freeVar));
+        }
+        final IRenaming renaming = _renaming.build();
+        final IndexedRuleApplication newRule;
+        try {
+            if((newRule = of(state.freeze(), spec, rule.apply(renaming)).orElse(null)) == null) {
+                return Optional.empty();
+            }
+        } catch(Delay d) {
+            throw Delay.ofVars(d.vars().stream().map(renaming::rename).collect(Collectors.toList()));
+        }
+        return Optional.of(newRule.apply(renaming));
+    }
+
+    public static Optional<IndexedRuleApplication> of(IState.Immutable state, Spec spec, Rule rule)
+            throws Delay, InterruptedException {
+        final Set.Immutable<ITermVar> freeVars = rule.freeVars();
+
+        final IState.Transient _state = state.melt();
+        final List<ITermVar> args = new ArrayList<>();
+        for(@SuppressWarnings("unused") Pattern param : rule.params()) {
+            final ITermVar v = _state.freshVar(B.newVar("", "arg"));
+            args.add(v);
+        }
+        final IState.Immutable newState = _state.freeze();
+
+        final ApplyResult applyResult;
+        if((applyResult =
+                RuleUtil.apply(newState.unifier(), rule, args, null, ApplyMode.RELAXED).orElse(null)) == null) {
+            return Optional.empty();
+        }
+
+        final SolverResult solveResult = Solver.solve(spec, newState, applyResult.body(), new NullDebugContext(),
+                new NullCancel(), new NullProgress());
+        if(solveResult.hasErrors()) {
+            return Optional.empty();
+        }
+
+        final SortedSet<ITermVar> indexVars = new TreeSet<>();
+        final List<Pattern> newParams = new ArrayList<>();
+        final java.util.Set<ITermVar> newParamVars = new HashSet<>();
+        for(ITermVar arg : args) {
+            final ITerm term = solveResult.state().unifier().findRecursive(arg);
+            final Immutable<ITermVar> termVars = term.getVars();
+            final Pattern param = P.fromTerm(term);
+            indexVars.addAll(termVars.__retainAll(freeVars));
+            newParams.add(param);
+            newParamVars.addAll(termVars);
+        }
+
+        final ITerm index = B.newTuple(indexVars);
+
+        final IndexedRuleApplication ira;
+        if(solveResult.delays().isEmpty()) {
+            ira = new IndexedRuleApplication(spec, newParams, null, index);
+        } else {
+            final IConstraint residualConstraint = solveResult.delayed();
+            final java.util.Set<ITermVar> newFreeVars = Sets.difference(residualConstraint.getVars(), newParamVars);
+            if(!newFreeVars.isEmpty()) {
+                throw Delay.ofVars(newFreeVars);
+            }
+            ira = new IndexedRuleApplication(spec, newParams, residualConstraint, index);
+        }
+
+        return Optional.of(ira);
+    }
+
+}
