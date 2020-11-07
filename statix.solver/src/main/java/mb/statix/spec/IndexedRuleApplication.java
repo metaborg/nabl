@@ -102,7 +102,7 @@ public class IndexedRuleApplication {
             final State state = State.of(spec);
             final NullDebugContext debug = new NullDebugContext();
             final SolverResult solveResult =
-                    Solver.solve(spec, state, constraint, debug, new NullCancel(), new NullProgress());
+                    Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(), new NullProgress());
             try {
                 if(!Solver.entailed(state, solveResult, debug)) {
                     return Optional.empty();

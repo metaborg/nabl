@@ -34,8 +34,10 @@ public class IndexedRuleApplicationTest {
 
     // @formatter:off
     final RuleSet ruleSet = RuleSet.of(Arrays.asList(
-        Rule.of("p", Arrays.asList(P.newVar("x"), P.newVar(x)), new CTrue()),
-        Rule.of("p", Arrays.asList(P.newWld(), P.newWld()), new CFalse())
+        Rule.of("p", Arrays.asList(P.newVar(x), P.newVar(x)), new CTrue()),
+        Rule.of("p", Arrays.asList(P.newWld(), P.newWld()), new CFalse()),
+        Rule.of("q", Arrays.asList(P.newInt(1)), new CFalse()),
+        Rule.of("q", Arrays.asList(P.newWld()), new CTrue())
     ));
     final Spec spec = Spec.of(ruleSet, Collections.emptySet(), Collections.emptySet(), HashMultimap.create());
     // @formatter:on
@@ -79,9 +81,16 @@ public class IndexedRuleApplicationTest {
         assertEquals(assertPresent(ira.applyIndex(foo, foo)), assertPresent(ira.applyIndex(baz, baz)));
     }
 
-    @Test(expected = Delay.class) public void testPred() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CUser("p", Arrays.asList(x, y)));
+    @Test public void testPred() throws Delay, InterruptedException {
+        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CUser("q", Arrays.asList(x)));
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
+        assertAbsent(ira.applyIndex(B.newInt(1)));
+        assertEquals(assertPresent(ira.applyIndex(B.newInt(0))), assertPresent(ira.applyIndex(B.newInt(2))));
+    }
+
+    @Test(expected = Delay.class) public void testPredWithFreeArgument() throws Delay, InterruptedException {
+        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CUser("p", Arrays.asList(x, y)));
+        IndexedRuleApplication.of(spec, rule);
     }
 
     private <T> T assertPresent(Optional<T> opt) {
