@@ -220,6 +220,18 @@ public abstract class MultiSetMap<K, V> {
 
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof MultiSetMap)) return false;
+        final MultiSetMap<?, ?> that = (MultiSetMap<?, ?>)obj;
+        return this.toMap().equals(that.toMap());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toMap().hashCode();
+    }
+
     @Override public String toString() {
         return asMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue())
                 .collect(Collectors.joining(", ", "{", "}"));
