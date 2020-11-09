@@ -224,12 +224,12 @@ public abstract class MultiSetMap<K, V> {
     public boolean equals(Object obj) {
         if (!(obj instanceof MultiSetMap)) return false;
         final MultiSetMap<?, ?> that = (MultiSetMap<?, ?>)obj;
-        return this.toMap().equals(that.toMap());
+        return this.asMap().equals(that.asMap());
     }
 
     @Override
     public int hashCode() {
-        return this.toMap().hashCode();
+        return this.asMap().hashCode();
     }
 
     @Override public String toString() {
