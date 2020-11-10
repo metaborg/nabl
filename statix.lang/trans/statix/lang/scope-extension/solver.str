@@ -56,10 +56,10 @@ rules
 
          // errors if requires != {} and provides == {}
        ; cover* := <filter(\ ExtIsCovered(s, o) -> (s, o) \)> c*
-       ; map(Fst);ext-log(prettyprint-Statix-ExtSets|"covered:")
+       ; map(Fst);ext-log(prettyprint-Statix-ExtSets|"cover:")
        ; uncovered* := <raw-diff> (<map(Fst)> requires*, <map(Fst)> provides*)
        ; ext-log(prettyprint-Statix-ExtSets|"uncovered:")
-       ; missing* := <filter(where(<elem> (<Fst>, uncovered*)))> cover*
+       ; missing* := <filter(where(<raw-elem> (<Fst>, uncovered*)))> cover*
        ; map(Fst);ext-log(prettyprint-Statix-ExtSets|"missing:")
        ; uncovered-e* := <filter(ext-uncovered-error(|missing*, requires*))> c*
 
@@ -72,7 +72,7 @@ rules
 
 
   ext-uncovered-error(|missing*, requires*) : ExtRequires(v, s, o) -> (t, msg)
-    where o' := <lookup> (v, missing*)
+    where o' := <raw-lookup> (v, missing*)
         ; lbls := <ext-get-nonempty(|requires*)> s
     with lbls-msg := <pp-Statix-string(prettyprint-Statix-ExtOp)> lbls
        ; msg := $[Scope missing permission to be extended with [lbls-msg]]
@@ -91,8 +91,8 @@ rules
   
   ext-get-nonempty(|values*): ExtAll() -> <id>
   ext-get-nonempty(|values*): ExtLit([_|_]) -> <id>
-  ext-get-nonempty(|values*): v@ExtVar(_) -> <lookup> (v, values*)
-  ext-get-nonempty(|values*): v@ExtParam(_, _) -> <lookup> (v, values*)
+  ext-get-nonempty(|values*): v@ExtVar(_) -> <raw-lookup> (v, values*)
+  ext-get-nonempty(|values*): v@ExtParam(_, _) -> <raw-lookup> (v, values*)
 
 
   ext-spec-entries: (ExtParam(d, i), ExtLit(lbls)) -> entry*

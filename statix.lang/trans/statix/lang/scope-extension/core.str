@@ -45,11 +45,13 @@ rules // collect extension constraints
   ext-constraints: CNew(vs) -> c*
     with c* := <filter(is-var);map(\ v@Var(y) -> ExtProvides(ExtVar(<ext-get-var-ref> y), ExtAll(), v) \)> vs
 
-  ext-constraints: CTellEdge(v@Var(y), lbl, _) -> c*
-    with c* := [ExtRequires(ExtVar(<ext-get-var-ref> y), ExtLit([lbl]), v)]
+  ext-constraints: CTellEdge(t, lbl, _) -> c*
+    where t-ref := <ext-get-term-ref> t
+    with c* := [ExtRequires(t-ref, ExtLit([lbl]), t)]
 
-  ext-constraints: CTellRel(lbl, _, v@Var(y)) -> c*
-    with c* := [ExtRequires(ExtVar(<ext-get-var-ref> y), ExtLit([lbl]), v)]
+  ext-constraints: CTellRel(lbl, _, t) -> c*
+    where t-ref := <ext-get-term-ref> t
+    with c* := [ExtRequires(t-ref, ExtLit([lbl]), t)]
 
 
   ext-constraints: C(x, args, _) -> c*
@@ -57,11 +59,15 @@ rules // collect extension constraints
        ; c* := <ext-args-constraints(|r-ref)> args
 
   ext-args-constraints(|r-ref): args -> c*
-    with i_v* := <add-indices;filter((id, is-var))> args
+    with i_v* := <add-indices;filter((id, !(<id>, <ext-get-term-ref>)))> args
        ; c* := <map(ext-arg-constraints(|r-ref));concat> i_v*
 
-  ext-arg-constraints(|r-ref): (i, v@Var(y)) -> c*
-    with v-ref := <ext-get-var-ref> y
-       ; c* := [ ExtProvides(ExtVar(v-ref), ExtParam(r-ref, i), v)
-               , ExtRequires(ExtVar(v-ref), ExtParam(r-ref, i), v)
+  ext-arg-constraints(|r-ref): (i, (t, t-ref)) -> c*
+    with c* := [ ExtProvides(t-ref, ExtParam(r-ref, i), t)
+               , ExtRequires(t-ref, ExtParam(r-ref, i), t)
                ]
+
+
+  ext-get-term-ref: Var(x) -> ExtVar(r-ref)
+    with r-ref := <ext-get-var-ref> x
+

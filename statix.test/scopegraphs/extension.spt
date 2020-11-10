@@ -319,7 +319,7 @@ test extension of output of functional constraint fails [[
     c : 
     c() :- {s} [[f()]] -> Var{"x"@-}.
     f : -> scope
-]] 0 errors
+]] 2 errors at #1, #1/* should be #2 */
 
 // extension in lambdas and tries
 
@@ -445,7 +445,7 @@ test single-rule recursive predicate without news gives permission caveat succee
 ]] 0 errors
 
 test multi-recursive predicate without news with wildcards gives no permission fails [[
-  resolve {s} c(s, [])
+  resolve {s} c([[s]], [])
   signature
     relations
       r : int
@@ -453,4 +453,28 @@ test multi-recursive predicate without news with wildcards gives no permission f
     c : scope * list(int)
     c(_, []).
     c(s, [i|is]) :- !r[i] in s, c(s, is).
-]] > 0 errors
+]] 1 error at #1
+
+test no extension from functional predicate returning a scope [[
+  resolve true
+  signature
+    relations
+      r1 :
+  rules
+    p : scope
+    p(s) :- !r1[] in [[q()]]. 
+    q : -> scope
+    q() = s.
+]] 1 error at #1
+
+test extension from functional predicate returning a scope [[
+  resolve true
+  signature
+    relations
+      r1 :
+  rules
+    p : scope
+    p(s) :- !r1[] in q(). 
+    q : -> scope
+    q() = s :- new s.
+]] 0 errors

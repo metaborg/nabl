@@ -38,6 +38,15 @@ rules // collect extension constraints
        ; c* := <ext-params-constraints(|r-ref)> ps
 
 
-  ext-constraints: COp(x, args) -> c*
+  ext-constraints: t@COp(x, args) -> c*
+    with t-ref := <ext-get-term-ref> t
     with r-ref := <ext-get-constraint-ref> x
-       ; c* := <ext-args-constraints(|r-ref)> args
+       ; c-in*  := <ext-args-constraints(|r-ref)> args
+       ; c-out* := [ExtIsCovered(t-ref, t)]
+       ; c* := <conc> (c-in*, c-out*)
+
+
+  ext-get-term-ref: COp(x, args) -> ExtParam(r-ref, i)
+    with r-ref := <ext-get-constraint-ref> x;
+         i := <length;inc> args
+
