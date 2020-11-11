@@ -486,7 +486,7 @@ class GreedySolver {
                         eq = new CEqual(idTerm, indexTerm);
                         return successNew(c, state, ImmutableList.of(eq), fuel);
                     } else {
-                        return fail(c, state);
+                        return failSoft(c, state);
                     }
                 }
             }
