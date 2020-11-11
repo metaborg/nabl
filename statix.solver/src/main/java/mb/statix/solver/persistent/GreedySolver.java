@@ -533,7 +533,7 @@ class GreedySolver {
                         return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
                                 NO_EXISTENTIALS, fuel);
                     } else {
-                        return fail(c, state);
+                        return failSoft(c, state);
                     }
                 }
             }
