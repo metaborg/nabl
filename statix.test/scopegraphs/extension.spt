@@ -467,7 +467,7 @@ test no extension from functional predicate returning a scope [[
     q() = s.
 ]] 1 error at #1
 
-test extension from functional predicate returning a scope [[
+test extension from functional predicate returning a scope (via variable) [[
   resolve true
   signature
     relations
@@ -477,4 +477,16 @@ test extension from functional predicate returning a scope [[
     p(s) :- !r1[] in q(). 
     q : -> scope
     q() = s :- new s.
+]] 0 errors
+
+test extension from functional predicate returning a scope (inline) [[
+  resolve true
+  signature
+    relations
+      r1 :
+  rules
+    p : scope
+    p(s) :- !r1[] in q(). 
+    q : -> scope
+    q() = new.
 ]] 0 errors

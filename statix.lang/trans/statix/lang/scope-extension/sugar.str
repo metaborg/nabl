@@ -37,6 +37,11 @@ rules // collect extension constraints
        ; ps := <conc> (inparam*, [outparam])
        ; c* := <ext-params-constraints(|r-ref)> ps
 
+  ext-param-constraints(|r-ref): (i, n@NewOp()) -> (n, c*)
+    with c* := [ ExtProvides(ExtParam(r-ref, i), ExtAll(), n)
+               , ExtRequires(ExtParam(r-ref, i), ExtAll(), n)
+               ]
+
 
   ext-constraints: t@COp(x, args) -> c*
     with t-ref := <ext-get-term-ref> t

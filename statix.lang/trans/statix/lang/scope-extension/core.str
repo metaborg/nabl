@@ -16,19 +16,21 @@ rules // collect extension constraints
        ; c* := <ext-params-constraints(|r-ref)> ps
 
   ext-params-constraints(|r-ref): ps -> c*
-    with (i_v*, i_t*) := <add-indices;partition((id, is-var+is-wld))> ps
-       ; c1* := <map(ext-param-constraints(|r-ref));concat> i_v*
-       ; z* := <raw-diff> (<all-vars> i_t*, <all-vars> i_v*)
+    with ((v*, c1*), t*) := < add-indices
+                            ; partition(ext-param-constraints(|r-ref))
+                            ; (unzip;(id, concat), map(Snd))
+                            > ps
+       ; z* := <raw-diff> (<all-vars> t*, <all-vars> v*)
        ; c2* := <map(\ v@Var(z) -> [ExtIsCovered(ExtVar(<ext-get-var-decl> z), v)] \);concat> z*
        ; c* := <conc> (c1*, c2*)
 
-  ext-param-constraints(|r-ref): (i, v@Var(y)) -> c*
+  ext-param-constraints(|r-ref): (i, v@Var(y)) -> (v, c*)
     with v-decl := <ext-get-var-decl> y
        ; c* := [ ExtProvides(ExtParam(r-ref, i), ExtVar(v-decl), v)
                , ExtRequires(ExtParam(r-ref, i), ExtVar(v-decl), v)
                ]
 
-  ext-param-constraints(|r-ref): (i, w@Wld()) -> c*
+  ext-param-constraints(|r-ref): (i, w@Wld()) -> (w, c*)
     with c* := [ ExtProvides(ExtParam(r-ref, i), ExtNone(), w)
                , ExtRequires(ExtParam(r-ref, i), ExtLit([]), w)
                ]
