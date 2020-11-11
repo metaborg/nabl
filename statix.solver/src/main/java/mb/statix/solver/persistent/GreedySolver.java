@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import mb.statix.constraints.messages.MessageKind;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -227,13 +228,21 @@ class GreedySolver {
                 fuel);
     }
 
-    private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
-        failed.put(constraint, MessageUtil.findClosestMessage(constraint));
+    private IState.Immutable fail(IConstraint constraint, IState.Immutable state, MessageKind kind) {
+        failed.put(constraint, MessageUtil.findClosestMessage(constraint, kind));
         // remove current constraint (duplicated in ::success)
         final Set<CriticalEdge> removedEdges = completeness.remove(constraint, state.unifier());
         constraints.activateFromEdges(removedEdges, debug);
         this.removedEdges.addAll(removedEdges);
         return state;
+    }
+
+    private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
+        return fail(constraint, state, MessageKind.ERROR);
+    }
+
+    private IState.Immutable failSoft(IConstraint constraint, IState.Immutable state) {
+        return fail(constraint, state, MessageKind.WARNING);
     }
 
     private IState.Immutable queue(IConstraint constraint, IState.Immutable state) {

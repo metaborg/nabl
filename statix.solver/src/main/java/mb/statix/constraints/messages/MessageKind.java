@@ -12,13 +12,13 @@ public enum MessageKind implements Serializable {
 
     WARNING {
         @Override public String toString() {
-            return "Error";
+            return "Warning";
         }
     },
 
     NOTE {
         @Override public String toString() {
-            return "Error";
+            return "Note";
         }
     };
 
