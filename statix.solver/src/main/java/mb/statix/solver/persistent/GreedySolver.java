@@ -95,6 +95,7 @@ class GreedySolver {
 
     private static final int CANCEL_RATE = 42;
     private static final int MAX_DEPTH = 32;
+    private static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
     // set-up
     private final Spec spec;
@@ -117,20 +118,26 @@ class GreedySolver {
 
     public GreedySolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug, IProgress progress, ICancel cancel) {
-        if(spec.hasPrecomputedCriticalEdges()) {
-            this.spec = spec;
-        } else {
+        if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
             debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
             this.spec = spec.precomputeCriticalEdges();
+        } else {
+            this.spec = spec;
         }
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
-        final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
-                CompletenessUtil.precomputeCriticalEdges(initialConstraint, spec.scopeExtensions());
-        constraints.add(initialConstraintAndCriticalEdges._1());
-        this.completeness = Completeness.Transient.of();
-        completeness.addAll(initialConstraintAndCriticalEdges._2(), initialState.unifier());
+        if(INCREMENTAL_CRITICAL_EDGES) {
+            final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
+                    CompletenessUtil.precomputeCriticalEdges(initialConstraint, spec.scopeExtensions());
+            constraints.add(initialConstraintAndCriticalEdges._1());
+            this.completeness = Completeness.Transient.of();
+            completeness.addAll(initialConstraintAndCriticalEdges._2(), initialState.unifier());
+        } else {
+            constraints.add(initialConstraint);
+            this.completeness = Completeness.Transient.of();
+            completeness.add(initialConstraint, spec, initialState.unifier());
+        }
         final IsComplete isComplete = (s, l, st) -> {
             return completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
@@ -205,7 +212,11 @@ class GreedySolver {
 
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
-        completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
+        if(INCREMENTAL_CRITICAL_EDGES) {
+            completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
+        } else {
+            completeness.addAll(newConstraints, spec, unifier); // must come before ICompleteness::remove
+        }
         if(subDebug.isEnabled(Level.Debug) && !newConstraints.isEmpty()) {
             subDebug.debug("Simplified to:");
             for(IConstraint newConstraint : newConstraints) {
@@ -239,13 +250,17 @@ class GreedySolver {
     }
 
     private void removeCompleteness(IConstraint constraint, IState.Immutable state) {
-        if(!constraint.ownCriticalEdges().isPresent()) {
-            throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
+        final Set<CriticalEdge> removedEdges;
+        if(INCREMENTAL_CRITICAL_EDGES) {
+            if(!constraint.ownCriticalEdges().isPresent()) {
+                throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
+            }
+            criticalEdges +=
+                    constraint.ownCriticalEdges().get().entrySet().stream().mapToInt(e -> e.getValue().size()).sum();
+            removedEdges = completeness.removeAll(constraint.ownCriticalEdges().get(), state.unifier());
+        } else {
+            removedEdges = completeness.remove(constraint, spec, state.unifier());
         }
-        criticalEdges +=
-                constraint.ownCriticalEdges().get().entrySet().stream().mapToInt(e -> e.getValue().size()).sum();
-        final Set<CriticalEdge> removedEdges =
-                completeness.removeAll(constraint.ownCriticalEdges().get(), state.unifier());
         constraints.activateFromEdges(removedEdges, debug);
         this.removedEdges.addAll(removedEdges);
     }
@@ -349,11 +364,12 @@ class GreedySolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                if(!c.bodyCriticalEdges().isPresent()) {
+                if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
                 }
-                final ICompleteness.Immutable newCriticalEdges = c.bodyCriticalEdges().get().apply(subst);
+                final ICompleteness.Immutable newCriticalEdges =
+                        c.bodyCriticalEdges().orElse(NO_NEW_CRITICAL_EDGES).apply(subst);
                 return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges, existentials,
                         fuel);
             }
@@ -593,11 +609,13 @@ class GreedySolver {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.commit();
-                    if(applyResult.criticalEdges() == null) {
+                    if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
-                    return success(c, state, NO_UPDATED_VARS, disjoin(applyResult.body()), applyResult.criticalEdges(),
+                    final ICompleteness.Immutable newCriticalEdges =
+                            Optional.ofNullable(applyResult.criticalEdges()).orElse(NO_NEW_CRITICAL_EDGES);
+                    return success(c, state, NO_UPDATED_VARS, disjoin(applyResult.body()), newCriticalEdges,
                             NO_EXISTENTIALS, fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
