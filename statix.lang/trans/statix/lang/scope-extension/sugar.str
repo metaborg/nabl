@@ -38,9 +38,7 @@ rules // collect extension constraints
        ; c* := <ext-params-constraints(|r-ref)> ps
 
   ext-param-constraints(|r-ref): (i, n@NewOp()) -> (n, c*)
-    with c* := [ ExtProvides(ExtParam(r-ref, i), ExtAll(), n)
-               , ExtRequires(ExtParam(r-ref, i), ExtAll(), n)
-               ]
+    with c* := [ ExtProvides(ExtParam(r-ref, i), ExtAll(), n) ]
 
 
   ext-constraints: t@COp(x, args) -> c*
