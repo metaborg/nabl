@@ -48,14 +48,14 @@ rules
   // in the initial occurrence.
 
   ext-explicate-set(|a): ExtDecl(d) -> ExtDecl(d')
-    with i := <nabl2-get-occurrence-index> d
-       ; t := <nabl2-set-ast-index(|i)> ()
-       ; d' := <nabl2-get-ast-property(|a, "decl")> t
+    where i := <nabl2-get-occurrence-index> d
+        ; t := <nabl2-set-ast-index(|i)> ()
+        ; d' := <nabl2-get-ast-property(|a, "decl")> t
 
   ext-explicate-set(|a): ExtRef(r) -> ExtDecl(d)
-    with i := <nabl2-get-occurrence-index> r
-       ; t := <nabl2-set-ast-index(|i)> ()
-       ; d := <nabl2-get-ast-property(|a, "decl")> t
+    where i := <nabl2-get-occurrence-index> r
+        ; t := <nabl2-set-ast-index(|i)> ()
+        ; d := <nabl2-get-ast-property(|a, "decl")> t
 
 
   ext-get-name: ExtRef(o) -> <nabl2-get-occurrence-name> o

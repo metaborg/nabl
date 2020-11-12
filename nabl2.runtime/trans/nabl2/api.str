@@ -539,3 +539,7 @@ rules // ###### Editor Integration ######
    * @type (node, position, ast, path, project-path) -> label
    */
   nabl2-editor-hover = nabl2--editor-hover
+
+rules
+  
+  nabl2-is-ground = nabl2--is-ground

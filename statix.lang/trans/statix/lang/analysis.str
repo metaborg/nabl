@@ -47,14 +47,9 @@ rules // Analysis
     with nabl2-custom-analysis-info-msg(|"Finishing file analysis...")
        ; unit-e* := <map(?CustomUnitAnalysis(<id>, _, _));concat> units
        ; unit-w* := <map(?CustomUnitAnalysis(_, <id>, _));concat> units
-       ; if <nabl2-analysis-has-errors> a then
-            // FIXME Change custom analysis to work as well as possible on results with errors
-            (e*, ca) := <empty-custom-analysis>
-          else
-            (e*, ca) := <nabl2-custom-analysis-final-hook'(|a)> units
-          end
-        ; result := ([unit-e*, e*], [unit-w*], [], ca)
-        ; nabl2-custom-analysis-info-msg(|"| Done.")
+       ; (e*, ca) := <nabl2-custom-analysis-final-hook'(|a)> units
+       ; result := ([unit-e*, e*], [unit-w*], [], ca)
+       ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   nabl2-custom-analysis-final-hook'(|a):
       units -> (e*, ca)

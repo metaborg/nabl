@@ -12,64 +12,64 @@ imports
 rules // collect extension constraints
 
   ext-constraints: r@Rule(_, C(x, ps), _) -> c*
-    with r-ref := <ext-get-constraint-ref> x
-       ; c* := <ext-params-constraints(|r-ref)> ps
+    where r-ref := <ext-get-constraint-ref> x
+        ; c* := <ext-params-constraints(|r-ref)> ps
 
   ext-params-constraints(|r-ref): ps -> c*
-    with ((v*, c1*), t*) := < add-indices
-                            ; partition(ext-param-constraints(|r-ref))
-                            ; (unzip;(id, concat), map(Snd))
-                            > ps
-       ; z* := <raw-diff> (<all-vars> t*, <all-vars> v*)
-       ; c2* := <map(\ v@Var(z) -> [ExtIsCovered(ExtVar(<ext-get-var-decl> z), v)] \);concat> z*
-       ; c* := <conc> (c1*, c2*)
+    where ((v*, c1*), t*) := < add-indices
+                             ; partition(ext-param-constraints(|r-ref))
+                             ; (unzip;(id, concat), map(Snd))
+                             > ps
+        ; z* := <raw-diff> (<all-vars> t*, <all-vars> v*)
+        ; c2* := <map(\ v@Var(z) -> [ExtIsCovered(ExtVar(<ext-get-var-decl> z), v)] \);concat> z*
+        ; c* := <conc> (c1*, c2*)
 
   ext-param-constraints(|r-ref): (i, v@Var(y)) -> (v, c*)
-    with v-decl := <ext-get-var-decl> y
-       ; c* := [ ExtProvides(ExtParam(r-ref, i), ExtVar(v-decl), v)
-               , ExtRequires(ExtParam(r-ref, i), ExtVar(v-decl), v)
-               ]
+    where v-decl := <ext-get-var-decl> y
+        ; c* := [ ExtProvides(ExtParam(r-ref, i), ExtVar(v-decl), v)
+                , ExtRequires(ExtParam(r-ref, i), ExtVar(v-decl), v)
+                ]
 
   ext-param-constraints(|r-ref): (i, w@Wld()) -> (w, c*)
-    with c* := [ ExtProvides(ExtParam(r-ref, i), ExtNone(), w)
-               , ExtRequires(ExtParam(r-ref, i), ExtLit([]), w)
-               ]
+    where c* := [ ExtProvides(ExtParam(r-ref, i), ExtNone(), w)
+                , ExtRequires(ExtParam(r-ref, i), ExtLit([]), w)
+                ]
 
   ext-constraints: l@LLam(ps, body) -> c*
-    with c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), l) \)> ps
+    where c* := <all-vars;map(\ Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), l) \)> ps
 
 
   ext-constraints: c@CTry(_, _) -> []
 
   ext-constraints: c@CExists(vs, _) -> c*
-    with c* := <filter(is-var);map(\ v@Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), v) \)> vs
+    where c* := <filter(is-var);map(\ v@Var(y) -> ExtIsCovered(ExtVar(<ext-get-var-decl> y), v) \)> vs
 
   ext-constraints: CNew(vs) -> c*
-    with c* := <filter(is-var);map(\ v@Var(y) -> ExtProvides(ExtVar(<ext-get-var-ref> y), ExtAll(), v) \)> vs
+    where c* := <filter(is-var);map(\ v@Var(y) -> ExtProvides(ExtVar(<ext-get-var-ref> y), ExtAll(), v) \)> vs
 
   ext-constraints: CTellEdge(t, lbl, _) -> c*
     where t-ref := <ext-get-term-ref> t
-    with c* := [ExtRequires(t-ref, ExtLit([lbl]), t)]
+        ; c* := [ExtRequires(t-ref, ExtLit([lbl]), t)]
 
   ext-constraints: CTellRel(lbl, _, t) -> c*
     where t-ref := <ext-get-term-ref> t
-    with c* := [ExtRequires(t-ref, ExtLit([lbl]), t)]
+        ; c* := [ExtRequires(t-ref, ExtLit([lbl]), t)]
 
 
   ext-constraints: C(x, args, _) -> c*
-    with r-ref := <ext-get-constraint-ref> x
-       ; c* := <ext-args-constraints(|r-ref)> args
+    where r-ref := <ext-get-constraint-ref> x
+        ; c* := <ext-args-constraints(|r-ref)> args
 
   ext-args-constraints(|r-ref): args -> c*
-    with i_v* := <add-indices;filter((id, !(<id>, <ext-get-term-ref>)))> args
-       ; c* := <map(ext-arg-constraints(|r-ref));concat> i_v*
+    where i_v* := <add-indices;filter((id, !(<id>, <ext-get-term-ref>)))> args
+        ; c* := <map(ext-arg-constraints(|r-ref));concat> i_v*
 
   ext-arg-constraints(|r-ref): (i, (t, t-ref)) -> c*
-    with c* := [ ExtProvides(t-ref, ExtParam(r-ref, i), t)
-               , ExtRequires(t-ref, ExtParam(r-ref, i), t)
-               ]
+    where c* := [ ExtProvides(t-ref, ExtParam(r-ref, i), t)
+                , ExtRequires(t-ref, ExtParam(r-ref, i), t)
+                ]
 
 
   ext-get-term-ref: Var(x) -> ExtVar(r-ref)
-    with r-ref := <ext-get-var-ref> x
+    where r-ref := <ext-get-var-ref> x
 
