@@ -30,10 +30,11 @@ public abstract class ATermOrigin {
         return getImploderAttachment().getRightToken();
     }
 
-    public ITerm put(ITerm term) {
+    @SuppressWarnings({ "unchecked" }) 
+    public <T extends ITerm> T put(T term) {
         final IAttachments.Builder attachments = term.getAttachments().toBuilder();
         attachments.put(TermOrigin.class, (TermOrigin) this);
-        return term.withAttachments(attachments.build());
+        return (T)term.withAttachments(attachments.build());
     }
 
     @Override public String toString() {
@@ -48,20 +49,25 @@ public abstract class ATermOrigin {
         return sb.toString();
     }
 
-    public static TermOrigin of(String resource) {
-        return TermOrigin.of(ImploderAttachment.createCompactPositionAttachment(resource, 0, 0, 0, 0));
-    }
-
     public static Optional<TermOrigin> get(ITerm term) {
         return get(term.getAttachments());
     }
 
-    public static ITerm copy(ITerm src, ITerm dst) {
-        return get(src).map(o -> o.put(dst)).orElse(dst);
-    }
-
     public static Optional<TermOrigin> get(IAttachments attachments) {
         return Optional.ofNullable(attachments.get(TermOrigin.class));
+    }
+
+    public static boolean has(ITerm term) {
+        return get(term).isPresent();
+    }
+
+    public static <T extends ITerm> T copy(ITerm src, T dst) {
+        //noinspection unchecked
+        return (T)get(src).map(o -> o.put(dst)).orElse(dst);
+    }
+
+    public static TermOrigin of(String resource) {
+        return TermOrigin.of(ImploderAttachment.createCompactPositionAttachment(resource, 0, 0, 0, 0));
     }
 
     // Stratego term interaction

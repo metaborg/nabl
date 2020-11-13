@@ -30,10 +30,11 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
 
     @Override @Value.Parameter public abstract int getId();
 
-    public ITerm put(ITerm term) {
+    @SuppressWarnings({ "unchecked" }) 
+    public <T extends ITerm> T put(T term) {
         final IAttachments.Builder attachments = term.getAttachments().toBuilder();
         attachments.put(TermIndex.class, (TermIndex) this);
-        return term.withAttachments(attachments.build());
+        return (T)term.withAttachments(attachments.build());
     }
 
     // IApplTerm implementation
@@ -96,8 +97,13 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
         return Optional.ofNullable(attachments.get(TermIndex.class));
     }
 
-    public static ITerm copy(ITerm src, ITerm dst) {
-        return get(src).map(o -> o.put(dst)).orElse(dst);
+    public static boolean has(ITerm term) {
+        return get(term).isPresent();
+    }
+
+    public static <T extends ITerm> T copy(ITerm src, T dst) {
+        //noinspection unchecked
+        return (T)get(src).map(o -> o.put(dst)).orElse(dst);
     }
 
     public static TermIndex of(String resource, int id) {
