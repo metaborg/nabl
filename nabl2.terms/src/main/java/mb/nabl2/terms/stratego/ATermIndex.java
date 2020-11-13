@@ -31,19 +31,17 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
 
     @Override @Value.Parameter public abstract int getId();
 
-    @SuppressWarnings({ "unchecked", "rawtypes" }) public ITerm put(ITerm term) {
+    @SuppressWarnings({ "unchecked", "rawtypes" }) public <T extends ITerm> T put(T term) {
         final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
         // builder does not allow overwriting entries, so we need to filter out
         // the term origin, in case it is already there
         // @formatter:off
         term.getAttachments().entrySet().stream()
             .filter(e -> !TermIndex.class.equals(e.getKey()))
-            .forEach(e -> {
-                attachments.put((Class)e.getKey(), e.getValue());
-            });
+            .forEach(e -> attachments.put((Class)e.getKey(), e.getValue()));
         // @formatter:on
         attachments.put(TermIndex.class, (TermIndex) this);
-        return term.withAttachments(attachments.build());
+        return (T)term.withAttachments(attachments.build());
     }
 
     // IApplTerm implementation
@@ -105,8 +103,13 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
         return Optional.ofNullable(attachments.getInstance(TermIndex.class));
     }
 
-    public static ITerm copy(ITerm src, ITerm dst) {
-        return get(src).map(o -> o.put(dst)).orElse(dst);
+    public static boolean has(ITerm term) {
+        return get(term).isPresent();
+    }
+
+    public static <T extends ITerm> T copy(ITerm src, T dst) {
+        //noinspection unchecked
+        return (T)get(src).map(o -> o.put(dst)).orElse(dst);
     }
 
     public static TermIndex of(String resource, int id) {
