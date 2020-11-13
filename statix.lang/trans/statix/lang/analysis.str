@@ -14,8 +14,6 @@ imports
 
   statix/lang/-
   statix/lang/statics/-
-  statix/lang/normalize
-  statix/lang/scope-extension
 
   statix/runtime/pp
   pp/statix/lang/-
@@ -30,7 +28,7 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-custom-analysis-unit-hook:
+  nabl2-custom-analysis-unit-hook2(|a):
       (resource, ast, _) -> CustomUnitAnalysis(e*, w*, ext-c*)
     with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
        ; n-e* := <check-module-name(|resource)> ast
@@ -38,9 +36,11 @@ rules // Analysis
        ; ext-c* := <collect-ext-constraints> ast
        ; nabl2-custom-analysis-info-msg(|"| detecting accidental axioms...")
        ; ax-w* := <check-accidental-axioms> ast
+     //; nabl2-custom-analysis-info-msg(|"| checking variable usage...")
+       ; vu-w* := [] // <check-variable-usages(|a)> ast
        ; nabl2-custom-analysis-info-msg(|"| Done.")
        ; e* := n-e*
-       ; w* := ax-w*
+       ; w* := [ax-w*, vu-w*]
 
   nabl2-custom-analysis-final-hook(|a):
       (resource, _, units) -> result

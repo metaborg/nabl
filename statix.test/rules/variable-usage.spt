@@ -1,0 +1,52 @@
+module rules/order
+
+language StatixLang
+
+test unused output variable [[
+module test
+rules
+  f : -> int
+  f() = [[i]].
+]] // 1 warning at #1
+
+test unused wrapped output variable [[
+module test
+rules
+  f : -> (int * int)
+  f() = ([[i]], j) :- j == 1.
+]] // 1 warning at #1
+
+test used output variable [[
+module test
+rules
+  f : -> int
+  f() = [[i]] :- i == 1.
+]] // 0 warnings at #1
+
+test output variable appears in input patterns [[
+module test
+rules
+  f : int -> int
+  f(i) = [[i]].
+]] // 0 warnings at #1
+
+test unused local variable [[
+module test
+rules
+  p :
+  p() :- {[[x]]} true.
+]] // 1 warning at #1
+
+test local variable used only once [[
+module test
+rules
+  p :
+  p() :- {[[x]]} x == _.
+]] // 1 warning at #1
+
+test local variable used multiple times [[
+module test
+rules
+  p :
+  p() :- {[[x]]} x == x.
+]] // 0 warnings at #1
