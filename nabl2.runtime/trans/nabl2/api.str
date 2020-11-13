@@ -83,6 +83,12 @@ rules // ###### Custom analysis hooks ######
 
   /**
    * @param a : Analysis
+   * @type (resource:String, ast:Term, CustomInitialResult) -> CustomUnitResult
+   */
+  nabl2-custom-analysis-unit-hook2(|a) = fail
+
+  /**
+   * @param a : Analysis
    * @type (resource:String, CustomInitialResult, List(CustomUnitResult))
    *         -> (errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage), CustomFinalResult)
    */

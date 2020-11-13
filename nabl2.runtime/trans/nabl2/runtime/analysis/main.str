@@ -49,10 +49,10 @@ rules // single file analysis
          ast' := <pre;nabl2--index-ast(|resource)> ast;
          nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          file-C := <nabl2--generate-constraint-file(|resource, params)> ast';
-         file-custom := <nabl2-custom-analysis-unit-hook <+ !None()> (resource, ast', initial-custom);
          nabl2--collection-info-msg(|$[Solving constraints [resource]]);
          (a, constraint-error*, constraint-warning*, constraint-note*) :=
              <nabl2--solve-constraint(|config, cancel, progress)> CConj(initial-C, file-C);
+         file-custom := <nabl2-custom-analysis-unit-hook <+ nabl2-custom-analysis-unit-hook2(|a) <+ !None()> (resource, ast', initial-custom);
          if (custom-error*, custom-warning*, custom-note*, final-custom) :=
                 <nabl2-custom-analysis-final-hook(|a)> (resource, initial-custom, [file-custom]) then
            a' :=  <nabl2--set-custom-analysis(|a)> final-custom
@@ -89,7 +89,7 @@ rules // multi file analysis
          nabl2--collection-info-msg(|$[Generating constraints [resource]]);
          C := <nabl2--generate-constraint-file(|resource, params)> ast';
          unit-analysis := <prim("SG_solve_multi_unit_constraint")> WithCancelProgress((initial-analysis, C), cancel, progress);
-         if unit-custom := <nabl2-custom-analysis-unit-hook> (resource, ast', initial-custom) then
+         if unit-custom := <nabl2-custom-analysis-unit-hook <+ nabl2-custom-analysis-unit-hook2(|unit-analysis)> (resource, ast', initial-custom) then
            unit-analysis' :=  <nabl2--set-custom-analysis(|unit-analysis)> unit-custom
          else
            unit-analysis' := unit-analysis
