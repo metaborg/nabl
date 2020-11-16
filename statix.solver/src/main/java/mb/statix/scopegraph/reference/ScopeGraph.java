@@ -84,7 +84,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
         // ------------------------------------------------------------
 
         @Override public ScopeGraph.Transient<S, L, D> melt() {
-            return new ScopeGraph.Transient<>(edgeLabels, edges.asTransient(), data.asTransient());
+            return new ScopeGraph.Transient<>(edgeLabels.asTransient(), edges.asTransient(), data.asTransient());
         }
 
         @Override public int hashCode() {
@@ -120,19 +120,19 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
     public static class Transient<S, L, D> extends ScopeGraph<S, L, D> implements IScopeGraph.Transient<S, L, D> {
 
-        private final Set.Immutable<L> edgeLabels;
+        private final Set.Transient<L> edgeLabels;
 
         private final Map.Transient<Tuple2<S, L>, ConsList<S>> edges;
         private final Map.Transient<S, D> data;
 
-        Transient(Set.Immutable<L> edgeLabels, Map.Transient<Tuple2<S, L>, ConsList<S>> edges,
+        Transient(Set.Transient<L> edgeLabels, Map.Transient<Tuple2<S, L>, ConsList<S>> edges,
                 Map.Transient<S, D> data) {
             this.edgeLabels = edgeLabels;
             this.edges = edges;
             this.data = data;
         }
 
-        @Override public Set.Immutable<L> getEdgeLabels() {
+        @Override public Set.Transient<L> getEdgeLabels() {
             return edgeLabels;
         }
 
@@ -171,17 +171,20 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             for(Entry<S, D> entry : other.getData().entrySet()) {
                 data.__put(entry.getKey(), entry.getValue());
             }
+            for(L label : other.getEdgeLabels()) {
+                edgeLabels.__insert(label);
+            }
             return true;
         }
 
         // ------------------------------------------------------------
 
         @Override public ScopeGraph.Immutable<S, L, D> freeze() {
-            return new ScopeGraph.Immutable<>(edgeLabels, edges.freeze(), data.freeze());
+            return new ScopeGraph.Immutable<>(edgeLabels.freeze(), edges.freeze(), data.freeze());
         }
 
         public static <S, L, D> ScopeGraph.Transient<S, L, D> of(Iterable<L> edgeLabels) {
-            return new ScopeGraph.Transient<>(CapsuleUtil.toSet(edgeLabels), Map.Transient.of(), Map.Transient.of());
+            return new ScopeGraph.Transient<>(CapsuleUtil.toSet(edgeLabels).asTransient(), Map.Transient.of(), Map.Transient.of());
         }
 
     }
