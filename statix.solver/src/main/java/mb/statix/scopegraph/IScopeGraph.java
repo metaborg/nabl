@@ -1,6 +1,5 @@
 package mb.statix.scopegraph;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -12,7 +11,7 @@ import io.usethesource.capsule.Set;
 
 public interface IScopeGraph<S, L, D> {
 
-    Collection<L> getEdgeLabels();
+    Set<L> getEdgeLabels();
 
     Map<? extends Entry<S, L>, ? extends Iterable<S>> getEdges();
 
