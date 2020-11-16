@@ -1,5 +1,6 @@
 package mb.statix.scopegraph;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -11,7 +12,7 @@ import io.usethesource.capsule.Set;
 
 public interface IScopeGraph<S, L, D> {
 
-    Set.Immutable<L> getEdgeLabels();
+    Collection<L> getEdgeLabels();
 
     Map<? extends Entry<S, L>, ? extends Iterable<S>> getEdges();
 
@@ -28,6 +29,8 @@ public interface IScopeGraph<S, L, D> {
 
     interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
 
+        @Override Set.Immutable<L> getEdgeLabels();
+
         Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 
         Immutable<S, L, D> setDatum(S scope, D datum);
@@ -39,6 +42,8 @@ public interface IScopeGraph<S, L, D> {
     }
 
     interface Transient<S, L, D> extends IScopeGraph<S, L, D> {
+
+        @Override Set.Transient<L> getEdgeLabels();
 
         boolean addEdge(S sourceScope, L label, S targetScope);
 
