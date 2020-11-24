@@ -75,6 +75,13 @@ public abstract class Completeness implements ICompleteness {
             return incomplete;
         }
 
+        @Override public mb.statix.solver.completeness.ICompleteness.Immutable
+                addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier) {
+            final Completeness.Transient _completeness = melt();
+            _completeness.addAll(criticalEdges, unifier);
+            return _completeness.freeze();
+        }
+
         @Override public ICompleteness.Immutable apply(ISubstitution.Immutable subst) {
             final Completeness.Transient _completeness = melt();
             _completeness.apply(subst);

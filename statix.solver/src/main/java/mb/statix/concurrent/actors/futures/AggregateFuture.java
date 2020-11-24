@@ -14,6 +14,9 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Lists;
 
+import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
+
 public class AggregateFuture<T> implements IFuture<List<T>> {
 
     private static final ILogger logger = LoggerUtils.logger(AggregateFuture.class);
@@ -81,11 +84,13 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         }
     }
 
-    @Override public <U> IFuture<U> handle(CheckedFunction2<? super List<T>, Throwable, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U>
+            handle(CheckedFunction2<? super List<T>, Throwable, ? extends U, ? extends Throwable> handler) {
         return result.handle(handler);
     }
 
-    @Override public IFuture<List<T>> whenComplete(CheckedAction2<? super List<T>, Throwable, ? extends Throwable> handler) {
+    @Override public IFuture<List<T>>
+            whenComplete(CheckedAction2<? super List<T>, Throwable, ? extends Throwable> handler) {
         return result.whenComplete(handler);
     }
 
@@ -97,7 +102,8 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.getNow();
     }
 
-    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super List<T>, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U>
+            thenApply(CheckedFunction1<? super List<T>, ? extends U, ? extends Throwable> handler) {
         return result.thenApply(handler);
     }
 
@@ -105,18 +111,29 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.thenAccept(handler);
     }
 
-    @Override public <U> IFuture<U>
-            thenCompose(CheckedFunction1<? super List<T>, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U> thenCompose(
+            CheckedFunction1<? super List<T>, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         return result.thenCompose(handler);
     }
 
-    @Override public <U> IFuture<U>
-            compose(CheckedFunction2<? super List<T>, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U> compose(
+            CheckedFunction2<? super List<T>, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         return result.compose(handler);
     }
 
     @Override public boolean isDone() {
         return result.isDone();
     }
+
+    @SuppressWarnings("unchecked") public static <T1, T2> IFuture<Tuple2<T1, T2>> apply(IFuture<T1> f1,
+            IFuture<T2> f2) {
+        return new AggregateFuture<>(f1, f2).thenApply(rs -> Tuple2.of((T1) rs.get(0), (T2) rs.get(1)));
+    }
+
+    @SuppressWarnings("unchecked") public static <T1, T2, T3> IFuture<Tuple3<T1, T2, T3>> apply(IFuture<T1> f1,
+            IFuture<T2> f2, IFuture<T3> f3) {
+        return new AggregateFuture<>(f1, f2, f3).thenApply(rs -> Tuple3.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2)));
+    }
+
 
 }

@@ -31,6 +31,8 @@ public interface ICompleteness {
 
     interface Immutable extends ICompleteness {
 
+        Immutable addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier);
+
         Immutable apply(ISubstitution.Immutable subst);
 
         Immutable apply(IRenaming renaming);

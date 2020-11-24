@@ -1,6 +1,8 @@
 package mb.statix.concurrent.actors.impl;
 
-import java.util.Map;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -8,7 +10,7 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
@@ -18,10 +20,12 @@ import mb.statix.concurrent.actors.TypeTag;
 
 public class ActorSystem implements IActorSystem {
 
+    private static final String ID_SEP = "/";
+
     private static final ILogger logger = LoggerUtils.logger(ActorSystem.class);
 
     private final Object lock = new Object();
-    private final Map<String, Actor<?>> actors;
+    private final Set<Actor<?>> actors;
     private final IActorScheduler scheduler;
     private volatile ActorSystemState state;
     private final IActorContext context;
@@ -35,34 +39,51 @@ public class ActorSystem implements IActorSystem {
     }
 
     public ActorSystem(IActorScheduler scheduler) {
-        this.actors = Maps.newHashMap();
+        this.actors = Sets.newHashSet();
         this.scheduler = scheduler;
         this.state = ActorSystemState.INIT;
         this.context = new ActorContext();
     }
 
     @Override public <T> IActor<T> add(String id, TypeTag<T> type, Function1<IActor<T>, T> supplier) {
-        return add(null, id, type, supplier);
+        final String qid = ID_SEP + escapeId(id);
+        return add(null, qid, type, supplier);
     }
 
-    private <T> IActor<T> add(@Nullable IActorRef<?> parent, String id, TypeTag<T> type,
+    private <T> IActor<T> add(@Nullable IActorRef<?> parent, String qid, TypeTag<T> type,
             Function1<IActor<T>, T> supplier) {
-        logger.debug("add actor {}", id);
-        final Actor<T> actor = new Actor<>(context, id, type, supplier);
+        logger.debug("add actor {}", qid);
+        final Actor<T> actor = new Actor<>(context, qid, type, supplier);
         synchronized(lock) {
             if(state.equals(ActorSystemState.STOPPED)) {
                 throw new IllegalStateException("Actor system already stopped.");
             }
-            if(actors.containsKey(id)) {
-                throw new IllegalArgumentException("Actor with id " + id + " already exists.");
-            }
-            actors.put(id, actor);
+            actors.add(actor);
             if(state.equals(ActorSystemState.RUNNING)) {
                 actor.start();
             }
         }
-        logger.debug("added actor {}", id);
+        logger.debug("added actor {}", qid);
         return actor;
+    }
+
+    private String escapeId(String id) {
+        final StringBuilder sb = new StringBuilder();
+        final StringCharacterIterator it = new StringCharacterIterator(id);
+        while(it.current() != CharacterIterator.DONE) {
+            char c = it.current();
+            switch(c) {
+                case '/':
+                case '\\':
+                    sb.append('\\').append(c);
+                    break;
+                default:
+                    sb.append(c);
+                    break;
+            }
+            it.next();
+        }
+        return sb.toString();
     }
 
     @Override public void addMonitor(IActorRef<?> actor, IActorRef<? extends IActorMonitor> monitor) {
@@ -80,7 +101,7 @@ public class ActorSystem implements IActorSystem {
                 throw new IllegalStateException("Actor system already started.");
             }
             state = ActorSystemState.RUNNING;
-            for(Actor<?> actor : actors.values()) {
+            for(Actor<?> actor : actors) {
                 actor.start();
             }
         }
@@ -93,7 +114,7 @@ public class ActorSystem implements IActorSystem {
                 throw new IllegalStateException("Actor system not started.");
             }
             state = ActorSystemState.STOPPED;
-            for(Actor<?> actor : actors.values()) {
+            for(Actor<?> actor : actors) {
                 actor.stop();
             }
             scheduler.shutdown();
@@ -110,6 +131,10 @@ public class ActorSystem implements IActorSystem {
         }
     }
 
+    @Override public boolean running() {
+        return state.equals(ActorSystemState.RUNNING);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // IActorContext
     ///////////////////////////////////////////////////////////////////////////
@@ -118,11 +143,13 @@ public class ActorSystem implements IActorSystem {
     private class ActorContext implements IActorContext {
 
         @Override public <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
-            return ActorSystem.this.add(Actor.current.get(), id, type, supplier);
+            final Actor<?> parent = Actor.current.get();
+            final String qid = parent.id() + ID_SEP + escapeId(id);
+            return ActorSystem.this.add(parent, qid, type, supplier);
         }
 
         @Override public <T> T async(IActorRef<T> receiver) {
-            if(!actors.containsValue(receiver)) {
+            if(!actors.contains(receiver)) {
                 throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
             }
             return (T) ((Actor) receiver).asyncActor;

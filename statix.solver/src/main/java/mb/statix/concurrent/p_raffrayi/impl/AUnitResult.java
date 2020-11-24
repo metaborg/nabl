@@ -13,7 +13,7 @@ import mb.statix.scopegraph.IScopeGraph;
 
 @Value.Immutable
 @Serial.Version(42L)
-abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R> {
+public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R> {
 
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
 
