@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageKind;
@@ -68,6 +69,20 @@ public abstract class ASolverResult {
     public static SolverResult of(Spec spec) {
         return SolverResult.of(State.of(spec), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
                 ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of());
+    }
+
+    public SolverResult combine(SolverResult other) {
+        final SolverResult.Builder combined = SolverResult.builder().from(this);
+        combined.state(state().add(other.state()));
+        combined.putAllMessages(other.messages());
+        combined.putAllDelays(other.delays());
+        combined.putAllExistentials(other.existentials());
+        combined.addAllUpdatedVars(other.updatedVars());
+        combined.addAllRemovedEdges(other.removedEdges());
+        combined.completeness(completeness().addAll(other.completeness(), PersistentUniDisunifier.Immutable.of()));
+        combined.totalSolved(totalSolved() + other.totalSolved());
+        combined.totalCriticalEdges(totalCriticalEdges() + other.totalCriticalEdges());
+        return combined.build();
     }
 
 }

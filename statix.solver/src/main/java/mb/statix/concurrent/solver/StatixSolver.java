@@ -115,14 +115,14 @@ public class StatixSolver {
     private static final ImmutableMap<ITermVar, ITermVar> NO_EXISTENTIALS = ImmutableMap.of();
 
     private static final int MAX_DEPTH = 32;
-    private static final boolean INCREMENTAL_CRITICAL_EDGES = true;
+    private static final boolean INCREMENTAL_CRITICAL_EDGES = false;
 
     private final Spec spec;
     private final IConstraintStore constraints;
     private final IDebugContext debug;
     private final IProgress progress;
     private final ICancel cancel;
-    private final ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> scopeGraph;
+    private final ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph;
 
     private IState.Immutable state;
     private ICompleteness.Immutable completeness;
@@ -136,7 +136,7 @@ public class StatixSolver {
 
     public StatixSolver(IConstraint constraint, Spec spec, IState.Immutable state, ICompleteness.Immutable completeness,
             IDebugContext debug, IProgress progress, ICancel cancel,
-            ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> scopeGraph) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph) {
         if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
             debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
             this.spec = spec.precomputeCriticalEdges();
@@ -167,9 +167,11 @@ public class StatixSolver {
     // driver
     ///////////////////////////////////////////////////////////////////////////
 
-    public IFuture<SolverResult> solve(Scope root) {
+    public IFuture<SolverResult> solve(Iterable<Scope> roots) {
         try {
-            scopeGraph.initRoot(root, getOpenEdges(root), false);
+            for(Scope root : roots) {
+                scopeGraph.initScope(root, getOpenEdges(root), false);
+            }
             fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
@@ -695,7 +697,7 @@ public class StatixSolver {
 
             @Override public Unit caseTry(CTry c) throws InterruptedException {
                 final IDebugContext subDebug = debug.subContext();
-                final ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> subContext = scopeGraph.subContext("try");
+                final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = scopeGraph.subContext("try");
                 final IState.Immutable subState = state.subState().withResource(subContext.id());
                 final StatixSolver subSolver = new StatixSolver(c.constraint(), spec, subState, completeness, subDebug,
                         progress, cancel, subContext);
@@ -771,7 +773,7 @@ public class StatixSolver {
 
     private IFuture<Boolean> entails(IConstraint constraint) {
         final IDebugContext subDebug = debug.subContext();
-        final ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> subContext = scopeGraph.subContext("try");
+        final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = scopeGraph.subContext("try");
         return absorbDelays(() -> {
             final IState.Immutable subState = state.subState().withResource(subContext.id());
             final StatixSolver subSolver =

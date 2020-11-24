@@ -3,16 +3,16 @@ package mb.statix.concurrent.p_raffrayi.impl;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import javax.annotation.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
@@ -24,16 +24,18 @@ import mb.statix.concurrent.actors.deadlock.DeadlockBatcher;
 import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
 import mb.statix.concurrent.actors.deadlock.IDeadlockMonitor;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
 import mb.statix.concurrent.p_raffrayi.IBroker;
-import mb.statix.concurrent.p_raffrayi.IBrokerResult;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
-public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
+public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
+
+    static final String ID_SEP = "/";
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
@@ -42,12 +44,12 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
     private final ICancel cancel;
 
     private final ActorSystem system;
-    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>>> dlm;
+    private final IActor<IDeadlockMonitor<IUnit<S, L, D, ?>>> dlm;
 
-    private final Object lock = new Object();
-    private final Map<String, IActor<IUnit<S, L, D, R>>> units;
-    private final Map<String, IUnitResult<S, L, D, R>> results;
-    private final CompletableFuture<IBrokerResult<S, L, D, R>> result;
+    private final Map<String, IActorRef<? extends IUnit<S, L, D, ?>>> units;
+    private final AtomicInteger unfinishedUnits;
+    private final AtomicInteger totalUnits;
+    private final ICompletableFuture<org.metaborg.util.unit.Unit> result;
 
     public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         this(scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors());
@@ -63,43 +65,42 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
                 self -> new DeadlockMonitor<>(self, this::handleDeadlock));
         dlm.addMonitor(this);
 
-        this.units = Maps.newHashMap();
-        this.results = Maps.newHashMap();
+        this.units = new ConcurrentHashMap<>();
+        this.unfinishedUnits = new AtomicInteger();
+        this.totalUnits = new AtomicInteger();
+
         this.result = new CompletableFuture<>();
     }
 
-    @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
-        final IActor<IUnit<S, L, D, R>> unit = add(id, null, unitChecker);
-        system.async(unit)._start(null).whenComplete((r, ex) -> addResult(unit.id(), r, ex));
-    }
-
-    private IActor<IUnit<S, L, D, R>> add(String id, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
-            ITypeChecker<S, L, D, R> unitChecker) {
-        final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, parent, new UnitContext(self), unitChecker, edgeLabels));
-        unit.addMonitor(this);
-        synchronized(lock) {
-            units.put(id, unit);
+    @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker) {
+        if(system.running()) {
+            throw new IllegalStateException("Cannot add units when already running.");
         }
-        return unit;
-    }
-
-    private void addResult(String id, IUnitResult<S, L, D, R> unitResult, Throwable ex) {
-        synchronized(lock) {
+        final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
+                self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
+        addUnit(unit);
+        return system.async(unit)._start(null).whenComplete((r, ex) -> {
             if(ex != null) {
                 fail(ex);
             } else {
-                results.put(id, unitResult);
-                logger.info("Unit {} finished ({}/{}).", id, results.size(), units.size());
-                checkResults();
+                finished(unit);
             }
-        }
+        });
     }
 
-    private void checkResults() {
-        if(results.size() == units.size()) {
-            logger.info("All units finished.");
-            result.complete(BrokerResult.of(results));
+    private void addUnit(IActor<? extends IUnit<S, L, D, ?>> unit) {
+        unfinishedUnits.incrementAndGet();
+        totalUnits.incrementAndGet();
+        unit.addMonitor(this);
+        units.put(unit.id(), unit);
+    }
+
+    private void finished(IActor<?> self) {
+        logger.info("Unit {} finished ({} of {} remaining).", self.id(), unfinishedUnits.decrementAndGet(),
+                totalUnits.get());
+        if(unfinishedUnits.get() == 0) {
+            logger.info("All {} units finished.", totalUnits.get());
+            result.complete(org.metaborg.util.unit.Unit.unit);
             system.stop();
         }
     }
@@ -110,35 +111,31 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
 
     private void fail(Throwable ex) {
         logger.error("Unit failed.", ex);
-        synchronized(lock) {
-            result.completeExceptionally(ex);
-            system.stop();
-        }
+        system.stop();
+        result.completeExceptionally(ex);
     }
 
-    private void handleDeadlock(IActor<?> dlm, Deadlock<IActorRef<? extends IUnit<S, L, D, R>>> deadlock) {
-        for(Entry<IActorRef<? extends IUnit<S, L, D, R>>, Clock<IActorRef<? extends IUnit<S, L, D, R>>>> entry : deadlock
+    private void handleDeadlock(IActor<?> dlm, Deadlock<IActorRef<? extends IUnit<S, L, D, ?>>> deadlock) {
+        for(Entry<IActorRef<? extends IUnit<S, L, D, ?>>, Clock<IActorRef<? extends IUnit<S, L, D, ?>>>> entry : deadlock
                 .nodes().entrySet()) {
-            final IActorRef<? extends IUnit<S, L, D, R>> unit = entry.getKey();
-            final Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock = entry.getValue();
+            final IActorRef<? extends IUnit<S, L, D, ?>> unit = entry.getKey();
+            final Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock = entry.getValue();
             logger.debug("deadlock detected: {}", deadlock);
             dlm.async(unit)._deadlocked(clock, deadlock.nodes().keySet());
         }
     }
 
-    @Override public void run() {
+    @Override public IFuture<org.metaborg.util.unit.Unit> run() {
         system.start();
-        checkResults();
 
         // start cancel watcher
         final Thread watcher = new Thread(() -> {
             try {
                 while(true) {
-                    if(result.isDone()) {
+                    if(!system.running()) {
                         return;
                     } else if(cancel.cancelled()) {
-                        result.completeExceptionally(new InterruptedException());
-                        system.stop();
+                        system.cancel();
                         return;
                     } else {
                         Thread.sleep(1000);
@@ -148,18 +145,16 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             }
         }, "PRaffrayiWatcher");
         watcher.start();
-    }
 
-    @Override public IFuture<IBrokerResult<S, L, D, R>> result() {
         return result;
     }
 
-    private class UnitContext implements IUnitContext<S, L, D, R> {
+    private class UnitContext implements IUnitContext<S, L, D> {
 
-        private final IActor<? extends IUnit<S, L, D, R>> self;
-        private final DeadlockBatcher<IUnit<S, L, D, R>, IWaitFor<S, L, D>> udlm;
+        private final IActor<? extends IUnit<S, L, D, ?>> self;
+        private final DeadlockBatcher<IUnit<S, L, D, ?>, IWaitFor<S, L, D>> udlm;
 
-        public UnitContext(IActor<? extends IUnit<S, L, D, R>> self) {
+        public UnitContext(IActor<? extends IUnit<S, L, D, ?>> self) {
             this.self = self;
             this.udlm = new DeadlockBatcher<>(self, dlm);
         }
@@ -172,24 +167,26 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             return scopeImpl.make(self.id(), name);
         }
 
-        @Override public IActorRef<? extends IUnit<S, L, D, R>> owner(S scope) {
-            synchronized(lock) {
-                return units.get(scopeImpl.id(scope));
-            }
+        @Override public IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope) {
+            return units.get(scopeImpl.id(scope));
         }
 
-        @Override public IActorRef<? extends IUnit<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-                S root) {
-            final IActor<IUnit<S, L, D, R>> unit = Broker.this.add(id, self, unitChecker);
-            self.async(unit)._start(root).whenComplete((r, ex) -> addResult(unit.id(), r, ex));
-            return unit;
+        @Override public <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>>
+                add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+            final IActor<IUnit<S, L, D, R>> unit = self.add(id, TypeTag.of(IUnit.class),
+                    self -> new Unit<>(self, UnitContext.this.self, new UnitContext(self), unitChecker, edgeLabels));
+            Broker.this.addUnit(unit);
+            final IFuture<IUnitResult<S, L, D, R>> result = self.async(unit)._start(root).whenComplete((r, ex) -> {
+                finished(unit);
+            });
+            return Tuple2.of(result, unit);
         }
 
-        @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+        @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {
             udlm.waitFor(unit, token);
         }
 
-        @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+        @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {
             udlm.granted(unit, token);
         }
 
@@ -201,14 +198,26 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R>, IActorMonitor {
             return udlm.isWaitingFor(token);
         }
 
-        @Override public MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, R>> unit) {
+        @Override public MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
             return udlm.getTokens(unit);
         }
 
-        @Override public void suspended(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
+        @Override public void suspended(Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock) {
             udlm.suspended(clock);
         }
 
+    }
+
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> singleShot(IScopeImpl<S> scopeImpl,
+            Iterable<L> edgeLabels, String id, ITypeChecker<S, L, D, R> unitChecker, ICancel cancel) {
+        return singleShot(scopeImpl, edgeLabels, id, unitChecker, Runtime.getRuntime().availableProcessors(), cancel);
+    }
+
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> singleShot(IScopeImpl<S> scopeImpl,
+            Iterable<L> edgeLabels, String id, ITypeChecker<S, L, D, R> unitChecker, int parallelism, ICancel cancel) {
+        final Broker<S, L, D> broker = new Broker<>(scopeImpl, edgeLabels, cancel);
+        final IFuture<IUnitResult<S, L, D, R>> result = broker.add(id, unitChecker);
+        return broker.run().compose((r, ex) -> result);
     }
 
 }

@@ -14,7 +14,7 @@ import mb.statix.scopegraph.path.IResolutionPath;
 /**
  * The interface from the system to the type checkers.
  */
-public interface ITypeCheckerContext<S, L, D, R> {
+public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Return id of the current unit.
@@ -24,12 +24,12 @@ public interface ITypeCheckerContext<S, L, D, R> {
     /**
      * Start sub type-checker, with the given root scope.
      */
-    void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
 
     /**
      * Initialize root scope.
      */
-    void initRoot(S root, Iterable<L> labels, boolean shared);
+    void initScope(S root, Iterable<L> labels, boolean shared);
 
     /**
      * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
@@ -46,6 +46,11 @@ public interface ITypeCheckerContext<S, L, D, R> {
      * Add edge. Source scope must be open for this label.
      */
     void addEdge(S source, L label, S target);
+
+    /**
+     * Indicate that the unit intends to initialize the scope again.
+     */
+    void shareLocal(S scope);
 
     /**
      * Close open label for the given scope.
@@ -69,9 +74,9 @@ public interface ITypeCheckerContext<S, L, D, R> {
             DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
             DataLeqInternal<D> dataEquivInternal);
 
-    default ITypeCheckerContext<S, L, D, R> subContext(String subId) {
-        final ITypeCheckerContext<S, L, D, R> outer = this;
-        return new ITypeCheckerContext<S, L, D, R>() {
+    default ITypeCheckerContext<S, L, D> subContext(String subId) {
+        final ITypeCheckerContext<S, L, D> outer = this;
+        return new ITypeCheckerContext<S, L, D>() {
 
             private final String id = outer.id() + "#" + subId;
 
@@ -79,15 +84,20 @@ public interface ITypeCheckerContext<S, L, D, R> {
                 return id;
             }
 
-            @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+            @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+                    S root) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void initRoot(S root, Iterable<L> labels, boolean shared) {
+            @Override public void initScope(S root, Iterable<L> labels, boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
             @Override public S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public void shareLocal(S scope) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

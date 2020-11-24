@@ -1,16 +1,16 @@
 package mb.statix.concurrent.p_raffrayi;
 
+import org.metaborg.util.unit.Unit;
+
 import mb.statix.concurrent.actors.futures.IFuture;
 
 /**
  * Represents the whole system of type checkers to the outside.
  */
-public interface IBroker<S, L, D, R> {
+public interface IBroker<S, L, D> {
 
-    void add(String id, ITypeChecker<S, L, D, R> unitChecker);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker);
 
-    void run();
-
-    IFuture<IBrokerResult<S, L, D, R>> result();
+    IFuture<Unit> run();
 
 }

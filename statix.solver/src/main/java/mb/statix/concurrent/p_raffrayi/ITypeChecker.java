@@ -10,7 +10,7 @@ import mb.statix.concurrent.actors.futures.IFuture;
  */
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(ITypeCheckerContext<S, L, D, R> unit, @Nullable S root);
+    IFuture<R> run(ITypeCheckerContext<S, L, D> unit, @Nullable S root);
 
     default IFuture<D> getExternalDatum(D datum) {
         return CompletableFuture.completedFuture(datum);

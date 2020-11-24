@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
@@ -62,14 +63,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
-    private final TypeTag<IUnit<S, L, D, R>> TYPE = TypeTag.of(IUnit.class);
+    private final TypeTag<IUnit<S, L, D, ?>> TYPE = TypeTag.of(IUnit.class);
 
     private final IActor<? extends IUnit<S, L, D, R>> self;
-    private final @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent;
-    private final IUnitContext<S, L, D, R> context;
+    private final @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent;
+    private final IUnitContext<S, L, D> context;
     private final ITypeChecker<S, L, D, R> typeChecker;
 
-    private Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock;
+    private Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock;
     private UnitState state;
 
     private final Ref<R> analysis;
@@ -84,8 +85,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     private final Stats stats;
 
-    Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
-            IUnitContext<S, L, D, R> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+    Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
+            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -118,6 +119,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
         state = UnitState.ACTIVE;
         if(root != null) {
+            scopes.__insert(root);
             doAddLocalShare(self, root); // FIXME If we doAddShare here, the system deadlocks but is not picked up by DLM
         }
 
@@ -152,16 +154,27 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         return self.id();
     }
 
-    @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+    @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
         assertInState(UnitState.ACTIVE);
         assertOwnOrSharedScope(root);
 
-        final IActorRef<? extends IUnit<S, L, D, R>> subunit = context.add(id, unitChecker, root);
+        final Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> result_subunit =
+                context.add(id, unitChecker, root);
+        final ICompletableFuture<IUnitResult<S, L, D, R>> result = new CompletableFuture<>();
+        final IActorRef<? extends IUnit<S, L, D, R>> subunit = result_subunit._2();
+        final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);
+        waitFor(token, subunit);
+        result_subunit._1().whenComplete((r, ex) -> {
+            granted(token, subunit);
+            result.complete(r, ex);
+        });
 
         doAddShare(subunit, root);
+
+        return result;
     }
 
-    @Override public void initRoot(S root, Iterable<L> labels, boolean sharing) {
+    @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
@@ -184,10 +197,17 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             labels.add(EdgeOrData.data());
         }
 
+        scopes.__insert(scope);
         doAddLocalShare(self, scope);
         doInitShare(self, scope, labels, sharing);
 
         return scope;
+    }
+
+    @Override public void shareLocal(S scope) {
+        assertInState(UnitState.ACTIVE);
+
+        doAddShare(self, scope);
     }
 
     @Override public void setDatum(S scope, D datum) {
@@ -269,21 +289,22 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Implementations -- independent of message handling context
     ///////////////////////////////////////////////////////////////////////////
 
-    private final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
-        scopes.__insert(scope);
+    private final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
+        assertOwnOrSharedScope(scope);
+
         waitFor(InitScope.of(self, scope), sender);
     }
 
-    private final void doAddShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
+    private final void doAddShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
         doAddLocalShare(sender, scope);
 
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(!owner.equals(self)) {
             self.async(parent)._addShare(scope);
         }
     }
 
-    private final void doInitShare(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope,
+    private final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
             Iterable<EdgeOrData<L>> edges, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
@@ -296,7 +317,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
         tryFinish();
 
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(owner.equals(self)) {
             if(isScopeInitialized(scope)) {
                 releaseDelays(scope);
@@ -306,13 +327,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private final void doCloseScope(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope) {
+    private final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
         tryFinish();
 
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(owner.equals(self)) {
             if(isScopeInitialized(scope)) {
                 releaseDelays(scope);
@@ -322,13 +343,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, R>> sender, S scope, EdgeOrData<L> edge) {
+    private final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
         tryFinish();
 
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(owner.equals(self)) {
             if(isEdgeClosed(scope, edge)) {
                 releaseDelays(scope, edge);
@@ -338,19 +359,19 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private final void doAddEdge(IActorRef<? extends IUnit<S, L, D, R>> sender, S source, L label, S target) {
+    private final void doAddEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, S source, L label, S target) {
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
 
         scopeGraph.set(scopeGraph.get().addEdge(source, label, target));
 
-        final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(source);
+        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(source);
         if(!owner.equals(self)) {
             self.async(parent)._addEdge(source, label, target);
         }
     }
 
-    private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, R>> sender, IScopePath<S, L> path,
+    private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, IScopePath<S, L> path,
             LabelWF<L> labelWF, LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv,
             DataWfInternal<D> dataWfInternal, DataLeqInternal<D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
@@ -367,7 +388,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
                     LabelOrder<L> labelOrder) {
                 final S scope = path.getTarget();
-                final IActorRef<? extends IUnit<S, L, D, R>> owner = context.owner(scope);
+                final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
                 if(owner.equals(self)) {
                     logger.debug("local env {}", scope);
                     return Optional.empty();
@@ -466,11 +487,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
-    private void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+    private void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {
         context.waitFor(token, unit);
     }
 
-    private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
+    private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {
         self.assertOnActorThread();
         context.granted(token, unit);
     }
@@ -481,8 +502,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
      * may conclude prematurely that the unit is done.
      */
     private void tryFinish() {
-        boolean notDone = state.equals(UnitState.INIT) || state.equals(UnitState.ACTIVE);
-        if(notDone && !context.isWaiting()) {
+        if(!state.equals(UnitState.DONE) && !context.isWaiting()) {
             state = UnitState.DONE;
             unitResult.complete(UnitResult.of(scopeGraph.get(), analysis.get(), failures, stats));
         }
@@ -521,7 +541,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
-            IActorRef<? extends IUnit<S, L, D, R>> sender) {
+            IActorRef<? extends IUnit<S, L, D, ?>> sender) {
         if(isEdgeClosed(scope, edge)) {
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
         } else {
@@ -534,9 +554,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private class Delay {
 
         public final ICompletableFuture<org.metaborg.util.unit.Unit> future;
-        public final IActorRef<? extends IUnit<S, L, D, R>> sender;
+        public final IActorRef<? extends IUnit<S, L, D, ?>> sender;
 
-        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, R>> sender) {
+        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, ?>> sender) {
             this.future = future;
             this.sender = sender;
         }
@@ -551,8 +571,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock,
-            java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
+    @Override public void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock,
+            java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         self.assertOnActorThread();
 
         if(!this.clock.equals(clock)) {
@@ -577,7 +597,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     /**
      * Fail delays that are part of the deadlock.
      */
-    private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
+    private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         final Set.Transient<ICompletable<?>> deadlocked = CapsuleUtil.transientSet();
         for(Delay delay : delays.inverse().keySet()) {
             if(nodes.contains(delay.sender)) {
@@ -586,7 +606,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 deadlocked.__insert(delay.future);
             }
         }
-        for(IActorRef<? extends IUnit<S, L, D, R>> node : nodes) {
+        for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
             for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
             // @formatter:off
             wf.visit(IWaitFor.cases(
@@ -611,10 +631,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         return !deadlocked.isEmpty();
     }
 
-    private void failAll(java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes) {
+    private void failAll(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         // Grants are processed immediately, while the result failure is scheduled.
         // This ensures that all labels are closed by the time the result failure is processed.
-        for(IActorRef<? extends IUnit<S, L, D, R>> node : nodes) {
+        for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
             for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
             // @formatter:off
             wf.visit(IWaitFor.cases(
@@ -666,7 +686,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @SuppressWarnings("unchecked") @Override public void sent(IActor<?> self, IActorRef<?> target,
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
-            clock = clock.sent((IActorRef<? extends IUnit<S, L, D, R>>) target);
+            clock = clock.sent((IActorRef<? extends IUnit<S, L, D, ?>>) target);
             logger.debug("updated clock: {}", clock);
         }
     }
@@ -674,7 +694,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @SuppressWarnings("unchecked") @Override public void delivered(IActor<?> self, IActorRef<?> source,
             java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
-            clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, R>>) source);
+            clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, ?>>) source);
             logger.debug("updated clock: {}", clock);
         }
     }
@@ -689,6 +709,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             return;
         }
         context.suspended(clock);
+    }
+
+    @Override public void stopped(IActor<?> self) {
     }
 
     ///////////////////////////////////////////////////////////////////////////

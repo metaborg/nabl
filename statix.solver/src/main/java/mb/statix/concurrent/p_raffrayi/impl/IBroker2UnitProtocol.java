@@ -11,7 +11,7 @@ public interface IBroker2UnitProtocol<S, L, D, R> {
 
     IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root);
 
-    void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock,
-            java.util.Set<IActorRef<? extends IUnit<S, L, D, R>>> nodes);
+    void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock,
+            java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes);
 
 }

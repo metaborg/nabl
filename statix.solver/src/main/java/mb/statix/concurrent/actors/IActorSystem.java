@@ -29,4 +29,6 @@ public interface IActorSystem {
      */
     void cancel();
 
+    boolean running();
+
 }
