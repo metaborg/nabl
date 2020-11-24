@@ -1,0 +1,32 @@
+module statix/lang/var-usage
+
+imports
+
+  nabl2/api
+
+  signatures/statix/lang/-
+
+  statix/lang/-
+
+rules
+
+  check-variable-usages(|a) =
+    collect-all(check-variable-usage(|a)) ; concat
+
+
+  check-variable-usage(|a): F(_, in_t*, out_t) -> w*
+    with in-var* := <all-vars> in_t*
+       ; out-var* := <all-vars> out_t
+       ; var* := <raw-diff> (out-var*, in-var*)
+       ; w* := <filter(\ v -> (v, $[Unreferenced output variable]) where [] := <var-usages(|a)> v \)> var*
+  
+  check-variable-usage(|a): CExists(var*, _) -> w*
+    with w0* := <filter(\ v -> (v, $[Unused local variable]) where [] := <var-usages(|a)> v \)> var*
+       ; w1* := <filter(\ v -> (v, $[Singleton local variable]) where [_] := <var-usages(|a)> v \)> var*
+       ; w* := [w0*, w1*]
+
+
+  var-usages(|a): Var(x) -> r*
+    with d := <nabl2-get-ast-property(|a, "decl")> x
+       ; r* := <nabl2-get-refs-to-decl(|a)> d
+
