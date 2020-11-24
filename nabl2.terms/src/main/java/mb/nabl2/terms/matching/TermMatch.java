@@ -20,6 +20,7 @@ import org.metaborg.util.optionals.Optionals;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.IConsTerm;
@@ -33,6 +34,8 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.util.CapsuleUtil;
+import mb.nabl2.util.Tuple2;
 
 public class TermMatch {
 
@@ -468,6 +471,13 @@ public class TermMatch {
         @SuppressWarnings("unchecked") public <R extends ITerm> IMatcher<R> preserveAttachments(IMatcher<R> matcher) {
             return (term, unifier) -> matcher.match(term, unifier)
                     .map(r -> (R) r.withAttachments(term.getAttachments()));
+        }
+
+        // map
+
+        public <K, V> IMatcher<Map.Immutable<K, V>> map(IMatcher<K> keyMatcher, IMatcher<V> valueMatcher) {
+            return listElems(tuple2(keyMatcher, valueMatcher, (e, k, v) -> Tuple2.of(k, v)),
+                    (t, es) -> CapsuleUtil.toMap(es));
         }
 
         // util
