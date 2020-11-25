@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -58,17 +60,23 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final IScopeImpl<Scope> scopeImpl = new ScopeImpl();
 
-        logger.info("Analyzing files");
-
-        final double t0 = System.currentTimeMillis();
-        final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> result = Broker.singleShot(scopeImpl,
-                spec.allLabels(), project.resource(), new ProjectTypeChecker(project, spec, debug), cancel);
-
         final List<ITerm> results = Lists.newArrayList();
         try {
+            logger.info("Analyzing files");
 
-            final Map<String, SolverResult> resultMap = flattenResult(spec, result.get());
+            final double t0 = System.currentTimeMillis();
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.singleShot(scopeImpl,
+                    spec.allLabels(), project.resource(), new ProjectTypeChecker(project, spec, debug), cancel);
+
+            final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result;
+            try {
+                result = futureResult.get(5, TimeUnit.SECONDS);
+            } catch(TimeoutException ex) {
+                throw ex;
+            }
             final double dt = System.currentTimeMillis() - t0;
+
+            final Map<String, SolverResult> resultMap = flattenResult(spec, result);
 
             //            PRaffrayiUtil.writeStatsCsvFromResult(solveResult, System.out);
 

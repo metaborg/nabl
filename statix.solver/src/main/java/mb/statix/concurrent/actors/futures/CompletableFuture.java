@@ -2,6 +2,8 @@ package mb.statix.concurrent.actors.futures;
 
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
@@ -20,7 +22,8 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         this.future = future;
     }
 
-    @Override public <U> IFuture<U> handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U>
+            handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             try {
@@ -50,6 +53,11 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
      */
     @Override public T get() throws ExecutionException, InterruptedException {
         return future.get();
+    }
+
+    @Override public T get(long timeout, TimeUnit unit)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        return future.get(timeout, unit);
     }
 
     /**
@@ -120,8 +128,8 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return result;
     }
 
-    @Override public <U> IFuture<U>
-            compose(CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U> compose(
+            CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         final CompletableFuture<U> result = new CompletableFuture<>();
         future.whenComplete((r, ex) -> {
             try {

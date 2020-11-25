@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
@@ -98,6 +100,11 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.get();
     }
 
+    @Override public List<T> get(long timeout, TimeUnit unit)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        return result.get(timeout, unit);
+    }
+
     @Override public List<T> getNow() throws CompletionException, InterruptedException {
         return result.getNow();
     }
@@ -132,7 +139,8 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
 
     @SuppressWarnings("unchecked") public static <T1, T2, T3> IFuture<Tuple3<T1, T2, T3>> apply(IFuture<T1> f1,
             IFuture<T2> f2, IFuture<T3> f3) {
-        return new AggregateFuture<>(f1, f2, f3).thenApply(rs -> Tuple3.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2)));
+        return new AggregateFuture<>(f1, f2, f3)
+                .thenApply(rs -> Tuple3.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2)));
     }
 
 
