@@ -608,21 +608,21 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
         for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
             for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
-            // @formatter:off
-            wf.visit(IWaitFor.cases(
-                initScope -> {},
-                closeScope -> {},
-                closeLabel -> {},
-                query -> {},
-                result  -> {},
-                typeCheckerState -> {
-                    if(nodes.contains(typeCheckerState.origin())) {
-                        logger.debug("{} fail {}", self, typeCheckerState);
-                        deadlocked.__insert(typeCheckerState.future());
+                // @formatter:off
+                wf.visit(IWaitFor.cases(
+                    initScope -> {},
+                    closeScope -> {},
+                    closeLabel -> {},
+                    query -> {},
+                    result  -> {},
+                    typeCheckerState -> {
+                        if(nodes.contains(typeCheckerState.origin())) {
+                            logger.debug("{} fail {}", self, typeCheckerState);
+                            deadlocked.__insert(typeCheckerState.future());
+                        }
                     }
-                }
-            ));
-            // @formatter:on
+                ));
+                // @formatter:on
             }
         }
         for(ICompletable<?> future : deadlocked) {
@@ -636,48 +636,48 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         // This ensures that all labels are closed by the time the result failure is processed.
         for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
             for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
-            // @formatter:off
-            wf.visit(IWaitFor.cases(
-                initScope -> {
-                    failures.add(new DeadlockException(initScope.toString()));
-                    granted(initScope, self);
-                    if(!context.owner(initScope.scope()).equals(self)) {
-                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
+                // @formatter:off
+                wf.visit(IWaitFor.cases(
+                    initScope -> {
+                        failures.add(new DeadlockException(initScope.toString()));
+                        granted(initScope, self);
+                        if(!context.owner(initScope.scope()).equals(self)) {
+                            self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
+                        }
+                        releaseDelays(initScope.scope());
+                    },
+                    closeScope -> {
+                        failures.add(new DeadlockException(closeScope.toString()));
+                        granted(closeScope, self);
+                        if(!context.owner(closeScope.scope()).equals(self)) {
+                            self.async(parent)._doneSharing(closeScope.scope());
+                        }
+                        releaseDelays(closeScope.scope());
+                    },
+                    closeLabel -> {
+                        failures.add(new DeadlockException(closeLabel.toString()));
+                        granted(closeLabel, self);
+                        if(!context.owner(closeLabel.scope()).equals(self)) {
+                            self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
+                        }
+                        releaseDelays(closeLabel.scope(), closeLabel.label());
+                    },
+                    query -> {
+                        logger.error("Unexpected remaining query: " + query);
+                        throw new IllegalStateException("Unexpected remaining query: " + query);
+                    },
+                    result  -> {
+                        self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
+                    },
+                    typeCheckerState -> {
+                        if(nodes.contains(typeCheckerState.origin())) {
+                            logger.error("Unexpected remaining internal state: " + typeCheckerState);
+                            throw new IllegalStateException("Unexpected remaining internal state: " + typeCheckerState);
+                        }
+                        self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
                     }
-                    releaseDelays(initScope.scope());
-                },
-                closeScope -> {
-                    failures.add(new DeadlockException(closeScope.toString()));
-                    granted(closeScope, self);
-                    if(!context.owner(closeScope.scope()).equals(self)) {
-                        self.async(parent)._doneSharing(closeScope.scope());
-                    }
-                    releaseDelays(closeScope.scope());
-                },
-                closeLabel -> {
-                    failures.add(new DeadlockException(closeLabel.toString()));
-                    granted(closeLabel, self);
-                    if(!context.owner(closeLabel.scope()).equals(self)) {
-                        self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
-                    }
-                    releaseDelays(closeLabel.scope(), closeLabel.label());
-                },
-                query -> {
-                    logger.error("Unexpected remaining query: " + query);
-                    throw new IllegalStateException("Unexpected remaining query: " + query);
-                },
-                result  -> {
-                    self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
-                },
-                typeCheckerState -> {
-                    if(nodes.contains(typeCheckerState.origin())) {
-                        logger.error("Unexpected remaining internal state: " + typeCheckerState);
-                        throw new IllegalStateException("Unexpected remaining internal state: " + typeCheckerState);
-                    }
-                    self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
-                }
-            ));
-            // @formatter:on
+                ));
+                // @formatter:on
             }
         }
         tryFinish();
@@ -712,6 +712,35 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void stopped(IActor<?> self) {
+//        logger.error("Actor {} stopped.", self);
+        for(IWaitFor<S, L, D> wf : context.getAllTokens()) {
+            // @formatter:off
+            wf.visit(IWaitFor.cases(
+                initScope -> {
+                    if(!context.owner(initScope.scope()).equals(self)) {
+                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
+                    }
+                },
+                closeScope -> {
+                    if(!context.owner(closeScope.scope()).equals(self)) {
+                        self.async(parent)._doneSharing(closeScope.scope());
+                    }
+                },
+                closeLabel -> {
+                    if(!context.owner(closeLabel.scope()).equals(self)) {
+                        self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
+                    }
+                },
+                query -> {},
+                result  -> {
+                    self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
+                },
+                typeCheckerState -> {
+                    self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
+                }
+            ));
+            // @formatter:on
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////

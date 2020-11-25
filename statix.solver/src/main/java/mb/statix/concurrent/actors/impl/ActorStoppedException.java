@@ -1,6 +1,6 @@
 package mb.statix.concurrent.actors.impl;
 
-public class ActorStoppedException extends ActorException {
+public class ActorStoppedException extends ActorRuntimeException {
 
     private static final long serialVersionUID = 1L;
 
