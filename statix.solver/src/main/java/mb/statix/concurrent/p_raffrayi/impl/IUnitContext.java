@@ -35,6 +35,8 @@ public interface IUnitContext<S, L, D> {
 
     boolean isWaitingFor(IWaitFor<S, L, D> token);
 
+    MultiSet.Immutable<IWaitFor<S, L, D>> getAllTokens();
+
     MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, ?>> unit);
 
     void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit);

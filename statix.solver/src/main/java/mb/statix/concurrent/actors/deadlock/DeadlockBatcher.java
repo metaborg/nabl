@@ -48,6 +48,10 @@ public class DeadlockBatcher<N, T> {
         return waitForsByActor.get(actor);
     }
 
+    public MultiSet.Immutable<T> getAllTokens() {
+        return waitFors;
+    }
+
     public void waitFor(IActorRef<? extends N> actor, T token) {
         logger.debug("{} wait for {}/{}", self, actor, token);
         waitFors = waitFors.add(token);
@@ -70,6 +74,7 @@ public class DeadlockBatcher<N, T> {
             committedWaitFors = committedWaitFors.remove(actor);
             pendingGrants = pendingGrants.add(actor);
         } else {
+            logger.error("waitFors out of sync with {pending,committed}WaitFors.");
             throw new IllegalStateException("waitFors out of sync with {pending,committed}WaitFors.");
         }
     }

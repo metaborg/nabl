@@ -127,6 +127,9 @@ public class ActorSystem implements IActorSystem {
                 throw new IllegalStateException("Actor system not started.");
             }
             state = ActorSystemState.STOPPED;
+            for(Actor<?> actor : actors) {
+                actor.stop();
+            }
             scheduler.shutdownNow();
         }
     }

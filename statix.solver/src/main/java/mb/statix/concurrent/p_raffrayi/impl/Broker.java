@@ -79,13 +79,15 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
         addUnit(unit);
-        return system.async(unit)._start(null).whenComplete((r, ex) -> {
+        final IFuture<IUnitResult<S, L, D, R>> unitResult = system.async(unit)._start(null);
+        unitResult.whenComplete((r, ex) -> {
             if(ex != null) {
                 fail(ex);
             } else {
                 finished(unit);
             }
         });
+        return result.thenCompose(r -> unitResult);
     }
 
     private void addUnit(IActor<? extends IUnit<S, L, D, ?>> unit) {
@@ -202,6 +204,10 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
             return udlm.getTokens(unit);
         }
 
+        @Override public MultiSet.Immutable<IWaitFor<S, L, D>> getAllTokens() {
+            return udlm.getAllTokens();
+        }
+
         @Override public void suspended(Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock) {
             udlm.suspended(clock);
         }
@@ -217,7 +223,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
             Iterable<L> edgeLabels, String id, ITypeChecker<S, L, D, R> unitChecker, int parallelism, ICancel cancel) {
         final Broker<S, L, D> broker = new Broker<>(scopeImpl, edgeLabels, cancel);
         final IFuture<IUnitResult<S, L, D, R>> result = broker.add(id, unitChecker);
-        return broker.run().compose((r, ex) -> result);
+        return broker.run().thenCompose(r -> result);
     }
 
 }
