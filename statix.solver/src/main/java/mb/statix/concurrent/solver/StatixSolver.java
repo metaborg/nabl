@@ -115,7 +115,7 @@ public class StatixSolver {
     private static final ImmutableMap<ITermVar, ITermVar> NO_EXISTENTIALS = ImmutableMap.of();
 
     private static final int MAX_DEPTH = 32;
-    private static final boolean INCREMENTAL_CRITICAL_EDGES = false;
+    private static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
     private final Spec spec;
     private final IConstraintStore constraints;
@@ -842,7 +842,7 @@ public class StatixSolver {
         final List<EdgeOrData<ITerm>> openEdges =
                 Streams.stream(completeness.get(varOrScope, state.unifier())).collect(Collectors.toList());
         final List<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope)
-                .map(var -> delayedCloses.stream().filter(e -> state.unifier().findRecursive(var).equals(e.scope()))
+                .map(var -> delayedCloses.stream().filter(e -> state.unifier().equal(var, e.scope()))
                         .map(e -> e.edgeOrData()))
                 .orElse(Stream.<EdgeOrData<ITerm>>empty()).collect(Collectors.toList());
         return stream(Iterables.concat(openEdges, queuedEdges)).<ITerm>flatMap(eod -> {
