@@ -167,6 +167,18 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         }
 
         ///////////////////////////////////////////
+        // equal(ITerm, ITerm)
+        ///////////////////////////////////////////
+
+        @Override public boolean equal(ITerm term1, ITerm term2) {
+            try {
+                return unify(term1, term2).map(r -> r.result().isEmpty()).orElse(false);
+            } catch(OccursException e) {
+                return false;
+            }
+        }
+
+        ///////////////////////////////////////////
         // disunify(Set<ITermVar>, ITerm, ITerm)
         ///////////////////////////////////////////
 
