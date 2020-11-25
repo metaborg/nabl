@@ -169,8 +169,9 @@ public class StatixSolver {
 
     public IFuture<SolverResult> solve(Iterable<Scope> roots) {
         try {
-            for(Scope root : roots) {
-                scopeGraph.initScope(root, getOpenEdges(root), false);
+            for(Scope root : CapsuleUtil.toSet(roots)) {
+                final Set.Immutable<ITerm> openEdges = getOpenEdges(root);
+                scopeGraph.initScope(root, openEdges, false);
             }
             fixedpoint();
         } catch(Throwable e) {

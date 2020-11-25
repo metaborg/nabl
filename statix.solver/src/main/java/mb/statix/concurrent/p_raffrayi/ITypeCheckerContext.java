@@ -1,5 +1,6 @@
 package mb.statix.concurrent.p_raffrayi;
 
+import java.util.List;
 import java.util.Set;
 
 import mb.statix.concurrent.actors.futures.IFuture;
@@ -24,7 +25,7 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Start sub type-checker, with the given root scope.
      */
-    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
 
     /**
      * Initialize root scope.
@@ -85,7 +86,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-                    S root) {
+                    List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
