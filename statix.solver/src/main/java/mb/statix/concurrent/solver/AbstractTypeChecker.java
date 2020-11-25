@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 
@@ -35,6 +37,8 @@ import mb.statix.spec.Spec;
 
 public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITerm, ITerm, R> {
 
+    private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
+
     protected final Spec spec;
     protected final IDebugContext debug;
 
@@ -52,45 +56,56 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         return s;
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>
-            runGroups(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope root) {
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> runGroups(
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope projectScope,
+            Scope groupScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result =
-                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), root);
-            results.add(result.thenApply(r -> Tuple2.of(key, r)));
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result = context.add(key,
+                    new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope, groupScope));
+            results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
+                logger.debug("checker {}: group {} returned.", context.id(), key);
+            }));
         }
         return new AggregateFuture<>(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
+                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .whenComplete((r, ex) -> {
+                    logger.debug("checker {}: all groups returned.", context.id());
+                });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>
-            runUnits(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope root) {
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> runUnits(
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope projectScope,
+            Scope groupScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result =
-                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), root);
-            results.add(result.thenApply(r -> Tuple2.of(key, r)));
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result = context.add(key,
+                    new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope, groupScope));
+            results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
+                logger.debug("checker {}: unit {} returned.", context.id(), key);
+            }));
         }
         return new AggregateFuture<>(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
+                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .whenComplete((r, ex) -> {
+                    logger.debug("checker {}: all units returned.", context.id());
+                });
     }
 
     protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
-            Scope... scopes) {
+            List<Scope> scopes) {
         if(!rule.isPresent()) {
             for(Scope scope : scopes) {
                 context.initScope(scope, Collections.emptyList(), false);
             }
             return CompletableFuture.completedFuture(SolverResult.of(spec));
         }
-        final List<Scope> scopeList = Arrays.asList(scopes);
         final IState.Immutable unitState = State.of(spec).withResource(context.id());
         final ApplyResult applyResult;
         try {
-            if((applyResult = RuleUtil.apply(unitState.unifier(), rule.get(), scopeList, null, ApplyMode.STRICT)
+            if((applyResult = RuleUtil.apply(unitState.unifier(), rule.get(), scopes, null, ApplyMode.STRICT)
                     .orElse(null)) == null) {
                 return CompletableFuture.completedExceptionally(
                         new IllegalArgumentException("Cannot apply initial rule to root scope."));
@@ -101,7 +116,10 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         }
         solver = new StatixSolver(applyResult.body(), spec, unitState, Completeness.Immutable.of(), debug,
                 new NullProgress(), new NullCancel(), context);
-        return solver.solve(scopeList);
+        final IFuture<SolverResult> solveResult = solver.solve(scopes);
+        return solveResult.whenComplete((r, ex) -> {
+            logger.debug("checker {}: solver returned.", context.id());
+        });
     }
 
     @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {

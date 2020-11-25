@@ -92,7 +92,8 @@ rules // multi file analysis (new)
        ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
        ; grp-c-name  := <stx--mk-qualified-name(|spec-name)> group-constraint
        ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
-       ; s-root      := Var("s_root")
+       ; s-proj      := Var("s_proj")
+       ; s-grp       := Var("s_grp")
     with
       //
       // 1. Build project task
@@ -106,7 +107,7 @@ rules // multi file analysis (new)
           fatal-err(|"Unexpected change on project")
       end
     ; project-ast  := ()
-    ; project-rule := LLam([s-root], C(proj-c-name, [s-root], NoMessage()))
+    ; project-rule := LLam([s-proj], C(proj-c-name, [s-proj], NoMessage()))
     ; project-task := ([], project-resource, project-rule)
       //
       // 2. Build file tasks
@@ -116,7 +117,7 @@ rules // multi file analysis (new)
         \ (resource, ast) -> (key, resource, rule, ast')
             where key := <group-key> (resource, ast)
                 ; ast' := <pre;stx--index-ast(|resource)> ast
-                ; rule := LLam([s-root], C(file-c-name, [s-root, <stx--explode> ast'], NoMessage()))
+                ; rule := LLam([s-proj, s-grp], C(file-c-name, [s-proj, s-grp, <stx--explode> ast'], NoMessage()))
         \
       })> changed-file-ast*
     ; changed-file-task* := <map(\ (key, resource, rule, _) -> (key, resource, rule) \)> changed-file-task_ast*
@@ -163,9 +164,10 @@ rules // multi file analysis (new)
 
   cstx--make-sub(|key, grp-c-name): file-task* -> (key, Group(rule, groups, units))
     where <map(?([_|_], _, _))> file-task*
-    with s-parent := Var("s")
-       ; s-group  := Var("s_grp")
-       ; rule := LLam([s-parent, s-group], C(grp-c-name, [s-parent, <stx--explode> key, s-group], NoMessage()))
+    with s-proj        := Var("s_proj")
+       ; s-parent-grp  := Var("s_parentGrp")
+       ; s-this-grp    := Var("s_thisGrp")
+       ; rule := LLam([s-proj, s-parent-grp, s-this-grp], C(grp-c-name, [s-proj, s-parent-grp, <stx--explode> key, s-this-grp], NoMessage()))
        ; (groups, units) := <cstx--make-subs(|grp-c-name)> file-task*
 
   cstx--make-sub(|key, grp-c-name): file-task* -> (key, Unit(resource, ast))
@@ -200,7 +202,7 @@ rules // multi file analysis (new)
 
 rules // multi file analysis
 
-  stx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint):
+  stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -230,9 +232,6 @@ rules // multi file analysis
       // 3. Partially solve file constraints
       //
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; if <not(map(\ (resource, ast) -> [resource] where [resource] := <group-key> (resource, ast) \))> resource-ast* then
-        fatal-err(|"Grouping is only supported by concurrent solver.")
-      end
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
     ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*

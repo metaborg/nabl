@@ -1,5 +1,7 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
+import java.util.List;
+
 import org.metaborg.util.task.ICancel;
 
 import mb.nabl2.util.Tuple2;
@@ -23,7 +25,7 @@ public interface IUnitContext<S, L, D> {
     IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope);
 
     <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> add(String id,
-            ITypeChecker<S, L, D, R> unitChecker, S root);
+            ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
 
     //////////////////////////////////////////////////////////////////////////
     // Deadlock detection

@@ -1,5 +1,7 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -79,7 +81,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new Unit<>(self, null, new UnitContext(self), unitChecker, edgeLabels));
         addUnit(unit);
-        final IFuture<IUnitResult<S, L, D, R>> unitResult = system.async(unit)._start(null);
+        final IFuture<IUnitResult<S, L, D, R>> unitResult = system.async(unit)._start(Collections.emptyList());
         unitResult.whenComplete((r, ex) -> {
             if(ex != null) {
                 fail(ex);
@@ -93,8 +95,8 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
     private void addUnit(IActor<? extends IUnit<S, L, D, ?>> unit) {
         unfinishedUnits.incrementAndGet();
         totalUnits.incrementAndGet();
-        unit.addMonitor(this);
         units.put(unit.id(), unit);
+        unit.addMonitor(this);
     }
 
     private void finished(IActor<?> self) {
@@ -113,8 +115,8 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
 
     private void fail(Throwable ex) {
         logger.error("Unit failed.", ex);
-        system.stop();
         result.completeExceptionally(ex);
+        system.stop();
     }
 
     private void handleDeadlock(IActor<?> dlm, Deadlock<IActorRef<? extends IUnit<S, L, D, ?>>> deadlock) {
@@ -129,14 +131,18 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
 
     @Override public IFuture<org.metaborg.util.unit.Unit> run() {
         system.start();
+        startWatcherThread();
+        return result;
+    }
 
-        // start cancel watcher
+    private void startWatcherThread() {
         final Thread watcher = new Thread(() -> {
             try {
                 while(true) {
                     if(!system.running()) {
                         return;
                     } else if(cancel.cancelled()) {
+                        result.completeExceptionally(new InterruptedException());
                         system.cancel();
                         return;
                     } else {
@@ -147,8 +153,6 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
             }
         }, "PRaffrayiWatcher");
         watcher.start();
-
-        return result;
     }
 
     private class UnitContext implements IUnitContext<S, L, D> {
@@ -174,14 +178,19 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
         }
 
         @Override public <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>>
-                add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+                add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
             final IActor<IUnit<S, L, D, R>> unit = self.add(id, TypeTag.of(IUnit.class),
                     self -> new Unit<>(self, UnitContext.this.self, new UnitContext(self), unitChecker, edgeLabels));
             Broker.this.addUnit(unit);
-            final IFuture<IUnitResult<S, L, D, R>> result = self.async(unit)._start(root).whenComplete((r, ex) -> {
-                finished(unit);
+            final IFuture<IUnitResult<S, L, D, R>> unitResult = self.async(unit)._start(rootScopes);
+            unitResult.whenComplete((r, ex) -> {
+                if(ex != null) {
+                    fail(ex);
+                } else {
+                    finished(unit);
+                }
             });
-            return Tuple2.of(result, unit);
+            return Tuple2.of(unitResult, unit);
         }
 
         @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {

@@ -114,13 +114,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, R>> _start(@Nullable S root) {
+    @Override public IFuture<IUnitResult<S, L, D, R>> _start(List<S> rootScopes) {
         assertInState(UnitState.INIT);
 
         state = UnitState.ACTIVE;
-        if(root != null) {
-            scopes.__insert(root);
-            doAddLocalShare(self, root); // FIXME If we doAddShare here, the system deadlocks but is not picked up by DLM
+        for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
+            scopes.__insert(rootScope);
+            doAddLocalShare(self, rootScope); // FIXME If we doAddShare here, the system deadlocks but is not picked up by DLM
         }
 
         // run() after inits are initialized before run, since unitChecker
@@ -129,7 +129,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         final ICompletableFuture<R> typeCheckerResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> result = TypeCheckerResult.of(self, typeCheckerResult);
         waitFor(result, self);
-        self.schedule(this.typeChecker.run(this, root)).whenComplete(typeCheckerResult::complete);
+        self.schedule(this.typeChecker.run(this, rootScopes)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
             if(ex != null) {
                 failures.add(ex);
@@ -154,12 +154,15 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         return self.id();
     }
 
-    @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+    @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+            List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
-        assertOwnOrSharedScope(root);
+        for(S rootScope : rootScopes) {
+            assertOwnOrSharedScope(rootScope);
+        }
 
         final Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> result_subunit =
-                context.add(id, unitChecker, root);
+                context.add(id, unitChecker, rootScopes);
         final ICompletableFuture<IUnitResult<S, L, D, R>> result = new CompletableFuture<>();
         final IActorRef<? extends IUnit<S, L, D, R>> subunit = result_subunit._2();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);
@@ -169,7 +172,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             result.complete(r, ex);
         });
 
-        doAddShare(subunit, root);
+        for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
+            doAddShare(subunit, rootScope);
+        }
 
         return result;
     }
@@ -712,7 +717,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void stopped(IActor<?> self) {
-//        logger.error("Actor {} stopped.", self);
+        //        logger.error("Actor {} stopped.", self);
         for(IWaitFor<S, L, D> wf : context.getAllTokens()) {
             // @formatter:off
             wf.visit(IWaitFor.cases(

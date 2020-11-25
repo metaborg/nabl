@@ -1,6 +1,11 @@
 package mb.statix.concurrent.solver;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
@@ -14,6 +19,8 @@ import mb.statix.spec.Spec;
 
 public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
 
+    private static final ILogger logger = LoggerUtils.logger(GroupTypeChecker.class);
+
     private final IStatixGroup group;
 
     public GroupTypeChecker(IStatixGroup group, Spec spec, IDebugContext debug) {
@@ -21,16 +28,22 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
         this.group = group;
     }
 
-    @Override public IFuture<GroupResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, Scope root) {
-        final Scope groupScope = makeSharedScope(context, "s_grp");
+    @Override public IFuture<GroupResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
+            List<Scope> rootScopes) {
+        final Scope projectScope = rootScopes.get(0);
+        final Scope parentGrpScope = rootScopes.get(1);
+        final Scope thisGroupScope = makeSharedScope(context, "s_grp");
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, group.groups(), groupScope);
+                runGroups(context, group.groups(), projectScope, thisGroupScope);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, group.units(), groupScope);
-        context.closeScope(groupScope);
-        final IFuture<SolverResult> result = runSolver(context, group.rule(), root, groupScope);
+                runUnits(context, group.units(), projectScope, thisGroupScope);
+        context.closeScope(thisGroupScope);
+        final IFuture<SolverResult> result =
+                runSolver(context, group.rule(), Arrays.asList(projectScope, parentGrpScope, thisGroupScope));
         return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
             return GroupResult.of(e._1(), e._2(), e._3(), null);
+        }).whenComplete((r, ex) -> {
+            logger.debug("group {}: returned.", context.id());
         });
     }
 
