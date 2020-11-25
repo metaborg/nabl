@@ -155,6 +155,11 @@ public interface IUnifier {
      */
     Optional<? extends IUnifier.Immutable> diff(ITerm term1, ITerm term2);
 
+    /**
+     * Return if two terms are equal, relative to the current unifier.
+     */
+    boolean equal(ITerm term1, ITerm term2);
+
 
     public interface Immutable extends IUnifier {
 

@@ -280,6 +280,10 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.diff(term1, term2);
         }
 
+        @Override public boolean equal(ITerm term1, ITerm term2) {
+            return unifier.equal(term1, term2);
+        }
+
         @Override public ISubstitution.Immutable retain(ITermVar var) {
             final IUniDisunifier.Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result =
                     unifier.retain(var);

@@ -415,6 +415,18 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         ///////////////////////////////////////////
+        // equal(ITerm, ITerm)
+        ///////////////////////////////////////////
+
+        @Override public boolean equal(ITerm term1, ITerm term2) {
+            try {
+                return unify(term1, term2).map(r -> r.result().isEmpty()).orElse(false);
+            } catch(OccursException e) {
+                return false;
+            }
+        }
+
+        ///////////////////////////////////////////
         // retain(ITermVar)
         ///////////////////////////////////////////
 
