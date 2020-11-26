@@ -152,8 +152,10 @@ public class ActorSystem implements IActorSystem {
         }
 
         @Override public <T> T async(IActorRef<T> receiver) {
-            if(!actors.contains(receiver)) {
-                throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
+            synchronized(lock) {
+                if(!actors.contains(receiver)) {
+                    throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
+                }
             }
             return (T) ((Actor) receiver).asyncActor;
         }
