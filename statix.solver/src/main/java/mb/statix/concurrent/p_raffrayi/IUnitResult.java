@@ -8,6 +8,8 @@ import mb.statix.scopegraph.IScopeGraph;
 
 public interface IUnitResult<S, L, D, R> {
 
+    String id();
+
     IScopeGraph.Immutable<S, L, D> scopeGraph();
 
     @Nullable R analysis();

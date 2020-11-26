@@ -509,7 +509,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void tryFinish() {
         if(!state.equals(UnitState.DONE) && !context.isWaiting()) {
             state = UnitState.DONE;
-            unitResult.complete(UnitResult.of(scopeGraph.get(), analysis.get(), failures, stats));
+            unitResult.complete(UnitResult.of(id(), scopeGraph.get(), analysis.get(), failures, stats));
         }
     }
 
