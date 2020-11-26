@@ -15,6 +15,8 @@ import mb.statix.scopegraph.IScopeGraph;
 @Serial.Version(42L)
 public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R> {
 
+    @Value.Parameter @Override public abstract String id();
+
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
 
     @Value.Parameter @Override public abstract @Nullable R analysis();
