@@ -4,8 +4,7 @@
   xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>statix.build</artifactId>
-  <name>statix.build</name>
+  <artifactId>statix.build.java</artifactId>
   <packaging>pom</packaging>
 
   <parent>
@@ -16,10 +15,10 @@
   </parent>
 
   <modules>
-    <module>../nabl2.terms</module>
-    <module>../statix.solver</module>
-    <module>../statix.generator</module>
-    <module>../statix.cli</module>
+    <module>../../nabl2.terms</module>
+    <module>../../statix.solver</module>
+    <module>../../statix.generator</module>
+    <module>../../statix.cli</module>
   </modules>
 
   <repositories>
