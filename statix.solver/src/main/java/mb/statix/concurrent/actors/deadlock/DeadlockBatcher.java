@@ -1,5 +1,7 @@
 package mb.statix.concurrent.actors.deadlock;
 
+import java.util.Map.Entry;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -71,8 +73,12 @@ public class DeadlockBatcher<N, T> {
             pendingWaitFors = pendingWaitFors.remove(actor);
         } else if(committedWaitFors.contains(actor)) {
             logger.debug("{} granted {}/{}", self, actor, token);
-            committedWaitFors = committedWaitFors.remove(actor);
-            pendingGrants = pendingGrants.add(actor);
+            final MultiSet.Transient<IActorRef<? extends N>> _committedWaitFors = committedWaitFors.melt();
+            final int n = _committedWaitFors.remove(actor);
+            if(n == 0) {
+                pendingGrants = pendingGrants.add(actor);
+            }
+            committedWaitFors = _committedWaitFors.freeze();
         } else {
             logger.error("waitFors out of sync with {pending,committed}WaitFors.");
             throw new IllegalStateException("waitFors out of sync with {pending,committed}WaitFors.");
@@ -84,15 +90,22 @@ public class DeadlockBatcher<N, T> {
     }
 
     private MultiSet.Immutable<IActorRef<? extends N>> commitWaitFors() {
-        final MultiSet.Immutable<IActorRef<? extends N>> newWaitFors = pendingWaitFors;
-        committedWaitFors = committedWaitFors.addAll(newWaitFors);
+        final MultiSet.Transient<IActorRef<? extends N>> newWaitFors = MultiSet.Transient.of();
+        final MultiSet.Transient<IActorRef<? extends N>> _committedWaitFors = committedWaitFors.melt();
+        for(Entry<IActorRef<? extends N>, Integer> entry : pendingWaitFors.entrySet()) {
+            final int n = _committedWaitFors.add(entry.getKey(), entry.getValue());
+            if(n == entry.getValue()) {
+                newWaitFors.add(entry.getKey());
+            }
+        }
+        committedWaitFors = _committedWaitFors.freeze();
         pendingWaitFors = MultiSet.Immutable.of();
-        return newWaitFors;
+        return newWaitFors.freeze();
     }
 
     private MultiSet.Immutable<IActorRef<? extends N>> commitGrants() {
         final MultiSet.Immutable<IActorRef<? extends N>> newGrants = pendingGrants;
-        this.pendingGrants = MultiSet.Immutable.of();
+        pendingGrants = MultiSet.Immutable.of();
         return newGrants;
     }
 
