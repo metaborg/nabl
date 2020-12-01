@@ -15,8 +15,7 @@
   </parent>
 
   <modules>
-    <module>../../statix.runtime</module>
-    <module>../../statix.lang</module>
+    <module>../../statix.test</module>
   </modules>
 
   <repositories>

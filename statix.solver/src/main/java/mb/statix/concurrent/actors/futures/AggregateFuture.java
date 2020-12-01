@@ -18,6 +18,7 @@ import com.google.common.collect.Lists;
 
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple4;
 
 public class AggregateFuture<T> implements IFuture<List<T>> {
 
@@ -143,5 +144,10 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
                 .thenApply(rs -> Tuple3.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2)));
     }
 
+    @SuppressWarnings("unchecked") public static <T1, T2, T3, T4> IFuture<Tuple4<T1, T2, T3, T4>> apply(IFuture<T1> f1,
+            IFuture<T2> f2, IFuture<T3> f3, IFuture<T4> f4) {
+        return new AggregateFuture<>(f1, f2, f3, f4)
+                .thenApply(rs -> Tuple4.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2), (T4) rs.get(3)));
+    }
 
 }

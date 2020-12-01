@@ -41,7 +41,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
-    private final IScopeImpl<S> scopeImpl;
+    private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
 
@@ -53,11 +53,11 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
     private final AtomicInteger totalUnits;
     private final ICompletableFuture<org.metaborg.util.unit.Unit> result;
 
-    public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
+    public Broker(IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         this(scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors());
     }
 
-    public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism) {
+    public Broker(IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism) {
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
@@ -223,12 +223,12 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
 
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> singleShot(IScopeImpl<S> scopeImpl,
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> singleShot(IScopeImpl<S, D> scopeImpl,
             Iterable<L> edgeLabels, String id, ITypeChecker<S, L, D, R> unitChecker, ICancel cancel) {
         return singleShot(scopeImpl, edgeLabels, id, unitChecker, Runtime.getRuntime().availableProcessors(), cancel);
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> singleShot(IScopeImpl<S> scopeImpl,
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> singleShot(IScopeImpl<S, D> scopeImpl,
             Iterable<L> edgeLabels, String id, ITypeChecker<S, L, D, R> unitChecker, int parallelism, ICancel cancel) {
         final Broker<S, L, D> broker = new Broker<>(scopeImpl, edgeLabels, cancel);
         final IFuture<IUnitResult<S, L, D, R>> result = broker.add(id, unitChecker);

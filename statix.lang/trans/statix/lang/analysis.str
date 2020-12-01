@@ -28,7 +28,7 @@ rules // Analysis
 
   editor-analyze = nabl2-analyze(desugar-all)
 
-  nabl2-custom-analysis-unit-hook2(|a):
+  nabl2-custom-analysis-unit-hook:
       (resource, ast, _) -> CustomUnitAnalysis(e*, w*, ext-c*)
     with nabl2-custom-analysis-info-msg(|"Extra file analysis...")
        ; n-e* := <check-module-name(|resource)> ast

@@ -22,4 +22,6 @@ rules
 
   prettyprint-Statix-ExtOrigin: _ -> [S("")]
 
+  ext-log(|msg) = ext-log(write-to-string|msg)
+
   ext-log(pp|msg) = id <+ with(warn-msg(|msg);pp-Statix-string(pp);debug)

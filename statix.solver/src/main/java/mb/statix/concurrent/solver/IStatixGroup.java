@@ -31,21 +31,7 @@ public interface IStatixGroup {
     static IMatcher<IStatixGroup> matcher() {
         return M.casesFix(m -> Iterables2.singleton(M.appl3("Group", StatixTerms.hoconstraint(),
                 M.map(M.stringValue(), m), M.map(M.stringValue(), IStatixUnit.matcher()), (t, rule, groups, units) -> {
-                    return new IStatixGroup() {
-
-                        @Override public Optional<Rule> rule() {
-                            return Optional.of(rule);
-                        }
-
-                        @Override public Map<String, IStatixGroup> groups() {
-                            return groups;
-                        }
-
-                        @Override public Map<String, IStatixUnit> units() {
-                            return units;
-                        }
-
-                    };
+                    return StatixGroup.of(Optional.of(rule), groups, units);
                 })));
     }
 

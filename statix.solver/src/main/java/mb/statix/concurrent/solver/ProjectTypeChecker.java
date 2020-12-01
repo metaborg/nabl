@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.unit.Unit;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
@@ -31,14 +32,23 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
     @Override public IFuture<ProjectResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
             List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
+
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
                 runGroups(context, project.groups(), projectScope, projectScope);
+
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
                 runUnits(context, project.units(), projectScope, projectScope);
+
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
+                runLibraries(context, project.libraries(), projectScope);
+
         context.closeScope(projectScope);
+
         final IFuture<SolverResult> result = runSolver(context, project.rule(), Arrays.asList(projectScope));
-        return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
-            return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), null);
+
+        return AggregateFuture.apply(groupResults, unitResults, libraryResults, result).thenApply(e -> {
+            // FIXME library is not part of the result
+            return ProjectResult.of(project.resource(), e._1(), e._2(), e._4(), null);
         }).whenComplete((r, ex) -> {
             logger.debug("project {}: returned.", context.id());
         });

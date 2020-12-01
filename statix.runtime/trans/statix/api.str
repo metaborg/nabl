@@ -21,8 +21,8 @@ rules // analysis
   stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre,  id  |spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
   
-  stx-editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
-                                                                                                            ; cstx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint)
+  stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
+                                                                                                        ; cstx--editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint)
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*

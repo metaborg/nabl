@@ -92,12 +92,12 @@ public interface IState {
             state = state.subState();
         }
 
-        @Override public IUniDisunifier unifier() {
+        @Override public IUniDisunifier.Immutable unifier() {
             freezeTwiceShameOnYou();
             return state.unifier();
         }
 
-        @Override public IScopeGraph<Scope, ITerm, ITerm> scopeGraph() {
+        @Override public IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph() {
             freezeTwiceShameOnYou();
             return state.scopeGraph();
         }
