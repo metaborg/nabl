@@ -177,7 +177,9 @@ public class StatixSolver {
         } catch(Throwable e) {
             result.completeExceptionally(e);
         }
-        return result;
+        return result.whenComplete((r, ex) -> {
+            Object self = this;
+        });
     }
 
     public IFuture<SolverResult> entail() {

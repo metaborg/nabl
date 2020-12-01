@@ -13,6 +13,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.unit.Unit;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.Tuple2;
@@ -91,6 +92,25 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all units returned.", context.id());
+                });
+    }
+
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> runLibraries(
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
+            Scope projectScope) {
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results = new ArrayList<>();
+        for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
+            final String key = entry.getKey();
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result = context.add(key,
+                    new LibraryTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope));
+            results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
+                logger.debug("checker {}: group {} returned.", context.id(), key);
+            }));
+        }
+        return new AggregateFuture<>(results)
+                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .whenComplete((r, ex) -> {
+                    logger.debug("checker {}: all groups returned.", context.id());
                 });
     }
 

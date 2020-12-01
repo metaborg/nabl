@@ -23,7 +23,6 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.concurrent.p_raffrayi.PRaffrayiUtil;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.solver.GroupResult;
@@ -57,7 +56,7 @@ public class STX_solve_multi extends StatixPrimitive {
         final IStatixProject project =
                 IStatixProject.matcher().match(term).orElseThrow(() -> new InterpreterException("Expected project."));
 
-        final IScopeImpl<Scope> scopeImpl = new ScopeImpl();
+        final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
         final List<ITerm> results = Lists.newArrayList();
         try {
@@ -73,7 +72,7 @@ public class STX_solve_multi extends StatixPrimitive {
             final List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults = new ArrayList<>();
             final Map<String, SolverResult> resultMap = flattenResult(spec, result, unitResults);
 
-//            PRaffrayiUtil.writeStatsCsvFromResult(unitResults, System.out);
+            //            PRaffrayiUtil.writeStatsCsvFromResult(unitResults, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
 

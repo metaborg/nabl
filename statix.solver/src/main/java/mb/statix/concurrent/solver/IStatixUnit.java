@@ -19,17 +19,7 @@ public interface IStatixUnit {
 
     static IMatcher<IStatixUnit> matcher() {
         return M.appl2("Unit", M.stringValue(), StatixTerms.hoconstraint(), (t, resource, rule) -> {
-            return new IStatixUnit() {
-
-                @Override public String resource() {
-                    return resource;
-                }
-
-                @Override public Optional<Rule> rule() {
-                    return Optional.of(rule);
-                }
-
-            };
+            return StatixUnit.of(resource, Optional.of(rule));
         });
     }
 

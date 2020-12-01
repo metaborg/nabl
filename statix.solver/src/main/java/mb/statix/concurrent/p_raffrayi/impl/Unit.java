@@ -24,6 +24,7 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
+import mb.nabl2.util.collections.MultiSet.Immutable;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
@@ -131,12 +132,17 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         waitFor(result, self);
         self.schedule(this.typeChecker.run(this, rootScopes)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
+            this.clock = this.clock.sent(self).delivered(self); // FIXME necessary?
             if(ex != null) {
                 failures.add(ex);
             } else {
                 analysis.set(r);
             }
             granted(result, self);
+            final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = context.getTokens(self);
+            if(!selfTokens.isEmpty()) {
+                logger.warn("{} returned while waiting on {}", self, selfTokens);
+            }
             tryFinish();
         });
 
@@ -718,7 +724,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     @Override public void stopped(IActor<?> self) {
         //        logger.error("Actor {} stopped.", self);
-        for(IWaitFor<S, L, D> wf : context.getAllTokens()) {
+        final MultiSet.Immutable<IWaitFor<S, L, D>> remainingTokens = context.getAllTokens();
+        if(!remainingTokens.isEmpty()) {
+            logger.warn("{} stopped while waiting for: {}", self, remainingTokens);
+        }
+        for(IWaitFor<S, L, D> wf : remainingTokens) {
             // @formatter:off
             wf.visit(IWaitFor.cases(
                 initScope -> {
