@@ -76,17 +76,23 @@ public abstract class MultiSetMap<K, V> {
             if(n < 0) {
                 throw new IllegalArgumentException("Negative count");
             }
+            if(n == 0) {
+                return this;
+            }
             final MultiSet.Immutable<V> values = entries.getOrDefault(key, MultiSet.Immutable.of());
-            return new Immutable<>(entries.__put(key, values.add(value, n)));
+            final MultiSet.Immutable<V> newValues = values.add(value, n);
+            return new Immutable<>(entries.__put(key, newValues));
         }
 
         public Immutable<K, V> putAll(K key, MultiSet.Immutable<V> values) {
-            MultiSet.Immutable<V> oldValues = entries.get(key);
+            final MultiSet.Immutable<V> oldValues = entries.get(key);
+            final MultiSet.Immutable<V> newValues;
             if(oldValues != null) {
-                return new Immutable<>(entries.__put(key, MultiSet.Immutable.union(oldValues, values)));
+                newValues = MultiSet.Immutable.union(oldValues, values);
             } else {
-                return new Immutable<>(entries.__put(key, values));
+                newValues = values;
             }
+            return new Immutable<>(entries.__put(key, newValues));
         }
 
         public Immutable<K, V> removeKey(K key) {
@@ -94,8 +100,18 @@ public abstract class MultiSetMap<K, V> {
         }
 
         public Immutable<K, V> remove(K key, V value) {
-            final MultiSet.Immutable<V> values = entries.getOrDefault(key, MultiSet.Immutable.of());
-            return new Immutable<>(entries.__put(key, values.remove(value)));
+            final MultiSet.Immutable<V> values = entries.get(key);
+            if(values == null) {
+                return this;
+            }
+            final MultiSet.Immutable<V> newValues = values.remove(value);
+            final Map.Immutable<K, MultiSet.Immutable<V>> newEntries;
+            if(newValues.isEmpty()) {
+                newEntries = entries.__remove(key);
+            } else {
+                newEntries = entries.__put(key, newValues);
+            }
+            return new Immutable<>(newEntries);
         }
 
         public Immutable<K, V> removeAll(java.util.Set<K> keys) {
@@ -194,7 +210,7 @@ public abstract class MultiSetMap<K, V> {
                 throw new IllegalArgumentException("Negative count");
             }
             final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
-            final int m = values.remove(value);
+            final int m = values.remove(value, n);
             if(values.isEmpty()) {
                 entries.__remove(key);
             } else {
@@ -220,15 +236,14 @@ public abstract class MultiSetMap<K, V> {
 
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof MultiSetMap)) return false;
-        final MultiSetMap<?, ?> that = (MultiSetMap<?, ?>)obj;
+    @Override public boolean equals(Object obj) {
+        if(!(obj instanceof MultiSetMap))
+            return false;
+        final MultiSetMap<?, ?> that = (MultiSetMap<?, ?>) obj;
         return this.asMap().equals(that.asMap());
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return this.asMap().hashCode();
     }
 
