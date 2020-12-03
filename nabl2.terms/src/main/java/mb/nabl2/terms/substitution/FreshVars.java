@@ -2,6 +2,8 @@ package mb.nabl2.terms.substitution;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.regex.Pattern;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.CapsuleUtil;
@@ -12,6 +14,8 @@ import mb.nabl2.util.CapsuleUtil;
  * kept unchanged.
  */
 public class FreshVars {
+
+    private static final Pattern SUFFIX = Pattern.compile("-?[0-9]*$");
 
     private Set.Immutable<ITermVar> oldVars;
     private Set.Immutable<ITermVar> newVars;
@@ -43,7 +47,7 @@ public class FreshVars {
      * Generate a variable with a fresh name, and remember the generated name.
      */
     public ITermVar fresh(String name) {
-        final String base = name.replaceAll("-?[0-9]*$", "");
+        final String base = SUFFIX.matcher(name).replaceAll("");
         ITermVar fresh = B.newVar("", name);
         int i = 0;
         while(oldVars.contains(fresh) || newVars.contains(fresh)) {
@@ -54,7 +58,7 @@ public class FreshVars {
     }
 
     public ITermVar fresh(ITermVar var) {
-        final String base = var.getName().replaceAll("-?[0-9]*$", "");
+        final String base = SUFFIX.matcher(var.getName()).replaceAll("");
         ITermVar fresh = var;
         int i = 0;
         while(oldVars.contains(fresh) || newVars.contains(fresh)) {

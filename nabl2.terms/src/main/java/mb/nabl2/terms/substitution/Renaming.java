@@ -44,8 +44,12 @@ public class Renaming implements IRenaming {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final List<ITerm> args = appl.getArgs().stream().map(this::apply).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args, appl.getAttachments());
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(apply(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
             },
             list -> apply(list),
             string -> string,
@@ -92,7 +96,9 @@ public class Renaming implements IRenaming {
         }
 
         public Builder put(ITermVar v1, ITermVar v2) {
-            renaming.put(v1, v2);
+            if(!v1.equals(v2)) {
+                renaming.put(v1, v2);
+            }
             return this;
         }
 

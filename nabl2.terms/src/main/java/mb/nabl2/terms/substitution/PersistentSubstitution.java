@@ -37,8 +37,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
     }
 
     @Override public Set<ITermVar> rangeSet() {
-        return subst().values().stream().flatMap(t -> t.getVars().stream())
-                .collect(CapsuleCollectors.toSet());
+        return subst().values().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
     @Override public Set<Entry<ITermVar, ITerm>> entrySet() {
@@ -49,8 +48,12 @@ public abstract class PersistentSubstitution implements ISubstitution {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final List<ITerm> args = appl.getArgs().stream().map(this::apply).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args, appl.getAttachments());
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(apply(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
             },
             list -> apply(list),
             string -> string,

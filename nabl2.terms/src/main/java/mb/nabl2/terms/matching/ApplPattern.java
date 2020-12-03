@@ -71,21 +71,28 @@ class ApplPattern extends Pattern {
     }
 
     @Override public Pattern apply(IRenaming subst) {
-        return new ApplPattern(op, args.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList()),
-                getAttachments());
+        final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+        for(Pattern arg : args) {
+            newArgs.add(arg.apply(subst));
+        }
+        return new ApplPattern(op, newArgs.build(), getAttachments());
     }
 
     @Override public ApplPattern eliminateWld(Function0<ITermVar> fresh) {
-        return new ApplPattern(op,
-                args.stream().map(p -> p.eliminateWld(fresh)).collect(ImmutableList.toImmutableList()),
-                getAttachments());
+        final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+        for(Pattern arg : args) {
+            newArgs.add(arg.eliminateWld(fresh));
+        }
+        return new ApplPattern(op, newArgs.build(), getAttachments());
     }
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
-        return B.newAppl(op,
-                args.stream().map(a -> a.asTerm(equalities, fresh)).collect(ImmutableList.toImmutableList()),
-                getAttachments());
+        final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+        for(Pattern arg : args) {
+            newArgs.add(arg.asTerm(equalities, fresh));
+        }
+        return B.newAppl(op, newArgs.build(), getAttachments());
     }
 
     @Override public String toString() {

@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification.u;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -142,7 +143,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         private static class Unify extends PersistentUnifier.Transient {
 
             private final Predicate1<ITermVar> isRigid;
-            private final Deque<Map.Entry<ITerm, ITerm>> worklist = Lists.newLinkedList();
+            private final Deque<Map.Entry<ITerm, ITerm>> worklist = new ArrayDeque<>();
             private final List<ITermVar> result = Lists.newArrayList();
 
             public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right, Predicate1<ITermVar> isRigid) {
@@ -179,14 +180,23 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
                 final PersistentUnifier.Immutable unifier = freeze();
                 if(finite) {
-                    final ImmutableSet<ITermVar> cyclicVars =
-                            result.stream().filter(v -> unifier.isCyclic(v)).collect(ImmutableSet.toImmutableSet());
-                    if(!cyclicVars.isEmpty()) {
-                        throw new OccursException(cyclicVars);
-                    }
+                    occursCheck(unifier);
                 }
                 final IUnifier.Immutable diffUnifier = diffUnifier(result);
                 return Optional.of(new ImmutableResult<>(diffUnifier, unifier));
+            }
+
+            private void occursCheck(final PersistentUnifier.Immutable unifier) throws OccursException {
+                final ImmutableSet.Builder<ITermVar> _cyclicVars = ImmutableSet.builderWithExpectedSize(0);
+                for(ITermVar var : result) {
+                    if(unifier.isCyclic(var)) {
+                        _cyclicVars.add(var);
+                    }
+                }
+                final ImmutableSet<ITermVar> cyclicVars = _cyclicVars.build();
+                if(!cyclicVars.isEmpty()) {
+                    throw new OccursException(cyclicVars);
+                }
             }
 
             private boolean unifyTerms(final ITerm left, final ITerm right) throws RigidException {
