@@ -28,6 +28,7 @@
     <module>../nabl2.shared</module>
     <module>../nabl2.shared.eclipse</module>
     <module>../nabl2.test</module>
+    <module>../shared.primitives</module>
   </modules>
 
   <repositories>
