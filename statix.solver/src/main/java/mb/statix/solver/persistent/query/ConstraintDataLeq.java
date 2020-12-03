@@ -1,5 +1,7 @@
 package mb.statix.solver.persistent.query;
 
+import java.util.Collections;
+
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -53,7 +55,8 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
                     .orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, result.body(), isComplete, debug, progress.subProgress(1), cancel)) {
+            if(Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),
+                    result.criticalEdges(), isComplete, debug, progress.subProgress(1), cancel)) {
                 if(debug.isEnabled(Level.Debug)) {
                     debug.debug("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
                 }

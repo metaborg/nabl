@@ -9,6 +9,7 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
@@ -19,8 +20,9 @@ public final class Infer extends SearchStrategy<SearchState, SearchState> {
         final SearchState state = node.output();
         final SolverResult resultConfig;
         try {
-            resultConfig = Solver.solve(ctx.spec(), state.state(), state.constraints(), state.delays(),
-                    state.completeness(), new NullDebugContext(), new NullProgress(), new NullCancel());
+            resultConfig =
+                    Solver.solve(ctx.spec(), state.state(), state.constraints(), state.delays(), state.completeness(),
+                            IsComplete.ALWAYS, new NullDebugContext(), new NullProgress(), new NullCancel());
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
