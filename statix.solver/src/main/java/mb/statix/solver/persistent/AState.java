@@ -82,7 +82,7 @@ public abstract class AState implements IState.Immutable {
 
     private Tuple2<ITermVar, IState.Immutable> freshVar(String name, @Nullable IAttachments attachments) {
         final int i = __varCounter() + 1;
-        final String newName = name.replaceAll("-", "_") + "-" + i;
+        final String newName = name.replace('-', '_') + "-" + i;
         final ITermVar newVar = B.newVar(resource(), newName, attachments);
         final Set.Immutable<ITermVar> vars = __vars().__insert(newVar);
         return Tuple2.of(newVar, State.builder().from(this).__varCounter(i).__vars(vars).build());
@@ -104,7 +104,7 @@ public abstract class AState implements IState.Immutable {
 
     @Override public Tuple2<Scope, IState.Immutable> freshScope(String base) {
         final int i = __scopeCounter() + 1;
-        final String name = base.replaceAll("-", "_") + "-" + i;
+        final String name = base.replace('-', '_') + "-" + i;
         final Scope scope = Scope.of(resource(), name);
         final Set.Immutable<Scope> scopes = __scopes().__insert(scope);
         return Tuple2.of(scope, State.builder().from(this).__scopeCounter(i).__scopes(scopes).build());

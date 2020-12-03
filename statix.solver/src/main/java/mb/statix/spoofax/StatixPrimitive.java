@@ -219,7 +219,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     }
 
     private String cleanupString(String string) {
-        return string.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
 }

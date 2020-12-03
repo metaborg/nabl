@@ -24,7 +24,6 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
-import mb.nabl2.util.collections.MultiSet.Immutable;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;

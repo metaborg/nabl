@@ -133,8 +133,12 @@ public class TermPattern {
             // @formatter:off
             return term.match(Terms.cases(
                 appl -> {
-                    final List<Pattern> args = appl.getArgs().stream().map(a -> fromTerm(a, isWildcard)).collect(ImmutableList.toImmutableList());
-                    return new ApplPattern(appl.getOp(), args, appl.getAttachments());
+                    final List<ITerm> args = appl.getArgs();
+                    final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                    for(ITerm arg : args) {
+                        newArgs.add(fromTerm(arg, isWildcard));
+                    }
+                    return new ApplPattern(appl.getOp(), newArgs.build(), appl.getAttachments());
                 },
                 list -> list.match(ListTerms.cases(
                     cons -> new ConsPattern(fromTerm(cons.getHead(), isWildcard), fromTerm(cons.getTail(), isWildcard), cons.getAttachments()),

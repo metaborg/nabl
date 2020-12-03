@@ -3,6 +3,7 @@ package mb.nabl2.terms.unification.u;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -119,7 +120,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private IListTerm findListTermRecursive(IListTerm list, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
-        Deque<IListTerm> elements = Lists.newLinkedList();
+        Deque<IListTerm> elements = new ArrayDeque<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
             // @formatter:off

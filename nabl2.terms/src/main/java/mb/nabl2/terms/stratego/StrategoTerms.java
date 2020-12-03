@@ -2,7 +2,6 @@ package mb.nabl2.terms.stratego;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -128,12 +127,20 @@ public class StrategoTerms {
         // @formatter:off
         ITerm term = match(sterm, StrategoTerms.cases(
             appl -> {
-                final List<ITerm> args = Arrays.asList(appl.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getConstructor().getName(), args, attachments);
+                final IStrategoTerm[] subTerms = appl.getAllSubterms();
+                final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
+                for(IStrategoTerm subTerm : subTerms) {
+                    args.add(fromStratego(subTerm));
+                }
+                return B.newAppl(appl.getConstructor().getName(), args.build(), attachments);
             },
             tuple -> {
-                final List<ITerm> args = Arrays.asList(tuple.getAllSubterms()).stream().map(this::fromStratego).collect(ImmutableList.toImmutableList());
-                return B.newTuple(args, attachments);
+                final IStrategoTerm[] subTerms = tuple.getAllSubterms();
+                final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
+                for(IStrategoTerm subTerm : subTerms) {
+                    args.add(fromStratego(subTerm));
+                }
+                return B.newTuple(args.build(), attachments);
             },
             this::fromStrategoList,
             integer -> B.newInt(integer.intValue(), attachments),
