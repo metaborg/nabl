@@ -7,38 +7,38 @@ import static org.junit.Assert.assertThrows;
 import org.junit.Test;
 import org.metaborg.eqclac.NameIndex;
 
-class NameIndexTest {
+public class NameIndexTest {
 
 	@Test
-	void testEqual() {
+	public void testEqual() {
 		NameIndex index1 = new NameIndex(1, "foo");
 		NameIndex index2 = new NameIndex(1, "foo");
 		assertEquals(index1, index2);
 	}
 	
 	@Test
-	void testNotEqualNumIndex() {
+	public void testNotEqualNumIndex() {
 		NameIndex index1 = new NameIndex(1, "foo");
 		NameIndex index2 = new NameIndex(2, "foo");
 		assertNotEquals(index1, index2);
 	}
 	
 	@Test
-	void testNotEqualPath() {
+	public void testNotEqualPath() {
 		NameIndex index1 = new NameIndex(1, "foo");
 		NameIndex index2 = new NameIndex(1, "bar");
 		assertNotEquals(index1, index2);
 	}
 	
 	@Test
-	void testNotEqualType() {
+	public void testNotEqualType() {
 		NameIndex index = new NameIndex(1, "foo");
 		String otherType = "foo";
 		assertNotEquals(index, otherType);
 	}
 	
 	@Test
-	void testInvalidNumIndex() {
+	public void testInvalidNumIndex() {
 		 assertThrows(IllegalArgumentException.class, () -> {
 			 new NameIndex(-1, "foo");
 			  });
@@ -46,7 +46,7 @@ class NameIndexTest {
 	}
 	
 	@Test
-	void testInvalidPath() {
+	public void testInvalidPath() {
 		 assertThrows(IllegalArgumentException.class, () -> {
 			 new NameIndex(1, null);
 			  });
@@ -54,14 +54,14 @@ class NameIndexTest {
 	}
 	
 	@Test
-	void testHashCode() {
+	public void testHashCode() {
 		NameIndex index1 = new NameIndex(1, "foo");
 		NameIndex index2 = new NameIndex(1, "foo");
 		assertEquals(index1.hashCode(), index2.hashCode());
 	}
 	
 	@Test
-	void testToString() {
+	public void testToString() {
 		NameIndex index = new NameIndex(1, "foo");
 		assertEquals(index.toString(), "NameIndex(foo, 1)");
 	}

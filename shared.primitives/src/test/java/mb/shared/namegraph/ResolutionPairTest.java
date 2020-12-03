@@ -8,10 +8,10 @@ import org.junit.Test;
 import org.metaborg.eqclac.NameIndex;
 import org.metaborg.eqclac.ResolutionPair;
 
-class ResolutionPairTest {
+public class ResolutionPairTest {
 
 	@Test
-	void testEqual() {
+	public void testEqual() {
 		ResolutionPair pair1 = new ResolutionPair("foo", 2, 1);
 		ResolutionPair pair2 = new ResolutionPair("foo", 2, 1);
 		
@@ -19,7 +19,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testNotEqualRef() {
+	public void testNotEqualRef() {
 		ResolutionPair pair1 = new ResolutionPair("foo", 2, 1);
 		ResolutionPair pair2 = new ResolutionPair("foo", 3, 1);
 		
@@ -27,7 +27,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testNotEqualDec() {
+	public void testNotEqualDec() {
 		ResolutionPair pair1 = new ResolutionPair("foo", 2, 1);		
 		ResolutionPair pair2 = new ResolutionPair("foo", 2 ,3);
 		
@@ -35,7 +35,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testNotEqualType() {
+	public void testNotEqualType() {
 		ResolutionPair pair = new ResolutionPair("foo", 2, 1);
 		
 		String otherType = "foo";
@@ -43,7 +43,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testInvalidRef() {
+	public void testInvalidRef() {
 		 assertThrows(IllegalArgumentException.class, () -> {
 				NameIndex index = new NameIndex(1, "foo");
 				new ResolutionPair(null, index);
@@ -52,7 +52,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testInvalidDec() {
+	public void testInvalidDec() {
 		 assertThrows(IllegalArgumentException.class, () -> {
 				NameIndex index = new NameIndex(1, "foo");
 				new ResolutionPair(index, null);
@@ -62,7 +62,7 @@ class ResolutionPairTest {
 	
 	
 	@Test
-	void testConstructorOne() {
+	public void testConstructorOne() {
 		NameIndex ref = new NameIndex(2, "foo");
 		NameIndex dec = new NameIndex(1, "foo");
 		ResolutionPair pair = new ResolutionPair(ref, dec);
@@ -72,7 +72,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testConstructorTwo() {
+	public void testConstructorTwo() {
 		NameIndex ref = new NameIndex(2, "foo");
 		NameIndex dec = new NameIndex(1, "foo");
 		ResolutionPair pair = new ResolutionPair("foo", 2, 1);
@@ -82,7 +82,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testHashCode() {
+	public void testHashCode() {
 		ResolutionPair pair1 = new ResolutionPair("foo", 2, 1);
 		ResolutionPair pair2 = new ResolutionPair("foo", 2, 1);
 		
@@ -91,7 +91,7 @@ class ResolutionPairTest {
 	}
 	
 	@Test
-	void testToString() {
+	public void testToString() {
 		NameIndex ref = new NameIndex(2, "foo");
 		NameIndex dec = new NameIndex(1, "foo");
 		ResolutionPair pair = new ResolutionPair(ref, dec);

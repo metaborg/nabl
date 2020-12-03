@@ -12,10 +12,10 @@ import org.metaborg.eqclac.NameIndex;
 import org.metaborg.eqclac.ResolutionPair;
 
 
-class NameGraphTest {
+public class NameGraphTest {
 
 	@Test
-	void testOneCluster() {
+	public void testOneCluster() {
 		NameGraph graph = new NameGraph();
 		
 		NameIndex ref1 = new NameIndex(2, "foo");
@@ -37,7 +37,7 @@ class NameGraphTest {
 	}
 	
 	@Test
-	void testMultipeCluster() {
+	public void testMultipeCluster() {
 		NameIndex[] nodes = createNodes(9, "foo");
 		ResolutionPair[] edges = new ResolutionPair[6];
 		
@@ -97,7 +97,7 @@ class NameGraphTest {
 	}
 	
 	@Test
-	void testMultipeClusterComplex() {
+	public void testMultipeClusterComplex() {
 		NameIndex[] nodes = createNodes(12, "foo");
 		ResolutionPair[] edges = new ResolutionPair[10];
 		
@@ -181,7 +181,7 @@ class NameGraphTest {
 	}
 	
 	@Test
-	void testUnion() {
+	public void testUnion() {
 		ResolutionPair pair1 = new ResolutionPair("foo", 2, 1);
 		ResolutionPair pair2 = new ResolutionPair("foo", 3, 4);
 		ResolutionPair pair3 = new ResolutionPair("foo", 4, 1);
@@ -200,7 +200,7 @@ class NameGraphTest {
 	}
 	
 	@Test
-	void testSelfReferencePairs() {
+	public void testSelfReferencePairs() {
 		ResolutionPair pair1 = new ResolutionPair("demo/example.mjv", 30, 40);
 		ResolutionPair pair2 = new ResolutionPair("demo/example.mjv", 23, 23);
 		ResolutionPair pair3 = new ResolutionPair("demo/example.mjv", 31, 12);
