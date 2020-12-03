@@ -147,8 +147,8 @@ class GreedySolver {
     }
 
     public GreedySolver(Spec spec, IState.Immutable state, Iterable<IConstraint> constraints,
-            Map<IConstraint, Delay> delays, ICompleteness.Immutable completeness, IDebugContext debug,
-            IProgress progress, ICancel cancel) {
+            Map<IConstraint, Delay> delays, ICompleteness.Immutable completeness, IsComplete _isComplete,
+            IDebugContext debug, IProgress progress, ICancel cancel) {
         this.spec = spec;
         this.initialState = state;
         this.debug = debug;
@@ -158,7 +158,7 @@ class GreedySolver {
         this.completeness = completeness.melt();
         // the constraints should already be reflected in completeness
         final IsComplete isComplete = (s, l, st) -> {
-            return this.completeness.isComplete(s, l, st.unifier());
+            return this.completeness.isComplete(s, l, st.unifier()) && _isComplete.test(s, l, st);
         };
         this.params = new ConstraintContext(isComplete, debug);
         this.progress = progress;

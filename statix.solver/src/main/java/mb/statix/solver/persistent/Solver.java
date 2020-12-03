@@ -43,9 +43,25 @@ public class Solver {
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
-            final ICompleteness.Immutable completeness, final IDebugContext debug, IProgress progress, ICancel cancel)
-            throws InterruptedException {
-        return new GreedySolver(spec, state, constraints, delays, completeness, debug, progress, cancel).solve();
+            final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
+            IProgress progress, ICancel cancel) throws InterruptedException {
+        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel)
+                .solve();
+    }
+
+    public static boolean entails(final Spec spec, IState.Immutable state, final Iterable<IConstraint> constraints,
+            final Map<IConstraint, Delay> delays, final ICompleteness.Immutable completeness,
+            final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
+            throws Delay, InterruptedException {
+        final IUniDisunifier.Immutable unifier = state.unifier();
+        if(debug.isEnabled(Level.Debug)) {
+            debug.debug("Checking entailment of {}", toString(constraints, unifier));
+        }
+
+        final IState.Immutable subState = state.subState();
+        final SolverResult result = Solver.solve(spec, subState, constraints, delays, completeness, isComplete,
+                debug.subContext(), progress, cancel);
+        return Solver.entailed(subState, result, debug);
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final IConstraint constraint,

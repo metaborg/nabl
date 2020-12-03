@@ -25,6 +25,7 @@ import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
@@ -67,9 +68,9 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //      kept in sync
 
         // no substate is used here, as we allow variables from the context to be unified
-        final SolverResult result =
-                Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
-                        completeness.freeze(), new NullDebugContext(), new NullProgress(), new NullCancel());
+        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
+                Map.Immutable.of(), completeness.freeze(), IsComplete.ALWAYS, new NullDebugContext(),
+                new NullProgress(), new NullCancel());
 
         // NOTE This part is almost a duplicate of Solver::entailed and should be
         //      kept in sync

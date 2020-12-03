@@ -6,6 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -88,6 +89,7 @@ import mb.statix.solver.ITermProperty.Multiplicity;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.CompletenessUtil;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.NullDebugContext;
@@ -947,8 +949,8 @@ public class StatixSolver {
                                 .orElse(null)) == null) {
                     return false;
                 }
-                return Solver.entails(spec, state, result.body(), (s, l, st) -> true, new NullDebugContext(),
-                        new NullProgress(), cancel);
+                return Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),
+                        result.criticalEdges(), IsComplete.ALWAYS, new NullDebugContext(), new NullProgress(), cancel);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
@@ -1010,8 +1012,8 @@ public class StatixSolver {
                         .orElse(null)) == null) {
                     return false;
                 }
-                return Solver.entails(spec, state, result.body(), (s, l, st) -> true, new NullDebugContext(),
-                        new NullProgress(), cancel);
+                return Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),
+                        result.criticalEdges(), IsComplete.ALWAYS, new NullDebugContext(), new NullProgress(), cancel);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
