@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1606983275427
+Bnd-LastModified: 1606983588892
 Build-Jdk: 1.8.0_272
 Built-By: phil
 Bundle-Description: Maven parent POM for Java projects
@@ -12,8 +12,5 @@ Bundle-Version: 2.6.0.qualifier
 Created-By: Apache Maven Bundle Plugin
 Eclipse-BuddyPolicy: registered
 Embed-Transitive: true
-Export-Package: org.metaborg.eqclac
-Import-Package: org.spoofax.interpreter.terms,org.spoofax.terms.util,jav
- ax.inject
-Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"
+Import-Package: javax.inject
 Tool: Bnd-2.4.1.201501161923
