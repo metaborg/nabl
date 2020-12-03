@@ -1,4 +1,4 @@
-package org.metaborg.eqclac;
+package mb.shared.namegraph;
 
 
 import static org.junit.Assert.assertEquals;
@@ -7,6 +7,9 @@ import static org.junit.Assert.assertTrue;
 import java.util.Set;
 
 import org.junit.Test;
+import org.metaborg.eqclac.NameGraph;
+import org.metaborg.eqclac.NameIndex;
+import org.metaborg.eqclac.ResolutionPair;
 
 
 class NameGraphTest {

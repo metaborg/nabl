@@ -1,10 +1,11 @@
-package org.metaborg.eqclac;
+package mb.shared.namegraph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
+import org.metaborg.eqclac.NameIndex;
 
 class NameIndexTest {
 
