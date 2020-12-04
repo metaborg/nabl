@@ -7,9 +7,10 @@ import static org.junit.Assert.assertTrue;
 import java.util.Set;
 
 import org.junit.Test;
-import org.metaborg.eqclac.NameGraph;
-import org.metaborg.eqclac.NameIndex;
-import org.metaborg.eqclac.ResolutionPair;
+
+import mb.shared.namegraph.NameGraph;
+import mb.shared.namegraph.NameIndex;
+import mb.shared.namegraph.ResolutionPair;
 
 
 public class NameGraphTest {

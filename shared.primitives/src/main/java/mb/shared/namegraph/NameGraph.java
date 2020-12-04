@@ -1,4 +1,4 @@
-package org.metaborg.eqclac;
+package mb.shared.namegraph;
 
 import java.util.HashSet;
 import java.util.List;

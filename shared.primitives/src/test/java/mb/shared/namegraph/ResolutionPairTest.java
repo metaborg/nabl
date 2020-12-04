@@ -5,8 +5,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
-import org.metaborg.eqclac.NameIndex;
-import org.metaborg.eqclac.ResolutionPair;
+
+import mb.shared.namegraph.NameIndex;
+import mb.shared.namegraph.ResolutionPair;
 
 public class ResolutionPairTest {
 
