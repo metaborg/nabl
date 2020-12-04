@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1607067000279
+Bnd-LastModified: 1607067656307
 Build-Jdk: 1.8.0_272
 Built-By: phil
 Bundle-Description: Maven parent POM for Java projects
