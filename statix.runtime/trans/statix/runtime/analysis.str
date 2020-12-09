@@ -34,6 +34,7 @@ signature
     Solution : List(Var, Term) * SolverResult -> Solution
 
     Project : /*resource*/String * /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixProject
+    Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
     Group   : /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
     Unit    : /*resource*/String * /*ast*/Term -> StatixUnit
 
