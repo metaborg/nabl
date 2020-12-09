@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bnd-LastModified: 1607067656307
+Bnd-LastModified: 1607409306754
 Build-Jdk: 1.8.0_272
 Built-By: phil
 Bundle-Description: Maven parent POM for Java projects
@@ -12,8 +12,9 @@ Bundle-Version: 2.6.0.qualifier
 Created-By: Apache Maven Bundle Plugin
 Eclipse-BuddyPolicy: registered
 Embed-Transitive: true
-Export-Package: mb.shared.namegraph
-Import-Package: org.spoofax.interpreter.terms,org.spoofax.terms.util,jav
- ax.inject
+Export-Package: mb.shared,mb.shared.namegraph
+Import-Package: org.spoofax.interpreter.core,org.spoofax.interpreter.lib
+ rary,org.spoofax.interpreter.stratego,org.spoofax.interpreter.terms,org
+ .spoofax.terms.util,javax.inject
 Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"
 Tool: Bnd-2.4.1.201501161923
