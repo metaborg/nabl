@@ -39,4 +39,19 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
         return Query.of(origin, path, dataWF, future);
     }
 
+    /*
+     * CAREFUL
+     * For this class, hashCode and equals are simplified to reference equality for performance.
+     * This is possible because we never create a new instance which is used in isWaitingFor.
+     * The tokens CloseScope & CloseLabel are created for such checks, and must have structural equality.
+     */
+
+    @Override public int hashCode() {
+        return System.identityHashCode(this);
+    }
+
+    @Override public boolean equals(Object obj) {
+        return this == obj;
+    }
+
 }

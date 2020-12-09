@@ -49,7 +49,9 @@ public class Env<S, L, D> implements Iterable<IResolutionPath<S, L, D>> {
         }
 
         public void addAll(Iterable<? extends IResolutionPath<S, L, D>> paths) {
-            paths.forEach(this.paths::__insert);
+            for(IResolutionPath<S, L, D> path : paths) {
+                this.paths.__insert(path);
+            }
         }
 
         public Env<S, L, D> build() {

@@ -195,7 +195,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private boolean isCyclic(final java.util.Set<ITermVar> vars, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, Boolean> visited) {
-        return vars.stream().anyMatch(var -> isCyclic(var, stack, visited));
+        for(ITermVar var : vars) {
+            if(isCyclic(var, stack, visited)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isCyclic(final ITermVar var, final java.util.Set<ITermVar> stack,
@@ -261,7 +266,9 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private void getVars(final java.util.Set<ITermVar> tryVars, final LinkedList<ITermVar> stack,
             final java.util.Set<ITermVar> visited, Set.Transient<ITermVar> vars) {
-        tryVars.stream().forEach(var -> getVars(var, stack, visited, vars));
+        for(ITermVar var : tryVars) {
+            getVars(var, stack, visited, vars);
+        }
     }
 
     private void getVars(final ITermVar var, final LinkedList<ITermVar> stack, final java.util.Set<ITermVar> visited,
@@ -280,7 +287,9 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         } else {
             final int index = stack.indexOf(rep); // linear
             if(index >= 0) {
-                stack.subList(0, index + 1).forEach(vars::__insert);
+                for(ITermVar v : stack.subList(0, index + 1)) {
+                    vars.__insert(v);
+                }
             }
         }
     }

@@ -155,16 +155,17 @@ abstract class NameResolution<S, L, D> {
         logger.trace("env_data {} {}", path, re);
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
         logger.trace("env_data {} {}: datum {}", path, re, datum);
-        final IFuture<Env<S, L, D>> env = datum.thenCompose(d -> {
-            if(!d.isPresent()) {
+        final IFuture<Env<S, L, D>> env = datum.thenCompose(_d -> {
+            D d;
+            if((d = _d.orElse(null)) == null) {
                 return CompletableFuture.completedFuture(Env.empty());
             }
-            return dataWf(d.get(), cancel).thenApply(wf -> {
+            return dataWf(d, cancel).thenApply(wf -> {
                 if(!wf) {
                     return Env.empty();
                 }
-                logger.trace("env_data {} {}: datum {}", path, re, d.get());
-                final IResolutionPath<S, L, D> resPath = Paths.resolve(path, d.get());
+                logger.trace("env_data {} {}: datum {}", path, re, d);
+                final IResolutionPath<S, L, D> resPath = Paths.resolve(path, d);
                 return Env.of(resPath);
             });
         });

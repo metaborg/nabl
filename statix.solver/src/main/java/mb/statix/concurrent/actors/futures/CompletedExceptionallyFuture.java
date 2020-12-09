@@ -1,10 +1,5 @@
 package mb.statix.concurrent.actors.futures;
 
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
 import org.metaborg.util.functions.CheckedFunction1;
@@ -20,6 +15,18 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
         }
         this.ex = ex;
     }
+
+    /////////////////////////////////////////////////////////////////////
+    // ICompletable
+    /////////////////////////////////////////////////////////////////////
+
+    @Override public void complete(T value, Throwable ex) {
+        // ignore
+    }
+
+    /////////////////////////////////////////////////////////////////////
+    // IFuture
+    /////////////////////////////////////////////////////////////////////
 
     @Override public <U> IFuture<U>
             handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
@@ -37,23 +44,6 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
         } catch(Throwable ex) {
             return CompletableFuture.completedExceptionally(ex);
         }
-    }
-
-    @Override public T get() throws ExecutionException {
-        throw new ExecutionException(ex);
-    }
-
-    @Override public T get(long timeout, TimeUnit unit)
-            throws ExecutionException, InterruptedException, TimeoutException {
-        throw new CompletionException(ex);
-    }
-
-    @Override public T getNow() throws CompletionException, InterruptedException {
-        throw new CompletionException(ex);
-    }
-
-    @Override public void complete(T value, Throwable ex) {
-        // ignore
     }
 
     @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
@@ -80,6 +70,12 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
 
     @Override public boolean isDone() {
         return true;
+    }
+
+    @Override public java.util.concurrent.CompletableFuture<T> asJavaCompletion() {
+        final java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
+        future.completeExceptionally(ex);
+        return future;
     }
 
     @Override public String toString() {

@@ -1,8 +1,9 @@
 package mb.nabl2.terms.stratego;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoList;
@@ -14,7 +15,8 @@ import org.spoofax.terms.util.TermUtils;
 public final class StrategoTermIndices {
 
     // Prevent instantiation.
-    private StrategoTermIndices() {}
+    private StrategoTermIndices() {
+    }
 
     private static final String OP = "TermIndex";
     private static final int ARITY = 2;
@@ -178,8 +180,13 @@ public final class StrategoTermIndices {
     }
 
     private static IStrategoList removeFromAnnoList(IStrategoList list, ITermFactory factory) {
-        return factory.makeList(Arrays.asList(list.getAllSubterms()).stream().filter(term -> !match(term).isPresent())
-                .collect(Collectors.toList()));
+        List<IStrategoTerm> terms = new ArrayList<>(list.getAllSubterms().length);
+        for(IStrategoTerm term : list.getAllSubterms()) {
+            if(!match(term).isPresent()) {
+                terms.add(term);
+            }
+        }
+        return factory.makeList(terms);
     }
 
 }

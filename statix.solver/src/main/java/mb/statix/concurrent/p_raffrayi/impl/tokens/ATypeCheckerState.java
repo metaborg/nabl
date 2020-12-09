@@ -21,4 +21,19 @@ public abstract class ATypeCheckerState<S, L, D> implements IWaitFor<S, L, D> {
         cases.on((TypeCheckerState<S, L, D>) this);
     }
 
+    /*
+     * CAREFUL
+     * For this class, hashCode and equals are simplified to reference equality for performance.
+     * This is possible because we never create a new instance which is used in isWaitingFor.
+     * The tokens CloseScope & CloseLabel are created for such checks, and must have structural equality.
+     */
+
+    @Override public int hashCode() {
+        return System.identityHashCode(this);
+    }
+
+    @Override public boolean equals(Object obj) {
+        return this == obj;
+    }
+
 }

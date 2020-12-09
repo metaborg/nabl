@@ -1,9 +1,6 @@
 package mb.statix.concurrent.actors.futures;
 
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CompletableFuture;
 
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
@@ -26,11 +23,7 @@ public interface IFuture<T> {
 
     IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ? extends Throwable> handler);
 
-    T get() throws ExecutionException, InterruptedException;
-
-    T get(long timeout, TimeUnit unit) throws ExecutionException, InterruptedException, TimeoutException;
-
-    T getNow() throws CompletionException, InterruptedException;
+    CompletableFuture<T> asJavaCompletion();
 
     boolean isDone();
 

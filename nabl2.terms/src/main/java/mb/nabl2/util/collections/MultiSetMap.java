@@ -222,7 +222,9 @@ public abstract class MultiSetMap<K, V> {
         public Immutable<K, V> clear() {
             final Immutable<K, V> cleared =
                     new Immutable<>(Map.Immutable.<K, MultiSet.Immutable<V>>of().__putAll(entries));
-            entries.keySet().forEach(entries::__remove);
+            for(K k : entries.keySet()) {
+                entries.__remove(k);
+            }
             return cleared;
         }
 

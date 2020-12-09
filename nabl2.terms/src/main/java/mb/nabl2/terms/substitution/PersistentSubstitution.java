@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.metaborg.util.iterators.Iterables2;
-
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
@@ -102,14 +100,18 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
         @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
-            Iterables2.stream(vars).forEach(subst::__remove);
+            for(ITermVar v : vars) {
+                subst.__remove(v);
+            }
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
         @Override public ISubstitution.Immutable compose(ISubstitution.Immutable other) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
             CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
-            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+            for(Entry<ITermVar, ITerm> e : other.removeAll(subst.keySet()).entrySet()) {
+                subst.__put(e.getKey(), e.getValue());
+            }
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
@@ -156,12 +158,16 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         @Override public void removeAll(Iterable<ITermVar> vars) {
-            Iterables2.stream(vars).forEach(subst::remove);
+            for(ITermVar v : vars) {
+                subst.remove(v);
+            }
         }
 
         @Override public void compose(ISubstitution.Immutable other) {
             CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
-            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+            for(Entry<ITermVar, ITerm> e : other.removeAll(subst.keySet()).entrySet()) {
+                subst.__put(e.getKey(), e.getValue());
+            }
         }
 
         @Override public void compose(ITermVar var, ITerm term) {

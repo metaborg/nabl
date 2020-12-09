@@ -2,8 +2,6 @@ package mb.nabl2.terms.substitution;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.regex.Pattern;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.CapsuleUtil;
@@ -14,8 +12,6 @@ import mb.nabl2.util.CapsuleUtil;
  * kept unchanged.
  */
 public class FreshVars {
-
-    private static final Pattern SUFFIX = Pattern.compile("-?[0-9]*$");
 
     private Set.Immutable<ITermVar> oldVars;
     private Set.Immutable<ITermVar> newVars;
@@ -47,7 +43,7 @@ public class FreshVars {
      * Generate a variable with a fresh name, and remember the generated name.
      */
     public ITermVar fresh(String name) {
-        final String base = SUFFIX.matcher(name).replaceAll("");
+        final String base = dropSuffix(name);
         ITermVar fresh = B.newVar("", name);
         int i = 0;
         while(oldVars.contains(fresh) || newVars.contains(fresh)) {
@@ -58,7 +54,7 @@ public class FreshVars {
     }
 
     public ITermVar fresh(ITermVar var) {
-        final String base = SUFFIX.matcher(var.getName()).replaceAll("");
+        final String base = dropSuffix(var.getName());
         ITermVar fresh = var;
         int i = 0;
         while(oldVars.contains(fresh) || newVars.contains(fresh)) {
@@ -105,6 +101,11 @@ public class FreshVars {
         final Set.Immutable<ITermVar> resetVars = newVars;
         this.newVars = Set.Immutable.of();
         return resetVars;
+    }
+
+    private String dropSuffix(String name) {
+        final int idx = name.indexOf('-');
+        return idx < 0 ? name : name.substring(0, idx);
     }
 
 }

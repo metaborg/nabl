@@ -60,7 +60,6 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
     private CountingListener<V> countingListener;
 
     public IncSCCAlg(IGraphDataSource<V> graphDataSource) {
-
         if (graphDataSource instanceof IBiDirectionalGraphDataSource<?>) {
             gds = (IBiDirectionalGraphDataSource<V>) graphDataSource;
         } else {

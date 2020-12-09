@@ -47,7 +47,9 @@ public class ConsList<E> implements Iterable<E>, Serializable {
 
     public ConsList<E> prepend(ConsList<E> init) {
         final Deque<E> elems = Lists.newLinkedList();
-        init.forEach(elems::push);
+        for(E e : init) {
+            elems.push(e);
+        }
         ConsList<E> list = this;
         while(!elems.isEmpty()) {
             list = list.prepend(elems.pop());

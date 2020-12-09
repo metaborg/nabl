@@ -2,10 +2,8 @@ package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.util.Collection;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Predicate2;
@@ -16,6 +14,7 @@ import org.metaborg.util.task.IProgress;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Streams;
@@ -333,10 +332,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
                 final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges.flatMap((k, ps) -> {
-                    final List<IDeclPath<S, L, O>> newPs = ps.stream()
-                            .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p)))
-                            .collect(Collectors.toList());
-                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs);
+                    final ImmutableList.Builder<IDeclPath<S, L, O>> newPs =
+                            ImmutableList.builderWithExpectedSize(ps.size());
+                    for(IDeclPath<S, L, O> p : ps) {
+                        (params.getPathRelevance() ? Paths.append(step, p) : Optional.of(p)).ifPresent(newPs::add);
+                    }
+                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs.build());
                 });
                 logger.trace("queued fwd changes {} to {} added {} removed {}", env, dstEnv,
                         envChanges.addedPaths().paths(), envChanges.removedPaths().paths());
@@ -393,10 +394,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(srcEnv);
         final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
                 BUChanges.ofPaths(srcEnv, _env.pathSet()).flatMap((k, ps) -> {
-                    final List<IDeclPath<S, L, O>> newPs = ps.stream()
-                            .flatMap(p -> (params.getPathRelevance() ? ofOpt(Paths.append(step, p)) : Stream.of(p)))
-                            .collect(Collectors.toList());
-                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs);
+                    final ImmutableList.Builder<IDeclPath<S, L, O>> newPs =
+                            ImmutableList.builderWithExpectedSize(ps.size());
+                    for(IDeclPath<S, L, O> p : ps) {
+                        (params.getPathRelevance() ? Paths.append(step, p) : Optional.of(p)).ifPresent(newPs::add);
+                    }
+                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs.build());
                 });
         logger.trace("queued back changes {} to {} added {} removed {}", srcEnv, dstEnv, changes.addedPaths().paths(),
                 changes.removedPaths().paths());
