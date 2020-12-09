@@ -157,17 +157,17 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                     Predicate1<ITermVar> isRigid) {
                 super(unifier);
                 this.isRigid = isRigid;
-                equalities.forEach(e -> {
+                for(Entry<? extends ITerm, ? extends ITerm> e : equalities) {
                     worklist.push(Tuple2.of(e));
-                });
+                }
             }
 
             public Unify(PersistentUnifier.Immutable unifier, IUnifier other, Predicate1<ITermVar> isRigid) {
                 super(unifier);
                 this.isRigid = isRigid;
-                other.domainSet().forEach(v -> {
+                for(ITermVar v : other.domainSet()) {
                     worklist.push(Tuple2.of(v, other.findTerm(v)));
-                });
+                }
             }
 
             public Optional<ImmutableResult<IUnifier.Immutable>> apply() throws OccursException, RigidException {
@@ -684,9 +684,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
         protected ListMultimap<ITermVar, ITermVar> getInvReps() {
             final ListMultimap<ITermVar, ITermVar> invReps = LinkedListMultimap.create();
-            reps.forEach((var, rep) -> {
-                invReps.put(rep, var);
-            });
+            for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
+                invReps.put(e.getValue(), e.getKey());
+            }
             return invReps;
         }
 

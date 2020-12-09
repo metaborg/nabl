@@ -1,10 +1,5 @@
 package mb.statix.concurrent.actors.futures;
 
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
 import org.metaborg.util.functions.CheckedFunction1;
@@ -15,11 +10,21 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
     private final T result;
 
     public CompletedFuture(T result) {
-        if(result == null) {
-            throw new IllegalArgumentException("null value is not supported.");
-        }
         this.result = result;
     }
+
+    /////////////////////////////////////////////////////////////////////
+    // ICompletable
+    /////////////////////////////////////////////////////////////////////
+
+    @Override public void complete(T value, Throwable ex) {
+        // ignore
+    }
+
+
+    /////////////////////////////////////////////////////////////////////
+    // IFuture
+    /////////////////////////////////////////////////////////////////////
 
     @Override public <U> IFuture<U>
             handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
@@ -37,23 +42,6 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
         } catch(Throwable ex) {
             return CompletableFuture.completedExceptionally(ex);
         }
-    }
-
-    @Override public T get() {
-        return result;
-    }
-
-    @Override public T get(long timeout, TimeUnit unit)
-            throws ExecutionException, InterruptedException, TimeoutException {
-        return result;
-    }
-
-    @Override public T getNow() throws CompletionException, InterruptedException {
-        return result;
-    }
-
-    @Override public void complete(T value, Throwable ex) {
-        // ignore
     }
 
     @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
@@ -93,6 +81,12 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
 
     @Override public boolean isDone() {
         return true;
+    }
+
+    @Override public java.util.concurrent.CompletableFuture<T> asJavaCompletion() {
+        final java.util.concurrent.CompletableFuture<T> future = new java.util.concurrent.CompletableFuture<>();
+        future.complete(result);
+        return future;
     }
 
     @Override public String toString() {

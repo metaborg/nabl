@@ -114,7 +114,9 @@ public final class CapsuleUtil {
             return (Set.Immutable<V>) values;
         }
         final Set.Transient<V> set = Set.Transient.of();
-        values.forEach(set::__insert);
+        for(V v : values) {
+            set.__insert(v);
+        }
         return set.freeze();
     }
 
@@ -136,7 +138,9 @@ public final class CapsuleUtil {
 
     public static <K, V> Map.Immutable<K, V> toMap(Iterable<? extends Entry<? extends K, ? extends V>> entries) {
         final Map.Transient<K, V> map = Map.Transient.of();
-        entries.forEach(e -> map.__put(e.getKey(), e.getValue()));
+        for(Entry<? extends K, ? extends V> e : entries) {
+            map.__put(e.getKey(), e.getValue());
+        }
         return map.freeze();
     }
 
@@ -146,7 +150,9 @@ public final class CapsuleUtil {
             return (SetMultimap.Immutable<K, V>) map;
         }
         final SetMultimap.Transient<K, V> multimap = SetMultimap.Transient.of();
-        map.entrySet().forEach(e -> multimap.__insert(e.getKey(), e.getValue()));
+        for(Entry<? extends K, ? extends V> e : map.entrySet()) {
+            multimap.__insert(e.getKey(), e.getValue());
+        }
         return multimap.freeze();
     }
 

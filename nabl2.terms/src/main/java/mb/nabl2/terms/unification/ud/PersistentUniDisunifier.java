@@ -11,7 +11,6 @@ import org.spoofax.terms.util.NotImplementedException;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -365,8 +364,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final BaseUnifier.ImmutableResult<ISubstitution.Immutable> r = unifier.removeAll(vars);
             final Set.Transient<Diseq> newDisequalities = CapsuleUtil.transientSet();
-            disequalities.stream().flatMap(diseq -> Streams.stream(diseq.apply(r.result())))
-                    .map(diseq -> diseq.removeAll(vars)).forEach(newDisequalities::__insert);
+            for(Diseq diseq : disequalities) {
+                if((diseq = diseq.apply(r.result()).orElse(null)) != null) {
+                    diseq = diseq.removeAll(vars);
+                    newDisequalities.__insert(diseq);
+                }
+            }
             if(newDisequalities.stream().anyMatch(Diseq::isEmpty)) {
                 // FIXME disequalities may become empty, and therefore false!
                 throw new NotImplementedException("removal made disequality false, unhandled");

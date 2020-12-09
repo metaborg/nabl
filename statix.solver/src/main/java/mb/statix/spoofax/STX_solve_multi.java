@@ -66,7 +66,7 @@ public class STX_solve_multi extends StatixPrimitive {
             final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.singleShot(scopeImpl,
                     spec.allLabels(), project.resource(), new ProjectTypeChecker(project, spec, debug), cancel);
 
-            final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.get();
+            final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;
 
             final List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults = new ArrayList<>();

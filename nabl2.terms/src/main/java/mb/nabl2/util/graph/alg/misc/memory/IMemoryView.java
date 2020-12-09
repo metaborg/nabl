@@ -80,7 +80,9 @@ public interface IMemoryView<T> extends Iterable<T> {
      * Process contained values with their multiplicities
      */
     default void forEachEntryWithMultiplicities(BiConsumer<T, Integer> entryConsumer) {
-        entriesWithMultiplicities().forEach(e -> entryConsumer.accept(e.getKey(), e.getValue()));
+        for(Entry<T, Integer> e : entriesWithMultiplicities()) {
+            entryConsumer.accept(e.getKey(), e.getValue());
+        }
     }
 
 

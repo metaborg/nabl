@@ -2,10 +2,6 @@ package mb.statix.concurrent.actors.futures;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
@@ -97,19 +93,6 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.whenComplete(handler);
     }
 
-    @Override public List<T> get() throws ExecutionException, InterruptedException {
-        return result.get();
-    }
-
-    @Override public List<T> get(long timeout, TimeUnit unit)
-            throws ExecutionException, InterruptedException, TimeoutException {
-        return result.get(timeout, unit);
-    }
-
-    @Override public List<T> getNow() throws CompletionException, InterruptedException {
-        return result.getNow();
-    }
-
     @Override public <U> IFuture<U>
             thenApply(CheckedFunction1<? super List<T>, ? extends U, ? extends Throwable> handler) {
         return result.thenApply(handler);
@@ -131,6 +114,10 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
 
     @Override public boolean isDone() {
         return result.isDone();
+    }
+
+    @Override public java.util.concurrent.CompletableFuture<List<T>> asJavaCompletion() {
+        return result.asJavaCompletion();
     }
 
     @SuppressWarnings("unchecked") public static <T1, T2> IFuture<Tuple2<T1, T2>> apply(IFuture<T1> f1,

@@ -14,6 +14,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -49,7 +50,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
         });
 
         final List<ITerm> scopeEntries = Lists.newArrayList(); // [Scope * ITerm? * [Label * Scope]]
-        for(Scope scope : state.scopes()) {
+        for(Scope scope : Sets.union(edgeEntries.keySet(), dataEntries.keySet())) {
             final ITerm data = Optional.ofNullable(dataEntries.get(scope)).map(d -> B.newAppl("Some", d))
                     .orElse(B.newAppl("None"));
             final ITerm edges = B.newList(edgeEntries.getOrDefault(scope, ImmutableList.of()));

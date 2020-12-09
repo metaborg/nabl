@@ -37,8 +37,12 @@ public class ConstraintTerms {
         // @formatter:off
         ITerm newTerm = term.match(Terms.cases(
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args, term.getAttachments());
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(specialize(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), term.getAttachments());
             },
             list -> specializeList(list),
             string -> string,
@@ -62,8 +66,8 @@ public class ConstraintTerms {
 
     private static IListTerm specializeList(IListTerm list) {
         // fromStrategoList
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<IAttachments> attachments = Lists.newArrayList();
+        final List<ITerm> terms = Lists.newArrayListWithExpectedSize(list.getMinSize());
+        final List<IAttachments> attachments = Lists.newArrayListWithCapacity(list.getMinSize());
         final Ref<ITermVar> varTail = new Ref<>();
         while(list != null) {
             // @formatter:off
@@ -102,8 +106,12 @@ public class ConstraintTerms {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args, term.getAttachments());
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(explicate(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), term.getAttachments());
             },
             list -> explicate(list),
             string -> string,
@@ -116,8 +124,8 @@ public class ConstraintTerms {
 
     private static ITerm explicate(IListTerm list) {
         // toStrategoList
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<IAttachments> attachments = Lists.newArrayList();
+        final List<ITerm> terms = Lists.newArrayListWithExpectedSize(list.getMinSize());
+        final List<IAttachments> attachments = Lists.newArrayListWithExpectedSize(list.getMinSize());
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             // @formatter:off
