@@ -17,6 +17,8 @@ rules
 
   stx--is-var = ?Var(_)
 
+  stx--is-scope = ?Scope(_, _)
+
 
   stx--explode: t*{a*} -> List(<map(stx--explode)> t*){a*}
     where is-list
