@@ -5,6 +5,7 @@ import org.metaborg.util.functions.CheckedAction2;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.CheckedFunction2;
 
+@SuppressWarnings("unchecked")
 public class CompletableFuture<T> implements ICompletableFuture<T> {
 
     private static enum State {
@@ -47,24 +48,26 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
 
     @Override public <U> IFuture<U> compose(
             CheckedFunction2<? super T, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
-        State handle = null;
-        synchronized(this) {
-            if(state.equals(State.OPEN)) {
-                final ICompletableFuture<U> future = new CompletableFuture<>();
-                data = (Handler<T>) new Handler<T>((Handler<T>) data) {
+        State handle = state;
+        if(handle.equals(State.OPEN)) {
+            synchronized(this) {
+                if(state.equals(State.OPEN)) {
+                    final ICompletableFuture<U> future = new CompletableFuture<>();
+                    data = (Handler<T>) new Handler<T>((Handler<T>) data) {
 
-                    @Override public void handle(T r, Throwable ex) {
-                        try {
-                            handler.apply(r, ex).whenComplete(future::complete);
-                        } catch(Throwable ex2) {
-                            future.completeExceptionally(ex2);
+                        @Override public void handle(T r, Throwable ex) {
+                            try {
+                                handler.apply(r, ex).whenComplete(future::complete);
+                            } catch(Throwable ex2) {
+                                future.completeExceptionally(ex2);
+                            }
                         }
-                    }
 
-                };
-                return future;
-            } else {
-                handle = state;
+                    };
+                    return future;
+                } else {
+                    handle = state;
+                }
             }
         }
         try {
@@ -82,28 +85,30 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
     }
 
     @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
-        State handle = null;
-        synchronized(this) {
-            if(state.equals(State.OPEN)) {
-                final ICompletableFuture<U> future = new CompletableFuture<>();
-                data = (Handler<T>) new Handler<T>((Handler<T>) data) {
+        State handle = state;
+        if(handle.equals(State.OPEN)) {
+            synchronized(this) {
+                if(state.equals(State.OPEN)) {
+                    final ICompletableFuture<U> future = new CompletableFuture<>();
+                    data = (Handler<T>) new Handler<T>((Handler<T>) data) {
 
-                    @Override public void handle(T r, Throwable ex) {
-                        if(ex != null) {
-                            future.completeExceptionally(ex);
-                        } else {
-                            try {
-                                future.complete(handler.apply(r));
-                            } catch(Throwable ex2) {
-                                future.completeExceptionally(ex2);
+                        @Override public void handle(T r, Throwable ex) {
+                            if(ex != null) {
+                                future.completeExceptionally(ex);
+                            } else {
+                                try {
+                                    future.complete(handler.apply(r));
+                                } catch(Throwable ex2) {
+                                    future.completeExceptionally(ex2);
+                                }
                             }
                         }
-                    }
 
-                };
-                return future;
-            } else {
-                handle = state;
+                    };
+                    return future;
+                } else {
+                    handle = state;
+                }
             }
         }
         switch(handle) {
@@ -121,29 +126,31 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
     }
 
     @Override public IFuture<Void> thenAccept(CheckedAction1<? super T, ? extends Throwable> handler) {
-        State handle = null;
-        synchronized(this) {
-            if(state.equals(State.OPEN)) {
-                final ICompletableFuture<Void> future = new CompletableFuture<>();
-                data = (Handler<T>) new Handler<T>((Handler<T>) data) {
+        State handle = state;
+        if(handle.equals(State.OPEN)) {
+            synchronized(this) {
+                if(state.equals(State.OPEN)) {
+                    final ICompletableFuture<Void> future = new CompletableFuture<>();
+                    data = (Handler<T>) new Handler<T>((Handler<T>) data) {
 
-                    @Override public void handle(T r, Throwable ex) {
-                        if(ex != null) {
-                            future.completeExceptionally(ex);
-                        } else {
-                            try {
-                                handler.apply(r);
-                                future.complete(null);
-                            } catch(Throwable ex2) {
-                                future.completeExceptionally(ex2);
+                        @Override public void handle(T r, Throwable ex) {
+                            if(ex != null) {
+                                future.completeExceptionally(ex);
+                            } else {
+                                try {
+                                    handler.apply(r);
+                                    future.complete(null);
+                                } catch(Throwable ex2) {
+                                    future.completeExceptionally(ex2);
+                                }
                             }
                         }
-                    }
 
-                };
-                return future;
-            } else {
-                handle = state;
+                    };
+                    return future;
+                } else {
+                    handle = state;
+                }
             }
         }
         switch(handle) {
@@ -163,28 +170,30 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
 
     @Override public <U> IFuture<U>
             thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
-        State handle = null;
-        synchronized(this) {
-            if(state.equals(State.OPEN)) {
-                final ICompletableFuture<U> future = new CompletableFuture<>();
-                data = (Handler<T>) new Handler<T>((Handler<T>) data) {
+        State handle = state;
+        if(handle.equals(State.OPEN)) {
+            synchronized(this) {
+                if(state.equals(State.OPEN)) {
+                    final ICompletableFuture<U> future = new CompletableFuture<>();
+                    data = (Handler<T>) new Handler<T>((Handler<T>) data) {
 
-                    @Override public void handle(T r, Throwable ex) {
-                        if(ex != null) {
-                            future.completeExceptionally(ex);
-                        } else {
-                            try {
-                                handler.apply(r).whenComplete(future::complete);
-                            } catch(Throwable ex2) {
-                                future.completeExceptionally(ex2);
+                        @Override public void handle(T r, Throwable ex) {
+                            if(ex != null) {
+                                future.completeExceptionally(ex);
+                            } else {
+                                try {
+                                    handler.apply(r).whenComplete(future::complete);
+                                } catch(Throwable ex2) {
+                                    future.completeExceptionally(ex2);
+                                }
                             }
                         }
-                    }
 
-                };
-                return future;
-            } else {
-                handle = state;
+                    };
+                    return future;
+                } else {
+                    handle = state;
+                }
             }
         }
         switch(handle) {
@@ -203,24 +212,26 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
 
     @Override public <U> IFuture<U>
             handle(CheckedFunction2<? super T, Throwable, ? extends U, ? extends Throwable> handler) {
-        State handle = null;
-        synchronized(this) {
-            if(state.equals(State.OPEN)) {
-                final ICompletableFuture<U> future = new CompletableFuture<>();
-                data = (Handler<T>) new Handler<T>((Handler<T>) data) {
+        State handle = state;
+        if(handle.equals(State.OPEN)) {
+            synchronized(this) {
+                if(state.equals(State.OPEN)) {
+                    final ICompletableFuture<U> future = new CompletableFuture<>();
+                    data = (Handler<T>) new Handler<T>((Handler<T>) data) {
 
-                    @Override public void handle(T r, Throwable ex) {
-                        try {
-                            future.complete(handler.apply(r, ex));
-                        } catch(Throwable ex2) {
-                            future.completeExceptionally(ex2);
-                        }
+                        @Override public void handle(T r, Throwable ex) {
+                            try {
+                                future.complete(handler.apply(r, ex));
+                            } catch(Throwable ex2) {
+                                future.completeExceptionally(ex2);
+                            }
+                        };
+
                     };
-
-                };
-                return future;
-            } else {
-                handle = state;
+                    return future;
+                } else {
+                    handle = state;
+                }
             }
         }
         try {
@@ -238,25 +249,27 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
     }
 
     @Override public IFuture<T> whenComplete(CheckedAction2<? super T, Throwable, ? extends Throwable> handler) {
-        State handle = null;
-        synchronized(this) {
-            if(state.equals(State.OPEN)) {
-                final ICompletableFuture<T> future = new CompletableFuture<>();
-                data = (Handler<T>) new Handler<T>((Handler<T>) data) {
+        State handle = state;
+        if(handle.equals(State.OPEN)) {
+            synchronized(this) {
+                if(state.equals(State.OPEN)) {
+                    final ICompletableFuture<T> future = new CompletableFuture<>();
+                    data = (Handler<T>) new Handler<T>((Handler<T>) data) {
 
-                    @Override public void handle(T r, Throwable ex) {
-                        try {
-                            handler.apply(r, ex);
-                            future.complete(r, ex);
-                        } catch(Throwable ex2) {
-                            future.completeExceptionally(ex2);
-                        }
+                        @Override public void handle(T r, Throwable ex) {
+                            try {
+                                handler.apply(r, ex);
+                                future.complete(r, ex);
+                            } catch(Throwable ex2) {
+                                future.completeExceptionally(ex2);
+                            }
+                        };
+
                     };
-
-                };
-                return future;
-            } else {
-                handle = state;
+                    return future;
+                } else {
+                    handle = state;
+                }
             }
         }
         try {
