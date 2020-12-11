@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.ConsList;
 import mb.statix.scopegraph.IScopeGraph;
@@ -35,20 +34,19 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             implements IScopeGraph.Immutable<S, L, D>, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final Set.Immutable<L> edgeLabels;
+        private final Set.Immutable<L> labels;
 
         private final Map.Immutable<Tuple2<S, L>, ConsList<S>> edges;
         private final Map.Immutable<S, D> data;
 
-        Immutable(Set.Immutable<L> edgeLabels, Map.Immutable<Tuple2<S, L>, ConsList<S>> edges,
-                Map.Immutable<S, D> data) {
-            this.edgeLabels = edgeLabels;
+        Immutable(Set.Immutable<L> labels, Map.Immutable<Tuple2<S, L>, ConsList<S>> edges, Map.Immutable<S, D> data) {
+            this.labels = labels;
             this.edges = edges;
             this.data = data;
         }
 
-        @Override public Set.Immutable<L> getEdgeLabels() {
-            return edgeLabels;
+        @Override public Set.Immutable<L> getLabels() {
+            return labels;
         }
 
         // ------------------------------------------------------------
@@ -84,7 +82,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
         // ------------------------------------------------------------
 
         @Override public ScopeGraph.Transient<S, L, D> melt() {
-            return new ScopeGraph.Transient<>(edgeLabels.asTransient(), edges.asTransient(), data.asTransient());
+            return new ScopeGraph.Transient<>(labels.asTransient(), edges.asTransient(), data.asTransient());
         }
 
         @Override public int hashCode() {
@@ -110,8 +108,8 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             return true;
         }
 
-        public static <S, L, D> ScopeGraph.Immutable<S, L, D> of(Iterable<L> edgeLabels) {
-            return new ScopeGraph.Immutable<>(CapsuleUtil.toSet(edgeLabels), Map.Immutable.of(), Map.Immutable.of());
+        public static <S, L, D> ScopeGraph.Immutable<S, L, D> of() {
+            return new ScopeGraph.Immutable<>(Set.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
         }
 
         // ------------------------------------------------------------
@@ -120,20 +118,19 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
     public static class Transient<S, L, D> extends ScopeGraph<S, L, D> implements IScopeGraph.Transient<S, L, D> {
 
-        private final Set.Transient<L> edgeLabels;
+        private final Set.Transient<L> labels;
 
         private final Map.Transient<Tuple2<S, L>, ConsList<S>> edges;
         private final Map.Transient<S, D> data;
 
-        Transient(Set.Transient<L> edgeLabels, Map.Transient<Tuple2<S, L>, ConsList<S>> edges,
-                Map.Transient<S, D> data) {
-            this.edgeLabels = edgeLabels;
+        Transient(Set.Transient<L> labels, Map.Transient<Tuple2<S, L>, ConsList<S>> edges, Map.Transient<S, D> data) {
+            this.labels = labels;
             this.edges = edges;
             this.data = data;
         }
 
-        @Override public Set.Transient<L> getEdgeLabels() {
-            return edgeLabels;
+        @Override public Set<L> getLabels() {
+            return labels;
         }
 
         // ------------------------------------------------------------
@@ -152,6 +149,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             final Tuple2<S, L> key = Tuple2.of(sourceScope, label);
             final ConsList<S> scopes = edges.getOrDefault(key, ConsList.nil());
             edges.__put(key, scopes.prepend(targetScope));
+            labels.__insert(label);
             return true;
         }
 
@@ -171,8 +169,8 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             for(Entry<S, D> entry : other.getData().entrySet()) {
                 data.__put(entry.getKey(), entry.getValue());
             }
-            for(L label : other.getEdgeLabels()) {
-                edgeLabels.__insert(label);
+            for(L label : other.getLabels()) {
+                labels.__insert(label);
             }
             return true;
         }
@@ -180,11 +178,11 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
         // ------------------------------------------------------------
 
         @Override public ScopeGraph.Immutable<S, L, D> freeze() {
-            return new ScopeGraph.Immutable<>(edgeLabels.freeze(), edges.freeze(), data.freeze());
+            return new ScopeGraph.Immutable<>(labels.freeze(), edges.freeze(), data.freeze());
         }
 
-        public static <S, L, D> ScopeGraph.Transient<S, L, D> of(Iterable<L> edgeLabels) {
-            return new ScopeGraph.Transient<>(CapsuleUtil.toSet(edgeLabels).asTransient(), Map.Transient.of(), Map.Transient.of());
+        public static <S, L, D> ScopeGraph.Transient<S, L, D> of() {
+            return new ScopeGraph.Transient<>(Set.Transient.of(), Map.Transient.of(), Map.Transient.of());
         }
 
     }

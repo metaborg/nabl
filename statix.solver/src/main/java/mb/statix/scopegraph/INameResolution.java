@@ -1,5 +1,7 @@
 package mb.statix.scopegraph;
 
+import java.util.Set;
+
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.task.ICancel;
 
@@ -27,7 +29,7 @@ public interface INameResolution<S, L, D> {
 
         Builder<S, L, D> withIsComplete(Predicate2<S, EdgeOrData<L>> isComplete);
 
-        INameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph);
+        INameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, Set<L> edgeLabels);
 
     }
 

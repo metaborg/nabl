@@ -34,12 +34,12 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
 
     private final Predicate2<S, EdgeOrData<L>> isComplete; // default: true
 
-    public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
+    public FastNameResolution(IScopeGraph<S, L, D> scopeGraph, java.util.Set<L> edgeLabels, LabelWF<L> labelWF,
+            LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data();
-        this.allLabels = scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge).collect(CapsuleCollectors.toSet())
-                .__insert(dataLabel);
+        this.allLabels =
+                edgeLabels.stream().map(EdgeOrData::edge).collect(CapsuleCollectors.toSet()).__insert(dataLabel);
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
         this.dataWF = dataWF;
@@ -243,8 +243,9 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
             return this;
         }
 
-        @Override public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph) {
-            return new FastNameResolution<>(scopeGraph, labelWF, labelOrder, dataWF, dataEquiv, isComplete);
+        @Override public FastNameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph,
+                java.util.Set<L> edgeLabels) {
+            return new FastNameResolution<>(scopeGraph, edgeLabels, labelWF, labelOrder, dataWF, dataEquiv, isComplete);
         }
 
     }

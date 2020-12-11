@@ -60,6 +60,7 @@ public final class CanResolve
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
                 ctx.spec(),
                 state.scopeGraph(),
+                ctx.spec().allLabels(),
                 labelWF, labelOrd, 
                 dataWF, isAlways, isComplete);
         // @formatter:on

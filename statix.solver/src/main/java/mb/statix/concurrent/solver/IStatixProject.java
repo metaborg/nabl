@@ -2,7 +2,6 @@ package mb.statix.concurrent.solver;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,10 +34,10 @@ public interface IStatixProject {
     Map<String, IStatixLibrary> libraries();
 
     static IMatcher<IStatixProject> matcher() {
-        return M.appl4("Project", M.stringValue(), StatixTerms.hoconstraint(),
+        return M.appl5("Project", M.stringValue(), StatixTerms.hoconstraint(),
                 M.map(M.stringValue(), IStatixGroup.matcher()), M.map(M.stringValue(), IStatixUnit.matcher()),
-                (t, id, rule, groups, units) -> {
-                    return StatixProject.of(id, Optional.of(rule), groups, units, Collections.emptyMap());
+                M.map(M.stringValue(), M.req(IStatixLibrary.matcher())), (t, id, rule, groups, units, libs) -> {
+                    return StatixProject.of(id, Optional.of(rule), groups, units, libs);
                 });
     }
 

@@ -34,7 +34,7 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
 
     @Override public IFuture<Unit> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, List<Scope> rootScopes) {
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = library.scopeGraph();
-        final Set.Immutable<ITerm> labels = scopeGraph.getEdgeLabels();
+        final Set.Immutable<ITerm> labels = scopeGraph.getLabels();
 
         final Map<Scope, Scope> scopeMap = new HashMap<>();
 
@@ -51,7 +51,7 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
             context.initScope(newScope, labels, false);
         }
 
-        for(Scope scope : library.scopes()) {
+        for(Scope scope : library.ownScopes()) {
             if(scopeMap.containsKey(scope)) {
                 throw new IllegalStateException("Scope already initialized.");
             }
@@ -60,7 +60,7 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
             scopeMap.put(scope, newScope);
         }
 
-        for(Scope scope : Iterables.concat(rootScopes, library.scopes())) {
+        for(Scope scope : Iterables.concat(rootScopes, library.ownScopes())) {
             final Scope newScope = scopeMap.get(scope);
 
             final ITerm datum;

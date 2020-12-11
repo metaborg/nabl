@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,6 +47,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -69,10 +71,12 @@ import mb.statix.constraints.messages.Message;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.TermPart;
 import mb.statix.constraints.messages.TextPart;
+import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.reference.EdgeOrData;
+import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
@@ -343,10 +347,10 @@ public class StatixTerms {
             }),
             intTerm(),
             listTerm(),
-            // SCOPE_OP -- has no syntax
-            // TERMINDEX_OP -- has no syntax
-            // NOID_OP -- has no syntax
-            // WITHID_OP -- has no syntax
+            M.appl(SCOPE_OP, t -> t),
+            M.appl(TERMINDEX_OP, t -> t),
+            M.appl(NOID_OP, t -> t),
+            M.appl(WITHID_OP, t -> t),
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
@@ -554,6 +558,34 @@ public class StatixTerms {
             M.appl1("Origin", varTerm(), (t, v) -> Optional.of(v))
         );
         // @formatter:on
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraph() {
+        return M.listElems(scopeEntry(), (t, scopeEntries) -> {
+            final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
+            for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>> se : scopeEntries) {
+                Scope s = se._1();
+                if(se._2().isPresent()) {
+                    scopeGraph.setDatum(s, se._2().get());
+                }
+                for(Entry<ITerm, List<Scope>> ee : se._3().entrySet()) {
+                    final ITerm lbl = ee.getKey();
+                    for(Scope tgt : ee.getValue()) {
+                        scopeGraph.addEdge(s, lbl, tgt);
+                    }
+                }
+            }
+            return scopeGraph.freeze();
+        });
+    }
+
+    public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>>> scopeEntry() {
+        return M.tuple3(Scope.matcher(), M.option(term()), M.map(label(), M.listElems(Scope.matcher())),
+                (t, scope, maybeDatum, edges) -> {
+                    return Tuple3.of(scope, maybeDatum, edges);
+                });
     }
 
     ///////////////////////////////////////////////////////////////////////////

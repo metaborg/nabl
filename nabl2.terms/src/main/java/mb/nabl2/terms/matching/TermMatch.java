@@ -480,6 +480,17 @@ public class TermMatch {
                     (t, es) -> CapsuleUtil.toMap(es));
         }
 
+        // option
+
+        public <R> IMatcher<Optional<R>> option(IMatcher<R> matcher) {
+            // @formatter:off
+            return cases(
+                appl0("None", t -> Optional.empty()),
+                appl1("Some", matcher, (t, e) -> Optional.of(e))
+            );
+            // @formatter:on
+        }
+
         // util
 
         private <T> Optional<T> empty(@SuppressWarnings("unused") ITerm term) {
