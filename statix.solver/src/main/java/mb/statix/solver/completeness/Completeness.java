@@ -159,6 +159,9 @@ public abstract class Completeness implements ICompleteness {
             getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                 final int n = incomplete.remove(scopeOrVar, label);
                 if(n == 0) {
+                    throw new IllegalStateException("Absent critical edge: " + scopeOrVar + "/" + label);
+                }
+                if(n == 1) {
                     removedEdges.__insert(CriticalEdge.of(scopeOrVar, label));
                 }
             });
@@ -173,6 +176,10 @@ public abstract class Completeness implements ICompleteness {
                     for(Entry<EdgeOrData<ITerm>, Integer> labelCount : varLabel.getValue().entrySet()) {
                         final int n = incomplete.remove(scopeOrVar, labelCount.getKey(), labelCount.getValue());
                         if(n == 0) {
+                            throw new IllegalStateException("Absent critical edge: " + scopeOrVar + "/"
+                                    + labelCount.getKey() + "#" + labelCount.getValue());
+                        }
+                        if(n == 1) {
                             removedEdges.__insert(CriticalEdge.of(scopeOrVar, labelCount.getKey()));
                         }
                     }

@@ -203,6 +203,13 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
             final Function0<FreshVars> fvProvider = freshVarProvider(this);
 
+            // update unifier with the correct variable counts
+            final PersistentUnifier.Transient _unifier = new PersistentUnifier.Transient(this.unifier);
+            for(ITermVar var : diseq.freeVarSet()) {
+                _unifier.addRangeVar(var, 1);
+            }
+            final PersistentUnifier.Immutable unifier = _unifier.freeze();
+
             // check if diseq is implied -- ignore rigid vars here
             final Optional<Diseq> reducedDiseqNoRigid;
             if((reducedDiseqNoRigid = normalizeDiseq(this, fvProvider, diseq, Predicate1.never(),
@@ -295,9 +302,6 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
          * 
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced disequality, or none if
          * the disequality is satisfied.
-         * 
-         * @param updateableUnifier
-         *            TODO
          */
         private static Optional<Optional<Diseq>> normalizeDiseq(IUnifier.Immutable unifier,
                 Function0<FreshVars> fvProvider, Diseq diseq, Predicate1<ITermVar> isRigid,

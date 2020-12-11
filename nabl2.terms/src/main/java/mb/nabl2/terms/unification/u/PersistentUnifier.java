@@ -775,7 +775,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 throw new IllegalStateException();
             }
             final int n = repAndTermVarsCache.add(var, k);
-            if(n == k) { // added var
+            if(n == 0) { // added var
                 if(!domainSetCache.contains(var)) {
                     rangeSetCache.__insert(var);
                     varSetCache.__insert(var);
@@ -788,7 +788,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 throw new IllegalStateException();
             }
             final int n = repAndTermVarsCache.remove(var, k);
-            if(n == 0) { // removed var
+            if(n < k) {
+                throw new IllegalStateException();
+            }
+            if(n == k) { // removed var
                 if(!domainSetCache.contains(var)) {
                     rangeSetCache.__remove(var);
                     varSetCache.__remove(var);

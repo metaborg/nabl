@@ -149,23 +149,31 @@ public abstract class MultiSetMap<K, V> {
         }
 
         /**
-         * Add an entry to the map, return the new count.
+         * Add an entry to the map, return the old count.
          */
         public int put(K key, V value) {
-            final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
-            final int n = values.add(value);
-            entries.__put(key, values.freeze());
-            return n;
+            return put(key, value, 1);
         }
 
         public int put(K key, V value, int n) {
             if(n < 0) {
                 throw new IllegalArgumentException("Negative count");
             }
-            final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
-            final int m = values.add(value, n);
-            entries.__put(key, values.freeze());
-            return m;
+            final MultiSet.Immutable<V> oldValues = entries.__remove(key);
+            final MultiSet.Immutable<V> newValues;
+            final int oldCount;
+            if(oldValues != null) {
+                final MultiSet.Transient<V> values = oldValues.melt();
+                oldCount = values.add(value, n);
+                newValues = values.freeze();
+            } else {
+                oldCount = 0;
+                newValues = MultiSet.Immutable.of(value, n);
+            }
+            if(!newValues.isEmpty()) {
+                entries.__put(key, newValues);
+            }
+            return oldCount;
         }
 
         public void putAll(K key, Iterable<V> values) {
@@ -175,11 +183,15 @@ public abstract class MultiSetMap<K, V> {
         }
 
         public void putAll(K key, MultiSet.Immutable<V> values) {
-            final MultiSet.Immutable<V> oldValues = entries.get(key);
+            final MultiSet.Immutable<V> oldValues = entries.__remove(key);
+            final MultiSet.Immutable<V> newValues;
             if(oldValues != null) {
-                entries.__put(key, MultiSet.Immutable.union(oldValues, values));
+                newValues = MultiSet.Immutable.union(oldValues, values);
             } else {
-                entries.__put(key, values);
+                newValues = values;
+            }
+            if(!newValues.isEmpty()) {
+                entries.__put(key, newValues);
             }
         }
 
@@ -192,31 +204,31 @@ public abstract class MultiSetMap<K, V> {
         }
 
         /**
-         * Remove an entry from the map, return the new count.
+         * Remove an entry from the map, return the old count.
          */
         public int remove(K key, V value) {
-            final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
-            final int n = values.remove(value);
-            if(values.isEmpty()) {
-                entries.__remove(key);
-            } else {
-                entries.__put(key, values.freeze());
-            }
-            return n;
+            return remove(key, value, 1);
         }
 
         public int remove(K key, V value, int n) {
             if(n < 0) {
                 throw new IllegalArgumentException("Negative count");
             }
-            final MultiSet.Transient<V> values = entries.getOrDefault(key, MultiSet.Immutable.of()).melt();
-            final int m = values.remove(value, n);
-            if(values.isEmpty()) {
-                entries.__remove(key);
+            final MultiSet.Immutable<V> oldValues = entries.__remove(key);
+            final MultiSet.Immutable<V> newValues;
+            final int oldCount;
+            if(oldValues != null) {
+                final MultiSet.Transient<V> values = oldValues.melt();
+                oldCount = values.remove(value, n);
+                newValues = values.freeze();
             } else {
-                entries.__put(key, values.freeze());
+                oldCount = 0;
+                newValues = MultiSet.Immutable.of();
             }
-            return m;
+            if(!newValues.isEmpty()) {
+                entries.__put(key, newValues);
+            }
+            return oldCount;
         }
 
         public Immutable<K, V> clear() {
