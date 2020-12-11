@@ -197,7 +197,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
-        final String name = baseName.replace("-", "_");
+        final String name = baseName.replace('-', '_');
         final int n = scopeNameCounters.add(name);
         final S scope = context.makeScope(name + "-" + n);
 
