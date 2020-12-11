@@ -34,9 +34,9 @@ abstract class NameResolution<S, L, D> {
 
     private final LabelOrder<L> labelOrder;
 
-    public NameResolution(Iterable<L> edgeLabels, LabelOrder<L> labelOrder) {
+    public NameResolution(Set.Immutable<L> edgeLabels, LabelOrder<L> labelOrder) {
         this.dataLabel = EdgeOrData.data();
-        this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
+        this.edgeLabels = edgeLabels;
 
         this.labelOrder = labelOrder;
     }

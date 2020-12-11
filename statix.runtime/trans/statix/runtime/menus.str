@@ -20,9 +20,9 @@ rules
   stx--make-project-library:
       (_, _, _, path, project-path) -> (filename, result)
     where
-      a := <stx--get-resource-analysis> project-path
+      a* := <stx--get-project-analyses;map(Snd)>
     with
       filename := "project.stxlib"
-    ; sg := <stx--debug-scopegraph> a
+    ; sg := <stx--debug-scopegraph;strip-annos> a*
     ; s* := <collect-all(stx--is-scope);make-set> sg
     ; result := Library([], s*, sg)

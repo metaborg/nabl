@@ -33,7 +33,7 @@ signature
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Solution : List(Var, Term) * SolverResult -> Solution
 
-    Project : /*resource*/String * /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixProject
+    Project : /*resource*/String * /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) * /*libraries*/List(String, StatixLibrary) -> StatixProject
     Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
     Group   : /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
     Unit    : /*resource*/String * /*ast*/Term -> StatixUnit
@@ -89,6 +89,7 @@ rules // multi file analysis (new)
   cstx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
+       ; libs  := <stx--local-libs>
        ; level := <stx--log-level>
        ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
        ; grp-c-name  := <stx--mk-qualified-name(|spec-name)> group-constraint
@@ -128,7 +129,7 @@ rules // multi file analysis (new)
       //
       // 3. Solve project
       //
-    ; project   := <cstx--make-project(|grp-c-name)> (project-task, file-task*)
+    ; project   := <cstx--make-project(|grp-c-name, libs)> (project-task, file-task*)
     ; analysis* := <cstx--solve-multi(|spec, level, progress, cancel)> project
       //
       // 4. Construct resuls
@@ -151,8 +152,8 @@ rules // multi file analysis (new)
   //  end
 
 
-  cstx--make-project(|grp-c-name):
-      ((_, project-resource, project-rule), file-task*) -> Project(project-resource, project-rule, groups, units)
+  cstx--make-project(|grp-c-name, libs):
+      ((_, project-resource, project-rule), file-task*) -> Project(project-resource, project-rule, groups, units, libs)
     with (groups, units) := <cstx--make-subs(|grp-c-name)> file-task*
 
   cstx--make-subs(|grp-c-name): file-task* -> (groups, units)
@@ -307,6 +308,7 @@ rules
 
   stx--log-level = stx--is-debug-custom-enabled < !"Info" + !"None"
 
+
   stx--language-spec-by-name =
     MkSingleton
   ; language-resources(stx--module-path, stx--spec-imports)
@@ -320,6 +322,16 @@ rules
   ; map(Snd)
   ; ![spec|<id>]
   ; stx--merge-spec-aterms
+
+
+  stx--local-libs =
+    !["stxlibs"]
+  ; project-resources(stx--lib-path, is-list;filter(is-string))
+  ; filter(not(?("stxlibs", _)))
+ <+ ![]
+
+  stx--lib-path: "stxlibs" -> "lib/stxlibs"
+  stx--lib-path: name -> $[lib/[name].stxlib]
 
 
   stx--spec-imports = ?FileSpec(<id>, _, _, _, _, _)
@@ -377,9 +389,17 @@ rules
 
   stx--get-resource-analysis =
     get-resource-constraint-analysis
-  ; ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
+  ; stx--get-result-analysis
+
+  stx--get-project-analyses =
+    get-project-constraint-analyses
+  ; map((id, stx--get-result-analysis))
+
+  stx--get-result-analysis = 
+    ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
    <+ ?FileAnalysis(_, _, <id>) + ?ProjectAnalysis(<id>) // cstx
     )
+
 
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")

@@ -80,6 +80,7 @@ public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchS
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
                 spec,
                 state.scopeGraph(),
+                spec.allLabels(),
                 labelWF, labelOrd, 
                 dataWF, isAlways, isComplete);
         // @formatter:on

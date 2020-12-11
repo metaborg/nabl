@@ -78,6 +78,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     private final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
+    private final Set.Immutable<L> edgeLabels;
     private final Set.Transient<S> scopes;
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
@@ -99,8 +100,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.failures = Lists.newArrayList();
         this.unitResult = new CompletableFuture<>();
 
-        this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of(edgeLabels));
-        this.scopes = Set.Transient.of();
+        this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of());
+        this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
+        this.scopes = CapsuleUtil.transientSet();
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
@@ -387,7 +389,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
 
-        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(scopeGraph.get().getEdgeLabels(), labelOrder) {
+        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder) {
 
             // FIXME Eliminate tryFinish in resolution predicates. To eliminate tryFinish here,
             //       there needs to be a difference between local waitFors (originating from this

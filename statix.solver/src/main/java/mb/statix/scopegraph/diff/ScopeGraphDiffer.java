@@ -41,7 +41,7 @@ public class ScopeGraphDiffer<S, L, D> {
         this.s0 = s0;
         this.current = current;
         this.previous = previous;
-        this.labels = Set.Immutable.union(current.getEdgeLabels(), previous.getEdgeLabels());
+        this.labels = Set.Immutable.union(current.getLabels(), previous.getLabels());
         this.diffOps = diffOps;
     }
 
@@ -88,7 +88,7 @@ public class ScopeGraphDiffer<S, L, D> {
                 if(datum.isPresent()) {
                     scopeList.addAll(getScopes.apply(datum.get()));
                 }
-                for(L label : scopeGraph.getEdgeLabels()) {
+                for(L label : scopeGraph.getLabels()) {
                     for(S target : scopeGraph.getEdges(scope, label)) {
                         final Edge<S, L> edge = new Edge<>(scope, label, target);
                         edgeList.add(edge);

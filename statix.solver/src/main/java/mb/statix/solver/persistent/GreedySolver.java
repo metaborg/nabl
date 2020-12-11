@@ -458,7 +458,7 @@ class GreedySolver {
                                 .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
                                 .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
                                 .withIsComplete((s, l) -> params.isComplete(s, l, state))
-                                .build(state.scopeGraph());
+                                .build(state.scopeGraph(), spec.allLabels());
                     // @formatter:on
                     final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope, cancel);
                     final List<ITerm> pathTerms =
