@@ -75,7 +75,7 @@ public class DeadlockBatcher<N, T> {
             logger.debug("{} granted {}/{}", self, actor, token);
             final MultiSet.Transient<IActorRef<? extends N>> _committedWaitFors = committedWaitFors.melt();
             final int n = _committedWaitFors.remove(actor);
-            if(n == 0) {
+            if(n == 1) {
                 pendingGrants = pendingGrants.add(actor);
             }
             committedWaitFors = _committedWaitFors.freeze();
@@ -94,7 +94,7 @@ public class DeadlockBatcher<N, T> {
         final MultiSet.Transient<IActorRef<? extends N>> _committedWaitFors = committedWaitFors.melt();
         for(Entry<IActorRef<? extends N>, Integer> entry : pendingWaitFors.entrySet()) {
             final int n = _committedWaitFors.add(entry.getKey(), entry.getValue());
-            if(n == entry.getValue()) {
+            if(n == 0) {
                 newWaitFors.add(entry.getKey());
             }
         }
