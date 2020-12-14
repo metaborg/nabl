@@ -5,8 +5,9 @@ import java.util.Set;
 
 import org.metaborg.util.functions.Action1;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.SetMultimap;
 
 import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas.Host;
 
@@ -30,23 +31,23 @@ public class ChandyMisraHaas<P extends Host<P>> {
     }
 
     private final P self;
-    private final Action1<P> deadlockHandler;
+    private final Action1<Set<P>> deadlockHandler;
 
     private State state;
 
     private final Map<P, Integer> latest;
     private final Map<P, P> engager;
     private final Map<P, Integer> num;
-    private final Set<P> wait;
+    private final SetMultimap<P, P> wait;
 
-    public ChandyMisraHaas(P self, Action1<P> deadlockHandler) {
+    public ChandyMisraHaas(P self, Action1<Set<P>> deadlockHandler) {
         this.self = self;
         this.deadlockHandler = deadlockHandler;
         this.state = State.EXECUTING;
         this.latest = Maps.newHashMap();
         this.num = Maps.newHashMap();
         this.engager = Maps.newHashMap();
-        this.wait = Sets.newHashSet();
+        this.wait = HashMultimap.create();
     }
 
     /**
@@ -59,7 +60,7 @@ public class ChandyMisraHaas<P extends Host<P>> {
         }
         state = State.IDLE;
         latest.put(i, latest.get(i) + 1);
-        wait.add(i);
+        wait.put(i, i);
         final Set<P> S = i.dependentSet();
         for(P j : S) {
             j.query(i, latest.get(i), i);
@@ -97,14 +98,14 @@ public class ChandyMisraHaas<P extends Host<P>> {
         if(m > latest.getOrDefault(i, 0)) {
             latest.put(i, m);
             engager.put(i, j);
-            wait.add(i);
+            wait.put(i, k);
             final Set<P> S = k.dependentSet();
             for(P r : S) {
                 r.query(i, m, k);
             }
             num.put(i, S.size());
-        } else if(wait.contains(i) && m == latest.get(i)) {
-            j.reply(i, m, k);
+        } else if(wait.containsKey(i) && m == latest.get(i)) {
+            j.reply(i, m, wait.get(i));
         }
     }
 
@@ -118,19 +119,21 @@ public class ChandyMisraHaas<P extends Host<P>> {
      * @param r
      *            Replying host P_r.
      */
-    public void reply(P i, int m, P r) {
+    public void reply(P i, int m, Set<P> R) {
         final P k = self;
         if(state.equals(State.EXECUTING)) {
             return;
         }
-        if(m == latest.get(i) && wait.contains(i)) {
-            num.put(i, num.get(i) - 1);
-            if(num.get(i) == 0) {
+        if(m == latest.get(i) && wait.containsKey(i)) {
+            wait.putAll(i, R);
+            final int num_i = num.put(i, num.get(i) - 1) - 1;
+            if(num_i == 1) {
+                final Set<P> Q = wait.get(i);
                 if(i.equals(k)) {
-                    deadlockHandler.apply(k);
+                    deadlockHandler.apply(Q);
                 } else {
                     P j = engager.get(i);
-                    j.reply(i, m, k);
+                    j.reply(i, m, Q);
                 }
             }
         }
@@ -142,7 +145,7 @@ public class ChandyMisraHaas<P extends Host<P>> {
 
         void query(P i, int m, P j);
 
-        void reply(P i, int m, P r);
+        void reply(P i, int m, Set<P> R);
 
     }
 
