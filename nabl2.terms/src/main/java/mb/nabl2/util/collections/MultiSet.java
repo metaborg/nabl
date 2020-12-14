@@ -3,8 +3,11 @@ package mb.nabl2.util.collections;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 
@@ -53,6 +56,56 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
     @Override public Iterator<E> iterator() {
         return new MultiSetIterator();
+    }
+
+    public Optional<Integer> compareTo(MultiSet<E> other) {
+        final Map<E, Integer> ours = elements();
+        final Map<E, Integer> theirs = other.elements();
+        boolean oursMissing = false;
+        boolean theirsMissing = false;
+        boolean oursSmaller = false;
+        boolean theirsSmaller = false;
+        for(E e : Sets.union(ours.keySet(), theirs.keySet())) {
+            final Integer ourCount = ours.get(e);
+            final Integer theirCount = theirs.get(e);
+            if(ourCount == null && theirCount == null) {
+                // continue
+            } else if(ourCount == null) {
+                if(theirsMissing) {
+                    return Optional.empty();
+                } else {
+                    oursMissing = true;
+                }
+            } else if(theirCount == null) {
+                if(oursMissing) {
+                    return Optional.empty();
+                } else {
+                    theirsMissing = true;
+                }
+            } else {
+                final int d = ourCount - theirCount;
+                if(d < 0) {
+                    if(theirsSmaller) {
+                        return Optional.empty();
+                    } else {
+                        oursSmaller = true;
+                    }
+                } else if(d > 0) {
+                    if(oursSmaller) {
+                        return Optional.empty();
+                    } else {
+                        theirsSmaller = true;
+                    }
+                }
+            }
+        }
+        // at this point, oursMissing && theirsMissing == false, and oursSmaller && theirsMissing == false should hold
+        if(oursMissing || oursSmaller) {
+            return Optional.of(-1);
+        } else if(theirsMissing || theirsSmaller) {
+            return Optional.of(1);
+        }
+        return Optional.of(0);
     }
 
     public static class Immutable<E> extends MultiSet<E> implements Serializable {

@@ -1,6 +1,7 @@
 package mb.statix.concurrent.actors.deadlock;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSet.Immutable;
@@ -46,6 +47,19 @@ public class Clock<N> {
         return sent.equals(other.sent) && delivered.equals(other.delivered);
     }
 
+    public Optional<Integer> compareTo(Clock<N> other) {
+        Integer ds = sent.compareTo(other.sent).orElse(null);
+        Integer dr = delivered.compareTo(other.delivered).orElse(null);
+        if(ds == null || dr == null) {
+            return Optional.empty();
+        } else if(ds < 0 & dr < 0) {
+            return Optional.of(-1);
+        } else if(ds > 0 && dr > 0) {
+            return Optional.of(1);
+        } else {
+            return Optional.empty();
+        }
+    }
 
     @Override public String toString() {
         return "Clock[sent = " + sent + ", delivered = " + delivered + "]";
