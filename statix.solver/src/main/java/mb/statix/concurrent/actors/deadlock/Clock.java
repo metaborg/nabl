@@ -52,9 +52,11 @@ public class Clock<N> {
         Integer dr = delivered.compareTo(other.delivered).orElse(null);
         if(ds == null || dr == null) {
             return Optional.empty();
-        } else if(ds < 0 & dr < 0) {
+        } else if(ds == 0 & dr == 0) {
+            return Optional.of(0);
+        } else if(ds <= 0 & dr <= 0) {
             return Optional.of(-1);
-        } else if(ds > 0 && dr > 0) {
+        } else if(ds >= 0 && dr >= 0) {
             return Optional.of(1);
         } else {
             return Optional.empty();
