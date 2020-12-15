@@ -1,13 +1,13 @@
 package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertAbsent;
+import static mb.nabl2.terms.unification.UnifierTests.assertPresent;
 import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
-import java.util.Optional;
 
 import org.junit.Test;
 import org.metaborg.util.iterators.Iterables2;
@@ -422,15 +422,6 @@ public class UniDisunifierFiniteTest {
         assertPresent(phi.disunify(B.newTuple(b, u), B.newTuple(d, v))); // implied
         assertFalse(phi.rangeSet().contains(u));
         assertFalse(phi.rangeSet().contains(v));
-    }
-
-
-    private static <X> void assertPresent(Optional<X> opt) {
-        assertTrue(opt.isPresent());
-    }
-
-    private static <X> void assertAbsent(Optional<X> opt) {
-        assertFalse(opt.isPresent());
     }
 
 }

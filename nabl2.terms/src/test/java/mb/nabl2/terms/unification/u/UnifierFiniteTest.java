@@ -1,6 +1,9 @@
 package mb.nabl2.terms.unification.u;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.unification.UnifierTests.assertContains;
+import static mb.nabl2.terms.unification.UnifierTests.assertNotContains;
+import static mb.nabl2.terms.unification.UnifierTests.assertPresent;
 import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -8,7 +11,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 import org.junit.Test;
 
@@ -318,18 +320,29 @@ public class UnifierFiniteTest {
         assertPresent(phi.unify(a, b, Set.Immutable.of(a)::contains));
     }
 
-    @Test(expected = RigidException.class, timeout = 10000) public void testUnifyFreeRigidVarFreeRigidVar()
-            throws OccursException, RigidException {
+    @Test(timeout = 10000) public void testUnifyFreeRigidVarFreeRigidVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
-        phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+        try {
+            phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+            throw new AssertionError("Expected RigidException.");
+        } catch(RigidException ex) {
+            assertContains(a, ex.vars());
+            assertContains(b, ex.vars());
+        }
     }
 
-    @Test(expected = RigidException.class, timeout = 10000) public void testUnifyFreeRigidVarBoundRigidVar()
-            throws OccursException, RigidException {
+    @Test(timeout = 10000) public void testUnifyFreeRigidVarBoundRigidVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         assertPresent(phi.unify(b, x));
-        phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+        try {
+            phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+            throw new AssertionError("Expected RigidException.");
+        } catch(RigidException ex) {
+            assertContains(a, ex.vars());
+            assertNotContains(b, ex.vars());
+        }
     }
+
 
     @Test(timeout = 10000) public void testUnifyBoundRigidVarBoundRigidVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
@@ -347,12 +360,28 @@ public class UnifierFiniteTest {
 
     }
 
-    private static <X> void assertPresent(Optional<X> opt) {
-        assertTrue(opt.isPresent());
+    @Test(timeout = 10000) public void testUnifyUnifiedFreeRigidVar() throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable
+                .of(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of()).melt();
+        try {
+            phi.unify(a, x, Set.Immutable.of(a, b)::contains);
+            throw new AssertionError("Expected RigidException.");
+        } catch(RigidException ex) {
+            assertContains(b, ex.vars());
+            assertNotContains(a, ex.vars());
+        }
     }
 
-    private static <X> void assertAbsent(Optional<X> opt) {
-        assertFalse(opt.isPresent());
+    @Test(timeout = 10000) public void testUnifyUnifiedBoundRigidVar() throws OccursException, RigidException {
+        IUnifier.Transient phi = PersistentUnifier.Immutable
+                .of(true, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(a, x)).melt();
+        try {
+            phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+            throw new AssertionError("Expected RigidException.");
+        } catch(RigidException ex) {
+            assertContains(b, ex.vars());
+            assertNotContains(a, ex.vars());
+        }
     }
 
 }
