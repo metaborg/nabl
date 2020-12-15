@@ -319,8 +319,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(repTerm != null) {
                     worklist.push(Tuple2.of(repTerm, term));
                 } else {
-                    if(isRigid.test(var)) {
-                        throw new RigidException(var);
+                    if(isRigid.test(rep)) {
+                        throw new RigidException(rep);
                     }
                     putTerm(rep, term);
                     result.add(rep);
