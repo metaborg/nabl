@@ -27,6 +27,8 @@ import mb.statix.spec.Spec;
 
 public class Solver {
 
+    public static final boolean INCREMENTAL_CRITICAL_EDGES = true;
+
     private Solver() {
     }
 

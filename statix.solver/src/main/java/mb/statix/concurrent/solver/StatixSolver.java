@@ -117,7 +117,6 @@ public class StatixSolver {
     private static final ImmutableMap<ITermVar, ITermVar> NO_EXISTENTIALS = ImmutableMap.of();
 
     private static final int MAX_DEPTH = 32;
-    private static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
     private final Spec spec;
     private final IConstraintStore constraints;
@@ -139,7 +138,7 @@ public class StatixSolver {
     public StatixSolver(IConstraint constraint, Spec spec, IState.Immutable state, ICompleteness.Immutable completeness,
             IDebugContext debug, IProgress progress, ICancel cancel,
             ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph) {
-        if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
             debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
             this.spec = spec.precomputeCriticalEdges();
         } else {
@@ -150,7 +149,7 @@ public class StatixSolver {
         this.state = state;
         this.constraints = new BaseConstraintStore(debug);
         final ICompleteness.Transient _completeness = completeness.melt();
-        if(INCREMENTAL_CRITICAL_EDGES) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
             final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
                     CompletenessUtil.precomputeCriticalEdges(constraint, spec.scopeExtensions());
             this.constraints.add(initialConstraintAndCriticalEdges._1());
@@ -284,7 +283,7 @@ public class StatixSolver {
         if(!newConstraints.isEmpty()) {
             // no constraints::addAll, instead recurse in tail position
             final ICompleteness.Transient _completeness = completeness.melt();
-            if(INCREMENTAL_CRITICAL_EDGES) {
+            if(Solver.INCREMENTAL_CRITICAL_EDGES) {
                 _completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
             } else {
                 _completeness.addAll(newConstraints, spec, unifier); // must come before ICompleteness::remove
@@ -367,7 +366,7 @@ public class StatixSolver {
     private void removeCompleteness(IConstraint constraint) throws InterruptedException {
         final Set.Immutable<CriticalEdge> removedEdges;
         final ICompleteness.Transient _completeness = completeness.melt();
-        if(INCREMENTAL_CRITICAL_EDGES) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
             if(!constraint.ownCriticalEdges().isPresent()) {
                 throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
             }
@@ -486,7 +485,7 @@ public class StatixSolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
+                if(Solver.INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
                 }
@@ -752,7 +751,7 @@ public class StatixSolver {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.commit();
-                    if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
+                    if(Solver.INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
