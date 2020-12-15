@@ -31,6 +31,10 @@ public class UnifierTests {
                 diseq -> diseq.toTuple().apply(phi::disunify).map(r -> r.result().isPresent()).orElse(true)));
     }
 
+    public static void assertXor(boolean left, boolean right) {
+        assertTrue((left || right) && !(left && right));
+    }
+
     public static <E> void assertContains(E element, Collection<E> collection) {
         assertTrue(collection.contains(element));
     }
