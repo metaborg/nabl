@@ -472,7 +472,6 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             public ImmutableResult<ISubstitution.Immutable> apply() {
                 // remove vars from unifier
                 final ISubstitution.Immutable subst = removeAll();
-                // TODO Check if variables escaped?
                 final PersistentUnifier.Immutable newUnifier = freeze();
                 return new BaseUnifier.ImmutableResult<>(subst, newUnifier);
             }
@@ -617,6 +616,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return new PersistentUnifier.Immutable(finite, reps, ranks, terms, repAndTermVarsCache.freeze(),
                     domainSetCache.freeze(), rangeSetCache.freeze(), varSetCache.freeze());
         }
+
     }
 
     ///////////////////////////////////////////

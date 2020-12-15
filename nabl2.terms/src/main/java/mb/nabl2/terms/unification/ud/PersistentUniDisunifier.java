@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Predicate1;
-import org.spoofax.terms.util.NotImplementedException;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -367,19 +366,27 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
         @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             final BaseUnifier.ImmutableResult<ISubstitution.Immutable> r = unifier.removeAll(vars);
+
+            final PersistentUnifier.Transient newUnifier = new PersistentUnifier.Transient(r.unifier());
             final Set.Transient<Diseq> newDisequalities = CapsuleUtil.transientSet();
             for(Diseq diseq : disequalities) {
-                if((diseq = diseq.apply(r.result()).orElse(null)) != null) {
-                    diseq = diseq.removeAll(vars);
-                    newDisequalities.__insert(diseq);
+                for(ITermVar freeVar : diseq.freeVarSet()) {
+                    newUnifier.removeRangeVar(freeVar, 1);
+                }
+                Diseq newDiseq;
+                if((newDiseq = diseq.apply(r.result()).orElse(null)) != null) {
+                    newDiseq = newDiseq.removeAll(vars);
+                    if(!newDiseq.isEmpty()) {
+                        newDisequalities.__insert(newDiseq);
+                        for(ITermVar newFreeVar : newDiseq.freeVarSet()) {
+                            newUnifier.addRangeVar(newFreeVar, 1);
+                        }
+                    }
                 }
             }
-            if(newDisequalities.stream().anyMatch(Diseq::isEmpty)) {
-                // FIXME disequalities may become empty, and therefore false!
-                throw new NotImplementedException("removal made disequality false, unhandled");
-            }
+
             final PersistentUniDisunifier.Immutable ud =
-                    new PersistentUniDisunifier.Immutable(r.unifier(), newDisequalities.freeze());
+                    new PersistentUniDisunifier.Immutable(newUnifier.freeze(), newDisequalities.freeze());
             return new ImmutableResult<>(r.result(), ud);
         }
 

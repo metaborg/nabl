@@ -112,7 +112,7 @@ public class UnifierFiniteTest {
         assertEquals("f(\"x\",\"y\")", phi.toString(a));
     }
 
-    @Test(timeout = 10000) public void testRemoveUnifiedVar() throws OccursException {
+    @Test(timeout = 10000) public void testRemoveInBetweenUnifiedVar() throws OccursException {
         Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
         Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
         reps.__put(a, b);
