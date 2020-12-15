@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import mb.statix.constraints.messages.MessageKind;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -51,6 +50,7 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -96,7 +96,6 @@ class GreedySolver {
 
     private static final int CANCEL_RATE = 42;
     private static final int MAX_DEPTH = 32;
-    private static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
     // set-up
     private final Spec spec;
@@ -119,7 +118,7 @@ class GreedySolver {
 
     public GreedySolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
             IDebugContext debug, IProgress progress, ICancel cancel) {
-        if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
             debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
             this.spec = spec.precomputeCriticalEdges();
         } else {
@@ -128,7 +127,7 @@ class GreedySolver {
         this.initialState = state;
         this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
-        if(INCREMENTAL_CRITICAL_EDGES) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
             final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
                     CompletenessUtil.precomputeCriticalEdges(initialConstraint, spec.scopeExtensions());
             constraints.add(initialConstraintAndCriticalEdges._1());
@@ -213,7 +212,7 @@ class GreedySolver {
 
         // add new constraints
         // no constraints::addAll, instead recurse immediately below
-        if(INCREMENTAL_CRITICAL_EDGES) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
             completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
         } else {
             completeness.addAll(newConstraints, spec, unifier); // must come before ICompleteness::remove
@@ -252,7 +251,7 @@ class GreedySolver {
 
     private void removeCompleteness(IConstraint constraint, IState.Immutable state) {
         final Set<CriticalEdge> removedEdges;
-        if(INCREMENTAL_CRITICAL_EDGES) {
+        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
             if(!constraint.ownCriticalEdges().isPresent()) {
                 throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
             }
@@ -373,7 +372,7 @@ class GreedySolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
+                if(Solver.INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
                 }
@@ -618,7 +617,7 @@ class GreedySolver {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.commit();
-                    if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
+                    if(Solver.INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
