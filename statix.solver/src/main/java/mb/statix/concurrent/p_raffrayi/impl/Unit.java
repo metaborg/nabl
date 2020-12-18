@@ -108,8 +108,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.scopeNameCounters = MultiSet.Transient.of();
 
         this.stats = new Stats(self.stats());
-
-        self.addMonitor(this);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -695,23 +693,21 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         tryFinish();
     }
 
-    @SuppressWarnings("unchecked") @Override public void sent(IActor<?> self, IActorRef<?> target,
-            java.util.Set<String> tags) {
+    @SuppressWarnings("unchecked") @Override public void sent(IActorRef<?> target, java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.sent((IActorRef<? extends IUnit<S, L, D, ?>>) target);
             logger.debug("updated clock: {}", clock);
         }
     }
 
-    @SuppressWarnings("unchecked") @Override public void delivered(IActor<?> self, IActorRef<?> source,
-            java.util.Set<String> tags) {
+    @SuppressWarnings("unchecked") @Override public void delivered(IActorRef<?> source, java.util.Set<String> tags) {
         if(tags.contains("stuckness")) {
             clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, ?>>) source);
             logger.debug("updated clock: {}", clock);
         }
     }
 
-    @Override public void suspended(IActor<?> self) {
+    @Override public void suspended() {
         if(state.equals(UnitState.INIT)) {
             // Ignore suspends before the start message is processed. This is important
             // because otherwise deadlock detection may fail. The suspend after the start
@@ -723,7 +719,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         context.suspended(clock);
     }
 
-    @Override public void stopped(IActor<?> self) {
+    @Override public void stopped() {
         //        logger.error("Actor {} stopped.", self);
         final MultiSet.Immutable<IWaitFor<S, L, D>> remainingTokens = context.getAllTokens();
         if(!remainingTokens.isEmpty()) {

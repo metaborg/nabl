@@ -109,7 +109,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
         }
     }
 
-    @Override public void failed(IActor<?> self, Throwable ex) {
+    @Override public void failed(Throwable ex) {
         fail(ex);
     }
 

@@ -7,43 +7,43 @@ public interface IActorMonitor {
     /**
      * Actor is started.
      */
-    default void started(IActor<?> self) {
+    default void started() {
     }
 
     /**
      * Actor sent a message to another actor.
      */
-    default void sent(IActor<?> self, IActorRef<?> target, Set<String> tags) {
+    default void sent(IActorRef<?> target, Set<String> tags) {
     }
 
     /**
      * Actor delivered a message from another actor.
      */
-    default void delivered(IActor<?> self, IActorRef<?> source, Set<String> tags) {
+    default void delivered(IActorRef<?> source, Set<String> tags) {
     }
 
     /**
      * Actor suspended.
      */
-    default void suspended(IActor<?> self) {
+    default void suspended() {
     }
 
     /**
      * Actor resumed.
      */
-    default void resumed(IActor<?> self) {
+    default void resumed() {
     }
 
     /**
      * Actor stopped.
      */
-    default void stopped(IActor<?> self) {
+    default void stopped() {
     }
 
     /**
      * Actor failed.
      */
-    default void failed(IActor<?> self, Throwable ex) {
+    default void failed(Throwable ex) {
     }
 
 }

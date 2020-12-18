@@ -12,13 +12,6 @@ public interface IActorSystem {
      */
     <T> T async(IActorRef<T> receiver);
 
-    void addMonitor(IActorRef<?> actor, IActorRef<? extends IActorMonitor> monitor);
-
-    /**
-     * Start actor system.
-     */
-    void start();
-
     /**
      * Stop actor system, actors may complete current work.
      */

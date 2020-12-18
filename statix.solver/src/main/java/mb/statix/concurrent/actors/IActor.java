@@ -4,9 +4,9 @@ import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Function1;
 
-import mb.statix.concurrent.actors.futures.ICompletable;
-import mb.statix.concurrent.actors.futures.IFuture;
-
+/**
+ * Interface through which an actor implementation interacts with the underlying actor.
+ */
 public interface IActor<T> extends IActorRef<T> {
 
     /**
@@ -25,16 +25,6 @@ public interface IActor<T> extends IActorRef<T> {
     T local();
 
     /**
-     * Complete future as a message.
-     */
-    <U> void complete(ICompletable<U> completable, U value, Throwable ex);
-
-    /**
-     * Schedule future to be dispatched as a message on completion.
-     */
-    <U> IFuture<U> schedule(IFuture<U> future);
-
-    /**
      * Get sender of the current message being handled.
      */
     @Nullable IActorRef<?> sender();
@@ -43,16 +33,6 @@ public interface IActor<T> extends IActorRef<T> {
      * Get typed sender of the current message being handled.
      */
     @Nullable <U> IActorRef<U> sender(TypeTag<U> type);
-
-    /**
-     * Add a monitor.
-     */
-    void addMonitor(IActorMonitor monitor);
-
-    /**
-     * Stop the actor.
-     */
-    void stop();
 
     /**
      * Assertion that checks it is executed on the actors thread.

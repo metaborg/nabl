@@ -4,8 +4,6 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -13,21 +11,20 @@ import org.metaborg.util.log.LoggerUtils;
 import com.google.common.collect.Sets;
 
 import mb.statix.concurrent.actors.IActor;
-import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.IActorSystem;
 import mb.statix.concurrent.actors.TypeTag;
 
-public class ActorSystem implements IActorSystem {
+public class ActorSystem implements IActorSystem, IActorInternal<Void> {
 
     private static final String ID_SEP = "/";
 
     private static final ILogger logger = LoggerUtils.logger(ActorSystem.class);
 
     private final Object lock = new Object();
-    private final Set<Actor<?>> actors;
+    private final Set<IActorInternal<?>> actors;
     private final IActorScheduler scheduler;
-    private volatile ActorSystemState state;
+    private volatile boolean running;
     private final IActorContext context;
 
     public ActorSystem() {
@@ -41,7 +38,7 @@ public class ActorSystem implements IActorSystem {
     public ActorSystem(IActorScheduler scheduler) {
         this.actors = Sets.newHashSet();
         this.scheduler = scheduler;
-        this.state = ActorSystemState.INIT;
+        this.running = true;
         this.context = new ActorContext();
     }
 
@@ -50,20 +47,18 @@ public class ActorSystem implements IActorSystem {
         return add(null, qid, type, supplier);
     }
 
-    private <T> IActor<T> add(@Nullable IActorRef<?> parent, String qid, TypeTag<T> type,
+    private <T> IActorImpl<T> add(IActorInternal<?> parent, String qid, TypeTag<T> type,
             Function1<IActor<T>, T> supplier) {
         logger.debug("add actor {}", qid);
-        final Actor<T> actor = new Actor<>(context, qid, type, supplier);
+        final Actor<T> actor = new Actor<>(context, parent, qid, type);
         synchronized(lock) {
-            if(state.equals(ActorSystemState.STOPPED)) {
+            if(!running) {
                 throw new IllegalStateException("Actor system already stopped.");
             }
             actors.add(actor);
-            if(state.equals(ActorSystemState.RUNNING)) {
-                actor.start();
-            }
         }
         logger.debug("added actor {}", qid);
+        actor.start(supplier);
         return actor;
     }
 
@@ -86,56 +81,59 @@ public class ActorSystem implements IActorSystem {
         return sb.toString();
     }
 
-    @Override public void addMonitor(IActorRef<?> actor, IActorRef<? extends IActorMonitor> monitor) {
-        ((Actor<?>) actor).addMonitor(async(monitor));
-    }
-
     @Override public <T> T async(IActorRef<T> receiver) {
-        return ((Actor<T>) receiver).asyncSystem;
-    }
-
-    @Override public void start() {
-        logger.debug("start system");
-        synchronized(lock) {
-            if(!state.equals(ActorSystemState.INIT)) {
-                throw new IllegalStateException("Actor system already started.");
-            }
-            state = ActorSystemState.RUNNING;
-            for(Actor<?> actor : actors) {
-                actor.start();
-            }
-        }
-        logger.debug("started system");
+        return ((IActorInternal<T>) receiver).async();
     }
 
     @Override public void stop() {
+        doStop(null);
+    }
+
+    @Override public void cancel() {
+        doStop(new InterruptedException());
+    }
+
+    @Override public boolean running() {
         synchronized(lock) {
-            if(!state.equals(ActorSystemState.RUNNING)) {
-                throw new IllegalStateException("Actor system not started.");
+            return running;
+        }
+    }
+
+    private void doStop(Throwable ex) {
+        synchronized(lock) {
+            if(!running) {
+                throw new IllegalStateException("Actor system not running.");
             }
-            state = ActorSystemState.STOPPED;
-            for(Actor<?> actor : actors) {
-                actor.stop();
+            running = false;
+            for(IActorInternal<?> actor : actors) {
+                actor.stop(ex);
             }
+        }
+        if(ex != null) {
+            scheduler.shutdownNow();
+        } else {
             scheduler.shutdown();
         }
     }
 
-    @Override public void cancel() {
-        synchronized(lock) {
-            if(!state.equals(ActorSystemState.RUNNING)) {
-                throw new IllegalStateException("Actor system not started.");
-            }
-            state = ActorSystemState.STOPPED;
-            for(Actor<?> actor : actors) {
-                actor.stop();
-            }
-            scheduler.shutdownNow();
-        }
+    ///////////////////////////////////////////////////////////////////////////
+    // IActorInternal
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public String id() {
+        return toString();
     }
 
-    @Override public boolean running() {
-        return state.equals(ActorSystemState.RUNNING);
+    @Override public void start(Function1<IActor<Void>, ? extends Void> supplier) {
+        throw new IllegalStateException("Actor system is not started by message.");
+    }
+
+    @Override public Void async() {
+        throw new IllegalStateException("Actor system has no async interface.");
+    }
+
+    @Override public void stop(Throwable ex) {
+        doStop(ex);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -145,8 +143,8 @@ public class ActorSystem implements IActorSystem {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private class ActorContext implements IActorContext {
 
-        @Override public <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
-            final Actor<?> parent = Actor.current.get();
+        @Override public <U> IActorImpl<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
+            final IActorInternal<?> parent = ActorThreadLocals.current.get();
             final String qid = parent.id() + ID_SEP + escapeId(id);
             return ActorSystem.this.add(parent, qid, type, supplier);
         }
@@ -157,13 +155,17 @@ public class ActorSystem implements IActorSystem {
                     throw new IllegalArgumentException("Actor " + receiver + " not part of this system.");
                 }
             }
-            return (T) ((Actor) receiver).asyncActor;
+            return ((IActorInternal<T>) receiver).async();
         }
 
         @Override public IActorScheduler scheduler() {
             return scheduler;
         }
 
+    }
+
+    @Override public String toString() {
+        return "system:/";
     }
 
 }

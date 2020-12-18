@@ -4,6 +4,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -27,21 +28,21 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
         this.executor = new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, executorQueue);
     }
 
-    @Override public void schedule(Actor<?> actor, int priority) {
-        final ActorTask task = new ActorTask(actor, priority);
+    @Override public void schedule(Runnable runnable, int priority, AtomicReference<Runnable> taskRef) {
+        final Task task = new Task(runnable, priority);
         maxPriority = Math.max(maxPriority, priority);
-        if(!actor.scheduledTask.compareAndSet(null, task)) {
-            logger.error("Actor {} already scheduled", actor.id());
-            throw new IllegalStateException("Actor " + actor.id() + " already scheduled.");
+        if(!taskRef.compareAndSet(null, task)) {
+            logger.error("Actor {} already scheduled", runnable);
+            throw new IllegalStateException("Actor " + runnable + " already scheduled.");
         }
         executor.execute(task);
     }
 
-    @Override public void reschedule(Runnable oldTask, int newPriority) {
-        ActorTask task = (ActorTask) oldTask;
+    @Override public void reschedule(Runnable oldTask, int newPriority, AtomicReference<Runnable> taskRef) {
+        Task task = (Task) oldTask;
         if(task.priority * RESCHEDULE_FACTOR < newPriority) {
             if(task.active.compareAndSet(true, false)) {
-                schedule(task.actor, newPriority);
+                schedule(task.runnable, newPriority, taskRef);
             }
         }
     }
@@ -60,7 +61,7 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
 
     private void updateMaxPriority() {
         // FIXME Top task may be inactive, possibly setting the priority too high.
-        final ActorTask task = (ActorTask) executorQueue.peek();
+        final Task task = (Task) executorQueue.peek();
         if(task != null) {
             maxPriority = task.priority;
         } else {
@@ -68,14 +69,14 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
         }
     }
 
-    private class ActorTask implements Runnable, Comparable<ActorTask> {
+    private class Task implements Runnable, Comparable<Task> {
 
-        private final Actor<?> actor;
+        private final Runnable runnable;
         private final int priority;
         private final AtomicBoolean active;
 
-        ActorTask(Actor<?> runnable, int priority) {
-            this.actor = runnable;
+        Task(Runnable runnable, int priority) {
+            this.runnable = runnable;
             this.priority = priority;
             this.active = new AtomicBoolean(true);
         }
@@ -83,11 +84,11 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
         @Override public void run() {
             if(active.compareAndSet(true, false)) {
                 updateMaxPriority();
-                actor.run();
+                runnable.run();
             }
         }
 
-        @Override public int compareTo(ActorTask o) {
+        @Override public int compareTo(Task o) {
             return o.priority - priority;
         }
 

@@ -3,6 +3,7 @@ package mb.statix.concurrent.actors.impl;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -17,16 +18,16 @@ public class WorkStealingScheduler implements IActorScheduler {
         this.executor = Executors.newWorkStealingPool(parallelism);
     }
 
-    @Override public void schedule(Actor<?> actor, int priority) {
-        final ActorTask task = new ActorTask(actor);
-        if(!actor.scheduledTask.compareAndSet(null, task)) {
-            logger.error("Actor {} already scheduled", actor.id());
-            throw new IllegalStateException("Actor " + actor.id() + " already scheduled.");
+    @Override public void schedule(Runnable runnable, int priority, AtomicReference<Runnable> taskRef) {
+        final Task task = new Task(runnable);
+        if(!taskRef.compareAndSet(null, task)) {
+            logger.error("Actor {} already scheduled", runnable);
+            throw new IllegalStateException("Actor " + runnable + " already scheduled.");
         }
         executor.execute(task);
     }
 
-    @Override public void reschedule(Runnable oldTask, int newPriority) {
+    @Override public void reschedule(Runnable oldTask, int newPriority, AtomicReference<Runnable> taskRef) {
     }
 
     @Override public boolean preempt(int priority) {
@@ -41,19 +42,19 @@ public class WorkStealingScheduler implements IActorScheduler {
         executor.shutdownNow();
     }
 
-    private class ActorTask implements Runnable {
+    private class Task implements Runnable {
 
-        private final Actor<?> actor;
+        private final Runnable runnable;
         private final AtomicBoolean active;
 
-        ActorTask(Actor<?> runnable) {
-            this.actor = runnable;
+        Task(Runnable runnable) {
+            this.runnable = runnable;
             this.active = new AtomicBoolean(true);
         }
 
         @Override public void run() {
             if(active.compareAndSet(true, false)) {
-                actor.run();
+                runnable.run();
             }
         }
 
