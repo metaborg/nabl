@@ -13,9 +13,10 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api(compositeBuild("org.metaborg.util")) // API to expose logger framework.
+  implementation(compositeBuild("org.metaborg.util"))
   api(compositeBuild("org.spoofax.terms"))
   api(compositeBuild("org.spoofax.interpreter.core"))
+  implementation(compositeBuild("org.strategoxt.strj"))
   api(project(":nabl2.terms"))
 
   api("com.google.guava:guava")

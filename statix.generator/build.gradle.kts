@@ -3,17 +3,18 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
+val spoofax2Version: String by ext
 dependencies {
-  api(platform("org.metaborg:parent:$version"))
-  testImplementation(platform("org.metaborg:parent:$version"))
-  annotationProcessor(platform("org.metaborg:parent:$version"))
-  testAnnotationProcessor(platform("org.metaborg:parent:$version"))
+  api(platform("org.metaborg:parent:$spoofax2Version"))
+  testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
+  annotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
+  testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
 
   // !! Update dependencies in pom.xml as well
   api(project(":nabl2.terms"))
   api(project(":statix.solver"))
 
-  api("org.apache.commons:commons-math3:3.6.1")
+  implementation("org.apache.commons:commons-math3:3.6.1")
   api("com.google.guava:guava")
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
