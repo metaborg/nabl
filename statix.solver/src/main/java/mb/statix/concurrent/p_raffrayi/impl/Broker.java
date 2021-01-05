@@ -179,8 +179,7 @@ public class Broker<S, L, D> implements IBroker<S, L, D>, IActorMonitor {
 
         @Override public <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>>
                 add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
-            final IActor<IUnit<S, L, D, R>> unit = self.add(id, TypeTag.of(IUnit.class),
-                    self -> new Unit<>(self, UnitContext.this.self, new UnitContext(self), unitChecker, edgeLabels));
+            final IActor<IUnit<S, L, D, R>> unit = self.add(id, TypeTag.of(IUnit.class));
             Broker.this.addUnit(unit);
             final IFuture<IUnitResult<S, L, D, R>> unitResult = self.async(unit)._start(rootScopes);
             unitResult.whenComplete((r, ex) -> {

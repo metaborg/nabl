@@ -1,6 +1,9 @@
 package mb.statix.concurrent.actors;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.unit.Unit;
+
+import mb.statix.concurrent.actors.futures.IFuture;
 
 
 public interface IActorSystem {
@@ -15,12 +18,12 @@ public interface IActorSystem {
     /**
      * Stop actor system, actors may complete current work.
      */
-    void stop();
+    IFuture<Unit> stop();
 
     /**
      * Stop actor system, interrupt actors current work.
      */
-    void cancel();
+    IFuture<Unit> cancel();
 
     boolean running();
 
