@@ -11,6 +11,6 @@ public interface IBroker<S, L, D> {
 
     <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker);
 
-    IFuture<Unit> run();
+    IFuture<Unit> result();
 
 }

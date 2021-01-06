@@ -24,12 +24,14 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
+import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.IActorStats;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.deadlock.Clock;
+import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas;
+import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas.Host;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
@@ -59,7 +61,7 @@ import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.path.Paths;
 
-class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
+class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorRef<? extends IUnit<S, L, D, ?>>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
@@ -70,8 +72,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private final IUnitContext<S, L, D> context;
     private final ITypeChecker<S, L, D, R> typeChecker;
 
-    private Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock;
-    private UnitState state;
+    private volatile UnitState state;
+    private final ChandyMisraHaas<IActorRef<? extends IUnit<S, L, D, ?>>> cmh;
 
     private final Ref<R> analysis;
     private final List<Throwable> failures;
@@ -93,8 +95,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         this.context = context;
         this.typeChecker = unitChecker;
 
-        this.clock = Clock.of();
         this.state = UnitState.INIT;
+        this.cmh = new ChandyMisraHaas<>(this, this::handleDeadlock);
 
         this.analysis = new Ref<>();
         this.failures = Lists.newArrayList();
@@ -116,6 +118,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
 
     @Override public IFuture<IUnitResult<S, L, D, R>> _start(List<S> rootScopes) {
         assertInState(UnitState.INIT);
+        resume();
 
         state = UnitState.ACTIVE;
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
@@ -131,21 +134,47 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         waitFor(result, self);
         self.schedule(this.typeChecker.run(this, rootScopes)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
-            this.clock = this.clock.sent(self).delivered(self); // FIXME necessary?
+            resume();
+            // FIXME this.clock = this.clock.sent(self).delivered(self); // FIXME necessary?
             if(ex != null) {
                 failures.add(ex);
             } else {
                 analysis.set(r);
             }
             granted(result, self);
-            final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = context.getTokens(self);
+            final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = getTokens(self);
             if(!selfTokens.isEmpty()) {
                 logger.warn("{} returned while waiting on {}", self, selfTokens);
             }
-            tryFinish();
+            // tryFinish();
         });
 
         return unitResult;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IActorMonitor
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void resume() {
+        logger.info("{} resume", this);
+        if(cmh.exec()) {
+            logger.info("{} exec", this);
+        }
+    }
+
+    @Override public void suspended() {
+        logger.info("{} suspended", this);
+        if(cmh.idle()) {
+            logger.info("{} idle", this);
+        }
+        tryFinish();
+    }
+
+    @Override public void stopped(Throwable ex) {
+        if(!state.equals(UnitState.DONE)) {
+            unitResult.completeExceptionally(new Exception("Actor " + this + " stopped.", ex));
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -159,20 +188,21 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         return self.id();
     }
 
-    @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
             List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
 
-        final Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> result_subunit =
+        final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
                 context.add(id, unitChecker, rootScopes);
-        final ICompletableFuture<IUnitResult<S, L, D, R>> result = new CompletableFuture<>();
-        final IActorRef<? extends IUnit<S, L, D, R>> subunit = result_subunit._2();
+        final ICompletableFuture<IUnitResult<S, L, D, Q>> result = new CompletableFuture<>();
+        final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);
         waitFor(token, subunit);
         result_subunit._1().whenComplete((r, ex) -> {
+            resume();
             granted(token, subunit);
             result.complete(r, ex);
         });
@@ -261,7 +291,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         stats.ownQueries += 1;
         return self.schedule(result).whenComplete((env, ex) -> {
             granted(wf, self);
-            tryFinish();
+            // tryFinish();
         }).thenApply(CapsuleUtil::toSet);
     }
 
@@ -270,6 +300,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void _initShare(S scope, Iterable<EdgeOrData<L>> edges, boolean sharing) {
+        resume();
         doInitShare(self.sender(TYPE), scope, edges, sharing);
     }
 
@@ -278,6 +309,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _doneSharing(S scope) {
+        resume();
         doCloseScope(self.sender(TYPE), scope);
     }
 
@@ -286,11 +318,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     @Override public void _closeEdge(S scope, EdgeOrData<L> edge) {
+        resume();
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
     @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
+        // resume(); // FIXME not necessary?
         stats.foreignQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
@@ -325,7 +359,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         if(sharing) {
             waitFor(CloseScope.of(self, scope), sender);
         }
-        tryFinish();
+        // tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -341,7 +375,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
-        tryFinish();
+        // tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -357,7 +391,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
-        tryFinish();
+        // tryFinish();
 
         final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         if(owner.equals(self)) {
@@ -369,7 +403,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         }
     }
 
-    private final void doAddEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, S source, L label, S target) {
+    private final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?>> sender, S source,
+            L label, S target) {
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
 
@@ -411,9 +446,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     waitFor(wf, owner);
                     stats.forwardedQueries += 1;
                     return Optional.of(result.whenComplete((r, ex) -> {
+                        resume();
                         logger.debug("got answer from {}", sender);
                         granted(wf, owner);
-                        tryFinish();
+                        // tryFinish();
                     }));
                 }
             }
@@ -434,7 +470,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                         return externalRep.whenComplete((rep, ex) -> {
                             self.assertOnActorThread();
                             granted(token, self);
-                            tryFinish();
+                            // tryFinish();
                         }).thenApply(rep -> {
                             logger.debug("got external rep {} for {}", rep, datum.get());
                             return Optional.of(rep);
@@ -462,7 +498,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     return result.whenComplete((r, ex) -> {
                         self.assertOnActorThread();
                         granted(token, self);
-                        tryFinish();
+                        // tryFinish();
                     });
                 }
             }
@@ -479,7 +515,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                     return result.whenComplete((r, ex) -> {
                         self.assertOnActorThread();
                         granted(token, self);
-                        tryFinish();
+                        // tryFinish();
                     });
                 }
             }
@@ -497,13 +533,35 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
-    private void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {
-        context.waitFor(token, unit);
+    private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
+    private MultiSetMap.Immutable<IActorRef<? extends IUnit<S, L, D, ?>>, IWaitFor<S, L, D>> waitForsByActor =
+            MultiSetMap.Immutable.of();
+
+    private boolean isWaiting() {
+        return !waitFors.isEmpty();
     }
 
-    private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> unit) {
-        self.assertOnActorThread();
-        context.granted(token, unit);
+    private boolean isWaitingFor(IWaitFor<S, L, D> token) {
+        return waitFors.contains(token);
+    }
+
+    private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
+        return waitForsByActor.get(unit);
+    }
+
+    private void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+        logger.debug("{} wait for {}/{}", self, actor, token);
+        waitFors = waitFors.add(token);
+        waitForsByActor = waitForsByActor.put(actor, token);
+    }
+
+    private void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+        if(!waitForsByActor.contains(actor, token)) {
+            logger.error("{} not waiting for granted {}/{}", self, actor, token);
+            throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
+        }
+        waitFors = waitFors.remove(token);
+        waitForsByActor = waitForsByActor.remove(actor, token);
     }
 
     /**
@@ -512,7 +570,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
      * may conclude prematurely that the unit is done.
      */
     private void tryFinish() {
-        if(!state.equals(UnitState.DONE) && !context.isWaiting()) {
+        if(state.equals(UnitState.ACTIVE) && !isWaiting()) {
             state = UnitState.DONE;
             unitResult.complete(UnitResult.of(id(), scopeGraph.get(), analysis.get(), failures, stats));
         }
@@ -525,7 +583,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     private void releaseDelays(S scope) {
         for(Entry<EdgeOrData<L>, Delay> entry : delays.get(scope)) {
             final EdgeOrData<L> edge = entry.getKey();
-            if(!context.isWaitingFor(CloseLabel.of(self, scope, edge))) {
+            if(!isWaitingFor(CloseLabel.of(self, scope, edge))) {
                 final Delay delay = entry.getValue();
                 logger.debug("released {} on {}(/{})", delay.future, scope, edge);
                 delays.remove(scope, edge, delay);
@@ -543,11 +601,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     }
 
     private boolean isScopeInitialized(S scope) {
-        return !context.isWaitingFor(InitScope.of(self, scope)) && !context.isWaitingFor(CloseScope.of(self, scope));
+        return !isWaitingFor(InitScope.of(self, scope)) && !isWaitingFor(CloseScope.of(self, scope));
     }
 
     private boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
-        return isScopeInitialized(scope) && !context.isWaitingFor(CloseLabel.of(self, scope, edge));
+        return isScopeInitialized(scope) && !isWaitingFor(CloseLabel.of(self, scope, edge));
     }
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
@@ -581,27 +639,34 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _deadlocked(Clock<IActorRef<? extends IUnit<S, L, D, ?>>> clock,
-            java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        self.assertOnActorThread();
+    @Override public void _deadlockQuery(IActorRef<? extends IUnit<S, L, D, ?>> i, int m) {
+        final IActorRef<? extends IUnit<S, L, D, ?>> j = self.sender(TYPE);
+        cmh.query(i, m, j);
+    }
 
-        if(!this.clock.equals(clock)) {
-            // Deadlock is detected even when not all units are suspended---only the component is enough.
-            // This means the unit could receive messages between suspend and the deadlock. However, they
-            // should not influence the deadlocked state, as received queries from other units (even when
-            // forwarded, thus creating a wait-for), do not cause progress on this unit. Eventually, we deadlock
-            // would be there again.
-            logger.debug("stale deadlock");
-            return;
+    @Override public void _deadlockReply(IActorRef<? extends IUnit<S, L, D, ?>> i, int m,
+            java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> R) {
+        cmh.reply(i, m, R);
+    }
+
+    private void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+        if(!nodes.contains(self)) {
+            throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
-        this.clock = this.clock.sent(self).delivered(self); // increase local clock to ensure deadlock detection after this
-        if(nodes.size() == 1 && nodes.contains(self)) {
+        if(nodes.size() == 1) {
             if(!failDelays(nodes)) {
                 failAll(nodes);
             }
         } else {
-            failDelays(nodes);
+            for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
+                self.async(node)._deadlocked(nodes);
+            }
         }
+    }
+
+    @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+        // FIXME this.clock = this.clock.sent(self).delivered(self); // increase local clock to ensure deadlock detection after this
+        failDelays(nodes);
     }
 
     /**
@@ -617,7 +682,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             }
         }
         for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
-            for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
+            for(IWaitFor<S, L, D> wf : getTokens(node)) {
                 // @formatter:off
                 wf.visit(IWaitFor.cases(
                     initScope -> {},
@@ -645,7 +710,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
         // Grants are processed immediately, while the result failure is scheduled.
         // This ensures that all labels are closed by the time the result failure is processed.
         for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
-            for(IWaitFor<S, L, D> wf : context.getTokens(node)) {
+            for(IWaitFor<S, L, D> wf : getTokens(node)) {
                 // @formatter:off
                 wf.visit(IWaitFor.cases(
                     initScope -> {
@@ -690,69 +755,29 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
                 // @formatter:on
             }
         }
-        tryFinish();
+        // tryFinish();
     }
 
-    @SuppressWarnings("unchecked") @Override public void sent(IActorRef<?> target, java.util.Set<String> tags) {
-        if(tags.contains("stuckness")) {
-            clock = clock.sent((IActorRef<? extends IUnit<S, L, D, ?>>) target);
-            logger.debug("updated clock: {}", clock);
-        }
+    ///////////////////////////////////////////////////////////////////////////
+    // ChandryMisraHaas.Host
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public IActorRef<? extends IUnit<S, L, D, ?>> process() {
+        return self;
     }
 
-    @SuppressWarnings("unchecked") @Override public void delivered(IActorRef<?> source, java.util.Set<String> tags) {
-        if(tags.contains("stuckness")) {
-            clock = clock.delivered((IActorRef<? extends IUnit<S, L, D, ?>>) source);
-            logger.debug("updated clock: {}", clock);
-        }
+    @Override public java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> dependentSet() {
+        return waitForsByActor.keySet();
     }
 
-    @Override public void suspended() {
-        if(state.equals(UnitState.INIT)) {
-            // Ignore suspends before the start message is processed. This is important
-            // because otherwise deadlock detection may fail. The suspend after the start
-            // message is then ignored if no messages were exchanged. However, even without
-            // messages the unit may need to initialize its root scope, and failing to do so
-            // should be detected.
-            return;
-        }
-        context.suspended(clock);
+    @Override public void query(IActorRef<? extends IUnit<S, L, D, ?>> k, IActorRef<? extends IUnit<S, L, D, ?>> i,
+            int m) {
+        self.async(k)._deadlockQuery(i, m);
     }
 
-    @Override public void stopped() {
-        //        logger.error("Actor {} stopped.", self);
-        final MultiSet.Immutable<IWaitFor<S, L, D>> remainingTokens = context.getAllTokens();
-        if(!remainingTokens.isEmpty()) {
-            logger.warn("{} stopped while waiting for: {}", self, remainingTokens);
-        }
-        for(IWaitFor<S, L, D> wf : remainingTokens) {
-            // @formatter:off
-            wf.visit(IWaitFor.cases(
-                initScope -> {
-                    if(!context.owner(initScope.scope()).equals(self)) {
-                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
-                    }
-                },
-                closeScope -> {
-                    if(!context.owner(closeScope.scope()).equals(self)) {
-                        self.async(parent)._doneSharing(closeScope.scope());
-                    }
-                },
-                closeLabel -> {
-                    if(!context.owner(closeLabel.scope()).equals(self)) {
-                        self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
-                    }
-                },
-                query -> {},
-                result  -> {
-                    self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
-                },
-                typeCheckerState -> {
-                    self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
-                }
-            ));
-            // @formatter:on
-        }
+    @Override public void reply(IActorRef<? extends IUnit<S, L, D, ?>> k, IActorRef<? extends IUnit<S, L, D, ?>> i,
+            int m, java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> R) {
+        self.async(k)._deadlockReply(i, m, R);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -812,21 +837,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor {
             logger.error("Label {}/{} is not open on {}.", scope, edge, self);
             throw new IllegalArgumentException("Label " + scope + "/" + edge + " is not open on " + self + ".");
         }
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // hashCode
-    ///////////////////////////////////////////////////////////////////////////
-
-    private volatile int hashCode;
-
-    @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = System.identityHashCode(this);
-            hashCode = result;
-        }
-        return result;
     }
 
     ///////////////////////////////////////////////////////////////////////////
