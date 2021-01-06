@@ -53,8 +53,8 @@ class Actor<T> implements IActorImpl<T>, Runnable {
     private volatile Thread thread = null;
 
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
-        logger.error("Cannot get sender when not in message processing context.");
-        throw new IllegalStateException("Cannot get sender when not in message processing context.");
+        logger.error("Cannot get sender. Not in message processing context?");
+        throw new IllegalStateException("Cannot get sender. Not in message processing context?");
     });
 
     private Stats stats = new Stats();
@@ -127,7 +127,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                     finalizeThread();
 
                     if(!running.compareAndSet(true, false)) {
-                        doStop(new IllegalStateException("Unexpected state, should be running."));
+                        throw new IllegalStateException("Unexpected state, should be running.");
                     }
 
                     if(!messages.isEmpty() && running.compareAndSet(false, true)) {
@@ -137,10 +137,8 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                     }
                 }
             }
-        } catch(
-
-        Throwable ex) {
-            logger.error("THIS SHOUD NOT HAPPEN", ex);
+        } catch(Throwable ex) {
+            logger.error("Internal error.", ex);
         }
     }
 
@@ -245,7 +243,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                         final Method method1 = method;
                         final Object[] args1 = args;
                         put(() -> {
-                            doInvoke((IActorInternal<?>) sender, method1, args1, (Action2<Object, Throwable>) null);
+                            doInvoke(sender, method1, args1, (Action2<Object, Throwable>) null);
                         });
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
@@ -268,12 +266,14 @@ class Actor<T> implements IActorImpl<T>, Runnable {
     }
 
     @Override public void _stop(Throwable ex) {
-        @SuppressWarnings("unused") final IActorInternal<?> sender = ActorThreadLocals.current.get();
+        final IActorInternal<?> sender = ActorThreadLocals.current.get();
+        logger.info("{} recieved _stop from {}", this, sender);
         put(() -> doStop(ex));
     }
 
     @Override public void _childStopped(Throwable ex) {
         final IActorInternal<?> sender = ActorThreadLocals.current.get();
+        logger.info("{} recieved _childStopped from {}", this, sender);
         put(() -> doChildStopped(sender, ex));
     }
 
@@ -282,8 +282,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
     // Handlers -- safe, called from actor thread only
     ///////////////////////////////////////////////////////////////////////////
 
-    private void doStart(final IActorInternal<?> sender, Function1<IActor<T>, ? extends T> supplier)
-            throws ActorException {
+    private void doStart(IActorInternal<?> sender, Function1<IActor<T>, ? extends T> supplier) throws ActorException {
         if(!state.equals(ActorState.INITIAL)) {
             throw new ActorException("Cannot start actor that was already started.");
         }
@@ -319,7 +318,12 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         final Object returnValue;
         try {
             method.setAccessible(true);
-            returnValue = method.invoke(impl, args);
+            try {
+                Actor.sender.set(sender);
+                returnValue = method.invoke(impl, args);
+            } finally {
+                Actor.sender.remove();
+            }
             if(result != null) {
                 if(returnValue == null) {
                     result.apply(null, new NullPointerException());
@@ -337,7 +341,12 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         updateStateOnReceive(sender);
 
         try {
-            completable.complete(value, ex);
+            try {
+                Actor.sender.set(sender);
+                completable.complete(value, ex);
+            } finally {
+                Actor.sender.remove();
+            }
         } catch(Throwable ex2) {
             throw new ActorException("Return failed.", ex2);
         }
@@ -392,7 +401,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         }
     }
 
-    private void doChildStopped(final IActorInternal<?> sender, @SuppressWarnings("unused") Throwable ex)
+    private void doChildStopped(IActorInternal<?> sender, @SuppressWarnings("unused") Throwable ex)
             throws ActorException {
         if(!children.remove(sender)) {
             throw new ActorException("Stopped actor " + sender + " is not a child of actor " + this);
@@ -403,7 +412,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                 throw new IllegalStateException("Child " + sender + " stopped before parent " + this + " started.");
             case RUNNING:
             case WAITING:
-                doStop(new ActorException("Child stopped."));
+                doStop(null);
                 stopIfNoMoreChildren();
                 return;
             case STOPPING:
@@ -452,6 +461,16 @@ class Actor<T> implements IActorImpl<T>, Runnable {
 
     @Override public T local() {
         return _dynamicAsync();
+    }
+
+    @Override public <U> IFuture<U> schedule(IFuture<U> future) {
+        final ICompletableFuture<U> scheduled = new CompletableFuture<>();
+        future.whenComplete((r, ex) -> put(() -> scheduled.complete(r, ex)));
+        return scheduled;
+    }
+
+    @Override public <U> void complete(ICompletable<U> completable, U result, Throwable ex) {
+        put(() -> completable.complete(result, ex));
     }
 
     @Override public IActorRef<?> sender() {

@@ -1,4 +1,4 @@
-package mb.statix.actors.deadlock;
+package mb.statix.concurrent.actors.deadlock;
 
 import java.util.ArrayList;
 import java.util.Arrays;

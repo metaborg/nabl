@@ -1,4 +1,4 @@
-package mb.statix.actors;
+package mb.statix.concurrent.actors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -272,6 +272,34 @@ public class ActorTest {
         assertEquals(2, (int) oneStopped.asJavaCompletion().get());
         system.stop().asJavaCompletion().get();
     }
+
+    @Test(timeout = 10_000) public void testOneActorSelfResume() throws InterruptedException, ExecutionException {
+        final ICompletableFuture<Unit> oneResumed = new CompletableFuture<>();
+        final IActorSystem system = new ActorSystem();
+        system.add("one", PING_ACTOR, (self) -> new PingActor() {
+
+            private volatile boolean pinged = false;
+
+            @Override public IFuture<Unit> ping() {
+                pinged = true;
+                return CompletableFuture.completedFuture(Unit.unit);
+            }
+
+            @Override public void resumed() {
+                oneResumed.complete(Unit.unit);
+            };
+
+            @Override public void suspended() {
+                if(!pinged) {
+                    self.local().ping();
+                }
+            }
+
+        });
+        oneResumed.asJavaCompletion().get();
+        system.stop().asJavaCompletion().get();
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////
     // Actor Interfaces

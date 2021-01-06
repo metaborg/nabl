@@ -9,8 +9,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 
-import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas.Host;
-
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).
  * 
@@ -24,13 +22,13 @@ import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas.Host;
  * [1] Chandy, K. Mani, Jayadev Misra, and Laura M. Haas. “Distributed Deadlock Detection.” ACM Transactions on Computer
  * Systems 1, no. 2 (May 1, 1983): 144–156. https://doi.org/10.1145/357360.357365.
  */
-public class ChandyMisraHaas<P extends Host<P>> {
+public class ChandyMisraHaas<P> {
 
     enum State {
         IDLE, EXECUTING
     }
 
-    private final P self;
+    private final Host<P> self;
     private final Action1<Set<P>> deadlockHandler;
 
     private State state;
@@ -40,7 +38,7 @@ public class ChandyMisraHaas<P extends Host<P>> {
     private final Map<P, Integer> num;
     private final SetMultimap<P, P> wait;
 
-    public ChandyMisraHaas(P self, Action1<Set<P>> deadlockHandler) {
+    public ChandyMisraHaas(Host<P> self, Action1<Set<P>> deadlockHandler) {
         this.self = self;
         this.deadlockHandler = deadlockHandler;
         this.state = State.EXECUTING;
@@ -51,37 +49,39 @@ public class ChandyMisraHaas<P extends Host<P>> {
     }
 
     /**
-     * Initiate query computation on idle host P_i.
+     * Initiate query computation on becoming idle.
      */
-    public void idle() {
-        final P i = self;
-        if(!state.equals(State.EXECUTING)) {
-            throw new IllegalStateException();
+    public boolean idle() {
+        if(state.equals(State.IDLE)) {
+            return false;
         }
+        final P i = self.process();
         state = State.IDLE;
-        latest.put(i, latest.get(i) + 1);
+        latest.put(i, latest.getOrDefault(i, 0) + 1);
         wait.put(i, i);
-        final Set<P> S = i.dependentSet();
+        final Set<P> S = self/*i*/.dependentSet();
         for(P j : S) {
-            j.query(i, latest.get(i), i);
+            self/*i*/.query(j, i, latest.get(i));
         }
         num.put(i, S.size());
+        return true;
     }
 
     /**
-     * Becoming executing on host P_k.
+     * Becoming executing.
      */
-    public void exec() {
-        @SuppressWarnings("unused") final P k = self;
-        if(!state.equals(State.IDLE)) {
-            throw new IllegalStateException();
+    public boolean exec() {
+        if(state.equals(State.EXECUTING)) {
+            return false;
         }
-        wait.clear();
+        @SuppressWarnings("unused") final P k = self.process();
         state = State.EXECUTING;
+        wait.clear();
+        return true;
     }
 
     /**
-     * Receive query on host P_k.
+     * Receive query.
      * 
      * @param i
      *            Idle host P_i.
@@ -91,61 +91,85 @@ public class ChandyMisraHaas<P extends Host<P>> {
      *            Sending host P_j.
      */
     public void query(P i, int m, P j) {
-        final P k = self;
         if(state.equals(State.EXECUTING)) {
             return;
         }
+        final P k = self.process();
         if(m > latest.getOrDefault(i, 0)) {
             latest.put(i, m);
             engager.put(i, j);
             wait.put(i, k);
-            final Set<P> S = k.dependentSet();
+            final Set<P> S = self/*k*/.dependentSet();
             for(P r : S) {
-                r.query(i, m, k);
+                self/*k*/.query(r, i, m);
             }
             num.put(i, S.size());
         } else if(wait.containsKey(i) && m == latest.get(i)) {
-            j.reply(i, m, wait.get(i));
+            self/*k*/.reply(j, i, m, wait.get(i));
         }
     }
 
     /**
-     * Receive reply on host P_k.
+     * Receive reply.
      * 
      * @param i
      *            Idle host P_i.
      * @param m
      *            Sequence number m.
      * @param r
-     *            Replying host P_r.
+     *            Replying hosts R.
      */
     public void reply(P i, int m, Set<P> R) {
-        final P k = self;
         if(state.equals(State.EXECUTING)) {
             return;
         }
+        final P k = self.process();
         if(m == latest.get(i) && wait.containsKey(i)) {
             wait.putAll(i, R);
             final int num_i = num.put(i, num.get(i) - 1) - 1;
-            if(num_i == 1) {
+            if(num_i == 0) {
                 final Set<P> Q = wait.get(i);
                 if(i.equals(k)) {
                     deadlockHandler.apply(Q);
                 } else {
                     P j = engager.get(i);
-                    j.reply(i, m, Q);
+                    self/*k*/.reply(j, i, m, Q);
                 }
             }
         }
     }
 
-    public interface Host<P extends Host<P>> {
+    public interface Host<P> {
+
+        P process();
 
         Set<P> dependentSet();
 
-        void query(P i, int m, P j);
+        /**
+         * Query.
+         * 
+         * @param k
+         *            Receiving host P_k.
+         * @param i
+         *            Idle host P_i.
+         * @param m
+         *            Sequence number m.
+         */
+        void query(P k, P i, int m);
 
-        void reply(P i, int m, Set<P> R);
+        /**
+         * Reply.
+         * 
+         * @param k
+         *            Receiving host P_k.
+         * @param i
+         *            Idle host P_i.
+         * @param m
+         *            Sequence number m.
+         * @param r
+         *            Replying hosts R.
+         */
+        void reply(P k, P i, int m, Set<P> R);
 
     }
 

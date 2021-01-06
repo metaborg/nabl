@@ -5,8 +5,6 @@ import java.util.concurrent.ExecutionException;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.statix.concurrent.actors.IActor;
-import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
@@ -18,7 +16,6 @@ public class LocalTest {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         final ActorSystem system = new ActorSystem();
         system.add("local", TypeTag.of(ILocal.class), self -> new Test(self));
-        system.start();
         Thread.sleep(2000);
         system.stop();
     }

@@ -1,4 +1,4 @@
-package mb.statix.actors.futures;
+package mb.statix.concurrent.actors.futures;
 
 import static mb.statix.concurrent.actors.futures.CompletableFuture.completedExceptionally;
 import static mb.statix.concurrent.actors.futures.CompletableFuture.completedFuture;

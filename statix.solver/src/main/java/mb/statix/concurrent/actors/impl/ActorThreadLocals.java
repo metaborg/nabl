@@ -8,7 +8,9 @@ class ActorThreadLocals {
     private static final ILogger logger = LoggerUtils.logger(ActorThreadLocals.class);
 
     static final ThreadLocal<IActorInternal<?>> current = ThreadLocal.withInitial(() -> {
-        logger.error("Cannot get current actor.");
-        throw new IllegalStateException("Cannot get current actor.");
+        final IllegalStateException ex = new IllegalStateException("Cannot get current actor.");
+        logger.error("Cannot get current actor.", ex);
+        throw ex;
     });
+
 }

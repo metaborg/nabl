@@ -123,13 +123,27 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
             switch(state) {
                 case RUNNING:
                     state = ActorSystemState.STOPPING;
+                    IActorInternal<?> previousCurrent; // HACK Very awkward code to ensure
+                                                       // the current actor is properly restored
+                                                       // when this is called from an actor.
+                                                       // Problem because the system is not an actor,
+                                                       // but called directly and with locking.
+                    try {
+                        previousCurrent = ActorThreadLocals.current.get();
+                    } catch(Throwable ex2) {
+                        previousCurrent = null;
+                    }
                     try {
                         ActorThreadLocals.current.set(this);
                         for(IActorInternal<?> actor : children) {
                             actor._stop(null);
                         }
                     } finally {
-                        ActorThreadLocals.current.remove();
+                        if(previousCurrent != null) {
+                            ActorThreadLocals.current.set(previousCurrent);
+                        } else {
+                            ActorThreadLocals.current.remove();
+                        }
                     }
                     break;
                 case STOPPING:

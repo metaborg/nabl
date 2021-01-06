@@ -5,9 +5,6 @@ import java.util.concurrent.ExecutionException;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.statix.concurrent.actors.IActor;
-import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
@@ -21,7 +18,6 @@ public class FutureTest {
         final IActorRef<IServer> server = system.add("server", TypeTag.of(IServer.class), self -> new Server(self));
         final IActorRef<IClient> client =
                 system.add("client", TypeTag.of(IClient.class), self -> new Client(self, server));
-        system.start();
         Thread.sleep(2000);
         system.stop();
     }

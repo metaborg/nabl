@@ -1,4 +1,4 @@
-package mb.statix.actors.futures;
+package mb.statix.concurrent.actors.futures;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
