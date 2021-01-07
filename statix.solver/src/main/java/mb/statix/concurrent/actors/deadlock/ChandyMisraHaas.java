@@ -1,15 +1,13 @@
 package mb.statix.concurrent.actors.deadlock;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
+import mb.nabl2.util.collections.MultiSet;
 
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).
@@ -33,23 +31,23 @@ public class ChandyMisraHaas<P> {
     }
 
     private final Host<P> self;
-    private final Action1<Set<P>> deadlockHandler;
+    private final Action1<java.util.Set<P>> deadlockHandler;
 
     private State state;
 
-    private final Map<P, Integer> latest;
-    private final Map<P, P> engager;
-    private final Map<P, Integer> num;
-    private final SetMultimap<P, P> wait;
+    private final MultiSet.Transient<P> latest;
+    private final Map.Transient<P, P> engager;
+    private final MultiSet.Transient<P> num;
+    private SetMultimap.Transient<P, P> wait;
 
-    public ChandyMisraHaas(Host<P> self, Action1<Set<P>> deadlockHandler) {
+    public ChandyMisraHaas(Host<P> self, Action1<java.util.Set<P>> deadlockHandler) {
         this.self = self;
         this.deadlockHandler = deadlockHandler;
         this.state = State.EXECUTING;
-        this.latest = Maps.newHashMap();
-        this.num = Maps.newHashMap();
-        this.engager = Maps.newHashMap();
-        this.wait = HashMultimap.create();
+        this.latest = MultiSet.Transient.of();
+        this.engager = Map.Transient.of();
+        this.num = MultiSet.Transient.of();
+        this.wait = SetMultimap.Transient.of();
     }
 
     /**
@@ -62,13 +60,13 @@ public class ChandyMisraHaas<P> {
         logger.debug("{} idle", self);
         final P i = self.process();
         state = State.IDLE;
-        latest.put(i, latest.getOrDefault(i, 0) + 1);
-        wait.put(i, i);
-        final Set<P> S = self/*i*/.dependentSet();
+        latest.add(i);
+        wait.__insert(i, i);
+        final java.util.Set<P> S = self/*i*/.dependentSet();
         for(P j : S) {
-            self/*i*/.query(j, i, latest.get(i));
+            self/*i*/.query(j, i, latest.count(i));
         }
-        num.put(i, S.size());
+        num.set(i, S.size());
         return true;
     }
 
@@ -82,7 +80,7 @@ public class ChandyMisraHaas<P> {
         logger.debug("{} exec", self);
         @SuppressWarnings("unused") final P k = self.process();
         state = State.EXECUTING;
-        wait.clear();
+        wait = SetMultimap.Transient.of();
         return true;
     }
 
@@ -102,16 +100,16 @@ public class ChandyMisraHaas<P> {
         }
         logger.debug("{} query {}.{} from {}", self, i, m, j);
         final P k = self.process();
-        if(m > latest.getOrDefault(i, 0)) {
-            latest.put(i, m);
+        if(m > latest.count(i)) {
+            latest.set(i, m);
             engager.put(i, j);
-            wait.put(i, k);
-            final Set<P> S = self/*k*/.dependentSet();
+            wait.__insert(i, k);
+            final java.util.Set<P> S = self/*k*/.dependentSet();
             for(P r : S) {
                 self/*k*/.query(r, i, m);
             }
-            num.put(i, S.size());
-        } else if(wait.containsKey(i) && m == latest.get(i)) {
+            num.set(i, S.size());
+        } else if(wait.containsKey(i) && m == latest.count(i)) {
             self/*k*/.reply(j, i, m, wait.get(i));
         }
     }
@@ -126,17 +124,18 @@ public class ChandyMisraHaas<P> {
      * @param r
      *            Replying hosts R.
      */
-    public void reply(P i, int m, Set<P> R) {
+    public void reply(P i, int m, java.util.Set<P> R) {
         if(state.equals(State.EXECUTING)) {
             return;
         }
         logger.debug("{} reply {}.{} from {}", self, i, m, R);
         final P k = self.process();
-        if(m == latest.get(i) && wait.containsKey(i)) {
-            wait.putAll(i, R);
-            final int num_i = num.put(i, num.get(i) - 1) - 1;
-            if(num_i == 0) {
-                final Set<P> Q = wait.get(i);
+        if(m == latest.count(i) && wait.containsKey(i)) {
+            for(P r : R) {
+                wait.__insert(i, r);
+            }
+            if(num.remove(i) == 1) {
+                final Set.Immutable<P> Q = wait.get(i);
                 if(i.equals(k)) {
                     logger.debug("{} deadlocked with {}", self, Q);
                     deadlockHandler.apply(Q);
@@ -152,7 +151,7 @@ public class ChandyMisraHaas<P> {
 
         P process();
 
-        Set<P> dependentSet();
+        java.util.Set<P> dependentSet();
 
         /**
          * Query.
@@ -178,7 +177,7 @@ public class ChandyMisraHaas<P> {
          * @param r
          *            Replying hosts R.
          */
-        void reply(P k, P i, int m, Set<P> R);
+        void reply(P k, P i, int m, java.util.Set<P> R);
 
     }
 
