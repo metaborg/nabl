@@ -7,7 +7,7 @@ import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
@@ -27,7 +27,7 @@ public interface IUnit2UnitProtocol<S, L, D, R> {
 
     void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder,
+    IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWf<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder,
             DataLeq<D> dataEquiv);
 
 

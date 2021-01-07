@@ -6,4 +6,12 @@ public interface LabelOrder<L> {
 
     boolean lt(EdgeOrData<L> l1, EdgeOrData<L> l2);
 
+    static <L> LabelOrder<L> none() {
+        return new LabelOrder<L>() {
+            @Override public boolean lt(EdgeOrData<L> l1, EdgeOrData<L> l2) {
+                return false;
+            }
+        };
+    }
+
 }

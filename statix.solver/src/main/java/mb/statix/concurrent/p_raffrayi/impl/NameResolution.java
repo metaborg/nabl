@@ -18,7 +18,7 @@ import mb.statix.concurrent.actors.futures.Futures;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -43,7 +43,7 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
+    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWf<L> re,
             LabelOrder<L> labelOrder);
 
     protected abstract IFuture<Optional<D>> getDatum(S scope);
@@ -56,7 +56,7 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    public ICompletableFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
+    public ICompletableFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
         logger.trace("env {}", path);
         final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
@@ -73,7 +73,7 @@ abstract class NameResolution<S, L, D> {
         return result;
     }
 
-    private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWF<L> re, Set.Immutable<EdgeOrData<L>> L,
+    private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWf<L> re, Set.Immutable<EdgeOrData<L>> L,
             ICancel cancel) {
         logger.trace("env_L {} {} {}", path, re, L);
         if(cancel.cancelled()) {
@@ -97,7 +97,7 @@ abstract class NameResolution<S, L, D> {
         return env;
     }
 
-    private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l,
+    private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l,
             Set.Immutable<EdgeOrData<L>> L, ICancel cancel) {
         final IFuture<Env<S, L, D>> env1 = env_L(path, re, L, cancel);
         logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
@@ -143,7 +143,7 @@ abstract class NameResolution<S, L, D> {
         return smaller.freeze();
     }
 
-    private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWF<L> re, EdgeOrData<L> l, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
             return l.matchInResolution(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
         } catch(Exception e) {
@@ -151,7 +151,7 @@ abstract class NameResolution<S, L, D> {
         }
     }
 
-    private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWF<L> re, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         logger.trace("env_data {} {}", path, re);
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
         logger.trace("env_data {} {}: datum {}", path, re, datum);
@@ -174,9 +174,9 @@ abstract class NameResolution<S, L, D> {
         return env;
     }
 
-    private IFuture<Env<S, L, D>> env_edges(IScopePath<S, L> path, LabelWF<L> re, L l, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_edges(IScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
         logger.trace("env_edges {} {} {}", path, re, l);
-        final LabelWF<L> newRe = re.step(l).get();
+        final LabelWf<L> newRe = re.step(l).get();
         final IFuture<Iterable<S>> scopes = getEdges(path.getTarget(), l);
         logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
         return scopes.thenCompose(ss -> {

@@ -2,9 +2,9 @@ package mb.statix.concurrent.p_raffrayi.nameresolution;
 
 import java.util.Optional;
 
-public interface LabelWF<L> {
+public interface LabelWf<L> {
 
-    Optional<LabelWF<L>> step(L l);
+    Optional<LabelWf<L>> step(L l);
 
     boolean accepting();
 

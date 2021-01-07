@@ -9,7 +9,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.path.IResolutionPath;
 
 /**
@@ -66,12 +66,12 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Execute scope graph query in the given scope.
      */
-    default IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
+    default IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
             LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv) {
         return query(scope, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
-    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
             DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
             DataLeqInternal<D> dataEquivInternal);
 
@@ -118,7 +118,7 @@ public interface ITypeCheckerContext<S, L, D> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
+            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                     LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
                     DataLeqInternal<D> dataEquivInternal) {
                 return outer.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);

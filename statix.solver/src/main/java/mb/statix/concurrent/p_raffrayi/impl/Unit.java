@@ -52,7 +52,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -145,7 +145,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             granted(result, self);
             final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = getTokens(self);
             if(!selfTokens.isEmpty()) {
-                logger.warn("{} returned while waiting on {}", self, selfTokens);
+                logger.debug("{} returned while waiting on {}", self, selfTokens);
             }
             // tryFinish();
         });
@@ -281,7 +281,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         doCloseScope(self, scope);
     }
 
-    @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
+    @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
             DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
             DataLeqInternal<D> dataEquivInternal) {
         assertInState(UnitState.ACTIVE);
@@ -325,7 +325,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
-    @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWf<D> dataWF,
+    @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWf<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
         // resume(); // FIXME not necessary?
         stats.foreignQueries += 1;
@@ -420,7 +420,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     private final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, IScopePath<S, L> path,
-            LabelWF<L> labelWF, LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv,
+            LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<D> dataWF, DataLeq<D> dataEquiv,
             DataWfInternal<D> dataWfInternal, DataLeqInternal<D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
@@ -433,7 +433,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             //       local state). Method isWaiting should then only consider the local wait-fors when checking
             //       if the unit completed. Then these checks are not necessary anymore.
 
-            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWF<L> re,
+            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWf<L> re,
                     LabelOrder<L> labelOrder) {
                 final S scope = path.getTarget();
                 final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
@@ -655,7 +655,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     private void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        logger.debug("{} deadlocked with {}", this, nodes);
+        logger.info("{} deadlocked with {}", this, nodes);
         if(!nodes.contains(self)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
@@ -833,8 +833,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     private void assertOwnOrSharedScope(S scope) {
         if(!scopes.contains(scope)) {
-            logger.error("Scope {} is not owned or shared.", scope);
-            throw new IllegalArgumentException("Scope " + scope + " is not owned or shared.");
+            logger.error("Scope {} is not owned or shared by {}", scope, this);
+            throw new IllegalArgumentException("Scope " + scope + " is not owned or shared by " + this);
         }
     }
 

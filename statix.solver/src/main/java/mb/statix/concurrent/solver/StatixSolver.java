@@ -50,14 +50,14 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
-import mb.statix.concurrent.p_raffrayi.impl.RegExpLabelWF;
 import mb.statix.concurrent.p_raffrayi.impl.RelationLabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.RegExpLabelWf;
 import mb.statix.concurrent.util.VarIndexedCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -560,7 +560,7 @@ public class StatixSolver {
                 final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
-                final LabelWF<ITerm> labelWF = new RegExpLabelWF(filter.getLabelWF());
+                final LabelWf<ITerm> labelWF = new RegExpLabelWf<>(filter.getLabelWF());
                 final LabelOrder<ITerm> labelOrder = new RelationLabelOrder(min.getLabelOrder());
                 final DataWf<ITerm> dataWF = new ConstraintDataWF(spec, state, filter.getDataWF());
                 final DataLeq<ITerm> dataEquiv = new ConstraintDataEquiv(spec, state, min.getDataEquiv());

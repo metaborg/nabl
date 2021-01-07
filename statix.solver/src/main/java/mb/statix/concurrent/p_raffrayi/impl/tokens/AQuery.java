@@ -8,7 +8,7 @@ import mb.statix.concurrent.p_raffrayi.impl.IUnit;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.Env;
 
@@ -34,7 +34,7 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
     }
 
     public static <S, L, D> Query<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?>> origin, IScopePath<S, L> path,
-            LabelWF<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv,
+            LabelWf<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv,
             IFuture<Env<S, L, D>> future) {
         return Query.of(origin, path, dataWF, future);
     }
