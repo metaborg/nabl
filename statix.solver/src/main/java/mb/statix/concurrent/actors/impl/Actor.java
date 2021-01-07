@@ -49,6 +49,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
 
     private T impl;
     private @Nullable IActorMonitor monitor;
+    private @Nullable Throwable stopCause;
 
     private volatile Thread thread = null;
     private static final ThreadLocal<IActorInternal<?>> current = ThreadLocal.withInitial(() -> {
@@ -388,10 +389,12 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                 }
                 break;
             case STOPPING:
-                sender._stop(this, new ActorException("Receiving actor stopping."));
-                break;
             case STOPPED:
-                sender._stop(this, new ActorException("Receiving actor stopped."));
+                Throwable ex2 = stopCause;
+                if(ex2 == null || !(ex2 instanceof InterruptedException)) {
+                    ex2 = new ActorException("Receiving actor stopping.", ex2);
+                }
+                sender._stop(this, ex2);
                 break;
             default:
                 throw new ActorException("Unexpected state " + state);
@@ -406,11 +409,22 @@ class Actor<T> implements IActorImpl<T>, Runnable {
             case RUNNING:
             case WAITING:
                 if(ex != null) {
-                    logger.error("{} failed.", ex, this);
+                    if(ex instanceof InterruptedException) {
+                        logger.debug("{} interrupted", this);
+                    } else {
+                        logger.error("{} failed", ex, this);
+                    }
                 }
+
+                Throwable ex2 = ex;
+                if(ex2 != null && !(ex2 instanceof InterruptedException)) {
+                    ex2 = new ActorException("Actor " + this + " failed", ex);
+                }
+
                 state = ActorState.STOPPING;
+                stopCause = ex2;
                 for(IActorInternal<?> child : children) {
-                    child._stop(this, null);
+                    child._stop(this, ex2);
                 }
                 stopIfNoMoreChildren();
                 break;
@@ -422,12 +436,16 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         }
     }
 
-    private void doChildStopped(IActorInternal<?> sender, @SuppressWarnings("unused") Throwable ex)
-            throws ActorException {
+    private void doChildStopped(IActorInternal<?> sender, Throwable ex) throws ActorException {
         assertOnActorThread();
 
         if(!children.remove(sender)) {
             throw new ActorException("Stopped actor " + sender + " is not a child of actor " + this);
+        }
+
+        Throwable ex2 = ex;
+        if(ex2 != null && !(ex2 instanceof InterruptedException)) {
+            ex2 = new ActorException("Child " + sender + " of " + this + " failed", ex);
         }
 
         switch(state) {
@@ -436,7 +454,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                 throw new IllegalStateException("Child " + sender + " stopped before parent " + this + " started.");
             case RUNNING:
             case WAITING:
-                doStop(null);
+                doStop(ex2);
                 stopIfNoMoreChildren();
                 return;
             case STOPPING:
@@ -460,12 +478,12 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         state = ActorState.STOPPED;
         try {
             if(monitor != null) {
-                monitor.stopped(null);
+                monitor.stopped(stopCause);
             }
         } catch(Throwable ex2) {
             logger.error("Stop monitor failed.", ex2);
         }
-        parent._childStopped(this, null);
+        parent._childStopped(this, stopCause);
     }
 
     ///////////////////////////////////////////////////////////////////////////

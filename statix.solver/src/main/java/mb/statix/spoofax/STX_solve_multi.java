@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -63,8 +64,8 @@ public class STX_solve_multi extends StatixPrimitive {
             logger.info("Analyzing files");
 
             final double t0 = System.currentTimeMillis();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.singleShot(scopeImpl,
-                    spec.allLabels(), project.resource(), new ProjectTypeChecker(project, spec, debug), cancel);
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
+                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), cancel);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;
@@ -79,9 +80,19 @@ public class STX_solve_multi extends StatixPrimitive {
             for(Entry<String, SolverResult> entry : resultMap.entrySet()) {
                 results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(entry.getValue())));
             }
+        } catch(InterruptedException ie) {
+            logger.info("Async solving interrupted");
+        } catch(ExecutionException ee) {
+            Throwable c = ee.getCause();
+            if(c instanceof InterruptedException) {
+                logger.info("Async solving interrupted");
+            } else {
+                logger.error("Async solving failed.", c);
+                throw new InterpreterException("Async solving failed."/*, c*/);
+            }
         } catch(Throwable e) {
             logger.error("Async solving failed.", e);
-            throw new InterpreterException("Async solving failed.", e);
+            throw new InterpreterException("Async solving failed."/*, e*/);
         }
 
         return Optional.of(B.newList(results));

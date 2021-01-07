@@ -33,26 +33,22 @@ public class PRaffrayiTest {
     private final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
     @Test(timeout = 10000) public void testSingleNoop() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Object, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
                             List<Scope> roots) {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testSingleOneScope() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -62,16 +58,14 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testSingleOneScope_NoClose() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -80,7 +74,7 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
         assertNotNull(result.analysis());
@@ -88,10 +82,8 @@ public class PRaffrayiTest {
     }
 
     @Test(timeout = 10000) public void testSingleParentChild() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -114,17 +106,15 @@ public class PRaffrayiTest {
                         return subResult.thenCompose(r -> CompletableFuture.completedFuture(Unit.unit));
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testSingleParentChild_ParentNoClose()
             throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -145,7 +135,7 @@ public class PRaffrayiTest {
                         return subFuture.thenCompose(r -> CompletableFuture.completedFuture(Unit.unit));
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
 
@@ -160,10 +150,8 @@ public class PRaffrayiTest {
 
     @Test(timeout = 10000) public void testSingleParentChild_ChildNoInitRoot()
             throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -183,7 +171,7 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
 
@@ -198,10 +186,8 @@ public class PRaffrayiTest {
 
     @Test(timeout = 10000) public void testSingleParentChild_ChildNoCloseEdge()
             throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -223,7 +209,7 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Set.Immutable.of(), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
 
@@ -231,10 +217,8 @@ public class PRaffrayiTest {
     }
 
     @Test(timeout = 10000) public void testTwoUnitsDeadlockCycle() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(1, 2), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -248,16 +232,14 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Arrays.asList(1, 2), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testThreeUnitsDeadlockCycle() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Arrays.asList(1, 2, 3), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -272,16 +254,14 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Arrays.asList(1, 2, 3), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testTwoUnitsCycle() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Set.Immutable.of(1, 2), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -295,16 +275,14 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Arrays.asList(1, 2), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testThreeUnitsCycle() throws ExecutionException, InterruptedException {
-        final Broker<Scope, Integer, ITerm> broker = new Broker<>(scopeImpl, Arrays.asList(1, 2, 3), new NullCancel());
-
         final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
-                broker.add(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                Broker.run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
@@ -319,7 +297,7 @@ public class PRaffrayiTest {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                });
+                }, scopeImpl, Arrays.asList(1, 2, 3), new NullCancel());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }

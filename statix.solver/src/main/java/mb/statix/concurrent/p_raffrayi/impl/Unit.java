@@ -40,6 +40,7 @@ import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.IUnitStats;
+import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseLabel;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
@@ -174,7 +175,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     @Override public void stopped(Throwable ex) {
         if(!state.equals(UnitState.DONE)) {
-            unitResult.completeExceptionally(new Exception("Actor " + this + " stopped.", ex));
+            if(ex != null && ex instanceof InterruptedException) {
+                unitResult.completeExceptionally(ex);
+            } else {
+                unitResult.completeExceptionally(new TypeCheckingFailedException(this + " stopped.", ex));
+            }
         }
     }
 

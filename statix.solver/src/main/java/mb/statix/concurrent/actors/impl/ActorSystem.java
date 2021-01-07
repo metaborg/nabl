@@ -115,13 +115,13 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
         }
     }
 
-    private void doStop(@SuppressWarnings("unused") Throwable ex) {
+    private void doStop(Throwable ex) {
         synchronized(lock) {
             switch(state) {
                 case RUNNING:
                     state = ActorSystemState.STOPPING;
                     for(IActorInternal<?> actor : children) {
-                        actor._stop(this, null);
+                        actor._stop(this, ex);
                     }
                     break;
                 case STOPPING:

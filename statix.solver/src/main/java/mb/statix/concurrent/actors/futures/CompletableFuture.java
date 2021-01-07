@@ -356,4 +356,8 @@ public class CompletableFuture<T> implements ICompletableFuture<T> {
         return new CompletedExceptionallyFuture<>(ex);
     }
 
+    public static <T> IFuture<T> completed(T value, Throwable ex) {
+        return ex != null ? completedExceptionally(ex) : completedFuture(value);
+    }
+
 }

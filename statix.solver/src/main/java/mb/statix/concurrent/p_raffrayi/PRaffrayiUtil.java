@@ -22,7 +22,6 @@ public class PRaffrayiUtil {
         }
     }
 
-
     private static String formatLine(String id, Iterable<String> cells) {
         return Streams.stream(Iterables2.cons(id, cells)).collect(Collectors.joining(","));
     }
