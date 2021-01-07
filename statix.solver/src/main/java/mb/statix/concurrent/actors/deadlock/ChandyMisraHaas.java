@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.metaborg.util.functions.Action1;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -23,6 +25,8 @@ import com.google.common.collect.SetMultimap;
  * Systems 1, no. 2 (May 1, 1983): 144–156. https://doi.org/10.1145/357360.357365.
  */
 public class ChandyMisraHaas<P> {
+
+    private static final ILogger logger = LoggerUtils.logger(ChandyMisraHaas.class);
 
     enum State {
         IDLE, EXECUTING
@@ -55,6 +59,7 @@ public class ChandyMisraHaas<P> {
         if(state.equals(State.IDLE)) {
             return false;
         }
+        logger.debug("{} idle", self);
         final P i = self.process();
         state = State.IDLE;
         latest.put(i, latest.getOrDefault(i, 0) + 1);
@@ -74,6 +79,7 @@ public class ChandyMisraHaas<P> {
         if(state.equals(State.EXECUTING)) {
             return false;
         }
+        logger.debug("{} exec", self);
         @SuppressWarnings("unused") final P k = self.process();
         state = State.EXECUTING;
         wait.clear();
@@ -94,6 +100,7 @@ public class ChandyMisraHaas<P> {
         if(state.equals(State.EXECUTING)) {
             return;
         }
+        logger.debug("{} query {}.{} from {}", self, i, m, j);
         final P k = self.process();
         if(m > latest.getOrDefault(i, 0)) {
             latest.put(i, m);
@@ -123,6 +130,7 @@ public class ChandyMisraHaas<P> {
         if(state.equals(State.EXECUTING)) {
             return;
         }
+        logger.debug("{} reply {}.{} from {}", self, i, m, R);
         final P k = self.process();
         if(m == latest.get(i) && wait.containsKey(i)) {
             wait.putAll(i, R);
@@ -130,6 +138,7 @@ public class ChandyMisraHaas<P> {
             if(num_i == 0) {
                 final Set<P> Q = wait.get(i);
                 if(i.equals(k)) {
+                    logger.debug("{} deadlocked with {}", self, Q);
                     deadlockHandler.apply(Q);
                 } else {
                     P j = engager.get(i);
