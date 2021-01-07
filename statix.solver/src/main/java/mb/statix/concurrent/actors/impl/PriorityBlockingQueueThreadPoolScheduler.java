@@ -48,6 +48,7 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
     }
 
     @Override public boolean preempt(int priority) {
+        // FIXME preempting when the executor is shutting down results in an exception in the actor
         return priority * PREEMPT_FACTOR < maxPriority;
     }
 

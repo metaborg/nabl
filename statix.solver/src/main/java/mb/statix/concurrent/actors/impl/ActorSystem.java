@@ -40,7 +40,8 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
     }
 
     public ActorSystem(int parallelism) {
-        this(new PriorityBlockingQueueThreadPoolScheduler(parallelism));
+        this(new WorkStealingScheduler(parallelism));
+        //        this(new PriorityBlockingQueueThreadPoolScheduler(parallelism));
     }
 
     public ActorSystem(IActorScheduler scheduler) {

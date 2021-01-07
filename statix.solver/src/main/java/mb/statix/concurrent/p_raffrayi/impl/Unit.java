@@ -123,7 +123,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         state = UnitState.ACTIVE;
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
             scopes.__insert(rootScope);
-            doAddLocalShare(self, rootScope); // FIXME If we doAddShare here, the system deadlocks but is not picked up by DLM
+            doAddLocalShare(self, rootScope);
         }
 
         // run() after inits are initialized before run, since unitChecker
@@ -135,8 +135,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         self.schedule(this.typeChecker.run(this, rootScopes)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
             logger.debug("{} type checker finished", this);
-            // FIXME this.clock = this.clock.sent(self).delivered(self); // FIXME necessary?
-            resume();
+            resume(); // FIXME necessary?
             if(ex != null) {
                 failures.add(ex);
             } else {
@@ -427,12 +426,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
         final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder) {
 
-            // FIXME Eliminate tryFinish in resolution predicates. To eliminate tryFinish here,
-            //       there needs to be a difference between local waitFors (originating from this
-            //       unit's type checker), and waitFors that are the result of queries (but won't influence the
-            //       local state). Method isWaiting should then only consider the local wait-fors when checking
-            //       if the unit completed. Then these checks are not necessary anymore.
-
             @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWf<L> re,
                     LabelOrder<L> labelOrder) {
                 final S scope = path.getTarget();
@@ -655,7 +648,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     private void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        logger.info("{} deadlocked with {}", this, nodes);
+        logger.debug("{} deadlocked with {}", this, nodes);
         if(!nodes.contains(self)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
@@ -672,7 +665,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        // FIXME this.clock = this.clock.sent(self).delivered(self); // increase local clock to ensure deadlock detection after this
+        // resume(); // FIXME necessary?
         failDelays(nodes);
     }
 
