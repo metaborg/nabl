@@ -586,6 +586,8 @@ public class StatixSolver {
                                 debug.debug("deadlocked query (spec error) {}", c.toString(state.unifier()::toString));
                             }
                             return fail(c);
+                        } catch(InterruptedException t) {
+                            throw t;
                         } catch(Throwable t) {
                             debug.error("failed query {}", t, c.toString(state.unifier()::toString));
                             return fail(c);
@@ -725,7 +727,6 @@ public class StatixSolver {
                                     debug.debug("constraint {} not entailed", c.toString(state.unifier()::toString));
                                 }
                                 return fail(c);
-
                             }
                         } catch(Delay delay) {
                             return delay(c, state, delay, fuel);
