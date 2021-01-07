@@ -42,38 +42,38 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
             throw new IllegalArgumentException("Number of root scopes does not match.");
         }
         for(int i = 0; i < rootScopes.size(); i++) {
-            final Scope scope = library.rootScopes().get(i);
-            if(scopeMap.containsKey(scope)) {
+            final Scope libRootScope = library.rootScopes().get(i);
+            if(scopeMap.containsKey(libRootScope)) {
                 continue;
             }
-            final Scope newScope = rootScopes.get(i);
-            scopeMap.put(scope, newScope);
-            context.initScope(newScope, labels, false);
+            final Scope rootScope = rootScopes.get(i);
+            scopeMap.put(libRootScope, rootScope);
+            context.initScope(rootScope, labels, false);
         }
 
-        for(Scope scope : library.ownScopes()) {
-            if(scopeMap.containsKey(scope)) {
+        for(Scope libScope : library.ownScopes()) {
+            if(scopeMap.containsKey(libScope)) {
                 throw new IllegalStateException("Scope already initialized.");
             }
-            final Scope newScope =
-                    context.freshScope(scope.getName(), labels, scopeGraph.getData(scope).isPresent(), false);
-            scopeMap.put(scope, newScope);
+            final Scope scope =
+                    context.freshScope(libScope.getName(), labels, scopeGraph.getData(libScope).isPresent(), false);
+            scopeMap.put(libScope, scope);
         }
 
-        for(Scope scope : Iterables.concat(rootScopes, library.ownScopes())) {
-            final Scope newScope = scopeMap.get(scope);
+        for(Scope libScope : Iterables.concat(library.rootScopes(), library.ownScopes())) {
+            final Scope scope = scopeMap.get(libScope);
 
             final ITerm datum;
-            if((datum = scopeGraph.getData(scope).orElse(null)) != null) {
-                context.setDatum(newScope, subtituteScopes(datum, scopeMap));
+            if((datum = scopeGraph.getData(libScope).orElse(null)) != null) {
+                context.setDatum(scope, subtituteScopes(datum, scopeMap));
             }
 
             for(ITerm label : labels) {
-                for(Scope target : scopeGraph.getEdges(scope, label)) {
-                    final Scope newTarget = scopeMap.get(target);
-                    context.addEdge(newScope, label, newTarget);
+                for(Scope libTarget : scopeGraph.getEdges(libScope, label)) {
+                    final Scope target = scopeMap.get(libTarget);
+                    context.addEdge(scope, label, target);
                 }
-                context.closeEdge(newScope, label);
+                context.closeEdge(scope, label);
             }
         }
 
