@@ -1,5 +1,6 @@
 package mb.statix.concurrent.actors.impl;
 
+import java.lang.reflect.Method;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Set;
@@ -16,6 +17,7 @@ import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.IActorSystem;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 
@@ -55,19 +57,13 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
 
     @Override public <T> IActor<T> add(String id, TypeTag<T> type, Function1<IActor<T>, T> supplier) {
         final String qid = ID_SEP + escapeId(id);
-        final IActorImpl<T> actor;
-        try {
-            ActorThreadLocals.current.set(this);
-            actor = doAdd(this, qid, type);
-            synchronized(lock) {
-                if(!state.equals(ActorSystemState.RUNNING)) {
-                    throw new IllegalStateException("Actor system already stopped.");
-                }
-                children.add(actor);
-                actor._start(supplier);
+        final IActorImpl<T> actor = doAdd(this, qid, type);
+        synchronized(lock) {
+            if(!state.equals(ActorSystemState.RUNNING)) {
+                throw new IllegalStateException("Actor system already stopped.");
             }
-        } finally {
-            ActorThreadLocals.current.remove();
+            children.add(actor);
+            actor._start(this, supplier);
         }
         return actor;
     }
@@ -99,7 +95,7 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
     }
 
     @Override public <T> T async(IActorRef<T> receiver) {
-        return ((IActorInternal<T>) receiver)._staticAsync(this);
+        return ((IActorInternal<T>) receiver)._invokeStatic(this);
     }
 
     @Override public IFuture<Unit> stop() {
@@ -123,27 +119,8 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
             switch(state) {
                 case RUNNING:
                     state = ActorSystemState.STOPPING;
-                    IActorInternal<?> previousCurrent; // HACK Very awkward code to ensure
-                                                       // the current actor is properly restored
-                                                       // when this is called from an actor.
-                                                       // Problem because the system is not an actor,
-                                                       // but called directly and with locking.
-                    try {
-                        previousCurrent = ActorThreadLocals.current.get();
-                    } catch(Throwable ex2) {
-                        previousCurrent = null;
-                    }
-                    try {
-                        ActorThreadLocals.current.set(this);
-                        for(IActorInternal<?> actor : children) {
-                            actor._stop(null);
-                        }
-                    } finally {
-                        if(previousCurrent != null) {
-                            ActorThreadLocals.current.set(previousCurrent);
-                        } else {
-                            ActorThreadLocals.current.remove();
-                        }
+                    for(IActorInternal<?> actor : children) {
+                        actor._stop(this, null);
                     }
                     break;
                 case STOPPING:
@@ -176,24 +153,30 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
         return toString();
     }
 
-    @Override public void _start(@SuppressWarnings("unused") Function1<IActor<Void>, ? extends Void> supplier) {
+    @Override public void _start(@SuppressWarnings("unused") IActorInternal<?> sender,
+            @SuppressWarnings("unused") Function1<IActor<Void>, ? extends Void> supplier) {
         throw new IllegalStateException("Actor system is not started by message.");
     }
 
-    @Override public Void _dynamicAsync() {
+    @Override public Void _invokeDynamic() {
         throw new IllegalStateException("Actor system has no async interface.");
     }
 
-    @Override public Void _staticAsync(@SuppressWarnings("unused") IActorInternal<?> system) {
+    @Override public Void _invokeStatic(@SuppressWarnings("unused") IActorInternal<?> system) {
         throw new IllegalStateException("Actor system has no async interface.");
     }
 
-    @Override public void _stop(Throwable ex) {
+    @SuppressWarnings("unchecked") @Override public void _return(@SuppressWarnings("unused") IActorInternal<?> sender,
+            @SuppressWarnings("unused") Method method, @SuppressWarnings("rawtypes") ICompletable result, Object value,
+            Throwable ex) {
+        result.complete(value, ex);
+    }
+
+    @Override public void _stop(@SuppressWarnings("unused") IActorInternal<?> sender, Throwable ex) {
         doStop(ex);
     }
 
-    @Override public void _childStopped(@SuppressWarnings("unused") Throwable ex) {
-        final IActorInternal<?> sender = ActorThreadLocals.current.get();
+    @Override public void _childStopped(IActorInternal<?> sender, @SuppressWarnings("unused") Throwable ex) {
         synchronized(lock) {
             if(!children.remove(sender)) {
                 throw new IllegalStateException("Stopped actor " + sender + " is not a top-level actor.");
@@ -208,15 +191,14 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
 
     private class ActorContext implements IActorContext {
 
-        @Override public <U> IActorImpl<U> add(String id, TypeTag<U> type) {
-            final IActorInternal<?> self = ActorThreadLocals.current.get();
+        @Override public <U> IActorImpl<U> add(IActorInternal<?> self, String id, TypeTag<U> type) {
             final String qid = self.id() + ID_SEP + escapeId(id);
             final IActorImpl<U> actor = doAdd(self, qid, type);
             return actor;
         }
 
         @Override public <T> T async(IActorRef<T> receiver) {
-            return ((IActorInternal<T>) receiver)._dynamicAsync();
+            return ((IActorInternal<T>) receiver)._invokeDynamic();
         }
 
         @Override public IActorScheduler scheduler() {

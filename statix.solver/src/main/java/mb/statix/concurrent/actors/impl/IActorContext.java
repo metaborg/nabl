@@ -5,7 +5,7 @@ import mb.statix.concurrent.actors.TypeTag;
 
 interface IActorContext {
 
-    <U> IActorImpl<U> add(String id, TypeTag<U> type);
+    <U> IActorImpl<U> add(IActorInternal<?> self, String id, TypeTag<U> type);
 
     <U> U async(IActorRef<U> receiver);
 

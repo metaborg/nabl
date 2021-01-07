@@ -134,8 +134,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         waitFor(result, self);
         self.schedule(this.typeChecker.run(this, rootScopes)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
-            resume();
+            logger.debug("{} type checker finished", this);
             // FIXME this.clock = this.clock.sent(self).delivered(self); // FIXME necessary?
+            resume();
             if(ex != null) {
                 failures.add(ex);
             } else {
@@ -156,17 +157,18 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     // IActorMonitor
     ///////////////////////////////////////////////////////////////////////////
 
+    @Override public void resumed() {
+        logger.debug("{} resumed", this);
+    }
+
     private void resume() {
-        logger.info("{} resume", this);
         if(cmh.exec()) {
-            logger.info("{} exec", this);
         }
     }
 
     @Override public void suspended() {
-        logger.info("{} suspended", this);
+        logger.debug("{} suspended", this);
         if(cmh.idle()) {
-            logger.info("{} idle", this);
         }
         tryFinish();
     }
@@ -202,6 +204,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);
         waitFor(token, subunit);
         result_subunit._1().whenComplete((r, ex) -> {
+            logger.debug("{} subunit {} finished", this, subunit);
             resume();
             granted(token, subunit);
             result.complete(r, ex);
@@ -570,7 +573,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
      * may conclude prematurely that the unit is done.
      */
     private void tryFinish() {
+        logger.debug("{} tryFinish", this);
         if(state.equals(UnitState.ACTIVE) && !isWaiting()) {
+            logger.debug("{} finish", this);
             state = UnitState.DONE;
             unitResult.complete(UnitResult.of(id(), scopeGraph.get(), analysis.get(), failures, stats));
         }
@@ -650,10 +655,12 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     private void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+        logger.debug("{} deadlocked with {}", this, nodes);
         if(!nodes.contains(self)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
         if(nodes.size() == 1) {
+            logger.debug("{} self-deadlocked with {}", this, getTokens(self));
             if(!failDelays(nodes)) {
                 failAll(nodes);
             }
