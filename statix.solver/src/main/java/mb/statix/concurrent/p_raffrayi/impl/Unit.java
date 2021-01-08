@@ -331,7 +331,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     @Override public final IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWf<L> labelWF, DataWf<D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-        // resume(); // FIXME not necessary?
+        resume(); // FIXME necessary?
         stats.foreignQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
@@ -588,7 +588,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             final EdgeOrData<L> edge = entry.getKey();
             if(!isWaitingFor(CloseLabel.of(self, scope, edge))) {
                 final Delay delay = entry.getValue();
-                logger.debug("released {} on {}(/{})", delay.future, scope, edge);
+                logger.debug("released {} on {}(/{})", delay, scope, edge);
                 delays.remove(scope, edge, delay);
                 self.complete(delay.future, org.metaborg.util.unit.Unit.unit, null);
             }
@@ -597,7 +597,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     private void releaseDelays(S scope, EdgeOrData<L> edge) {
         for(Delay delay : delays.get(scope, edge)) {
-            logger.debug("released {} on {}/{}", delay.future, scope, edge);
+            logger.debug("released {} on {}/{}", delay, scope, edge);
             delays.remove(scope, edge, delay);
             self.complete(delay.future, org.metaborg.util.unit.Unit.unit, null);
         }
@@ -670,12 +670,15 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        // resume(); // FIXME necessary?
+        // resume(); // FIXME not necessary?
         failDelays(nodes);
     }
 
     /**
-     * Fail delays that are part of the deadlock.
+     * Fail delays that are part of the deadlock. If any delays can be failed, computations should be able to continue
+     * (or fail following the exception).
+     * 
+     * The set of open scopes and labels is unchanged, and it is safe for the type checker to continue.
      */
     private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         final Set.Transient<ICompletable<?>> deadlocked = CapsuleUtil.transientSet();
@@ -711,6 +714,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         return !deadlocked.isEmpty();
     }
 
+    /**
+     * If there are no delays to fail, the type checker has no way to make progress. In this case, everything is failed,
+     * and the state cleaned such that all scopes and labels are closed and these closures properly reported to the
+     * parent.
+     * 
+     * After this, it is not safe if the type checker is ever called again, as it may then try to close scopes and
+     * labels that were cleaned up. Therefore, local delays are not failed, as this would trigger their completion and
+     * trigger the type checker. Delays resulting from remote queries must still be cancelled, or the remote unit waits
+     * indefinitely for the result from this now defunct unit.
+     */
     private void failAll(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         // Grants are processed immediately, while the result failure is scheduled.
         // This ensures that all labels are closed by the time the result failure is processed.
