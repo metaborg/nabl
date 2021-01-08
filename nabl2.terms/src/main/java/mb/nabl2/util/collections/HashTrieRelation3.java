@@ -197,9 +197,9 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
                 for(Tuple2<L, V> entry : entries) {
                     L label = entry._1();
                     V value = entry._2();
-                    fwdKL.__remove(Tuple2.of(key, label));
-                    bwdV.__remove(value);
-                    bwdVL.__remove(Tuple2.of(value, label));
+                    fwdKL.__remove(Tuple2.of(key, label), value);
+                    bwdV.__remove(value, Tuple2.of(label, key));
+                    bwdVL.__remove(Tuple2.of(value, label), key);
                     removed.__insert(label, value);
                 }
             }
@@ -212,6 +212,7 @@ public abstract class HashTrieRelation3<K, L, V> implements IRelation3<K, L, V> 
             if(!(values = fwdKL.get(Tuple2.of(key, label))).isEmpty()) {
                 fwdKL.__remove(Tuple2.of(key, label));
                 for(V value : values) {
+                    fwdK.__remove(key, Tuple2.of(label, value));
                     bwdV.__remove(value, Tuple2.of(label, key));
                     bwdVL.__remove(Tuple2.of(value, label), key);
                     removed.__insert(value);
