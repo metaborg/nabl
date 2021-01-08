@@ -101,14 +101,9 @@ class Actor<T> implements IActorImpl<T>, Runnable {
             while(true) {
                 stats.maxPendingMessages = Math.max(stats.maxPendingMessages, priority.get());
 
-                if(context.scheduler().preempt(priority.get())) {
-                    finalizeThread();
-                    context.scheduler().schedule(this, priority.get(), scheduledTask);
-                    return;
-                }
-
                 final Message message = messages.poll();
                 if(message != null) {
+
                     stats.messages += 1;
                     this.priority.decrementAndGet();
                     try {
@@ -116,7 +111,15 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                     } catch(Throwable ex) {
                         doStop(ex);
                     }
+
+                    if(!messages.isEmpty() && context.scheduler().preempt(priority.get())) {
+                        finalizeThread();
+                        context.scheduler().schedule(this, priority.get(), scheduledTask);
+                        return;
+                    }
+
                 } else {
+
                     if(state.equals(ActorState.RUNNING)) {
                         logger.debug("suspend");
                         stats.suspended += 1;
@@ -142,6 +145,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                     } else {
                         return;
                     }
+
                 }
             }
         } catch(Throwable ex) {

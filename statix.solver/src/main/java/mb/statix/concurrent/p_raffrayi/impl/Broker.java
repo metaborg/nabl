@@ -20,6 +20,9 @@ import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
+import mb.statix.concurrent.actors.impl.IActorScheduler;
+import mb.statix.concurrent.actors.impl.WonkyScheduler;
+import mb.statix.concurrent.actors.impl.WorkStealingScheduler;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -41,14 +44,14 @@ public class Broker<S, L, D, R> {
     private final AtomicInteger totalUnits;
 
     private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-            ICancel cancel, int parallelism) {
+            ICancel cancel, IActorScheduler scheduler) {
         this.id = id;
         this.typeChecker = typeChecker;
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
 
-        this.system = new ActorSystem(parallelism);
+        this.system = new ActorSystem(scheduler);
 
         this.units = new ConcurrentHashMap<>();
         this.unfinishedUnits = new AtomicInteger();
@@ -138,7 +141,22 @@ public class Broker<S, L, D, R> {
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel, parallelism).run();
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel, new WorkStealingScheduler(parallelism))
+                .run();
+    }
+
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, double preemptProbability,
+            int scheduleDelayBoundMillis) {
+        return debug(id, typeChecker, scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors(),
+                preemptProbability, scheduleDelayBoundMillis);
+    }
+
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism,
+            double preemptProbability, int scheduleDelayBoundMillis) {
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel,
+                new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();
     }
 
 }
