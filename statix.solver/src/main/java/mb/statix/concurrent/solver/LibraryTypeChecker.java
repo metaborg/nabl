@@ -63,9 +63,10 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
         for(Scope libScope : Iterables.concat(library.rootScopes(), library.ownScopes())) {
             final Scope scope = scopeMap.get(libScope);
 
-            final ITerm datum;
-            if((datum = scopeGraph.getData(libScope).orElse(null)) != null) {
-                context.setDatum(scope, subtituteScopes(datum, scopeMap));
+            final ITerm libDatum;
+            if((libDatum = scopeGraph.getData(libScope).orElse(null)) != null) {
+                final ITerm datum = subtituteScopes(libDatum, scopeMap);
+                context.setDatum(scope, datum);
             }
 
             for(ITerm label : labels) {

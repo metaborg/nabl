@@ -727,51 +727,49 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     private void failAll(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         // Grants are processed immediately, while the result failure is scheduled.
         // This ensures that all labels are closed by the time the result failure is processed.
-        for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
-            for(IWaitFor<S, L, D> wf : getTokens(node)) {
-                // @formatter:off
-                wf.visit(IWaitFor.cases(
-                    initScope -> {
-                        failures.add(new DeadlockException(initScope.toString()));
-                        granted(initScope, self);
-                        if(!context.owner(initScope.scope()).equals(self)) {
-                            self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
-                        }
-                        releaseDelays(initScope.scope());
-                    },
-                    closeScope -> {
-                        failures.add(new DeadlockException(closeScope.toString()));
-                        granted(closeScope, self);
-                        if(!context.owner(closeScope.scope()).equals(self)) {
-                            self.async(parent)._doneSharing(closeScope.scope());
-                        }
-                        releaseDelays(closeScope.scope());
-                    },
-                    closeLabel -> {
-                        failures.add(new DeadlockException(closeLabel.toString()));
-                        granted(closeLabel, self);
-                        if(!context.owner(closeLabel.scope()).equals(self)) {
-                            self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
-                        }
-                        releaseDelays(closeLabel.scope(), closeLabel.label());
-                    },
-                    query -> {
-                        logger.error("Unexpected remaining query: " + query);
-                        throw new IllegalStateException("Unexpected remaining query: " + query);
-                    },
-                    result  -> {
-                        self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
-                    },
-                    typeCheckerState -> {
-                        if(nodes.contains(typeCheckerState.origin())) {
-                            logger.error("Unexpected remaining internal state: " + typeCheckerState);
-                            throw new IllegalStateException("Unexpected remaining internal state: " + typeCheckerState);
-                        }
-                        self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
+        for(IWaitFor<S, L, D> wf : waitFors) {
+            // @formatter:off
+            wf.visit(IWaitFor.cases(
+                initScope -> {
+                    failures.add(new DeadlockException(initScope.toString()));
+                    granted(initScope, self);
+                    if(!context.owner(initScope.scope()).equals(self)) {
+                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
                     }
-                ));
-                // @formatter:on
-            }
+                    releaseDelays(initScope.scope());
+                },
+                closeScope -> {
+                    failures.add(new DeadlockException(closeScope.toString()));
+                    granted(closeScope, self);
+                    if(!context.owner(closeScope.scope()).equals(self)) {
+                        self.async(parent)._doneSharing(closeScope.scope());
+                    }
+                    releaseDelays(closeScope.scope());
+                },
+                closeLabel -> {
+                    failures.add(new DeadlockException(closeLabel.toString()));
+                    granted(closeLabel, self);
+                    if(!context.owner(closeLabel.scope()).equals(self)) {
+                        self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
+                    }
+                    releaseDelays(closeLabel.scope(), closeLabel.label());
+                },
+                query -> {
+                    logger.error("Unexpected remaining query: " + query);
+                    throw new IllegalStateException("Unexpected remaining query: " + query);
+                },
+                result  -> {
+                    self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
+                },
+                typeCheckerState -> {
+                    if(typeCheckerState.origin().equals(self)) {
+                        logger.error("Unexpected remaining internal state: " + typeCheckerState);
+                        throw new IllegalStateException("Unexpected remaining internal state: " + typeCheckerState);
+                    }
+                    self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
+                }
+            ));
+            // @formatter:on
         }
         // tryFinish();
     }
