@@ -1,4 +1,4 @@
-NaBL2 & Statix -- Java Components
+Renaming -- Java Components
 ========================
 
-The project contains the Java primitives used by both Statix & NaBL2.
+The project contains the Java primitives used for the language-parametric renaming implementation.

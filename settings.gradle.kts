@@ -16,4 +16,4 @@ include("statix.generator")
 include("statix.lang")
 include("statix.runtime")
 
-include("shared.primitives")
+include("renaming.java")
