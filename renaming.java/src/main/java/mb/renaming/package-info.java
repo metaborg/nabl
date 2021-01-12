@@ -9,6 +9,6 @@
     allowedClasspathAnnotations = {Override.class}
 )
 // @formatter:on
-package mb.shared;
+package mb.renaming;
 
 import org.immutables.value.Value;

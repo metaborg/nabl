@@ -1,4 +1,4 @@
-package mb.shared.namegraph;
+package mb.renaming.namegraph;
 
 import java.util.HashSet;
 import java.util.List;

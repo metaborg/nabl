@@ -16,10 +16,10 @@
 
   <modules>
     <module>../../nabl2.terms</module>
+    <module>../../renaming.java</module>
     <module>../../statix.solver</module>
     <module>../../statix.generator</module>
     <module>../../statix.cli</module>
-    <module>../../shared.primitives</module>
   </modules>
 
   <repositories>

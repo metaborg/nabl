@@ -1,4 +1,4 @@
-package mb.shared.namegraph;
+package mb.renaming.namegraph;
 
 
 import static org.junit.Assert.assertEquals;
@@ -8,9 +8,9 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import mb.shared.namegraph.NameGraph;
-import mb.shared.namegraph.NameIndex;
-import mb.shared.namegraph.ResolutionPair;
+import mb.renaming.namegraph.NameGraph;
+import mb.renaming.namegraph.NameIndex;
+import mb.renaming.namegraph.ResolutionPair;
 
 
 public class NameGraphTest {

@@ -1,4 +1,4 @@
-package mb.shared.namegraph;
+package mb.renaming.namegraph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -6,7 +6,7 @@ import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
 
-import mb.shared.namegraph.NameIndex;
+import mb.renaming.namegraph.NameIndex;
 
 public class NameIndexTest {
 
