@@ -589,7 +589,12 @@ public class StatixTerms {
     ///////////////////////////////////////////////////////////////////////////
 
     public static ITerm explicate(ITerm term) {
-        return T.somebu(M.var(StatixTerms::explicate)::match).apply(term);
+        // @formatter:off
+        return T.sometd(M.cases(
+            M.cons(M.term(), M.var(), (t, hd,tl) -> B.newAppl("Conc", explicate(hd), explicate(tl))),
+            M.var(StatixTerms::explicate)
+        )::match).apply(term);
+        // @formatter:on
     }
 
     private static ITerm explicate(ITermVar var) {
