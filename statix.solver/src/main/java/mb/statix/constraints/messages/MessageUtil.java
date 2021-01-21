@@ -18,7 +18,6 @@ public class MessageUtil {
         ImmutableMap.<Class<? extends IConstraint>, MessageKind>builder()
             .put(CAstId.class, MessageKind.WARNING)
             .put(CAstProperty.class, MessageKind.WARNING)
-            .put(CTry.class, MessageKind.WARNING)
             .build();
     // @formatter:on
 
