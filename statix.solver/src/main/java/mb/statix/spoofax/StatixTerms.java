@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -39,11 +38,10 @@ import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
@@ -582,7 +580,7 @@ public class StatixTerms {
     }
 
     public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>>> scopeEntry() {
-        return M.tuple3(Scope.matcher(), M.option(term()), M.map(label(), M.listElems(Scope.matcher())),
+        return M.tuple3(Scope.matcher(), M.option(M.term()), M.map(label(), M.listElems(Scope.matcher())),
                 (t, scope, maybeDatum, edges) -> {
                     return Tuple3.of(scope, maybeDatum, edges);
                 });
@@ -591,74 +589,11 @@ public class StatixTerms {
     ///////////////////////////////////////////////////////////////////////////
 
     public static ITerm explicate(ITerm term) {
-        // @formatter:off
-        return term.match(Terms.cases(
-            appl -> {
-                switch(appl.getOp()) {
-                    case SCOPE_OP:
-                    case TERMINDEX_OP:
-                    case NOID_OP:
-                    case WITHID_OP:
-                    case PATH_EMPTY_OP:
-                    case PATH_STEP_OP: {
-                        return appl;
-                    }
-                    case OCCURRENCE_OP: {
-                        final ITerm ns = appl.getArgs().get(0);
-                        final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
-                                .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = explicatePosition(appl.getArgs().get(2));
-                        return B.newAppl(appl.getOp(), ImmutableList.of(ns, B.newList(args), pos), term.getAttachments());
-                    }
-                    default: {
-                        final List<ITerm> args = explicate(appl.getArgs());
-                        return B.newAppl("Op", ImmutableList.of(B.newString(appl.getOp()), B.newList(args)), term.getAttachments());
-                    }
-                }
-            },
-            list -> explicate(list),
-            string -> B.newAppl("Str", ImmutableList.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
-            integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
-            blob -> B.newString(blob.toString(), term.getAttachments()),
-            var -> explicate(var)
-        )).withAttachments(term.getAttachments());
-        // @formatter:on
-    }
-
-    private static ITerm explicate(IListTerm list) {
-        // @formatter:off
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<IAttachments> attachments = Lists.newArrayList();
-        final Ref<ITerm> varTail = new Ref<>();
-        while(list != null) {
-            list = list.match(ListTerms.cases(
-                cons -> {
-                    terms.add(explicate(cons.getHead()));
-                    attachments.add(cons.getAttachments());
-                    return cons.getTail();
-                },
-                nil -> {
-                    attachments.add(nil.getAttachments());
-                    return null;
-                },
-                var -> {
-                    varTail.set(explicate(var));
-                    attachments.add(Attachments.empty());
-                    return null;
-                }
-            ));
-            // @formatter:on
-        }
-        list = B.newList(terms, attachments);
-        if(varTail.get() != null) {
-            return B.newAppl("ListTail", list, varTail.get());
-        } else {
-            return B.newAppl("List", list);
-        }
+        return T.somebu(M.var(StatixTerms::explicate)::match).apply(term);
     }
 
     private static ITerm explicate(ITermVar var) {
-        return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
+        return B.newAppl("Var", Arrays.asList(B.newString(var.getResource()), B.newString(var.getName())));
     }
 
     public static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
@@ -675,6 +610,7 @@ public class StatixTerms {
                 .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
                 .collect(ImmutableList.toImmutableList()));
     }
+
 
     public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path, Set<ITerm> relationLabels) {
         return B.newTuple(explicate(path.getPath(), relationLabels), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
@@ -695,10 +631,6 @@ public class StatixTerms {
             throw new IllegalArgumentException("Encountered a relation label in the middle of path.");
         }
         return pathTerm;
-    }
-
-    private static ITerm explicatePosition(ITerm pos) {
-        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explicate(pos)));
     }
 
 }

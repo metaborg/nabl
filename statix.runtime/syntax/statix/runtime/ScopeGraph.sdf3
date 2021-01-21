@@ -1,30 +1,35 @@
-module statix/runtime/NoParse
+module statix/runtime/ScopeGraph
 
 imports
 
   statix/API
 
-
-context-free syntax
-
-  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-TermIndex>}>
-
-  Stx-OccurrencePosition = Stx-TermIndex
-
-  Stx-Scope.Scope = <#<Stx-STRING>-<Stx-STRING>>
-
-  Stx-TermIndex.TermIndex = <@<Stx-STRING>-<Stx-INT>>
-  Stx-TermIndex.NoId      = <@->
-
-  Stx-Var.Var = <?<Stx-STRING>-<Stx-STRING>>
+  statix/runtime/ATerm
 
 
 context-free syntax
 
-  Stx-ATerm   = Stx-Var
-  Stx-ATerm   = Stx-Scope
-  Stx-ATerm   = Stx-Occurrence
-  Stx-ATerm   = Stx-TermIndex
+  Stx-ScopeGraph = <
+    scope graph
+      <{Stx-ScopeEntry "\n"}*>
+  >
+
+  Stx-ScopeEntry = <
+    <Stx-Scope><Stx-DataEntry> {
+      <{Stx-EdgeEntry "\n"}*>
+    }
+  >
+
+  Stx-DataEntry.None =
+  Stx-DataEntry.Some = < : <Stx-ATerm>>
+
+  Stx-EdgeEntry = <<Stx-Label> : <Stx-EntryValues>>
+
+  Stx-EntryValues = {Stx-ATerm "\n"}*
+
+  // duplicate of RelRef & Label in statix.lang
+  Stx-Label.Decl  = "decl"
+  Stx-Label.Label = Stx-STRING
 
 
 context-free syntax

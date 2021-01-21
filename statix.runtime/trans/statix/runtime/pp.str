@@ -3,6 +3,7 @@ module statix/runtime/pp
 imports
 
   libstratego-gpp
+  libspoofax/sdf/pp
 
   statix/runtime/-
 
@@ -24,6 +25,9 @@ rules
     ; !V([], <id>)
     ; box2text-string(|120)
 
+  pp-Statix-ScopeGraph =
+    pp-Statix-string(prettyprint-Statix-Stx-ScopeGraph)
+
 rules
 
   prettyprint-Statix-Stx-INT =
@@ -34,12 +38,50 @@ rules
     where(is-string)
   ; ![S(<id>)]
 
-  prettyprint-Statix-Stx-ATerm =
-    ![S(<strip-annos;write-to-string>)]
+rules
+
+// ATerm is a sort for any Stratego term. Pretty printing is generic, but specialized
+// for Statix specific constructors such as scopes. This is achieved by the special
+// pretty printing strategies here. The productions in statix/runtime/ATerm.sdf3 and
+// strategies here must be kept in sync!
+
+  is-ATerm-or-inj =
+    is-Statix-Stx-ATerm
+  + is-Statix-Stx-Var
+  + is-Statix-Stx-Scope
+  + is-Statix-Stx-Occurrence
+  + is-Statix-Stx-TermIndex
+
+
+  prettyprint-Statix-Stx-ATerm:
+      t1__ -> t1__'
+    where not(is-ATerm-or-inj)
+    where is-int
+    with t1__' := <pp-one-Z(prettyprint-Statix-Stx-INT) <+ pp-one-Z(prettyprint-completion-aux)> t1__
+
+  prettyprint-Statix-Stx-ATerm:
+      t1__ -> [ H([SOpt(HS(), "0")], [S("\""), t1__', S("\"")]) ]
+    where not(is-ATerm-or-inj)
+    where is-string
+    with t1__' := <pp-one-Z(prettyprint-Statix-Stx-STRING) <+ pp-one-Z(prettyprint-completion-aux)> t1__
+
+  prettyprint-Statix-Stx-ATerm:
+      t1__ -> [ H([SOpt(HS(), "0")], [S("["), t1__', S("]")]) ]
+    where not(is-ATerm-or-inj)
+    where is-list
+    with t1__' := <pp-H-list(prettyprint-Statix-Stx-ATerm|", ") <+ pp-one-Z(prettyprint-completion-aux)> t1__
+
+  prettyprint-Statix-Stx-ATerm:
+      t1__#(t2__) -> [ H([SOpt(HS(), "0")], [t1__', S("("), t2__', S(")")]) ]
+    where not(is-ATerm-or-inj)
+    with t1__' := <pp-one-Z(prettyprint-Statix-Stx-STRING) <+ pp-one-Z(prettyprint-completion-aux)> t1__
+    with t2__' := <pp-H-list(prettyprint-Statix-Stx-ATerm|", ") <+ pp-one-Z(prettyprint-completion-aux)> t2__
+
 
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
     where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)
+
 
   stx--prettyprint-term =
     prettyprint-Statix-Stx-ATerm

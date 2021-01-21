@@ -15,7 +15,7 @@ rules
     with
       filename := <guarantee-extension(|"scopegraph")> path
     ; sg := <stx--debug-scopegraph> a
-    ; result := <write-to-string> sg
+    ; result := <pp-Statix-ScopeGraph> sg
 
   stx--make-project-library:
       (_, _, _, path, project-path) -> (filename, result)
