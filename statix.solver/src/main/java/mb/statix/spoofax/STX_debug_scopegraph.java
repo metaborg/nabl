@@ -75,7 +75,10 @@ public class STX_debug_scopegraph extends StatixPrimitive {
         final IUniDisunifier.Immutable unifier = state.unifier();
 
         scopeGraph.getData().forEach((s, d) -> {
-            dataEntries.put(s, unifier.findRecursive(d));
+            d = unifier.findRecursive(d);
+            if(!d.equals(s)) {
+                dataEntries.put(s, d);
+            }
         });
 
         scopeGraph.getEdges().forEach((src_lbl, tgt) -> {

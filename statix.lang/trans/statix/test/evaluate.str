@@ -52,12 +52,17 @@ signature
   constructors
     SUCCEEDS : TestResult
     FAILS    : TestResult
+    WARNS    : TestResult
 
 rules
 
   evaluate-test: ast -> result
-    with if EvalResult(_, [], _, _) := <evaluate> ast then
-           result := SUCCEEDS()
+    with if EvalResult(_, [], w*, n*) := <evaluate> ast then
+           if [] := w* then
+             result := SUCCEEDS()
+           else
+             result := WARNS()
+           end
          else
            result := FAILS()
          end
