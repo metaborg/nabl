@@ -50,7 +50,6 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
-import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
@@ -234,18 +233,18 @@ class GreedySolver {
         return state;
     }
 
+    private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
+        failed.put(constraint, MessageUtil.findClosestMessage(constraint));
+        removeCompleteness(constraint, state);
+        return state;
+    }
+
     private IState.Immutable delay(IConstraint constraint, IState.Immutable state, Delay delay) {
         final IDebugContext subDebug = debug.subContext();
         constraints.delay(constraint, delay);
         if(subDebug.isEnabled(Level.Debug)) {
             subDebug.debug("Delayed: {}", Solver.toString(constraint, state.unifier()));
         }
-        return state;
-    }
-
-    private IState.Immutable fail(IConstraint constraint, IState.Immutable state, MessageKind kind) {
-        failed.put(constraint, MessageUtil.findClosestMessage(constraint, kind));
-        removeCompleteness(constraint, state);
         return state;
     }
 
@@ -263,14 +262,6 @@ class GreedySolver {
         }
         constraints.activateFromEdges(removedEdges, debug);
         this.removedEdges.addAll(removedEdges);
-    }
-
-    private IState.Immutable fail(IConstraint constraint, IState.Immutable state) {
-        return fail(constraint, state, MessageKind.ERROR);
-    }
-
-    private IState.Immutable failSoft(IConstraint constraint, IState.Immutable state) {
-        return fail(constraint, state, MessageKind.WARNING);
     }
 
     private IState.Immutable queue(IConstraint constraint, IState.Immutable state) {
@@ -532,7 +523,7 @@ class GreedySolver {
                         return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
                                 NO_EXISTENTIALS, fuel);
                     } else {
-                        return failSoft(c, state);
+                        return fail(c, state);
                     }
                 }
             }

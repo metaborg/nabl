@@ -1,13 +1,29 @@
 package mb.statix.constraints.messages;
 
-import mb.statix.solver.IConstraint;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableMap;
+
+import mb.statix.constraints.CAstId;
+import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CTry;
+import mb.statix.solver.IConstraint;
+
 public class MessageUtil {
 
+    // @formatter:off
+    private static Map<Class<? extends IConstraint>, MessageKind> KINDS =
+        ImmutableMap.<Class<? extends IConstraint>, MessageKind>builder()
+            .put(CAstId.class, MessageKind.WARNING)
+            .put(CAstProperty.class, MessageKind.WARNING)
+            .put(CTry.class, MessageKind.WARNING)
+            .build();
+    // @formatter:on
+
     public static IMessage findClosestMessage(IConstraint c) {
-        return findClosestMessage(c, MessageKind.ERROR);
+        return findClosestMessage(c, KINDS.getOrDefault(c.getClass(), MessageKind.ERROR));
     }
 
     /**
