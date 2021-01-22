@@ -34,6 +34,8 @@ context-free syntax
 
 context-free syntax
 
+  // Stx-ATerm should not have direct productions, only injections!
+
   Stx-ATerm = Stx-Var
   Stx-ATerm = Stx-Scope
   Stx-ATerm = Stx-Occurrence

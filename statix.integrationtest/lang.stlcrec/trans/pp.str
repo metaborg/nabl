@@ -43,25 +43,6 @@ rules
 
   pp-generated = pp-partial-STLCrec-string
 
-  pp-one(pp)   = stx-prettyprint-term
-  pp-one-V(pp) = stx-prettyprint-term
-  pp-one-Z(pp) = stx-prettyprint-term
-  
-  pp-option(pp) = stx-prettyprint-term
-
-  pp-V-list(pp)         = stx-prettyprint-term
-  pp-V-list(pp|vs)      = stx-prettyprint-term
-  pp-V-list(pp|vs, sep) = stx-prettyprint-term
-  
-  pp-H-list(pp)     = stx-prettyprint-term
-  pp-H-list(pp|sep) = stx-prettyprint-term
-  
-  pp-HV-list(pp)     = stx-prettyprint-term
-  pp-HV-list(pp|sep) = stx-prettyprint-term
-  
-  pp-HZ-list(pp)     = stx-prettyprint-term
-  pp-HZ-list(pp|sep) = stx-prettyprint-term
-  
   prettyprint-STCLrec-ID      = stx-prettyprint-term
   prettyprint-STCLrec-Exp     = stx-prettyprint-term
   prettyprint-STCLrec-Bind    = stx-prettyprint-term

@@ -99,10 +99,10 @@ rules // services
   /**
    * Default hover strategy for types and named properties
    */
-  stx-editor-hover          = stx-editor-hover(strip-annos;write-to-string)
+  stx-editor-hover          = stx-editor-hover(pp-Statix-ATerm)
   stx-editor-hover(pp)      = stx--editor-hover(pp|"Type: ", Type())
 
-  stx-editor-hover(|name)   = stx-editor-hover(strip-annos;write-to-string|name)
+  stx-editor-hover(|name)   = stx-editor-hover(pp-Statix-ATerm|name)
   stx-editor-hover(pp|name) = stx--editor-hover(pp|$[[name]: ], Prop(name))
 
 rules // prettyprinting
