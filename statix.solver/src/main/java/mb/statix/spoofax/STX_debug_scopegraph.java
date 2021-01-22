@@ -76,9 +76,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
 
         scopeGraph.getData().forEach((s, d) -> {
             d = unifier.findRecursive(d);
-            if(!d.equals(s)) {
-                dataEntries.put(s, d);
-            }
+            dataEntries.put(s, d);
         });
 
         scopeGraph.getEdges().forEach((src_lbl, tgt) -> {
