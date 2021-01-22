@@ -2,7 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.spoofax.StatixTerms.explicate;
+import static mb.statix.spoofax.StatixTerms.explicateVars;
 
 import java.util.List;
 import java.util.Map;
@@ -55,13 +55,13 @@ public class STX_debug_scopegraph extends StatixPrimitive {
             final ITerm edges = Optional.ofNullable(edgeEntries.get(scope)).map(es -> {
                 final List<ITerm> lblTgts = Lists.newArrayList();
                 es.asMap().entrySet().forEach(ee -> {
-                    final ITerm lbl_tgt = B.newTuple(ee.getKey(), B.newList(explicate(ee.getValue())));
+                    final ITerm lbl_tgt = B.newTuple(ee.getKey(), B.newList(explicateVars(ee.getValue())));
                     lblTgts.add(lbl_tgt);
                 });
                 return B.newList(lblTgts);
             }).orElse(B.newList());
 
-            scopeEntries.add(B.newTuple(explicate(scope), data, edges));
+            scopeEntries.add(B.newTuple(explicateVars(scope), data, edges));
         }
 
         // @formatter:on

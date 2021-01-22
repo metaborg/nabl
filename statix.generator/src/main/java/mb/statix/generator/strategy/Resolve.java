@@ -140,7 +140,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                         env.rejects.forEach(subEnvBuilder::reject);
                         final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
                         final List<ITerm> pathTerms =
-                                subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path, ctx.spec().dataLabels()))
+                                subEnv.matches.stream().map(m -> StatixTerms.pathToTerm(m.path, ctx.spec().dataLabels()))
                                         .collect(ImmutableList.toImmutableList());
                         final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
                         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));

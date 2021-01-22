@@ -47,7 +47,7 @@ context-free syntax
 
 context-free syntax
 
-  SubstEntry = [[Stx-Var] |-> [Stx-ATerm]]
+  SubstEntry = [[Var] |-> [Stx-ATerm]]
   
 context-free syntax
 

@@ -4,6 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function1;
@@ -13,9 +14,13 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.terms.unification.ud.IUniDisunifier.Immutable;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
@@ -64,9 +69,16 @@ public class STX_solve_constraint extends StatixPrimitive {
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
+        final IUniDisunifier.Immutable unifier = resultConfig.state().unifier();
 
-        final ITerm substTerm =
-                StatixTerms.explicateMapEntries(resultConfig.existentials().entrySet(), resultConfig.state().unifier());
+        final List<ITerm> substEntries = Lists.newArrayList();
+        for(Entry<ITermVar, ITermVar> e : resultConfig.existentials().entrySet()) {
+            final ITerm v = StatixTerms.explode(e.getKey());
+            final ITerm t = StatixTerms.explicateVars(unifier.findRecursive(e.getValue()));
+            substEntries.add(B.newTuple(v, t));
+        }
+
+        final ITerm substTerm = B.newList(substEntries);
         final ITerm solverTerm = B.newBlob(resultConfig);
         final ITerm resultTerm = B.newAppl("Solution", substTerm, solverTerm);
 

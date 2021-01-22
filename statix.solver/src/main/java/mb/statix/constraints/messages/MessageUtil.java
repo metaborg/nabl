@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableMap;
 
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
-import mb.statix.constraints.CTry;
 import mb.statix.solver.IConstraint;
 
 public class MessageUtil {

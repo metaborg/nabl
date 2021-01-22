@@ -452,7 +452,7 @@ class GreedySolver {
                     // @formatter:on
                     final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope, cancel);
                     final List<ITerm> pathTerms =
-                            Streams.stream(paths).map(p -> StatixTerms.explicate(p, spec.dataLabels()))
+                            Streams.stream(paths).map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
                                     .collect(ImmutableList.toImmutableList());
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                     return success(c, state, NO_UPDATED_VARS, ImmutableList.of(C), NO_NEW_CRITICAL_EDGES,

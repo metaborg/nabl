@@ -84,4 +84,5 @@ rules
 
 
   stx--prettyprint-term =
-    prettyprint-Statix-Stx-ATerm
+    where(is-ATerm-or-inj)
+  ; prettyprint-Statix-Stx-ATerm
