@@ -9,16 +9,15 @@ imports
   signatures/nabl2/runtime/common/-
 
 rules
-  rename-action(pp|) :
-    (selected-term, _, ast, path, project-path) -> (filename, result)
+  rename-action(construct-textual-change|) :
+    (selected-term, _, ast, path, project-path) -> (path, result)
     where
       analysis := <nabl2-get-ast-analysis> ast;
       <not(nabl2-analysis-has-errors)> analysis
     with
       new-name := <read-new-name> path
-      ; renamed-ast := <rename(|selected-term, new-name, path)> ast
-      ; filename := <compose-filename> path
-      ; result := <pp> renamed-ast
+      ; {| ErrorMessage: renamed-ast := <rename(|selected-term, new-name, path) <+ show-errors; !ast> ast |}
+      ; (_, _, result) := <construct-textual-change> (ast, renamed-ast)
 
   rename(|selected-term, new-name, path): ast -> renamed-ast
     where
@@ -36,11 +35,11 @@ rules // Step 1: Find occurrence in selection
       decs := <nabl2-get-all-decls(|analysis)> analysis
       ; refs  := <nabl2-get-all-refs(|analysis)> analysis
       ; occs := <conc> (decs, refs)
-      ; <show-error-on-fail(collect-one(get-occurrence(|occs))|"Renaming impossible", "The selected term cannot be renamed.")> term
+      ; <add-error-on-fail(collect-one(get-occurrence(|occs))|"Renaming impossible", "The selected term cannot be renamed.")> term
       ; occ := <collect-one(get-occurrence(|occs))> term
       ; if (<elem> (occ, refs)) then
           (dec, _) := <nabl2-get-resolved-name(|analysis)> occ
-      ; <show-error-on-fail(not(is-built-in)|"Renaming impossible", "The selected entity was not declarded within this program.")> dec
+      ; <add-error-on-fail(not(is-built-in)|"Renaming impossible", "The selected entity was not declarded within this program.")> dec
         end
       ; occ-index := <get-term-index-from-occ> occ
 
@@ -106,7 +105,7 @@ rules //Step 4: Checking for capture
     (new-renamed-ast, new-analysis, _, _, _) := <nabl2-analyze-ast(|path)> renamed-ast
     ; old-resolution-relation := <qsort(dec-ref-pair-gt)> resolution-relation
     ; new-resolution-relation := <calc-resolution-relation; qsort(dec-ref-pair-gt)> new-analysis
-    ; <show-error-on-fail(eq|"Capture detecte", "This renaming leads to name capture")> (old-resolution-relation, new-resolution-relation)
+    ; <add-error-on-fail(eq|"Capture detected", "This renaming leads to name capture")> (old-resolution-relation, new-resolution-relation)
 
   dec-ref-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
@@ -118,22 +117,25 @@ rules //Step 4: Checking for capture
 
 rules // UI strategies
 
-  compose-filename: path -> filename
-    where
-      path-parts := <string-tokenize(|['.'])>
-      ; file-extension := <last> path-parts
-      ; new-file-extension := <conc-strings> ("refactored.", file-extension)
-      ; filename := <guarantee-extension(|new-file-extension)> path
-
   read-new-name: _ -> new-name
     where 	
       new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
 
   check-selection(|selected-term, ast) =
-    <show-error-on-fail(not(eq)|"Invalid selection", "Please select a name")> (selected-term, ast)
-
-  show-error-on-fail(s|title, message) =
-    s <+ <show-dialog(|title, "ERROR")> message ; fail
+    <add-error-on-fail(not(eq)|"Invalid selection", "Please select a name")> (selected-term, ast)
+    
+rules // error handling strategies 
+  add-error(|title, message) =
+    rules(
+      ErrorMessage :+ () -> (title, message)
+    )
+     
+  add-error-on-fail(s|title, message) =
+    s <+ add-error(|title, message); fail
+      
+  show-errors =    
+    [(title, message) | _] := <bagof-ErrorMessage> ()
+    ; <show-dialog(|title, "ERROR")> message    
 
 rules // Utility strategies
   add-elem: (new-elem, list) -> [new-elem | list]
