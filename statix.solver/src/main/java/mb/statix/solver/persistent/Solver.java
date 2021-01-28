@@ -97,6 +97,7 @@ public class Solver {
         final IState.Immutable newState = result.state();
         final Set<ITermVar> newVars = newState.vars();
         final Set<Scope> newScopes = newState.scopes();
+        final IUniDisunifier.Immutable newUnifier = newState.unifier();
 
         if(!result.delays().isEmpty()) {
             final Delay delay = result.delay().removeAll(newVars, newScopes);
@@ -107,6 +108,13 @@ public class Solver {
                 debug.debug("Cannot decide constraint entailment: unsolved constraints");
                 throw delay;
             }
+        }
+
+        if(newUnifier.disequalities().stream().flatMap(diseq -> diseq.domainSet().stream()).filter(newVars::contains)
+                .count() > 0) {
+            // if any local variables are still constrained, the entailment does not hold for all possible assignments for the free local variables
+            debug.debug("Constraints not entailed: internal stuckness"); // of the point-free mind
+            return false;
         }
 
         debug.debug("Constraints entailed");

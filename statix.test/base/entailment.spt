@@ -22,8 +22,13 @@ test var equality entails existential sub-var equality [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test no constraints do not entail disequality [[
+test no constraints do not entail disequality between variables [[
   resolve {x y} try { x != y }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test no constraints do not entail disequality between variable and term [[
+  resolve {x} try { x != 1 }
 ]] analysis succeeds
    run evaluate-test to FAILS()
 
@@ -47,6 +52,17 @@ test entailment requires at least one part to be unequal [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
+test entailment must hold in all possible top-level solutions [[
+  // counter example: a == 1
+  resolve {a} try { a != 1 }
+]] analysis succeeds
+   run evaluate-test to FAILS()
+
+test entailment must hold in all possible top-level solutions for all possible local solutions [[
+  // counter example: x == 1
+  resolve {xs} xs == [1], try { {x} xs != [x] }
+]] analysis succeeds
+   run evaluate-test to FAILS()
 
 test rule application implies disequalities which does not entail equality [[
   resolve {xs} c(1, xs), try { xs == [] }
