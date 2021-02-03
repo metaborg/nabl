@@ -242,7 +242,7 @@ context-free syntax
   // little duplication to fix ambiguity between
   // As(Var(_),Var(_)), NoId() and Var(_), WithId(Var(_))
   OccurrenceTerms = <<{OccurrenceTerm " "}*>>
-  OccurrenceTerm  = Term
+  OccurrenceTerm  = Term {longest-match}
   OccurrenceTerm  = <<Var>@<Term>> {reject}
 
 syntax
