@@ -20,7 +20,6 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.terms.unification.ud.IUniDisunifier.Immutable;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
@@ -61,7 +60,7 @@ public class STX_solve_constraint extends StatixPrimitive {
 
     private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
             ICancel cancel) {
-        final IState.Immutable state = State.of(spec);
+        final IState.Immutable state = State.of();
 
         final SolverResult resultConfig;
         try {

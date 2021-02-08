@@ -26,6 +26,8 @@ import mb.statix.spec.Spec;
 @Serial.Version(42L)
 public abstract class ASolverResult {
 
+    @Value.Parameter public abstract Spec spec();
+
     @Value.Parameter public abstract IState.Immutable state();
 
     @Value.Parameter public abstract Map<IConstraint, IMessage> messages();
@@ -67,7 +69,7 @@ public abstract class ASolverResult {
     }
 
     public static SolverResult of(Spec spec) {
-        return SolverResult.of(State.of(spec), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
+        return SolverResult.of(spec, State.of(), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
                 ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of());
     }
 

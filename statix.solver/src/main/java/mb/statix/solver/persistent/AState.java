@@ -23,7 +23,6 @@ import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.ITermProperty;
-import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -122,7 +121,7 @@ public abstract class AState implements IState.Immutable {
 
     @Value.Parameter @Override public abstract Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
-    public static State of(Spec spec) {
+    public static State of() {
         return State.of(Unifiers.Immutable.of(), ScopeGraph.Immutable.of(), Map.Immutable.of());
     }
 

@@ -189,7 +189,7 @@ class GreedySolver {
         }
 
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
-        return SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze())
+        return SolverResult.of(spec, state, failed, delayed, existentials, updatedVars, removedEdges, completeness.freeze())
                 .withTotalSolved(solved).withTotalCriticalEdges(criticalEdges);
     }
 

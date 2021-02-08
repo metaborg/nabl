@@ -20,6 +20,17 @@ context-free syntax
     }
   >
 
+  Stx-ScopeEntry.InlinedEntry = <
+    <Stx-Scope> {
+      relations {
+        <{Stx-EdgeEntry "\n"}*>
+      }
+      edges {
+        <{Stx-EdgeEntry "\n"}*>
+      }
+    }
+  >
+
   Stx-DataEntry.None =
   Stx-DataEntry.Some = < : <Stx-ATerm>>
 

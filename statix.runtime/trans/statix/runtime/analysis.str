@@ -435,6 +435,12 @@ rules
   stx--debug-scopegraph =
     prim("STX_debug_scopegraph")
 
+  /**
+   * @type : Analysis -> ScopeGraph
+   */
+  stx--get-scopegraph =
+    prim("STX_get_scopegraph")
+
   stx--diff-scopegraphs(|s0) =
     prim("STX_diff_scopegraphs",s0)
 

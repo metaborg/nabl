@@ -251,7 +251,7 @@ public class StatixSolver {
         final java.util.Set<CriticalEdge> removedEdges = ImmutableSet.of();
         final ICompleteness.Immutable completeness = Completeness.Immutable.of();
         final SolverResult result =
-                SolverResult.of(state, failed, delayed, existentials, updatedVars, removedEdges, completeness);
+                SolverResult.of(spec, state, failed, delayed, existentials, updatedVars, removedEdges, completeness);
         return result;
     }
 

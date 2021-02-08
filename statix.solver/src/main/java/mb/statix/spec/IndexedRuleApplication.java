@@ -99,7 +99,7 @@ public class IndexedRuleApplication {
             return Optional.empty();
         }
         if(constraint != null) {
-            final State state = State.of(spec);
+            final State state = State.of();
             final NullDebugContext debug = new NullDebugContext();
             final SolverResult solveResult =
                     Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(), new NullProgress());
@@ -132,7 +132,7 @@ public class IndexedRuleApplication {
     }
 
     public static Optional<IndexedRuleApplication> of(Spec spec, Rule rule) throws Delay, InterruptedException {
-        final IState.Transient state = State.of(spec).melt();
+        final IState.Transient state = State.of().melt();
         final Renaming.Builder _renaming = Renaming.builder();
         for(ITermVar freeVar : rule.freeVars()) {
             _renaming.put(freeVar, state.freshVar(freeVar));

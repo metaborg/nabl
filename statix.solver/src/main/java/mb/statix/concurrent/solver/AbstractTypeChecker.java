@@ -122,7 +122,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
             }
             return CompletableFuture.completedFuture(SolverResult.of(spec));
         }
-        final IState.Immutable unitState = State.of(spec).withResource(context.id());
+        final IState.Immutable unitState = State.of().withResource(context.id());
         final ApplyResult applyResult;
         try {
             if((applyResult = RuleUtil.apply(unitState.unifier(), rule.get(), scopes, null, ApplyMode.STRICT)
