@@ -442,4 +442,27 @@ public class UniDisunifierFiniteTest {
         assertEquals(CapsuleUtil.toSet(a, b), phi.rangeSet());
     }
 
+    @Test(timeout = 10000) public void testUnifyWithUnrelatedExistingRigidDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, x));
+        assertPresent(phi.unify(b, y, v -> v.equals(a)));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyRigidImpliedByExistingDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, x));
+        assertPresent(phi.disunify(a, x, v -> v.equals(a)));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyVariableTwice() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, B.newList(c)));
+        assertAbsent(phi.unify(a, b));
+        assertAbsent(phi.unify(a, B.newList(c)));
+        assertPresent(phi.unify(b, B.newList(c)));
+    }
+
 }
