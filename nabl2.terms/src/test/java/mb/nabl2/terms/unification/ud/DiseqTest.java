@@ -38,8 +38,8 @@ public class DiseqTest {
     @Test public void test03() {
         final Diseq deq1 = Diseq.of(Set.Immutable.of(), B.newTuple(a, b), B.newTuple(c, d)).get();
         final Diseq deq2 = Diseq.of(Set.Immutable.of(), a, c).get();
-        assertTrue(deq1.implies(deq2));
-        assertFalse(deq2.implies(deq1));
+        assertFalse(deq1.implies(deq2));
+        assertTrue(deq2.implies(deq1));
     }
 
     @Test public void test04() {
@@ -88,6 +88,27 @@ public class DiseqTest {
         final Diseq deq1 = Diseq.of(Set.Immutable.of(x), a, B.newTuple(x, b)).get();
         final Diseq deq2 = Diseq.of(Set.Immutable.of(y), a, B.newTuple(B.newList(y), b)).get();
         assertTrue(deq1.implies(deq2));
+        assertFalse(deq2.implies(deq1));
+    }
+
+    @Test public void test11() {
+        final Diseq deq1 = Diseq.of(Set.Immutable.of(x), a, B.newList(x)).get();
+        final Diseq deq2 = Diseq.of(Set.Immutable.of(), a, B.newList(b)).get();
+        assertTrue(deq1.implies(deq2));
+        assertFalse(deq2.implies(deq1));
+    }
+
+    @Test public void test12() {
+        final Diseq deq1 = Diseq.of(Set.Immutable.of(x), a, B.newList(x)).get();
+        final Diseq deq2 = Diseq.of(Set.Immutable.of(y), a, B.newList(y)).get();
+        assertTrue(deq1.implies(deq2));
+        assertTrue(deq2.implies(deq1));
+    }
+
+    @Test public void test13() {
+        final Diseq deq1 = Diseq.of(Set.Immutable.of(x), a, B.newList(x)).get();
+        final Diseq deq2 = Diseq.of(Set.Immutable.of(y), b, B.newList(y)).get();
+        assertFalse(deq1.implies(deq2));
         assertFalse(deq2.implies(deq1));
     }
 

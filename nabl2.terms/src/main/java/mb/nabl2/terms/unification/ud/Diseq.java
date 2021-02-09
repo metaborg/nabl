@@ -153,14 +153,12 @@ public class Diseq {
             otherDiseq = other.rename(fv.fresh(other.universals));
         }
 
-        final Predicate1<ITermVar> isRigid = v -> !diseq.universals.contains(v);
+        final Set.Immutable<ITermVar> universals = Set.Immutable.union(diseq.universals, otherDiseq.universals);
+        final Predicate1<ITermVar> isRigid = v -> !universals.contains(v);
         try {
             final IUnifier.Result<? extends IUnifier.Immutable> ur;
-            if((ur = diseq.diseqs.unify(otherDiseq.diseqs, isRigid).orElse(null)) == null) {
+            if((ur = otherDiseq.diseqs.unify(diseq.diseqs, isRigid).orElse(null)) == null) {
                 return false;
-            }
-            if(ur.result().isEmpty()) {
-                return true;
             }
             final IUnifier.Result<? extends ISubstitution.Immutable> rr;
             rr = ur.result().removeAll(diseq.universals);
@@ -188,7 +186,7 @@ public class Diseq {
     }
 
     /**
-     * Create a new disequality. Returns none of the disequality holds, or a disequality object otherwise.
+     * Create a new disequality. Returns none if the disequality holds, or a disequality object otherwise.
      */
     public static Optional<Diseq> of(Iterable<ITermVar> universals, ITerm left, ITerm right) {
         try {
