@@ -48,47 +48,68 @@ rules
 // pretty printing strategies here. The productions in statix/runtime/ATerm.sdf3 and
 // strategies here must be kept in sync!
 
-  stx--prettyprint-term =
-    is-Statix-Stx-Var        < prettyprint-Statix-Stx-Var
-  + is-Statix-Stx-Scope      < prettyprint-Statix-Stx-Scope
-  + is-Statix-Stx-Occurrence < prettyprint-Statix-Stx-Occurrence
-  + is-Statix-Stx-TermIndex  < prettyprint-Statix-Stx-TermIndex
-  + fail
+
+  // pretty-print strategy that can be injected into other sorts to allow printing
+  // special Statix terms in those positions
+
+  stx--prettyprint-term: _ -> <prettyprint-Statix-Stx-Var>
+    where is-Statix-Stx-Var
+
+  stx--prettyprint-term: _ -> <prettyprint-Statix-Stx-Scope>
+    where is-Statix-Stx-Scope
+
+  stx--prettyprint-term: _ -> <prettyprint-Statix-Stx-Occurrence>
+    where prettyprint-Statix-Stx-Occurrence
+
+  stx--prettyprint-term: _ -> <prettyprint-Statix-Stx-TermIndex>
+    where prettyprint-Statix-Stx-TermIndex
 
 
-  stx--is-term =
-    is-Statix-Stx-Var
-  + is-Statix-Stx-Scope
-  + is-Statix-Stx-Occurrence
-  + is-Statix-Stx-TermIndex
+  // extend generated strategy to treat native terms as constructors of ATerm
+  // one for every special rule below
+  // do not write as ` = is-int + is-string + ...`, as this breaks merging with generated rules
 
+  is-Statix-Stx-ATerm: _ -> <is-int>
+  is-Statix-Stx-ATerm: _ -> <is-string>
+  is-Statix-Stx-ATerm: _ -> <is-list>
+
+
+  // injections into ATerm that should not be handled generically
+  // should cover all injections in syntax/ATerm.sdf3
+
+  stx--is-ATerm-inj: _ -> <is-Statix-Stx-Var>
+  stx--is-ATerm-inj: _ -> <is-Statix-Stx-Scope>
+  stx--is-ATerm-inj: _ -> <is-Statix-Stx-Occurrence>
+  stx--is-ATerm-inj: _ -> <is-Statix-Stx-TermIndex>
+
+
+  // generic pretty-printing rules for ATerms
 
   prettyprint-Statix-Stx-ATerm:
       t1__ -> [ H([SOpt(HS(), "0")], [t1__']) ]
-    where not(stx--is-term)
     where is-int
     with t1__' := <pp-one-Z(prettyprint-Statix-Stx-INT)> t1__
 
   prettyprint-Statix-Stx-ATerm:
       t1__ -> [ H([SOpt(HS(), "0")], [S("\""), t1__', S("\"")]) ]
-    where not(stx--is-term)
     where is-string
     with t1__' := <pp-one-Z(prettyprint-Statix-Stx-STRING)> t1__
 
   prettyprint-Statix-Stx-ATerm:
       t1__ -> [ H([SOpt(HS(), "0")], [S("["), t1__', S("]")]) ]
-    where not(stx--is-term)
     where is-list
     with t1__' := <pp-H-list(prettyprint-Statix-Stx-ATerm|", ")> t1__
+    with <map(prettyprint-Statix-Stx-ATerm)> t1__
 
   prettyprint-Statix-Stx-ATerm:
       t1__#(t2__) -> [ H([SOpt(HS(), "0")], [t1__', S("("), t2__', S(")")]) ]
-    where not(stx--is-term)
+    where not(is-Statix-Stx-ATerm + stx--is-ATerm-inj)
     with t1__' := <pp-one-Z(prettyprint-Statix-Stx-STRING)> t1__
     with t2__' := <pp-H-list(prettyprint-Statix-Stx-ATerm|", ")> t2__
 
 
+  // pretty-printing rule for analysis, that converts to a term with a scope graph
+
   prettyprint-Statix-Analysis: a -> <prettyprint-Statix-Analysis> a'
     where <stx--is-analysis> a
     with a' := Analysis(<stx--debug-scopegraph> a)
-
