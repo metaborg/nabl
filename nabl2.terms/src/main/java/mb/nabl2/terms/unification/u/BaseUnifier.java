@@ -391,7 +391,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         }
         // @formatter:off
         return term.match(Terms.cases(
-            appl -> appl.getOp() + (!appl.getArgs().isEmpty() ? "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1) + ")" : ""),
+            appl -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1) + ")",
             list -> toString(list, stack, visited, maxDepth),
             string -> string.toString(),
             integer -> integer.toString(),
