@@ -12,6 +12,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -113,12 +114,12 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     // toString(ITerm)
     ///////////////////////////////////////////
 
-    @Override public String toString(final ITerm term) {
-        return unifier().toString(term);
+    @Override public String toString(final ITerm term, SpecializedTermFormatter specializedTermFormatter) {
+        return unifier().toString(term, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n) {
-        return unifier().toString(term, n);
+    @Override public String toString(final ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
+        return unifier().toString(term, n, specializedTermFormatter);
     }
 
     ///////////////////////////////////////////
@@ -217,12 +218,12 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.size(term);
         }
 
-        @Override public String toString(ITerm term) {
-            return unifier.toString(term);
+        @Override public String toString(ITerm term, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n) {
-            return unifier.toString(term, n);
+        @Override public String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, n, specializedTermFormatter);
         }
 
         @Override public Set.Immutable<Diseq> disequalities() {

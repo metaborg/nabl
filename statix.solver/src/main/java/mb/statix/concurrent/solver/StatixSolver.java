@@ -402,7 +402,8 @@ public class StatixSolver {
         }
 
         if(debug.isEnabled(Level.Debug)) {
-            debug.debug("Solving {}", constraint.toString(Solver.shallowTermFormatter(state.unifier())));
+            debug.debug("Solving {}",
+                    constraint.toString(Solver.shallowTermFormatter(state.unifier(), Solver.TERM_FORMAT_DEPTH)));
         }
 
         // solve

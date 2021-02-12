@@ -25,6 +25,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
@@ -170,7 +171,7 @@ public class SearchState {
         final StringBuilder sb = new StringBuilder();
         print(ln -> {
             sb.append(ln).append("\n");
-        }, (t, u) -> new UnifierFormatter(u, 2).format(t));
+        }, (t, u) -> Solver.shallowTermFormatter(u, 2).format(t));
         return sb.toString();
     }
 
