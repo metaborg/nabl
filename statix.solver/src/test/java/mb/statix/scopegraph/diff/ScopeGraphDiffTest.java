@@ -7,9 +7,15 @@ import java.util.Set;
 import org.junit.Test;
 import org.metaborg.util.functions.Predicate2;
 
+import mb.nabl2.terms.ITerm;
+import static mb.nabl2.terms.build.TermBuild.B;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.util.CapsuleUtil;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.reference.ScopeGraph;
+import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.terms.StatixDifferOps;
 
 public class ScopeGraphDiffTest {
 	
@@ -17,7 +23,7 @@ public class ScopeGraphDiffTest {
 	private static final Integer s1 = 1;
 	private static final Integer s2 = 2;
 	
-	private static final String l1 = "L";
+	private static final String l1 = "P";
 	
 	private static final IScopeGraph.Immutable<Integer, String, String> EMPTY_SG = ScopeGraph.Immutable.of();
 	
@@ -46,6 +52,36 @@ public class ScopeGraphDiffTest {
 		assertTrue(diff.matchedScopes().containsEntry(s0, s0));
 		assertTrue(diff.matchedScopes().containsEntry(s1, s2));
 		assertTrue(diff.matchedEdges().containsEntry(edge(s0, l1, s1), edge(s0, l1, s2)));
+	}
+	
+	@Test public void testTransitiveChange() {
+		ITerm P  = B.newAppl("Label", B.newString("P"));
+		ITerm var  = B.newAppl("Label", B.newString("var"));
+		
+		Scope s0 = Scope.of("", "s0");
+		Scope s1 = Scope.of("", "s1");
+		Scope s2 = Scope.of("", "s2");
+		Scope s3 = Scope.of("", "s3");
+		Scope s4 = Scope.of("", "s4");
+		
+		Scope d1 = Scope.of("", "d1");
+		Scope d2 = Scope.of("", "d2");
+
+		IScopeGraph.Immutable<Scope, ITerm, ITerm> sc1 = ScopeGraph.Immutable.<Scope, ITerm, ITerm>of()
+				.addEdge(s0, P, s2)
+				.addEdge(s2, P, s1)
+				.addEdge(s1, var, d1)
+				.setDatum(d1, B.newList(B.newString("x"), B.newAppl("INT")));
+		IScopeGraph.Immutable<Scope, ITerm, ITerm> sc2 = ScopeGraph.Immutable.<Scope, ITerm, ITerm>of()
+				.addEdge(s0, P, s4)
+				.addEdge(s4, P, s3)
+				.addEdge(s3, var, d2)
+				.setDatum(d2, B.newList(B.newString("y"), B.newAppl("INT")));
+		
+		ScopeGraphDifferOps<Scope, ITerm> ops = new StatixDifferOps(PersistentUnifier.Immutable.of(), PersistentUnifier.Immutable.of());
+		ScopeGraphDiff<Scope, ITerm, ITerm> diff = ScopeGraphDiffer.diff(s0, sc2, sc1, ops);
+		
+		// TODO proper assertions.
 	}
 	
 	private Edge<Integer, String> edge(Integer src, String lbl, Integer tgt) {
