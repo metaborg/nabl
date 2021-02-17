@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -29,14 +31,14 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
     }
 
     @Override public IFuture<GroupResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
-            List<Scope> rootScopes) {
+            List<Scope> rootScopes, @Nullable IUnitResult<Scope, ITerm, ITerm, GroupResult> previousResult) {
         final Scope projectScope = rootScopes.get(0);
         final Scope parentGrpScope = rootScopes.get(1);
         final Scope thisGroupScope = makeSharedScope(context, "s_grp");
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, group.groups(), projectScope, thisGroupScope);
+                runGroups(context, group.groups(), projectScope, thisGroupScope, previousResult);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, group.units(), projectScope, thisGroupScope);
+                runUnits(context, group.units(), projectScope, thisGroupScope, previousResult);
         context.closeScope(thisGroupScope);
         final IFuture<SolverResult> result =
                 runSolver(context, group.rule(), Arrays.asList(projectScope, parentGrpScope, thisGroupScope));

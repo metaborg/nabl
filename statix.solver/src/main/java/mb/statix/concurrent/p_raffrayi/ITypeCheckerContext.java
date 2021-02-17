@@ -3,6 +3,8 @@ package mb.statix.concurrent.p_raffrayi;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
@@ -23,9 +25,17 @@ public interface ITypeCheckerContext<S, L, D> {
     String id();
 
     /**
-     * Start sub type-checker, with the given root scope.
+     * Start sub type-checker, with the given root scope and previous result.
      */
-    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+    		List<S> rootScopes, @Nullable IUnitResult<S, L, D, R> previousResult);
+
+    /**
+     * Start sub type-checker, with the given root scope and no previous result.
+     */
+    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
+    	return add(id, unitChecker, rootScopes, null);
+    }
 
     /**
      * Initialize root scope.
@@ -86,7 +96,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-                    List<S> rootScopes) {
+                    List<S> rootScopes, @Nullable IUnitResult<S, L, D, R> previousResult) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

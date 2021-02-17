@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -29,14 +31,14 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
     }
 
     @Override public IFuture<ProjectResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
-            List<Scope> rootScopes) {
+            List<Scope> rootScopes, @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, project.groups(), projectScope, projectScope);
+                runGroups(context, project.groups(), projectScope, projectScope, previousResult);
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, project.units(), projectScope, projectScope);
+                runUnits(context, project.units(), projectScope, projectScope, previousResult);
 
         runLibraries(context, project.libraries(), projectScope);
 

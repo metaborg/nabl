@@ -11,6 +11,10 @@ public interface IUnitResult<S, L, D, R> {
     String id();
 
     IScopeGraph.Immutable<S, L, D> scopeGraph();
+    
+    // TODO add root scopes (??)
+	
+	// TODO add logs of queries
 
     @Nullable R analysis();
 

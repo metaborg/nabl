@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
@@ -59,7 +61,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> runGroups(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope projectScope,
-            Scope groupScope) {
+            Scope groupScope, @Nullable IUnitResult<Scope, ITerm, ITerm, ? extends IStatixGroupResult> previousResult) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
@@ -78,7 +80,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> runUnits(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope projectScope,
-            Scope groupScope) {
+            Scope groupScope, @Nullable IUnitResult<Scope, ITerm, ITerm, ? extends IStatixGroupResult> previousResult) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
@@ -102,7 +104,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result = context.add(key,
-                    new LibraryTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope));
+                    new LibraryTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope), null);
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));

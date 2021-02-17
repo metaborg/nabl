@@ -10,6 +10,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -59,13 +61,16 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
+        // TODO pass previous result from runtime
+        final @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult = null;
+
         final List<ITerm> results = Lists.newArrayList();
         try {
             logger.info("Analyzing files");
 
             final double t0 = System.currentTimeMillis();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
-                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), cancel);
+                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), previousResult, cancel);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;

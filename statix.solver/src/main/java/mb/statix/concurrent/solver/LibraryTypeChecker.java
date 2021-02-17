@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
@@ -16,6 +18,7 @@ import mb.nabl2.terms.matching.Transform.T;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
@@ -32,7 +35,8 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
         this.library = library;
     }
 
-    @Override public IFuture<Unit> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, List<Scope> rootScopes) {
+    @Override public IFuture<Unit> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, List<Scope> rootScopes,
+    		@Nullable IUnitResult<Scope, ITerm, ITerm, Unit> previousResult) {
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = library.scopeGraph();
         final Set.Immutable<ITerm> labels = scopeGraph.getLabels();
 

@@ -12,7 +12,7 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
 @Value.Immutable
-public abstract class AGroupResult implements IStatixResult {
+public abstract class AGroupResult implements IStatixGroupResult {
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>> groupResults();
 

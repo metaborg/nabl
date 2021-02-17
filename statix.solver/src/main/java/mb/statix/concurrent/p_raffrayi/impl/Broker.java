@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -33,6 +35,7 @@ public class Broker<S, L, D, R> {
 
     private final String id;
     private final ITypeChecker<S, L, D, R> typeChecker;
+    private final @Nullable IUnitResult<S, L, D, R> previousResult;
     private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
@@ -44,9 +47,10 @@ public class Broker<S, L, D, R> {
     private final AtomicInteger totalUnits;
 
     private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-            ICancel cancel, IActorScheduler scheduler) {
+            @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel, IActorScheduler scheduler) {
         this.id = id;
         this.typeChecker = typeChecker;
+        this.previousResult = previousResult;
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
@@ -62,7 +66,7 @@ public class Broker<S, L, D, R> {
         startWatcherThread();
 
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels));
+                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels, previousResult));
         addUnit(unit);
 
         final IFuture<IUnitResult<S, L, D, R>> result = system.async(unit)._start(Collections.emptyList());
@@ -123,9 +127,10 @@ public class Broker<S, L, D, R> {
         }
 
         @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>>
-                add(String id, ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes) {
+                add(String id, ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes,
+                		@Nullable IUnitResult<S, L, D, Q> previousResult) {
             final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
-                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels));
+                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels, previousResult));
             addUnit(unit);
             final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
             unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));
@@ -135,27 +140,34 @@ public class Broker<S, L, D, R> {
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> unitChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
-        return run(id, unitChecker, scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors());
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel) {
+        return run(id, unitChecker, scopeImpl, edgeLabels, previousResult, cancel, Runtime.getRuntime().availableProcessors());
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel, new WorkStealingScheduler(parallelism))
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel, int parallelism) {
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, previousResult, cancel, new WorkStealingScheduler(parallelism))
                 .run();
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, double preemptProbability,
-            int scheduleDelayBoundMillis) {
-        return debug(id, typeChecker, scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors(),
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, 
+            double preemptProbability, int scheduleDelayBoundMillis) {
+        return debug(id, typeChecker, scopeImpl, edgeLabels, null, cancel, Runtime.getRuntime().availableProcessors(),
                 preemptProbability, scheduleDelayBoundMillis);
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel, 
             double preemptProbability, int scheduleDelayBoundMillis) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel,
+        return debug(id, typeChecker, scopeImpl, edgeLabels, previousResult, cancel, Runtime.getRuntime().availableProcessors(),
+                preemptProbability, scheduleDelayBoundMillis);
+    }
+
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel,
+            int parallelism, double preemptProbability, int scheduleDelayBoundMillis) {
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, previousResult, cancel,
                 new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();
     }
 
