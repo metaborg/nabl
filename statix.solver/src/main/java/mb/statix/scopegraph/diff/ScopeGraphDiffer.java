@@ -19,7 +19,8 @@ import mb.statix.scopegraph.IScopeGraph;
 
 public class ScopeGraphDiffer<S, L, D> {
 
-    private final S s0;
+    private final S s0current;
+    private final S s0previous;
     private final IScopeGraph.Immutable<S, L, D> current;
     private final IScopeGraph.Immutable<S, L, D> previous;
     private final Set.Immutable<L> labels;
@@ -36,9 +37,10 @@ public class ScopeGraphDiffer<S, L, D> {
 
     private final Queue<EdgeMatch> worklist = new PriorityQueue<>();
 
-    private ScopeGraphDiffer(S s0, IScopeGraph.Immutable<S, L, D> current, IScopeGraph.Immutable<S, L, D> previous,
+    private ScopeGraphDiffer(S s0current, S s0previous, IScopeGraph.Immutable<S, L, D> current, IScopeGraph.Immutable<S, L, D> previous,
             ScopeGraphDifferOps<S, D> diffOps) {
-        this.s0 = s0;
+        this.s0current = s0current;
+        this.s0previous = s0previous;
         this.current = current;
         this.previous = previous;
         this.labels = Set.Immutable.union(current.getLabels(), previous.getLabels());
@@ -46,7 +48,7 @@ public class ScopeGraphDiffer<S, L, D> {
     }
 
     private ScopeGraphDiff<S, L, D> doDiff() {
-        if(!matchScopes(BiMap.Immutable.of(s0, s0))) {
+        if(!matchScopes(BiMap.Immutable.of(s0current, s0previous))) {
             throw new IllegalStateException();
         }
         while(!worklist.isEmpty()) {
@@ -231,9 +233,9 @@ public class ScopeGraphDiffer<S, L, D> {
         return true;
     }
 
-    public static <S, L, D> ScopeGraphDiff<S, L, D> diff(S s0, IScopeGraph.Immutable<S, L, D> current,
+    public static <S, L, D> ScopeGraphDiff<S, L, D> diff(S s0current, S s0previous, IScopeGraph.Immutable<S, L, D> current,
             IScopeGraph.Immutable<S, L, D> previous, ScopeGraphDifferOps<S, D> diffOps) {
-        return new ScopeGraphDiffer<>(s0, current, previous, diffOps).doDiff();
+        return new ScopeGraphDiffer<>(s0current, s0previous, current, previous, diffOps).doDiff();
     }
 
     private class EdgeMatch implements Comparable<EdgeMatch> {
