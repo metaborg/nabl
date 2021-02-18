@@ -29,8 +29,8 @@ public interface IStatixGroup {
     Map<String, IStatixUnit> units();
 
     static IMatcher<IStatixGroup> matcher() {
-        return M.casesFix(m -> Iterables2.singleton(M.appl3("Group", StatixTerms.hoconstraint(),
-                M.map(M.stringValue(), m), M.map(M.stringValue(), IStatixUnit.matcher()), (t, rule, groups, units) -> {
+        return M.casesFix(m -> Iterables2.singleton(M.appl5("Group", M.string(), StatixTerms.hoconstraint(), IStatixProject.resultMatcher(),
+                M.map(M.stringValue(), m), M.map(M.stringValue(), IStatixUnit.matcher()), (t, resource, rule, result, groups, units) -> {
                     return StatixGroup.of(Optional.of(rule), groups, units);
                 })));
     }

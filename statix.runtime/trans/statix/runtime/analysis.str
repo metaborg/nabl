@@ -26,17 +26,22 @@ signature
     ProjectAnalysis : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
     FileAnalysis    : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
 
-    ProjectAnalysis : Analysis -> AnalysisResult // cstx -- concurrent version
-    FileAnalysis    : GroupKey * Constraint * Analysis -> AnalysisResult // cstx -- concurrent version
+    ProjectAnalysis : Analysis * UnitResult * List(GroupKey, GroupAnalysis) -> AnalysisResult // cstx -- concurrent version
+    FileAnalysis    : GroupKey * Constraint * Analysis * UnitResult -> AnalysisResult // cstx -- concurrent version
+    GroupAnalysis   : Constraint * Analysis * UnitResult -> GroupAnalysis
+
+    ProjectResult   : Analysis * UnitResult -> Result // cstx solver outputs
+    GroupResult     : Analysis * UnitResult -> Result
+    FileResult      : Analysis * UnitResult -> Result
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Solution : List(Var, Term) * SolverResult -> Solution
 
-    Project : /*resource*/String * /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) * /*libraries*/List(String, StatixLibrary) -> StatixProject
+    Project : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) * /*libraries*/List(String, StatixLibrary) -> StatixProject
     Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
-    Group   : /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
-    Unit    : /*resource*/String * /*ast*/Term -> StatixUnit
+    Group   : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
+    Unit    : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult -> StatixUnit
 
     EOP : Label // duplicate from statix.lang
 
@@ -103,46 +108,72 @@ rules // multi file analysis (new)
       switch !project-change
         case ?Added(_) + ?Changed(_, _):
           id
-        case ?Cached(ProjectAnalysis(_)):
+        case ?Cached(ProjectAnalysis(_, _, _)):
           id
         otherwise:
           fatal-err(|"Unexpected change on project")
       end
     ; project-ast  := ()
     ; project-rule := LLam([s-proj], C(proj-c-name, [s-proj], NoMessage()))
-    ; project-task := ([], project-resource, project-rule)
+    ; project-res  := <?Cached(ProjectAnalysis(_, <id>, _)) + ?Changed(_, ProjectAnalysis(_, <id>, _)) + ?Added(<!()>)> project-change
+    ; project-task := ([], project-resource, project-rule, project-res)
       //
       // 2. Build file tasks
       //
-    ; changed-file-ast*  := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> file-change*
+    ; changed-file-ast*  := <filter((id, ?Added(_) + ?Changed(_, _))); map({ ast, result:
+        \(res, change) -> (res, ast, result)
+           with switch !change
+                  case ?Added(ast'):
+                    ast := ast'
+                  ; result := ()
+                  case ?Changed(ast', FileAnalysis(_, _, _, result')):
+                    ast := ast'
+                  ; result := result'
+                end
+        \
+      })> file-change*
     ; changed-file-task_ast* := <map({ key, ast', rule:
-        \ (resource, ast) -> (key, resource, rule, ast')
+        \ (resource, ast, result) -> (key, resource, rule, ast', result)
             where key := <group-key> (resource, ast)
                 ; ast' := <pre;stx--index-ast(|resource)> ast
                 ; rule := LLam([s-proj, s-grp], C(file-c-name, [s-proj, s-grp, <stx--explode> ast'], NoMessage()))
         \
       })> changed-file-ast*
-    ; changed-file-task* := <map(\ (key, resource, rule, _) -> (key, resource, rule) \)> changed-file-task_ast*
-    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(key, file-rule, _))) -> (key, resource, file-rule) \)> file-change*
+    ; changed-file-task* := <map(\ (key, resource, rule, _, result) -> (key, resource, rule, result) \)> changed-file-task_ast*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(key, file-rule, _, unit-result))) -> (key, resource, file-rule, unit-result) \)> file-change*
     ; file-task*         := [changed-file-task*, cached-file-task*]
-    ; changed-file-ast'* := <map(\ (_, resource, _, ast) -> (resource, ast) \)> changed-file-task_ast*
+    ; changed-file-ast'* := <map(\ (_, resource, _, ast, _) -> (resource, ast) \)> changed-file-task_ast*
       //
-      // 3. Solve project
+      // 3. Build group tasks
       //
-    ; project   := <cstx--make-project(|grp-c-name, libs)> (project-task, file-task*)
+    ; cached-group* := <?Cached(ProjectAnalysis(_, _, <id>)) + ?Changed(_, ProjectAnalysis(_, _, <id>)) + ![]> project-change
+    ; group-task*   := <map({resource, key, group-rule, unit-result:
+        \ (key, GroupAnalysis(group-rule, _, unit-result)) -> (key, resource, group-rule, unit-result)
+          with
+            resource := <separate-by(|">"); concat-strings> key
+        \})> cached-group*
+      //
+      // 4. Solve project
+      //
+    ; project   := <cstx--make-project(|grp-c-name, libs)> (project-task, group-task*, file-task*)
     ; analysis* := <cstx--solve-multi(|spec, level, progress, cancel)> project
       //
-      // 4. Construct resuls
+      // 5. Construct results
       //
-    ; project-result := < cstx--mk-result(\ (key, rule, a) -> ProjectAnalysis(a) \|[(project-resource, project-ast)], [project-task], analysis*)
-                        ; \ (resource, result) -> (resource, result) \
+    ; (group-result*, grp-error*, grp-warning*, grp-note*) := <cstx-mk-group-results(|project)> (group-task*, cached-group*, analysis*)
+    ; project-result := <cstx--mk-result(
+                           \ ProjectResult(state, res) -> (state, res) \,
+                           \ (key, rule, a, unit-result) -> ProjectAnalysis(a, unit-result, group-result*) \|
+                           [(project-resource, project-ast)], [project-task], analysis*, grp-error*, grp-warning*, grp-note*)
                         > (project-resource, project-change)
-    ; file-result*   := <map( cstx--mk-result(\ (key, rule, a) -> FileAnalysis(key, rule, a) \|changed-file-ast'*, file-task*, analysis*)
-                            ; \ (resource, result) -> (resource, result) \
-                            )> file-change*
+    ; file-result*   := <map(cstx--mk-result(
+                               \ FileResult(state, res) -> (state, res)\,
+                               \ (key, rule, a, unit-result) -> FileAnalysis(key, rule, a, unit-result) \|
+                               changed-file-ast'*, file-task*, analysis*, [], [], []))
+                        > file-change*
     ; result* := [project-result|file-result*]
       //
-      // 5. Compute scope graph diff
+      // 6. Compute scope graph diff
       //
   // Disabled as long as we do not know the root scope here
   //; if Cached(ProjectAnalysis(_, project-analysis')) := project-change then
@@ -151,32 +182,45 @@ rules // multi file analysis (new)
   //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
   //  end
 
-
   cstx--make-project(|grp-c-name, libs):
-      ((_, project-resource, project-rule), file-task*) -> Project(project-resource, project-rule, groups, units, libs)
-    with (groups, units) := <cstx--make-subs(|grp-c-name)> file-task*
+      ((_, project-resource, project-rule, project-res), group-task*, file-task*) -> Project(project-resource, project-rule, project-res, groups, units, libs)
+    with (groups, units) := <cstx--make-subs(|project-resource, grp-c-name)> (group-task*, file-task*)
 
-  cstx--make-subs(|grp-c-name): file-task* -> (groups, units)
-    with key* := <map(\ ([key|_], _, _) -> key \); make-set> file-task*
-       ; subs := <map(\ key -> < filter({ keys, resource, rule: ?([key|keys], resource, rule); !(keys, resource, rule) })
-                               ; cstx--make-sub(|key, grp-c-name)> file-task* \)
-                               > key*
-       ; groups := <filter(?(_, Group(_, _, _)))> subs
-       ; units  := <filter(?(_, Unit(_, _)))> subs
+  cstx--make-subs(|grp-res, grp-c-name): (group-task*, file-task*) -> (groups, units)
+    with key* := <map({key: \ ([key|_], _, _, _) -> key \}); make-set> file-task*
+       ; subs := <map({sub-group-task*, key: \ key -> < filter({ keys, resource, rule, result: ?([key|keys], resource, rule, result); !(keys, resource, rule, result) })
+                               ; cstx--make-sub(|key, grp-res, grp-c-name, sub-group-task*)
+                               > file-task*
+                        with
+                          sub-group-task* := <filter({ keys, resource, rule, result: ?([key|keys], resource, rule, result); !(keys, resource, rule, result) })> group-task*
+                      \
+                 })> key*
+       ; groups := <filter(?(_, Group(_, _, _, _, _)))> subs
+       ; units  := <filter(?(_, Unit(_, _, _)))> subs
 
-  cstx--make-sub(|key, grp-c-name): file-task* -> (key, Group(rule, groups, units))
-    where <map(?([_|_], _, _))> file-task*
+  cstx--make-sub(|key, parent-res, grp-c-name, group-task*): file-task* -> <cstx--make-sub(|key, parent-res, grp-c-name)> (group-task*, file-task*)
+
+  cstx--make-sub(|key, parent-res, grp-c-name): (group-task*, file-task*) -> grp
+    where <map(?([_|_], _, _, _))> file-task*
+    with grp-res := $[[parent-res]>[key]]
+       ; grp := <cstx--make-group(|key, grp-res, grp-c-name)> (group-task*, file-task*)
+
+  cstx--make-sub(|key, _, grp-c-name): (_, file-task*) -> (key, Unit(resource, ast, result))
+    where <map(?([], resource, ast, result))> file-task*
+
+  cstx--make-sub(|key, _, grp-c-name) = fatal-err(|$[Grouping failed for key [key]])
+
+  cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, result, groups, units))
+    where <getfirst(?([], _, rule, result))> group-task*
+    with (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
+
+  cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, (), groups, units))
+    where <filter(?([], _, _, _))> group-task* => []
     with s-proj        := Var("s_proj")
        ; s-parent-grp  := Var("s_parentGrp")
        ; s-this-grp    := Var("s_thisGrp")
        ; rule := LLam([s-proj, s-parent-grp, s-this-grp], C(grp-c-name, [s-proj, s-parent-grp, <stx--explode> key, s-this-grp], NoMessage()))
-       ; (groups, units) := <cstx--make-subs(|grp-c-name)> file-task*
-
-  cstx--make-sub(|key, grp-c-name): file-task* -> (key, Unit(resource, ast))
-    where <map(?([], resource, ast))> file-task*
-
-  cstx--make-sub(|key, grp-c-name) = fatal-err(|$[Grouping failed for key [key]])
-
+       ; (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
 
   // @param spec  : Spec
   // @param level : LogLevel
@@ -184,18 +228,40 @@ rules // multi file analysis (new)
   cstx--solve-multi(|spec, level, progress, cancel) =
     prim("STX_solve_multi", spec, level, progress, cancel)
 
+  cstx-mk-group-results(|project): (task*, cached-group*, analysis*) -> (new-group-result*, grp-error*, grp-warning*, grp-note*)
+    with group-result*  := <filter(?(_, GroupResult(_, _)))> analysis*
+       ; group*		    := <cstx-collect-groups> project
+       ; group-results-msgs := <map({ key, rule: \(resource, GroupResult(state, result)) -> ((key, GroupAnalysis(rule, state, result)), error*, warning*, note*)
+                                  with (key, Group(_, rule, _, _, _)) := <getfirst(?(_, Group(resource, _, _, _, _)))> group*
+                                     ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages> state
+                                \})> group-result*
+       ; new-group-result*     := <map(Fst)> group-results-msgs
+       ; grp-error*            := <mapconcat(Snd)> group-results-msgs
+       ; grp-warning*          := <mapconcat(Third)> group-results-msgs
+       ; grp-note*             := <mapconcat(Ttl; Third)> group-results-msgs
 
-  cstx--mk-result(mk-analysis|changed-ast*, task*, state*): (resource, change) -> (resource, result)
-    with (key, _, rule) := <getfirst(?(_, resource, _))> task*
-       ; if state := <lookup> (resource, state*) then
-           analysis := <mk-analysis> (key, rule, state)
+  cstx-collect-groups = ?Project(_, _, _, <mapconcat(cstx-collect-groups(|[]))>, _, _)
+
+  cstx-collect-groups(|parent-key): (key, grp) -> [(full-key, grp)| sub-group*]
+    with full-key := <conc> (parent-key, [key])
+       ; Group(_, _, _, grps, _) := grp
+       ; sub-group* := <mapconcat(cstx-collect-groups(|full-key))> grps
+
+
+  cstx--mk-result(extract-analysis, mk-analysis|changed-ast*, task*, state*, ext-error*, ext-warning*, ext-note*): (resource, change) -> (resource, result)
+    with (key, _, rule, _) := <getfirst(?(_, resource, _, _))> task*
+       ; if (state, res) := <lookup; extract-analysis> (resource, state*) then
+           analysis := <mk-analysis> (key, rule, state, res)
          ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages> state
+         ; all-error*   := <conc> (error*, ext-error*)
+         ; all-warning* := <conc> (warning*, ext-warning*)
+         ; all-note*    := <conc> (note*, ext-note*)
          ; switch !change
              case ?Added(_) + ?Changed(_, _):
                ast    := <lookup> (resource, changed-ast*)
-             ; result := Full(ast, analysis, error*, warning*, note*)
+             ; result := Full(ast, analysis, all-error*, all-warning*, all-note*)
              case ?Cached(_):
-               result := Update(analysis, error*, warning*, note*)
+               result := Update(analysis, all-error*, all-warning*, all-note*)
            end
          else
            result := Failed()
@@ -397,7 +463,7 @@ rules
 
   stx--get-result-analysis = 
     ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
-   <+ ?FileAnalysis(_, _, <id>) + ?ProjectAnalysis(<id>) // cstx
+   <+ ?FileAnalysis(_, _, <id>, _) + ?ProjectAnalysis(<id>, _, _) // cstx
     )
 
 

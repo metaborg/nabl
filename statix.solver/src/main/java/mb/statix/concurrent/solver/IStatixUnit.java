@@ -18,7 +18,7 @@ public interface IStatixUnit {
     Optional<Rule> rule();
 
     static IMatcher<IStatixUnit> matcher() {
-        return M.appl2("Unit", M.stringValue(), StatixTerms.hoconstraint(), (t, resource, rule) -> {
+        return M.appl3("Unit", M.stringValue(), StatixTerms.hoconstraint(), IStatixProject.resultMatcher(), (t, resource, rule, result) -> {
             return StatixUnit.of(resource, Optional.of(rule));
         });
     }

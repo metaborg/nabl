@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -76,14 +77,14 @@ public class STX_solve_multi extends StatixPrimitive {
             final double dt = System.currentTimeMillis() - t0;
 
             final List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults = new ArrayList<>();
-            final Map<String, SolverResult> resultMap = flattenResult(spec, result, unitResults);
+            final Map<String, ITerm> resultMap = flattenResult(spec, result, unitResults);
 
             //            PRaffrayiUtil.writeStatsCsvFromResult(unitResults, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
 
-            for(Entry<String, SolverResult> entry : resultMap.entrySet()) {
-                results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(entry.getValue())));
+            for(Entry<String, ITerm> entry : resultMap.entrySet()) {
+                results.add(B.newTuple(B.newString(entry.getKey()), entry.getValue()));
             }
         } catch(InterruptedException ie) {
             logger.info("Async solving interrupted");
@@ -103,46 +104,48 @@ public class STX_solve_multi extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private Map<String, SolverResult> flattenResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ProjectResult> result,
+    private Map<String, ITerm> flattenResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ProjectResult> result,
             List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
         unitResults.add(result);
-        final Map<String, SolverResult> resourceResults = new HashMap<>();
+        final Map<String, ITerm> resourceResults = new HashMap<>();
         final ProjectResult projectResult = result.analysis();
+        final String resource = projectResult.resource();
         if(projectResult != null) {
             final List<SolverResult> groupResults = new ArrayList<>();
             projectResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, gr, groupResults, resourceResults, unitResults));
+                    .forEach((k, gr) -> flattenGroupResult(spec, subResource(resource,  k), gr, groupResults, resourceResults, unitResults));
             projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
             SolverResult solveResult = flatSolverResult(spec, result);
             for(SolverResult groupResult : groupResults) {
                 solveResult = solveResult.combine(groupResult);
             }
-            resourceResults.put(projectResult.resource(), solveResult);
+            resourceResults.put(resource, B.newAppl("ProjectResult", B.newBlob(solveResult), B.newBlob(result)));
         }
         return resourceResults;
     }
 
-    private void flattenGroupResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, GroupResult> result,
-            List<SolverResult> groupResults, Map<String, SolverResult> resourceResults,
+    private void flattenGroupResult(Spec spec, String groupId, IUnitResult<Scope, ITerm, ITerm, GroupResult> result,
+            List<SolverResult> groupResults, Map<String, ITerm> resourceResults,
             List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
         unitResults.add(result);
         final GroupResult groupResult = result.analysis();
         if(groupResult != null) {
             groupResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, gr, groupResults, resourceResults, unitResults));
+                    .forEach((k, gr) -> flattenGroupResult(spec, subResource(groupId, k), gr, groupResults, resourceResults, unitResults));
             groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
             final SolverResult solveResult = flatSolverResult(spec, result);
             groupResults.add(solveResult);
+            resourceResults.put(groupId, B.newAppl("GroupResult", B.newBlob(solveResult), B.newBlob(result)));
         }
     }
 
     private void flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult> result,
-            Map<String, SolverResult> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
+            Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
         unitResults.add(result);
         final UnitResult unitResult = result.analysis();
         if(unitResult != null) {
             final SolverResult solveResult = flatSolverResult(spec, result);
-            resourceResults.put(unitResult.resource(), solveResult);
+            resourceResults.put(unitResult.resource(), B.newAppl("FileResult", B.newBlob(solveResult), B.newBlob(result)));
         }
     }
 
@@ -151,6 +154,11 @@ public class STX_solve_multi extends StatixPrimitive {
         SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
         solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
         return solveResult;
+    }
+
+    // TODO: resource on group?
+    private String subResource(String parent, String child) {
+    	return String.format("%s>%s", parent, child);
     }
 
 }
