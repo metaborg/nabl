@@ -32,6 +32,7 @@ import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.solver.GroupResult;
 import mb.statix.concurrent.solver.IStatixProject;
 import mb.statix.concurrent.solver.IStatixResult;
+import mb.statix.concurrent.solver.InputMatchers;
 import mb.statix.concurrent.solver.ProjectResult;
 import mb.statix.concurrent.solver.ProjectTypeChecker;
 import mb.statix.concurrent.solver.UnitResult;
@@ -58,7 +59,7 @@ public class STX_solve_multi extends StatixPrimitive {
         final ICancel cancel = getCancel(terms.get(3));
 
         final IStatixProject project =
-                IStatixProject.matcher().match(term).orElseThrow(() -> new InterpreterException("Expected project."));
+                InputMatchers.project().match(term).orElseThrow(() -> new InterpreterException("Expected project."));
 
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
