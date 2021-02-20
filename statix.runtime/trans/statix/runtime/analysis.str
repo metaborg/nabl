@@ -33,6 +33,10 @@ signature
     ProjectResult   : Analysis * UnitResult -> Result // cstx solver outputs
     GroupResult     : Analysis * UnitResult -> Result
     FileResult      : Analysis * UnitResult -> Result
+    
+    Added           : InitialState
+    Cached          : UnitResult -> InitialState
+    Changed         : UnitResult -> InitialState
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
@@ -115,7 +119,7 @@ rules // multi file analysis (new)
       end
     ; project-ast  := ()
     ; project-rule := LLam([s-proj], C(proj-c-name, [s-proj], NoMessage()))
-    ; project-res  := <?Cached(ProjectAnalysis(_, <id>, _)) + ?Changed(_, ProjectAnalysis(_, <id>, _)) + ?Added(<!()>)> project-change
+    ; project-res  := <?Cached(ProjectAnalysis(_, <!Cached(<id>)>, _)) + ?Changed(_, ProjectAnalysis(_, <!Changed(<id>)>, _)) + ?Added(<!Added()>)> project-change
     ; project-task := ([], project-resource, project-rule, project-res)
       //
       // 2. Build file tasks
@@ -125,10 +129,10 @@ rules // multi file analysis (new)
            with switch !change
                   case ?Added(ast'):
                     ast := ast'
-                  ; result := ()
+                  ; result := Added()
                   case ?Changed(ast', FileAnalysis(_, _, _, result')):
                     ast := ast'
-                  ; result := result'
+                  ; result := Changed(result')
                 end
         \
       })> file-change*
@@ -140,7 +144,7 @@ rules // multi file analysis (new)
         \
       })> changed-file-ast*
     ; changed-file-task* := <map(\ (key, resource, rule, _, result) -> (key, resource, rule, result) \)> changed-file-task_ast*
-    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(key, file-rule, _, unit-result))) -> (key, resource, file-rule, unit-result) \)> file-change*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(key, file-rule, _, result))) -> (key, resource, file-rule, Cached(result)) \)> file-change*
     ; file-task*         := [changed-file-task*, cached-file-task*]
     ; changed-file-ast'* := <map(\ (_, resource, _, ast, _) -> (resource, ast) \)> changed-file-task_ast*
       //
@@ -210,11 +214,11 @@ rules // multi file analysis (new)
 
   cstx--make-sub(|key, _, grp-c-name) = fatal-err(|$[Grouping failed for key [key]])
 
-  cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, result, groups, units))
+  cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, Cached(result), groups, units))
     where <getfirst(?([], _, rule, result))> group-task*
     with (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
 
-  cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, (), groups, units))
+  cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, Added(), groups, units))
     where <filter(?([], _, _, _))> group-task* => []
     with s-proj        := Var("s_proj")
        ; s-parent-grp  := Var("s_parentGrp")
