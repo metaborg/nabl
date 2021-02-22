@@ -85,7 +85,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     private final Set.Transient<S> scopes;
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
-    private final @Nullable IUnitResult<S, L, D, R> previousResult; // TODO: check needed after add finished
+    // TODO unwrap old scope graph(?)
+    private final @Nullable IInitialState<S, L, D, R> initialState;
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
@@ -93,7 +94,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
-            @Nullable IUnitResult<S, L, D, R> previousResult) {
+            IInitialState<S, L, D, R> initialState) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -111,7 +112,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         this.scopes = CapsuleUtil.transientSet();
         this.delays = HashTrieRelation3.Transient.of();
 
-        this.previousResult = previousResult;
+        this.initialState = initialState;
         // TODO unwrap scope graph, and initialize diffing
 
         this.scopeNameCounters = MultiSet.Transient.of();
@@ -139,7 +140,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         final ICompletableFuture<R> typeCheckerResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> result = TypeCheckerResult.of(self, typeCheckerResult);
         waitFor(result, self);
-        self.schedule(this.typeChecker.run(this, rootScopes, previousResult)).whenComplete(typeCheckerResult::complete);
+        self.schedule(this.typeChecker.run(this, rootScopes, initialState)).whenComplete(typeCheckerResult::complete);
         typeCheckerResult.whenComplete((r, ex) -> {
             logger.debug("{} type checker finished", this);
             resume(); // FIXME necessary?
@@ -201,14 +202,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
-            List<S> rootScopes, @Nullable IUnitResult<S, L, D, Q> previousResult) {
+            List<S> rootScopes, IInitialState<S, L, D, Q> initialState) {
         assertInState(UnitState.ACTIVE);
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
 
         final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
-                context.add(id, unitChecker, rootScopes, previousResult);
+                context.add(id, unitChecker, rootScopes, initialState);
         final ICompletableFuture<IUnitResult<S, L, D, Q>> result = new CompletableFuture<>();
         final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);

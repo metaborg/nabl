@@ -25,6 +25,7 @@ import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
@@ -50,7 +51,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Object, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Object, ITerm, Object> initialState) {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
@@ -65,7 +66,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(1), false, false);
                         unit.addEdge(s, 1, s);
                         unit.closeEdge(s, 1);
@@ -83,7 +84,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(1), false, false);
                         unit.addEdge(s, 1, s);
                         return CompletableFuture.completedFuture(Unit.unit);
@@ -102,7 +103,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, ITerm, Object>> subResult =
@@ -110,7 +111,7 @@ public class PRaffrayiTest {
 
                                     @Override public IFuture<Object>
                                             run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> roots, 
-                                            		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                                            		IInitialState<Scope, Integer, ITerm, Object> initialState) {
                                         Scope root = roots.get(0);
                                         unit.initScope(root, Set.Immutable.of(), false);
                                         return CompletableFuture.completedFuture(Unit.unit);
@@ -135,7 +136,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, ITerm, Object>> subFuture =
@@ -143,7 +144,7 @@ public class PRaffrayiTest {
 
                                     @Override public IFuture<Object>
                                             run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> roots,
-                                            		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                                            		IInitialState<Scope, Integer, ITerm, Object> initialState) {
                                         Scope root = roots.get(0);
                                         unit.initScope(root, Set.Immutable.of(), false);
                                         return CompletableFuture.completedFuture(Unit.unit);
@@ -174,13 +175,13 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
                         unit.add("sub", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                                    List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                                    List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                                 return CompletableFuture.completedFuture(Unit.unit);
                             }
 
@@ -211,13 +212,13 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
                         unit.add("sub", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                                    List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                                    List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                                 Scope root = roots.get(0);
                                 unit.initScope(root, Set.Immutable.of(1), false);
                                 return CompletableFuture.completedFuture(Unit.unit);
@@ -244,7 +245,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s));
@@ -267,7 +268,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s));
@@ -290,7 +291,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
@@ -312,7 +313,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
@@ -336,7 +337,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
@@ -359,7 +360,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s));
@@ -382,7 +383,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s));
@@ -405,7 +406,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s));
@@ -428,7 +429,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s));
@@ -450,7 +451,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s));
@@ -473,7 +474,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s));
@@ -496,7 +497,7 @@ public class PRaffrayiTest {
                 run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                     @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                            List<Scope> roots, IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+                            List<Scope> roots, IInitialState<Scope, Integer, ITerm, Object> initialState) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
                         unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s));
@@ -526,7 +527,7 @@ public class PRaffrayiTest {
         }
 
         @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes, 
-        		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+        		IInitialState<Scope, Integer, ITerm, Object> initialState) {
             Scope s = rootScopes.get(0);
             unit.initScope(s, Set.Immutable.of(ownLabel), false);
 
@@ -562,7 +563,7 @@ public class PRaffrayiTest {
         }
 
         @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-        		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+        		IInitialState<Scope, Integer, ITerm, Object> initialState) {
             Scope s = rootScopes.get(0);
             unit.initScope(s, Set.Immutable.of(ownLabel), false);
 
@@ -596,7 +597,7 @@ public class PRaffrayiTest {
         }
 
         @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-        		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+        		IInitialState<Scope, Integer, ITerm, Object> initialState) {
             Scope s = rootScopes.get(0);
             unit.initScope(s, Set.Immutable.of(ownLabel), false);
 
@@ -632,7 +633,7 @@ public class PRaffrayiTest {
         }
 
         @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-        		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+        		IInitialState<Scope, Integer, ITerm, Object> initialState) {
             Scope s = rootScopes.get(0);
             unit.initScope(s, Set.Immutable.of(ownLabel), false);
 
@@ -666,7 +667,7 @@ public class PRaffrayiTest {
         }
 
         @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-        		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+        		IInitialState<Scope, Integer, ITerm, Object> initialState) {
             Scope s = rootScopes.get(0);
             unit.initScope(s, Set.Immutable.of(ownLabel), false);
 
@@ -704,7 +705,7 @@ public class PRaffrayiTest {
         }
 
         @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-        		IUnitResult<Scope, Integer, ITerm, Object> previousResult) {
+        		IInitialState<Scope, Integer, ITerm, Object> initialState) {
             Scope s = rootScopes.get(0);
             unit.initScope(s, Set.Immutable.of(ownLabel), false);
 

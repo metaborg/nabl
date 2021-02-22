@@ -9,8 +9,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
@@ -25,6 +23,7 @@ import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
@@ -61,7 +60,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> runGroups(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope projectScope,
-            Scope groupScope, @Nullable IUnitResult<Scope, ITerm, ITerm, ? extends IStatixGroupResult> previousResult) {
+            Scope groupScope, IInitialState<Scope, ITerm, ITerm, ? extends IStatixGroupResult> initialState) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
@@ -80,7 +79,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> runUnits(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope projectScope,
-            Scope groupScope, @Nullable IUnitResult<Scope, ITerm, ITerm, ? extends IStatixGroupResult> previousResult) {
+            Scope groupScope, IInitialState<Scope, ITerm, ITerm, ? extends IStatixGroupResult> initialState) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();

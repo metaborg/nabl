@@ -3,9 +3,8 @@ package mb.statix.concurrent.p_raffrayi;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
@@ -28,7 +27,7 @@ public interface ITypeCheckerContext<S, L, D> {
      * Start sub type-checker, with the given root scope and previous result.
      */
     <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-    		List<S> rootScopes, @Nullable IUnitResult<S, L, D, R> previousResult);
+    		List<S> rootScopes, IInitialState<S, L, D, R> initialState);
 
     /**
      * Start sub type-checker, with the given root scope and no previous result.
@@ -96,7 +95,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-                    List<S> rootScopes, @Nullable IUnitResult<S, L, D, R> previousResult) {
+                    List<S> rootScopes, IInitialState<S, L, D, R> initialState) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

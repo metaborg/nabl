@@ -2,20 +2,20 @@ package mb.statix.concurrent.p_raffrayi;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 
 /**
  * Represents the user-implemented type checker for a specific unit.
  */
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes, @Nullable IUnitResult<S, L, D, R> previousResult);
+    IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes, IInitialState<S, L, D, R> initialState);
 
+    // TODO remove
     default IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes) {
-    	return run(unit, rootScopes, null);
+    	return run(unit, rootScopes, IInitialState.added());
     }
 
     default IFuture<D> getExternalDatum(D datum) {

@@ -10,8 +10,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -23,11 +21,11 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.solver.GroupResult;
 import mb.statix.concurrent.solver.IStatixProject;
@@ -64,7 +62,7 @@ public class STX_solve_multi extends StatixPrimitive {
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
         // TODO pass previous result from runtime
-        final @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult = null;
+        final IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState = null;
 
         final List<ITerm> results = Lists.newArrayList();
         try {
@@ -72,7 +70,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
             final double t0 = System.currentTimeMillis();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
-                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), previousResult, cancel);
+                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), initialState, cancel);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;

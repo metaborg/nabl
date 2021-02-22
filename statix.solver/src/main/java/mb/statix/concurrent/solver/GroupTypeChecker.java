@@ -4,8 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -14,6 +12,7 @@ import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
@@ -31,14 +30,14 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
     }
 
     @Override public IFuture<GroupResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
-            List<Scope> rootScopes, @Nullable IUnitResult<Scope, ITerm, ITerm, GroupResult> previousResult) {
+            List<Scope> rootScopes, IInitialState<Scope, ITerm, ITerm, GroupResult> initialState) {
         final Scope projectScope = rootScopes.get(0);
         final Scope parentGrpScope = rootScopes.get(1);
         final Scope thisGroupScope = makeSharedScope(context, "s_grp");
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, group.groups(), projectScope, thisGroupScope, previousResult);
+                runGroups(context, group.groups(), projectScope, thisGroupScope, initialState);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, group.units(), projectScope, thisGroupScope, previousResult);
+                runUnits(context, group.units(), projectScope, thisGroupScope, initialState);
         context.closeScope(thisGroupScope);
         final IFuture<SolverResult> result =
                 runSolver(context, group.rule(), Arrays.asList(projectScope, parentGrpScope, thisGroupScope));

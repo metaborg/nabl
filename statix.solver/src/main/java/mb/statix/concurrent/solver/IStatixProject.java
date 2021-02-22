@@ -3,6 +3,9 @@ package mb.statix.concurrent.solver;
 import java.util.Map;
 import java.util.Optional;
 
+import mb.nabl2.terms.ITerm;
+import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spec.Rule;
 
 public interface IStatixProject {
@@ -28,5 +31,10 @@ public interface IStatixProject {
      * Direct sub units of this project.
      */
     Map<String, IStatixLibrary> libraries();
+
+    /**
+     * Result from previous type-checker run.
+     */
+    IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState();
 
 }
