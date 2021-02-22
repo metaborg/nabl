@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -37,6 +38,7 @@ import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
+import mb.statix.concurrent.p_raffrayi.IRecordedQuery;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.IUnitStats;
@@ -86,9 +88,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
     // TODO unwrap old scope graph(?)
-    private final @Nullable IInitialState<S, L, D, R> initialState;
+    private final IInitialState<S, L, D, R> initialState;
 
     private final MultiSet.Transient<String> scopeNameCounters;
+
+    private java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
 
     private final Stats stats;
 
@@ -293,9 +297,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
-            DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
-            DataLeqInternal<D> dataEquivInternal) {
+            DataWf<D> dataWF, DataLeq<D> dataEquiv, @Nullable DataWfInternal<D> dataWfInternal,
+            @Nullable DataLeqInternal<D> dataEquivInternal) {
         assertInState(UnitState.ACTIVE);
+        recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, dataWfInternal, dataEquivInternal));
 
         final IScopePath<S, L> path = Paths.empty(scope);
         final IFuture<Env<S, L, D>> result =
@@ -582,7 +587,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         if(state.equals(UnitState.ACTIVE) && !isWaiting()) {
             logger.debug("{} finish", this);
             state = UnitState.DONE;
-            unitResult.complete(UnitResult.of(id(), scopeGraph.get(), analysis.get(), failures, stats));
+            unitResult.complete(UnitResult.of(id(), scopeGraph.get(), recordedQueries, analysis.get(), failures, stats));
         }
     }
 

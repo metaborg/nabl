@@ -3,6 +3,8 @@ package mb.statix.concurrent.p_raffrayi;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
@@ -81,8 +83,8 @@ public interface ITypeCheckerContext<S, L, D> {
     }
 
     IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
-            DataWf<D> dataWF, DataLeq<D> dataEquiv, DataWfInternal<D> dataWfInternal,
-            DataLeqInternal<D> dataEquivInternal);
+            DataWf<D> dataWF, DataLeq<D> dataEquiv, @Nullable DataWfInternal<D> dataWfInternal,
+            @Nullable DataLeqInternal<D> dataEquivInternal);
 
     default ITypeCheckerContext<S, L, D> subContext(String subId) {
         final ITypeCheckerContext<S, L, D> outer = this;

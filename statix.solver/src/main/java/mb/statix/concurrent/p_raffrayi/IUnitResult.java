@@ -1,6 +1,7 @@
 package mb.statix.concurrent.p_raffrayi;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -12,9 +13,9 @@ public interface IUnitResult<S, L, D, R> {
 
     IScopeGraph.Immutable<S, L, D> scopeGraph();
     
-    // TODO add root scopes (??)
+    Set<IRecordedQuery<S, L, D>> queries();
 	
-	// TODO add logs of queries
+	// TODO add root scopes
 
     @Nullable R analysis();
 
