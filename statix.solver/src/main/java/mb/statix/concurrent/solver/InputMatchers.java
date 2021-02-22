@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.AInitialState;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
@@ -67,9 +68,9 @@ public class InputMatchers {
     @SuppressWarnings("unchecked") public static <R> IMatcher<IInitialState<Scope, ITerm, ITerm, R>> initialState() {
         // @formatter:off
         return M.cases(
-            M.appl0("Added", appl -> IInitialState.added()),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> IInitialState.cached(result)),
-            M.appl1("Changed", M.blobValue(IUnitResult.class), (appl, result) -> IInitialState.changed(result))
+            M.appl0("Added", appl -> AInitialState.added()),
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> AInitialState.cached(result)),
+            M.appl1("Changed", M.blobValue(IUnitResult.class), (appl, result) -> AInitialState.changed(result))
         );
         // formatter:on
     }

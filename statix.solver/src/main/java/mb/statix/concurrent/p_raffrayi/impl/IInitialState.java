@@ -16,16 +16,4 @@ public interface IInitialState<S, L, D, R> {
      */
     Optional<IUnitResult<S, L, D, R>> previousResult();
 
-    public static <S, L, D, R> IInitialState<S, L, D, R> added() {
-        return InitialState.of(true, Optional.empty());
-    }
-
-    public static <S, L, D, R> IInitialState<S, L, D, R> changed(IUnitResult<S, L, D, R> previousResult) {
-        return InitialState.of(true, Optional.of(previousResult));
-    }
-
-    public static <S, L, D, R> IInitialState<S, L, D, R> cached(IUnitResult<S, L, D, R> previousResult) {
-        return InitialState.of(false, Optional.of(previousResult));
-    }
-
 }

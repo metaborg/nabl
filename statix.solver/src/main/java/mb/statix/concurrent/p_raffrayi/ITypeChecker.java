@@ -4,6 +4,7 @@ import java.util.List;
 
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.impl.AInitialState;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 
 /**
@@ -15,7 +16,7 @@ public interface ITypeChecker<S, L, D, R> {
 
     // TODO remove
     default IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes) {
-    	return run(unit, rootScopes, IInitialState.added());
+    	return run(unit, rootScopes, AInitialState.added());
     }
 
     default IFuture<D> getExternalDatum(D datum) {
