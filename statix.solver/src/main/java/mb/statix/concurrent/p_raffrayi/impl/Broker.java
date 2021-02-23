@@ -64,7 +64,7 @@ public class Broker<S, L, D, R> {
         startWatcherThread();
 
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels, initialState));
+                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels, scopeImpl, initialState));
         addUnit(unit);
 
         final IFuture<IUnitResult<S, L, D, R>> result = system.async(unit)._start(Collections.emptyList());
@@ -128,7 +128,7 @@ public class Broker<S, L, D, R> {
                 add(String id, ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes,
                 		IInitialState<S, L, D, Q> initialState) {
             final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
-                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels, initialState));
+                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels, scopeImpl, initialState));
             addUnit(unit);
             final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
             unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));

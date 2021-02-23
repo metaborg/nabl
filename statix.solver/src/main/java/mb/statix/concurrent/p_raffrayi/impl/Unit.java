@@ -41,6 +41,7 @@ import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.IRecordedQuery;
+import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.IUnitStats;
@@ -90,6 +91,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     private final Set.Immutable<L> edgeLabels;
     private final Set.Transient<S> scopes;
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
+    private final IScopeImpl<S, D> scopeImpl;
 
     // TODO unwrap old scope graph(?)
     private final IInitialState<S, L, D, R> initialState;
@@ -103,7 +105,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     Unit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
-            IInitialState<S, L, D, R> initialState) {
+            IScopeImpl<S, D> scopeImpl, IInitialState<S, L, D, R> initialState) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -120,6 +122,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
         this.scopes = CapsuleUtil.transientSet();
         this.delays = HashTrieRelation3.Transient.of();
+        this.scopeImpl = scopeImpl;
 
         this.initialState = initialState;
         // TODO unwrap scope graph, and initialize diffing
@@ -195,12 +198,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                 assertInState(UnitState.UNKNOWN);
                 startTypeChecker(rootScopes);
             } else {
-                logger.info("{} confirmations confirmed", this);
-                IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
-                // TODO: patch scopes
-                scopeGraph.set(previousResult.scopeGraph());
-                analysis.set(initialState.previousResult().get().analysis());
-                tryFinish();
+                logger.info("{} confirmations confirmed", this);                
+                release(v._2());
             }
         });
 
@@ -227,8 +226,30 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                     v.forEach(result -> patches.__putAll(result._2()));
                     confirmationsComplete.complete(Tuple2.of(true, patches.freeze()), ex);
                 }
+                // in the else case, one of the futures has restarted the type checker, so we don't handle that case here.
             });
         // @formatter:on
+    }
+
+    private void release(Map.Immutable<S, S> patches) {
+        IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
+        
+        IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
+        previousResult.scopeGraph().getEdges().forEach((entry, targets) -> {
+            S oldSource = entry.getKey();
+            S newSource = patches.getOrDefault(oldSource, oldSource);
+            targets.forEach(targetScope -> {
+                newScopeGraph.addEdge(newSource, entry.getValue(), patches.getOrDefault(targetScope, targetScope));
+            });
+        });
+        previousResult.scopeGraph().getData().forEach((oldScope, datum) -> {
+            S newScope = patches.getOrDefault(oldScope, oldScope);
+            newScopeGraph.setDatum(newScope, scopeImpl.subtituteScopes(datum, patches));
+        });
+        
+        scopeGraph.set(newScopeGraph.freeze());
+        analysis.set(initialState.previousResult().get().analysis());
+        tryFinish();
     }
 
     ///////////////////////////////////////////////////////////////////////////
