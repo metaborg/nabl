@@ -12,6 +12,6 @@ public interface IQueryConfirmation<S, L, D> {
      * @return A tuple containing a boolean that is true when the result is confirmed,
      * and a map that contains the scope patches as (oldname, newname) pairs.
      */
-    IFuture<Tuple2<Boolean, Map<S, S>>> confirm(IRecordedQuery<S, L, D> query);
+    IFuture<Tuple2<Boolean, Map.Immutable<S, S>>> confirm(IRecordedQuery<S, L, D> query);
 
 }

@@ -27,6 +27,6 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
 
     @Value.Parameter @Override public abstract List<Throwable> failures();
 
-    @Value.Parameter @Override public abstract IUnitStats stats();
+    @Value.Parameter @Override public abstract @Nullable IUnitStats stats();
 
 }

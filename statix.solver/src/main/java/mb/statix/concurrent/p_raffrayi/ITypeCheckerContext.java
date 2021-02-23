@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.impl.AInitialState;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeqInternal;
@@ -35,7 +36,7 @@ public interface ITypeCheckerContext<S, L, D> {
      * Start sub type-checker, with the given root scope and no previous result.
      */
     default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
-    	return add(id, unitChecker, rootScopes, null);
+    	return add(id, unitChecker, rootScopes, AInitialState.added());
     }
 
     /**

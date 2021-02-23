@@ -190,4 +190,30 @@ public final class CapsuleUtil {
         return EMPTY_SET.asTransient();
     }
 
+    @SuppressWarnings("rawtypes") private static final Map.Immutable EMPTY_MAP = Map.Immutable.of();
+
+    /**
+     * Constructor for Map.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K, V> Map.Immutable<K, V> immutableMap() {
+        return EMPTY_MAP;
+    }
+
+    /**
+     * Constructor for Map.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K, V> Map.Immutable<K, V> immutableMap(K k1, V v1) {
+        return EMPTY_MAP.__put(k1, v1);
+    }
+
+    /**
+     * Constructor for Map.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K, V> Map.Transient<K, V> transientMap() {
+        return EMPTY_MAP.asTransient();
+    }
+
 }

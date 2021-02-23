@@ -151,7 +151,7 @@ public class Broker<S, L, D, R> {
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, 
             double preemptProbability, int scheduleDelayBoundMillis) {
-        return debug(id, typeChecker, scopeImpl, edgeLabels, null, cancel, Runtime.getRuntime().availableProcessors(),
+        return debug(id, typeChecker, scopeImpl, edgeLabels, AInitialState.added(), cancel, Runtime.getRuntime().availableProcessors(),
                 preemptProbability, scheduleDelayBoundMillis);
     }
 

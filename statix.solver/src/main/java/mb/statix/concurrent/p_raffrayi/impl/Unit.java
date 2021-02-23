@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
@@ -33,6 +34,7 @@ import mb.statix.concurrent.actors.IActorStats;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas;
 import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas.Host;
+import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
@@ -43,6 +45,8 @@ import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.IUnitStats;
 import mb.statix.concurrent.p_raffrayi.TypeCheckingFailedException;
+import mb.statix.concurrent.p_raffrayi.confirmation.DenyingConfirmation;
+import mb.statix.concurrent.p_raffrayi.confirmation.IQueryConfirmation;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseLabel;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.CloseScope;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
@@ -89,6 +93,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     // TODO unwrap old scope graph(?)
     private final IInitialState<S, L, D, R> initialState;
+    private final IQueryConfirmation<S, L, D> confirmation = new DenyingConfirmation<>();
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
@@ -132,12 +137,22 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         assertInState(UnitState.INIT);
         resume();
 
-        state = UnitState.ACTIVE;
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
         }
 
+        if(initialState.changed()) {
+            startTypeChecker(rootScopes);
+        } else {
+            confirmQueries(rootScopes);
+        }
+
+        return unitResult;
+    }
+
+    private void startTypeChecker(List<S> rootScopes) {
+        state = UnitState.ACTIVE;
         // run() after inits are initialized before run, since unitChecker
         // can immediately call methods, that are executed synchronously
 
@@ -149,6 +164,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             logger.debug("{} type checker finished", this);
             resume(); // FIXME necessary?
             if(ex != null) {
+                logger.error("type checker errored: {}", ex);
                 failures.add(ex);
             } else {
                 analysis.set(r);
@@ -160,8 +176,59 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             }
             // tryFinish();
         });
+    }
 
-        return unitResult;
+    private void confirmQueries(List<S> rootScopes) {
+        assertInState(UnitState.INIT, /* or */ UnitState.UNKNOWN);
+        resume();
+
+        state = UnitState.UNKNOWN;
+        ICompletableFuture<Tuple2<Boolean, Map.Immutable<S, S>>> confirmationsComplete = new CompletableFuture<>();
+        // TODO deadlock handling
+        confirmationsComplete.whenComplete((v, ex) -> {
+            if (ex != null) {
+                logger.error("{} confirmation failed: {}", this, ex);
+                failures.add(ex);
+                tryFinish();
+            } else if(!v._1()) {
+                logger.info("{} confirmations denied, restarting", this);
+                assertInState(UnitState.UNKNOWN);
+                startTypeChecker(rootScopes);
+            } else {
+                logger.info("{} confirmations confirmed", this);
+                IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
+                // TODO: patch scopes
+                scopeGraph.set(previousResult.scopeGraph());
+                analysis.set(initialState.previousResult().get().analysis());
+                tryFinish();
+            }
+        });
+
+        // @formatter:off
+        new AggregateFuture<Tuple2<Boolean, Map.Immutable<S, S>>>(initialState.previousResult()
+            .orElseThrow(() -> new IllegalStateException("Cannot confirm queries when no previous result is provided"))
+            .queries()
+            .stream()
+            .map(recordedQuery -> confirmation.confirm(recordedQuery)
+                .whenComplete((v, ex) -> {
+                    // When confirmation denied, eagerly restart type-checker
+                    if(ex == null && (v == null || !v._1())) {
+                        confirmationsComplete.complete(v, ex);
+                    }
+                }))
+            .collect(Collectors.toSet()))
+            .whenComplete((v, ex) -> {
+                if(ex != null) {
+                    confirmationsComplete.complete(Tuple2.of(false, CapsuleUtil.immutableMap()), ex);
+                } else if(v.stream().allMatch(x -> x != null && x._1())) {
+                    // All queries confirmed, aggregate patches and complete
+                    Map.Transient<S, S> patches = CapsuleUtil.transientMap();
+                    // TODO: optimize for duplicates?
+                    v.forEach(result -> patches.__putAll(result._2()));
+                    confirmationsComplete.complete(Tuple2.of(true, patches.freeze()), ex);
+                }
+            });
+        // @formatter:on
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -300,7 +367,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             DataWf<D> dataWF, DataLeq<D> dataEquiv, @Nullable DataWfInternal<D> dataWfInternal,
             @Nullable DataLeqInternal<D> dataEquivInternal) {
         assertInState(UnitState.ACTIVE);
-        recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, dataWfInternal, dataEquivInternal));
+        recordedQueries
+            .add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, dataWfInternal, dataEquivInternal));
 
         final IScopePath<S, L> path = Paths.empty(scope);
         final IFuture<Env<S, L, D>> result =
@@ -422,8 +490,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         }
     }
 
-    private final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?>> sender, S source,
-            L label, S target) {
+    private final void doAddEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, S source, L label, S target) {
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
 
@@ -573,6 +640,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             logger.error("{} not waiting for granted {}/{}", self, actor, token);
             throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
         }
+        logger.debug("{} granted {} by {}", self, token, actor);
         waitFors = waitFors.remove(token);
         waitForsByActor = waitForsByActor.remove(actor, token);
     }
@@ -584,7 +652,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
      */
     private void tryFinish() {
         logger.debug("{} tryFinish", this);
-        if(state.equals(UnitState.ACTIVE) && !isWaiting()) {
+        if((state.equals(UnitState.ACTIVE) || state.equals(UnitState.UNKNOWN)) && !isWaiting()) {
             logger.debug("{} finish", this);
             state = UnitState.DONE;
             unitResult.complete(UnitResult.of(id(), scopeGraph.get(), recordedQueries, analysis.get(), failures, stats));
@@ -804,7 +872,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     @Override public void reply(IActorRef<? extends IUnit<S, L, D, ?>> k, IActorRef<? extends IUnit<S, L, D, ?>> i,
-            int m, java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> R) {
+        int m, java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> R) {
         self.async(k)._deadlockReply(i, m, R);
     }
 
@@ -849,6 +917,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         if(!state.equals(s)) {
             logger.error("Expected state {}, was {}", s, state);
             throw new IllegalStateException("Expected state " + s + ", was " + state);
+        }
+    }
+
+    private void assertInState(UnitState s1, UnitState s2) {
+        if(!state.equals(s1) && !state.equals(s2)) {
+            logger.error("Expected state {} or {}, was {}", s1, s2, state);
+            throw new IllegalStateException("Expected state " + s1 + "or" + s2 + ", was " + state);
         }
     }
 

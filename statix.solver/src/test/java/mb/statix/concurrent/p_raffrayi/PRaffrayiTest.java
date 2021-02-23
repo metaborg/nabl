@@ -33,15 +33,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.RegExpLabelWf;
 import mb.statix.scopegraph.terms.Scope;
 
-public class PRaffrayiTest {
-
-    private final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
-
-    private <L, R> IFuture<IUnitResult<Scope, L, ITerm, R>> run(String id, ITypeChecker<Scope, L, ITerm, R> typeChecker,
-            Iterable<L> edgeLabels) {
-        return Broker.debug(id, typeChecker, scopeImpl, edgeLabels, new NullCancel(), 0.3, 50);
-        //return Broker.run(id, typeChecker, scopeImpl, edgeLabels, new NullCancel());
-    }
+public class PRaffrayiTest extends PRaffrayiTestBase {
 
     ///////////////////////////////////////////////////////////////////////////
 
