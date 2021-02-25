@@ -147,6 +147,10 @@ public abstract class BiMap<E> {
             return new Transient<>(Map.Transient.of(key, value), Map.Transient.of(value, key));
         }
 
+        public E getKey(E key) {
+            return fwd.get(key);
+        }
+
     }
 
 }

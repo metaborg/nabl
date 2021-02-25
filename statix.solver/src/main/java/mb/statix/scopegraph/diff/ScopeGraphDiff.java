@@ -1,6 +1,7 @@
 package mb.statix.scopegraph.diff;
 
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -13,8 +14,8 @@ public class ScopeGraphDiff<S, L, D> {
     private final Changes<S, L, D> removed;
 
     public ScopeGraphDiff(BiMap.Immutable<S> matchedScopes, BiMap.Immutable<Edge<S, L>> matchedEdges,
-            Map.Immutable<S, D> addedScopes, Set.Immutable<Edge<S, L>> addedEdges, Map.Immutable<S, D> removedScopes,
-            Set.Immutable<Edge<S, L>> removedEdges) {
+        Map.Immutable<S, Optional<D>> addedScopes, Set.Immutable<Edge<S, L>> addedEdges,
+        Map.Immutable<S, Optional<D>> removedScopes, Set.Immutable<Edge<S, L>> removedEdges) {
         this.matchedScopes = matchedScopes;
         this.matchedEdges = matchedEdges;
         this.added = new Changes<>(addedScopes, addedEdges);
@@ -46,11 +47,9 @@ public class ScopeGraphDiff<S, L, D> {
             sb.append("    ").append(entry.getKey()).append(" ~ ").append(entry.getValue()).append("\n");
         }
         /*
-        sb.append("  matched edges:\n");
-        for(Map.Entry<Edge<S, L>, Edge<S, L>> entry : matchedEdges.entrySet()) {
-            sb.append("    ").append(entry.getKey()).append(" ~ ").append(entry.getValue()).append("\n");
-        }
-        */
+         * sb.append("  matched edges:\n"); for(Map.Entry<Edge<S, L>, Edge<S, L>> entry : matchedEdges.entrySet()) {
+         * sb.append("    ").append(entry.getKey()).append(" ~ ").append(entry.getValue()).append("\n"); }
+         */
 
         sb.append("  added:\n");
         sb.append(added);
@@ -63,15 +62,15 @@ public class ScopeGraphDiff<S, L, D> {
 
     public static class Changes<S, L, D> {
 
-        private final Map.Immutable<S, D> scopes;
+        private final Map.Immutable<S, Optional<D>> scopes;
         private final Set.Immutable<Edge<S, L>> edges;
 
-        public Changes(Map.Immutable<S, D> scopes, Set.Immutable<Edge<S, L>> edges) {
+        public Changes(Map.Immutable<S, Optional<D>> scopes, Set.Immutable<Edge<S, L>> edges) {
             this.scopes = scopes;
             this.edges = edges;
         }
 
-        public Map.Immutable<S, D> scopes() {
+        public Map.Immutable<S, Optional<D>> scopes() {
             return scopes;
         }
 
@@ -84,9 +83,9 @@ public class ScopeGraphDiff<S, L, D> {
             sb.append("Changes:\n");
 
             sb.append("  scopes:\n");
-            for(Entry<S, D> entry : scopes.entrySet()) {
+            for(Entry<S, Optional<D>> entry : scopes.entrySet()) {
                 sb.append("  + ").append(entry.getKey());
-                if(entry.getValue() != null) {
+                if(entry.getValue().isPresent()) {
                     sb.append(" : ").append(entry.getValue());
                 }
                 sb.append("\n");
