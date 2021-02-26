@@ -9,6 +9,7 @@ import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
+import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -43,7 +44,10 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
 
         context.closeScope(projectScope);
 
-        final IFuture<SolverResult> result = runSolver(context, project.rule(), Arrays.asList(projectScope));
+        final IFuture<SolverResult> result = context.confirmQueries().thenCompose(v -> {
+            return v ? CompletableFuture.completedFuture(initialState.previousResult().get().analysis().solveResult())
+                : runSolver(context, project.rule(), Arrays.asList(projectScope));
+        });
 
         return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
             return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), null);

@@ -39,6 +39,9 @@ public interface ITypeCheckerContext<S, L, D> {
     	return add(id, unitChecker, rootScopes, AInitialState.added());
     }
 
+
+    IFuture<Boolean> confirmQueries();
+
     /**
      * Initialize root scope.
      */
@@ -99,6 +102,10 @@ public interface ITypeCheckerContext<S, L, D> {
 
             @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
                     List<S> rootScopes, IInitialState<S, L, D, R> initialState) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public IFuture<Boolean> confirmQueries() {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

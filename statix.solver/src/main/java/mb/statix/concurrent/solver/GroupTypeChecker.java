@@ -9,6 +9,7 @@ import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
+import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -39,8 +40,12 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
                 runUnits(context, group.units(), projectScope, thisGroupScope, initialState);
         context.closeScope(thisGroupScope);
-        final IFuture<SolverResult> result =
-                runSolver(context, group.rule(), Arrays.asList(projectScope, parentGrpScope, thisGroupScope));
+
+        final IFuture<SolverResult> result = context.confirmQueries().thenCompose(v -> {
+            return v ? CompletableFuture.completedFuture(initialState.previousResult().get().analysis().solveResult())
+                : runSolver(context, group.rule(), Arrays.asList(projectScope, parentGrpScope, thisGroupScope));
+        });
+
         return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
             return GroupResult.of(e._1(), e._2(), e._3(), null);
         }).whenComplete((r, ex) -> {

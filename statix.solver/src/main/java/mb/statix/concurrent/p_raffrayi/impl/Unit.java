@@ -1,11 +1,16 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.statix.spoofax.StatixTerms.explicateVars;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -17,10 +22,16 @@ import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
@@ -67,6 +78,7 @@ import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.ScopeGraph;
+import mb.statix.scopegraph.terms.Scope;
 import mb.statix.scopegraph.terms.path.Paths;
 
 class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorRef<? extends IUnit<S, L, D, ?>>> {
@@ -90,6 +102,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     private final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     private final Set.Immutable<L> edgeLabels;
     private final Set.Transient<S> scopes;
+    private final List<S> rootScopes = new ArrayList<>();
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
     private final IScopeImpl<S, D> scopeImpl;
 
@@ -140,6 +153,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         assertInState(UnitState.INIT);
         resume();
 
+        this.rootScopes.addAll(rootScopes);
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
@@ -318,6 +332,121 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         }
 
         return result;
+    }
+
+    @Override public IFuture<Boolean> confirmQueries() {
+        if(initialState.changed()) {
+            logger.debug("Unit changed or no previous result wa");
+            return CompletableFuture.completedFuture(false);
+        }
+
+        // Invariant: added units are marked as changed.
+        // Therefore, if unit is not changed, a previous result must be given.
+        IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
+
+        final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
+        // @formatter:off
+        final Set<IFuture<Tuple2<Boolean, Map.Immutable<S, S>>>> confirmations = previousResult
+            .queries()
+            .stream()
+            .map(q -> {
+                return confirmation.confirm(q).whenComplete((res, ex) -> {
+                    // If one of the confirmations fails, eagerly fail result
+                    if(!res._1()) {
+                        confirmationResult.complete(false);
+                    }
+                });
+            })
+            .collect(CapsuleCollectors.toSet());
+        // @formatter:on
+        new AggregateFuture<>(confirmations).whenComplete((r, ex) -> {
+            if(r.stream().allMatch(Tuple2::_1)) {
+                // Aggregate patches: remove duplicates
+                final Map.Transient<S, S> patches = CapsuleUtil.transientMap();
+                r.stream().map(Tuple2::_2).forEach(patches::__putAll);
+
+                // Index scope graph data by source scope
+                IScopeGraph.Immutable<S, L, D> previousScopeGraph = previousResult.scopeGraph();
+
+                final HashMap<S, D> dataEntries = Maps.newHashMap();
+                final HashMap<S, ListMultimap<L, S>> edgeEntries = Maps.newHashMap();
+
+                previousScopeGraph.getData().forEach((s, d) -> {
+                    dataEntries.put(s, d);
+                });
+
+                previousScopeGraph.getEdges().forEach((src_lbl, tgt) -> {
+                    ListMultimap<L, S> edges = edgeEntries.getOrDefault(src_lbl.getKey(), LinkedListMultimap.create());
+                    edges.putAll(src_lbl.getValue(), tgt);
+                    edgeEntries.put(src_lbl.getKey(), edges);
+                });
+
+                // Insert patched scope graph
+                for(S oldScope : Sets.union(edgeEntries.keySet(), dataEntries.keySet())) {
+                    Optional<D> datum = previousScopeGraph.getData(oldScope);
+                    ListMultimap<L, S> edges = edgeEntries.get(oldScope);
+
+                    S scope;
+                    if(context.owner(oldScope) != self) {
+                        // When scope is not our own, it should be shared with us. This implies that
+                        // it is remote, and hence the differ supplied a patch for its previous representation.
+                        // Therefore looking up the patch must result in a scope shared with us.
+                        scope = patches.getOrDefault(oldScope, oldScope);
+                        assertOwnOrSharedScope(scope);
+                        if(datum.isPresent()) {
+                            throw new IllegalStateException("Cannot set datum for shared scope");
+                        }
+
+                        // TODO: if we are not owner, send parent message that we added this edge
+                        // Owner should verify correctness: we may only add edge that was in its previous
+                        // result.
+                        // This should trivially hold for this case (queries confirmed) but not
+                        // trivially when the unit is restarted.
+                        // Probably this should just happen when the owner receives _addEdge
+
+                        initScope(scope, edges.keySet(), false);
+                    } else {
+                        scope = oldScope;
+                        // Avoid generation of new identity when freshScope would be used.
+                        scopes.__insert(scope);
+                        doAddLocalShare(self, scope);
+
+                        // Collect labels for scope
+                        Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
+                        edges.keySet().forEach(l -> labels.__insert(EdgeOrData.edge(l)));
+                        datum.ifPresent(d -> labels.__insert(EdgeOrData.data()));
+
+                        // TODO: If scope was shared in original result, share here as well
+                        // TODO: When scope is shared, handle following situations:
+                        // - Subunit changed: wait for any declaration before closing scope
+                        // - Subunit cached: assert that it precisely declares the same stuff (modulo patching)
+                        // Strategy: track edge sources, that initialize expectations (multiset)
+                        // if _addEdge not in expectations: error
+                        // if scope closed, but remaining expectations: error
+                        doInitShare(self, scope, labels, false);
+
+                        datum.ifPresent(d -> setDatum(scope, scopeImpl.subtituteScopes(d, patches)));
+                    }
+
+                    // No sharing, hence no closeScope needed
+                    edges.forEach((lbl, tgt) -> {
+                        addEdge(scope, lbl, patches.getOrDefault(tgt, tgt));
+                    });
+
+                    edges.keySet().forEach(lbl -> closeEdge(scope, lbl));
+                }
+
+                // TODO assert no waits for self
+
+                // All queries confirmed, transition to released state
+                confirmationResult.complete(true);
+            } else if(!confirmationResult.isDone()) {
+                logger.warn("Not all queries confirmed, but confirmation result was not falsified either.");
+                confirmationResult.complete(false);
+            }
+        });
+
+        return confirmationResult;
     }
 
     @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {

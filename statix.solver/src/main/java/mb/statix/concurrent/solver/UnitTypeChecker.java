@@ -6,6 +6,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
@@ -26,7 +27,10 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
 
     @Override public IFuture<UnitResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, List<Scope> rootScopes,
             IInitialState<Scope, ITerm, ITerm, UnitResult> initialState) {
-        return runSolver(context, unit.rule(), rootScopes).handle((r, ex) -> {
+        return context.confirmQueries().thenCompose(v -> {
+            return v ? CompletableFuture.completedFuture(initialState.previousResult().get().analysis().solveResult())
+                : runSolver(context, unit.rule(), rootScopes);
+        }).handle((r, ex) -> {
             return UnitResult.of(unit.resource(), r, ex);
         }).whenComplete((r, ex) -> {
             logger.debug("unit {}: returned.", context.id());
