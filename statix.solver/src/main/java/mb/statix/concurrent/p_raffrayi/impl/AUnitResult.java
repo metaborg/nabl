@@ -23,6 +23,8 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
 
     @Value.Parameter @Override public abstract Set<IRecordedQuery<S, L, D>> queries();
 
+    @Value.Parameter @Override public abstract List<S> rootScopes();
+
     @Value.Parameter @Override public abstract @Nullable R analysis();
 
     @Value.Parameter @Override public abstract List<Throwable> failures();

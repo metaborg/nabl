@@ -26,6 +26,7 @@ import mb.statix.concurrent.actors.impl.WorkStealingScheduler;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.diff.IScopeGraphDifferOps;
 
 public class Broker<S, L, D, R> {
 
@@ -36,6 +37,7 @@ public class Broker<S, L, D, R> {
     private final IInitialState<S, L, D, R> initialState;
     private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
+    private final IScopeGraphDifferOps<S, D> differOps;
     private final ICancel cancel;
 
     private final ActorSystem system;
@@ -45,12 +47,13 @@ public class Broker<S, L, D, R> {
     private final AtomicInteger totalUnits;
 
     private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-            IInitialState<S, L, D, R> initialState, ICancel cancel, IActorScheduler scheduler) {
+            IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps, ICancel cancel, IActorScheduler scheduler) {
         this.id = id;
         this.typeChecker = typeChecker;
         this.initialState = initialState;
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
+        this.differOps = differOps;
         this.cancel = cancel;
 
         this.system = new ActorSystem(scheduler);
@@ -64,7 +67,7 @@ public class Broker<S, L, D, R> {
         startWatcherThread();
 
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels, scopeImpl, initialState));
+                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels, scopeImpl, initialState, differOps));
         addUnit(unit);
 
         final IFuture<IUnitResult<S, L, D, R>> result = system.async(unit)._start(Collections.emptyList());
@@ -128,7 +131,7 @@ public class Broker<S, L, D, R> {
                 add(String id, ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes,
                 		IInitialState<S, L, D, Q> initialState) {
             final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
-                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels, scopeImpl, initialState));
+                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels, scopeImpl, initialState, differOps));
             addUnit(unit);
             final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
             unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));
@@ -138,34 +141,37 @@ public class Broker<S, L, D, R> {
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> unitChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, ICancel cancel) {
-        return run(id, unitChecker, scopeImpl, edgeLabels, initialState, cancel, Runtime.getRuntime().availableProcessors());
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps,
+            ICancel cancel) {
+        return run(id, unitChecker, scopeImpl, edgeLabels, initialState, differOps, cancel, Runtime.getRuntime().availableProcessors());
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, ICancel cancel, int parallelism) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, initialState, cancel, new WorkStealingScheduler(parallelism))
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps,
+            ICancel cancel, int parallelism) {
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, initialState, differOps, cancel, new WorkStealingScheduler(parallelism))
                 .run();
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, 
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IScopeGraphDifferOps<S, D> differOps, ICancel cancel,
             double preemptProbability, int scheduleDelayBoundMillis) {
-        return debug(id, typeChecker, scopeImpl, edgeLabels, AInitialState.added(), cancel, Runtime.getRuntime().availableProcessors(),
+        return debug(id, typeChecker, scopeImpl, edgeLabels, AInitialState.added(), differOps, cancel, Runtime.getRuntime().availableProcessors(),
                 preemptProbability, scheduleDelayBoundMillis);
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, ICancel cancel,
-            double preemptProbability, int scheduleDelayBoundMillis) {
-        return debug(id, typeChecker, scopeImpl, edgeLabels, initialState, cancel, Runtime.getRuntime().availableProcessors(),
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps,
+            ICancel cancel, double preemptProbability, int scheduleDelayBoundMillis) {
+        return debug(id, typeChecker, scopeImpl, edgeLabels, initialState, differOps, cancel, Runtime.getRuntime().availableProcessors(),
                 preemptProbability, scheduleDelayBoundMillis);
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, ICancel cancel,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps,
+            ICancel cancel,
             int parallelism, double preemptProbability, int scheduleDelayBoundMillis) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, initialState, cancel,
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, initialState, differOps, cancel,
                 new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();
     }
 

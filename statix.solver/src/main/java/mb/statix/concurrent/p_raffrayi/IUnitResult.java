@@ -14,8 +14,8 @@ public interface IUnitResult<S, L, D, R> {
     IScopeGraph.Immutable<S, L, D> scopeGraph();
     
     Set<IRecordedQuery<S, L, D>> queries();
-	
-	// TODO add root scopes
+
+    List<S> rootScopes();
 
     @Nullable R analysis();
 

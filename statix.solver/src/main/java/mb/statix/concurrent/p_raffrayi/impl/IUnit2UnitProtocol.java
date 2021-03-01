@@ -1,5 +1,6 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
+import java.util.Optional;
 import java.util.Set;
 
 import mb.statix.concurrent.actors.IActorRef;
@@ -30,6 +31,9 @@ public interface IUnit2UnitProtocol<S, L, D, R> {
     IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWf<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder,
             DataLeq<D> dataEquiv);
 
+    IFuture<org.metaborg.util.unit.Unit> _isComplete(S scope, EdgeOrData<L> label);
+
+    IFuture<Optional<D>> _datum(S scope);
 
     void _deadlockQuery(IActorRef<? extends IUnit<S, L, D, ?>> i, int m);
 

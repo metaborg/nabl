@@ -15,6 +15,9 @@ import org.junit.Test;
 import org.metaborg.util.task.ICancel;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.CapsuleUtil;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
@@ -32,50 +35,51 @@ import mb.statix.scopegraph.terms.Scope;
 
 public class ConfirmationTest extends PRaffrayiTestBase {
     
-    private static final <R> UnitResult<Scope, Integer, ITerm, R> emptyResult(String id, R analysis) {
-        return UnitResult.of(id, ScopeGraph.Immutable.of(), new HashSet<>(), analysis, new ArrayList<>(), null);
+    private static final <R> UnitResult<Scope, ITerm, ITerm, R> emptyResult(String id, R analysis) {
+        return UnitResult.of(id, ScopeGraph.Immutable.of(), new HashSet<>(), new ArrayList<>(), analysis, new ArrayList<>(), null);
     }
     
-    private static final <R> IUnitResult<Scope, Integer, ITerm, R> resultWithQueries(String id, R analysis, Set<IRecordedQuery<Scope, Integer, ITerm>> queries) {
-        return UnitResult.<Scope, Integer, ITerm, R>builder()
+    private static final <R> IUnitResult<Scope, ITerm, ITerm, R> resultWithQueries(String id, R analysis, Set<IRecordedQuery<Scope, ITerm, ITerm>> queries) {
+        return UnitResult.<Scope, ITerm, ITerm, R>builder()
             .from(emptyResult(id, analysis))
             .addAllQueries(queries)
             .build();
     }
 
-    @Test(timeout = 1000000) public void testSingleDenial()
+    @Test(timeout = 10000) public void testSingleDenial()
         throws ExecutionException, InterruptedException {
-        final IFuture<IUnitResult<Scope, Integer, ITerm, Boolean>> future =
-            run(".", new ITypeChecker<Scope, Integer, ITerm, Boolean>() {
+        final IFuture<IUnitResult<Scope, ITerm, ITerm, Boolean>> future =
+            run(".", new ITypeChecker<Scope, ITerm, ITerm, Boolean>() {
 
-                @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> roots,
-                    IInitialState<Scope, Integer, ITerm, Boolean> initialState) {
+                @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, ITerm, ITerm> unit, List<Scope> roots,
+                    IInitialState<Scope, ITerm, ITerm, Boolean> initialState) {
                     Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                    IFuture<IUnitResult<Scope, Integer, ITerm, Boolean>> unit1Result = unit.add("one", new FalseUnit(), Arrays.asList(s), AInitialState.cached(emptyResult("one", true)));
-                    
-                    IUnitResult<Scope, Integer, ITerm, Boolean> previousResult = ConfirmationTest.<Boolean>resultWithQueries("two", false, Collections.singleton(
-                        RecordedQuery.<Scope, Integer, ITerm>of(s, new ConstantClosureWf<>(1), new TrueDataWf(), new IntegerLabelOrder(), new FalseDataOrder(), null, null)));
-                    IFuture<IUnitResult<Scope, Integer, ITerm, Boolean>> unit2Result = unit.add("two", new EmptyUnit(), Arrays.asList(s), AInitialState.cached(previousResult));
+                    IFuture<IUnitResult<Scope, ITerm, ITerm, Boolean>> unit1Result = unit.add("one", new FalseUnit(), Arrays.asList(s), AInitialState.cached(emptyResult("one", true)));
+
+                    IUnitResult<Scope, ITerm, ITerm, Boolean> previousResult = ConfirmationTest.<Boolean>resultWithQueries("two", false, Collections.singleton(
+                        RecordedQuery.<Scope, ITerm, ITerm>of(s, new ConstantClosureWf<>(B.newInt(1)), new TrueDataWf(), new HashcodeLabelOrder(), new FalseDataOrder(), null, null)));
+
+                    IFuture<IUnitResult<Scope, ITerm, ITerm, Boolean>> unit2Result = unit.add("two", new EmptyUnit(), Arrays.asList(s), AInitialState.cached(previousResult));
 
                     unit.closeScope(s);
 
                     return AggregateFuture.apply(unit1Result, unit2Result).thenApply(r -> r._1().analysis() & r._2().analysis());
                 }
 
-            }, Arrays.asList(1, 2, 3));
+            }, Arrays.asList(B.newInt(1)));
 
-        final IUnitResult<Scope, Integer, ITerm, Boolean> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, ITerm, ITerm, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
         assertTrue(result.analysis());
     }
-    
+
     // Type checkers
     
-    private static class EmptyUnit implements ITypeChecker<Scope, Integer, ITerm, Boolean> {
+    private static class EmptyUnit implements ITypeChecker<Scope, ITerm, ITerm, Boolean> {
 
-        @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-            IInitialState<Scope, Integer, ITerm, Boolean> initialState) {
+        @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, ITerm, ITerm> unit, List<Scope> rootScopes,
+            IInitialState<Scope, ITerm, ITerm, Boolean> initialState) {
             
             rootScopes.forEach(s -> {
                 unit.initScope(s, Collections.emptyList(), false);
@@ -86,10 +90,10 @@ public class ConfirmationTest extends PRaffrayiTestBase {
         
     }
     
-    private static class FalseUnit implements ITypeChecker<Scope, Integer, ITerm, Boolean> {
+    private static class FalseUnit implements ITypeChecker<Scope, ITerm, ITerm, Boolean> {
 
-        @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes,
-            IInitialState<Scope, Integer, ITerm, Boolean> initialState) {
+        @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, ITerm, ITerm> unit, List<Scope> rootScopes,
+            IInitialState<Scope, ITerm, ITerm, Boolean> initialState) {
             
             rootScopes.forEach(s -> {
                 unit.initScope(s, Collections.emptyList(), false);
@@ -131,10 +135,10 @@ public class ConfirmationTest extends PRaffrayiTestBase {
         
     }
     
-    private class IntegerLabelOrder implements LabelOrder<Integer> {
+    private class HashcodeLabelOrder implements LabelOrder<ITerm> {
 
-        @Override public boolean lt(EdgeOrData<Integer> l1, EdgeOrData<Integer> l2) {
-            return l1.match(() -> true, e1 ->  l2.match(() -> false, e2 -> e1 < e2));
+        @Override public boolean lt(EdgeOrData<ITerm> l1, EdgeOrData<ITerm> l2) {
+            return l1.match(() -> true, e1 ->  l2.match(() -> false, e2 -> e1.hashCode() < e2.hashCode()));
         }
         
     }
