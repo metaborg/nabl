@@ -80,20 +80,18 @@ public class ScopeGraphDiff<S, L, D> {
 
         @Override public String toString() {
             final StringBuilder sb = new StringBuilder();
-            sb.append("Changes:\n");
-
-            sb.append("  scopes:\n");
+            sb.append("    scopes:\n");
             for(Entry<S, Optional<D>> entry : scopes.entrySet()) {
-                sb.append("  + ").append(entry.getKey());
+                sb.append("    + ").append(entry.getKey());
                 if(entry.getValue().isPresent()) {
                     sb.append(" : ").append(entry.getValue());
                 }
                 sb.append("\n");
             }
 
-            sb.append("  edges:\n");
+            sb.append("    edges:\n");
             for(Edge<S, L> edge : edges) {
-                sb.append("  + ").append(edge).append("\n");
+                sb.append("    + ").append(edge).append("\n");
             }
 
             return sb.toString();
