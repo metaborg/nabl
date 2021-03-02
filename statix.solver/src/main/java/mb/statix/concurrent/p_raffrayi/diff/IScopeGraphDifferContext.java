@@ -14,8 +14,6 @@ public interface IScopeGraphDifferContext<S, L, D> {
     IFuture<Iterable<S>> getCurrentEdges(S scope, L label);
 
     IFuture<Iterable<S>> getPreviousEdges(S scope, L label);
-    
-    String owner(S current);
 
     IFuture<Iterable<L>> labels(S currentScope);
     
@@ -36,4 +34,11 @@ public interface IScopeGraphDifferContext<S, L, D> {
 
     Set.Immutable<S> getPreviousScopes(D d);
 
+    // External scopes
+
+    boolean ownScope(S scope);
+
+    boolean ownOrSharedScope(S currentScope);
+
+    IFuture<Optional<S>> externalMatch(S previousScope);
 }

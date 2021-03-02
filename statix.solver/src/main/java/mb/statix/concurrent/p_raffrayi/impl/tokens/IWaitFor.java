@@ -25,6 +25,8 @@ public interface IWaitFor<S, L, D> {
 
         void on(Datum<S, L, D> datum);
 
+        void on(Match<S, L, D> match);
+
         void on(TypeCheckerResult<S, L, D> result);
 
         void on(TypeCheckerState<S, L, D> typeCheckerState);
@@ -36,8 +38,9 @@ public interface IWaitFor<S, L, D> {
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
             Action1<CloseScope<S, L, D>> onCloseScope, Action1<CloseLabel<S, L, D>> onCloseLabel,
             Action1<Query<S, L, D>> onQuery, Action1<Complete<S, L, D>> onComplete,
-            Action1<Datum<S, L, D>> onDatum, Action1<TypeCheckerResult<S, L, D>> onResult,
-            Action1<TypeCheckerState<S, L, D>> onTypeCheckerState, Action1<DifferResult<S, L, D>> onDifferResult) {
+            Action1<Datum<S, L, D>> onDatum, Action1<Match<S, L, D>> onMatch,
+            Action1<TypeCheckerResult<S, L, D>> onResult, Action1<TypeCheckerState<S, L, D>> onTypeCheckerState,
+            Action1<DifferResult<S, L, D>> onDifferResult) {
         return new Cases<S, L, D>() {
 
             @Override public void on(InitScope<S, L, D> initScope) {
@@ -62,6 +65,10 @@ public interface IWaitFor<S, L, D> {
 
             @Override public void on(Datum<S, L, D> datum) {
                 onDatum.apply(datum);
+            }
+
+            @Override public void on(Match<S, L, D> match) {
+                onMatch.apply(match);
             }
 
             @Override public void on(TypeCheckerResult<S, L, D> result) {

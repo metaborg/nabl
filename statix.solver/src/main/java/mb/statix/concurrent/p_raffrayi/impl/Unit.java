@@ -71,6 +71,7 @@ import mb.statix.concurrent.p_raffrayi.impl.tokens.Datum;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.DifferResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.InitScope;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.Match;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerState;
@@ -81,6 +82,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataWfInternal;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.diff.BiMap;
 import mb.statix.scopegraph.diff.ScopeGraphDiff;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
@@ -117,7 +119,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     // TODO unwrap old scope graph(?)
     private final IInitialState<S, L, D, R> initialState;
     private final IQueryConfirmation<S, L, D> confirmation = new DenyingConfirmation<>();
-    private IScopeGraphDiffer<S, L, D> differ;
+    private final IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
 
     private final MultiSet.Transient<String> scopeNameCounters;
@@ -154,7 +156,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         this.differ = initialState.previousResult().isPresent() ?
             new ScopeGraphDiffer<>(new DifferContext(previousScopeGraph, differOps)) :
                 new AddingDiffer<>(new DifferContext(previousScopeGraph, differOps));
-        // TODO unwrap scope graph, and initialize diffing
 
         this.scopeNameCounters = MultiSet.Transient.of();
 
@@ -209,6 +210,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         typeCheckerResult.whenComplete((r, ex) -> {
             logger.debug("{} type checker finished", this);
             resume(); // FIXME necessary?
+            differ.typeCheckerFinished();
             if(ex != null) {
                 logger.error("type checker errored: {}", ex);
                 failures.add(ex);
@@ -342,6 +344,29 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
+
+        initialState.previousResult().map(IUnitResult::rootScopes).ifPresent(previousRootScopes -> {
+            // When a scope is shared, the shares must be consistent.
+            // Also, it is not necessary that shared scopes are reachable from the root scopes
+            // (A unit started by the Broker does not even have root scopes)
+            // Therefore we enforce here that the current root scopes and the previous ones match.
+
+            if(rootScopes.size() != previousRootScopes.size()) {
+                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                throw new IllegalStateException("Different root scope count.");
+            }
+
+            BiMap.Transient<S> req = BiMap.Transient.of();
+            for(int i = 0; i < rootScopes.size(); i++) {
+                req.put(rootScopes.get(i), previousRootScopes.get(i));
+            }
+
+            if(!differ.matchScopes(req.freeze())) {
+                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                throw new IllegalStateException("Could not match.");
+            }
+
+        });
 
         final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
                 context.add(id, unitChecker, rootScopes, initialState);
@@ -603,6 +628,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     @Override public IFuture<Optional<D>> _datum(S scope) {
         assertOwnScope(scope);
         return isComplete(scope, EdgeOrData.data(), self.sender(TYPE)).thenApply(__ -> scopeGraph.get().getData(scope));
+    }
+
+    @Override public IFuture<Optional<S>> _match(S previousScope) {
+        assertOwnScope(previousScope);
+        return differ.match(previousScope);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -969,6 +999,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                     query -> {},
                     complete -> {},
                     datum -> {},
+                    match -> {},
                     result  -> {},
                     typeCheckerState -> {
                         if(nodes.contains(typeCheckerState.origin())) {
@@ -1040,6 +1071,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                 datum -> {
                     logger.error("Unexpected remaining datum query: " + datum);
                     throw new IllegalStateException("Unexpected remaining datum query: " + datum);
+                },
+                match -> {
+                    logger.error("Unexpected remaining match query: " + match);
+                    throw new IllegalStateException("Unexpected remaining match query: " + match);
                 },
                 result  -> {
                     self.complete(result.future(), null, new DeadlockException("Type checker did not return a result."));
@@ -1115,11 +1150,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             return CompletableFuture.completedFuture(previousScopeGraph.getEdges(scope, label));
         }
 
-        @Override public String owner(S current) {
-            return context.owner(current).id();
-        }
-
         @Override public IFuture<Iterable<L>> labels(S currentScope) {
+            assertOwnOrSharedScope(currentScope);
             // TODO make more precise with labels for which scope was initialized.
             return CompletableFuture.completedFuture(Set.Immutable.union(scopeGraph.get().getLabels(), previousScopeGraph.getLabels()));
         }
@@ -1142,7 +1174,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         }
 
         @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
-            return context.owner(currentScope) == context.owner(previousScope);
+            return context.owner(previousScope).equals(context.owner(currentScope));
         }
 
         @Override public Immutable<S> getCurrentScopes(D d) {
@@ -1151,6 +1183,22 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
         @Override public Immutable<S> getPreviousScopes(D d) {
             return differOps.getScopes(d);
+        }
+
+        @Override public boolean ownScope(S scope) {
+            return context.owner(scope).equals(self);
+        }
+
+        @Override public boolean ownOrSharedScope(S currentScope) {
+            return scopes.contains(currentScope);
+        }
+
+        @Override public IFuture<Optional<S>> externalMatch(S previousScope) {
+            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(previousScope);
+            final Match<S, L, D> match = Match.of(self, previousScope);
+            waitFor(match, owner);
+            return self.async(context.owner(previousScope))._match(previousScope).
+                whenComplete((__, ___) -> granted(match, owner));
         }
 
     }

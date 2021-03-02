@@ -35,6 +35,8 @@ public interface IUnit2UnitProtocol<S, L, D, R> {
 
     IFuture<Optional<D>> _datum(S scope);
 
+    IFuture<Optional<S>> _match(S previousScope);
+
     void _deadlockQuery(IActorRef<? extends IUnit<S, L, D, ?>> i, int m);
 
     void _deadlockReply(IActorRef<? extends IUnit<S, L, D, ?>> i, int m, Set<IActorRef<? extends IUnit<S, L, D, ?>>> r);

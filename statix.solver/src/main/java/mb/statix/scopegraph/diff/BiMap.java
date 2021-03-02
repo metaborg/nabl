@@ -151,6 +151,10 @@ public abstract class BiMap<E> {
             return fwd.get(key);
         }
 
+        public E getValue(E value) {
+            return bwd.get(value);
+        }
+
     }
 
 }
