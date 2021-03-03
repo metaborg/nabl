@@ -16,6 +16,7 @@ import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.unit.Unit;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
@@ -49,6 +50,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     private StatixSolver solver;
+    private IFuture<SolverResult> solveResult;
 
     protected Scope makeSharedScope(ITypeCheckerContext<Scope, ITerm, ITerm> context, String name) {
         final Scope s = context.freshScope(name, Collections.emptyList(), true, true);
@@ -136,20 +138,30 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         }
         solver = new StatixSolver(applyResult.body(), spec, unitState, Completeness.Immutable.of(), debug,
                 new NullProgress(), new NullCancel(), context);
-        final IFuture<SolverResult> solveResult = solver.solve(scopes);
-        return solveResult.whenComplete((r, ex) -> {
+        solveResult = solver.solve(scopes);
+        return solveResult.thenApply(r -> {
             logger.debug("checker {}: solver returned.", context.id());
+            solver = null; // gc solver
+            return r; // FIXME minimize result to what is externally visible
+                      //       note that this can make debugging harder, so perhaps optional?
         });
     }
 
     @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
-        final IFuture<ITerm> externalDatum;
         if(solver != null) {
-            externalDatum = solver.getExternalRepresentation(datum);
+            return solver.getExternalRepresentation(datum);
+        } else if(solveResult != null) {
+            return solveResult.thenCompose(r -> {
+                final IUniDisunifier.Immutable unifier = r.state().unifier();
+                if(unifier.isGround(datum)) {
+                    return CompletableFuture.completedFuture(unifier.findRecursive(datum));
+                } else {
+                    return new CompletableFuture<>();
+                }
+            });
         } else {
             return CompletableFuture.completedFuture(datum);
         }
-        return externalDatum;
     }
 
 }

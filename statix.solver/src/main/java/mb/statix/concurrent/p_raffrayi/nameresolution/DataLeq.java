@@ -2,22 +2,28 @@ package mb.statix.concurrent.p_raffrayi.nameresolution;
 
 import org.metaborg.util.task.ICancel;
 
-public interface DataLeq<D> {
+import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 
-    boolean leq(D d1, D d2, ICancel cancel) throws InterruptedException;
+public interface DataLeq<S, L, D> {
 
-    static <D> DataLeq<D> any() {
-        return new DataLeq<D>() {
-            @Override public boolean leq(D d1, D d2, ICancel cancel) throws InterruptedException {
-                return true;
+    IFuture<Boolean> leq(D d1, D d2, ITypeCheckerContext<S, L, D> context, ICancel cancel) throws InterruptedException;
+
+    static <S, L, D> DataLeq<S, L, D> any() {
+        return new DataLeq<S, L, D>() {
+            @SuppressWarnings("unused") @Override public IFuture<Boolean> leq(D d1, D d2,
+                    ITypeCheckerContext<S, L, D> context, ICancel cancel) throws InterruptedException {
+                return CompletableFuture.completedFuture(true);
             }
         };
     }
 
-    static <D> DataLeq<D> none() {
-        return new DataLeq<D>() {
-            @Override public boolean leq(D d1, D d2, ICancel cancel) throws InterruptedException {
-                return false;
+    static <S, L, D> DataLeq<S, L, D> none() {
+        return new DataLeq<S, L, D>() {
+            @SuppressWarnings("unused") @Override public IFuture<Boolean> leq(D d1, D d2,
+                    ITypeCheckerContext<S, L, D> context, ICancel cancel) throws InterruptedException {
+                return CompletableFuture.completedFuture(false);
             }
         };
     }

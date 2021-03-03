@@ -2,14 +2,19 @@ package mb.statix.concurrent.p_raffrayi.nameresolution;
 
 import org.metaborg.util.task.ICancel;
 
-public interface DataWf<D> {
+import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 
-    boolean wf(D d, ICancel cancel) throws InterruptedException;
+public interface DataWf<S, L, D> {
 
-    static <D> DataWf<D> any() {
-        return new DataWf<D>() {
-            @Override public boolean wf(D d, ICancel cancel) throws InterruptedException {
-                return true;
+    IFuture<Boolean> wf(D d, ITypeCheckerContext<S, L, D> context, ICancel cancel) throws InterruptedException;
+
+    static <S, L, D> DataWf<S, L, D> any() {
+        return new DataWf<S, L, D>() {
+            @SuppressWarnings("unused") @Override public IFuture<Boolean> wf(D d, ITypeCheckerContext<S, L, D> context,
+                    ICancel cancel) throws InterruptedException {
+                return CompletableFuture.completedFuture(true);
             }
         };
     }

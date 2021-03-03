@@ -19,11 +19,10 @@ import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.terms.path.Paths;
+import mb.statix.scopegraph.terms.newPath.ResolutionPath;
+import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 abstract class NameResolution<S, L, D> {
 
@@ -43,7 +42,7 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(IScopePath<S, L> path, LabelWf<L> re,
+    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
             LabelOrder<L> labelOrder);
 
     protected abstract IFuture<Optional<D>> getDatum(S scope);
@@ -56,7 +55,7 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    public ICompletableFuture<Env<S, L, D>> env(IScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
+    public ICompletableFuture<Env<S, L, D>> env(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
         logger.trace("env {}", path);
         final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
@@ -73,7 +72,7 @@ abstract class NameResolution<S, L, D> {
         return result;
     }
 
-    private IFuture<Env<S, L, D>> env_L(IScopePath<S, L> path, LabelWf<L> re, Set.Immutable<EdgeOrData<L>> L,
+    private IFuture<Env<S, L, D>> env_L(ScopePath<S, L> path, LabelWf<L> re, Set.Immutable<EdgeOrData<L>> L,
             ICancel cancel) {
         logger.trace("env_L {} {} {}", path, re, L);
         if(cancel.cancelled()) {
@@ -97,7 +96,7 @@ abstract class NameResolution<S, L, D> {
         return env;
     }
 
-    private IFuture<Env<S, L, D>> env_lL(IScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l,
+    private IFuture<Env<S, L, D>> env_lL(ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l,
             Set.Immutable<EdgeOrData<L>> L, ICancel cancel) {
         final IFuture<Env<S, L, D>> env1 = env_L(path, re, L, cancel);
         logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
@@ -143,7 +142,7 @@ abstract class NameResolution<S, L, D> {
         return smaller.freeze();
     }
 
-    private IFuture<Env<S, L, D>> env_l(IScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_l(ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
             return l.matchInResolution(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
         } catch(Exception e) {
@@ -151,7 +150,7 @@ abstract class NameResolution<S, L, D> {
         }
     }
 
-    private IFuture<Env<S, L, D>> env_data(IScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_data(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         logger.trace("env_data {} {}", path, re);
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
         logger.trace("env_data {} {}: datum {}", path, re, datum);
@@ -165,7 +164,7 @@ abstract class NameResolution<S, L, D> {
                     return Env.empty();
                 }
                 logger.trace("env_data {} {}: datum {}", path, re, d);
-                final IResolutionPath<S, L, D> resPath = Paths.resolve(path, d);
+                final ResolutionPath<S, L, D> resPath = path.resolve(d);
                 return Env.of(resPath);
             });
         });
@@ -174,7 +173,7 @@ abstract class NameResolution<S, L, D> {
         return env;
     }
 
-    private IFuture<Env<S, L, D>> env_edges(IScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_edges(ScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
         logger.trace("env_edges {} {} {}", path, re, l);
         final LabelWf<L> newRe = re.step(l).get();
         final IFuture<Iterable<S>> scopes = getEdges(path.getTarget(), l);
@@ -182,7 +181,7 @@ abstract class NameResolution<S, L, D> {
         return scopes.thenCompose(ss -> {
             List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
             for(S nextScope : ss) {
-                final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
+                final Optional<ScopePath<S, L>> p = path.step(l, nextScope);
                 if(p.isPresent()) {
                     envs.add(env(p.get(), newRe, cancel));
                 }
