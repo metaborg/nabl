@@ -11,7 +11,6 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.scopegraph.diff.BiMap;
-import mb.statix.scopegraph.diff.BiMap.Immutable;
 import mb.statix.scopegraph.diff.Edge;
 import mb.statix.scopegraph.diff.ScopeGraphDiff;
 
@@ -91,13 +90,17 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         throw new UnsupportedOperationException("There can be no previous scopes for an added unit.");
     }
 
-    @Override public boolean matchScopes(Immutable<S> scopes) {
+    @Override public boolean matchScopes(BiMap.Immutable<S> scopes) {
         throw new UnsupportedOperationException("There can be no previous scopes for an added unit.");
     }
 
     @Override public void typeCheckerFinished() {
         // TODO Wait for finalization?
 
+    }
+
+    @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
+        throw new UnsupportedOperationException("There can be no previous scopes for an added unit.");
     }
 
 }
