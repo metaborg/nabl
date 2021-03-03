@@ -17,7 +17,7 @@ class CompletedFuture<T> implements ICompletableFuture<T> {
     // ICompletable
     /////////////////////////////////////////////////////////////////////
 
-    @Override public void complete(T value, Throwable ex) {
+    @SuppressWarnings("unused") @Override public void complete(T value, Throwable ex) {
         // ignore
     }
 

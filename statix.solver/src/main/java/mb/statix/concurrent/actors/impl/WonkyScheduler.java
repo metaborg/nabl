@@ -26,7 +26,8 @@ public class WonkyScheduler implements IActorScheduler {
         this.rnd = new Random();
     }
 
-    @Override public void schedule(Runnable runnable, int priority, AtomicReference<Runnable> taskRef) {
+    @Override public void schedule(Runnable runnable, @SuppressWarnings("unused") int priority,
+            AtomicReference<Runnable> taskRef) {
         final Task task = new Task(runnable);
         if(!taskRef.compareAndSet(null, task)) {
             logger.error("Actor {} already scheduled", runnable);
@@ -35,10 +36,11 @@ public class WonkyScheduler implements IActorScheduler {
         executor.schedule(task, rnd.nextInt(scheduleDelayBoundMillis), TimeUnit.MILLISECONDS);
     }
 
-    @Override public void reschedule(Runnable oldTask, int newPriority, AtomicReference<Runnable> taskRef) {
+    @SuppressWarnings("unused") @Override public void reschedule(Runnable oldTask, int newPriority,
+            AtomicReference<Runnable> taskRef) {
     }
 
-    @Override public boolean preempt(int priority) {
+    @SuppressWarnings("unused") @Override public boolean preempt(int priority) {
         return rnd.nextDouble() < preemptProbability;
     }
 

@@ -23,7 +23,7 @@ public interface IActorMonitor {
     /**
      * Actor stopped or failed.
      */
-    default void stopped(Throwable ex) {
+    default void stopped(@SuppressWarnings("unused") Throwable ex) {
     }
 
 }

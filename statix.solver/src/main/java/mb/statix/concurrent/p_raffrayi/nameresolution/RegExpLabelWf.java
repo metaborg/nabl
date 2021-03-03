@@ -17,7 +17,7 @@ public class RegExpLabelWf<L> implements LabelWf<L> {
         if(re.isEmpty()) {
             return Optional.empty();
         } else {
-            return Optional.of(new RegExpLabelWf(re));
+            return Optional.of(new RegExpLabelWf<>(re));
         }
     }
 
@@ -30,7 +30,7 @@ public class RegExpLabelWf<L> implements LabelWf<L> {
     }
 
     public static <L> RegExpLabelWf<L> of(IRegExpMatcher<L> re) {
-        return new RegExpLabelWf(re);
+        return new RegExpLabelWf<>(re);
     }
 
 }

@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.Iterables;
@@ -22,8 +20,6 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
-
-    private static final ILogger logger = LoggerUtils.logger(LibraryTypeChecker.class);
 
     private final IStatixLibrary library;
 

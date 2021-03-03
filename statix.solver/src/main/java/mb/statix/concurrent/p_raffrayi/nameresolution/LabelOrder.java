@@ -8,7 +8,7 @@ public interface LabelOrder<L> {
 
     static <L> LabelOrder<L> none() {
         return new LabelOrder<L>() {
-            @Override public boolean lt(EdgeOrData<L> l1, EdgeOrData<L> l2) {
+            @SuppressWarnings("unused") @Override public boolean lt(EdgeOrData<L> l1, EdgeOrData<L> l2) {
                 return false;
             }
         };
