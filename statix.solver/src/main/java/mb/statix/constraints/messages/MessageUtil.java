@@ -20,6 +20,10 @@ public class MessageUtil {
             .build();
     // @formatter:on
 
+    public static MessageKind defaultMessageKind(IConstraint c) {
+        return KINDS.getOrDefault(c.getClass(), MessageKind.ERROR);
+    }
+
     public static IMessage findClosestMessage(IConstraint c) {
         return findClosestMessage(c, KINDS.getOrDefault(c.getClass(), MessageKind.ERROR));
     }
