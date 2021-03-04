@@ -23,7 +23,7 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return getArgs().size();
     }
 
-    @Value.Lazy @Override public boolean isGround() {
+    @Override public boolean isGround() {
         return getArgs().stream().allMatch(ITerm::isGround);
     }
 
@@ -48,10 +48,14 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
     @Override public int hashCode() {
         int result = hashCode;
         if(result == 0) {
-            result = Objects.hash(getOp(), getArity(), getArgs());
+            result = computeHashCode();
             hashCode = result;
         }
         return result;
+    }
+
+    protected int computeHashCode() {
+        return Objects.hash(getOp(), getArgs());
     }
 
     @Override public boolean equals(Object other) {
