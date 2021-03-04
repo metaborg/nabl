@@ -961,7 +961,11 @@ public class StatixSolver {
         private final Rule constraint;
 
         public ConstraintDataWF(Spec spec, IState.Immutable state, Rule constraint) {
-            // this requires that all constraint.freeVars() are ground in state.unifier()!
+            // Assertion disabled as I expect this to be expensive
+            //if(!constraint.freeVars().stream().allMatch(fv -> state.unifier().isGround(fv))) {
+            //    throw new IllegalArgumentException(
+            //            "The given constraint cannot have free variables in the given state.");
+            //}
             this.spec = spec;
             this.state = state;
             this.constraint = constraint;
@@ -1027,7 +1031,11 @@ public class StatixSolver {
         private final Rule constraint;
 
         public ConstraintDataEquiv(Spec spec, IState.Immutable state, Rule constraint) {
-            // this requires that all constraint.freeVars() are ground in state.unifier()!
+            // Assertion disabled as I expect this to be expensive
+            //if(!constraint.freeVars().stream().allMatch(fv -> state.unifier().isGround(fv))) {
+            //    throw new IllegalArgumentException(
+            //            "The given constraint cannot have free variables in the given state.");
+            //}
             this.spec = spec;
             this.state = state;
             this.constraint = constraint;
