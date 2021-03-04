@@ -2,7 +2,11 @@ package mb.statix.concurrent.p_raffrayi.diff;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -26,6 +30,10 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private final ICompletableFuture<ScopeGraphDiff<S, L, D>> diffResult = new CompletableFuture<>();
 
+    private final Queue<S> worklist = Lists.newLinkedList();
+    private final AtomicBoolean typeCheckerFinished = new AtomicBoolean();
+    private final AtomicInteger nesting = new AtomicInteger(0);
+
     public AddingDiffer(IScopeGraphDifferContext<S, L, D> context) {
         this.context = context;
     }
@@ -34,46 +42,74 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         // TODO Auto-generated method stub
         currentRootScopes.forEach(this::addScope);
 
-        tryFinalize();
+        fixedpoint();
         return diffResult;
+    }
+
+    private void fixedpoint() {
+        try {
+            nesting.incrementAndGet();
+            while(!worklist.isEmpty()) {
+                addScope(worklist.poll());
+            }
+        } finally {
+            nesting.decrementAndGet();
+        }
+
+        tryFinalize();
     }
 
     // TODO rework to max recursion depth (fuel) and worklist
     private void addScope(S scope) {
-        if(seenScopes.contains(scope)) {
-            tryFinalize();
-            return;
-        }
-        seenScopes.__insert(scope);
-        pendingResults.incrementAndGet();
-        context.currentDatum(scope).thenAccept(d -> {
-            pendingResults.decrementAndGet();
-            addedScopes.__put(scope, d);
-            d.ifPresent(datum -> {
-                context.getCurrentScopes(datum).forEach(this::addScope);
-            });
-            tryFinalize();
-        });
-        pendingResults.incrementAndGet();
-        context.labels(scope).thenAccept(lbls -> {
-            pendingResults.decrementAndGet();
-            lbls.forEach(lbl -> {
-                pendingResults.incrementAndGet();
-                context.getCurrentEdges(scope, lbl).thenAccept(edges -> {
-                    pendingResults.incrementAndGet();
-                    edges.forEach(this::addScope);
-                    tryFinalize();
+        if(!seenScopes.contains(scope)) {
+            seenScopes.__insert(scope);
+
+            IFuture<Optional<D>> datumFuture = context.currentDatum(scope);
+            K<Optional<D>> processDatum = d -> {
+                addedScopes.__put(scope, d);
+                d.ifPresent(datum -> {
+                    context.getCurrentScopes(datum).forEach(this::addScope);
                 });
-                // TODO cascade edges and scopes
-                // TODO finalize at correct moment
-            });
-            tryFinalize();
+                tryFinalize();
+            };
+            future(datumFuture, processDatum);
+
+            IFuture<Iterable<L>> f = context.labels(scope);
+            K<Iterable<L>> k = lbls -> {
+                lbls.forEach(lbl -> {
+                    IFuture<Iterable<S>> edgesFuture = context.getCurrentEdges(scope, lbl);
+                    K<Iterable<S>> processEdges = targets -> {
+                        targets.forEach(target -> {
+                            addedEdges.__insert(new Edge<S, L>(scope, lbl, target));
+                            worklist.add(target);
+                        });
+                    };
+                    future(edgesFuture, processEdges);
+                });
+            };
+            future(f, k);
+        }
+    }
+
+    private <R> void future(IFuture<R> f, K<R> k) {
+        pendingResults.incrementAndGet();
+        f.thenAccept(res -> {
+            pendingResults.decrementAndGet();
+            diffK(k, res);
         });
-        tryFinalize();
+    }
+
+    private <R> void diffK(K<R> k, R r) {
+        try {
+            k.k(r);
+            fixedpoint();
+        } catch(Throwable ex) {
+            diffResult.completeExceptionally(ex);
+        }
     }
 
     private void tryFinalize() {
-        if(pendingResults.get() == 0) {
+        if(pendingResults.get() == 0 && nesting.get() == 0 && typeCheckerFinished.get()) {
             // @formatter:off
             diffResult.complete(new ScopeGraphDiff<>(
                 BiMap.Immutable.of(),
@@ -95,12 +131,15 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public void typeCheckerFinished() {
-        // TODO Wait for finalization?
-
+        typeCheckerFinished.set(true);
+        tryFinalize();
     }
 
     @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
         throw new UnsupportedOperationException("There can be no previous scopes for an added unit.");
     }
 
+    private interface K<R> {
+        void k(R res);
+    }
 }

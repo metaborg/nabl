@@ -13,7 +13,7 @@ public abstract class ADatum<S, L, D> implements IWaitFor<S, L, D> {
     @Value.Parameter public abstract S scope();
 
     @Override public void visit(Cases<S, L, D> cases) {
-        // TODO Auto-generated method stub
+        cases.on((Datum<S, L, D>) this);
     }
 
 }

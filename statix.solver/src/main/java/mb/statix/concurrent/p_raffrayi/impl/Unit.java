@@ -174,25 +174,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             doAddLocalShare(self, rootScope);
         }
 
-        // Handle diff output
-        final ADifferResult<S, L, D> differResult = DifferResult.of(self);
-        waitFor(differResult, self);
-        self.schedule(differ.diff(rootScopes, initialState.previousResult()
-            .map(IUnitResult::rootScopes)
-            .orElse(Collections.emptyList())))
-            .whenComplete((r, ex) -> {
-                logger.debug("{} scope graph differ finished", this);
-                resume(); // FIXME necessary
-                if(ex != null) {
-                    logger.error("type checker errored: {}", ex);
-                    failures.add(ex);
-                } else {
-                    diffResult.set(r);
-                }
-                granted(differResult, self);
-            });
-
+        startDiffer(rootScopes);
         startTypeChecker(rootScopes);
+
         return unitResult;
     }
 
@@ -221,6 +205,28 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                 logger.debug("{} returned while waiting on {}", self, selfTokens);
             }
         });
+    }
+
+    private void startDiffer(List<S> rootScopes) {
+        final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
+
+        // Handle diff output
+        final ADifferResult<S, L, D> result = DifferResult.of(self, differResult);
+        waitFor(result, self);
+        self.schedule(differ.diff(rootScopes, initialState.previousResult()
+            .map(IUnitResult::rootScopes)
+            .orElse(Collections.emptyList()))).whenComplete(differResult::complete);
+        differResult.whenComplete((r, ex) -> {
+                logger.debug("{} scope graph differ finished", this);
+                resume(); // FIXME necessary
+                if(ex != null) {
+                    logger.error("scope graph differ errored: {}", ex);
+                    failures.add(ex);
+                } else {
+                    diffResult.set(r);
+                }
+                granted(result, self);
+            });
     }
 
     private void confirmQueries(List<S> rootScopes) {
@@ -1022,7 +1028,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         // resume(); // FIXME not necessary?
-        failDelays(nodes);
+        if(!failDelays(nodes)) {
+            logger.debug("No delays to fail. Still waiting for {}.", waitFors);
+        }
     }
 
     /**
@@ -1059,7 +1067,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                         }
                     },
                     differResult -> {
-                        // TODO: complete differ result with exception
+                        if(nodes.contains(differResult.origin())) {
+                            logger.debug("{} fail {}", self, differResult);
+                            deadlocked.__insert(differResult.future());
+                        }
                     }
                 ));
                 // @formatter:on
@@ -1139,7 +1150,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                 },
                 differResult -> {
                     logger.error("Differ result could not complete.");
-                    throw new IllegalStateException("Differ result could not complete.");
+                    self.complete(differResult.future(), null, new DeadlockException("Type checker deadlocked."));
                 }
             ));
             // @formatter:on
@@ -1187,10 +1198,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             // Most be done via owner, because delays on a shared, non-owned scope are not activated
             // and not desired to be activated, because not any operation on them can proceed
             final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-            final Complete<S, L, D> complete = Complete.of(owner, scope, EdgeOrData.edge(label));
+            final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label));
 
             waitFor(complete, owner);
-            return self.async(context.owner(scope))._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+            return self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
                 granted(complete, owner);
                 return scopeGraph.get().getEdges(scope, label);
             });
