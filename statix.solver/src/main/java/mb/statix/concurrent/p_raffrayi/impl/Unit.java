@@ -1029,7 +1029,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         // resume(); // FIXME not necessary?
         if(!failDelays(nodes)) {
-            logger.debug("No delays to fail. Still waiting for {}.", waitFors);
+            logger.debug("No delays to fail. Still waiting for {}.", waitForsByActor);
         }
     }
 
@@ -1149,7 +1149,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                     self.complete(typeCheckerState.future(), null, new DeadlockException("Type checker deadlocked."));
                 },
                 differResult -> {
-                    logger.error("Differ result could not complete.");
+                    logger.error("Differ could not complete.");
                     self.complete(differResult.future(), null, new DeadlockException("Type checker deadlocked."));
                 }
             ));
@@ -1203,6 +1203,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             waitFor(complete, owner);
             return self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
                 granted(complete, owner);
+                resume();
                 return scopeGraph.get().getEdges(scope, label);
             });
         }
@@ -1222,7 +1223,10 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             final Datum<S, L, D> datum = Datum.of(self, scope);
             waitFor(datum, owner);
             return self.async(owner)._datum(scope)
-                .whenComplete((__, ___) -> granted(datum, owner));
+                .whenComplete((__, ___) -> {
+                    granted(datum, owner);
+                    resume();
+                });
         }
 
         @Override public IFuture<Optional<D>> previousDatum(S scope) {
@@ -1258,8 +1262,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(previousScope);
             final Match<S, L, D> match = Match.of(self, previousScope);
             waitFor(match, owner);
-            return self.async(context.owner(previousScope))._match(previousScope).
-                whenComplete((__, ___) -> granted(match, owner));
+            return self.async(context.owner(previousScope))._match(previousScope)
+                .whenComplete((__, ___) -> {
+                    granted(match, owner);
+                    resume();
+                });
         }
 
     }

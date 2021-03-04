@@ -6,6 +6,9 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
+
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
@@ -19,6 +22,8 @@ import mb.statix.scopegraph.diff.Edge;
 import mb.statix.scopegraph.diff.ScopeGraphDiff;
 
 public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
+
+    private static ILogger logger = LoggerUtils.logger(AddingDiffer.class);
 
     private final AtomicInteger pendingResults = new AtomicInteger(0);
     private IScopeGraphDifferContext<S, L, D> context;
@@ -39,10 +44,11 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(List<S> currentRootScopes, List<S> previousRootScopes) {
-        // TODO Auto-generated method stub
         currentRootScopes.forEach(this::addScope);
 
         fixedpoint();
+        tryFinalize();
+
         return diffResult;
     }
 
@@ -55,8 +61,6 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         } finally {
             nesting.decrementAndGet();
         }
-
-        tryFinalize();
     }
 
     // TODO rework to max recursion depth (fuel) and worklist
@@ -70,12 +74,12 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 d.ifPresent(datum -> {
                     context.getCurrentScopes(datum).forEach(this::addScope);
                 });
-                tryFinalize();
             };
+            logger.trace("Schedule datum {}: {}", scope, datumFuture);
             future(datumFuture, processDatum);
 
-            IFuture<Iterable<L>> f = context.labels(scope);
-            K<Iterable<L>> k = lbls -> {
+            IFuture<Iterable<L>> labelsFuture = context.labels(scope);
+            K<Iterable<L>> processLabels = lbls -> {
                 lbls.forEach(lbl -> {
                     IFuture<Iterable<S>> edgesFuture = context.getCurrentEdges(scope, lbl);
                     K<Iterable<S>> processEdges = targets -> {
@@ -87,15 +91,22 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     future(edgesFuture, processEdges);
                 });
             };
-            future(f, k);
+            logger.trace("Schedule labels {}: {}", scope, labelsFuture);
+            future(labelsFuture, processLabels);
         }
     }
 
     private <R> void future(IFuture<R> f, K<R> k) {
         pendingResults.incrementAndGet();
-        f.thenAccept(res -> {
+        f.whenComplete((res, ex) -> {
+            logger.debug("Complete {}.", f);
             pendingResults.decrementAndGet();
-            diffK(k, res);
+            if(ex != null) {
+                diffResult.completeExceptionally(ex);
+            } else {
+                diffK(k, res);
+            }
+            tryFinalize();
         });
     }
 
@@ -109,7 +120,10 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     private void tryFinalize() {
+        logger.trace("Try finalize differ. Pending: {}, nesting: {}, TC finished: {}", pendingResults.get(),
+            nesting.get(), typeCheckerFinished.get());
         if(pendingResults.get() == 0 && nesting.get() == 0 && typeCheckerFinished.get()) {
+            logger.debug("Finalizing differ.");
             // @formatter:off
             diffResult.complete(new ScopeGraphDiff<>(
                 BiMap.Immutable.of(),
