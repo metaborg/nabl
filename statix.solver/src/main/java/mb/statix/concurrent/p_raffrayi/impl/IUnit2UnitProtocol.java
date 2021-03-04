@@ -9,9 +9,9 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
+import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 /**
  * Protocol accepted by clients, from other clients
@@ -28,8 +28,8 @@ public interface IUnit2UnitProtocol<S, L, D, R> {
 
     void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWf<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder,
-            DataLeq<D> dataEquiv);
+    IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
     IFuture<org.metaborg.util.unit.Unit> _isComplete(S scope, EdgeOrData<L> label);
 

@@ -1,6 +1,11 @@
 package mb.nabl2.terms.unification.u;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.nabl2.terms.unification.UnifierTests.assertSame;
+import static mb.nabl2.terms.unification.UnifierTests.assertContains;
+import static mb.nabl2.terms.unification.UnifierTests.assertNotContains;
+import static mb.nabl2.terms.unification.UnifierTests.assertPresent;
 import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -11,6 +16,7 @@ import org.junit.Test;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
 
 @SuppressWarnings("unused")
@@ -60,6 +66,17 @@ public class UnifierInfiniteTest {
         phi.unify(b, B.newAppl(g, a)).orElseThrow(() -> new IllegalArgumentException());
         assertEquals("μX0.f(X0,g(X0))", phi.toString(a));
         assertEquals("μX1.g(μX0.f(X0,X1))", phi.toString(b));
+    }
+
+    @Test(timeout = 10000) public void testCyclicSpecializedToString() throws OccursException {
+        SpecializedTermFormatter stf = (t, u, fmt) -> M.appl2(f, M.term(), M.term(), (t0, t1, t2) -> {
+            return "`f`(" + fmt.format(t1) + "," + fmt.format(t2) + ")";
+        }).match(t, u);
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
+        assertPresent(phi.unify(a, B.newAppl(f, a, b)));
+        assertPresent(phi.unify(b, B.newAppl(g, a)));
+        assertEquals("μX0.`f`(X0,g(X0))", phi.toString(a, stf));
+        assertEquals("μX1.g(μX0.`f`(X0,X1))", phi.toString(b, stf));
     }
 
 }

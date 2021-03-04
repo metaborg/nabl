@@ -21,7 +21,7 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     // @Value.Parameter public abstract LabelWF<L> labelWF();
 
-    @Value.Parameter public abstract DataWf<D> dataWF();
+    @Value.Parameter public abstract DataWf<S, L, D> dataWF();
 
     // @Value.Parameter public abstract LabelOrder<L> labelOrder();
 
@@ -34,8 +34,9 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
     }
 
     public static <S, L, D> Query<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?>> origin, IScopePath<S, L> path,
-            LabelWf<L> labelWF, DataWf<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv,
-            IFuture<Env<S, L, D>> future) {
+            @SuppressWarnings("unused") LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            @SuppressWarnings("unused") LabelOrder<L> labelOrder,
+            @SuppressWarnings("unused") DataLeq<S, L, D> dataEquiv, IFuture<Env<S, L, D>> future) {
         return Query.of(origin, path, dataWF, future);
     }
 

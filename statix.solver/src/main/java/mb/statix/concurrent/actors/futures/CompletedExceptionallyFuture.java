@@ -20,7 +20,7 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
     // ICompletable
     /////////////////////////////////////////////////////////////////////
 
-    @Override public void complete(T value, Throwable ex) {
+    @SuppressWarnings("unused") @Override public void complete(T value, Throwable ex) {
         // ignore
     }
 
@@ -46,15 +46,17 @@ class CompletedExceptionallyFuture<T> implements ICompletableFuture<T> {
         }
     }
 
-    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
+    @SuppressWarnings("unused") @Override public <U> IFuture<U>
+            thenApply(CheckedFunction1<? super T, ? extends U, ? extends Throwable> handler) {
         return CompletableFuture.completedExceptionally(ex);
     }
 
-    @Override public IFuture<Void> thenAccept(CheckedAction1<? super T, ? extends Throwable> handler) {
+    @SuppressWarnings("unused") @Override public IFuture<Void>
+            thenAccept(CheckedAction1<? super T, ? extends Throwable> handler) {
         return CompletableFuture.completedExceptionally(ex);
     }
 
-    @Override public <U> IFuture<U>
+    @SuppressWarnings("unused") @Override public <U> IFuture<U>
             thenCompose(CheckedFunction1<? super T, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         return CompletableFuture.completedExceptionally(ex);
     }

@@ -58,7 +58,7 @@ public class ConfirmationTest extends PRaffrayiTestBase {
                     IFuture<IUnitResult<Scope, ITerm, ITerm, Boolean>> unit1Result = unit.add("one", new FalseUnit(), Arrays.asList(s), AInitialState.cached(emptyResult("one", true)));
 
                     IUnitResult<Scope, ITerm, ITerm, Boolean> previousResult = ConfirmationTest.<Boolean>resultWithQueries("two", false, Collections.singleton(
-                        RecordedQuery.<Scope, ITerm, ITerm>of(s, new ConstantClosureWf<>(B.newInt(1)), new TrueDataWf(), new HashcodeLabelOrder(), new FalseDataOrder(), null, null)));
+                        RecordedQuery.<Scope, ITerm, ITerm>of(s, new ConstantClosureWf<ITerm>(B.newInt(1)), new TrueDataWf(), new HashcodeLabelOrder(), new FalseDataOrder())));
 
                     IFuture<IUnitResult<Scope, ITerm, ITerm, Boolean>> unit2Result = unit.add("two", new EmptyUnit(), Arrays.asList(s), AInitialState.cached(previousResult));
 
@@ -127,10 +127,10 @@ public class ConfirmationTest extends PRaffrayiTestBase {
         
     }
     
-    private class TrueDataWf implements DataWf<ITerm> {
+    private class TrueDataWf implements DataWf<Scope, ITerm, ITerm> {
 
-        @Override public boolean wf(ITerm d, ICancel cancel) throws InterruptedException {
-            return true;
+        @Override public IFuture<Boolean> wf(ITerm d, ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
+            return CompletableFuture.completedFuture(true);
         }
         
     }
@@ -143,10 +143,10 @@ public class ConfirmationTest extends PRaffrayiTestBase {
         
     }
     
-    private class FalseDataOrder implements DataLeq<ITerm> {
+    private class FalseDataOrder implements DataLeq<Scope, ITerm, ITerm> {
 
-        @Override public boolean leq(ITerm d1, ITerm d2, ICancel cancel) throws InterruptedException {
-            return false;
+        @Override public IFuture<Boolean> leq(ITerm d1, ITerm d2, ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
+            return CompletableFuture.completedFuture(true);
         }
     }
 }

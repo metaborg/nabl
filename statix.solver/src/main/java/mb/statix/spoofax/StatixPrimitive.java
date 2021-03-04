@@ -140,7 +140,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
             final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
-        final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
+        final TermFormatter formatter = Solver.shallowTermFormatter(unifier, Solver.TERM_FORMAT_DEPTH);
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();

@@ -31,7 +31,8 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
     }
 
     @Override public IFuture<ProjectResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
-            List<Scope> rootScopes, IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState) {
+            @SuppressWarnings("unused") List<Scope> rootScopes, 
+            IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =

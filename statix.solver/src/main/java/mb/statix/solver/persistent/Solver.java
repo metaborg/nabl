@@ -1,5 +1,7 @@
 package mb.statix.solver.persistent;
 
+import static mb.nabl2.terms.matching.TermMatch.M;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +13,7 @@ import org.metaborg.util.task.IProgress;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
@@ -26,6 +29,8 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 
 public class Solver {
+
+    public static final int TERM_FORMAT_DEPTH = 4;
 
     public static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
@@ -124,13 +129,13 @@ public class Solver {
     static void printTrace(IConstraint failed, IUniDisunifier.Immutable unifier, IDebugContext debug) {
         @Nullable IConstraint constraint = failed;
         while(constraint != null) {
-            debug.error(" * {}", constraint.toString(Solver.shallowTermFormatter(unifier)));
+            debug.error(" * {}", constraint.toString(Solver.shallowTermFormatter(unifier, TERM_FORMAT_DEPTH)));
             constraint = constraint.cause().orElse(null);
         }
     }
 
     public static String toString(IConstraint constraint, IUniDisunifier.Immutable unifier) {
-        return constraint.toString(Solver.shallowTermFormatter(unifier));
+        return constraint.toString(Solver.shallowTermFormatter(unifier, TERM_FORMAT_DEPTH));
     }
 
     public static String toString(Iterable<IConstraint> constraints, IUniDisunifier.Immutable unifier) {
@@ -142,7 +147,7 @@ public class Solver {
             } else {
                 sb.append(", ");
             }
-            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier)));
+            sb.append(constraint.toString(Solver.shallowTermFormatter(unifier, TERM_FORMAT_DEPTH)));
         }
         return sb.toString();
     }
@@ -152,8 +157,13 @@ public class Solver {
 
     }
 
-    public static TermFormatter shallowTermFormatter(final IUniDisunifier unifier) {
-        return new UnifierFormatter(unifier, 4);
+    public static TermFormatter shallowTermFormatter(final IUniDisunifier unifier, int depth) {
+        // @formatter:off
+        return new UnifierFormatter(unifier, depth, (t, u, f) -> M.cases(
+            Scope.matcher(),
+            TermIndex.matcher()
+        ).map(ITerm::toString).match(t, unifier));
+        // @formatter:on
     }
 
 }

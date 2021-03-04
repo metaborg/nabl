@@ -12,6 +12,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
 
 /**
@@ -135,12 +136,20 @@ public interface IUnifier {
     /**
      * Return a string representation of the given term.
      */
-    String toString(ITerm term);
+    String toString(ITerm term, SpecializedTermFormatter specializedTermFormatter);
+
+    default String toString(ITerm term) {
+        return toString(term, (t, u, f) -> Optional.empty());
+    }
 
     /**
      * Return a string representation of the given term, up to a certain term depth.
      */
-    String toString(ITerm term, int n);
+    String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter);
+
+    default String toString(ITerm term, int n) {
+        return toString(term, n, (t, u, f) -> Optional.empty());
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on a single term
