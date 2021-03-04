@@ -1,6 +1,10 @@
 package mb.nabl2.terms.build;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
+
+import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
@@ -30,11 +34,54 @@ public class TermBuild {
 
         @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable IAttachments attachments) {
-            if((attachments == null || attachments.isEmpty())) {
-                final IApplTerm term = ApplTerm.of(op, args);
-                return term.getArity() == 0 ? (IApplTerm) cache.getOrPut(term, term) : term;
-            } else {
-                return ApplTerm.builder().op(op).args(args).attachments(attachments).build();
+            final List<ITerm> argList = ImmutableList.copyOf(args);
+            switch(argList.size()) {
+                case 0: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        final ITerm term = Appl0Term.of(op);
+                        return (IApplTerm) cache.getOrPut(term, term);
+                    } else {
+                        return Appl0Term.builder().op(op).attachments(attachments).build();
+                    }
+                }
+                case 1: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl1Term.of(op, argList.get(0));
+                    } else {
+                        return Appl1Term.builder().op(op).arg0(argList.get(0)).attachments(attachments).build();
+                    }
+                }
+                case 2: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl2Term.of(op, argList.get(0), argList.get(1));
+                    } else {
+                        return Appl2Term.builder().op(op).arg0(argList.get(0)).arg1(argList.get(1))
+                                .attachments(attachments).build();
+                    }
+                }
+                case 3: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl3Term.of(op, argList.get(0), argList.get(1), argList.get(2));
+                    } else {
+                        return Appl3Term.builder().op(op).arg0(argList.get(0)).arg1(argList.get(1)).arg2(argList.get(2))
+                                .attachments(attachments).build();
+                    }
+                }
+                case 4: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl4Term.of(op, argList.get(0), argList.get(1), argList.get(2), argList.get(3));
+                    } else {
+                        return Appl4Term.builder().op(op).arg0(argList.get(0)).arg1(argList.get(1)).arg2(argList.get(2))
+                                .arg3(argList.get(3)).attachments(attachments).build();
+                    }
+                }
+                default: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return ApplTerm.of(op, args);
+                    } else {
+                        return ApplTerm.builder().op(op).args(args).attachments(attachments).build();
+                    }
+                }
             }
         }
 
