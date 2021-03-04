@@ -15,9 +15,8 @@ import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.terms.path.Paths;
+import mb.statix.scopegraph.terms.newPath.ResolutionPath;
+import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
 
@@ -48,18 +47,18 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     }
 
     @Override public Env<S, L, D> resolve(S scope, ICancel cancel) throws ResolutionException, InterruptedException {
-        return env(labelWF, Paths.empty(scope), Env.empty(), cancel);
+        return env(labelWF, new ScopePath<>(scope), Env.empty(), cancel);
     }
 
-    private Env<S, L, D> env(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics,
+    private Env<S, L, D> env(LabelWF<L> re, ScopePath<S, L> path, Iterable<ResolutionPath<S, L, D>> specifics,
             ICancel cancel) throws ResolutionException, InterruptedException {
         return env_L(allLabels, re, path, specifics, cancel);
     }
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Env<S, L, D> env_L(Set.Immutable<EdgeOrData<L>> L, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+    private Env<S, L, D> env_L(Set.Immutable<EdgeOrData<L>> L, LabelWF<L> re, ScopePath<S, L> path,
+            Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
         cancel.throwIfCancelled();
         final Env.Builder<S, L, D> env = Env.builder();
@@ -76,14 +75,14 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         return env.build();
     }
 
-    private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+    private Env<S, L, D> env_l(EdgeOrData<L> l, LabelWF<L> re, ScopePath<S, L> path,
+            Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
         return l.matchInResolution(() -> env_data(re, path, specifics),
                 lbl -> env_edges(lbl, re, path, specifics, cancel));
     }
 
-    private Env<S, L, D> env_data(LabelWF<L> re, IScopePath<S, L> path, Iterable<IResolutionPath<S, L, D>> specifics)
+    private Env<S, L, D> env_data(LabelWF<L> re, ScopePath<S, L> path, Iterable<ResolutionPath<S, L, D>> specifics)
             throws ResolutionException, InterruptedException {
         if(!re.accepting()) {
             return Env.empty();
@@ -95,11 +94,11 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         if((datum = getData(re, path).orElse(null)) == null || !dataWF.wf(datum) || isShadowed(datum, specifics)) {
             return Env.empty();
         }
-        return Env.of(Paths.resolve(path, datum));
+        return Env.of(path.resolve(datum));
     }
 
-    private Env<S, L, D> env_edges(L l, LabelWF<L> re, IScopePath<S, L> path,
-            Iterable<IResolutionPath<S, L, D>> specifics, ICancel cancel)
+    private Env<S, L, D> env_edges(L l, LabelWF<L> re, ScopePath<S, L> path,
+            Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
         final Optional<LabelWF<L>> newRe = re.step(l);
         if(!newRe.isPresent()) {
@@ -113,7 +112,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         }
         final Env.Builder<S, L, D> env = Env.builder();
         for(S nextScope : getEdges(re, path, l)) {
-            final Optional<IScopePath<S, L>> p = Paths.append(path, Paths.edge(path.getTarget(), l, nextScope));
+            final Optional<ScopePath<S, L>> p = path.step(l, nextScope);
             if(p.isPresent()) {
                 env.addAll(env(re, p.get(), specifics, cancel));
             }
@@ -121,9 +120,9 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         return env.build();
     }
 
-    private boolean isShadowed(D datum, Iterable<IResolutionPath<S, L, D>> specifics)
+    private boolean isShadowed(D datum, Iterable<ResolutionPath<S, L, D>> specifics)
             throws ResolutionException, InterruptedException {
-        for(IResolutionPath<S, L, D> p : specifics) {
+        for(ResolutionPath<S, L, D> p : specifics) {
             if(dataEquiv.leq(p.getDatum(), datum)) {
                 return true;
             }
@@ -135,11 +134,11 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     // edges and data                                                        //
     ///////////////////////////////////////////////////////////////////////////
 
-    protected Optional<D> getData(LabelWF<L> re, IScopePath<S, L> path) {
+    protected Optional<D> getData(@SuppressWarnings("unused") LabelWF<L> re, ScopePath<S, L> path) {
         return scopeGraph.getData(path.getTarget());
     }
 
-    protected Iterable<S> getEdges(LabelWF<L> re, IScopePath<S, L> path, L l) {
+    protected Iterable<S> getEdges(@SuppressWarnings("unused") LabelWF<L> re, ScopePath<S, L> path, L l) {
         return scopeGraph.getEdges(path.getTarget(), l);
     }
 
