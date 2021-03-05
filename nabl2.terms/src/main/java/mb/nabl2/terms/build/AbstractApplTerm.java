@@ -48,14 +48,10 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
     @Override public int hashCode() {
         int result = hashCode;
         if(result == 0) {
-            result = computeHashCode();
+            result = Objects.hash(getOp(), getArgs());
             hashCode = result;
         }
         return result;
-    }
-
-    protected int computeHashCode() {
-        return Objects.hash(getOp(), getArgs());
     }
 
     @Override public boolean equals(Object other) {

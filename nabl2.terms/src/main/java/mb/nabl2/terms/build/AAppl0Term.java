@@ -1,7 +1,6 @@
 package mb.nabl2.terms.build;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -41,10 +40,6 @@ abstract class AAppl0Term extends AbstractApplTerm implements IApplTerm {
 
     @Override public int hashCode() {
         return super.hashCode();
-    }
-
-    @Override protected int computeHashCode() {
-        return Objects.hash(getOp());
     }
 
     @Override public boolean equals(Object other) {
