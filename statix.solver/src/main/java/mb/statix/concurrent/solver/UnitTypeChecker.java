@@ -1,5 +1,6 @@
 package mb.statix.concurrent.solver;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.metaborg.util.log.ILogger;
@@ -8,7 +9,7 @@ import org.metaborg.util.log.LoggerUtils;
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
@@ -25,16 +26,21 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
         this.unit = unit;
     }
 
-    @Override public IFuture<UnitResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, List<Scope> rootScopes,
+    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult> context, List<Scope> rootScopes,
             IInitialState<Scope, ITerm, ITerm, UnitResult> initialState) {
-        return context.confirmQueries().thenCompose(v -> {
-            return v ? CompletableFuture.completedFuture(initialState.previousResult().get().analysis().solveResult())
-                : runSolver(context, unit.rule(), rootScopes);
-        }).handle((r, ex) -> {
-            return UnitResult.of(unit.resource(), r, ex);
-        }).whenComplete((r, ex) -> {
-            logger.debug("unit {}: returned.", context.id());
-        });
+        // @formatter:off
+        return context.runIncremental(
+            restarted -> {
+                return runSolver(context, unit.rule(), rootScopes);
+            },
+            UnitResult::solveResult,
+            (result, ex) -> {
+                return CompletableFuture.completedFuture(UnitResult.of(unit.resource(), result, ex));
+            })
+            .whenComplete((r, ex) -> {
+                logger.debug("unit {}: returned.", context.id());
+            });
+        // @formatter:on
     }
 
 }

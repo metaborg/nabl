@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.metaborg.util.task.ICancel;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.CapsuleUtil;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
@@ -51,7 +50,7 @@ public class ConfirmationTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, ITerm, ITerm, Boolean>> future =
             run(".", new ITypeChecker<Scope, ITerm, ITerm, Boolean>() {
 
-                @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, ITerm, ITerm> unit, List<Scope> roots,
+                @Override public IFuture<Boolean> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, Boolean> unit, List<Scope> roots,
                     IInitialState<Scope, ITerm, ITerm, Boolean> initialState) {
                     Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
@@ -78,7 +77,7 @@ public class ConfirmationTest extends PRaffrayiTestBase {
     
     private static class EmptyUnit implements ITypeChecker<Scope, ITerm, ITerm, Boolean> {
 
-        @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, ITerm, ITerm> unit, List<Scope> rootScopes,
+        @Override public IFuture<Boolean> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, Boolean> unit, List<Scope> rootScopes,
             IInitialState<Scope, ITerm, ITerm, Boolean> initialState) {
             
             rootScopes.forEach(s -> {
@@ -92,7 +91,7 @@ public class ConfirmationTest extends PRaffrayiTestBase {
     
     private static class FalseUnit implements ITypeChecker<Scope, ITerm, ITerm, Boolean> {
 
-        @Override public IFuture<Boolean> run(ITypeCheckerContext<Scope, ITerm, ITerm> unit, List<Scope> rootScopes,
+        @Override public IFuture<Boolean> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, Boolean> unit, List<Scope> rootScopes,
             IInitialState<Scope, ITerm, ITerm, Boolean> initialState) {
             
             rootScopes.forEach(s -> {

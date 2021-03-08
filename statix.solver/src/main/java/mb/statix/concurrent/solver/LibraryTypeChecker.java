@@ -13,7 +13,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
@@ -29,7 +29,7 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
         this.library = library;
     }
 
-    @Override public IFuture<Unit> run(ITypeCheckerContext<Scope, ITerm, ITerm> context, List<Scope> rootScopes,
+    @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, Unit> context, List<Scope> rootScopes,
             IInitialState<Scope, ITerm, ITerm, Unit> initialState) {
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = library.scopeGraph();
         final Set.Immutable<ITerm> labels = scopeGraph.getLabels();

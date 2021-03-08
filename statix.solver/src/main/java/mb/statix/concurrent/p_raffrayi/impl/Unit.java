@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -391,10 +392,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         return result;
     }
 
-    @Override public IFuture<Boolean> confirmQueries() {
+    @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
+            Function1<R, Q> extractLocal, Function2<Q, Throwable, IFuture<R>> combine) {
         if(initialState.changed()) {
-            logger.debug("Unit changed or no previous result wa");
-            return CompletableFuture.completedFuture(false);
+            logger.debug("Unit changed or no previous result was available.");
+            return runLocalTypeChecker.apply(false).compose(combine::apply);
         }
 
         // Invariant: added units are marked as changed.
@@ -503,7 +505,14 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             }
         });
 
-        return confirmationResult;
+        return confirmationResult.thenCompose(validated -> {
+            if(validated) {
+                Q previousLocalResult = extractLocal.apply(previousResult.analysis());
+                return combine.apply(previousLocalResult, null);
+            } else {
+                return runLocalTypeChecker.apply(true).compose(combine::apply);
+            }
+        });
     }
 
     @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
@@ -876,11 +885,6 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             return self.schedule(result).whenComplete((env, ex) -> {
                 granted(wf, self);
             }).thenApply(CapsuleUtil::toSet);
-        }
-
-        @Override public IFuture<Boolean> confirmQueries() {
-            // TODO Auto-generated method stub
-            return null;
         }
 
     };

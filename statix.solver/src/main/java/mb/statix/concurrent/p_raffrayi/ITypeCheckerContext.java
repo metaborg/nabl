@@ -28,7 +28,7 @@ public interface ITypeCheckerContext<S, L, D> {
      * Start sub type-checker, with the given root scope and previous result.
      */
     <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-    		List<S> rootScopes, IInitialState<S, L, D, R> initialState);
+            List<S> rootScopes, IInitialState<S, L, D, R> initialState);
 
     /**
      * Start sub type-checker, with the given root scope and no previous result.
@@ -36,9 +36,6 @@ public interface ITypeCheckerContext<S, L, D> {
     default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
     	return add(id, unitChecker, rootScopes, AInitialState.added());
     }
-
-
-    IFuture<Boolean> confirmQueries();
 
     /**
      * Initialize root scope.
@@ -112,10 +109,6 @@ public interface ITypeCheckerContext<S, L, D> {
 
             @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
                     ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes, IInitialState<S, L, D, R> initialState) {
-                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
-            }
-
-@           SuppressWarnings("unused") @Override public IFuture<Boolean> confirmQueries() {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

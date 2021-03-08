@@ -9,14 +9,12 @@ import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
 public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
@@ -30,31 +28,35 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
         this.project = project;
     }
 
-    @Override public IFuture<ProjectResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
-            @SuppressWarnings("unused") List<Scope> rootScopes, 
-            IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState) {
+    @Override public IFuture<ProjectResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, ProjectResult> context,
+            @SuppressWarnings("unused") List<Scope> rootScopes, IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, project.groups(), projectScope, projectScope, initialState);
+            runGroups(context, project.groups(), projectScope, projectScope, initialState);
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, project.units(), projectScope, projectScope, initialState);
+            runUnits(context, project.units(), projectScope, projectScope, initialState);
 
         runLibraries(context, project.libraries(), projectScope);
 
         context.closeScope(projectScope);
 
-        final IFuture<SolverResult> result = context.confirmQueries().thenCompose(v -> {
-            return v ? CompletableFuture.completedFuture(initialState.previousResult().get().analysis().solveResult())
-                : runSolver(context, project.rule(), Arrays.asList(projectScope));
-        });
-
-        return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
-            return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), null);
-        }).whenComplete((r, ex) -> {
-            logger.debug("project {}: returned.", context.id());
-        });
+        // @formatter:off
+        return context.runIncremental(
+            restarted -> {
+                return runSolver(context, project.rule(), Arrays.asList(projectScope));
+            },
+            ProjectResult::solveResult,
+            (result, ex) -> {
+                return AggregateFuture.apply(groupResults, unitResults).thenApply(e -> {
+                    return ProjectResult.of(project.resource(), e._1(), e._2(), result, ex);
+                });
+            })
+            .whenComplete((r, __) -> {
+                logger.debug("group {}: returned.", context.id());
+            });
+        // @formatter:on
     }
 
 }

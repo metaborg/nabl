@@ -12,10 +12,10 @@ import mb.statix.concurrent.p_raffrayi.impl.IInitialState;
  */
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes, IInitialState<S, L, D, R> initialState);
+    IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R> unit, List<S> rootScopes, IInitialState<S, L, D, R> initialState);
 
     // TODO remove
-    default IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes) {
+    default IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R> unit, List<S> rootScopes) {
     	return run(unit, rootScopes, AInitialState.added());
     }
 
