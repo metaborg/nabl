@@ -9,10 +9,12 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import mb.nabl2.terms.matching.VarProvider;
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
 import org.spoofax.interpreter.terms.IStrategoList;
+import org.spoofax.interpreter.terms.IStrategoPlaceholder;
 import org.spoofax.interpreter.terms.IStrategoReal;
 import org.spoofax.interpreter.terms.IStrategoString;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -28,6 +30,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
+import org.spoofax.terms.StrategoPlaceholder;
 
 public class StrategoTerms {
 
@@ -40,20 +43,29 @@ public class StrategoTerms {
     // to
 
     public IStrategoTerm toStratego(ITerm term) {
+        return toStratego(term, false);
+    }
+
+    public IStrategoTerm toStratego(ITerm term, boolean varsToPlhdrs) {
         // @formatter:off
         IStrategoTerm strategoTerm = term.match(Terms.cases(
             appl -> {
-                List<IStrategoTerm> args = appl.getArgs().stream().map(arg -> toStratego(arg)).collect(Collectors.toList());
-                IStrategoTerm[] argArray = args.toArray(new IStrategoTerm[args.size()]);
+                IStrategoTerm[] argArray = appl.getArgs().stream().map(arg -> toStratego(arg, varsToPlhdrs)).toArray(IStrategoTerm[]::new);
                 return appl.getOp().equals(Terms.TUPLE_OP)
                         ? termFactory.makeTuple(argArray)
                         : termFactory.makeAppl(termFactory.makeConstructor(appl.getOp(), appl.getArity()), argArray);
             },
-            list ->  toStrategoList(list),
+            list ->  toStrategoList(list, varsToPlhdrs),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
             blob -> new StrategoBlob(blob.getValue()),
-            var -> termFactory.makeAppl("nabl2.Var", new IStrategoTerm[] { termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()) })
+            var -> {
+                if (varsToPlhdrs) {
+                    return termFactory.makePlaceholder(termFactory.makeTuple(termFactory.makeString(var.getResource()), termFactory.makeString(var.getName())));
+                } else {
+                    return termFactory.makeAppl("nabl2.Var", termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()));
+                }
+            }
         ));
         // @formatter:on
         switch(strategoTerm.getType()) {
@@ -66,7 +78,7 @@ public class StrategoTerms {
         return strategoTerm;
     }
 
-    private IStrategoTerm toStrategoList(IListTerm list) {
+    private IStrategoTerm toStrategoList(IListTerm list, boolean varsToPlhdrs) {
         final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
         final LinkedList<IAttachments> attachments = Lists.newLinkedList();
         while(list != null) {
@@ -74,7 +86,7 @@ public class StrategoTerms {
             // @formatter:off
             list = list.match(ListTerms.<IListTerm>cases(
                 cons -> {
-                    terms.push(toStratego(cons.getHead()));
+                    terms.push(toStratego(cons.getHead(), varsToPlhdrs));
                     return cons.getTail();
                 },
                 nil -> {
@@ -123,6 +135,10 @@ public class StrategoTerms {
     // from
 
     public ITerm fromStratego(IStrategoTerm sterm) {
+        return fromStratego(sterm, null);
+    }
+
+    public ITerm fromStratego(IStrategoTerm sterm, @Nullable VarProvider varProvider) {
         @Nullable IAttachments attachments = getAttachments(sterm);
         // @formatter:off
         ITerm term = match(sterm, StrategoTerms.cases(
@@ -130,7 +146,7 @@ public class StrategoTerms {
                 final IStrategoTerm[] subTerms = appl.getAllSubterms();
                 final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
                 for(IStrategoTerm subTerm : subTerms) {
-                    args.add(fromStratego(subTerm));
+                    args.add(fromStratego(subTerm, varProvider));
                 }
                 return B.newAppl(appl.getConstructor().getName(), args.build(), attachments);
             },
@@ -138,25 +154,32 @@ public class StrategoTerms {
                 final IStrategoTerm[] subTerms = tuple.getAllSubterms();
                 final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
                 for(IStrategoTerm subTerm : subTerms) {
-                    args.add(fromStratego(subTerm));
+                    args.add(fromStratego(subTerm, varProvider));
                 }
                 return B.newTuple(args.build(), attachments);
             },
-            this::fromStrategoList,
+            list -> fromStrategoList(list, varProvider),
             integer -> B.newInt(integer.intValue(), attachments),
             real -> { throw new IllegalArgumentException("Real values are not supported."); },
             string -> B.newString(string.stringValue(), attachments),
-            blob -> B.newBlob(blob.value())
+            blob -> B.newBlob(blob.value()),
+            plhdr -> {
+                if (varProvider != null) {
+                    return varProvider.freshWld();
+                } else {
+                    throw new IllegalArgumentException("Placeholders are not supported.");
+                }
+            }
         ));
         // @formatter:on
         return term;
     }
 
-    private IListTerm fromStrategoList(IStrategoList list) {
+    private IListTerm fromStrategoList(IStrategoList list, @Nullable VarProvider varProvider) {
         final LinkedList<ITerm> terms = Lists.newLinkedList();
         final LinkedList<IAttachments> attachments = Lists.newLinkedList();
         while(!list.isEmpty()) {
-            terms.add(fromStratego(list.head()));
+            terms.add(fromStratego(list.head(), varProvider));
             attachments.push(getAttachments(list));
             list = list.tail();
         }
@@ -206,6 +229,8 @@ public class StrategoTerms {
                 } else {
                     throw new IllegalArgumentException("Unsupported Stratego blob type " + term.getClass());
                 }
+            case PLACEHOLDER:
+                return cases.casePlhdr((StrategoPlaceholder) term);
             default:
                 throw new IllegalArgumentException("Unsupported Stratego term type " + term.getType());
         }
@@ -219,7 +244,8 @@ public class StrategoTerms {
         Function1<IStrategoInt, T> onInt,
         Function1<IStrategoReal, T> onReal,
         Function1<IStrategoString, T> onString,
-        Function1<StrategoBlob, T> onBlob
+        Function1<StrategoBlob, T> onBlob,
+        Function1<IStrategoPlaceholder, T> onPlhdr
         // @formatter:on
     ) {
         return new ICases<T>() {
@@ -252,6 +278,10 @@ public class StrategoTerms {
                 return onBlob.apply(term);
             }
 
+            @Override public T casePlhdr(IStrategoPlaceholder term) {
+                return onPlhdr.apply(term);
+            }
+
         };
     }
 
@@ -270,6 +300,8 @@ public class StrategoTerms {
         public T caseString(IStrategoString term);
 
         public T caseBlob(StrategoBlob term);
+
+        public T casePlhdr(IStrategoPlaceholder term);
 
     }
 
