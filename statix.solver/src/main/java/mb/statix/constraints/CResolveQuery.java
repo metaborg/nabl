@@ -6,40 +6,39 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.query.IQueryFilter;
-import mb.statix.solver.query.IQueryMin;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
 
 public class CResolveQuery implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final IQueryFilter filter;
-    private final IQueryMin min;
+    private final QueryFilter filter;
+    private final QueryMin min;
     private final ITerm scopeTerm;
     private final ITerm resultTerm;
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
 
-    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm) {
+    public CResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm) {
         this(filter, min, scopeTerm, resultTerm, null, null);
     }
 
-    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IMessage message) {
         this(filter, min, scopeTerm, resultTerm, null, message);
     }
 
-    public CResolveQuery(IQueryFilter filter, IQueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IConstraint cause, @Nullable IMessage message) {
         this.filter = filter;
         this.min = min;
@@ -49,11 +48,11 @@ public class CResolveQuery implements IConstraint, Serializable {
         this.message = message;
     }
 
-    public IQueryFilter filter() {
+    public QueryFilter filter() {
         return filter;
     }
 
-    public IQueryMin min() {
+    public QueryMin min() {
         return min;
     }
 
@@ -89,13 +88,13 @@ public class CResolveQuery implements IConstraint, Serializable {
         return cases.caseResolveQuery(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(filter.getVars());
-        vars.addAll(min.getVars());
-        vars.addAll(scopeTerm.getVars());
-        vars.addAll(resultTerm.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
+        vars.__insertAll(filter.getVars());
+        vars.__insertAll(min.getVars());
+        vars.__insertAll(scopeTerm.getVars());
+        vars.__insertAll(resultTerm.getVars());
+        return vars.freeze();
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
@@ -136,7 +135,15 @@ public class CResolveQuery implements IConstraint, Serializable {
                 && Objects.equals(cause, that.cause) && Objects.equals(message, that.message);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(filter, min, scopeTerm, resultTerm, cause, message);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(filter, min, scopeTerm, resultTerm, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

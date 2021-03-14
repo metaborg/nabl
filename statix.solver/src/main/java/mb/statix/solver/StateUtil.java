@@ -7,6 +7,7 @@ import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -35,9 +36,9 @@ public class StateUtil {
     }
 
     private static void buildEqualities(IUnifier unifier, Action1<CEqual> add) {
-        unifier.equalityMap().forEach((left, right) -> {
-            add.apply(new CEqual(left, right));
-        });
+        for(ITermVar var : unifier.domainSet()) {
+            add.apply(new CEqual(var, unifier.findTerm(var)));
+        }
     }
 
     private static void buildInequalities(Iterable<Diseq> diseqs, Action1<CInequal> add) {

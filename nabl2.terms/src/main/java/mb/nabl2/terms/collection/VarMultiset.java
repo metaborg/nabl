@@ -2,11 +2,11 @@ package mb.nabl2.terms.collection;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -23,7 +23,7 @@ public class VarMultiset {
     }
 
     public boolean add(ITermVar var, int n, IUnifier unifier) {
-        final Multiset<ITermVar> reps = unifier.findRecursive(var).getVars();
+        final Set.Immutable<ITermVar> reps = unifier.findRecursive(var).getVars();
         boolean change = false;
         for(ITermVar rep : reps) {
             vars.add(rep, n);
@@ -45,7 +45,7 @@ public class VarMultiset {
     }
 
     public boolean remove(ITermVar var, int n, IUnifier unifier) {
-        final Multiset<ITermVar> reps = unifier.findRecursive(var).getVars();
+        final Set.Immutable<ITermVar> reps = unifier.findRecursive(var).getVars();
         boolean change = false;
         for(ITermVar rep : reps) {
             int prev_n = vars.remove(rep, n);
@@ -67,9 +67,9 @@ public class VarMultiset {
     }
 
     public int count(ITermVar var, IUnifier unifier) {
-        final Multiset<ITermVar> reps = unifier.findRecursive(var).getVars();
+        final Set.Immutable<ITermVar> reps = unifier.findRecursive(var).getVars();
         int n = 0;
-        for(ITermVar rep : reps.elementSet()) {
+        for(ITermVar rep : reps) {
             n += vars.count(rep);
         }
         return n;
@@ -79,7 +79,7 @@ public class VarMultiset {
         return vars.size();
     }
 
-    public Set<ITermVar> varSet() {
+    public java.util.Set<ITermVar> varSet() {
         return Collections.unmodifiableSet(vars.elementSet());
     }
 
@@ -94,7 +94,7 @@ public class VarMultiset {
     public boolean update(final ITermVar var, IUnifier unifier) {
         final int n = vars.remove(var, vars.count(var));
         if(n > 0) {
-            final Multiset<ITermVar> reps = unifier.findRecursive(var).getVars();
+            final Set.Immutable<ITermVar> reps = unifier.findRecursive(var).getVars();
             for(ITermVar rep : reps) {
                 vars.add(rep, n);
             }

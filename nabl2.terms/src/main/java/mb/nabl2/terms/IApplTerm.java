@@ -2,8 +2,6 @@ package mb.nabl2.terms;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
 public interface IApplTerm extends ITerm {
 
     String getOp();
@@ -12,6 +10,6 @@ public interface IApplTerm extends ITerm {
 
     List<ITerm> getArgs();
 
-    @Override IApplTerm withAttachments(ImmutableClassToInstanceMap<Object> value);
+    @Override IApplTerm withAttachments(IAttachments value);
 
 }

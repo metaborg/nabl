@@ -7,12 +7,15 @@ import org.metaborg.util.functions.Function1;
 import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.IFuture;
 
+/**
+ * Interface through which an actor implementation interacts with the underlying actor.
+ */
 public interface IActor<T> extends IActorRef<T> {
 
     /**
      * Start a sub actor.
      */
-    <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier);
+    <U> IActorRef<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier);
 
     /**
      * Get the async interface to an actor to send messages.
@@ -25,14 +28,16 @@ public interface IActor<T> extends IActorRef<T> {
     T local();
 
     /**
-     * Complete future as a message.
-     */
-    <U> void complete(ICompletable<U> completable, U value, Throwable ex);
-
-    /**
-     * Schedule future to be dispatched as a message on completion.
+     * Schedule handling of the given future as if it was sent as a message. Handlers attached to the returned future
+     * are not executed immediately, but scheduled later, at some time after processing the current message has
+     * finished.
      */
     <U> IFuture<U> schedule(IFuture<U> future);
+
+    /**
+     * Schedule completion of the given completable as if it was sent as a message.
+     */
+    <U> void complete(ICompletable<U> completable, U result, Throwable ex);
 
     /**
      * Get sender of the current message being handled.
@@ -45,13 +50,10 @@ public interface IActor<T> extends IActorRef<T> {
     @Nullable <U> IActorRef<U> sender(TypeTag<U> type);
 
     /**
-     * Add a monitor.
+     * Assertion that checks it is executed on the actors thread.
      */
-    void addMonitor(IActorMonitor monitor);
+    void assertOnActorThread();
 
-    /**
-     * Stop the actor.
-     */
-    void stop();
+    IActorStats stats();
 
 }

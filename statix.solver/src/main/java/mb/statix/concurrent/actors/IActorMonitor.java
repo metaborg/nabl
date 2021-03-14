@@ -1,49 +1,29 @@
 package mb.statix.concurrent.actors;
 
-import java.util.Set;
-
 public interface IActorMonitor {
 
     /**
      * Actor is started.
      */
-    default void started(IActor<?> self) {
-    }
-
-    /**
-     * Actor sent a message to another actor.
-     */
-    default void sent(IActor<?> self, IActorRef<?> target, Set<String> tags) {
-    }
-
-    /**
-     * Actor delivered a message from another actor.
-     */
-    default void delivered(IActor<?> self, IActorRef<?> source, Set<String> tags) {
+    default void started() {
     }
 
     /**
      * Actor suspended.
      */
-    default void suspended(IActor<?> self) {
+    default void suspended() {
     }
 
     /**
      * Actor resumed.
      */
-    default void resumed(IActor<?> self) {
+    default void resumed() {
     }
 
     /**
-     * Actor stopped.
+     * Actor stopped or failed.
      */
-    default void stopped(IActor<?> self) {
-    }
-
-    /**
-     * Actor failed.
-     */
-    default void failed(IActor<?> self, Throwable ex) {
+    default void stopped(@SuppressWarnings("unused") Throwable ex) {
     }
 
 }

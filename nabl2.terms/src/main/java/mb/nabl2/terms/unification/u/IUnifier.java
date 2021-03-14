@@ -3,12 +3,16 @@ package mb.nabl2.terms.unification.u;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import io.usethesource.capsule.Map;
+import org.metaborg.util.functions.Predicate1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
 
 /**
@@ -61,14 +65,19 @@ public interface IUnifier {
     boolean contains(ITermVar var);
 
     /**
-     * Return the domain of this unifier.
+     * Return the domain of this unifier, i.e., all bound variables.
      */
-    Set.Immutable<ITermVar> varSet();
+    Set.Immutable<ITermVar> domainSet();
 
     /**
-     * Return the set of free variables appearing in this unifier.
+     * Return the range of this unifier, i.e., all free variables.
      */
-    Set.Immutable<ITermVar> freeVarSet();
+    Set.Immutable<ITermVar> rangeSet();
+
+    /**
+     * Return the set of all variables appearing in this unifier.
+     */
+    Set.Immutable<ITermVar> varSet();
 
     /**
      * Test if the unifier contains any cycles.
@@ -127,12 +136,20 @@ public interface IUnifier {
     /**
      * Return a string representation of the given term.
      */
-    String toString(ITerm term);
+    String toString(ITerm term, SpecializedTermFormatter specializedTermFormatter);
+
+    default String toString(ITerm term) {
+        return toString(term, (t, u, f) -> Optional.empty());
+    }
 
     /**
      * Return a string representation of the given term, up to a certain term depth.
      */
-    String toString(ITerm term, int n);
+    String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter);
+
+    default String toString(ITerm term, int n) {
+        return toString(term, n, (t, u, f) -> Optional.empty());
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // Methods on a single term
@@ -147,11 +164,10 @@ public interface IUnifier {
      */
     Optional<? extends IUnifier.Immutable> diff(ITerm term1, ITerm term2);
 
-    ///////////////////////////////////////////
-    // asMap()
-    ///////////////////////////////////////////
-
-    Map.Immutable<ITermVar, ITerm> equalityMap();
+    /**
+     * Return if two terms are equal, relative to the current unifier.
+     */
+    boolean equal(ITerm term1, ITerm term2);
 
 
     public interface Immutable extends IUnifier {
@@ -163,18 +179,46 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Result<? extends Immutable>> unify(ITerm term1, ITerm term2) throws OccursException;
+        default Optional<? extends Result<? extends Immutable>> unify(ITerm term1, ITerm term2) throws OccursException {
+            try {
+                return unify(term1, term2, Predicate1.never());
+            } catch(RigidException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        Optional<? extends Result<? extends Immutable>> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException;
 
         /**
          * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Result<? extends Immutable>> unify(IUnifier other) throws OccursException;
+        default Optional<? extends Result<? extends Immutable>> unify(IUnifier other) throws OccursException {
+            try {
+                return unify(other, Predicate1.never());
+            } catch(RigidException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        Optional<? extends Result<? extends Immutable>> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException;
 
         /**
          * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Result<? extends Immutable>>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException;
+        default Optional<? extends Result<? extends Immutable>>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
+            try {
+                return unify(equalities, Predicate1.never());
+            } catch(RigidException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        Optional<? extends Result<? extends Immutable>> unify(
+                Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException;
 
         /**
          * Return a substitution that only retains the given variable in the domain. Also returns a substitution to
@@ -196,9 +240,14 @@ public interface IUnifier {
 
         /**
          * Return a unifier with the given variables removed from the domain. Returns a substitution to eliminate the
-         * variable from terms.
+         * variable from terms. Note that removal never unifies terms or variables that were not already unified before.
          */
         Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars);
+
+        /**
+         * Apply a variable renaming to this unifier.
+         */
+        IUnifier.Immutable rename(IRenaming renaming);
 
         /**
          * Return transient version of this unifier.
@@ -227,18 +276,45 @@ public interface IUnifier {
         /**
          * Unify the two input terms. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Immutable> unify(ITerm term1, ITerm term2) throws OccursException;
+        default Optional<? extends Immutable> unify(ITerm term1, ITerm term2) throws OccursException {
+            try {
+                return unify(term1, term2, Predicate1.never());
+            } catch(RigidException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        Optional<? extends Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException;
 
         /**
          * Unify with the given unifier. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Immutable> unify(IUnifier other) throws OccursException;
+        default Optional<? extends Immutable> unify(IUnifier other) throws OccursException {
+            try {
+                return unify(other, Predicate1.never());
+            } catch(RigidException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        Optional<? extends Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException;
 
         /**
          * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
          */
-        Optional<? extends Immutable> unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities)
-                throws OccursException;
+        default Optional<? extends Immutable>
+                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
+            try {
+                return unify(equalities, Predicate1.never());
+            } catch(RigidException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        Optional<? extends Immutable> unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException;
 
         /**
          * Retain only the given variable in the domain of this unifier. Returns a substitution to eliminate the removed

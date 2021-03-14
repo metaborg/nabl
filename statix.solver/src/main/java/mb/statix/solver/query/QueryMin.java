@@ -3,9 +3,7 @@ package mb.statix.solver.query;
 import java.io.Serializable;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -15,7 +13,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.spec.Rule;
 
-public class QueryMin implements IQueryMin, Serializable {
+public class QueryMin implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IRelation.Immutable<EdgeOrData<ITerm>> labelOrd;
@@ -26,29 +24,27 @@ public class QueryMin implements IQueryMin, Serializable {
         this.dataOrd = dataConstraint;
     }
 
-    @Override public IRelation<EdgeOrData<ITerm>> getLabelOrder() {
+    public IRelation.Immutable<EdgeOrData<ITerm>> getLabelOrder() {
         return labelOrd;
     }
 
-    @Override public Rule getDataEquiv() {
+    public Rule getDataEquiv() {
         return dataOrd;
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(dataOrd.varSet());
-        return vars.build();
+    public Set.Immutable<ITermVar> getVars() {
+        return dataOrd.varSet();
     }
 
-    @Override public IQueryMin apply(ISubstitution.Immutable subst) {
+    public QueryMin apply(ISubstitution.Immutable subst) {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }
 
-    @Override public IQueryMin apply(IRenaming subst) {
+    public QueryMin apply(IRenaming subst) {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }
 
-    @Override public String toString(TermFormatter termToString) {
+    public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("min ");
         sb.append(labelOrd);
@@ -61,17 +57,16 @@ public class QueryMin implements IQueryMin, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        QueryMin queryMin = (QueryMin)o;
-        return Objects.equals(labelOrd, queryMin.labelOrd) &&
-            Objects.equals(dataOrd, queryMin.dataOrd);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        QueryMin queryMin = (QueryMin) o;
+        return Objects.equals(labelOrd, queryMin.labelOrd) && Objects.equals(dataOrd, queryMin.dataOrd);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(labelOrd, dataOrd);
     }
 }

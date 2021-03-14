@@ -1,0 +1,7 @@
+module statix/runtime/Main
+
+imports
+
+  statix/API
+  statix/runtime/ATerm
+  statix/runtime/ScopeGraph

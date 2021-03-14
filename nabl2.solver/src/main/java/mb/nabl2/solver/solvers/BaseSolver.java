@@ -83,7 +83,7 @@ public class BaseSolver {
             final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component);
 
             solver.step().subscribe(r -> {
-                final Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
+                final Immutable<ITermVar> vars = r.result.unifierDiff().domainSet();
                 if(!vars.isEmpty()) {
                     try {
                         final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);

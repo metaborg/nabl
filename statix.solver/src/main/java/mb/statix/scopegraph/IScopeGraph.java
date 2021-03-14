@@ -11,7 +11,7 @@ import io.usethesource.capsule.Set;
 
 public interface IScopeGraph<S, L, D> {
 
-    Set.Immutable<L> getEdgeLabels();
+    Set<L> getLabels();
 
     Map<? extends Entry<S, L>, ? extends Iterable<S>> getEdges();
 
@@ -27,6 +27,8 @@ public interface IScopeGraph<S, L, D> {
     }
 
     interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
+
+        @Override Set.Immutable<L> getLabels();
 
         Immutable<S, L, D> addEdge(S sourceScope, L label, S targetScope);
 

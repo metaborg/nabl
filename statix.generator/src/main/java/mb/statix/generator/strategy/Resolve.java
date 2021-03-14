@@ -90,6 +90,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
         final NameResolution<Scope, ITerm, ITerm, CEqual> nameResolution = new NameResolution<>(
                 ctx.spec(),
                 state.scopeGraph(),
+                ctx.spec().allLabels(),
                 labelWF, labelOrd, 
                 dataWF, isAlways, isComplete);
         // @formatter:on
@@ -139,7 +140,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                         env.rejects.forEach(subEnvBuilder::reject);
                         final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
                         final List<ITerm> pathTerms =
-                                subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path, ctx.spec().dataLabels()))
+                                subEnv.matches.stream().map(m -> StatixTerms.pathToTerm(m.path, ctx.spec().dataLabels()))
                                         .collect(ImmutableList.toImmutableList());
                         final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
                         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
@@ -148,7 +149,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                                 .forEach(condition -> constraints
                                         .add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
                                                 condition.cause().orElse(null), condition.message().orElse(null))));
-                        final SearchState newState = input.update(constraints.build(), Iterables2.singleton(query));
+                        final SearchState newState = input.update(ctx.spec(), constraints.build(), Iterables2.singleton(query));
                         return new SearchNode<>(ctx.nextNodeId(), newState, node,
                                 "resolve[" + (idx + 1) + "/" + count.get() + "]");
                     }));

@@ -1,13 +1,11 @@
 package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.unification.UnifierTests.assertSame;
+import static mb.nabl2.terms.unification.UnifierTests.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
-import java.util.Optional;
 
 import org.junit.Test;
 import org.metaborg.util.iterators.Iterables2;
@@ -17,7 +15,9 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
+import mb.nabl2.util.CapsuleUtil;
 
 @SuppressWarnings("unused")
 public class UniDisunifierFiniteTest {
@@ -26,6 +26,9 @@ public class UniDisunifierFiniteTest {
     private final ITermVar b = B.newVar("", "b");
     private final ITermVar c = B.newVar("", "c");
     private final ITermVar d = B.newVar("", "d");
+    private final ITermVar u = B.newVar("", "u");
+    private final ITermVar v = B.newVar("", "v");
+    private final ITermVar w = B.newVar("", "w");
 
     private final String f = "f";
     private final String g = "g";
@@ -216,7 +219,7 @@ public class UniDisunifierFiniteTest {
         assertSame(phi.freeze(), theta.freeze());
     }
 
-    @Test(/*timeout = 10000*/) public void testVariableDisunify() throws OccursException {
+    @Test(timeout = 10000) public void testVariableDisunify() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         assertPresent(phi.disunify(a, b));
         assertAbsent(phi.diff(a, b));
@@ -286,7 +289,7 @@ public class UniDisunifierFiniteTest {
         assertAbsent(phi.disunify(a, b));
     }
 
-    @Test(/*timeout = 10000*/) public void testRemoveDisunifiedVar() throws OccursException {
+    @Test(timeout = 10000) public void testRemoveDisunifiedVar() throws OccursException {
         IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
         assertPresent(phi.disunify(a, b));
         assertPresent(phi.unify(a, c));
@@ -309,12 +312,157 @@ public class UniDisunifierFiniteTest {
         assertAbsent(phi.unify(c, B.newAppl(f, x)));
     }
 
-    private static <X> void assertPresent(Optional<X> opt) {
-        assertTrue(opt.isPresent());
+    @Test(timeout = 10000) public void testUniversalDisequalityShadowingVar() throws OccursException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(Iterables2.singleton(a), b, B.newAppl(f, a)));
+        assertPresent(phi.unify(a, x));
+        assertAbsent(phi.unify(b, B.newAppl(f, y)));
     }
 
-    private static <X> void assertAbsent(Optional<X> opt) {
-        assertFalse(opt.isPresent());
+    @Test(timeout = 10000) public void testDirectlyUnifyRigidVar() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a);
+        assertPresent(phi.unify(a, b, rigidVars::contains));
+    }
+
+    @Test(expected = RigidException.class, timeout = 10000) public void testDirectlyUnifyRigidVars()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a, b);
+        phi.unify(a, b, rigidVars::contains);
+    }
+
+    @Test(expected = RigidException.class, timeout = 10000) public void testIndirectlyUnifyRigidVars()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a, b);
+        assertPresent(phi.unify(c, a, rigidVars::contains));
+        phi.unify(c, b, rigidVars::contains);
+    }
+
+    @Test(expected = RigidException.class, timeout = 10000) public void testDisunifyRigidVars()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a, b);
+        phi.disunify(a, b, rigidVars::contains);
+    }
+
+    @Test(expected = RigidException.class, timeout = 10000) public void testDisunifyRigidVarTerm()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a);
+        phi.unify(a, x, rigidVars::contains);
+    }
+
+    @Test(timeout = 10000) public void testUnifyImpliedDiseqOfRigidVars() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a, b);
+        assertPresent(phi.unify(a, b)); // no rigid vars, 
+        assertPresent(phi.unify(a, b, rigidVars::contains));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyImpliedByDiseqOfRigidVars() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(a, b);
+        assertPresent(phi.disunify(a, b)); // no rigid vars, 
+        assertPresent(phi.disunify(a, b, rigidVars::contains));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyOfRigidVarImpliedUniversalDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        final Set.Immutable<ITermVar> rigidVars = Set.Immutable.of(b);
+        assertPresent(phi.disunify(Set.Immutable.of(a), b, B.newList(a)));
+        assertPresent(phi.disunify(b, B.newList(x), rigidVars::contains));
+    }
+
+    @Test(timeout = 10000) public void testDiseqVarSets1() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
+        assertPresent(phi.disunify(Set.Immutable.of(a), b, B.newList(a)));
+        assertEquals(CapsuleUtil.toSet(b), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(b), phi.rangeSet());
+    }
+
+    @Test(timeout = 10000) public void testDiseqVarSets2() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
+        assertPresent(phi.disunify(Set.Immutable.of(), B.newTuple(a, b), B.newTuple(c, d)));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.rangeSet());
+
+        assertPresent(phi.unify(a, B.newInt(1)));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(a), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(b, c, d), phi.rangeSet());
+
+        assertPresent(phi.unify(c, B.newInt(2)));
+        assertEquals(CapsuleUtil.toSet(a, c), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(a, c), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(), phi.rangeSet());
+    }
+
+    @Test(timeout = 10000) public void testDiseqVarSets3() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
+        assertPresent(phi.disunify(B.newTuple(a, b), B.newTuple(c, d)));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.rangeSet());
+
+        assertPresent(phi.unify(a, c));
+        assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
+        assertTrue(phi.rangeSet().contains(b));
+        assertTrue(phi.rangeSet().contains(d));
+
+        assertPresent(phi.disunify(B.newTuple(b, u), B.newTuple(d, v))); // implied
+        assertFalse(phi.rangeSet().contains(u));
+        assertFalse(phi.rangeSet().contains(v));
+    }
+
+    @Test(timeout = 10000) public void testDiseqVarSets4() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+
+        assertPresent(phi.disunify(a, b));
+        assertEquals(CapsuleUtil.toSet(a, b), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(a, b), phi.rangeSet());
+
+        assertPresent(phi.unify(a, c));
+        assertEquals(CapsuleUtil.toSet(a, b, c), phi.varSet());
+        assertXor(phi.domainSet().contains(a) && phi.rangeSet().contains(c),
+                phi.rangeSet().contains(a) && phi.domainSet().contains(c));
+        assertContains(b, phi.rangeSet());
+
+        phi.remove(c);
+        assertEquals(CapsuleUtil.toSet(a, b), phi.varSet());
+        assertEquals(CapsuleUtil.toSet(), phi.domainSet());
+        assertEquals(CapsuleUtil.toSet(a, b), phi.rangeSet());
+    }
+
+    @Test(timeout = 10000) public void testUnifyWithUnrelatedExistingRigidDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, x));
+        assertPresent(phi.unify(b, y, v -> v.equals(a)));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyRigidImpliedByExistingDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, x));
+        assertPresent(phi.disunify(a, x, v -> v.equals(a)));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyVariableTwice() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, B.newList(c)));
+        assertAbsent(phi.unify(a, b));
+        assertAbsent(phi.unify(a, B.newList(c)));
+        assertPresent(phi.unify(b, B.newList(c)));
     }
 
 }

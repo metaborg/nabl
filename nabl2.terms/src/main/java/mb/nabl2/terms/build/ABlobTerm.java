@@ -5,12 +5,12 @@ import java.util.Objects;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.collect.ImmutableMultiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.CapsuleUtil;
 
-@Value.Immutable(builder = false, copy = true, prehash = false)
+@Value.Immutable(builder = true, copy = true, prehash = false)
 @Serial.Version(value = 42L)
 abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
 
@@ -20,8 +20,8 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
         return true;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public <T> T match(Cases<T> cases) {
@@ -32,17 +32,25 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
         return cases.caseBlob(this);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(
-            getValue()
-        );
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getValue());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof IBlobTerm)) return false;
-        IBlobTerm that = (IBlobTerm)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof IBlobTerm))
+            return false;
+        IBlobTerm that = (IBlobTerm) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return Objects.equals(this.getValue(), that.getValue());
         // @formatter:on

@@ -61,7 +61,7 @@ public abstract class AMessageInfo implements IMessageInfo {
     }
 
     public static MessageInfo empty() {
-        return MessageInfo.of(MessageKind.ERROR, MessageContent.of(), B.EMPTY_TUPLE);
+        return MessageInfo.of(MessageKind.ERROR, MessageContent.of(), B.newTuple());
     }
 
     @Override public String toString() {

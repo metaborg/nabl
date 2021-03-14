@@ -1,14 +1,22 @@
 package mb.nabl2.terms;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-
-public interface ITermVar extends ITerm, IListTerm {
+public interface ITermVar extends ITerm, IListTerm, Comparable<ITermVar> {
 
     String getResource();
 
     String getName();
 
-    @Override
-    ITermVar withAttachments(ImmutableClassToInstanceMap<Object> value);
+    @Override ITermVar withAttachments(IAttachments value);
+
+    @Override default int compareTo(ITermVar other) {
+        int c = 0;
+        if(c == 0) {
+            c = getResource().compareTo(other.getResource());
+        }
+        if(c == 0) {
+            c = getName().compareTo(other.getName());
+        }
+        return c;
+    }
 
 }

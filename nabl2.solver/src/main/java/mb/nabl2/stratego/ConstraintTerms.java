@@ -8,15 +8,16 @@ import java.util.List;
 
 import org.metaborg.util.Ref;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
 public class ConstraintTerms {
@@ -31,13 +32,17 @@ public class ConstraintTerms {
     /**
      * Specialize appl's of NaBL2 constructors for variables and lists to actual variables and lists.
      */
-    public static ITerm specialize(ITerm term) {
+    public static ITerm specialize(final ITerm term) {
         // fromStratego
         // @formatter:off
-        term = term.match(Terms.cases(
+        ITerm newTerm = term.match(Terms.cases(
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> specialize(arg)).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args);
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(specialize(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), term.getAttachments());
             },
             list -> specializeList(list),
             string -> string,
@@ -47,22 +52,22 @@ public class ConstraintTerms {
         )).withAttachments(term.getAttachments());
         // @formatter:on
         // @formatter:off
-        term = M.preserveAttachments(M.<ITerm>cases(
+        newTerm = M.preserveAttachments(M.<ITerm>cases(
             M.appl2(VAR_CTOR, M.stringValue(), M.stringValue(), (v, resource, name) ->
                     B.newVar(resource, name)),
             M.appl1(LIST_CTOR, M.list(), (t, xs) ->
                     xs),
             M.appl2(LISTTAIL_CTOR, M.listElems(), M.term(), (t, xs, ys) ->
                     B.newListTail(xs, (IListTerm) ys))
-        )).match(term).orElse(term);
+        )).match(newTerm).orElse(newTerm);
         // @formatter:on
-        return term;
+        return newTerm;
     }
 
     private static IListTerm specializeList(IListTerm list) {
         // fromStrategoList
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final List<ITerm> terms = Lists.newArrayListWithExpectedSize(list.getMinSize());
+        final List<IAttachments> attachments = Lists.newArrayListWithCapacity(list.getMinSize());
         final Ref<ITermVar> varTail = new Ref<>();
         while(list != null) {
             // @formatter:off
@@ -101,8 +106,12 @@ public class ConstraintTerms {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                List<ITerm> args = appl.getArgs().stream().map(arg -> explicate(arg)).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args);
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(explicate(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), term.getAttachments());
             },
             list -> explicate(list),
             string -> string,
@@ -115,8 +124,8 @@ public class ConstraintTerms {
 
     private static ITerm explicate(IListTerm list) {
         // toStrategoList
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final List<ITerm> terms = Lists.newArrayListWithExpectedSize(list.getMinSize());
+        final List<IAttachments> attachments = Lists.newArrayListWithExpectedSize(list.getMinSize());
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             // @formatter:off
@@ -132,7 +141,7 @@ public class ConstraintTerms {
                 },
                 var -> {
                     varTail.set(explicate(var));
-                    attachments.add(ImmutableClassToInstanceMap.builder().build());
+                    attachments.add(Attachments.empty()); // necessary?
                     return null;
                 }
             ));
@@ -140,7 +149,7 @@ public class ConstraintTerms {
         }
         list = B.newList(terms, attachments);
         if(varTail.get() != null) {
-            return B.newAppl(LISTTAIL_CTOR, list, varTail.get());
+            return B.newAppl(LISTTAIL_CTOR, ImmutableList.of(list, varTail.get()));
         } else {
             return list;
         }

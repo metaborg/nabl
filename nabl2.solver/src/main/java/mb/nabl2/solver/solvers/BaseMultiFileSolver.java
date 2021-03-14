@@ -55,7 +55,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         super(nabl2Debug, callExternal);
     }
 
-    public ISolution solveIntra(GraphSolution initial, Collection<ITermVar> intfVars,
+    public ISolution solveIntra(GraphSolution initial, Iterable<ITermVar> intfVars,
             @Nullable Collection<Scope> intfScopes, Function1<String, String> fresh, ICancel cancel, IProgress progress)
             throws SolverException, InterruptedException {
         final SolverConfig config = initial.config();
@@ -98,7 +98,7 @@ public class BaseMultiFileSolver extends BaseSolver {
         final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component);
 
         solver.step().subscribe(r -> {
-            Set.Immutable<ITermVar> vars = r.result.unifierDiff().varSet();
+            Set.Immutable<ITermVar> vars = r.result.unifierDiff().domainSet();
             if(!vars.isEmpty()) {
                 try {
                     final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);

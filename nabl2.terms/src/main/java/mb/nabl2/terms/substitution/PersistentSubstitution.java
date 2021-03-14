@@ -7,11 +7,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.metaborg.util.iterators.Iterables2;
-
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -31,8 +30,12 @@ public abstract class PersistentSubstitution implements ISubstitution {
         return subst().containsKey(var);
     }
 
-    @Override public Set<ITermVar> varSet() {
+    @Override public Set<ITermVar> domainSet() {
         return subst().keySet();
+    }
+
+    @Override public Set<ITermVar> rangeSet() {
+        return subst().values().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
     @Override public Set<Entry<ITermVar, ITerm>> entrySet() {
@@ -43,8 +46,12 @@ public abstract class PersistentSubstitution implements ISubstitution {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final List<ITerm> args = appl.getArgs().stream().map(this::apply).collect(ImmutableList.toImmutableList());
-                return B.newAppl(appl.getOp(), args, appl.getAttachments());
+                final List<ITerm> args = appl.getArgs();
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                for(ITerm arg : args) {
+                    newArgs.add(apply(arg));
+                }
+                return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
             },
             list -> apply(list),
             string -> string,
@@ -93,14 +100,18 @@ public abstract class PersistentSubstitution implements ISubstitution {
 
         @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
-            Iterables2.stream(vars).forEach(subst::__remove);
+            for(ITermVar v : vars) {
+                subst.__remove(v);
+            }
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
         @Override public ISubstitution.Immutable compose(ISubstitution.Immutable other) {
             final Map.Transient<ITermVar, ITerm> subst = this.subst.asTransient();
             CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
-            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+            for(Entry<ITermVar, ITerm> e : other.removeAll(subst.keySet()).entrySet()) {
+                subst.__put(e.getKey(), e.getValue());
+            }
             return new PersistentSubstitution.Immutable(subst.freeze());
         }
 
@@ -147,12 +158,16 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         @Override public void removeAll(Iterable<ITermVar> vars) {
-            Iterables2.stream(vars).forEach(subst::remove);
+            for(ITermVar v : vars) {
+                subst.remove(v);
+            }
         }
 
         @Override public void compose(ISubstitution.Immutable other) {
             CapsuleUtil.updateValues(subst, (v, t) -> other.apply(t));
-            other.removeAll(subst.keySet()).entrySet().forEach(e -> subst.__put(e.getKey(), e.getValue()));
+            for(Entry<ITermVar, ITerm> e : other.removeAll(subst.keySet()).entrySet()) {
+                subst.__put(e.getKey(), e.getValue());
+            }
         }
 
         @Override public void compose(ITermVar var, ITerm term) {

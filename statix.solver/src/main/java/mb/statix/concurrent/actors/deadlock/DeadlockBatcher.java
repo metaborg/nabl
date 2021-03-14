@@ -7,7 +7,6 @@ import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.collections.MultiSetMap;
-import mb.nabl2.util.collections.MultiSetMap.Immutable;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 
@@ -15,88 +14,99 @@ import mb.statix.concurrent.actors.IActorRef;
  * Actors can use this class to locally batch wait-for/grant operations and only send them to the deadlock monitor on
  * suspend, thereby reducing messages.
  */
-public class DeadlockBatcher<N, S, T> implements IDeadlockMonitor<N, S, T> {
+public class DeadlockBatcher<N, T> {
 
     private static final ILogger logger = LoggerUtils.logger(DeadlockBatcher.class);
 
     private final IActor<? extends N> self;
-    private final IActorRef<? extends IDeadlockMonitor<N, S, T>> dlm;
+    private final IActorRef<? extends IDeadlockMonitor<N>> dlm;
 
-    private final MultiSetMap.Transient<IActorRef<? extends N>, T> committedWaitFors;
-    private final MultiSetMap.Transient<IActorRef<? extends N>, T> pendingWaitFors;
-    private final MultiSetMap.Transient<IActorRef<? extends N>, T> pendingGrants;
+    private MultiSet.Immutable<T> waitFors;
+    private MultiSetMap.Immutable<IActorRef<? extends N>, T> waitForsByActor;
+    private MultiSet.Immutable<IActorRef<? extends N>> committedWaitFors;
+    private MultiSet.Immutable<IActorRef<? extends N>> pendingWaitFors;
+    private MultiSet.Immutable<IActorRef<? extends N>> pendingGrants;
 
-    public DeadlockBatcher(IActor<? extends N> self, IActorRef<? extends IDeadlockMonitor<N, S, T>> dlm) {
+    public DeadlockBatcher(IActor<? extends N> self, IActorRef<? extends IDeadlockMonitor<N>> dlm) {
         this.self = self;
         this.dlm = dlm;
 
-        this.committedWaitFors = MultiSetMap.Transient.of();
-        this.pendingWaitFors = MultiSetMap.Transient.of();
-        this.pendingGrants = MultiSetMap.Transient.of();
+        this.waitFors = MultiSet.Immutable.of();
+        this.waitForsByActor = MultiSetMap.Immutable.of();
+        this.committedWaitFors = MultiSet.Immutable.of();
+        this.pendingWaitFors = MultiSet.Immutable.of();
+        this.pendingGrants = MultiSet.Immutable.of();
     }
 
-    public boolean isWaitingFor(IActorRef<? extends N> actor, T token) {
-        return pendingWaitFors.contains(actor, token) || committedWaitFors.contains(actor, token);
+    public boolean isWaiting() {
+        return !waitFors.isEmpty();
     }
 
     public boolean isWaitingFor(T token) {
-        return pendingWaitFors.containsValue(token) || committedWaitFors.containsValue(token);
+        return waitFors.contains(token);
     }
 
-    @Override public void waitFor(IActorRef<? extends N> actor, T token) {
-        logger.debug("wait for {}/{}", actor, token);
-        pendingWaitFors.put(actor, token);
+    public MultiSet.Immutable<T> getTokens(IActorRef<? extends N> actor) {
+        return waitForsByActor.get(actor);
     }
 
-    @Override public void granted(IActorRef<? extends N> actor, T token) {
-        if(pendingWaitFors.contains(actor, token)) {
-            logger.debug("locally granted {}/{}", actor, token);
-            pendingWaitFors.remove(actor, token);
-        } else {
-            if(!committedWaitFors.contains(actor, token)) {
-                logger.error("not waiting for granted {}/{}", actor, token);
-                throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
-            }
-            logger.debug("granted {}/{}", actor, token);
-            committedWaitFors.remove(actor, token);
-            pendingGrants.put(actor, token);
-        }
-    }
-
-    @Override public void suspended(S state, Clock<IActorRef<? extends N>> clock,
-            Immutable<IActorRef<? extends N>, T> waitFors, Immutable<IActorRef<? extends N>, T> grants) {
-        processBatchedWaitFors(waitFors, grants);
-        self.async(dlm).suspended(state, clock, commitWaitFors(), pendingGrants.clear());
-    }
-
-    @Override public void stopped(Clock<IActorRef<? extends N>> clock, Immutable<IActorRef<? extends N>, T> waitFors,
-            Immutable<IActorRef<? extends N>, T> grants) {
-        processBatchedWaitFors(waitFors, grants);
-        self.async(dlm).stopped(clock, commitWaitFors(), pendingGrants.clear());
-    }
-
-    private void processBatchedWaitFors(MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors,
-            MultiSetMap.Immutable<IActorRef<? extends N>, T> grants) {
-        // Process batch waitFors and grantes. Process waitFors first, in case the client
-        // does not discharge waitFors locally, but really only batches.
-        for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> waitForEntry : waitFors.toMap().entrySet()) {
-            for(T waitFor : waitForEntry.getValue()) {
-                waitFor(waitForEntry.getKey(), waitFor);
-            }
-        }
-        for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> grantedEntry : grants.toMap().entrySet()) {
-            for(T granted : grantedEntry.getValue()) {
-                granted(grantedEntry.getKey(), granted);
-            }
-        }
-    }
-
-    private MultiSetMap.Immutable<IActorRef<? extends N>, T> commitWaitFors() {
-        final MultiSetMap.Immutable<IActorRef<? extends N>, T> waitFors = pendingWaitFors.clear();
-        for(Entry<IActorRef<? extends N>, MultiSet.Immutable<T>> entry : waitFors.toMap().entrySet()) {
-            committedWaitFors.putAll(entry.getKey(), entry.getValue());
-        }
+    public MultiSet.Immutable<T> getAllTokens() {
         return waitFors;
+    }
+
+    public void waitFor(IActorRef<? extends N> actor, T token) {
+        logger.debug("{} wait for {}/{}", self, actor, token);
+        waitFors = waitFors.add(token);
+        waitForsByActor = waitForsByActor.put(actor, token);
+        pendingWaitFors = pendingWaitFors.add(actor);
+    }
+
+    public void granted(IActorRef<? extends N> actor, T token) {
+        if(!waitForsByActor.contains(actor, token)) {
+            logger.error("{} not waiting for granted {}/{}", self, actor, token);
+            throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
+        }
+        waitFors = waitFors.remove(token);
+        waitForsByActor = waitForsByActor.remove(actor, token);
+        if(pendingWaitFors.contains(actor)) {
+            logger.debug("{} locally granted {}/{}", self, actor, token);
+            pendingWaitFors = pendingWaitFors.remove(actor);
+        } else if(committedWaitFors.contains(actor)) {
+            logger.debug("{} granted {}/{}", self, actor, token);
+            final MultiSet.Transient<IActorRef<? extends N>> _committedWaitFors = committedWaitFors.melt();
+            final int n = _committedWaitFors.remove(actor);
+            if(n == 1) {
+                pendingGrants = pendingGrants.add(actor);
+            }
+            committedWaitFors = _committedWaitFors.freeze();
+        } else {
+            logger.error("waitFors out of sync with {pending,committed}WaitFors.");
+            throw new IllegalStateException("waitFors out of sync with {pending,committed}WaitFors.");
+        }
+    }
+
+    public void suspended(Clock<IActorRef<? extends N>> clock) {
+        self.async(dlm).suspended(clock, commitWaitFors(), commitGrants());
+    }
+
+    private MultiSet.Immutable<IActorRef<? extends N>> commitWaitFors() {
+        final MultiSet.Transient<IActorRef<? extends N>> newWaitFors = MultiSet.Transient.of();
+        final MultiSet.Transient<IActorRef<? extends N>> _committedWaitFors = committedWaitFors.melt();
+        for(Entry<IActorRef<? extends N>, Integer> entry : pendingWaitFors.entrySet()) {
+            final int n = _committedWaitFors.add(entry.getKey(), entry.getValue());
+            if(n == 0) {
+                newWaitFors.add(entry.getKey());
+            }
+        }
+        committedWaitFors = _committedWaitFors.freeze();
+        pendingWaitFors = MultiSet.Immutable.of();
+        return newWaitFors.freeze();
+    }
+
+    private MultiSet.Immutable<IActorRef<? extends N>> commitGrants() {
+        final MultiSet.Immutable<IActorRef<? extends N>> newGrants = pendingGrants;
+        pendingGrants = MultiSet.Immutable.of();
+        return newGrants;
     }
 
 }

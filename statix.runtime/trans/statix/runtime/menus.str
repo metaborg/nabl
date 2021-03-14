@@ -15,4 +15,14 @@ rules
     with
       filename := <guarantee-extension(|"scopegraph")> path
     ; sg := <stx--debug-scopegraph> a
-    ; result := <write-to-string> sg
+    ; result := <pp-Statix-ScopeGraph> sg
+
+  stx--make-project-library:
+      (_, _, _, path, project-path) -> (filename, result)
+    where
+      a* := <stx--get-project-analyses;map(Snd)>
+    with
+      filename := "project.stxlib"
+    ; sg := <stx--get-scopegraph;strip-annos> a*
+    ; s* := <collect-all(stx--is-scope);make-set> sg
+    ; result := Library([], s*, sg)

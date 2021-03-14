@@ -7,3 +7,6 @@ dependencies:
 runtime:
   nabl2:
     debug: analysis files custom
+sources:
+- language: StatixLang
+  directory: src

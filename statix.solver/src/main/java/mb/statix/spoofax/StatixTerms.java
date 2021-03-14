@@ -4,10 +4,12 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
-import java.util.Arrays;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,7 +20,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.optionals.Optionals;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -32,16 +33,20 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.terms.matching.Transform.T;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -65,17 +70,16 @@ import mb.statix.constraints.messages.Message;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.TermPart;
 import mb.statix.constraints.messages.TextPart;
+import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.path.IStep;
 import mb.statix.scopegraph.reference.EdgeOrData;
+import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.query.IQueryFilter;
-import mb.statix.solver.query.IQueryMin;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
-import mb.statix.spec.FreshVars;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
@@ -97,7 +101,7 @@ public class StatixTerms {
     public static IMatcher<Spec> spec() {
         return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
                 (t, edgeLabels, dataLabels, noRelationLabel, rules, ext) -> {
-                    return Spec.of(rules, edgeLabels, dataLabels, ext);
+                    return Spec.of(rules, edgeLabels, dataLabels, ext).precomputeCriticalEdges();
                 });
     }
 
@@ -168,8 +172,8 @@ public class StatixTerms {
                 }),
                 M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
                         (c, rel, filterTerm, minTerm, scope, result, msg) -> {
-                    final Optional<IQueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
-                    final Optional<IQueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                    final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                    final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
                     return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
                         return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
                     });
@@ -203,7 +207,7 @@ public class StatixTerms {
         return M.stringValue();
     }
 
-    public static IMatcher<IQueryFilter> queryFilter(ITerm rel) {
+    public static IMatcher<QueryFilter> queryFilter(ITerm rel) {
         final IRegExpBuilder<ITerm> builder = new RegExpBuilder<>();
         IMatcher<IRegExp<ITerm>> reMatcher = labelRE(builder);
         if(!isEOP(rel)) {
@@ -215,7 +219,7 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<IQueryMin> queryMin(ITerm rel) {
+    public static IMatcher<QueryMin> queryMin(ITerm rel) {
         IMatcher<IRelation.Immutable<EdgeOrData<ITerm>>> ltMatcher = labelLt();
         if(!isEOP(rel)) {
             // patch label order, replacing EOP with rel
@@ -338,14 +342,14 @@ public class StatixTerms {
                 return B.newTuple(args, t.getAttachments());
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
-                return B.newString(string, t.getAttachments());
+                return B.newString(Terms.unescapeString(string), t.getAttachments());
             }),
             intTerm(),
             listTerm(),
-            // SCOPE_OP -- has no syntax
-            // TERMINDEX_OP -- has no syntax
-            // NOID_OP -- has no syntax
-            // WITHID_OP -- has no syntax
+            M.appl(SCOPE_OP, t -> t),
+            M.appl(TERMINDEX_OP, t -> t),
+            M.appl(NOID_OP, t -> t),
+            M.appl(WITHID_OP, t -> t),
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
                 List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
@@ -382,13 +386,13 @@ public class StatixTerms {
         return M.casesFix(m -> Iterables2.from(
             varTerm(),
             M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
-                final List<ImmutableClassToInstanceMap<Object>> as = Lists.newArrayList();
+                final List<IAttachments> as = Lists.newArrayList();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 as.add(t.getAttachments());
                 return B.newList(elems, as);
             }),
             M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
-                final List<ImmutableClassToInstanceMap<Object>> as = Lists.newArrayList();
+                final List<IAttachments> as = Lists.newArrayList();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 return B.newListTail(elems, tail, as).withAttachments(t.getAttachments());
             })
@@ -398,7 +402,7 @@ public class StatixTerms {
 
     public static IMatcher<ITermVar> varTerm() {
         return M.preserveAttachments(M.appl1("Var", M.stringValue(), (t, name) -> {
-            return B.newVar("", name).withAttachments(t.getAttachments());
+            return B.newVar("", name, t.getAttachments());
         }));
     }
 
@@ -422,7 +426,7 @@ public class StatixTerms {
                 return P.newListTail(elems, tail, t.getAttachments());
             }),
             M.appl1("Str", M.stringValue(), (t, string) -> {
-                return P.newString(string, t.getAttachments());
+                return P.newString(Terms.unescapeString(string), t.getAttachments());
             }),
             M.appl1("Int", M.stringValue(), (t, integer) -> {
                 return P.newInt(Integer.parseInt(integer), t.getAttachments());
@@ -483,7 +487,7 @@ public class StatixTerms {
     public static IMatcher<List<IMessagePart>> messageContent() {
         // @formatter:off
         return M.cases(
-            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(text))),
+            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(Terms.unescapeString(text)))),
             M.appl1("Formatted", M.listElems(messagePart()), (t, parts) -> parts)
         );
         // @formatter:on
@@ -492,10 +496,48 @@ public class StatixTerms {
     public static IMatcher<IMessagePart> messagePart() {
         // @formatter:off
         return M.cases(
-            M.appl1("Text", M.stringValue(), (t, text) -> new TextPart(text)),
+            M.appl1("Text", M.stringValue(), (t, text) -> new TextPart(unescapeMessageText(text))),
             M.appl1("Term", term(), (t, term) -> new TermPart(term))
         );
         // @formatter:on
+    }
+
+    private static String unescapeMessageText(String text) {
+        final StringBuilder sb = new StringBuilder();
+        final StringCharacterIterator it = new StringCharacterIterator(text);
+        while(it.current() != CharacterIterator.DONE) {
+            char c1 = it.current();
+            if(c1 == '\\') {
+                char c2 = it.next();
+                if(c2 != CharacterIterator.DONE) {
+                    switch(c2) {
+                        case 'n':
+                            sb.append('\n');
+                            break;
+                        case 'r':
+                            sb.append('\r');
+                            break;
+                        case 't':
+                            sb.append('\t');
+                            break;
+                        case '[':
+                        case ']':
+                        case '\\':
+                            sb.append(c2);
+                            break;
+                        default:
+                            sb.append(c1).append(c2);
+                            break;
+                    }
+                } else {
+                    sb.append(c1);
+                }
+            } else {
+                sb.append(c1);
+            }
+            it.next();
+        }
+        return sb.toString();
     }
 
     public static IMatcher<MessageKind> messageKind() {
@@ -517,7 +559,37 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static ITerm explicate(ITerm term) {
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraph() {
+        return M.listElems(scopeEntry(), (t, scopeEntries) -> {
+            final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
+            for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>> se : scopeEntries) {
+                Scope s = se._1();
+                if(se._2().isPresent()) {
+                    scopeGraph.setDatum(s, se._2().get());
+                }
+                for(Entry<ITerm, List<Scope>> ee : se._3().entrySet()) {
+                    final ITerm lbl = ee.getKey();
+                    for(Scope tgt : ee.getValue()) {
+                        scopeGraph.addEdge(s, lbl, tgt);
+                    }
+                }
+            }
+            return scopeGraph.freeze();
+        });
+    }
+
+    public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>>> scopeEntry() {
+        return M.tuple3(Scope.matcher(), M.option(M.term()), M.map(label(), M.listElems(Scope.matcher())),
+                (t, scope, maybeDatum, edges) -> {
+                    return Tuple3.of(scope, maybeDatum, edges);
+                });
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static ITerm explode(ITerm term) {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
@@ -532,35 +604,35 @@ public class StatixTerms {
                     }
                     case OCCURRENCE_OP: {
                         final ITerm ns = appl.getArgs().get(0);
-                        final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
+                        final List<? extends ITerm> args = M.listElems().map(ts -> explode(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = explicatePosition(appl.getArgs().get(2));
-                        return B.newAppl(appl.getOp(), ns, B.newList(args), pos);
+                        final ITerm pos = explodePosition(appl.getArgs().get(2));
+                        return B.newAppl(appl.getOp(), ImmutableList.of(ns, B.newList(args), pos), term.getAttachments());
                     }
                     default: {
-                        final List<ITerm> args = explicate(appl.getArgs());
-                        return B.newAppl("Op", B.newString(appl.getOp()), B.newList(args));
+                        final List<ITerm> args = explode(appl.getArgs());
+                        return B.newAppl("Op", ImmutableList.of(B.newString(appl.getOp()), B.newList(args)), term.getAttachments());
                     }
                 }
             },
-            list -> explicate(list),
-            string -> B.newAppl("Str", string),
-            integer -> B.newAppl("Int", B.newString(integer.toString())),
-            blob -> B.newString(blob.toString()),
-            var -> explicate(var)
+            list -> explode(list),
+            string -> B.newAppl("Str", ImmutableList.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
+            integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
+            blob -> B.newString(blob.toString(), term.getAttachments()),
+            var -> explode(var)
         )).withAttachments(term.getAttachments());
         // @formatter:on
     }
 
-    private static ITerm explicate(IListTerm list) {
+    private static ITerm explode(IListTerm list) {
         // @formatter:off
         final List<ITerm> terms = Lists.newArrayList();
-        final List<ImmutableClassToInstanceMap<Object>> attachments = Lists.newArrayList();
+        final List<IAttachments> attachments = Lists.newArrayList();
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
                 cons -> {
-                    terms.add(explicate(cons.getHead()));
+                    terms.add(explode(cons.getHead()));
                     attachments.add(cons.getAttachments());
                     return cons.getTail();
                 },
@@ -569,8 +641,8 @@ public class StatixTerms {
                     return null;
                 },
                 var -> {
-                    varTail.set(explicate(var));
-                    attachments.add(ImmutableClassToInstanceMap.builder().build());
+                    varTail.set(explode(var));
+                    attachments.add(Attachments.empty());
                     return null;
                 }
             ));
@@ -584,30 +656,48 @@ public class StatixTerms {
         }
     }
 
-    private static ITerm explicate(ITermVar var) {
-        return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
+    public static ITerm explode(ITermVar var) {
+        if(!var.getResource().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Exploding a variable with a resource is not possible. Exploding a unification variable instead of a syntax variable?");
+        }
+        return B.newAppl("Var", B.newString(var.getName()));
     }
 
-    public static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+    private static List<ITerm> explode(Iterable<? extends ITerm> terms) {
+        return Iterables2.stream(terms).map(StatixTerms::explode).collect(ImmutableList.toImmutableList());
     }
 
-    public static IListTerm explicateList(Iterable<? extends ITerm> terms) {
-        return B.newList(explicate(terms));
+    private static ITerm explodePosition(ITerm pos) {
+        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explode(pos)));
     }
 
-    public static IListTerm explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries,
-            IUniDisunifier unifier) {
-        return B.newList(Iterables2.stream(entries)
-                .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
-                .collect(ImmutableList.toImmutableList()));
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static ITerm explicateVars(ITerm term) {
+        // @formatter:off
+        return T.sometd(M.cases(
+            M.cons(M.term(), M.var(), (t, hd, tl) -> B.newAppl("Conc", explicateVars(hd), explicateVar(tl))),
+            M.var(StatixTerms::explicateVar)
+        )::match).apply(term);
+        // @formatter:on
     }
 
-    public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path, Set<ITerm> relationLabels) {
-        return B.newTuple(explicate(path.getPath(), relationLabels), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    private static ITerm explicateVar(ITermVar var) {
+        return B.newAppl("Var", B.newString(var.getResource()), B.newString(var.getName()));
     }
 
-    public static ITerm explicate(IScopePath<Scope, ITerm> path, Set<ITerm> relationLabels) {
+    public static List<ITerm> explicateVars(Iterable<? extends ITerm> terms) {
+        return Iterables2.stream(terms).map(StatixTerms::explicateVars).collect(ImmutableList.toImmutableList());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static ITerm pathToTerm(IResolutionPath<Scope, ITerm, ITerm> path, Set<ITerm> relationLabels) {
+        return B.newTuple(pathToTerm(path.getPath(), relationLabels), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    }
+
+    public static ITerm pathToTerm(IScopePath<Scope, ITerm> path, Set<ITerm> relationLabels) {
         ITerm pathTerm = B.newAppl(PATH_EMPTY_OP, path.getSource());
         final Iterator<IStep<Scope, ITerm>> it = path.iterator();
         while(it.hasNext()) {
@@ -622,10 +712,6 @@ public class StatixTerms {
             throw new IllegalArgumentException("Encountered a relation label in the middle of path.");
         }
         return pathTerm;
-    }
-
-    private static ITerm explicatePosition(ITerm pos) {
-        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explicate(pos)));
     }
 
 }

@@ -1,16 +1,13 @@
 package mb.nabl2.terms.build;
 
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IIntTerm;
@@ -19,151 +16,124 @@ import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.Terms;
+import mb.nabl2.util.collections.ConcurrentWeakCache;
 
 public class TermBuild {
 
     public static final B B = new B();
 
-    public static class B {
+    public static class B implements ITermBuild {
 
-        public final IApplTerm EMPTY_TUPLE = newAppl(Terms.TUPLE_OP, ImmutableList.of());
+        private static final INilTerm NIL = NilTerm.builder().build();
 
-        public final IListTerm EMPTY_LIST = newNil();
+        // FIXME Use hash-consing to improve sharing between simple terms. Terms could be shared if:
+        // 1. They have no attachments.
+        // 2. The have no subterms (because their subterms may have attachments, even if the outer term does not).
+        // In practice this means mostly nil, strings, ints, and variables are shared.
+        final ConcurrentWeakCache<ITerm, ITerm> cache = new ConcurrentWeakCache<>();
 
-        public IApplTerm newAppl(String op, ITerm... args) {
-            return newAppl(op, Arrays.asList(args));
-        }
-
-        public IApplTerm newAppl(String op, Iterable<? extends ITerm> args) {
-            return newAppl(op, args, null);
-        }
-
-        public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
-                @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IApplTerm term = ApplTerm.of(op, args);
-            return attachments != null ? term.withAttachments(attachments) : term;
-        }
-
-        public ITerm newTuple(ITerm... args) {
-            return newTuple(Arrays.asList(args));
-        }
-
-        public ITerm newTuple(Iterable<? extends ITerm> args) {
-            return newTuple(args, null);
-        }
-
-        public ITerm newTuple(Iterable<? extends ITerm> args,
-                @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            return Iterables.size(args) == 1 ? Iterables.getOnlyElement(args)
-                    : newAppl(Terms.TUPLE_OP, args, attachments);
-        }
-
-        public IListTerm newList(ITerm... elems) {
-            return newList(Arrays.asList(elems));
-
-        }
-
-        public IListTerm newList(Iterable<? extends ITerm> elems) {
-            return newList(elems, null);
-        }
-
-        public IListTerm newList(Iterable<? extends ITerm> elems,
-                @Nullable Iterable<ImmutableClassToInstanceMap<Object>> attachments) {
-            LinkedList<ITerm> elemsQueue = Lists.newLinkedList(elems);
-            LinkedList<ImmutableClassToInstanceMap<Object>> attachmentsQueue =
-                    attachments != null ? Lists.newLinkedList(attachments) : null;
-            if(attachmentsQueue != null && attachmentsQueue.size() != elemsQueue.size() + 1) {
-                throw new IllegalArgumentException(
-                        "Number of attachments does not correspond to number of elements in the list.");
-            }
-            IListTerm list = newNil();
-            if(attachmentsQueue != null) {
-                list = list.withAttachments(attachmentsQueue.removeLast());
-            }
-            return newListTail(elemsQueue, list, attachmentsQueue);
-        }
-
-        public IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list) {
-            return newListTail(elems, list, null);
-        }
-
-        public IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list,
-                @Nullable Iterable<ImmutableClassToInstanceMap<Object>> attachments) {
-            LinkedList<ITerm> elemsQueue = Lists.newLinkedList(elems);
-            LinkedList<ImmutableClassToInstanceMap<Object>> attachmentsQueue =
-                    attachments != null ? Lists.newLinkedList(attachments) : null;
-            if(attachmentsQueue != null && attachmentsQueue.size() != elemsQueue.size()) {
-                throw new IllegalArgumentException(
-                        "Number of attachments does not correspond to number of elements in the list.");
-            }
-            return newListTail(elemsQueue, list, attachmentsQueue);
-        }
-
-        private IListTerm newListTail(LinkedList<? extends ITerm> elems, IListTerm list,
-                @Nullable LinkedList<ImmutableClassToInstanceMap<Object>> attachments) {
-            while(!elems.isEmpty()) {
-                list = newCons(elems.removeLast(), list);
-                if(attachments != null) {
-                    list = list.withAttachments(attachments.removeLast());
+        @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
+                @Nullable IAttachments attachments) {
+            final List<ITerm> argList = ImmutableList.copyOf(args);
+            switch(argList.size()) {
+                case 0: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        final ITerm term = Appl0Term.of(op);
+                        return (IApplTerm) cache.getOrPut(term, term);
+                    } else {
+                        return Appl0Term.builder().op(op).attachments(attachments).build();
+                    }
+                }
+                case 1: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl1Term.of(op, argList.get(0));
+                    } else {
+                        return Appl1Term.builder().op(op).arg0(argList.get(0)).attachments(attachments).build();
+                    }
+                }
+                case 2: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl2Term.of(op, argList.get(0), argList.get(1));
+                    } else {
+                        return Appl2Term.builder().op(op).arg0(argList.get(0)).arg1(argList.get(1))
+                                .attachments(attachments).build();
+                    }
+                }
+                case 3: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl3Term.of(op, argList.get(0), argList.get(1), argList.get(2));
+                    } else {
+                        return Appl3Term.builder().op(op).arg0(argList.get(0)).arg1(argList.get(1)).arg2(argList.get(2))
+                                .attachments(attachments).build();
+                    }
+                }
+                case 4: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return Appl4Term.of(op, argList.get(0), argList.get(1), argList.get(2), argList.get(3));
+                    } else {
+                        return Appl4Term.builder().op(op).arg0(argList.get(0)).arg1(argList.get(1)).arg2(argList.get(2))
+                                .arg3(argList.get(3)).attachments(attachments).build();
+                    }
+                }
+                default: {
+                    if((attachments == null || attachments.isEmpty())) {
+                        return ApplTerm.of(op, args);
+                    } else {
+                        return ApplTerm.builder().op(op).args(args).attachments(attachments).build();
+                    }
                 }
             }
-            return list;
         }
 
-        public INilTerm newNil() {
-            return newNil(null);
+        @Override public INilTerm newNil(@Nullable IAttachments attachments) {
+            if((attachments == null || attachments.isEmpty())) {
+                return NIL;
+            } else {
+                return NilTerm.builder().attachments(attachments).build();
+            }
         }
 
-        public INilTerm newNil(@Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final INilTerm term = NilTerm.of();
-            return attachments != null ? term.withAttachments(attachments) : term;
+        @Override public IConsTerm newCons(ITerm head, IListTerm tail, @Nullable IAttachments attachments) {
+            if(attachments == null || attachments.isEmpty()) {
+                return ConsTerm.of(head, tail);
+            } else {
+                return ConsTerm.builder().head(head).tail(tail).attachments(attachments).build();
+            }
         }
 
-        public IConsTerm newCons(ITerm head, IListTerm tail) {
-            return newCons(head, tail, null);
+        @Override public IStringTerm newString(String value, @Nullable IAttachments attachments) {
+            if((attachments == null || attachments.isEmpty())) {
+                final IStringTerm term = StringTerm.of(value);
+                return (IStringTerm) cache.getOrPut(term, term);
+            } else {
+                return StringTerm.builder().value(value).attachments(attachments).build();
+            }
         }
 
-        public IConsTerm newCons(ITerm head, IListTerm tail, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IConsTerm term = ConsTerm.of(head, tail);
-            return attachments != null ? term.withAttachments(attachments) : term;
+        @Override public IIntTerm newInt(int value, @Nullable IAttachments attachments) {
+            if((attachments == null || attachments.isEmpty())) {
+                final IIntTerm term = IntTerm.of(value);
+                return (IIntTerm) cache.getOrPut(term, term);
+            } else {
+                return IntTerm.builder().value(value).attachments(attachments).build();
+            }
         }
 
-        public IStringTerm newString(String value) {
-            return newString(value, null);
+        @Override public IBlobTerm newBlob(Object value, @Nullable IAttachments attachments) {
+            if(attachments == null || attachments.isEmpty()) {
+                return BlobTerm.of(value);
+            } else {
+                return BlobTerm.builder().value(value).attachments(attachments).build();
+            }
         }
 
-        public IStringTerm newString(String value, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IStringTerm term = StringTerm.of(value);
-            return attachments != null ? term.withAttachments(attachments) : term;
-        }
-
-        public IIntTerm newInt(int value) {
-            return newInt(value, null);
-        }
-
-        public IIntTerm newInt(int value, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IIntTerm term = IntTerm.of(value);
-            return attachments != null ? term.withAttachments(attachments) : term;
-        }
-
-
-        public IBlobTerm newBlob(Object value) {
-            return newBlob(value, null);
-        }
-
-        public IBlobTerm newBlob(Object value, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final IBlobTerm term = BlobTerm.of(value);
-            return attachments != null ? term.withAttachments(attachments) : term;
-        }
-
-        public ITermVar newVar(String resource, String name) {
-            return newVar(resource, name, null);
-        }
-
-        public ITermVar newVar(String resource, String name, @Nullable ImmutableClassToInstanceMap<Object> attachments) {
-            final ITermVar term = TermVar.of(resource, name);
-            return attachments != null ? term.withAttachments(attachments) : term;
+        @Override public ITermVar newVar(String resource, String name, @Nullable IAttachments attachments) {
+            if((attachments == null || attachments.isEmpty())) {
+                final ITermVar term = TermVar.of(resource, name);
+                return (ITermVar) cache.getOrPut(term, term);
+            } else {
+                return TermVar.builder().resource(resource).name(name).attachments(attachments).build();
+            }
         }
 
     }

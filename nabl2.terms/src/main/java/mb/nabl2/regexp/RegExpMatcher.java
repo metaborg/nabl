@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -20,29 +21,18 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final IRegExp<S> state;
-    private final Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions;
-    private final Map<IRegExp<S>, IRegExp<S>> defaultTransitions;
-    private final Set<IRegExp<S>> nonFinal;
-    private final Set<IRegExp<S>> isNullable;
+    private final State<S> state;
 
-    private RegExpMatcher(IRegExp<S> state, Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions,
-            Map<IRegExp<S>, IRegExp<S>> defaultTransitions, Set<IRegExp<S>> nonFinal, Set<IRegExp<S>> isNullable) {
+    private RegExpMatcher(State<S> state) {
         this.state = state;
-        this.stateTransitions = stateTransitions;
-        this.defaultTransitions = defaultTransitions;
-        this.nonFinal = nonFinal;
-        this.isNullable = isNullable;
     }
 
     @Override public IRegExp<S> regexp() {
-        return state;
+        return state.regexp;
     }
 
     @Override public RegExpMatcher<S> match(S symbol) {
-        final Map<S, IRegExp<S>> transitions = stateTransitions.get(state);
-        IRegExp<S> newState = transitions.getOrDefault(symbol, defaultTransitions.get(state));
-        return new RegExpMatcher<>(newState, stateTransitions, defaultTransitions, nonFinal, isNullable);
+        return new RegExpMatcher<>(state.symbolTransitions.getOrDefault(symbol, state.defaultTransition));
     }
 
     @Override public IRegExpMatcher<S> match(Iterable<S> symbols) {
@@ -54,15 +44,15 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
     }
 
     @Override public boolean isAccepting() {
-        return isNullable.contains(state);
+        return state.isNullable;
     }
 
     @Override public boolean isFinal() {
-        return !nonFinal.contains(state);
+        return !state.nonFinal;
     }
 
     @Override public String toString() {
-        return state.toString();
+        return state.regexp.toString();
     }
 
     public static <S> IRegExpMatcher<S> create(final IRegExp<S> initial) {
@@ -130,23 +120,59 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
                 }
             }
         }
-
         final Set<IRegExp<S>> isNullable =
                 stateTransitions.keySet().stream().filter(RegExps::isNullable).collect(ImmutableSet.toImmutableSet());
 
-        return new RegExpMatcher<>(initial, stateTransitions, defaultTransitions, nonFinal, isNullable);
+        // convert maps to object graph
+        Map<IRegExp<S>, State<S>> states = Maps.newHashMapWithExpectedSize(stateTransitions.size());
+        for(IRegExp<S> state : stateTransitions.keySet()) {
+            final State<S> _state;
+            states.put(state, _state = new State<>(state));
+            _state.isNullable = isNullable.contains(state);
+            _state.nonFinal = nonFinal.contains(state);
+        }
+        for(IRegExp<S> state : stateTransitions.keySet()) {
+            final State<S> _state = states.get(state);
+            _state.defaultTransition = states.get(defaultTransitions.get(state));
+            _state.symbolTransitions = stateTransitions.get(state).entrySet().stream()
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> states.get(e.getValue())));
+        }
+
+        return new RegExpMatcher<>(states.get(initial));
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        RegExpMatcher<?> that = (RegExpMatcher<?>)o;
+    private static class State<S> implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private final IRegExp<S> regexp;
+
+        private Map<S, State<S>> symbolTransitions;
+        private State<S> defaultTransition;
+        private boolean nonFinal;
+        private boolean isNullable;
+
+        private State(IRegExp<S> regexp) {
+            this.regexp = regexp;
+        }
+
+        @Override public String toString() {
+            return regexp.toString();
+        }
+
+    }
+
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        RegExpMatcher<?> that = (RegExpMatcher<?>) o;
         return Objects.equals(state, that.state);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(state);
     }
+
 }

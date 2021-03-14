@@ -2,84 +2,83 @@ package mb.statix.concurrent.actors.impl;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.concurrent.ClosableLock;
-import org.metaborg.util.concurrent.IClosableLock;
-import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Queues;
+import com.google.common.collect.ImmutableList;
 
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.MessageTags;
+import mb.statix.concurrent.actors.IActorStats;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.futures.AsyncCompletable;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 
-class Actor<T> implements IActorRef<T>, IActor<T> {
+class Actor<T> implements IActorImpl<T>, Runnable {
 
     private static final ILogger logger = LoggerUtils.logger(Actor.class);
 
     private final IActorContext context;
     private final String id;
     private final TypeTag<T> type;
-    private final Function1<IActor<T>, ? extends T> supplier;
+    private final IActorInternal<?> parent;
+    private final Set<IActorInternal<?>> children;
 
-    private final Object lock;
+    private final AtomicBoolean running;
+    private final AtomicReference<Runnable> scheduledTask;
+
     private volatile ActorState state;
-    private final Deque<IMessage<T>> messages;
-    private final Set<IReturn<?>> returns;
-
-    private final ReadWriteLock monitorsLock;
-    private final Set<IActorMonitor> monitors;
-
-    final T asyncSystem;
-    final T asyncActor;
+    private final AtomicInteger priority;
+    private final Deque<Message> messages;
 
     private T impl;
+    private @Nullable IActorMonitor monitor;
+    private @Nullable Throwable stopCause;
 
-    static final ThreadLocal<Actor<?>> current = ThreadLocal.withInitial(() -> {
-        throw new IllegalStateException("Cannot get current actor.");
+    private volatile Thread thread = null;
+    private static final ThreadLocal<IActorInternal<?>> current = ThreadLocal.withInitial(() -> {
+        final IllegalStateException ex = new IllegalStateException("Cannot get current actor.");
+        logger.error("Cannot get current actor.", ex);
+        throw ex;
     });
+
 
     private static final ThreadLocal<IActorRef<?>> sender = ThreadLocal.withInitial(() -> {
-        throw new IllegalStateException("Cannot get sender when not in message processing context.");
+        logger.error("Cannot get sender. Not in message processing context?");
+        throw new IllegalStateException("Cannot get sender. Not in message processing context?");
     });
 
-    Actor(IActorContext context, String id, TypeTag<T> type, Function1<IActor<T>, ? extends T> supplier) {
+    private Stats stats = new Stats();
+
+    Actor(IActorContext context, IActorInternal<?> parent, String id, TypeTag<T> type) {
         this.context = context;
         this.id = id;
         this.type = type;
-        this.supplier = supplier;
+        this.parent = parent;
+        this.children = new HashSet<>();
 
-        this.lock = new Object();
+        this.running = new AtomicBoolean();
+        this.scheduledTask = new AtomicReference<>();
+
         this.state = ActorState.INITIAL;
-        this.messages = Queues.newArrayDeque();
-        this.returns = new HashSet<>();
-
-        this.monitorsLock = new ReentrantReadWriteLock();
-        this.monitors = new HashSet<>();
-
-        this.asyncSystem = newAsyncSystem();
-        this.asyncActor = newAsyncActor();
-
+        this.priority = new AtomicInteger(0);
+        this.messages = new ConcurrentLinkedDeque<>();
     }
 
     @Override public String id() {
@@ -87,111 +86,419 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Start actors
+    // Run -- main loop
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public <U> IActor<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
-        return context.add(id, type, supplier);
+    @Override public void run() {
+        try {
+            initThread();
+
+            scheduledTask.set(null);
+
+            int startPriority = this.priority.get();
+            stats.maxPendingMessagesOnActivate = Math.max(stats.maxPendingMessagesOnActivate, startPriority);
+
+            while(true) {
+                stats.maxPendingMessages = Math.max(stats.maxPendingMessages, priority.get());
+
+                final Message message = messages.poll();
+                if(message != null) {
+
+                    stats.messages += 1;
+                    this.priority.decrementAndGet();
+                    try {
+                        message.dispatch();
+                    } catch(Throwable ex) {
+                        doStop(ex);
+                    }
+
+                    if(!messages.isEmpty() && context.scheduler().preempt(priority.get())) {
+                        finalizeThread();
+                        context.scheduler().schedule(this, priority.get(), scheduledTask);
+                        return;
+                    }
+
+                } else {
+
+                    if(state.equals(ActorState.RUNNING)) {
+                        logger.debug("suspend");
+                        stats.suspended += 1;
+
+                        state = ActorState.WAITING;
+                        try {
+                            if(monitor != null) {
+                                monitor.suspended();
+                            }
+                        } catch(Throwable ex) {
+                            doStop(new ActorException("Suspend monitor failed.", ex));
+                        }
+                    }
+
+                    finalizeThread();
+
+                    if(!running.compareAndSet(true, false)) {
+                        throw new IllegalStateException("Unexpected state, should be running.");
+                    }
+
+                    if(!messages.isEmpty() && running.compareAndSet(false, true)) {
+                        initThread();
+                    } else {
+                        return;
+                    }
+
+                }
+            }
+        } catch(Throwable ex) {
+            logger.error("Internal error.", ex);
+        }
     }
 
-    private void put(IMessage<T> message, boolean priority) throws ActorStoppedException {
-        synchronized(lock) {
-            if(state.equals(ActorState.STOPPED)) {
-                logger.debug("{} received message when already stopped", id);
-                throw new ActorStoppedException("Actor " + this + " not running.");
-            }
-            if(priority) {
-                messages.addFirst(message);
-            } else {
-                messages.addLast(message);
-            }
-            if(state.equals(ActorState.WAITING)) {
-                logger.debug("resume {}", this);
+    private void initThread() {
+        if(thread != null) {
+            logger.error("Actor already running on another thread.");
+            throw new IllegalStateException("Actor already running on another thread.");
+        }
+        thread = Thread.currentThread();
+        current.set(this);
+        LoggerUtils.setContextId(this.toString());
+    }
 
-                state = ActorState.RUNNING;
+    private void finalizeThread() {
+        LoggerUtils.clearContextId();
+        current.remove();
+        thread = null;
+    }
 
-                forEachMonitor(monitor -> {
-                    monitor.resumed(this);
-                });
+    private void scheduleIfNotRunning() {
+        if(running.compareAndSet(false, true)) {
+            logger.debug("resume {}", this);
+            context.scheduler().schedule(this, priority.get(), scheduledTask);
+        } else {
+            final Runnable oldTask = scheduledTask.getAndSet(null);
+            if(oldTask != null) {
+                // only the case when running == true, but the thread is not
+                // running the message loop---but task may be unqueued, and/or
+                // the thread may be started already
 
-                context.executor().submit(() -> this.run());
+                // if the thread starts in the meantime, it sets the scheduledTask
+                // to null, and we should not set it to anything anymore. But, if
+                // the thread started, it also means the task is not active anymore,
+                // so rescheduling will fail.
+
+                context.scheduler().reschedule(oldTask, priority.get(), scheduledTask);
             }
         }
     }
 
-    @SuppressWarnings("unchecked") private T newAsyncActor() {
+    ///////////////////////////////////////////////////////////////////////////
+    // Messages
+    ///////////////////////////////////////////////////////////////////////////
+
+    @FunctionalInterface
+    private interface Message {
+
+        void dispatch() throws ActorException;
+
+    }
+
+    private void put(Message message) {
+        priority.incrementAndGet();
+        messages.add(message);
+        scheduleIfNotRunning();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IActorInternal -- unsafe, called from other actors and system
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void _start(IActorInternal<?> sender, Function1<IActor<T>, ? extends T> supplier) {
+        put(() -> doStart(sender, supplier));
+    }
+
+    private volatile T dynamicAsync;
+
+    @Override public T _invokeDynamic() {
+        T result = dynamicAsync;
+        if(result == null) {
+            result = newAsync(current::get);
+            dynamicAsync = result;
+        }
+        return result;
+    }
+
+    @Override public T _invokeStatic(IActorInternal<?> sender) {
+        return newAsync(() -> sender);
+    }
+
+    @SuppressWarnings({ "unchecked" }) private T newAsync(Function0<IActorInternal<?>> senderGetter) {
         return (T) Proxy.newProxyInstance(this.type.type().getClassLoader(), new Class[] { this.type.type() },
                 (proxy, method, args) -> {
+                    // WARNING This runs on the sender's thread!
+
                     if(method.getDeclaringClass().equals(Object.class)) {
                         return method.invoke(this, args);
                     }
 
-                    final Actor<?> sender = Actor.current.get();
+                    if(method.getDeclaringClass().equals(IActorMonitor.class)) {
+                        logger.error("Illegal async actor monitor method called: {}", method);
+                        throw new IllegalStateException("Illegal async actor monitor method called: " + method);
+                    }
 
-                    // This runs on the sender's thread!
-                    // ASSERT ActorState != DONE
+                    final IActorInternal<?> sender = senderGetter.apply();
+
                     final Class<?> returnType = method.getReturnType();
-                    final IMessage<T> message;
-                    final Object returnValue;
+                    final IFuture<?> returnValue;
 
                     if(Void.TYPE.isAssignableFrom(returnType)) {
-                        message = new Invoke(sender, method, args, null);
+                        final Method method1 = method;
+                        final Object[] args1 = args;
+                        put(() -> {
+                            doInvoke(sender, method1, args1, (Action2<Object, Throwable>) null);
+                        });
                         returnValue = null;
                     } else if(IFuture.class.isAssignableFrom(returnType)) {
                         final ICompletableFuture<?> result = new CompletableFuture<>();
-                        final Return<?> ret = new Return<>(sender, method, result);
-                        message = new Invoke(sender, method, args, ret);
+                        final Method method1 = method;
+                        final Object[] args1 = args;
+                        final Action2<Object, Throwable> _return =
+                                (r, ex) -> sender._return(sender, method, result, r, ex);
+                        ;
+                        put(() -> {
+                            doInvoke((IActorInternal<?>) sender, method1, args1, _return);
+                        });
                         returnValue = result;
-                        synchronized(lock) {
-                            returns.add(ret);
-                        }
                     } else {
+                        logger.error("Unsupported method called: {}", method);
                         throw new IllegalStateException("Unsupported method called: " + method);
                     }
-
-                    logger.debug("send {} message {}", Actor.this, message);
-                    put(message, false);
-
-                    final Set<String> tags = tags(method);
-                    sender.forEachMonitor(monitor -> {
-                        monitor.sent(sender, this, tags);
-                    });
 
                     return returnValue;
                 });
     }
 
-    @SuppressWarnings("unchecked") private T newAsyncSystem() {
-        return (T) Proxy.newProxyInstance(this.type.type().getClassLoader(), new Class[] { this.type.type() },
-                (proxy, method, args) -> {
-                    if(method.getDeclaringClass().equals(Object.class)) {
-                        return method.invoke(this, args);
-                    }
+    @Override public void _return(IActorInternal<?> sender, Method method,
+            @SuppressWarnings("rawtypes") ICompletable result, Object value, Throwable ex) {
+        put(() -> doReturn(sender, method, result, value, ex));
+    }
 
-                    // This runs on the sender's thread!
-                    // ASSERT ActorState != DONE
-                    final Class<?> returnType = method.getReturnType();
-                    final IMessage<T> message;
-                    final Object returnValue;
-                    if(Void.TYPE.isAssignableFrom(returnType)) {
-                        message = new Invoke(null, method, args, null);
-                        returnValue = null;
-                    } else if(IFuture.class.isAssignableFrom(returnType)) {
-                        final ICompletableFuture<?> result = new CompletableFuture<>();
-                        message = new Invoke(null, method, args,
-                                IReturn.of(new AsyncCompletable<>(this.context.executor(), result)));
-                        returnValue = result;
+    @Override public void _stop(IActorInternal<?> sender, Throwable ex) {
+        logger.debug("{} recieved _stop from {}", this, sender);
+        put(() -> doStop(ex));
+    }
+
+    @Override public void _childStopped(IActorInternal<?> sender, Throwable ex) {
+        logger.debug("{} recieved _childStopped from {}", this, sender);
+        put(() -> doChildStopped(sender, ex));
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Handlers -- safe, called from actor thread only
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void doStart(IActorInternal<?> sender, Function1<IActor<T>, ? extends T> supplier) throws ActorException {
+        assertOnActorThread();
+
+        if(!state.equals(ActorState.INITIAL)) {
+            throw new ActorException("Cannot start actor that was already started.");
+        }
+        if(!sender.equals(parent)) {
+            throw new ActorException("Actor can only be started by parent.");
+        }
+
+        try {
+            impl = supplier.apply(this);
+        } catch(Throwable ex) {
+            throw new ActorException("Creating actor implementation failed.", ex);
+        }
+
+        if(IActorMonitor.class.isAssignableFrom(impl.getClass())) {
+            monitor = (IActorMonitor) impl;
+        }
+
+        state = ActorState.RUNNING;
+
+        try {
+            if(monitor != null) {
+                monitor.started();
+            }
+        } catch(Throwable ex) {
+            throw new ActorException("Start monitor failed.", ex);
+        }
+    }
+
+    private void doInvoke(final IActorInternal<?> sender, final Method method, final Object[] args,
+            Action2<Object, Throwable> result) throws ActorException {
+        assertOnActorThread();
+
+        updateStateOnReceive(sender);
+
+        logger.debug("{} invoke {} from {}", this, method.getName(), sender);
+
+        final Object returnValue;
+        try {
+            method.setAccessible(true);
+            try {
+                Actor.sender.set(sender);
+                returnValue = method.invoke(impl, args);
+            } finally {
+                Actor.sender.remove();
+            }
+            if(result != null) {
+                if(returnValue == null) {
+                    result.apply(null, new NullPointerException());
+                } else {
+                    ((IFuture<?>) returnValue).whenComplete((r, ex) -> result.apply(r, ex));
+                }
+            }
+        } catch(Throwable ex) {
+            throw new ActorException("Dispatch failed.", ex);
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" }) private void doReturn(final IActorInternal<?> sender, Method method,
+            ICompletable completable, Object value, Throwable ex) throws ActorException {
+        assertOnActorThread();
+
+        updateStateOnReceive(sender);
+
+        logger.debug("{} return {} from {}", this, method.getName(), sender);
+
+        try {
+            try {
+                Actor.sender.set(sender);
+                completable.complete(value, ex);
+            } finally {
+                Actor.sender.remove();
+            }
+        } catch(Throwable ex2) {
+            throw new ActorException("Return failed.", ex2);
+        }
+    }
+
+    private void updateStateOnReceive(final IActorInternal<?> sender) throws ActorException {
+        switch(state) {
+            case INITIAL:
+                throw new ActorException("Cannot invoke method on actor that was not started.");
+            case RUNNING:
+                break;
+            case WAITING:
+                state = ActorState.RUNNING;
+                try {
+                    if(monitor != null) {
+                        monitor.resumed();
+                    }
+                } catch(Throwable ex) {
+                    throw new ActorException("Resume monitor failed.", ex);
+                }
+                break;
+            case STOPPING:
+            case STOPPED:
+                Throwable ex2 = stopCause;
+                if(ex2 == null || !(ex2 instanceof InterruptedException)) {
+                    ex2 = new ActorException("Receiving actor stopping.", ex2);
+                }
+                sender._stop(this, ex2);
+                break;
+            default:
+                throw new ActorException("Unexpected state " + state);
+        }
+    }
+
+    private void doStop(Throwable ex) {
+        assertOnActorThread();
+
+        switch(state) {
+            case INITIAL:
+            case RUNNING:
+            case WAITING:
+                if(ex != null) {
+                    if(ex instanceof InterruptedException) {
+                        logger.debug("{} interrupted", this);
                     } else {
-                        throw new IllegalStateException("Unsupported method called: " + method);
+                        logger.error("{} failed", ex, this);
                     }
+                }
 
-                    logger.debug("send {} message {}", Actor.this, message);
-                    put(message, false);
+                Throwable ex2 = ex;
+                if(ex2 != null && !(ex2 instanceof InterruptedException)) {
+                    ex2 = new ActorException("Actor " + this + " failed", ex);
+                }
 
-                    // no sender, so cannot call senders monitors
+                state = ActorState.STOPPING;
+                stopCause = ex2;
+                for(IActorInternal<?> child : children) {
+                    child._stop(this, ex2);
+                }
+                stopIfNoMoreChildren();
+                break;
+            case STOPPING:
+            case STOPPED:
+                break;
+            default:
+                throw new IllegalStateException("Unexpected state " + state);
+        }
+    }
 
-                    return returnValue;
-                });
+    private void doChildStopped(IActorInternal<?> sender, Throwable ex) throws ActorException {
+        assertOnActorThread();
+
+        if(!children.remove(sender)) {
+            throw new ActorException("Stopped actor " + sender + " is not a child of actor " + this);
+        }
+
+        Throwable ex2 = ex;
+        if(ex2 != null && !(ex2 instanceof InterruptedException)) {
+            ex2 = new ActorException("Child " + sender + " of " + this + " failed", ex);
+        }
+
+        switch(state) {
+            case INITIAL:
+                logger.error("Child {} stopped before parent {} started.", sender, this);
+                throw new IllegalStateException("Child " + sender + " stopped before parent " + this + " started.");
+            case RUNNING:
+            case WAITING:
+                doStop(ex2);
+                stopIfNoMoreChildren();
+                return;
+            case STOPPING:
+                stopIfNoMoreChildren();
+                return;
+            case STOPPED:
+                logger.error("Child {} stopped after parent {} stopped.", sender, this);
+                throw new IllegalStateException("Child " + sender + " stopped after parent " + this + " stopped.");
+            default:
+                throw new IllegalStateException("Unexpected state " + state);
+        }
+    }
+
+    private void stopIfNoMoreChildren() {
+        if(!state.equals(ActorState.STOPPING)) {
+            return;
+        }
+        if(!children.isEmpty()) {
+            return;
+        }
+        state = ActorState.STOPPED;
+        try {
+            if(monitor != null) {
+                monitor.stopped(stopCause);
+            }
+        } catch(Throwable ex2) {
+            logger.error("Stop monitor failed.", ex2);
+        }
+        parent._childStopped(this, stopCause);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IActor -- safe, called from implementation object
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public <U> IActorRef<U> add(String id, TypeTag<U> type, Function1<IActor<U>, U> supplier) {
+        final IActorImpl<U> actor = context.add(this, id, type);
+        children.add(actor);
+        actor._start(this, supplier);
+        return actor;
     }
 
     @Override public <U> U async(IActorRef<U> receiver) {
@@ -199,150 +506,26 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     @Override public T local() {
-        return asyncActor;
-    }
-
-    @Override public <U> void complete(ICompletable<U> completable, U value, Throwable ex) {
-        try {
-            put(new Complete<>(completable, value, ex), false);
-        } catch(ActorStoppedException e) {
-            completable.completeExceptionally(e);
-        }
+        return _invokeDynamic();
     }
 
     @Override public <U> IFuture<U> schedule(IFuture<U> future) {
-        final CompletableFuture<U> completable = new CompletableFuture<>();
-        future.whenComplete((value, ex) -> complete(completable, value, ex));
-        return completable;
+        final ICompletableFuture<U> scheduled = new CompletableFuture<>();
+        future.whenComplete((r, ex) -> put(() -> scheduled.complete(r, ex)));
+        return scheduled;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Run & stop
-    ///////////////////////////////////////////////////////////////////////////
-
-    void start() {
-        synchronized(lock) {
-            if(!state.equals(ActorState.INITIAL)) {
-                throw new IllegalStateException("Actor already started and/or stopped.");
-            }
-
-            logger.debug("start");
-
-            this.impl = supplier.apply(this);
-            if(impl == null || !type.type().isInstance(impl)) {
-                throw new IllegalArgumentException("Supplied implementation " + impl
-                        + " does not implement the given interface " + type.type() + ".");
-            }
-
-            state = ActorState.RUNNING;
-
-            forEachMonitor(monitor -> {
-                monitor.started(this);
-            });
-
-            context.executor().submit(() -> this.run());
-        }
-    }
-
-    /**
-     * Actor main loop.
-     */
-    private void run() {
-        try {
-            current.set(this);
-            LoggerUtils.setContextId("act:" + id);
-
-            while(true) {
-                final IMessage<T> message;
-                synchronized(lock) {
-                    if(messages.isEmpty()) {
-                        logger.debug("suspend");
-
-                        state = ActorState.WAITING;
-
-                        forEachMonitor(monitor -> {
-                            monitor.suspended(this);
-                        });
-
-                        break;
-                    } else {
-                        message = messages.remove();
-                    }
-                }
-                logger.debug("deliver message {}", message);
-                message.dispatch(impl); // responsible for setting sender, and calling monitor!
-            }
-
-        } catch(StopException ex) {
-            logger.debug("stopped");
-            doStop(null);
-        } catch(Throwable ex) {
-            logger.error("failed", ex);
-            doStop(ex);
-        } finally {
-            current.remove();
-            LoggerUtils.clearContextId();
-        }
-    }
-
-    private void doStop(@Nullable Throwable cause) {
-        final boolean failed = cause != null;
-        final Throwable ex = new ActorStoppedException(cause);
-        synchronized(lock) {
-            state = ActorState.STOPPED;
-            messages.clear();
-            for(IReturn<?> ret : returns) {
-                try {
-                    ret.complete(null, ex);
-                } catch(ActorStoppedException e) {
-                    // receiver stopped, ignore
-                }
-            }
-            forEachMonitor(monitor -> {
-                if(failed) {
-                    monitor.failed(this, ex);
-                } else {
-                    monitor.stopped(this);
-                }
-            });
-        }
+    @Override public <U> void complete(ICompletable<U> completable, U result, Throwable ex) {
+        put(() -> completable.complete(result, ex));
     }
 
     @Override public IActorRef<?> sender() {
         return sender.get();
     }
 
-    @SuppressWarnings("unchecked") @Override public <U> IActorRef<U> sender(TypeTag<U> type) {
+    @SuppressWarnings("unchecked") @Override public <U> IActorRef<U>
+            sender(@SuppressWarnings("unused") TypeTag<U> type) {
         return (IActorRef<U>) sender.get();
-    }
-
-    @Override public void stop() {
-        try {
-            put(new Stop(), true);
-        } catch(ActorStoppedException ex) {
-            // actor already stopped, do nothing
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Monitors
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Override public void addMonitor(IActorMonitor monitor) {
-        try(IClosableLock lock = new ClosableLock(monitorsLock.writeLock())) {
-            monitors.add(monitor);
-        }
-    }
-
-    void forEachMonitor(Action1<? super IActorMonitor> action) {
-        try(IClosableLock lock = new ClosableLock(monitorsLock.readLock())) {
-            monitors.forEach(action::apply);
-        }
-    }
-
-    private Set<String> tags(Method method) {
-        return Optional.ofNullable(method.getAnnotation(MessageTags.class))
-                .map(tags -> ImmutableSet.copyOf(tags.value())).orElse(ImmutableSet.of());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -354,178 +537,59 @@ class Actor<T> implements IActorRef<T>, IActor<T> {
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Invoke message implementation
+    // Thread correctness
     ///////////////////////////////////////////////////////////////////////////
 
-    @FunctionalInterface
-    private interface IReturn<U> {
-
-        void complete(U value, Throwable ex) throws ActorStoppedException;
-
-        public static <U> IReturn<U> of(ICompletable<U> completable) {
-            return completable::complete;
+    @Override public void assertOnActorThread() {
+        if(thread == null) {
+            logger.error("Actor {} is not running.", this);
+            throw new IllegalStateException("Actor " + this + " is not running.");
+        } else {
+            final IActorInternal<?> current = Actor.current.get();
+            if(thread != Thread.currentThread()) {
+                logger.error("Actor {} is running on a different thread. (This thread is actor {}).", this, current);
+                throw new IllegalStateException(
+                        "Actor " + this + " is running on a different thread. (This thread is actor " + current + ").");
+            } else if(!current.equals(this)) {
+                logger.error("Actor {} is running, but thread and current are inconsistent.", this);
+                throw new IllegalStateException(
+                        "Actor " + this + " is running, but thread and current are inconsistent.");
+            }
         }
-
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private class Invoke implements IMessage<T> {
+    ///////////////////////////////////////////////////////////////////////////
+    // Stats
+    ///////////////////////////////////////////////////////////////////////////
 
-        private final IActorRef<?> sender;
-        private final Method method;
-        private final Object[] args;
-        private final IReturn result;
+    @Override public IActorStats stats() {
+        return stats;
+    }
 
-        public Invoke(IActorRef<?> sender, Method method, Object[] args, IReturn<?> result) {
-            this.sender = sender;
-            this.method = method;
-            this.args = args;
-            this.result = result;
+    private static class Stats implements IActorStats {
+
+        private int suspended = 0;
+        private int preempted = 0;
+        private int rescheduled = 0;
+        private int messages = 0;
+        private int maxPendingMessages = 0;
+        private int maxPendingMessagesOnActivate = 0;
+
+        @Override public Iterable<String> csvHeaders() {
+            return ImmutableList.of("suspended", "preempted", "rescheduled", "messages", "maxPendingMessages",
+                    "maxPendingMessagesOnActivate");
         }
 
-        @Override public void dispatch(T impl) throws ActorException {
-            final Object returnValue;
-            try {
-                Actor.sender.set(sender);
-
-                method.setAccessible(true);
-                returnValue = method.invoke(impl, args);
-            } catch(Throwable ex) {
-                final ActorException ae = new ActorException("Dispatch failed.", ex);
-                if(result != null) {
-                    result.complete(null, ae);
-                }
-                throw ae;
-            } finally {
-                Actor.sender.remove();
-            }
-
-            final Set<String> tags = tags(method);
-            forEachMonitor(monitor -> {
-                monitor.delivered(Actor.this, sender, tags);
-            });
-
-            if(result != null) {
-                // NOTE The completion runs on the thread of the receiving actor.
-                //      The different async(...) cases dispatch the result as a
-                //      message on the thread of the sender, or as a job on the executor.
-                ((IFuture<?>) returnValue).whenComplete(result::complete);
-            }
+        @Override public Iterable<String> csvRow() {
+            return ImmutableList.of(Integer.toString(suspended), Integer.toString(preempted),
+                    Integer.toString(rescheduled), Integer.toString(messages), Integer.toString(maxPendingMessages),
+                    Integer.toString(maxPendingMessagesOnActivate));
         }
 
         @Override public String toString() {
-            return sender + " invokes " + method.getName() + "(" + Arrays.toString(args) + ")";
-        }
-
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private class Return<U> implements IMessage, IReturn<U> {
-
-        private final Actor<?> invoker;
-        private final Method method;
-        private final ICompletable<U> completable;
-
-        private U value;
-        private Throwable ex;
-
-        private Return(Actor<?> sender, Method method, ICompletable<U> completable) {
-            this.invoker = sender;
-            this.method = method;
-            this.completable = completable;
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-        // complete -- called on the receiver's thread
-        ///////////////////////////////////////////////////////////////////////
-
-        @Override public void complete(U value, Throwable ex) throws ActorStoppedException {
-            if(!returns.remove(this)) {
-                throw new IllegalStateException("Dangling return?");
-            }
-
-            this.value = value;
-            this.ex = ex;
-
-            logger.debug("send {} message {}", invoker, this);
-            invoker.put(this, false);
-
-            final Set<String> tags = tags(method);
-            forEachMonitor(monitor -> {
-                monitor.sent(Actor.this, invoker, tags);
-            });
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-        // IMessage -- called on the invoker's thread
-        ///////////////////////////////////////////////////////////////////////
-
-        @Override public void dispatch(Object impl) {
-            // impl is ignored, since the future does not dispatch on the
-            // object directly, instead just calling the handler(s).
-            try {
-                Actor.sender.set(Actor.this);
-
-                completable.complete(value, ex);
-
-                final Set<String> tags = tags(method);
-                invoker.forEachMonitor(monitor -> {
-                    monitor.delivered(invoker, Actor.this, tags);
-                });
-
-
-            } finally {
-                Actor.sender.remove();
-            }
-        }
-
-        @Override public String toString() {
-            return Actor.this + " returns " + completable;
-        }
-
-    }
-
-    private class Complete<U> implements IMessage<T> {
-
-        private final ICompletable<U> completable;
-        private final U value;
-        private final Throwable ex;
-
-        private Complete(ICompletable<U> completable, U value, Throwable ex) {
-            this.completable = completable;
-            this.value = value;
-            this.ex = ex;
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-        // IMessage -- called on the (original) sender's thread
-        ///////////////////////////////////////////////////////////////////////
-
-        @Override public void dispatch(Object impl) {
-            // impl is ignored, since the future does not dispatch on the
-            // object directly, instead just calling the handler(s).
-            try {
-                Actor.sender.set(Actor.this);
-                completable.complete(value, ex);
-            } finally {
-                Actor.sender.remove();
-            }
-        }
-
-        @Override public String toString() {
-            return "complete " + completable;
-        }
-
-    }
-
-    private class Stop implements IMessage<T> {
-
-        @Override public void dispatch(T impl) throws StopException {
-            throw new StopException();
-        }
-
-        @Override public String toString() {
-            return "stop";
+            return "ActorStats{messages=" + messages + ",maxPendingMessages=" + maxPendingMessages
+                    + ",maxPendingMessagesOnActivate=" + maxPendingMessagesOnActivate + ",suspended=" + suspended
+                    + ",preempted=" + preempted + ",rescheduled=" + rescheduled + "}";
         }
 
     }

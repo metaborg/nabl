@@ -6,13 +6,12 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -60,8 +59,8 @@ public class CFalse implements IConstraint, Serializable {
         return cases.caseFalse(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public CFalse apply(ISubstitution.Immutable subst) {
@@ -80,17 +79,24 @@ public class CFalse implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CFalse cFalse = (CFalse)o;
-        return Objects.equals(cause, cFalse.cause) &&
-            Objects.equals(message, cFalse.message);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CFalse cFalse = (CFalse) o;
+        return Objects.equals(cause, cFalse.cause) && Objects.equals(message, cFalse.message);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(cause, message);
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

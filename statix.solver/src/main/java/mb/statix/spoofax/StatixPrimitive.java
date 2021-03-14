@@ -140,7 +140,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
             final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
-        final TermFormatter formatter = Solver.shallowTermFormatter(unifier);
+        final TermFormatter formatter = Solver.shallowTermFormatter(unifier, Solver.TERM_FORMAT_DEPTH);
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();
@@ -161,7 +161,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
         // use empty origin if none was found
         if(originTerm == null) {
-            originTerm = B.EMPTY_TUPLE;
+            originTerm = B.newTuple();
         }
 
         // add constraint message
@@ -214,12 +214,12 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())
             .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
-            .map(t -> B.EMPTY_TUPLE.withAttachments(t.getAttachments()));
+            .map(t -> B.newTuple(ImmutableList.of(), t.getAttachments()));
         // @formatter:on
     }
 
     private String cleanupString(String string) {
-        return string.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
 }

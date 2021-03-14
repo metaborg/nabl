@@ -2,6 +2,7 @@ package mb.nabl2.terms.stratego;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -22,14 +23,7 @@ public abstract class ATermPlaceholder {
     @Value.Parameter public abstract String getName();
 
     @SuppressWarnings({ "unchecked", "rawtypes" }) public <T extends ITerm> T put(T term) {
-        final ImmutableClassToInstanceMap.Builder<Object> attachments = ImmutableClassToInstanceMap.builder();
-        // builder does not allow overwriting entries, so we need to filter out
-        // the term placeholder, in case it is already there
-        // @formatter:off
-        term.getAttachments().entrySet().stream()
-            .filter(e -> !TermPlaceholder.class.equals(e.getKey()))
-            .forEach(e -> attachments.put((Class)e.getKey(), e.getValue()));
-        // @formatter:on
+        final IAttachments.Builder attachments = term.getAttachments().toBuilder();
         attachments.put(TermPlaceholder.class, (TermPlaceholder) this);
         return (T)term.withAttachments(attachments.build());
     }
@@ -43,8 +37,8 @@ public abstract class ATermPlaceholder {
         return get(term.getAttachments());
     }
 
-    public static Optional<TermPlaceholder> get(ClassToInstanceMap<Object> attachments) {
-        return Optional.ofNullable(attachments.getInstance(TermPlaceholder.class));
+    public static Optional<TermPlaceholder> get(IAttachments attachments) {
+        return Optional.ofNullable(attachments.get(TermPlaceholder.class));
     }
 
     public static boolean has(ITerm term) {

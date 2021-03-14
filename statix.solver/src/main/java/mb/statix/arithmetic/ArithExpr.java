@@ -2,14 +2,13 @@ package mb.statix.arithmetic;
 
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.Delay;
 
@@ -25,8 +24,8 @@ public interface ArithExpr {
         return Optional.empty();
     }
 
-    default Multiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    default Set.Immutable<ITermVar> getVars() {
+        return CapsuleUtil.immutableSet();
     }
 
     String toString(TermFormatter termToString);

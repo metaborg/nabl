@@ -4,6 +4,7 @@ import java.util.Map.Entry;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate1;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -57,6 +58,18 @@ public final class CapsuleUtil {
     }
 
     /**
+     * Filter the map by key.
+     */
+    public static <K, V> void filter(Map.Transient<K, V> map, Predicate1<K> filter) {
+        for(Entry<K, V> entry : map.entrySet()) {
+            final K key = entry.getKey();
+            if(!filter.test(key)) {
+                map.__remove(key);
+            }
+        }
+    }
+
+    /**
      * Replace the entry's key, or remove entry if the function returns `null`.
      */
     public static <K, V> void updateKeysOrRemove(Map.Transient<K, V> map, Function2<K, V, K> mapper) {
@@ -101,7 +114,17 @@ public final class CapsuleUtil {
             return (Set.Immutable<V>) values;
         }
         final Set.Transient<V> set = Set.Transient.of();
-        values.forEach(set::__insert);
+        for(V v : values) {
+            set.__insert(v);
+        }
+        return set.freeze();
+    }
+
+    @SuppressWarnings("unchecked") public static <V> Set.Immutable<V> toSet(V... values) {
+        final Set.Transient<V> set = Set.Transient.of();
+        for(V v : values) {
+            set.__insert(v);
+        }
         return set.freeze();
     }
 
@@ -115,7 +138,9 @@ public final class CapsuleUtil {
 
     public static <K, V> Map.Immutable<K, V> toMap(Iterable<? extends Entry<? extends K, ? extends V>> entries) {
         final Map.Transient<K, V> map = Map.Transient.of();
-        entries.forEach(e -> map.__put(e.getKey(), e.getValue()));
+        for(Entry<? extends K, ? extends V> e : entries) {
+            map.__put(e.getKey(), e.getValue());
+        }
         return map.freeze();
     }
 
@@ -125,8 +150,44 @@ public final class CapsuleUtil {
             return (SetMultimap.Immutable<K, V>) map;
         }
         final SetMultimap.Transient<K, V> multimap = SetMultimap.Transient.of();
-        map.entrySet().forEach(e -> multimap.__insert(e.getKey(), e.getValue()));
+        for(Entry<? extends K, ? extends V> e : map.entrySet()) {
+            multimap.__insert(e.getKey(), e.getValue());
+        }
         return multimap.freeze();
+    }
+
+    @SuppressWarnings("rawtypes") private static final Set.Immutable EMPTY_SET = Set.Immutable.of();
+
+    /**
+     * Constructor for Set.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Immutable<K> immutableSet() {
+        return EMPTY_SET;
+    }
+
+    /**
+     * Constructor for Set.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Immutable<K> immutableSet(K value) {
+        return EMPTY_SET.__insert(value);
+    }
+
+    /**
+     * Constructor for Set.Immutable that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Immutable<K> immutableSet(K value1, K value2) {
+        return EMPTY_SET.__insert(value1).__insert(value2);
+    }
+
+    /**
+     * Constructor for Set.Transient that reuses an instantiated object. Used not to hit the reflection used in the
+     * default construction methods.
+     */
+    @SuppressWarnings("unchecked") public static <K> Set.Transient<K> transientSet() {
+        return EMPTY_SET.asTransient();
     }
 
 }

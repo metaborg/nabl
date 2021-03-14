@@ -27,9 +27,9 @@ public final class FilterConstraints extends SearchStrategy<SearchState, SearchS
         final Immutable state = input.state();
         final Set.Immutable<IConstraint> constraints =
                 input.constraints().stream().filter(p::test).collect(CapsuleCollectors.toSet());
-        final ICompleteness.Transient completeness = Completeness.Transient.of(ctx.spec());
-        completeness.addAll(constraints, state.unifier());
-        completeness.addAll(input.delays().keySet(), state.unifier());
+        final ICompleteness.Transient completeness = Completeness.Transient.of();
+        completeness.addAll(constraints, ctx.spec(), state.unifier());
+        completeness.addAll(input.delays().keySet(), ctx.spec(), state.unifier());
         final SearchState output = input.replace(state, constraints, input.delays(), completeness.freeze());
         return SearchNodes.of(node, this::toString, new SearchNode<>(ctx.nextNodeId(), output, node, this.toString()));
     }

@@ -57,7 +57,7 @@ public class BaseComponent extends ASolver {
     }
 
     private ITermVar newVar(ITermVar var) {
-        return B.newVar(var.getResource(), fresh(var.getName())).withAttachments(var.getAttachments());
+        return B.newVar(var.getResource(), fresh(var.getName()), var.getAttachments());
     }
 
     private SolveResult solve(CNew constraint) {
@@ -69,8 +69,9 @@ public class BaseComponent extends ASolver {
     }
 
     private Scope newScope(ITerm term) {
-        return M.var(v -> Scope.of(v.getResource(), fresh(v.getName()))).match(term, unifier())
-                .orElseGet(() -> Scope.of("", fresh("s"))).withAttachments(term.getAttachments());
+        Scope scope = M.var(v -> Scope.of(v.getResource(), fresh(v.getName()))).match(term, unifier())
+                .orElseGet(() -> Scope.of("", fresh("s")).withAttachments(term.getAttachments()));
+        return scope;
     }
 
 }

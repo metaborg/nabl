@@ -24,4 +24,5 @@ public class OccursException extends Exception {
     @Override public String getMessage() {
         return "Recursive " + vars;
     }
+
 }

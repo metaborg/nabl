@@ -1,133 +1,96 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 
+import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.IActor;
-import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.deadlock.Clock;
-import mb.statix.concurrent.actors.deadlock.Deadlock;
-import mb.statix.concurrent.actors.deadlock.DeadlockBatcher;
-import mb.statix.concurrent.actors.deadlock.DeadlockMonitor;
-import mb.statix.concurrent.actors.deadlock.IDeadlockMonitor;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
-import mb.statix.concurrent.p_raffrayi.IBroker;
-import mb.statix.concurrent.p_raffrayi.IResult;
+import mb.statix.concurrent.actors.impl.IActorScheduler;
+import mb.statix.concurrent.actors.impl.WonkyScheduler;
+import mb.statix.concurrent.actors.impl.WorkStealingScheduler;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.IWaitFor;
 
-public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
+public class Broker<S, L, D, R> {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
-    private final IScopeImpl<S> scopeImpl;
+    private final String id;
+    private final ITypeChecker<S, L, D, R> typeChecker;
+    private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
 
     private final ActorSystem system;
-    private final IActor<IDeadlockMonitor<IUnit<S, L, D, R>, UnitState, IWaitFor<S, L, D>>> dlm;
 
-    private final Object lock = new Object();
-    private final Map<String, IActor<IUnit<S, L, D, R>>> units;
-    private final Map<String, IUnitResult<S, L, D, R>> results;
-    private final CompletableFuture<IResult<S, L, D, R>> result;
+    private final Map<String, IActorRef<? extends IUnit<S, L, D, ?>>> units;
+    private final AtomicInteger unfinishedUnits;
+    private final AtomicInteger totalUnits;
 
-    public Broker(IScopeImpl<S> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
+    private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
+            ICancel cancel, IActorScheduler scheduler) {
+        this.id = id;
+        this.typeChecker = typeChecker;
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
 
-        this.system = new ActorSystem();
-        this.dlm = system.add("<DLM>", TypeTag.of(IDeadlockMonitor.class),
-                self -> new DeadlockMonitor<>(self, this::handleDeadlock));
-        dlm.addMonitor(new IActorMonitor() {
-            @Override public void failed(mb.statix.concurrent.actors.IActor<?> self, Throwable ex) {
-                fail(ex);
-            };
-        });
+        this.system = new ActorSystem(scheduler);
 
-        this.units = Maps.newHashMap();
-        this.results = Maps.newHashMap();
-        this.result = new CompletableFuture<>();
+        this.units = new ConcurrentHashMap<>();
+        this.unfinishedUnits = new AtomicInteger();
+        this.totalUnits = new AtomicInteger();
     }
 
-    @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker) {
-        final IActor<IUnit<S, L, D, R>> unit = add(id, null, unitChecker);
-        system.async(unit)._start(null).whenComplete((r, ex) -> addResult(unit.id(), r, ex));
-    }
+    private IFuture<IUnitResult<S, L, D, R>> run() {
+        startWatcherThread();
 
-    private IActor<IUnit<S, L, D, R>> add(String id, @Nullable IActorRef<? extends IUnit<S, L, D, R>> parent,
-            ITypeChecker<S, L, D, R> unitChecker) {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, parent, new UnitContext(self), unitChecker, edgeLabels));
-        synchronized(lock) {
-            units.put(id, unit);
-        }
-        return unit;
+                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels));
+        addUnit(unit);
+
+        final IFuture<IUnitResult<S, L, D, R>> result = system.async(unit)._start(Collections.emptyList());
+        result.whenComplete((r, ex) -> finalizeUnit(unit, ex));
+
+        return result.compose((r, ex) -> system.stop().compose((r2, ex2) -> CompletableFuture.completed(r, ex)));
     }
 
-    private void addResult(String id, IUnitResult<S, L, D, R> unitResult, Throwable ex) {
-        synchronized(lock) {
-            if(ex != null) {
-                fail(ex);
-            } else {
-                results.put(id, unitResult);
-                if(results.size() == units.size()) {
-                    result.complete(Result.of(results));
-                    system.stop();
-                }
-            }
-        }
+    private void addUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
+        unfinishedUnits.incrementAndGet();
+        totalUnits.incrementAndGet();
+        units.put(unit.id(), unit);
     }
 
-    private void fail(Throwable ex) {
-        synchronized(lock) {
-            result.completeExceptionally(ex);
-            system.stop();
-        }
+    private void finalizeUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit, Throwable ex) {
+        final String event = ex != null ? "failed" : "finished";
+        logger.info("Unit {} {} ({} of {} remaining).", event, unit.id(), unfinishedUnits.decrementAndGet(),
+                totalUnits.get());
     }
 
-    private void handleDeadlock(IActor<?> dlm,
-            Deadlock<IActorRef<? extends IUnit<S, L, D, R>>, UnitState, IWaitFor<S, L, D>> deadlock) {
-        if(deadlock.edges().isEmpty()) {
-            final IActorRef<? extends IUnit<S, L, D, R>> unit = Iterables.getOnlyElement(deadlock.nodes().keySet());
-            dlm.async(unit)._done();
-        } else {
-            logger.error("deadlock detected: {}", deadlock);
-            for(IActorRef<? extends IUnit<S, L, D, R>> unit : deadlock.nodes().keySet()) {
-                dlm.async(unit)._deadlocked(deadlock.waitingFor(unit));
-            }
-        }
-    }
-
-    @Override public void run() {
-        system.start();
-
-        // start cancel watcher
+    private void startWatcherThread() {
         final Thread watcher = new Thread(() -> {
             try {
                 while(true) {
-                    if(result.isDone()) {
+                    if(!system.running()) {
                         return;
                     } else if(cancel.cancelled()) {
-                        result.completeExceptionally(new InterruptedException());
-                        system.stop();
+                        system.cancel();
                         return;
                     } else {
                         Thread.sleep(1000);
@@ -139,18 +102,12 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
         watcher.start();
     }
 
-    @Override public IFuture<IResult<S, L, D, R>> result() {
-        return result;
-    }
+    private class UnitContext implements IUnitContext<S, L, D> {
 
-    private class UnitContext implements IUnitContext<S, L, D, R> {
+        private final IActor<? extends IUnit<S, L, D, ?>> self;
 
-        private final IActor<? extends IUnit<S, L, D, R>> self;
-        private final DeadlockBatcher<IUnit<S, L, D, R>, UnitState, IWaitFor<S, L, D>> udlm;
-
-        public UnitContext(IActor<? extends IUnit<S, L, D, R>> self) {
+        public UnitContext(IActor<? extends IUnit<S, L, D, ?>> self) {
             this.self = self;
-            this.udlm = new DeadlockBatcher<>(self, dlm);
         }
 
         @Override public ICancel cancel() {
@@ -161,43 +118,45 @@ public class Broker<S, L, D, R> implements IBroker<S, L, D, R> {
             return scopeImpl.make(self.id(), name);
         }
 
-        @Override public IActorRef<? extends IUnit<S, L, D, R>> owner(S scope) {
-            synchronized(lock) {
-                return units.get(scopeImpl.id(scope));
-            }
+        @Override public IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope) {
+            return units.get(scopeImpl.id(scope));
         }
 
-        @Override public IActorRef<? extends IUnit<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-                S root) {
-            final IActor<IUnit<S, L, D, R>> unit = Broker.this.add(id, self, unitChecker);
-            self.async(unit)._start(root).whenComplete((r, ex) -> addResult(unit.id(), r, ex));
-            return unit;
+        @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>>
+                add(String id, ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes) {
+            final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
+                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels));
+            addUnit(unit);
+            final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
+            unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));
+            return Tuple2.of(unitResult, unit);
         }
 
-        @Override public void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            udlm.waitFor(unit, token);
-        }
+    }
 
-        @Override public void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            udlm.granted(unit, token);
-        }
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> unitChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
+        return run(id, unitChecker, scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors());
+    }
 
-        @Override public boolean isWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, R>> unit) {
-            return udlm.isWaitingFor(unit, token);
-        }
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism) {
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel, new WorkStealingScheduler(parallelism))
+                .run();
+    }
 
-        @Override public boolean isWaitingFor(IWaitFor<S, L, D> token) {
-            return udlm.isWaitingFor(token);
-        }
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, double preemptProbability,
+            int scheduleDelayBoundMillis) {
+        return debug(id, typeChecker, scopeImpl, edgeLabels, cancel, Runtime.getRuntime().availableProcessors(),
+                preemptProbability, scheduleDelayBoundMillis);
+    }
 
-        @Override public void suspended(UnitState state, Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
-            udlm.suspended(state, clock);
-        }
-
-        @Override public void stopped(Clock<IActorRef<? extends IUnit<S, L, D, R>>> clock) {
-            udlm.stopped(clock);
-        }
-
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, int parallelism,
+            double preemptProbability, int scheduleDelayBoundMillis) {
+        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, cancel,
+                new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();
     }
 
 }

@@ -30,7 +30,7 @@ public class TermMultiset {
 
     public void add(ITerm term, int n, IUnifier unifier) {
         final ITerm rep = unifier.findRecursive(term);
-        for(ITermVar var : rep.getVars().elementSet()) {
+        for(ITermVar var : rep.getVars()) {
             varTerms.put(var, rep);
         }
         terms.add(rep, n);

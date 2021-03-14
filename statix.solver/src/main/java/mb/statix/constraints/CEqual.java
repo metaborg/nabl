@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -77,11 +75,8 @@ public class CEqual implements IConstraint, Serializable {
         return cases.caseEqual(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(term1.getVars());
-        vars.addAll(term2.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(term1.getVars(), term2.getVars());
     }
 
     @Override public CEqual apply(ISubstitution.Immutable subst) {
@@ -104,19 +99,25 @@ public class CEqual implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CEqual cEqual = (CEqual)o;
-        return Objects.equals(term1, cEqual.term1) &&
-            Objects.equals(term2, cEqual.term2) &&
-            Objects.equals(cause, cEqual.cause) &&
-            Objects.equals(message, cEqual.message);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CEqual cEqual = (CEqual) o;
+        return Objects.equals(term1, cEqual.term1) && Objects.equals(term2, cEqual.term2)
+                && Objects.equals(cause, cEqual.cause) && Objects.equals(message, cEqual.message);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(term1, term2, cause, message);
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(term1, term2, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

@@ -12,32 +12,44 @@ imports
 rules // collect extension constraints
 
   ext-constraints: CDeriveMap(x, x', lift*) -> c*
-    with r-ref := <ext-get-constraint-ref> x
-       ; r-ref' := <ext-get-constraint-ref> x'
-       ; c* := <add-indices;filter(ext-lift-constraints(|r-ref, r-ref'));concat> lift*
+    where r-ref := <ext-get-constraint-ref> x
+        ; r-ref' := <ext-get-constraint-ref> x'
+        ; c* := <add-indices;filter(ext-lift-constraints(|r-ref, r-ref'));concat> lift*
 
   ext-constraints: FDeriveMap(x, x', inlift*, outlift) -> c*
-    with r-ref := <ext-get-constraint-ref> x
-       ; r-ref' := <ext-get-constraint-ref> x'
-       ; lift* := <conc> (inlift*, [outlift])
-       ; c* := <add-indices;filter(ext-lift-constraints(|r-ref, r-ref'));concat> lift*
+    where r-ref := <ext-get-constraint-ref> x
+        ; r-ref' := <ext-get-constraint-ref> x'
+        ; lift* := <conc> (inlift*, [outlift])
+        ; c* := <add-indices;filter(ext-lift-constraints(|r-ref, r-ref'));concat> lift*
 
   ext-lift-constraints(|r-ref, r-ref'): (i, l@IdLift()) -> c*
-    with c* := [ ExtProvides(ExtParam(r-ref, i), ExtParam(r-ref', i), l)
-               , ExtRequires(ExtParam(r-ref, i), ExtParam(r-ref', i), l)
-               ]
+    where c* := [ ExtProvides(ExtParam(r-ref, i), ExtParam(r-ref', i), l)
+                , ExtRequires(ExtParam(r-ref, i), ExtParam(r-ref', i), l)
+                ]
 
   ext-lift-constraints(|r-ref, r-ref'): (i, lift) -> c*
     where not(IdLift() := lift)
-    with c* := [ExtIsCovered(ExtParam(r-ref', i), lift)]
+        ; c* := [ExtIsCovered(ExtParam(r-ref', i), lift)]
 
 
   ext-constraints: Rule(_, F(x, inparam*, outparam), _) -> c*
-    with r-ref := <ext-get-constraint-ref> x
-       ; ps := <conc> (inparam*, [outparam])
-       ; c* := <ext-params-constraints(|r-ref)> ps
+    where r-ref := <ext-get-constraint-ref> x
+        ; ps := <conc> (inparam*, [outparam])
+        ; c* := <ext-params-constraints(|r-ref)> ps
+
+  ext-param-constraints(|r-ref): (i, n@NewOp()) -> (n, c*)
+    where c* := [ ExtProvides(ExtParam(r-ref, i), ExtAll(), n) ]
 
 
-  ext-constraints: COp(x, args) -> c*
-    with r-ref := <ext-get-constraint-ref> x
-       ; c* := <ext-args-constraints(|r-ref)> args
+  ext-constraints: t@COp(x, args) -> c*
+    where t-ref := <ext-get-term-ref> t
+        ; r-ref := <ext-get-constraint-ref> x
+        ; c-in*  := <ext-args-constraints(|r-ref)> args
+        ; c-out* := [ExtIsCovered(t-ref, t)]
+        ; c* := <conc> (c-in*, c-out*)
+
+
+  ext-get-term-ref: COp(x, args) -> ExtParam(r-ref, i)
+    where r-ref := <ext-get-constraint-ref> x
+        ; i := <length;inc> args
+

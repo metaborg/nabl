@@ -15,14 +15,20 @@ public interface ISubstitution {
 
     boolean contains(ITermVar var);
 
-    Set<ITermVar> varSet();
+    Set<ITermVar> domainSet();
+
+    Set<ITermVar> rangeSet();
 
     Set<Entry<ITermVar, ITerm>> entrySet();
 
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        return terms.stream().map(this::apply).collect(ImmutableList.toImmutableList());
+        final ImmutableList.Builder<ITerm> newTerms = ImmutableList.builderWithExpectedSize(terms.size());
+        for(ITerm term : terms) {
+            newTerms.add(apply(term));
+        }
+        return newTerms.build();
     }
 
     interface Immutable extends ISubstitution {

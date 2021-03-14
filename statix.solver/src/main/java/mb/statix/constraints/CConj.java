@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -58,11 +56,8 @@ public class CConj implements IConstraint, Serializable {
         return cases.caseConj(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(left.getVars());
-        vars.addAll(right.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(left.getVars(), right.getVars());
     }
 
     @Override public CConj apply(ISubstitution.Immutable subst) {
@@ -85,18 +80,25 @@ public class CConj implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CConj cConj = (CConj)o;
-        return Objects.equals(left, cConj.left) &&
-            Objects.equals(right, cConj.right) &&
-            Objects.equals(cause, cConj.cause);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CConj cConj = (CConj) o;
+        return Objects.equals(left, cConj.left) && Objects.equals(right, cConj.right)
+                && Objects.equals(cause, cConj.cause);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(left, right, cause);
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(left, right, cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

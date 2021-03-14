@@ -1,18 +1,19 @@
 package mb.statix.concurrent.p_raffrayi;
 
+import java.util.List;
 import java.util.Set;
 
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
 
 /**
  * The interface from the system to the type checkers.
  */
-public interface ITypeCheckerContext<S, L, D, R> {
+public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Return id of the current unit.
@@ -22,12 +23,12 @@ public interface ITypeCheckerContext<S, L, D, R> {
     /**
      * Start sub type-checker, with the given root scope.
      */
-    void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
 
     /**
      * Initialize root scope.
      */
-    void initRoot(S root, Iterable<L> labels, boolean shared);
+    void initScope(S root, Iterable<L> labels, boolean shared);
 
     /**
      * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
@@ -46,6 +47,11 @@ public interface ITypeCheckerContext<S, L, D, R> {
     void addEdge(S source, L label, S target);
 
     /**
+     * Indicate that the unit intends to initialize the scope again.
+     */
+    void shareLocal(S scope);
+
+    /**
      * Close open label for the given scope.
      */
     void closeEdge(S source, L label);
@@ -57,13 +63,31 @@ public interface ITypeCheckerContext<S, L, D, R> {
 
     /**
      * Execute scope graph query in the given scope.
+     * 
+     * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
+     * that do not leak references to the type checker, as this will break the actor abstraction.
      */
-    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF, DataWF<D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
+    default IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+            LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
+        return query(scope, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+    }
 
-    default ITypeCheckerContext<S, L, D, R> subContext(String subId) {
-        final ITypeCheckerContext<S, L, D, R> outer = this;
-        return new ITypeCheckerContext<S, L, D, R>() {
+    /**
+     * Execute scope graph query in the given scope.
+     * 
+     * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
+     * that do not leak references to the type checker, as this will break the actor abstraction.
+     * 
+     * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
+     * type checker state safely.
+     */
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
+            DataLeq<S, L, D> dataEquivInternal);
+
+    default ITypeCheckerContext<S, L, D> subContext(String subId) {
+        final ITypeCheckerContext<S, L, D> outer = this;
+        return new ITypeCheckerContext<S, L, D>() {
 
             private final String id = outer.id() + "#" + subId;
 
@@ -71,37 +95,44 @@ public interface ITypeCheckerContext<S, L, D, R> {
                 return id;
             }
 
-            @Override public void add(String id, ITypeChecker<S, L, D, R> unitChecker, S root) {
+            @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
+                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void initRoot(S root, Iterable<L> labels, boolean shared) {
+            @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared) {
+            @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> labels, boolean data,
+                    boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void setDatum(S scope, D datum) {
+            @SuppressWarnings("unused") @Override public void shareLocal(S scope) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void addEdge(S source, L label, S target) {
+            @SuppressWarnings("unused") @Override public void setDatum(S scope, D datum) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void closeEdge(S source, L label) {
+            @SuppressWarnings("unused") @Override public void addEdge(S source, L label, S target) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public void closeScope(S scope) {
+            @SuppressWarnings("unused") @Override public void closeEdge(S source, L label) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWF<L> labelWF,
-                    DataWF<D> dataWF, LabelOrder<L> labelOrder, DataLeq<D> dataEquiv) {
-                return outer.query(scope, labelWF, dataWF, labelOrder, dataEquiv);
+            @SuppressWarnings("unused") @Override public void closeScope(S scope) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+                    LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                    DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+                return outer.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
             }
 
         };

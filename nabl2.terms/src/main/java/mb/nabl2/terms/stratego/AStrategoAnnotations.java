@@ -12,4 +12,8 @@ public abstract class AStrategoAnnotations {
 
     @Value.Parameter public abstract List<IStrategoTerm> getAnnotationList();
 
+    public boolean isEmpty() {
+        return getAnnotationList().isEmpty();
+    }
+
 }

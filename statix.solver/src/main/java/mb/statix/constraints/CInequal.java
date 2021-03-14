@@ -3,19 +3,17 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -40,7 +38,7 @@ public class CInequal implements IConstraint, Serializable {
 
     public CInequal(Iterable<ITermVar> universals, ITerm term1, ITerm term2, @Nullable IConstraint cause,
             @Nullable IMessage message) {
-        this.universals = ImmutableSet.copyOf(universals);
+        this.universals = CapsuleUtil.toSet(universals);
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;
@@ -83,22 +81,24 @@ public class CInequal implements IConstraint, Serializable {
         return cases.caseInequal(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(term1.getVars());
-        vars.addAll(term2.getVars());
-        return vars.build();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
+        vars.__insertAll(universals);
+        vars.__insertAll(term1.getVars());
+        vars.__insertAll(term2.getVars());
+        return vars.freeze();
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {
-        final Set<ITermVar> us = universals.stream().flatMap(v -> subst.apply(v).getVars().stream())
-                .collect(ImmutableSet.toImmutableSet());
+        final Set.Immutable<ITermVar> us =
+                universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());
         return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
                 message == null ? null : message.apply(subst));
     }
 
     @Override public CInequal apply(IRenaming subst) {
-        final Set<ITermVar> us = universals.stream().map(v -> subst.rename(v)).collect(ImmutableSet.toImmutableSet());
+        final Set.Immutable<ITermVar> us =
+                universals.stream().map(v -> subst.rename(v)).collect(CapsuleCollectors.toSet());
         return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
                 message == null ? null : message.apply(subst));
     }
@@ -123,20 +123,26 @@ public class CInequal implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CInequal cInequal = (CInequal)o;
-        return Objects.equals(universals, cInequal.universals) &&
-            Objects.equals(term1, cInequal.term1) &&
-            Objects.equals(term2, cInequal.term2) &&
-            Objects.equals(cause, cInequal.cause) &&
-            Objects.equals(message, cInequal.message);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CInequal cInequal = (CInequal) o;
+        return Objects.equals(universals, cInequal.universals) && Objects.equals(term1, cInequal.term1)
+                && Objects.equals(term2, cInequal.term2) && Objects.equals(cause, cInequal.cause)
+                && Objects.equals(message, cInequal.message);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(universals, term1, term2, cause, message);
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(universals, term1, term2, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

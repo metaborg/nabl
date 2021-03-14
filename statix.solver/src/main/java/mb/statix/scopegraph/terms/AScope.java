@@ -39,8 +39,13 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
     }
 
     public static IMatcher<Scope> matcher() {
-        return M.preserveAttachments(
-                M.appl2(OP, M.stringValue(), M.stringValue(), (t, resource, name) -> Scope.of(resource, name)));
+        return M.preserveAttachments(M.appl2(OP, M.stringValue(), M.stringValue(), (t, resource, name) -> {
+            if(t instanceof Scope) {
+                return (Scope) t;
+            } else {
+                return Scope.of(resource, name);
+            }
+        }));
     }
 
     @Override protected AScope check() {
@@ -70,7 +75,14 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
     }
 
     @Override public String toString() {
-        return "#" + getResource() + "-" + getName();
+        StringBuilder sb = new StringBuilder();
+        sb.append("#");
+        if(!getResource().isEmpty()) {
+            sb.append(getResource());
+            sb.append("-");
+        }
+        sb.append(getName());
+        return sb.toString();
     }
 
     @Override public int compareTo(final IScope scope) {

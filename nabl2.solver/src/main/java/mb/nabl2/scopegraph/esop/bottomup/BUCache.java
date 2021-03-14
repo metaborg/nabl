@@ -8,6 +8,7 @@ import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
@@ -33,20 +34,23 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
 
     // fields cannot be final, because of readObject
 
-    protected /* final */ Map.Immutable<Tuple2<SpacedName, L>, BUPathKey<L>> keys;
+    protected /* final */ Map.Immutable<Tuple3<BUEnvKind, S, IRegExp<L>>, BUEnvKey<S, L>> envKeys;
+    protected /* final */ Map.Immutable<Tuple2<SpacedName, L>, BUPathKey<L>> pathKeys;
     protected /*final*/ Map.Immutable<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> envs;
     protected /*final*/ Set.Immutable<BUEnvKey<S, L>> completed;
     protected /*final*/ IRelation3.Immutable<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges;
     protected /*final*/ IRelation3.Immutable<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports;
     protected /*final*/ IRelation2.Immutable<BUEnvKey<S, L>, CriticalEdge> openEdges;
 
-    BUCache(Map.Immutable<Tuple2<SpacedName, L>, BUPathKey<L>> keys,
+    BUCache(Map.Immutable<Tuple3<BUEnvKind, S, IRegExp<L>>, BUEnvKey<S, L>> envKeys,
+            Map.Immutable<Tuple2<SpacedName, L>, BUPathKey<L>> pathKeys,
             Map.Immutable<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> envs,
             Set.Immutable<BUEnvKey<S, L>> completed,
             IRelation3.Immutable<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges,
             IRelation3.Immutable<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports,
             IRelation2.Immutable<BUEnvKey<S, L>, CriticalEdge> openEdges) {
-        this.keys = keys;
+        this.envKeys = envKeys;
+        this.pathKeys = pathKeys;
         this.envs = envs;
         this.completed = completed;
         this.backedges = backedges;
@@ -54,14 +58,17 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
         this.openEdges = openEdges;
     }
 
-    BUCache(Map<Tuple2<SpacedName, L>, BUPathKey<L>> keys, Map<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs,
-            Set<BUEnvKey<S, L>> completed, IRelation3<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges,
+    BUCache(Map<Tuple3<BUEnvKind, S, IRegExp<L>>, BUEnvKey<S, L>> envKeys,
+            Map<Tuple2<SpacedName, L>, BUPathKey<L>> pathKeys,
+            Map<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs, Set<BUEnvKey<S, L>> completed,
+            IRelation3<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges,
             IRelation3<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports,
             IRelation2<BUEnvKey<S, L>, CriticalEdge> openEdges) {
         final Map.Transient<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> _envs =
                 Map.Transient.of();
-        envs.forEach((e, ps) -> _envs.__put(e, ps.asChanges().addedPaths()));
-        this.keys = CapsuleUtil.toMap(keys);
+        envs.forEach((e, ps) -> _envs.__put(e, ps.pathSet()));
+        this.envKeys = CapsuleUtil.toMap(envKeys);
+        this.pathKeys = CapsuleUtil.toMap(pathKeys);
         this.envs = _envs.freeze();
         this.completed = CapsuleUtil.toSet(completed);
         this.backedges =
@@ -76,7 +83,8 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        this.keys = Map.Immutable.of();
+        this.envKeys = Map.Immutable.of();
+        this.pathKeys = Map.Immutable.of();
         this.envs = Map.Immutable.of();
         this.completed = Set.Immutable.of();
         this.backedges = HashTrieRelation3.Immutable.of();

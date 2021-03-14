@@ -77,6 +77,9 @@ public class Log {
         }
 
         private void log(IDebugContext debug) {
+            if(!debug.isEnabled(level)) {
+                return;
+            }
             if(t != null) {
                 debug.log(level, message, t, args);
             } else {

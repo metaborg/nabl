@@ -34,10 +34,14 @@ rules
        ; <dbg> "* BEGIN SCRIPT *"
        ; <dbg> "****************"
        ; result* := <foldl(execute-changes(dbg|spec-name, "projectOk", "unitOk"))> (change-sets', ([], []))
-       ; <dbg> "*****************"
+       < <dbg> "*****************"
        ; <dbg> "* FINISH SCRIPT *"
        ; <dbg> "*****************"
        ; result := result*
+       + <dbg> "*****************"
+       ; <dbg> "* SCRIPT FAILED *"
+       ; <dbg> "*****************"
+       ; result := []
 
   add-initial-project: []                               -> [ChangeSet([Added(<project-resource>, ())])]
   add-initial-project: [ChangeSet(changes)|change-sets] -> [ChangeSet([Added(<project-resource>, ())|changes])|change-sets]
@@ -66,7 +70,9 @@ rules
        ; <dbg> "**************"
     with AnalysisResult(mresult*) := <stx-editor-analyze(id, id|spec-name, project-constraint, file-constraint)> AnalyzeMulti((project-resource, project-change), change*, (), ())
 
-       ; error* := <mapconcat(Snd; (?Full(_, _, <id>, _, _) + ?Update(_, <id>, _, _)))> mresult*
+    where [] := <filter(?(_, Failed()))> mresult*
+    
+    with error* := <mapconcat(Snd; (?Full(_, _, <id>, _, _) + ?Update(_, <id>, _, _)))> mresult*
        ; <map(format-message(|"ERROR ");dbg)> error*
        ; warning* := <mapconcat(Snd; (?Full(_, _, _, <id>, _) + ?Update(_, _, <id>, _)))> mresult*
        ; <map(format-message(|"WARN  ");dbg)> warning*

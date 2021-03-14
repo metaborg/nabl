@@ -15,12 +15,12 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -33,13 +33,13 @@ import mb.nabl2.util.Tuple2;
 public abstract class Pattern implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableClassToInstanceMap<Object> attachments;
+    private final IAttachments attachments;
 
-    protected Pattern(ImmutableClassToInstanceMap<Object> attachments) {
+    protected Pattern(IAttachments attachments) {
         this.attachments = attachments;
     }
 
-    public ImmutableClassToInstanceMap<Object> getAttachments() {
+    public IAttachments getAttachments() {
         return attachments;
     }
 
@@ -78,8 +78,7 @@ public abstract class Pattern implements Serializable {
      * Fresh variables are generated for unmatched variables in the patterns. As a result, the resulting substitution
      * has entries for all the variables in the patterns, and no pattern variables escape in the equalities.
      */
-    public Optional<AMatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier,
-            Function1<Optional<ITermVar>, ITermVar> fresh) {
+    public Optional<MatchResult> matchWithEqs(ITerm term, IUnifier.Immutable unifier, VarProvider fresh) {
         // substitution from pattern variables to unifier variables
         final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
         // equalities between unifier terms
@@ -104,8 +103,10 @@ public abstract class Pattern implements Serializable {
         }
 
         // generate fresh unifier variables for unmatched pattern variables
-        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.varSet()).immutableCopy();
-        freeVars.forEach(v -> _subst.put(v, fresh.apply(Optional.of(v))));
+        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.domainSet()).immutableCopy();
+        for(ITermVar v : freeVars) {
+            _subst.put(v, fresh.freshVar(v));
+        }
         final ISubstitution.Immutable subst = _subst.freeze();
 
         // create equalities between unifier terms from pattern equalities
@@ -121,12 +122,12 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(Tuple2.of(subst.apply(v), subst.apply(t)));
-            }, (v) -> v.orElse(fresh.apply(Optional.empty())));
+            }, (v) -> v.orElse(fresh.freshWld()));
             stuckVars.add(leftVar);
             allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }
 
-        return Optional.of(MatchResult.of(subst, stuckVars.build(), allEqs.build()));
+        return Optional.of(new MatchResult(subst, stuckVars.build(), allEqs.build()));
     }
 
     protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,

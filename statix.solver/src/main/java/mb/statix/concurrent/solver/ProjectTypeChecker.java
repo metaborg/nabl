@@ -1,45 +1,54 @@
 package mb.statix.concurrent.solver;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
-import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
-public class ProjectTypeChecker implements ITypeChecker<Scope, ITerm, ITerm, SolverResult> {
+public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
 
-    private final Map<String, Rule> units;
-    private final Spec spec;
-    private final IDebugContext debug;
+    private static final ILogger logger = LoggerUtils.logger(ProjectTypeChecker.class);
 
-    public ProjectTypeChecker(Map<String, Rule> units, Spec spec, IDebugContext debug) {
-        this.units = units;
-        this.spec = spec;
-        this.debug = debug;
+    private final IStatixProject project;
+
+    public ProjectTypeChecker(IStatixProject project, Spec spec, IDebugContext debug) {
+        super(spec, debug);
+        this.project = project;
     }
 
-    @Override public IFuture<SolverResult> run(ITypeCheckerContext<Scope, ITerm, ITerm, SolverResult> context,
-            @Nullable Scope root) {
-        final Scope projectScope = context.freshScope("s_root", Collections.emptySet(), true, true);
-        context.setDatum(projectScope, projectScope);
-        for(Entry<String, Rule> entry : units.entrySet()) {
-            final String id = entry.getKey();
-            final Rule rule = entry.getValue();
-            context.add(id, new UnitTypeChecker(rule, spec, debug), projectScope);
-        }
+    @Override public IFuture<ProjectResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
+            @SuppressWarnings("unused") List<Scope> rootScopes) {
+        final Scope projectScope = makeSharedScope(context, "s_prj");
+
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
+                runGroups(context, project.groups(), projectScope, projectScope);
+
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
+                runUnits(context, project.units(), projectScope, projectScope);
+
+        runLibraries(context, project.libraries(), projectScope);
+
         context.closeScope(projectScope);
-        return CompletableFuture.completedFuture(SolverResult.of(spec));
+
+        final IFuture<SolverResult> result = runSolver(context, project.rule(), Arrays.asList(projectScope));
+
+        return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
+            return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), null);
+        }).whenComplete((r, ex) -> {
+            logger.debug("project {}: returned.", context.id());
+        });
     }
 
 }

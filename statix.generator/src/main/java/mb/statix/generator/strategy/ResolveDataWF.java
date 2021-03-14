@@ -25,9 +25,11 @@ import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -51,32 +53,38 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // apply rule
         final ApplyResult applyResult;
-        if((applyResult = RuleUtil.apply(state, dataWf, ImmutableList.of(datum), null).orElse(null)) == null) {
+        if((applyResult = RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED)
+                .orElse(null)) == null) {
             return Optional.empty();
         }
-        final IState.Immutable applyState = applyResult.state();
+        final IState.Immutable applyState = state;
         final IConstraint applyConstraint = applyResult.body();
 
         // update completeness for new state and constraint
         final ICompleteness.Transient completeness = this.completeness.melt();
-        completeness.updateAll(applyResult.diff().varSet(), applyState.unifier());
-        completeness.add(applyConstraint, applyState.unifier());
+        completeness.add(applyConstraint, spec, applyState.unifier());
 
-        // NOTE This method is almost a duplicate of Solver::entails and should be
+        // NOTE This part is almost a duplicate of Solver::entails and should be
         //      kept in sync
 
-        // solve rule constraint
-        final SolverResult result =
-                Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint), Map.Immutable.of(),
-                        completeness.freeze(), new NullDebugContext(), new NullProgress(), new NullCancel());
+        // no substate is used here, as we allow variables from the context to be unified
+        final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
+                Map.Immutable.of(), completeness.freeze(), IsComplete.ALWAYS, new NullDebugContext(),
+                new NullProgress(), new NullCancel());
+
+        // NOTE This part is almost a duplicate of Solver::entailed and should be
+        //      kept in sync
+
         if(result.hasErrors()) {
-            return Optional.empty();
-        }
-        if(!result.delays().isEmpty()) {
             return Optional.empty();
         }
 
         final IState.Immutable newState = result.state();
+
+        if(!result.delays().isEmpty()) {
+            return Optional.empty();
+        }
+
         // NOTE The retain operation is important because it may change
         //      representatives, which can be local to newUnifier.
         final IUniDisunifier.Immutable newUnifier = newState.unifier().retainAll(state.vars()).unifier();
@@ -85,14 +93,14 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // @formatter:off
         final List<ITermVar> disunifiedVars = newUnifier.disequalities().stream()
                 .filter(diseq -> diseq.toTuple().apply(unifier::disunify).map(r -> r.result().isPresent()).orElse(true))
-                .flatMap(diseq -> diseq.varSet().stream())
+                .flatMap(diseq -> diseq.domainSet().stream())
                 .collect(Collectors.toList());
         // @formatter:on
         if(!disunifiedVars.isEmpty()) {
             return Optional.empty();
         }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.varSet(), unifier.varSet());
+        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.domainSet(), unifier.domainSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`

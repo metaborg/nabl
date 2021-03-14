@@ -2,7 +2,12 @@ package mb.statix.concurrent.p_raffrayi.impl.tokens;
 
 import org.metaborg.util.functions.Action1;
 
+import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.p_raffrayi.impl.IUnit;
+
 public interface IWaitFor<S, L, D> {
+
+    IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
     void visit(Cases<S, L, D> cases);
 
@@ -16,13 +21,16 @@ public interface IWaitFor<S, L, D> {
 
         void on(Query<S, L, D> query);
 
-        void on(ExternalRep<S, L, D> externalRep);
+        void on(TypeCheckerResult<S, L, D> result);
+
+        void on(TypeCheckerState<S, L, D> typeCheckerState);
 
     }
 
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
             Action1<CloseScope<S, L, D>> onCloseScope, Action1<CloseLabel<S, L, D>> onCloseLabel,
-            Action1<Query<S, L, D>> onQuery, Action1<ExternalRep<S, L, D>> onExternalRep) {
+            Action1<Query<S, L, D>> onQuery, Action1<TypeCheckerResult<S, L, D>> onResult,
+            Action1<TypeCheckerState<S, L, D>> onTypeCheckerState) {
         return new Cases<S, L, D>() {
 
             @Override public void on(InitScope<S, L, D> initScope) {
@@ -41,8 +49,12 @@ public interface IWaitFor<S, L, D> {
                 onQuery.apply(query);
             }
 
-            @Override public void on(ExternalRep<S, L, D> externalRep) {
-                onExternalRep.apply(externalRep);
+            @Override public void on(TypeCheckerResult<S, L, D> result) {
+                onResult.apply(result);
+            }
+
+            @Override public void on(TypeCheckerState<S, L, D> typeCheckerState) {
+                onTypeCheckerState.apply(typeCheckerState);
             }
         };
     }

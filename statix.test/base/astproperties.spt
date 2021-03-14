@@ -7,27 +7,27 @@ test set property on term succeeds [[
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test set property on scope succeeds [[
+test set property on scope warns [[
   resolve {s} new s, @s.type := ()
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to WARNS()
 
-test set property on free variable fails [[
+test set property on free variable warns [[
   resolve {t} @t.type := ()
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to WARNS()
 
-test set property on term twice fails [[
+test set property on term twice warns [[
   resolve {t} t == (), @t.type := (), @t.type := ()
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to WARNS()
 
 test add property on term twice succeeds [[
   resolve {t} t == (), @t.type += (), @t.type += ()
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
 
-test set and add same property on term fails [[
+test set and add same property on term warns [[
   resolve {t} t == (), @t.type := (), @t.type += ()
 ]] analysis succeeds
-   run evaluate-test to FAILS()
+   run evaluate-test to WARNS()

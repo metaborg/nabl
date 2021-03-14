@@ -6,13 +6,14 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMultiset;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.util.CapsuleUtil;
 
-@Value.Immutable
+@Value.Immutable(builder = true, copy = true, prehash = false, lazyhash = false)
 @Serial.Version(value = 42L)
 public abstract class ATermVar extends AbstractTerm implements ITermVar {
 
@@ -33,8 +34,8 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return false;
     }
 
-    @Value.Lazy @Override public ImmutableMultiset<ITermVar> getVars() {
-        return ImmutableMultiset.of(this);
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return CapsuleUtil.immutableSet(this);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
@@ -53,18 +54,25 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return cases.caseVar(this);
     }
 
-    @Value.Lazy @Override public int hashCode() {
-        return Objects.hash(
-            getResource(),
-            getName()
-        );
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getResource(), getName());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof ITermVar)) return false;
-        ITermVar that = (ITermVar)other;
-        if (this.hashCode() != that.hashCode()) return false;
+        if(this == other)
+            return true;
+        if(!(other instanceof ITermVar))
+            return false;
+        ITermVar that = (ITermVar) other;
+        if(this.hashCode() != that.hashCode())
+            return false;
         // @formatter:off
         return Objects.equals(this.getResource(), that.getResource())
             && Objects.equals(this.getName(), that.getName());

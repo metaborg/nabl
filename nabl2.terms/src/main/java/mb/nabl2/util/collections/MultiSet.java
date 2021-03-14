@@ -3,13 +3,18 @@ package mb.nabl2.util.collections;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Sets;
+
 import io.usethesource.capsule.Map;
-import mb.nabl2.util.CapsuleUtil;
 
 public abstract class MultiSet<E> implements Iterable<E> {
+
+    @SuppressWarnings("rawtypes") private static final MultiSet.Immutable EMPTY =
+            new MultiSet.Immutable<>(Map.Immutable.of());
 
     protected abstract Map<E, Integer> elements();
 
@@ -17,6 +22,9 @@ public abstract class MultiSet<E> implements Iterable<E> {
         return elements().isEmpty();
     }
 
+    /**
+     * Return number of elements in the set. This operation does not run in constant time.
+     */
     public int size() {
         return elements().values().stream().mapToInt(i -> i).sum();
     }
@@ -27,6 +35,15 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
     public boolean contains(E e) {
         return elements().containsKey(e);
+    }
+
+    public boolean containsAll(Iterable<E> es) {
+        for(E e : es) {
+            if(contains(e)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public Set<Entry<E, Integer>> entrySet() {
@@ -41,8 +58,54 @@ public abstract class MultiSet<E> implements Iterable<E> {
         return new MultiSetIterator();
     }
 
-    public Map.Immutable<E, Integer> toMap() {
-        return CapsuleUtil.toMap(elements());
+    public Optional<Integer> compareTo(MultiSet<E> other) {
+        final Map<E, Integer> ours = elements();
+        final Map<E, Integer> theirs = other.elements();
+        boolean oursMissing = false;
+        boolean theirsMissing = false;
+        boolean oursSmaller = false;
+        boolean theirsSmaller = false;
+        for(E e : Sets.union(ours.keySet(), theirs.keySet())) {
+            final Integer ourCount = ours.get(e);
+            final Integer theirCount = theirs.get(e);
+            if(ourCount == null && theirCount == null) {
+                // continue
+            } else if(ourCount == null) {
+                if(theirsMissing) {
+                    return Optional.empty();
+                } else {
+                    oursMissing = true;
+                }
+            } else if(theirCount == null) {
+                if(oursMissing) {
+                    return Optional.empty();
+                } else {
+                    theirsMissing = true;
+                }
+            } else {
+                final int d = ourCount - theirCount;
+                if(d < 0) {
+                    if(theirsSmaller) {
+                        return Optional.empty();
+                    } else {
+                        oursSmaller = true;
+                    }
+                } else if(d > 0) {
+                    if(oursSmaller) {
+                        return Optional.empty();
+                    } else {
+                        theirsSmaller = true;
+                    }
+                }
+            }
+        }
+        // at this point, oursMissing && theirsMissing == false, and oursSmaller && theirsMissing == false should hold
+        if(oursMissing || oursSmaller) {
+            return Optional.of(-1);
+        } else if(theirsMissing || theirsSmaller) {
+            return Optional.of(1);
+        }
+        return Optional.of(0);
     }
 
     public static class Immutable<E> extends MultiSet<E> implements Serializable {
@@ -78,9 +141,10 @@ public abstract class MultiSet<E> implements Iterable<E> {
             if(n < 0) {
                 throw new IllegalArgumentException("count must be positive");
             }
-            final int c = elements.getOrDefault(e, 0) + n;
-            if(c > 0) {
-                return new MultiSet.Immutable<>(elements.__put(e, c));
+            final Integer oldCount = elements.getOrDefault(e, 0);
+            final int newCount = oldCount + n;
+            if(newCount > 0) {
+                return new MultiSet.Immutable<>(elements.__put(e, newCount));
             } else {
                 return new MultiSet.Immutable<>(elements.__remove(e));
             }
@@ -102,9 +166,10 @@ public abstract class MultiSet<E> implements Iterable<E> {
             if(n < 0) {
                 throw new IllegalArgumentException("count must be positive");
             }
-            final int c = Math.max(0, elements.getOrDefault(e, 0) - n);
-            if(c > 0) {
-                return new MultiSet.Immutable<>(elements.__put(e, c));
+            final Integer oldCount = elements.getOrDefault(e, 0);
+            final int newCount = Math.max(0, oldCount - n);
+            if(newCount > 0) {
+                return new MultiSet.Immutable<>(elements.__put(e, newCount));
             } else {
                 return new MultiSet.Immutable<>(elements.__remove(e));
             }
@@ -115,12 +180,37 @@ public abstract class MultiSet<E> implements Iterable<E> {
             return new MultiSet.Immutable<>(elements.__remove(e));
         }
 
+        public Map.Immutable<E, Integer> asMap() {
+            return elements;
+        }
+
         public MultiSet.Transient<E> melt() {
             return new MultiSet.Transient<>(elements.asTransient());
         }
 
-        public static <E> MultiSet.Immutable<E> of() {
-            return new MultiSet.Immutable<>(Map.Immutable.of());
+        @SuppressWarnings("unchecked") public static <E> MultiSet.Immutable<E> of() {
+            return EMPTY;
+        }
+
+        public static <E> MultiSet.Immutable<E> of(E var) {
+            return of(var, 1);
+        }
+
+        public static <E> MultiSet.Immutable<E> of(E var, int n) {
+            return new MultiSet.Immutable<>(Map.Immutable.of(var, n));
+        }
+
+        @SuppressWarnings("unchecked") public static <E> MultiSet.Immutable<E> union(MultiSet.Immutable<E> set1,
+                MultiSet.Immutable<E> set2) {
+            if(set1.isEmpty() && set2.isEmpty()) {
+                return EMPTY;
+            } else if(set1.isEmpty()) {
+                return set2;
+            } else if(set2.isEmpty()) {
+                return set1;
+            } else {
+                return set1.addAll(set2);
+            }
         }
 
     }
@@ -150,13 +240,13 @@ public abstract class MultiSet<E> implements Iterable<E> {
             if(n < 0) {
                 throw new IllegalArgumentException("count must be positive");
             }
-            final Integer c;
+            final Integer oldCount;
             if(n > 0) {
-                c = elements.__put(e, n);
+                oldCount = elements.__put(e, n);
             } else {
-                c = elements.__remove(e);
+                oldCount = elements.__remove(e);
             }
-            return c != null ? c : 0;
+            return oldCount != null ? oldCount : 0;
         }
 
         /**
@@ -177,24 +267,25 @@ public abstract class MultiSet<E> implements Iterable<E> {
          *            Element to be added
          * @param n
          *            Additions, greater or equal to zero
-         * @return New count for the element
+         * @return Old count for the element
          */
         public int add(E e, int n) {
             if(n < 0) {
                 throw new IllegalArgumentException("count must be positive");
             }
-            final int c = elements.getOrDefault(e, 0) + n;
-            if(c > 0) {
-                elements.__put(e, c);
+            final int oldCount = elements.getOrDefault(e, 0);
+            final int newCount = oldCount + n;
+            if(newCount > 0) {
+                elements.__put(e, newCount);
             } else {
                 elements.__remove(e);
             }
-            return c;
+            return oldCount;
         }
 
         public void addAll(Iterable<E> es) {
             for(E e : es) {
-                this.add(e);
+                add(e);
             }
         }
 
@@ -203,7 +294,7 @@ public abstract class MultiSet<E> implements Iterable<E> {
          * 
          * @param e
          *            Element to be removed
-         * @return New count for the element
+         * @return Old count for the element
          */
         public int remove(E e) {
             return remove(e, 1);
@@ -211,7 +302,7 @@ public abstract class MultiSet<E> implements Iterable<E> {
 
         public void removeAll(Iterable<E> es) {
             for(E e : es) {
-                this.remove(e);
+                remove(e);
             }
         }
 
@@ -222,19 +313,20 @@ public abstract class MultiSet<E> implements Iterable<E> {
          *            Element to be removed
          * @param n
          *            Removals, greater or equal to zero
-         * @return New count for the element
+         * @return Old count for the element
          */
         public int remove(E e, int n) {
             if(n < 0) {
                 throw new IllegalArgumentException("count must be positive");
             }
-            final int c = Math.max(0, elements.getOrDefault(e, 0) - n);
-            if(c > 0) {
-                elements.__put(e, c);
+            final int oldCount = elements.getOrDefault(e, 0);
+            final int newCount = Math.max(0, oldCount - n);
+            if(newCount > 0) {
+                elements.__put(e, newCount);
             } else {
                 elements.__remove(e);
             }
-            return c;
+            return oldCount;
         }
 
         /**
@@ -243,13 +335,13 @@ public abstract class MultiSet<E> implements Iterable<E> {
          * @return Old count for the element
          */
         public int removeAll(E e) {
-            final int c = elements.getOrDefault(e, 0);
+            final int oldCount = elements.getOrDefault(e, 0);
             elements.__remove(e);
-            return c;
+            return oldCount;
         }
 
-        public MultiSet.Immutable<E> freeze() {
-            return new MultiSet.Immutable<>(elements.freeze());
+        @SuppressWarnings("unchecked") public MultiSet.Immutable<E> freeze() {
+            return elements.isEmpty() ? EMPTY : new MultiSet.Immutable<>(elements.freeze());
         }
 
         public static <E> MultiSet.Transient<E> of() {

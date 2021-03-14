@@ -6,16 +6,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -26,11 +26,10 @@ public class TermPattern {
     public static class P {
 
         public Pattern newAppl(String op, Pattern... args) {
-            return newAppl(op, Arrays.asList(args), ImmutableClassToInstanceMap.of());
+            return newAppl(op, Arrays.asList(args), Attachments.empty());
         }
 
-        public Pattern newAppl(String op, Iterable<? extends Pattern> args,
-                ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newAppl(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
             if(op.equals("")) {
                 throw new IllegalArgumentException();
             }
@@ -38,14 +37,14 @@ public class TermPattern {
         }
 
         public Pattern newTuple(Pattern... args) {
-            return newTuple(Arrays.asList(args), ImmutableClassToInstanceMap.of());
+            return newTuple(Arrays.asList(args), Attachments.empty());
         }
 
         public Pattern newTuple(Iterable<? extends Pattern> args) {
-            return newTuple(args, ImmutableClassToInstanceMap.of());
+            return newTuple(args, Attachments.empty());
         }
 
-        public Pattern newTuple(Iterable<? extends Pattern> args, ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newTuple(Iterable<? extends Pattern> args, IAttachments attachments) {
             final List<Pattern> argList = ImmutableList.copyOf(args);
             if(argList.size() == 1) {
                 return argList.get(0);
@@ -55,19 +54,18 @@ public class TermPattern {
         }
 
         public Pattern newList(Iterable<? extends Pattern> args) {
-            return newListTail(args, newNil(), ImmutableClassToInstanceMap.of());
+            return newListTail(args, newNil(), Attachments.empty());
         }
 
-        public Pattern newList(Iterable<? extends Pattern> args, ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newList(Iterable<? extends Pattern> args, IAttachments attachments) {
             return newListTail(args, newNil(attachments), attachments);
         }
 
         public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail) {
-            return newListTail(args, tail, ImmutableClassToInstanceMap.of());
+            return newListTail(args, tail, Attachments.empty());
         }
 
-        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail,
-                ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail, IAttachments attachments) {
             Pattern list = tail;
             for(Pattern elem : ImmutableList.copyOf(args).reverse()) {
                 list = newCons(elem, list, attachments);
@@ -75,31 +73,31 @@ public class TermPattern {
             return list;
         }
 
-        public Pattern newCons(Pattern head, Pattern tail, ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newCons(Pattern head, Pattern tail, IAttachments attachments) {
             return new ConsPattern(head, tail, attachments);
         }
 
         public Pattern newNil() {
-            return new NilPattern(ImmutableClassToInstanceMap.of());
+            return new NilPattern(Attachments.empty());
         }
 
-        public Pattern newNil(ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newNil(IAttachments attachments) {
             return new NilPattern(attachments);
         }
 
         public Pattern newString(String value) {
-            return new StringPattern(value, ImmutableClassToInstanceMap.of());
+            return new StringPattern(value, Attachments.empty());
         }
 
-        public Pattern newString(String value, ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newString(String value, IAttachments attachments) {
             return new StringPattern(value, attachments);
         }
 
         public Pattern newInt(int value) {
-            return new IntPattern(value, ImmutableClassToInstanceMap.of());
+            return new IntPattern(value, Attachments.empty());
         }
 
-        public Pattern newInt(int value, ImmutableClassToInstanceMap<Object> attachments) {
+        public Pattern newInt(int value, IAttachments attachments) {
             return new IntPattern(value, attachments);
         }
 
@@ -135,8 +133,12 @@ public class TermPattern {
             // @formatter:off
             return term.match(Terms.cases(
                 appl -> {
-                    final List<Pattern> args = appl.getArgs().stream().map(a -> fromTerm(a, isWildcard)).collect(ImmutableList.toImmutableList());
-                    return new ApplPattern(appl.getOp(), args, appl.getAttachments());
+                    final List<ITerm> args = appl.getArgs();
+                    final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                    for(ITerm arg : args) {
+                        newArgs.add(fromTerm(arg, isWildcard));
+                    }
+                    return new ApplPattern(appl.getOp(), newArgs.build(), appl.getAttachments());
                 },
                 list -> list.match(ListTerms.cases(
                     cons -> new ConsPattern(fromTerm(cons.getHead(), isWildcard), fromTerm(cons.getTail(), isWildcard), cons.getAttachments()),
@@ -162,9 +164,8 @@ public class TermPattern {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
         }
 
-        public Optional<AMatchResult> matchWithEqs(final Iterable<Pattern> patterns,
-                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier,
-                Function1<Optional<ITermVar>, ITermVar> fresh) {
+        public Optional<MatchResult> matchWithEqs(final Iterable<Pattern> patterns,
+                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier, VarProvider fresh) {
             return TermPattern.P.newTuple(patterns).matchWithEqs(B.newTuple(terms), unifier, fresh);
         }
 

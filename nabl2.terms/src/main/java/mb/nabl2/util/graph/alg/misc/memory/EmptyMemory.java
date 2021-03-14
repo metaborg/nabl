@@ -10,26 +10,28 @@ package mb.nabl2.util.graph.alg.misc.memory;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import org.metaborg.util.iterators.Iterables2;
+
+import io.usethesource.capsule.Map;
+
 /**
- * A singleton immutable empty memory. 
+ * A singleton immutable empty memory.
+ * 
  * @author Gabor Bergmann
  * @since 2.0
  *
  */
 public class EmptyMemory<T> implements IMemoryView<T> {
 
-    @SuppressWarnings("rawtypes")
-    private static final EmptyMemory INSTANCE = new EmptyMemory();
-    
-    @SuppressWarnings("unchecked")
-    public static <T> EmptyMemory<T> instance() {
+    @SuppressWarnings("rawtypes") private static final EmptyMemory INSTANCE = new EmptyMemory();
+
+    @SuppressWarnings("unchecked") public static <T> EmptyMemory<T> instance() {
         return INSTANCE;
     }
-    
-    
-    
+
     /**
      * Singleton; hidden constructor
      */
@@ -37,57 +39,55 @@ public class EmptyMemory<T> implements IMemoryView<T> {
         super();
     }
 
-    @Override
-    public Iterator<T> iterator() {
+    @Override public Iterator<T> iterator() {
         return Collections.<T>emptySet().iterator();
     }
 
-    @Override
-    public int getCount(T value) {
+    @Override public int getCount(T value) {
         return 0;
     }
 
-    @Override
-    public int getCountUnsafe(Object value) {
+    @Override public int getCountUnsafe(Object value) {
         return 0;
     }
 
-    @Override
-    public boolean containsNonZero(T value) {
+    @Override public boolean containsNonZero(T value) {
         return false;
     }
 
-    @Override
-    public boolean containsNonZeroUnsafe(Object value) {
+    @Override public boolean containsNonZeroUnsafe(Object value) {
         return false;
     }
 
-    @Override
-    public int size() {
+    @Override public Map.Immutable<T, Integer> asMap() {
+        return Map.Immutable.of();
+    }
+
+    @Override public int size() {
         return 0;
     }
 
-    @Override
-    public boolean isEmpty() {
+    @Override public boolean isEmpty() {
         return true;
     }
 
-    @Override
-    public Set<T> distinctValues() {
+    @Override public Set<T> distinctValues() {
         return Collections.emptySet();
     }
-    
-    @Override
-    public int hashCode() {
+
+    @Override public Iterable<Entry<T, Integer>> entriesWithMultiplicities() {
+        return Iterables2.empty();
+    }
+
+    @Override public int hashCode() {
         return IMemoryView.hashCode(this);
     }
-    @Override
-    public boolean equals(Object obj) {
+
+    @Override public boolean equals(Object obj) {
         return IMemoryView.equals(this, obj);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "{}";
     }
 }

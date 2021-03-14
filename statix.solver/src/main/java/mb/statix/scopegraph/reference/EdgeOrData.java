@@ -1,7 +1,6 @@
 package mb.statix.scopegraph.reference;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -10,13 +9,15 @@ public abstract class EdgeOrData<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("rawtypes") private static final EdgeOrData DATA = new Data<>();
+
     abstract public <R> R matchInResolution(OnData<R> onData, OnEdge<L, R> onEdge)
             throws ResolutionException, InterruptedException;
 
     public abstract <R> R match(Function0<R> onData, Function1<L, R> onEdge);
 
-    public static <L> EdgeOrData<L> data() {
-        return new Data<>();
+    @SuppressWarnings("unchecked") public static <L> EdgeOrData<L> data() {
+        return DATA;
     }
 
     public static <L> EdgeOrData<L> edge(L l) {
@@ -40,7 +41,7 @@ public abstract class EdgeOrData<L> implements Serializable {
         }
 
         @Override public int hashCode() {
-            return Objects.hash();
+            return 7;
         }
 
         @Override public boolean equals(Object obj) {
@@ -78,8 +79,15 @@ public abstract class EdgeOrData<L> implements Serializable {
             return onEdge.apply(label);
         }
 
+        private volatile int hashCode;
+
         @Override public int hashCode() {
-            return Objects.hash(label);
+            int result = hashCode;
+            if(result == 0) {
+                result = label.hashCode();
+                hashCode = result;
+            }
+            return result;
         }
 
         @Override public boolean equals(Object obj) {

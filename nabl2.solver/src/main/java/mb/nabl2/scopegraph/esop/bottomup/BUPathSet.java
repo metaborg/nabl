@@ -2,6 +2,9 @@ package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map.Entry;
+
+import org.metaborg.util.functions.Predicate2;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
@@ -68,6 +71,15 @@ abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IOccurren
             return paths;
         }
 
+        public BUPathSet.Immutable<S, L, O, P> filter(Predicate2<BUPathKey<L>, P> filter) {
+            BUPathSet.Transient<S, L, O, P> filteredPaths = BUPathSet.Transient.of();
+            for(Entry<BUPathKey<L>, P> entry : paths.entrySet()) {
+                if(filter.test(entry.getKey(), entry.getValue())) {
+                    filteredPaths.add(entry.getKey(), entry.getValue());
+                }
+            }
+            return filteredPaths.freeze();
+        }
 
         public Transient<S, L, O, P> melt() {
             return new Transient<>(keys.asTransient(), paths.asTransient());

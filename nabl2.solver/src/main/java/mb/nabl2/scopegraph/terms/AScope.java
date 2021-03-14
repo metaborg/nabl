@@ -39,8 +39,8 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
     }
 
     public static IMatcher<Scope> matcher() {
-        return M.preserveAttachments(M.appl2("Scope", M.stringValue(), M.stringValue(),
-                (t, resource, name) -> Scope.of(resource, name)));
+        return M.preserveAttachments(
+                M.appl2("Scope", M.stringValue(), M.stringValue(), (t, resource, name) -> Scope.of(resource, name)));
     }
 
     @Override protected AScope check() {

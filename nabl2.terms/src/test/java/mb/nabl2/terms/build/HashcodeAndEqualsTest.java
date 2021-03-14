@@ -14,7 +14,6 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
@@ -95,19 +94,15 @@ public class HashcodeAndEqualsTest {
     }
 
     @Test public void testEqualsIgnoresAttachmentKeys() {
-        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(),
-                ImmutableClassToInstanceMap.builder().put(String.class, "a").build());
-        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(),
-                ImmutableClassToInstanceMap.builder().put(Integer.class, 3).build());
+        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(String.class, "a"));
+        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(Integer.class, 3));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testEqualsIgnoresAttachmentValues() {
-        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(),
-                ImmutableClassToInstanceMap.builder().put(String.class, "a").build());
-        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(),
-                ImmutableClassToInstanceMap.builder().put(String.class, "b").build());
+        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(String.class, "a"));
+        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(String.class, "b"));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }

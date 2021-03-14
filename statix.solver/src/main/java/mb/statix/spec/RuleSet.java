@@ -10,6 +10,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.SetMultimap;
+
+import mb.nabl2.terms.ITerm;
+import mb.nabl2.util.Tuple2;
+import mb.statix.solver.completeness.CompletenessUtil;
 
 
 /**
@@ -150,6 +155,17 @@ public final class RuleSet implements Serializable {
         return rules.stream().filter(a -> rules.stream().anyMatch(
                 b -> !a.equals(b) && ARule.leftRightPatternOrdering.compare(a, b).map(c -> c == 0).orElse(false)))
                 .collect(ImmutableSet.toImmutableSet());
+    }
+
+    public RuleSet precomputeCriticalEdges(SetMultimap<String, Tuple2<Integer, ITerm>> scopeExtensions) {
+        final ImmutableListMultimap.Builder<String, Rule> newRules = ImmutableListMultimap.builder();
+        for(String name : rules.keySet()) {
+            for(Rule rule : rules.get(name)) {
+                final Rule newRule = CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions);
+                newRules.put(name, newRule);
+            }
+        }
+        return new RuleSet(newRules.build());
     }
 
 }

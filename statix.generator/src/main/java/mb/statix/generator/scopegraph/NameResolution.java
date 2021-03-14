@@ -39,12 +39,12 @@ public class NameResolution<S extends D, L, D, X> {
 
     private Predicate0 select;
 
-    public NameResolution(Spec spec, IScopeGraph<S, L, D> scopeGraph, LabelWF<L> labelWF, LabelOrder<L> labelOrder,
-            DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
+    public NameResolution(Spec spec, IScopeGraph<S, L, D> scopeGraph, Set<L> edgeLabels, LabelWF<L> labelWF,
+            LabelOrder<L> labelOrder, DataWF<D, X> dataWF, boolean dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.spec = spec;
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data();
-        this.allLabels = Streams.concat(Stream.of(dataLabel), scopeGraph.getEdgeLabels().stream().map(EdgeOrData::edge))
+        this.allLabels = Streams.concat(Stream.of(dataLabel), edgeLabels.stream().map(EdgeOrData::edge))
                 .collect(Collectors.toSet());
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;

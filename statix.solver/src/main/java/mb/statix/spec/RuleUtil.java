@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Action1;
-import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.functions.Predicate2;
@@ -29,21 +28,18 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.unification.OccursException;
-import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CConj;
@@ -51,7 +47,6 @@ import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IState;
 import mb.statix.solver.StateUtil;
 
 public class RuleUtil {
@@ -74,9 +69,10 @@ public class RuleUtil {
      * @return Some application result if one rule applies, some empty if no rules apply, and empty if multiple rules
      *         apply.
      */
-    public static Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(IState.Immutable state,
-            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause) {
-        return applyOrdered(state, rules, args, cause, true)
+    public static <E extends Throwable> Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(
+            IUniDisunifier.Immutable state, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
+            ApplyMode<E> mode) throws E {
+        return applyOrdered(state, rules, args, cause, true, mode)
                 .map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
     }
 
@@ -96,23 +92,24 @@ public class RuleUtil {
      *
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
-    public static List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IState.Immutable state, List<Rule> rules,
-            List<? extends ITerm> args, @Nullable IConstraint cause) {
-        return applyOrdered(state, rules, args, cause, false).get();
+    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IUniDisunifier.Immutable state,
+            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode) throws E {
+        return applyOrdered(state, rules, args, cause, false, mode).get();
     }
 
     /**
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
      * rules that could be applied, or empty if onlyOne is true, and multiple matches were found.
      */
-    private static Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(IState.Immutable state, List<Rule> rules,
-            List<? extends ITerm> args, @Nullable IConstraint cause, boolean onlyOne) {
+    private static <E extends Throwable> Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(
+            IUniDisunifier.Immutable unifier, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
+            boolean onlyOne, ApplyMode<E> mode) throws E {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
             // apply rule
             final ApplyResult applyResult;
-            if((applyResult = apply(state, rule, args, cause).orElse(null)) == null) {
+            if((applyResult = apply(unifier, rule, args, cause, mode).orElse(null)) == null) {
                 // this rule does not apply, continue to next rules
                 continue;
             }
@@ -129,75 +126,39 @@ public class RuleUtil {
                 break;
             }
             final Optional<IUniDisunifier.Immutable> newUnifier =
-                    state.unifier().disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
+                    unifier.disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
             if(!newUnifier.isPresent()) {
                 // guards are equalities missing in the unifier, disunifying them should never fail
                 throw new IllegalStateException("Unexpected incompatible guard.");
             }
-            state = state.withUnifier(newUnifier.get());
+            unifier = newUnifier.get();
         }
         return Optional.of(results.build());
     }
 
     /**
      * Apply the given rule to the given arguments. Returns the result of application, or nothing of the rule cannot be
-     * applied.
+     * applied. The result may contain equalities that need to be satisfied for the application to be valid.
      */
-    public static Optional<ApplyResult> apply(IState.Immutable state, Rule rule, List<? extends ITerm> args,
-            @Nullable IConstraint cause) {
-        // create equality constraints
-        final IState.Transient newState = state.melt();
-        final Set.Transient<ITermVar> _universalVars = Set.Transient.of();
-        final Function1<Optional<ITermVar>, ITermVar> fresh = v -> {
-            final ITermVar f = v.map(newState::freshVar).orElseGet(newState::freshWld);
-            _universalVars.__insert(f);
-            return f;
-        };
-        return P.matchWithEqs(rule.params(), args, state.unifier(), fresh).flatMap(matchResult -> {
-            final Set.Immutable<ITermVar> universalVars = _universalVars.freeze();
-            final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), universalVars);
-            final IConstraint newConstraint = rule.body().apply(matchResult.substitution()).withCause(cause);
-
-            final ApplyResult applyResult;
-            if(constrainedVars.isEmpty()) {
-                applyResult = ApplyResult.of(newState.freeze(), PersistentUnifier.Immutable.of(), Optional.empty(),
-                        newConstraint);
-            } else {
-                // simplify guard constraints
-                final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
-                try {
-                    if((unifyResult = state.unifier().unify(matchResult.equalities()).orElse(null)) == null) {
-                        return Optional.empty();
-                    }
-                } catch(OccursException e) {
-                    return Optional.empty();
-                }
-                final IUniDisunifier.Immutable newUnifier = unifyResult.unifier();
-                final IUnifier.Immutable diff = unifyResult.result();
-
-                // construct guard
-                final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
-                if(guard.isEmpty()) {
-                    throw new IllegalStateException("Guard not expected to be empty here.");
-                }
-                final Diseq diseq = Diseq.of(universalVars, guard);
-
-                // construct result
-                final IState.Immutable resultState = newState.freeze().withUnifier(newUnifier);
-                applyResult = ApplyResult.of(resultState, diff, Optional.of(diseq), newConstraint);
-            }
-            return Optional.of(applyResult);
-        });
+    public static <E extends Throwable> Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule,
+            List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode) throws E {
+        return mode.apply(unifier, rule, args, cause);
     }
 
     /**
      * Apply the given rules to the given arguments. Returns the results of application.
      */
-    public static List<Tuple2<Rule, ApplyResult>> applyAll(IState.Immutable state, Collection<Rule> rules,
-            List<? extends ITerm> args, @Nullable IConstraint cause) {
-        return rules.stream()
-                .flatMap(rule -> Streams.stream(apply(state, rule, args, cause)).map(result -> Tuple2.of(rule, result)))
-                .collect(ImmutableList.toImmutableList());
+    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(IUniDisunifier.Immutable state,
+            Collection<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode)
+            throws E {
+        final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
+        for(Rule rule : rules) {
+            final ApplyResult result;
+            if((result = apply(state, rule, args, cause, mode).orElse(null)) != null) {
+                results.add(Tuple2.of(rule, result));
+            }
+        }
+        return results.build();
     }
 
     /**
@@ -410,7 +371,7 @@ public class RuleUtil {
     }
 
     public static Set.Immutable<ITermVar> freeVars(Rule rule) {
-        final Set.Transient<ITermVar> freeVars = Set.Transient.of();
+        final Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         freeVars(rule, freeVars::__insert);
         return freeVars.freeze();
     }

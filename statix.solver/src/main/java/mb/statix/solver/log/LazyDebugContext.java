@@ -32,8 +32,15 @@ public class LazyDebugContext implements IDebugContext {
         return debug.getDebugLevel();
     }
 
+    private volatile IDebugContext subContext;
+
     @Override public IDebugContext subContext() {
-        return new LazyDebugContext(debug, offset + 1, log);
+        IDebugContext result = subContext;
+        if(result == null) {
+            result = new LazyDebugContext(debug, offset + 1, log);
+            subContext = result;
+        }
+        return result;
     }
 
     @Override public void debug(String fmt, Object... args) {

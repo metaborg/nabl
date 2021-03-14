@@ -26,8 +26,15 @@ public class NullDebugContext implements IDebugContext {
         return false;
     }
 
+    private volatile IDebugContext subContext;
+
     @Override public IDebugContext subContext() {
-        return new NullDebugContext(depth + 1);
+        IDebugContext result = subContext;
+        if(result == null) {
+            result = new NullDebugContext(depth + 1);
+            subContext = result;
+        }
+        return result;
     }
 
     @Override public void debug(String fmt, Object... args) {

@@ -6,13 +6,12 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
@@ -45,8 +44,8 @@ public class CTrue implements IConstraint, Serializable {
         return cases.caseTrue(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        return ImmutableMultiset.of();
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public CTrue apply(ISubstitution.Immutable subst) {
@@ -65,16 +64,24 @@ public class CTrue implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CTrue cTrue = (CTrue)o;
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CTrue cTrue = (CTrue) o;
         return Objects.equals(cause, cTrue.cause);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(cause);
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(cause);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

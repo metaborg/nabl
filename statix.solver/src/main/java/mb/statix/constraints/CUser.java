@@ -8,16 +8,17 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.ICompleteness;
 
 public class CUser implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
@@ -27,20 +28,23 @@ public class CUser implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable ICompleteness.Immutable ownCriticalEdges;
 
     public CUser(String name, Iterable<? extends ITerm> args) {
-        this(name, args, null, null);
+        this(name, args, null, null, null);
     }
 
     public CUser(String name, Iterable<? extends ITerm> args, @Nullable IMessage message) {
-        this(name, args, null, message);
+        this(name, args, null, message, null);
     }
 
-    public CUser(String name, Iterable<? extends ITerm> args, @Nullable IConstraint cause, @Nullable IMessage message) {
+    public CUser(String name, Iterable<? extends ITerm> args, @Nullable IConstraint cause, @Nullable IMessage message,
+            @Nullable ICompleteness.Immutable ownCriticalEdges) {
         this.name = name;
         this.args = ImmutableList.copyOf(args);
         this.cause = cause;
         this.message = message;
+        this.ownCriticalEdges = ownCriticalEdges;
     }
 
     public String name() {
@@ -56,7 +60,7 @@ public class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withCause(@Nullable IConstraint cause) {
-        return new CUser(name, args, cause, message);
+        return new CUser(name, args, cause, message, ownCriticalEdges);
     }
 
     @Override public Optional<IMessage> message() {
@@ -64,7 +68,15 @@ public class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withMessage(@Nullable IMessage message) {
-        return new CUser(name, args, cause, message);
+        return new CUser(name, args, cause, message, ownCriticalEdges);
+    }
+
+    @Override public Optional<ICompleteness.Immutable> ownCriticalEdges() {
+        return Optional.ofNullable(ownCriticalEdges);
+    }
+
+    @Override public CUser withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
+        return new CUser(name, args, cause, message, criticalEdges);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -75,20 +87,22 @@ public class CUser implements IConstraint, Serializable {
         return cases.caseUser(this);
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        for (ITerm a : args) {
-            vars.addAll(a.getVars());
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
+        for(ITerm a : args) {
+            vars.__insertAll(a.getVars());
         }
-        return vars.build();
+        return vars.freeze();
     }
 
     @Override public CUser apply(ISubstitution.Immutable subst) {
-        return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst));
+        return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst),
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
     @Override public CUser apply(IRenaming subst) {
-        return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst));
+        return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst),
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -104,19 +118,25 @@ public class CUser implements IConstraint, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        CUser cUser = (CUser)o;
-        return Objects.equals(name, cUser.name) &&
-            Objects.equals(args, cUser.args) &&
-            Objects.equals(cause, cUser.cause) &&
-            Objects.equals(message, cUser.message);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        CUser cUser = (CUser) o;
+        return Objects.equals(name, cUser.name) && Objects.equals(args, cUser.args)
+                && Objects.equals(cause, cUser.cause) && Objects.equals(message, cUser.message);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, args, cause, message);
+    private volatile int hashCode;
+
+    @Override public int hashCode() {
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(name, args, cause, message);
+            hashCode = result;
+        }
+        return result;
     }
+
 }

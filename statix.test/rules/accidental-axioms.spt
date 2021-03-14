@@ -1,0 +1,79 @@
+module rules/order
+
+language StatixLang
+
+fixture [[
+  module debug
+  rules
+    q : int
+    p : int
+  [[...]]
+]]
+
+test X [[
+  p(1) :-
+    1 == 2.
+    q(1).
+]] 1 warning
+  
+test X [[
+  p(2) :-
+    1 == 2, 2 == 3.
+    q(2).
+]] 1 warning
+  
+test X [[
+  p(3) :-
+    (1 == 2,
+      2 == 3).
+    q(3).
+]] 1 warning
+  
+test X [[
+  p(4) :- {x}
+    (1 == 2,
+      2 == 3).
+    q(4).
+]] 1 warning
+  
+test X [[
+  p(5) :- {x}
+    1 == 2, {y} 2 == 3.
+    q(5).
+]] 1 warning
+  
+test X [[
+  p(6) :- {x}
+    1 == 2,
+    try { {y} 2 == 3 }.
+    q(6).
+]] 1 warning
+  
+test X [[
+  p(7) :- {x}
+    1 == 2,
+    try { {y} 2 == 3,
+              3 == 4 }.
+    q(7).
+]] 1 warning
+  
+test X [[
+  p(8) :-
+    1 == 2,
+      2 == 3.
+    q(8).
+]] 1 warning
+ 
+test X [[
+  p(9).
+  q(9).
+]] 0 warnings
+
+test X [[
+  p(10) :- 1 == 2. q(10).
+]] 1 warning
+
+test X [[
+  p(10) :- 1 == 2,
+    2 == 3. q(10).
+]] 1 warning

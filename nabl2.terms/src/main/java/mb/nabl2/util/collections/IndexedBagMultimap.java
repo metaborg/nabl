@@ -83,12 +83,16 @@ public class IndexedBagMultimap<K, V, I> {
         final Collection<Entry> entries = this.entries.removeAll(index).stream().collect(Collectors.toList());
         final Set<I> newIndices = ImmutableSet.copyOf(normalize.apply(index));
         if(removalPolicy.equals(RemovalPolicy.ANY) && !newIndices.contains(index)) {
-            entries.forEach(e -> {
-                e.indices.forEach(i -> this.entries.remove(i, e));
+            for(Entry e : entries) {
+                for(I i : e.indices) {
+                    this.entries.remove(i, e);
+                }
                 e.indices.clear();
-            });
+            }
         } else {
-            entries.forEach(e -> e.indices.remove(index));
+            for(Entry e : entries) {
+                e.indices.remove(index);
+            }
             for(I newIndex : newIndices) {
                 for(Entry entry : entries) {
                     this.entries.put(newIndex, entry);

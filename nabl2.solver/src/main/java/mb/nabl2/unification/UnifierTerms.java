@@ -20,7 +20,7 @@ public final class UnifierTerms {
 
     private ITerm build() {
         final List<ITerm> entries =
-                unifier.varSet().stream().map(this::buildVar).collect(ImmutableList.toImmutableList());
+                unifier.domainSet().stream().map(this::buildVar).collect(ImmutableList.toImmutableList());
         return B.newAppl("Unifier", (ITerm) B.newList(entries));
     }
 

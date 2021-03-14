@@ -4,12 +4,15 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import io.usethesource.capsule.Map;
+import org.metaborg.util.functions.Predicate1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -18,10 +21,6 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     private static final long serialVersionUID = 42L;
 
     protected abstract IUnifier.Immutable unifier();
-
-    @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
-        return unifier().equalityMap();
-    }
 
     ///////////////////////////////////////////
     // unifier functions
@@ -34,19 +33,6 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     @Override public boolean contains(ITermVar var) {
         // disequalities do not contribute to the domain
         return unifier().contains(var);
-    }
-
-    @Override public Set.Immutable<ITermVar> varSet() {
-        // disequalities do not contribute to the domain
-        // as a consequence, this.isEmpty() != this.varSet().isEmpty()
-        return unifier().varSet();
-    }
-
-    @Override public Set.Immutable<ITermVar> freeVarSet() {
-        final Set.Transient<ITermVar> freeVarSet = unifier().freeVarSet().asTransient();
-        disequalities().stream().flatMap(diseq -> diseq.freeVarSet().stream()).filter(v -> !unifier().contains(v))
-                .forEach(freeVarSet::__insert);
-        return freeVarSet.freeze();
     }
 
     @Override public boolean isCyclic() {
@@ -128,12 +114,12 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     // toString(ITerm)
     ///////////////////////////////////////////
 
-    @Override public String toString(final ITerm term) {
-        return unifier().toString(term);
+    @Override public String toString(final ITerm term, SpecializedTermFormatter specializedTermFormatter) {
+        return unifier().toString(term, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n) {
-        return unifier().toString(term, n);
+    @Override public String toString(final ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
+        return unifier().toString(term, n, specializedTermFormatter);
     }
 
     ///////////////////////////////////////////
@@ -143,9 +129,9 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
     protected static class ImmutableResult<T> implements IUniDisunifier.Result<T> {
 
         private final T result;
-        private final IUniDisunifier.Immutable unifier;
+        private final PersistentUniDisunifier.Immutable unifier;
 
-        public ImmutableResult(T result, IUniDisunifier.Immutable unifier) {
+        public ImmutableResult(T result, PersistentUniDisunifier.Immutable unifier) {
             this.result = result;
             this.unifier = unifier;
         }
@@ -154,7 +140,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return result;
         }
 
-        @Override public IUniDisunifier.Immutable unifier() {
+        @Override public PersistentUniDisunifier.Immutable unifier() {
             return unifier;
         }
 
@@ -184,12 +170,16 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.contains(var);
         }
 
-        @Override public Set.Immutable<ITermVar> varSet() {
-            return unifier.varSet();
+        @Override public Set.Immutable<ITermVar> domainSet() {
+            return unifier.domainSet();
         }
 
-        @Override public Set.Immutable<ITermVar> freeVarSet() {
-            return unifier.freeVarSet();
+        @Override public Set.Immutable<ITermVar> rangeSet() {
+            return unifier.rangeSet();
+        }
+
+        @Override public Set.Immutable<ITermVar> varSet() {
+            return unifier.varSet();
         }
 
         @Override public boolean isCyclic() {
@@ -228,57 +218,59 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.size(term);
         }
 
-        @Override public String toString(ITerm term) {
-            return unifier.toString(term);
+        @Override public String toString(ITerm term, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n) {
-            return unifier.toString(term, n);
-        }
-
-        @Override public Map.Immutable<ITermVar, ITerm> equalityMap() {
-            return unifier.equalityMap();
+        @Override public String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, n, specializedTermFormatter);
         }
 
         @Override public Set.Immutable<Diseq> disequalities() {
             return unifier.disequalities();
         }
 
-        @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(term1, term2);
+        @Override public Optional<IUnifier.Immutable> unify(ITerm term1, ITerm term2, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(term1, term2, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<? extends IUnifier.Immutable> unify(IUnifier other) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other);
+        @Override public Optional<? extends IUnifier.Immutable> unify(IUnifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<IUnifier.Immutable> unify(IUniDisunifier other) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other);
+        @Override public Optional<IUnifier.Immutable> unify(IUniDisunifier other, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<IUnifier.Immutable>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(equalities);
+        @Override public Optional<IUnifier.Immutable> unify(
+                Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(equalities, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
             });
         }
 
-        @Override public Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2) {
-            final Optional<IUniDisunifier.Result<Optional<Diseq>>> result = unifier.disunify(universal, term1, term2);
+        @Override public Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2,
+                Predicate1<ITermVar> isRigid) throws RigidException {
+            final Optional<IUniDisunifier.Result<Optional<Diseq>>> result =
+                    unifier.disunify(universal, term1, term2, isRigid);
             return result.map(ud -> {
                 unifier = ud.unifier();
                 return ud.result();
@@ -287,6 +279,10 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
 
         @Override public Optional<IUnifier.Immutable> diff(ITerm term1, ITerm term2) {
             return unifier.diff(term1, term2);
+        }
+
+        @Override public boolean equal(ITerm term1, ITerm term2) {
+            return unifier.equal(term1, term2);
         }
 
         @Override public ISubstitution.Immutable retain(ITermVar var) {

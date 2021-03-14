@@ -3,9 +3,7 @@ package mb.statix.solver.query;
 import java.io.Serializable;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
@@ -16,7 +14,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.spec.Rule;
 
-public class QueryFilter implements IQueryFilter, Serializable {
+public class QueryFilter implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IRegExpMatcher<ITerm> pathWf;
@@ -26,34 +24,32 @@ public class QueryFilter implements IQueryFilter, Serializable {
         this(RegExpMatcher.create(pathWf), dataConstraint);
     }
 
-    private QueryFilter(IRegExpMatcher<ITerm> pathWf, Rule dataConstraint) {
+    public QueryFilter(IRegExpMatcher<ITerm> pathWf, Rule dataConstraint) {
         this.pathWf = pathWf;
         this.dataWf = dataConstraint;
     }
 
-    @Override public IRegExpMatcher<ITerm> getLabelWF() {
+    public IRegExpMatcher<ITerm> getLabelWF() {
         return pathWf;
     }
 
-    @Override public Rule getDataWF() {
+    public Rule getDataWF() {
         return dataWf;
     }
 
-    @Override public Multiset<ITermVar> getVars() {
-        final ImmutableMultiset.Builder<ITermVar> vars = ImmutableMultiset.builder();
-        vars.addAll(dataWf.varSet());
-        return vars.build();
+    public Set.Immutable<ITermVar> getVars() {
+        return dataWf.varSet();
     }
 
-    @Override public IQueryFilter apply(ISubstitution.Immutable subst) {
+    public QueryFilter apply(ISubstitution.Immutable subst) {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }
 
-    @Override public IQueryFilter apply(IRenaming subst) {
+    public QueryFilter apply(IRenaming subst) {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }
 
-    @Override public String toString(TermFormatter termToString) {
+    public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
         sb.append("filter ");
         sb.append(pathWf);
@@ -66,17 +62,16 @@ public class QueryFilter implements IQueryFilter, Serializable {
         return toString(ITerm::toString);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        QueryFilter that = (QueryFilter)o;
-        return Objects.equals(pathWf, that.pathWf) &&
-            Objects.equals(dataWf, that.dataWf);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        QueryFilter that = (QueryFilter) o;
+        return Objects.equals(pathWf, that.pathWf) && Objects.equals(dataWf, that.dataWf);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(pathWf, dataWf);
     }
 }

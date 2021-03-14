@@ -1,43 +1,29 @@
 package mb.statix.concurrent.actors.deadlock;
 
 import io.usethesource.capsule.Map;
-import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.MultiSetMap;
 
-public class Deadlock<N, S, T> {
+public class Deadlock<N> {
 
-    private final Map.Immutable<N, S> nodes;
-    private final MultiSetMap.Immutable<Tuple2<N, N>, T> edges;
+    private final Map.Immutable<N, Clock<N>> nodes;
 
-    Deadlock(Map.Immutable<N, S> nodes, MultiSetMap.Immutable<Tuple2<N, N>, T> edges) {
+    Deadlock(Map.Immutable<N, Clock<N>> nodes) {
         this.nodes = nodes;
-        this.edges = edges;
     }
 
-    public Map.Immutable<N, S> nodes() {
+    public boolean isEmpty() {
+        return nodes.isEmpty();
+    }
+
+    public Map.Immutable<N, Clock<N>> nodes() {
         return nodes;
     }
 
-    public MultiSetMap.Immutable<Tuple2<N, N>, T> edges() {
-        return edges;
-    }
-
-    /**
-     * Return al tokens the given unit is waiting for.
-     */
-    public Set.Immutable<T> waitingFor(N node) {
-        return edges.toMap().entrySet().stream().filter(e -> e.getKey()._1().equals(node))
-                .flatMap(e -> e.getValue().elementSet().stream()).collect(CapsuleCollectors.toSet());
-    }
-
-    static <N, S, T> Deadlock<N, S, T> of(N node, S state) {
-        return new Deadlock<>(Map.Immutable.of(node, state), MultiSetMap.Immutable.of());
+    static <N, T> Deadlock<N> empty() {
+        return new Deadlock<>(Map.Immutable.of());
     }
 
     @Override public String toString() {
-        return "Deadlock[" + nodes() + ", " + edges() + "]";
+        return "Deadlock{" + nodes() + "}";
     }
 
 }

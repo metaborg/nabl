@@ -5,8 +5,7 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.Multiset;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -26,6 +25,8 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.ICompleteness;
 
 public interface IConstraint {
 
@@ -38,14 +39,36 @@ public interface IConstraint {
     }
 
     default IConstraint withMessage(IMessage msg) {
-        return this;
+        throw new UnsupportedOperationException("Constraint does not support message.");
+    }
+
+    /**
+     * Returns pre-computed critical edges that are introduced when this constraint is unfolded to its sub-constraints.
+     */
+    default Optional<ICompleteness.Immutable> ownCriticalEdges() {
+        return Optional.of(Completeness.Immutable.of());
+    }
+
+    default IConstraint withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
+        throw new UnsupportedOperationException("Constraint does not support own critical edges.");
+    }
+
+    /**
+     * Returns pre-computed critical edges that are introduced when this constraint is unfolded to its sub-constraints.
+     */
+    default Optional<ICompleteness.Immutable> bodyCriticalEdges() {
+        return Optional.of(Completeness.Immutable.of());
+    }
+
+    default IConstraint withBodyCriticalEdges(ICompleteness.Immutable criticalEdges) {
+        throw new UnsupportedOperationException("Constraint does not support body critical edges.");
     }
 
     <R> R match(Cases<R> cases);
 
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
-    Multiset<ITermVar> getVars();
+    Set.Immutable<ITermVar> getVars();
 
     IConstraint apply(ISubstitution.Immutable subst);
 

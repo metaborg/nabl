@@ -2,16 +2,17 @@ module statix/test/Result
 
 imports
 
+  statix/API
+
   statix/lang/Layout
   statix/lang/Common
   statix/lang/Core
   statix/lang/Sugar
   statix/lang/Deprecated
-  statix/API
 
-template options
+  statix/runtime/ATerm
+  statix/runtime/ScopeGraph
 
-  keyword -/- [a-zA-Z0-9\_\-\']
 
 context-free syntax
 
@@ -41,33 +42,13 @@ context-free syntax
 
   Analysis.Analysis = <
     analysis
-      <ScopeGraph>
+      <Stx-ScopeGraph>
   >
 
 context-free syntax
 
-  SubstEntry = [[Var] |-> [Term]]
+  SubstEntry = [[Var] |-> [Stx-ATerm]]
   
-context-free syntax
-
-  ScopeGraph = <
-    scope graph
-      <{ScopeEntry "\n"}*>
-  >
-
-  ScopeEntry = <
-    <Stx-Scope><DataEntry> {
-      <{EdgeEntry "\n"}*>
-    }
-  >
-
-  DataEntry.None =
-  DataEntry.Some = < : <Term>>
-
-  EdgeEntry = <<Label> : <EntryValues>>
-
-  EntryValues = {Term "\n"}*
-
 context-free syntax
 
   EditorMessage = [[MessagePos] : [Stx-STRING]]

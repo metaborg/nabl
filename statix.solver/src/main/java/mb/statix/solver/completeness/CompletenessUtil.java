@@ -8,15 +8,30 @@ import org.metaborg.util.functions.Action2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.SetMultimap;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
+import mb.nabl2.util.Tuple2;
+import mb.statix.constraints.CConj;
+import mb.statix.constraints.CExists;
+import mb.statix.constraints.CNew;
+import mb.statix.constraints.CResolveQuery;
+import mb.statix.constraints.CTellEdge;
+import mb.statix.constraints.CTry;
+import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.query.QueryFilter;
+import mb.statix.solver.query.QueryMin;
+import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public class CompletenessUtil {
@@ -89,6 +104,115 @@ public class CompletenessUtil {
 
     public static IMatcher<ITerm> scopeOrVar() {
         return M.cases(Scope.matcher(), M.var());
+    }
+
+    /**
+     * Pre-compute the critical edges that are introduced when scoping constructs such as rules and existantial
+     * constraints are unfolded.
+     * 
+     * If critical edges escape from the top-level rule, an IllegalArgumentException is thrown.
+     */
+    public static Rule precomputeCriticalEdges(Rule rule, SetMultimap<String, Tuple2<Integer, ITerm>> spec) {
+        return precomputeCriticalEdges(rule, spec, (s, l) -> {
+            throw new IllegalArgumentException("Rule cannot have escaping critical edges.");
+        });
+    }
+
+    public static Tuple2<IConstraint, ICompleteness.Immutable> precomputeCriticalEdges(IConstraint constraint,
+            SetMultimap<String, Tuple2<Integer, ITerm>> spec) {
+        final ICompleteness.Transient criticalEdges = Completeness.Transient.of();
+        IConstraint newConstraint = precomputeCriticalEdges(constraint, spec, (s, l) -> {
+            criticalEdges.add(s, l, PersistentUniDisunifier.Immutable.of());
+        });
+        return Tuple2.of(newConstraint, criticalEdges.freeze());
+    }
+
+    static Rule precomputeCriticalEdges(Rule rule, SetMultimap<String, Tuple2<Integer, ITerm>> spec,
+            Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
+        final Set.Immutable<ITermVar> paramVars = rule.paramVars();
+        final ICompleteness.Transient criticalEdges = Completeness.Transient.of();
+        final IConstraint newBody = precomputeCriticalEdges(rule.body(), spec, (s, l) -> {
+            if(paramVars.contains(s)) {
+                criticalEdges.add(s, l, PersistentUniDisunifier.Immutable.of());
+            } else {
+                criticalEdge.apply(s, l);
+            }
+        });
+        return rule.withBody(newBody).withBodyCriticalEdges(criticalEdges.freeze());
+    }
+
+    static IConstraint precomputeCriticalEdges(IConstraint constraint, SetMultimap<String, Tuple2<Integer, ITerm>> spec,
+            Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
+        // @formatter:off
+        return constraint.match(Constraints.cases(
+            carith -> carith,
+            cconj -> {
+                final IConstraint newLeft = precomputeCriticalEdges(cconj.left(), spec, criticalEdge);
+                final IConstraint newRight = precomputeCriticalEdges(cconj.right(), spec, criticalEdge);
+                return new CConj(newLeft, newRight, cconj.cause().orElse(null));
+            },
+            cequal -> cequal,
+            cexists -> {
+                final ICompleteness.Transient bodyCriticalEdges = Completeness.Transient.of();
+                final IConstraint newBody = precomputeCriticalEdges(cexists.constraint(), spec, (s, l) -> {
+                    if(cexists.vars().contains(s)) {
+                        bodyCriticalEdges.add(s, l, PersistentUniDisunifier.Immutable.of());
+                    } else {
+                        criticalEdge.apply(s, l);
+                    }
+                });
+                return new CExists(cexists.vars(), newBody, cexists.cause().orElse(null), bodyCriticalEdges.freeze());
+            },
+            cfalse -> cfalse,
+            cinequal -> cinequal,
+            cnew -> {
+                final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
+                final ITerm scopeOrVar;
+                if((scopeOrVar = scopeOrVar().match(cnew.scopeTerm()).orElse(null)) != null) {
+                    ownCriticalEdges.add(scopeOrVar, EdgeOrData.data(), PersistentUniDisunifier.Immutable.of());
+                    criticalEdge.apply(scopeOrVar, EdgeOrData.data());
+                }
+                return new CNew(cnew.scopeTerm(), cnew.datumTerm(), cnew.cause().orElse(null), ownCriticalEdges.freeze());
+            },
+            cresolveQuery -> {
+                final QueryFilter newFilter =
+                        new QueryFilter(cresolveQuery.filter().getLabelWF(), precomputeCriticalEdges(cresolveQuery.filter().getDataWF(), spec));
+                final QueryMin newMin =
+                        new QueryMin(cresolveQuery.min().getLabelOrder(), precomputeCriticalEdges(cresolveQuery.min().getDataEquiv(), spec));
+                return new CResolveQuery(newFilter, newMin, cresolveQuery.scopeTerm(), cresolveQuery.resultTerm(),
+                        cresolveQuery.cause().orElse(null), cresolveQuery.message().orElse(null));
+            },
+            ctellEdge -> {
+                final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
+                final ITerm scopeOrVar;
+                if((scopeOrVar = scopeOrVar().match(ctellEdge.sourceTerm()).orElse(null)) != null) {
+                    ownCriticalEdges.add(scopeOrVar, EdgeOrData.edge(ctellEdge.label()), PersistentUniDisunifier.Immutable.of());
+                    criticalEdge.apply(scopeOrVar, EdgeOrData.edge(ctellEdge.label()));
+                }
+                return new CTellEdge(ctellEdge.sourceTerm(), ctellEdge.label(), ctellEdge.targetTerm(),
+                        ctellEdge.cause().orElse(null), ownCriticalEdges.freeze());
+            },
+            ctermId -> ctermId,
+            ctermProperty -> ctermProperty,
+            ctrue -> ctrue,
+            ctry -> {
+                final IConstraint newBody = precomputeCriticalEdges(ctry.constraint(), spec, criticalEdge);
+                return new CTry(newBody, ctry.cause().orElse(null), ctry.message().orElse(null));
+            },
+            cuser -> {
+                final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
+                spec.get(cuser.name()).stream().forEach(il -> {
+                    final ITerm scopeOrVar;
+                    if((scopeOrVar = scopeOrVar().match(cuser.args().get(il._1())).orElse(null)) != null) {
+                        final EdgeOrData<ITerm> label = EdgeOrData.edge(il._2());
+                        ownCriticalEdges.add(scopeOrVar, label, PersistentUniDisunifier.Immutable.of());
+                        criticalEdge.apply(scopeOrVar, label);
+                    }
+                });
+                return new CUser(cuser.name(), cuser.args(), cuser.cause().orElse(null), cuser.message().orElse(null), ownCriticalEdges.freeze());
+            }
+        ));
+        // @formatter:on
     }
 
 }

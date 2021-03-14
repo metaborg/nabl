@@ -25,6 +25,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
@@ -77,18 +78,18 @@ public class SearchState {
      * 
      * This method assumes that no constraints appear in both add and remove, or it will be incorrect!
      */
-    public SearchState update(Iterable<IConstraint> add, Iterable<IConstraint> remove) {
+    public SearchState update(Spec spec, Iterable<IConstraint> add, Iterable<IConstraint> remove) {
         final ICompleteness.Transient completeness = this.completeness.melt();
         final Set.Transient<IConstraint> constraints = this.constraints.asTransient();
         final java.util.Set<CriticalEdge> removedEdges = Sets.newHashSet();
         add.forEach(c -> {
             if(constraints.__insert(c)) {
-                completeness.add(c, state.unifier());
+                completeness.add(c, spec, state.unifier());
             }
         });
         remove.forEach(c -> {
             if(constraints.__remove(c)) {
-                removedEdges.addAll(completeness.remove(c, state.unifier()));
+                removedEdges.addAll(completeness.remove(c, spec, state.unifier()));
             }
         });
         final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
@@ -140,8 +141,8 @@ public class SearchState {
     }
 
     public static SearchState of(Spec spec, IState.Immutable state, Iterable<? extends IConstraint> constraints) {
-        final ICompleteness.Transient completeness = Completeness.Transient.of(spec);
-        completeness.addAll(constraints, state.unifier());
+        final ICompleteness.Transient completeness = Completeness.Transient.of();
+        completeness.addAll(constraints, spec, state.unifier());
         return new SearchState(state, CapsuleUtil.toSet(constraints), Map.Immutable.of(), null, completeness.freeze());
     }
 
@@ -170,7 +171,7 @@ public class SearchState {
         final StringBuilder sb = new StringBuilder();
         print(ln -> {
             sb.append(ln).append("\n");
-        }, (t, u) -> new UnifierFormatter(u, 2).format(t));
+        }, (t, u) -> Solver.shallowTermFormatter(u, 2).format(t));
         return sb.toString();
     }
 

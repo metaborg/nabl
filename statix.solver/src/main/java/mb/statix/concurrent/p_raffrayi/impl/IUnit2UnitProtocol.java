@@ -1,31 +1,40 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
-import mb.statix.concurrent.actors.MessageTags;
+import java.util.Set;
+
+import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
+import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 /**
  * Protocol accepted by clients, from other clients
  */
 public interface IUnit2UnitProtocol<S, L, D, R> {
 
-    @MessageTags("stuckness") void _initShare(S scope, Iterable<EdgeOrData<L>> edges, boolean sharing);
+    void _initShare(S scope, Iterable<EdgeOrData<L>> edges, boolean sharing);
 
-    @MessageTags("stuckness") void _addShare(S scope);
+    void _addShare(S scope);
 
-    @MessageTags("stuckness") void _doneSharing(S scope);
+    void _doneSharing(S scope);
 
     void _addEdge(S source, L label, S target);
 
-    @MessageTags("stuckness") void _closeEdge(S scope, EdgeOrData<L> edge);
+    void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    @MessageTags("stuckness") IFuture<Env<S, L, D>> _query(IScopePath<S, L> path, LabelWF<L> labelWF, DataWF<D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<D> dataEquiv);
+    IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
+
+
+    void _deadlockQuery(IActorRef<? extends IUnit<S, L, D, ?>> i, int m);
+
+    void _deadlockReply(IActorRef<? extends IUnit<S, L, D, ?>> i, int m, Set<IActorRef<? extends IUnit<S, L, D, ?>>> r);
+
+    void _deadlocked(Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes);
 
 }

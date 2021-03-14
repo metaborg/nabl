@@ -1,6 +1,7 @@
 package mb.nabl2.util.collections;
 
 import java.io.Serializable;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -138,7 +139,9 @@ public abstract class HashTrieFunction<K, V> implements IFunction<K, V> {
         }
 
         @Override public void putAll(IFunction<K, V> other) {
-            other.stream().forEach(kv -> put(kv._1(), kv._2()));
+            for(Entry<K, V> kv : other.entrySet()) {
+                put(kv.getKey(), kv.getValue());
+            }
         }
 
         @Override public boolean remove(K key) {

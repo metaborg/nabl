@@ -2,7 +2,6 @@ package mb.statix.concurrent.actors.futures;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.functions.CheckedAction1;
 import org.metaborg.util.functions.CheckedAction2;
@@ -12,6 +11,10 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Lists;
+
+import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.Tuple3;
+import mb.nabl2.util.Tuple4;
 
 public class AggregateFuture<T> implements IFuture<List<T>> {
 
@@ -40,49 +43,58 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
                 whenComplete(j, r, ex);
             });
         }
-        synchronized(lock) {
-            fireIfComplete();
-        }
+        fireIfComplete();
     }
 
     private void whenComplete(int i, T r, Throwable ex) {
         // INVARIANT count > 0
         synchronized(lock) {
-            if(ex != null) {
-                logger.trace("{} completed {}: exception", this, i);
-                remaining = -1; // count will never be 0 and trigger completion
-                result.completeExceptionally(ex);
-            } else {
-                logger.trace("{} completed {}: value", this, i);
-                remaining -= 1;
-                results[i] = r;
+            if(remaining > 0) {
+                if(ex != null) {
+                    logger.trace("{} completed {}: exception", this, i);
+                    remaining = -1; // count will never be 0 and trigger completion
+                } else if(remaining > 0) {
+                    logger.trace("{} completed {}: value", this, i);
+                    remaining -= 1;
+                    results[i] = r;
+                }
             }
+        }
+        if(ex != null) {
+            result.completeExceptionally(ex);
+        } else {
             fireIfComplete();
         }
     }
 
     private void fireIfComplete() {
-        if(remaining == 0) {
-            logger.trace("{} done: completed all", this);
-            result.complete(Arrays.asList(results));
-        } else {
-            logger.trace("{} open: {} remaining", this, remaining);
+        final List<T> results;
+        synchronized(lock) {
+            if(remaining == 0) {
+                logger.trace("{} done: completed all", this);
+                results = Arrays.asList(this.results);
+            } else {
+                logger.trace("{} open: {} remaining", this, remaining);
+                results = null;
+            }
+        }
+        if(results != null) {
+            result.complete(results);
         }
     }
 
-    @Override public <U> IFuture<U> handle(CheckedFunction2<? super List<T>, Throwable, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U>
+            handle(CheckedFunction2<? super List<T>, Throwable, ? extends U, ? extends Throwable> handler) {
         return result.handle(handler);
     }
 
-    @Override public IFuture<List<T>> whenComplete(CheckedAction2<? super List<T>, Throwable, ? extends Throwable> handler) {
+    @Override public IFuture<List<T>>
+            whenComplete(CheckedAction2<? super List<T>, Throwable, ? extends Throwable> handler) {
         return result.whenComplete(handler);
     }
 
-    @Override public List<T> get() throws ExecutionException, InterruptedException {
-        return result.get();
-    }
-
-    @Override public <U> IFuture<U> thenApply(CheckedFunction1<? super List<T>, ? extends U, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U>
+            thenApply(CheckedFunction1<? super List<T>, ? extends U, ? extends Throwable> handler) {
         return result.thenApply(handler);
     }
 
@@ -90,12 +102,39 @@ public class AggregateFuture<T> implements IFuture<List<T>> {
         return result.thenAccept(handler);
     }
 
-    @Override public <U> IFuture<U> thenCompose(CheckedFunction1<? super List<T>, ? extends IFuture<U>, ? extends Throwable> handler) {
+    @Override public <U> IFuture<U> thenCompose(
+            CheckedFunction1<? super List<T>, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
         return result.thenCompose(handler);
+    }
+
+    @Override public <U> IFuture<U> compose(
+            CheckedFunction2<? super List<T>, Throwable, ? extends IFuture<? extends U>, ? extends Throwable> handler) {
+        return result.compose(handler);
     }
 
     @Override public boolean isDone() {
         return result.isDone();
+    }
+
+    @Override public java.util.concurrent.CompletableFuture<List<T>> asJavaCompletion() {
+        return result.asJavaCompletion();
+    }
+
+    @SuppressWarnings("unchecked") public static <T1, T2> IFuture<Tuple2<T1, T2>> apply(IFuture<T1> f1,
+            IFuture<T2> f2) {
+        return new AggregateFuture<>(f1, f2).thenApply(rs -> Tuple2.of((T1) rs.get(0), (T2) rs.get(1)));
+    }
+
+    @SuppressWarnings("unchecked") public static <T1, T2, T3> IFuture<Tuple3<T1, T2, T3>> apply(IFuture<T1> f1,
+            IFuture<T2> f2, IFuture<T3> f3) {
+        return new AggregateFuture<>(f1, f2, f3)
+                .thenApply(rs -> Tuple3.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2)));
+    }
+
+    @SuppressWarnings("unchecked") public static <T1, T2, T3, T4> IFuture<Tuple4<T1, T2, T3, T4>> apply(IFuture<T1> f1,
+            IFuture<T2> f2, IFuture<T3> f3, IFuture<T4> f4) {
+        return new AggregateFuture<>(f1, f2, f3, f4)
+                .thenApply(rs -> Tuple4.of((T1) rs.get(0), (T2) rs.get(1), (T3) rs.get(2), (T4) rs.get(3)));
     }
 
 }

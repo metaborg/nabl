@@ -8,6 +8,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import org.metaborg.util.log.Level;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -53,12 +55,16 @@ public class BaseConstraintStore implements IConstraintStore {
     @Override public void delay(IConstraint constraint, Delay delay) {
         final Delayed delayed = new Delayed(constraint);
         if(!delay.vars().isEmpty()) {
-            debug.debug("delayed {} on vars {}", constraint, delay.vars());
+            if(debug.isEnabled(Level.Debug)) {
+                debug.debug("delayed {} on vars {}", constraint, delay.vars());
+            }
             for(ITermVar var : delay.vars()) {
                 stuckOnVar.put(var, delayed);
             }
         } else if(!delay.criticalEdges().isEmpty()) {
-            debug.debug("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            if(debug.isEnabled(Level.Debug)) {
+                debug.debug("delayed {} on critical edges {}", constraint, delay.criticalEdges());
+            }
             for(CriticalEdge edge : delay.criticalEdges()) {
                 stuckOnEdge.put(edge, delayed);
             }
@@ -73,7 +79,9 @@ public class BaseConstraintStore implements IConstraintStore {
             for(Delayed delayed : activated) {
                 if(delayed.activate()) {
                     final IConstraint constraint = delayed.constraint;
-                    debug.debug("activating {}", constraint);
+                    if(debug.isEnabled(Level.Debug)) {
+                        debug.debug("activating {}", constraint);
+                    }
                     add(constraint);
                 }
             }
@@ -86,7 +94,9 @@ public class BaseConstraintStore implements IConstraintStore {
             for(Delayed delayed : activated) {
                 if(delayed.activate()) {
                     final IConstraint constraint = delayed.constraint;
-                    debug.debug("activating {}", constraint);
+                    if(debug.isEnabled(Level.Debug)) {
+                        debug.debug("activating {}", constraint);
+                    }
                     add(constraint);
                 }
             }

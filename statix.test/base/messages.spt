@@ -32,7 +32,7 @@ test error on try false [[
 test warning on try false [[
   resolve try { false } | warning "message"
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   run evaluate-test to WARNS()
 
 test note on try false [[
   resolve try { false } | note "message"
@@ -50,7 +50,7 @@ test error in warning succeeds [[
     c3 :
     c3() :- false.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   run evaluate-test to WARNS()
 
 test warning in error succeeds [[
   resolve
@@ -63,4 +63,4 @@ test warning in error succeeds [[
     c3 :
     c3() :- false.
 ]] analysis succeeds
-   run evaluate-test to SUCCEEDS()
+   run evaluate-test to WARNS()

@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification.u;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -9,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
@@ -22,15 +24,28 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
+import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
+import mb.nabl2.util.collections.MultiSet;
 
 public abstract class PersistentUnifier extends BaseUnifier implements IUnifier, Serializable {
 
     private static final long serialVersionUID = 42L;
+
+
+    private static final PersistentUnifier.Immutable FINITE_EMPTY = new PersistentUnifier.Immutable(true,
+            Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(), MultiSet.Immutable.of(),
+            CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
+
+    private static final PersistentUnifier.Immutable INFINITE_EMPTY = new PersistentUnifier.Immutable(false,
+            Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(), MultiSet.Immutable.of(),
+            CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
+
 
     ///////////////////////////////////////////
     // class Immutable
@@ -46,13 +61,26 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         private final Map.Immutable<ITermVar, Integer> ranks;
         private final Map.Immutable<ITermVar, ITerm> terms;
 
+        private final Ref<MultiSet.Immutable<ITermVar>> repAndTermVarsCache;
+        private final Set.Immutable<ITermVar> domainSetCache;
+        private final Set.Immutable<ITermVar> rangeSetCache;
+        private final Set.Immutable<ITermVar> varSetCache;
+
         // FIXME Should be `package`, but is `public` for constructor in PersistentUniDisunifier
         public Immutable(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
-                final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
+                final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms,
+                MultiSet.Immutable<ITermVar> repAndTermVarsCache, Set.Immutable<ITermVar> domainSetCache,
+                Set.Immutable<ITermVar> rangeSetCache, Set.Immutable<ITermVar> varSetCache) {
             this.finite = finite;
+
             this.reps = new Ref<>(reps);
             this.ranks = ranks;
             this.terms = terms;
+
+            this.repAndTermVarsCache = new Ref<>(repAndTermVarsCache);
+            this.domainSetCache = domainSetCache;
+            this.rangeSetCache = rangeSetCache;
+            this.varSetCache = varSetCache;
         }
 
         @Override public boolean isFinite() {
@@ -69,54 +97,80 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
         @Override public ITermVar findRep(ITermVar var) {
             final Map.Transient<ITermVar, ITermVar> reps = this.reps.get().asTransient();
-            final ITermVar rep = findRep(var, reps);
+            final MultiSet.Transient<ITermVar> repAndTermVarsCache = this.repAndTermVarsCache.get().melt();
+            final ITermVar rep = findRep(var, reps, repAndTermVarsCache);
             this.reps.set(reps.freeze());
+            this.repAndTermVarsCache.set(repAndTermVarsCache.freeze());
             return rep;
+        }
+
+        ///////////////////////////////////////////
+        // unifier functions
+        ///////////////////////////////////////////
+
+        @Override public Set.Immutable<ITermVar> domainSet() {
+            return domainSetCache;
+        }
+
+        @Override public Set.Immutable<ITermVar> rangeSet() {
+            return rangeSetCache;
+        }
+
+        @Override public Set.Immutable<ITermVar> varSet() {
+            return varSetCache;
         }
 
         ///////////////////////////////////////////
         // unify(ITerm, ITerm)
         ///////////////////////////////////////////
 
-        @Override public Optional<Result<IUnifier.Immutable>> unify(ITerm left, ITerm right) throws OccursException {
-            return new Unify(this, left, right).apply();
+        @Override public Optional<ImmutableResult<IUnifier.Immutable>> unify(ITerm left, ITerm right,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            return new Unify(this, left, right, isRigid).apply();
         }
 
-        @Override public Optional<Result<IUnifier.Immutable>>
-                unify(Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) throws OccursException {
-            return new Unify(this, equalities).apply();
+        @Override public Optional<ImmutableResult<IUnifier.Immutable>> unify(
+                Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities, Predicate1<ITermVar> isRigid)
+                throws OccursException, RigidException {
+            return new Unify(this, equalities, isRigid).apply();
         }
 
-        @Override public Optional<Result<IUnifier.Immutable>> unify(IUnifier other) throws OccursException {
-            return new Unify(this, other).apply();
+        @Override public Optional<ImmutableResult<IUnifier.Immutable>> unify(IUnifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
+            return new Unify(this, other, isRigid).apply();
         }
 
         private static class Unify extends PersistentUnifier.Transient {
 
-            private final Deque<Map.Entry<ITerm, ITerm>> worklist = Lists.newLinkedList();
+            private final Predicate1<ITermVar> isRigid;
+            private final Deque<Map.Entry<ITerm, ITerm>> worklist = new ArrayDeque<>();
             private final List<ITermVar> result = Lists.newArrayList();
 
-            public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right) {
+            public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right, Predicate1<ITermVar> isRigid) {
                 super(unifier);
+                this.isRigid = isRigid;
                 worklist.push(Tuple2.of(left, right));
             }
 
             public Unify(PersistentUnifier.Immutable unifier,
-                    Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities) {
+                    Iterable<? extends Entry<? extends ITerm, ? extends ITerm>> equalities,
+                    Predicate1<ITermVar> isRigid) {
                 super(unifier);
-                equalities.forEach(e -> {
+                this.isRigid = isRigid;
+                for(Entry<? extends ITerm, ? extends ITerm> e : equalities) {
                     worklist.push(Tuple2.of(e));
-                });
+                }
             }
 
-            public Unify(PersistentUnifier.Immutable unifier, IUnifier other) {
+            public Unify(PersistentUnifier.Immutable unifier, IUnifier other, Predicate1<ITermVar> isRigid) {
                 super(unifier);
-                other.varSet().forEach(v -> {
+                this.isRigid = isRigid;
+                for(ITermVar v : other.domainSet()) {
                     worklist.push(Tuple2.of(v, other.findTerm(v)));
-                });
+                }
             }
 
-            public Optional<Result<IUnifier.Immutable>> apply() throws OccursException {
+            public Optional<ImmutableResult<IUnifier.Immutable>> apply() throws OccursException, RigidException {
                 while(!worklist.isEmpty()) {
                     final Map.Entry<ITerm, ITerm> work = worklist.pop();
                     if(!unifyTerms(work.getKey(), work.getValue())) {
@@ -126,20 +180,29 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
                 final PersistentUnifier.Immutable unifier = freeze();
                 if(finite) {
-                    final ImmutableSet<ITermVar> cyclicVars =
-                            result.stream().filter(v -> unifier.isCyclic(v)).collect(ImmutableSet.toImmutableSet());
-                    if(!cyclicVars.isEmpty()) {
-                        throw new OccursException(cyclicVars);
-                    }
+                    occursCheck(unifier);
                 }
                 final IUnifier.Immutable diffUnifier = diffUnifier(result);
                 return Optional.of(new ImmutableResult<>(diffUnifier, unifier));
             }
 
-            private boolean unifyTerms(final ITerm left, final ITerm right) {
+            private void occursCheck(final PersistentUnifier.Immutable unifier) throws OccursException {
+                final ImmutableSet.Builder<ITermVar> _cyclicVars = ImmutableSet.builderWithExpectedSize(0);
+                for(ITermVar var : result) {
+                    if(unifier.isCyclic(var)) {
+                        _cyclicVars.add(var);
+                    }
+                }
+                final ImmutableSet<ITermVar> cyclicVars = _cyclicVars.build();
+                if(!cyclicVars.isEmpty()) {
+                    throw new OccursException(cyclicVars);
+                }
+            }
+
+            private boolean unifyTerms(final ITerm left, final ITerm right) throws RigidException {
                 // @formatter:off
-                return left.match(Terms.<Boolean>cases(
-                    applLeft -> right.match(Terms.<Boolean>cases()
+                return left.matchOrThrow(Terms.<Boolean,RigidException>checkedCases(
+                    applLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
                         .appl(applRight -> {
                             return applLeft.getArity() == applRight.getArity() &&
                                     applLeft.getOp().equals(applRight.getOp()) &&
@@ -152,7 +215,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    listLeft -> right.match(Terms.<Boolean>cases()
+                    listLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
                         .list(listRight -> {
                             return unifyLists(listLeft, listRight);
                         })
@@ -163,7 +226,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    stringLeft -> right.match(Terms.<Boolean>cases()
+                    stringLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
                         .string(stringRight -> {
                             return stringLeft.getValue().equals(stringRight.getValue());
                         })
@@ -174,7 +237,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    integerLeft -> right.match(Terms.<Boolean>cases()
+                    integerLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
                         .integer(integerRight -> {
                             return integerLeft.getValue() == integerRight.getValue();
                         })
@@ -185,7 +248,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    blobLeft -> right.match(Terms.<Boolean>cases()
+                    blobLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
                         .blob(blobRight -> {
                             return blobLeft.getValue().equals(blobRight.getValue());
                         })
@@ -196,7 +259,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    varLeft -> right.match(Terms.<Boolean>cases()
+                    varLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
@@ -208,10 +271,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 // @formatter:on
             }
 
-            private boolean unifyLists(final IListTerm left, final IListTerm right) {
+            private boolean unifyLists(final IListTerm left, final IListTerm right) throws RigidException {
                 // @formatter:off
-                return left.match(ListTerms.<Boolean>cases(
-                    consLeft -> right.match(ListTerms.<Boolean>cases()
+                return left.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases(
+                    consLeft -> right.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases()
                         .cons(consRight -> {
                             worklist.push(Tuple2.of(consLeft.getHead(), consRight.getHead()));
                             worklist.push(Tuple2.of(consLeft.getTail(), consRight.getTail()));
@@ -224,7 +287,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    nilLeft -> right.match(ListTerms.<Boolean>cases()
+                    nilLeft -> right.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases()
                         .nil(nilRight -> {
                             return true;
                         })
@@ -235,7 +298,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             return false;
                         })
                     ),
-                    varLeft -> right.match(ListTerms.<Boolean>cases()
+                    varLeft -> right.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases()
                         .var(varRight -> {
                             return unifyVars(varLeft, varRight);
                         })
@@ -247,7 +310,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 // @formatter:on
             }
 
-            private boolean unifyVarTerm(final ITermVar var, final ITerm term) {
+            private boolean unifyVarTerm(final ITermVar var, final ITerm term) throws RigidException {
                 final ITermVar rep = findRep(var);
                 if(term instanceof ITermVar) {
                     throw new IllegalStateException();
@@ -256,26 +319,49 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(repTerm != null) {
                     worklist.push(Tuple2.of(repTerm, term));
                 } else {
+                    if(isRigid.test(rep)) {
+                        throw new RigidException(rep);
+                    }
                     putTerm(rep, term);
                     result.add(rep);
                 }
                 return true;
             }
 
-            private boolean unifyVars(final ITermVar left, final ITermVar right) {
+            private boolean unifyVars(final ITermVar left, final ITermVar right) throws RigidException {
                 final ITermVar leftRep = findRep(left);
                 final ITermVar rightRep = findRep(right);
                 if(leftRep.equals(rightRep)) {
                     return true;
                 }
+                final boolean leftRigid = isRigid.test(leftRep);
+                final boolean rightRigid = isRigid.test(rightRep);
+                final ITerm leftTerm = getTerm(leftRep);
+                final ITerm rightTerm = getTerm(rightRep);
                 final int leftRank = Optional.ofNullable(ranks.__remove(leftRep)).orElse(1);
                 final int rightRank = Optional.ofNullable(ranks.__remove(rightRep)).orElse(1);
-                final boolean swap = leftRank > rightRank;
-                final ITermVar var = swap ? rightRep : leftRep; // the eliminated variable
-                final ITermVar rep = swap ? leftRep : rightRep; // the new representative
+                final ITermVar var; // the eliminated variable
+                final ITermVar rep; // the new representative
+                if(leftRigid && rightRigid && leftTerm == null && rightTerm == null) {
+                    throw new RigidException(leftRep, rightRep);
+                } else if(leftRigid && rightRigid && leftTerm == null) {
+                    throw new RigidException(leftRep);
+                } else if(leftRigid && rightRigid && rightTerm == null) {
+                    throw new RigidException(rightRep);
+                } else if(leftRigid && leftTerm == null) {
+                    var = rightRep;
+                    rep = leftRep;
+                } else if(rightRigid && rightTerm == null) {
+                    var = leftRep;
+                    rep = rightRep;
+                } else {
+                    final boolean swap = leftRank > rightRank;
+                    var = swap ? rightRep : leftRep; // the eliminated variable
+                    rep = swap ? leftRep : rightRep; // the new representative
+                }
                 ranks.__put(rep, leftRank + rightRank);
-                putRep(var, rep);
                 final ITerm varTerm = removeTerm(var); // term for the eliminated var
+                putRep(var, rep);
                 if(varTerm != null) {
                     final ITerm repTerm = getTerm(rep); // term for the representative
                     if(repTerm != null) {
@@ -339,26 +425,38 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         ///////////////////////////////////////////
+        // equal(ITerm, ITerm)
+        ///////////////////////////////////////////
+
+        @Override public boolean equal(ITerm term1, ITerm term2) {
+            try {
+                return unify(term1, term2).map(r -> r.result().isEmpty()).orElse(false);
+            } catch(OccursException e) {
+                return false;
+            }
+        }
+
+        ///////////////////////////////////////////
         // retain(ITermVar)
         ///////////////////////////////////////////
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retain(ITermVar var) {
-            return retainAll(Set.Immutable.of(var));
+            return retainAll(CapsuleUtil.immutableSet(var));
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Set.Immutable.subtract(varSet(), CapsuleUtil.toSet(vars)));
+            return removeAll(Set.Immutable.subtract(domainSet(), CapsuleUtil.toSet(vars)));
         }
 
         ///////////////////////////////////////////
         // remove(ITermVar)
         ///////////////////////////////////////////
 
-        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> remove(ITermVar var) {
-            return removeAll(Set.Immutable.of(var));
+        @Override public ImmutableResult<ISubstitution.Immutable> remove(ITermVar var) {
+            return removeAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
+        @Override public ImmutableResult<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
             return new RemoveAll(this, vars).apply();
         }
 
@@ -371,11 +469,10 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 this.vars = CapsuleUtil.toSet(vars);
             }
 
-            public IUnifier.Immutable.Result<ISubstitution.Immutable> apply() {
+            public ImmutableResult<ISubstitution.Immutable> apply() {
                 // remove vars from unifier
                 final ISubstitution.Immutable subst = removeAll();
-                // TODO Check if variables escaped?
-                final IUnifier.Immutable newUnifier = freeze();
+                final PersistentUnifier.Immutable newUnifier = freeze();
                 return new BaseUnifier.ImmutableResult<>(subst, newUnifier);
             }
 
@@ -387,7 +484,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 final ListMultimap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
-                    if((rep = removeRep(var)) != null) { // var |-> rep
+                    if((rep = removeRep(var)) != null) { // Case 1. Var _has_ a rep; var |-> rep
                         invReps.remove(rep, var);
                         subst.compose(var, rep);
                         for(ITermVar notRep : invReps.get(var)) {
@@ -396,7 +493,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                         }
                     } else {
                         final Collection<ITermVar> newReps = invReps.removeAll(var);
-                        if(!newReps.isEmpty()) { // rep |-> var
+                        if(!newReps.isEmpty()) { // Case 2. Var _is_ a rep; rep |-> var
                             rep = newReps.stream().max((r1, r2) -> Integer.compare(getRank(r1), getRank(r2))).get();
                             removeRep(rep);
                             invReps.remove(rep, var);
@@ -411,7 +508,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                             if((term = removeTerm(var)) != null) { // var |-> term
                                 putTerm(rep, term);
                             }
-                        } else {
+                        } else { // Case 3. Var neither _is_ nor _has_ a rep
                             final ITerm term;
                             if((term = removeTerm(var)) != null) { // var |-> term
                                 subst.compose(var, term);
@@ -430,6 +527,47 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         ///////////////////////////////////////////
+        // rename(IRenaming)
+        ///////////////////////////////////////////
+
+        @Override public PersistentUnifier.Immutable rename(IRenaming renaming) {
+            if(renaming.isEmpty() || this.isEmpty()) {
+                return this;
+            }
+            final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+            for(Entry<ITermVar, ITermVar> e : this.reps.get().entrySet()) {
+                reps.__put(renaming.rename(e.getKey()), renaming.rename(e.getValue()));
+            }
+            final Map.Transient<ITermVar, Integer> ranks = Map.Transient.of();
+            for(Entry<ITermVar, Integer> e : this.ranks.entrySet()) {
+                ranks.__put(renaming.rename(e.getKey()), e.getValue());
+            }
+            final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+            for(Entry<ITermVar, ITerm> e : this.terms.entrySet()) {
+                terms.__put(renaming.rename(e.getKey()), renaming.apply(e.getValue()));
+            }
+            final MultiSet.Transient<ITermVar> repAndTermVarsCache = MultiSet.Transient.of();
+            for(Entry<ITermVar, Integer> e : this.repAndTermVarsCache.get().entrySet()) {
+                repAndTermVarsCache.add(renaming.rename(e.getKey()), e.getValue());
+            }
+            final Set.Transient<ITermVar> domainSetCache = CapsuleUtil.transientSet();
+            for(ITermVar var : this.domainSetCache) {
+                domainSetCache.__insert(renaming.rename(var));
+            }
+            final Set.Transient<ITermVar> rangeSetCache = CapsuleUtil.transientSet();
+            for(ITermVar var : this.rangeSetCache) {
+                rangeSetCache.__insert(renaming.rename(var));
+            }
+            final Set.Transient<ITermVar> varSetCache = CapsuleUtil.transientSet();
+            for(ITermVar var : this.varSetCache) {
+                varSetCache.__insert(renaming.rename(var));
+            }
+            return new PersistentUnifier.Immutable(finite, reps.freeze(), ranks.freeze(), terms.freeze(),
+                    repAndTermVarsCache.freeze(), domainSetCache.freeze(), rangeSetCache.freeze(),
+                    varSetCache.freeze());
+        }
+
+        ///////////////////////////////////////////
         // construction
         ///////////////////////////////////////////
 
@@ -437,12 +575,46 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return new BaseUnifier.Transient(this);
         }
 
-        public static IUnifier.Immutable of() {
-            return of(true);
+        public static PersistentUnifier.Immutable of() {
+            return FINITE_EMPTY;
         }
 
-        public static IUnifier.Immutable of(boolean finite) {
-            return new PersistentUnifier.Immutable(finite, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+        public static PersistentUnifier.Immutable of(boolean finite) {
+            return finite ? FINITE_EMPTY : INFINITE_EMPTY;
+        }
+
+        public static PersistentUnifier.Immutable of(final boolean finite, final Map.Immutable<ITermVar, ITermVar> reps,
+                final Map.Immutable<ITermVar, Integer> ranks, final Map.Immutable<ITermVar, ITerm> terms) {
+            if(reps.isEmpty() && ranks.isEmpty() && terms.isEmpty()) {
+                return of(finite);
+            }
+            final MultiSet.Transient<ITermVar> repAndTermVarsCache = MultiSet.Transient.of();
+            final Set.Transient<ITermVar> domainSetCache = CapsuleUtil.transientSet();
+            final Set.Transient<ITermVar> varSetCache = CapsuleUtil.transientSet();
+            for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
+                domainSetCache.__insert(e.getKey());
+                varSetCache.__insert(e.getKey());
+                repAndTermVarsCache.add(e.getValue());
+                varSetCache.__insert(e.getValue());
+            }
+            for(Entry<ITermVar, ITerm> e : terms.entrySet()) {
+                domainSetCache.__insert(e.getKey());
+                varSetCache.__insert(e.getKey());
+                for(ITermVar tv : e.getValue().getVars()) {
+                    repAndTermVarsCache.add(tv);
+                    varSetCache.__insert(tv);
+                }
+            }
+
+            final Set.Transient<ITermVar> rangeSetCache = CapsuleUtil.transientSet();
+            for(ITermVar var : repAndTermVarsCache.elementSet()) {
+                if(!domainSetCache.contains(var)) {
+                    rangeSetCache.__insert(var);
+                }
+            }
+
+            return new PersistentUnifier.Immutable(finite, reps, ranks, terms, repAndTermVarsCache.freeze(),
+                    domainSetCache.freeze(), rangeSetCache.freeze(), varSetCache.freeze());
         }
 
     }
@@ -451,7 +623,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
     // class Transient
     ///////////////////////////////////////////
 
-    static class Transient {
+    // FIXME public because of use in PersistentUniDisunifier
+    public static class Transient {
 
         protected final boolean finite;
 
@@ -459,21 +632,37 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         protected final Map.Transient<ITermVar, Integer> ranks;
         private final Map.Transient<ITermVar, ITerm> terms;
 
+        private final MultiSet.Transient<ITermVar> repAndTermVarsCache;
+        private final Set.Transient<ITermVar> domainSetCache;
+        private final Set.Transient<ITermVar> rangeSetCache;
+        private final Set.Transient<ITermVar> varSetCache;
+
         Transient(boolean finite) {
-            this(finite, Map.Transient.of(), Map.Transient.of(), Map.Transient.of());
+            this(finite, Map.Transient.of(), Map.Transient.of(), Map.Transient.of(), MultiSet.Transient.of(),
+                    CapsuleUtil.transientSet(), CapsuleUtil.transientSet(), CapsuleUtil.transientSet());
         }
 
-        Transient(PersistentUnifier.Immutable unifier) {
+        public Transient(PersistentUnifier.Immutable unifier) {
             this(unifier.finite, unifier.reps.get().asTransient(), unifier.ranks.asTransient(),
-                    unifier.terms.asTransient());
+                    unifier.terms.asTransient(), unifier.repAndTermVarsCache.get().melt(),
+                    unifier.domainSetCache.asTransient(), unifier.rangeSetCache.asTransient(),
+                    unifier.varSetCache.asTransient());
         }
 
         Transient(boolean finite, Map.Transient<ITermVar, ITermVar> reps, Map.Transient<ITermVar, Integer> ranks,
-                Map.Transient<ITermVar, ITerm> terms) {
+                Map.Transient<ITermVar, ITerm> terms, MultiSet.Transient<ITermVar> repAndTermVarsCache,
+                Set.Transient<ITermVar> domainSetCache, Set.Transient<ITermVar> rangeSetCache,
+                Set.Transient<ITermVar> varSetCache) {
             this.finite = finite;
+
             this.reps = reps;
             this.ranks = ranks;
             this.terms = terms;
+
+            this.repAndTermVarsCache = repAndTermVarsCache;
+            this.domainSetCache = domainSetCache;
+            this.rangeSetCache = rangeSetCache;
+            this.varSetCache = varSetCache;
         }
 
         protected Iterable<Entry<ITermVar, ITermVar>> repEntries() {
@@ -484,8 +673,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return terms.entrySet();
         }
 
+
         protected ITermVar findRep(ITermVar var) {
-            return PersistentUnifier.findRep(var, reps);
+            return PersistentUnifier.findRep(var, reps, repAndTermVarsCache);
         }
 
         protected ITermVar getRep(ITermVar var) {
@@ -494,40 +684,140 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
         protected ListMultimap<ITermVar, ITermVar> getInvReps() {
             final ListMultimap<ITermVar, ITermVar> invReps = LinkedListMultimap.create();
-            reps.forEach((var, rep) -> {
-                invReps.put(rep, var);
-            });
+            for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
+                invReps.put(e.getValue(), e.getKey());
+            }
             return invReps;
         }
 
         protected void putRep(ITermVar var, ITermVar rep) {
-            reps.__put(var, rep);
+            if(terms.containsKey(var)) {
+                throw new IllegalStateException();
+            }
+            final ITermVar oldRep = reps.__put(var, rep);
+            if(oldRep == null) {
+                addDomainVar(var);
+            } else {
+                removeRangeVar(oldRep, 1);
+            }
+            addRangeVar(rep, 1);
         }
 
         protected ITermVar removeRep(ITermVar var) {
-            return reps.__remove(var);
+            final ITermVar rep = reps.__remove(var);
+            if(rep != null) {
+                removeDomainVar(var);
+                removeRangeVar(rep, 1);
+            }
+            return rep;
         }
+
 
         protected ITerm getTerm(ITermVar rep) {
             return terms.get(rep);
         }
 
         protected void putTerm(ITermVar rep, ITerm term) {
-            terms.__put(rep, term);
+            if(reps.containsKey(rep)) {
+                throw new IllegalStateException();
+            }
+            final ITerm oldTerm = terms.__put(rep, term);
+            if(oldTerm == null) {
+                addDomainVar(rep);
+            } else {
+                for(ITermVar var : oldTerm.getVars()) {
+                    removeRangeVar(var, 1);
+                }
+            }
+            for(ITermVar var : term.getVars()) {
+                addRangeVar(var, 1);
+            }
         }
 
         protected ITerm removeTerm(ITermVar rep) {
-            return terms.__remove(rep);
+            final ITerm term = terms.__remove(rep);
+            if(term != null) {
+                removeDomainVar(rep);
+                for(ITermVar var : term.getVars()) {
+                    removeRangeVar(var, 1);
+                }
+            }
+            return term;
         }
+
+
+        private void addDomainVar(ITermVar var) {
+            if(domainSetCache.contains(var)) {
+                throw new IllegalStateException();
+            }
+            domainSetCache.__insert(var);
+            if(repAndTermVarsCache.count(var) > 0) { // pre-existing var
+                rangeSetCache.__remove(var);
+            } else { // added var
+                varSetCache.__insert(var);
+            }
+        }
+
+        private void removeDomainVar(ITermVar var) {
+            if(!domainSetCache.contains(var)) {
+                throw new IllegalStateException();
+            }
+            domainSetCache.__remove(var);
+            if(repAndTermVarsCache.count(var) > 0) { // still existing var
+                rangeSetCache.__insert(var);
+            } else { // removed var
+                varSetCache.__remove(var);
+            }
+        }
+
+        public void addRangeVar(ITermVar var, int k) {
+            if(k <= 0) {
+                throw new IllegalStateException();
+            }
+            final int n = repAndTermVarsCache.add(var, k);
+            if(n == 0) { // added var
+                if(!domainSetCache.contains(var)) {
+                    rangeSetCache.__insert(var);
+                    varSetCache.__insert(var);
+                }
+            }
+        }
+
+        public void removeRangeVar(ITermVar var, int k) {
+            if(k <= 0) {
+                throw new IllegalStateException();
+            }
+            final int n = repAndTermVarsCache.remove(var, k);
+            if(n < k) {
+                throw new IllegalStateException();
+            }
+            if(n == k) { // removed var
+                if(!domainSetCache.contains(var)) {
+                    rangeSetCache.__remove(var);
+                    varSetCache.__remove(var);
+                }
+            }
+        }
+
 
         protected int getRank(ITermVar var) {
             return ranks.getOrDefault(var, 1);
         }
 
-        protected PersistentUnifier.Immutable freeze() {
-            final PersistentUnifier.Immutable unifier =
-                    new PersistentUnifier.Immutable(finite, reps.freeze(), ranks.freeze(), terms.freeze());
-            return unifier;
+
+        public PersistentUnifier.Immutable freeze() {
+            // We also check if the variable caches are empty, since they are not
+            // only derived from reps/ranks/terms, but also updated based on
+            // disequalities in the UniDisunifier implementation.
+            if(reps.isEmpty() && ranks.isEmpty() && terms.isEmpty() && repAndTermVarsCache.isEmpty()
+                    && domainSetCache.isEmpty() && rangeSetCache.isEmpty() && varSetCache.isEmpty()) {
+                return Immutable.of(finite);
+            } else {
+                final PersistentUnifier.Immutable unifier = new PersistentUnifier.Immutable(finite, reps.freeze(),
+                        ranks.freeze(), terms.freeze(), repAndTermVarsCache.freeze(), domainSetCache.freeze(),
+                        rangeSetCache.freeze(), varSetCache.freeze());
+                return unifier;
+            }
         }
 
     }
@@ -536,14 +826,19 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
     // utils
     ///////////////////////////////////////////
 
-    protected static ITermVar findRep(ITermVar var, Map.Transient<ITermVar, ITermVar> reps) {
-        ITermVar rep = reps.get(var);
+    protected static ITermVar findRep(ITermVar var, Map.Transient<ITermVar, ITermVar> reps,
+            MultiSet.Transient<ITermVar> repAndTermVarsCache) {
+        final ITermVar rep = reps.get(var);
         if(rep == null) {
             return var;
         } else {
-            rep = findRep(rep, reps);
-            reps.__put(var, rep);
-            return rep;
+            final ITermVar rep2 = findRep(rep, reps, repAndTermVarsCache);
+            if(!rep2.equals(rep)) {
+                reps.__put(var, rep2);
+                repAndTermVarsCache.remove(rep);
+                repAndTermVarsCache.add(rep2);
+            }
+            return rep2;
         }
     }
 

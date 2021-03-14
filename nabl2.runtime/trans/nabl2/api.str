@@ -83,6 +83,12 @@ rules // ###### Custom analysis hooks ######
 
   /**
    * @param a : Analysis
+   * @type (resource:String, ast:Term, CustomInitialResult) -> CustomUnitResult
+   */
+  nabl2-custom-analysis-unit-hook2(|a) = fail
+
+  /**
+   * @param a : Analysis
    * @type (resource:String, CustomInitialResult, List(CustomUnitResult))
    *         -> (errors:List(EditorMessage), warnings:List(EditorMessage), notes:List(EditorMessage), CustomFinalResult)
    */
@@ -539,3 +545,7 @@ rules // ###### Editor Integration ######
    * @type (node, position, ast, path, project-path) -> label
    */
   nabl2-editor-hover = nabl2--editor-hover
+
+rules
+  
+  nabl2-is-ground = nabl2--is-ground
