@@ -60,13 +60,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> runGroups(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope projectScope,
-            Scope groupScope) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope parentScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result = context.add(key,
-                    new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope, groupScope));
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result =
+                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
@@ -79,13 +78,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> runUnits(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope projectScope,
-            Scope groupScope) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope parentScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result = context.add(key,
-                    new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope, groupScope));
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result =
+                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
             }));
@@ -99,12 +97,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> runLibraries(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
-            Scope projectScope) {
+            Scope parentScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result = context.add(key,
-                    new LibraryTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope));
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result =
+                    context.add(key, new LibraryTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));

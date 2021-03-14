@@ -95,6 +95,7 @@ rules // multi file analysis (new)
        ; grp-c-name  := <stx--mk-qualified-name(|spec-name)> group-constraint
        ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
        ; s-proj      := Var("s_proj")
+       ; s-parent    := Var("s_parent")
        ; s-grp       := Var("s_grp")
     with
       //
@@ -119,7 +120,7 @@ rules // multi file analysis (new)
         \ (resource, ast) -> (key, resource, rule, ast')
             where key := <group-key> (resource, ast)
                 ; ast' := <pre;stx--index-ast(|resource)> ast
-                ; rule := LLam([s-proj, s-grp], C(file-c-name, [s-proj, s-grp, <stx--explode> ast'], NoMessage()))
+                ; rule := LLam([s-parent], C(file-c-name, [s-parent, <stx--explode> ast'], NoMessage()))
         \
       })> changed-file-ast*
     ; changed-file-task* := <map(\ (key, resource, rule, _) -> (key, resource, rule) \)> changed-file-task_ast*
@@ -166,10 +167,9 @@ rules // multi file analysis (new)
 
   cstx--make-sub(|key, grp-c-name): file-task* -> (key, Group(rule, groups, units))
     where <map(?([_|_], _, _))> file-task*
-    with s-proj        := Var("s_proj")
-       ; s-parent-grp  := Var("s_parentGrp")
-       ; s-this-grp    := Var("s_thisGrp")
-       ; rule := LLam([s-proj, s-parent-grp, s-this-grp], C(grp-c-name, [s-proj, s-parent-grp, <stx--explode> key, s-this-grp], NoMessage()))
+    with s-parent  := Var("s_parent")
+       ; s-grp     := Var("s_grp")
+       ; rule := LLam([s-parent, s-grp], C(grp-c-name, [s-parent, <stx--explode> key, s-grp], NoMessage()))
        ; (groups, units) := <cstx--make-subs(|grp-c-name)> file-task*
 
   cstx--make-sub(|key, grp-c-name): file-task* -> (key, Unit(resource, ast))

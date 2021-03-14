@@ -33,10 +33,10 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, project.groups(), projectScope, projectScope);
+                runGroups(context, project.groups(), projectScope);
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, project.units(), projectScope, projectScope);
+                runUnits(context, project.units(), projectScope);
 
         runLibraries(context, project.libraries(), projectScope);
 
