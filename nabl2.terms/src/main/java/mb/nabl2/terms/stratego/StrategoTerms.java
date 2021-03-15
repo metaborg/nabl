@@ -79,6 +79,7 @@ public class StrategoTerms {
     }
 
     private IStrategoTerm toStrategoList(IListTerm list, boolean varsToPlhdrs) {
+        if (varsToPlhdrs) return toStrategoListWithVars(list);
         final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
         final LinkedList<IAttachments> attachments = Lists.newLinkedList();
         while(list != null) {
@@ -104,6 +105,16 @@ public class StrategoTerms {
             strategoList = termFactory.makeListCons(terms.pop(), strategoList);
             putAttachments(strategoList, attachments.pop());
         }
+        return strategoList;
+    }
+
+    private IStrategoList toStrategoListWithVars(IListTerm list) {
+        IStrategoList strategoList = list.match(ListTerms.<IStrategoList>cases(
+            cons -> termFactory.makeListCons(toStratego(cons.getHead(), true), toStrategoListWithVars(cons.getTail())),
+            nil -> termFactory.makeList(),
+            var -> termFactory.makePlaceholder(termFactory.makeTuple(termFactory.makeString(var.getResource()), termFactory.makeString(var.getName())))
+        ));
+        putAttachments(strategoList, list.getAttachments());
         return strategoList;
     }
 
