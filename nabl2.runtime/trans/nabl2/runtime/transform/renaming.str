@@ -62,7 +62,8 @@ rules // Step 2: Find name index in selection
         <+ add-error(|"Renaming impossible", "The selected term cannot be renamed."); fail
 
   check-selection(|selected-term, ast) =
-    <add-error-on-fail(not(eq)|"Invalid selection", "Please select a name")> (selected-term, ast)
+    <not(eq)> (selected-term, ast)
+  	<+ add-error(|"Invalid selection", "Please select a name"); fail
 
   get-name-index(|res-rel): term -> occurrence
     where
