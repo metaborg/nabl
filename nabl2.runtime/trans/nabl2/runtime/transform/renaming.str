@@ -100,16 +100,14 @@ rules //Step 5: Checking for capture
     ; old-res-rel := <qsort(res-pair-gt)> res-rel
     ; <eq>(old-res-rel, new-res-rel) 
       <+ add-error(|"Capture detected", "This renaming leads to name capture"); fail
-
+      
   res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
-      <term-index-gt> (ref-1, ref-2)
-      ; <term-index-gt> (dec-1, dec-2)
-
+      <term-index-gt> (ref-1, ref-2) 
+															
   term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
     where 
-      <gt> (num-index-1, num-index-2)
-      ; <string-gt> (path-1, path-2)
+      <string-gt> (path-1, path-2) <+ <gt> (num-index-1, num-index-2)       
 
 rules // UI strategies
 
