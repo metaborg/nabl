@@ -5,6 +5,7 @@ import static com.google.common.collect.Streams.stream;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -154,8 +155,16 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     // IActorMonitor
     ///////////////////////////////////////////////////////////////////////////
 
+    private long wakeTimeNanos;
+
+    @Override public void started() {
+        logger.debug("{} started", this);
+        wakeTimeNanos = System.nanoTime();
+    }
+
     @Override public void resumed() {
         logger.debug("{} resumed", this);
+        wakeTimeNanos = System.nanoTime();
     }
 
     private void resume() {
@@ -165,6 +174,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     @Override public void suspended() {
         logger.debug("{} suspended", this);
+        final long suspendTimeNanos = System.nanoTime();
+        final long activeTimeNanos = suspendTimeNanos - wakeTimeNanos;
+        stats.runtimeNanos += activeTimeNanos;
         if(cmh.idle()) {
         }
         tryFinish();
@@ -292,7 +304,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(wf, self);
-        stats.ownQueries += 1;
+        stats.localQueries += 1;
         return self.schedule(result).whenComplete((env, ex) -> {
             granted(wf, self);
         }).thenApply(CapsuleUtil::toSet);
@@ -328,7 +340,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     @Override public final IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
-        stats.foreignQueries += 1;
+        stats.incomingQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
@@ -438,7 +450,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                             self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
                     final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                     waitFor(wf, owner);
-                    stats.forwardedQueries += 1;
+                    if(external) {
+                        stats.forwardedQueries += 1;
+                    } else {
+                        stats.outgoingQueries += 1;
+                    }
                     return Optional.of(result.whenComplete((r, ex) -> {
                         resume();
                         logger.debug("got answer from {}", sender);
@@ -568,7 +584,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
                     doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
             final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
             waitFor(wf, self);
-            stats.ownQueries += 1;
+            stats.localQueries += 1;
             return self.schedule(result).whenComplete((env, ex) -> {
                 granted(wf, self);
             }).thenApply(CapsuleUtil::toSet);
@@ -848,9 +864,11 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
 
     private static class Stats implements IUnitStats {
 
-        private int ownQueries;
-        private int foreignQueries;
+        private int localQueries;
+        private int incomingQueries;
+        private int outgoingQueries;
         private int forwardedQueries;
+        private long runtimeNanos;
 
         private IActorStats actorStats;
 
@@ -859,18 +877,32 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         }
 
         @Override public Iterable<String> csvHeaders() {
-            return Iterables.concat(ImmutableList.of("ownQueries", "incomingQueries", "outgoingQueries"),
-                    actorStats.csvHeaders());
+            // @formatter:off
+            return Iterables.concat(ImmutableList.of(
+                "localQueries",
+                "incomingQueries",
+                "outgoingQueries",
+                "forwardedQueries",
+                "runtimeMillis"
+            ), actorStats.csvHeaders());
+            // @formatter:on
         }
 
         @Override public Iterable<String> csvRow() {
-            return Iterables.concat(ImmutableList.of(Integer.toString(ownQueries), Integer.toString(foreignQueries),
-                    Integer.toString(forwardedQueries)), actorStats.csvRow());
+            // @formatter:off
+            return Iterables.concat(ImmutableList.of(
+                Integer.toString(localQueries),
+                Integer.toString(incomingQueries),
+                Integer.toString(outgoingQueries),
+                Integer.toString(forwardedQueries),
+                Long.toString(TimeUnit.MILLISECONDS.convert(runtimeNanos, TimeUnit.NANOSECONDS))
+            ), actorStats.csvRow());
+            // @formatter:on
         }
 
         @Override public String toString() {
-            return "UnitStats{ownQueries=" + ownQueries + ",foreignQueries=" + foreignQueries + ",forwardedQueries="
-                    + forwardedQueries + "," + actorStats + "}";
+            return "UnitStats{ownQueries=" + localQueries + ",foreignQueries=" + incomingQueries + ",forwardedQueries="
+                    + outgoingQueries + "," + actorStats + "}";
         }
 
     }
