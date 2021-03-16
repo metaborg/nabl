@@ -93,19 +93,22 @@ rules //Step 4: Change name terms
 
 rules //Step 5: Checking for capture
 
-  check-capture(|renamed-ast, resolution-relation, path) =
-    (new-renamed-ast, new-analysis, _, _, _) := <nabl2-analyze-ast(|path)> renamed-ast
-    ; old-resolution-relation := <qsort(dec-ref-pair-gt)> resolution-relation
-    ; new-resolution-relation := <calc-resolution-relation; qsort(dec-ref-pair-gt)> new-analysis
-    ; <add-error-on-fail(eq|"Capture detected", "This renaming leads to name capture")> (old-resolution-relation, new-renamed-ast)
+  check-capture(|renamed-ast, res-rel, path) =
+    (_, new-analysis, _, _, _) := <nabl2-analyze-ast(|path)> renamed-ast
+    ; new-res-rel := <calc-resolution-relation; qsort(res-pair-gt)> new-analysis
+    ; old-res-rel := <qsort(res-pair-gt)> res-rel
+    ; <eq>(old-res-rel, new-res-rel) 
+      <+ add-error(|"Capture detected", "This renaming leads to name capture"); fail
 
-  dec-ref-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
+  res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
       <term-index-gt> (ref-1, ref-2)
+      ; <term-index-gt> (dec-1, dec-2)
 
   term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
     where 
       <gt> (num-index-1, num-index-2)
+      ; <string-gt> (path-1, path-2)
 
 rules // UI strategies
 
@@ -114,23 +117,18 @@ rules // UI strategies
       new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
 
   check-selection(|selected-term, ast) =
-    <add-error-on-fail(not(eq)|"Invalid selection", "Please select a name")> (selected-term, ast)
+    <eq> (selected-term, ast) 
+    <+ add-error(|"Invalid selection", "Please select a name"); fail 
     
 rules // error handling strategies 
   add-error(|title, message) =
     rules(
       ErrorMessage :+ () -> (title, message)
     )
-     
-  add-error-on-fail(s|title, message) =
-    s <+ add-error(|title, message); fail
       
   show-errors =    
     [(title, message) | _] := <bagof-ErrorMessage> ()
     ; <show-dialog(|title, "ERROR")> message    
-
-rules // Utility strategies
-  add-elem: (new-elem, list) -> [new-elem | list]
 
 rules // primitives
   find-all-related-occs =  prim("FindAllRelatedOccurrences")
