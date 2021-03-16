@@ -554,7 +554,7 @@ public class StatixSolver {
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
                 final LabelWf<ITerm> labelWF = new RegExpLabelWf<>(filter.getLabelWF());
-                final LabelOrder<ITerm> labelOrder = new RelationLabelOrder(min.getLabelOrder());
+                final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
                 final DataWf<Scope, ITerm, ITerm> dataWF = new ConstraintDataWF(spec, state, filter.getDataWF());
                 final DataLeq<Scope, ITerm, ITerm> dataEquiv = new ConstraintDataEquiv(spec, state, min.getDataEquiv());
                 final DataWf<Scope, ITerm, ITerm> dataWFInternal = new ConstraintDataWFInternal(filter.getDataWF());
