@@ -60,10 +60,6 @@ rules // Step 2: Find name index in selection
       ; occ-index := <collect-one(get-name-index(|res-rel))> term  
         <+ add-error(|"Renaming impossible", "The selected term cannot be renamed.")
 
-  check-selection(|selected-term, ast) =
-    <not(eq)> (selected-term, ast)
-  	<+ add-error(|"Invalid selection", "Please select a name")
-
   get-name-index(|res-rel): term -> occurrence
     where
       if (<is-list> term) then
@@ -78,9 +74,7 @@ rules // Step 2: Find name index in selection
     where
       <eq> (term-index, ref-index) <+ <eq> (term-index, dec-index) 
 
-
 rules //Step 4: Change name terms
-
   rename-ast(|target-indices, new-name): ast -> renamed-ast
     where
       renamed-ast := <bottomup(try(rename-term(|target-indices, new-name)))> ast
@@ -92,13 +86,12 @@ rules //Step 4: Change name terms
       ; <elem> (term-index, target-indices)
 
 rules //Step 5: Checking for capture
-
   check-capture(|renamed-ast, res-rel, path) =
     (_, new-analysis, _, _, _) := <nabl2-analyze-ast(|path)> renamed-ast
     ; new-res-rel := <calc-resolution-relation; qsort(res-pair-gt)> new-analysis
     ; old-res-rel := <qsort(res-pair-gt)> res-rel
     ; <eq>(old-res-rel, new-res-rel) 
-      <+ add-error(|"Capture detected", "This renaming leads to name capture"); fail
+      <+ add-error(|"Capture detected", "This renaming leads to name capture")
       
   res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
@@ -109,20 +102,19 @@ rules //Step 5: Checking for capture
       <string-gt> (path-1, path-2) <+ <gt> (num-index-1, num-index-2)       
 
 rules // Utility strategies
-
   read-new-name: _ -> new-name
     where 	
       new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
 
   check-selection(|selected-term, ast) =
-    <eq> (selected-term, ast) 
-    <+ add-error(|"Invalid selection", "Please select a name") 
+    <not(eq)> (selected-term, ast)
+  	<+ add-error(|"Invalid selection", "Please select a name")
     
   get-analysis: ast -> analysis
-  where 
-    analysis := <nabl2-get-ast-analysis> ast
-    ; <not(nabl2-analysis-has-errors)> analysis
-      <+ add-error(|"Renaming impossible", "The program contains errors.")	
+    where 
+      analysis := <nabl2-get-ast-analysis> ast
+      ; <not(nabl2-analysis-has-errors)> analysis
+        <+ add-error(|"Renaming impossible", "The program contains errors.")	
 
   add-error(|title, message) =
     rules(
