@@ -1,7 +1,6 @@
 package mb.statix.concurrent.actors.impl;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -12,10 +11,10 @@ public class WorkStealingScheduler implements IActorScheduler {
 
     private static final ILogger logger = LoggerUtils.logger(WorkStealingScheduler.class);
 
-    private final ExecutorService executor;
+    private final ForkJoinPool executor;
 
     public WorkStealingScheduler(int parallelism) {
-        this.executor = Executors.newWorkStealingPool(parallelism);
+        this.executor = new ForkJoinPool(parallelism, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
     }
 
     @Override public void schedule(Runnable runnable, @SuppressWarnings("unused") int priority,
@@ -34,6 +33,10 @@ public class WorkStealingScheduler implements IActorScheduler {
 
     @SuppressWarnings("unused") @Override public boolean preempt(int priority) {
         return false;
+    }
+
+    @Override public boolean isActive() {
+        return executor.getActiveThreadCount() != 0 || executor.getQueuedTaskCount() != 0;
     }
 
     @Override public void shutdown() {

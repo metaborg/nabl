@@ -1,8 +1,7 @@
 package mb.statix.concurrent.actors.impl;
 
 import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,16 +13,20 @@ public class WonkyScheduler implements IActorScheduler {
 
     private static final ILogger logger = LoggerUtils.logger(WonkyScheduler.class);
 
-    private final ScheduledExecutorService executor;
+    private final ScheduledThreadPoolExecutor executor;
     private final double preemptProbability;
     private final int scheduleDelayBoundMillis;
     private final Random rnd;
 
     public WonkyScheduler(int parallelism, double preemptProbability, int scheduleDelayBoundMillis) {
-        this.executor = Executors.newScheduledThreadPool(parallelism);
+        this.executor = new ScheduledThreadPoolExecutor(parallelism);
         this.preemptProbability = preemptProbability;
         this.scheduleDelayBoundMillis = scheduleDelayBoundMillis;
         this.rnd = new Random();
+    }
+
+    @Override public boolean isActive() {
+        return executor.getActiveCount() != 0 || !executor.getQueue().isEmpty();
     }
 
     @Override public void schedule(Runnable runnable, @SuppressWarnings("unused") int priority,

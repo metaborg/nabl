@@ -31,12 +31,15 @@ public class Broker<S, L, D, R> {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
+    private static final int INACTIVE_TIMEOUT = 5;
+
     private final String id;
     private final ITypeChecker<S, L, D, R> typeChecker;
     private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
 
+    private final IActorScheduler scheduler;
     private final ActorSystem system;
 
     private final Map<String, IActorRef<? extends IUnit<S, L, D, ?>>> units;
@@ -51,6 +54,7 @@ public class Broker<S, L, D, R> {
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
 
+        this.scheduler = scheduler;
         this.system = new ActorSystem(scheduler);
 
         this.units = new ConcurrentHashMap<>();
@@ -59,16 +63,20 @@ public class Broker<S, L, D, R> {
     }
 
     private IFuture<IUnitResult<S, L, D, R>> run() {
-        startWatcherThread();
-
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels));
         addUnit(unit);
 
-        final IFuture<IUnitResult<S, L, D, R>> result = system.async(unit)._start(Collections.emptyList());
-        result.whenComplete((r, ex) -> finalizeUnit(unit, ex));
+        final IFuture<IUnitResult<S, L, D, R>> unitResult = system.async(unit)._start(Collections.emptyList());
 
-        return result.compose((r, ex) -> system.stop().compose((r2, ex2) -> CompletableFuture.completed(r, ex)));
+        final IFuture<IUnitResult<S, L, D, R>> runResult = unitResult.compose((r, ex) -> {
+            finalizeUnit(unit, ex);
+            return system.stop().compose((r2, ex2) -> CompletableFuture.completed(r, ex));
+        });
+
+        startWatcherThread();
+
+        return runResult;
     }
 
     private void addUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
@@ -84,6 +92,7 @@ public class Broker<S, L, D, R> {
     }
 
     private void startWatcherThread() {
+        final AtomicInteger inactive = new AtomicInteger();
         final Thread watcher = new Thread(() -> {
             try {
                 while(true) {
@@ -92,9 +101,18 @@ public class Broker<S, L, D, R> {
                     } else if(cancel.cancelled()) {
                         system.cancel();
                         return;
+                    } else if(!scheduler.isActive()) {
+                        if(inactive.incrementAndGet() < INACTIVE_TIMEOUT) {
+                            logger.error("Potential system deadlock...");
+                        } else {
+                            logger.error("System deadlock timeout.");
+                            system.cancel();
+                            return;
+                        }
                     } else {
-                        Thread.sleep(1000);
+                        inactive.set(0);
                     }
+                    Thread.sleep(1000);
                 }
             } catch(InterruptedException e) {
             }

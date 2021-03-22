@@ -28,6 +28,10 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
         this.executor = new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, executorQueue);
     }
 
+    @Override public boolean isActive() {
+        return executor.getActiveCount() != 0 || !executor.getQueue().isEmpty();
+    }
+
     @Override public void schedule(Runnable runnable, int priority, AtomicReference<Runnable> taskRef) {
         final Task task = new Task(runnable, priority);
         maxPriority = Math.max(maxPriority, priority);

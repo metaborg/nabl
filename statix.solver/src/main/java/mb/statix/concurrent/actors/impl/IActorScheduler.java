@@ -10,6 +10,8 @@ public interface IActorScheduler {
 
     boolean preempt(int priority);
 
+    boolean isActive();
+
     void shutdown();
 
     void shutdownNow();
