@@ -9,8 +9,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.unit.Unit;
 import org.spoofax.terms.util.NotImplementedException;
@@ -31,6 +31,7 @@ import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.RegExpLabelWf;
 import mb.statix.scopegraph.terms.Scope;
 
@@ -352,6 +353,50 @@ public class PRaffrayiTest {
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
+    @Test(timeout = 10000) public void testUnitCloseEdgeAndResolve_TargetStuckOnFailingExternalRepresentation()
+            throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
+                            List<Scope> roots) {
+                        Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
+
+                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
+                        unit.add("two", new CloseBeforeResolveFailingExternalRepUnit(2), Arrays.asList(s));
+
+                        unit.closeScope(s);
+
+                        return CompletableFuture.completedFuture(Unit.unit);
+                    }
+
+                }, Arrays.asList(1, 2));
+
+        final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
+    }
+
+    @Test(timeout = 10000) public void testUnitCloseEdgeAndResolve_TargetStuckOnExceptionalExternalRepresentation()
+            throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Integer, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
+                            List<Scope> roots) {
+                        Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
+
+                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
+                        unit.add("two", new CloseBeforeResolveExceptionalExternalRepUnit(2), Arrays.asList(s));
+
+                        unit.closeScope(s);
+
+                        return CompletableFuture.completedFuture(Unit.unit);
+                    }
+
+                }, Arrays.asList(1, 2));
+
+        final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
+    }
+
 
     @Test(timeout = 10000) public void testUnitResolveAndCloseEdge_TargetStuckOnExternalRepresentation()
             throws ExecutionException, InterruptedException {
@@ -512,7 +557,7 @@ public class PRaffrayiTest {
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
+    @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
                 run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
@@ -526,24 +571,158 @@ public class PRaffrayiTest {
         final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testNoRunResult() {
-        // FIXME Implement
+    @Test(timeout = 10000) public void testNoRunResult() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        return new CompletableFuture<>();
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testExceptionalRunResult() {
-        // FIXME Implement
+    @Test(timeout = 10000) public void testExceptionalRunResult() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        return CompletableFuture.completedExceptionally(new NotImplementedException());
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testFailureInQueryPredicate() {
-        // FIXME Implement
+    @Test(timeout = 10000) public void testExceptionalRunResult_NoClose()
+            throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Collections.emptySet(), true, false);
+                        return CompletableFuture.completedExceptionally(new NotImplementedException());
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testExceptionalQueryPredicateResult() {
-        // FIXME Implement
+    @Test(timeout = 10000) public void testFailureInQueryPredicate() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
+
+                        unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                            @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
+
+                                return unit
+                                        .query(s, LabelWf.any(), LabelOrder.none(), new DataWf<Scope, Object, ITerm>() {
+                                            @Override public IFuture<Boolean> wf(ITerm d,
+                                                    ITypeCheckerContext<Scope, Object, ITerm> context, ICancel cancel)
+                                                    throws InterruptedException {
+                                                throw new NotImplementedException();
+                                            }
+                                        }, DataLeq.none()).thenApply(r -> null);
+                            }
+
+                        }, Collections.singletonList(s));
+
+                        unit.closeScope(s);
+
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testNoQueryPredicateResult() {
-        // FIXME Implement
+    @Test(timeout = 10000) public void testExceptionalQueryPredicateResult()
+            throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
+
+                        unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                            @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
+
+                                return unit
+                                        .query(s, LabelWf.any(), LabelOrder.none(), new DataWf<Scope, Object, ITerm>() {
+                                            @Override public IFuture<Boolean> wf(ITerm d,
+                                                    ITypeCheckerContext<Scope, Object, ITerm> context, ICancel cancel)
+                                                    throws InterruptedException {
+                                                return CompletableFuture
+                                                        .completedExceptionally(new NotImplementedException());
+                                            }
+                                        }, DataLeq.none()).thenApply(r -> null);
+                            }
+
+                        }, Collections.singletonList(s));
+
+                        unit.closeScope(s);
+
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
+    }
+
+    @Test(timeout = 10000) public void testNoQueryPredicateResult() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
+
+                        unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                            @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
+
+                                return unit
+                                        .query(s, LabelWf.any(), LabelOrder.none(), new DataWf<Scope, Object, ITerm>() {
+                                            @Override public IFuture<Boolean> wf(ITerm d,
+                                                    ITypeCheckerContext<Scope, Object, ITerm> context, ICancel cancel)
+                                                    throws InterruptedException {
+                                                return new CompletableFuture<>();
+                                            }
+                                        }, DataLeq.none()).thenApply(r -> null);
+                            }
+
+                        }, Collections.singletonList(s));
+
+                        unit.closeScope(s);
+
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -717,6 +896,82 @@ public class PRaffrayiTest {
 
         @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
             return new CompletableFuture<>();
+        }
+
+    }
+
+    private final class CloseBeforeResolveFailingExternalRepUnit
+            implements ITypeChecker<Scope, Integer, ITerm, Object> {
+
+        private final Integer ownLabel;
+        private final List<Integer> queryLabels;
+
+        public CloseBeforeResolveFailingExternalRepUnit(Integer ownLabel, Integer... queryLabels) {
+            this.ownLabel = ownLabel;
+            this.queryLabels = ImmutableList.copyOf(queryLabels);
+        }
+
+        @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes) {
+            Scope s = rootScopes.get(0);
+            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+
+            Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
+
+            unit.addEdge(s, ownLabel, s1);
+            unit.closeEdge(s, ownLabel);
+
+            unit.setDatum(s1, s1);
+
+            for(Integer queryLabel : queryLabels) {
+                final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
+                final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
+                final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
+                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+            }
+
+            return CompletableFuture.completedFuture(Unit.unit);
+        }
+
+        @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
+            throw new NotImplementedException();
+        }
+
+    }
+
+    private final class CloseBeforeResolveExceptionalExternalRepUnit
+            implements ITypeChecker<Scope, Integer, ITerm, Object> {
+
+        private final Integer ownLabel;
+        private final List<Integer> queryLabels;
+
+        public CloseBeforeResolveExceptionalExternalRepUnit(Integer ownLabel, Integer... queryLabels) {
+            this.ownLabel = ownLabel;
+            this.queryLabels = ImmutableList.copyOf(queryLabels);
+        }
+
+        @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes) {
+            Scope s = rootScopes.get(0);
+            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+
+            Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
+
+            unit.addEdge(s, ownLabel, s1);
+            unit.closeEdge(s, ownLabel);
+
+            unit.setDatum(s1, s1);
+
+            for(Integer queryLabel : queryLabels) {
+                final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
+                final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
+                final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
+                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+            }
+
+            return CompletableFuture.completedFuture(Unit.unit);
+        }
+
+        @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
+            return CompletableFuture.completedExceptionally(new NotImplementedException());
         }
 
     }
