@@ -17,6 +17,8 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
@@ -32,7 +34,13 @@ import mb.statix.concurrent.solver.IStatixResult;
 import mb.statix.concurrent.solver.ProjectResult;
 import mb.statix.concurrent.solver.ProjectTypeChecker;
 import mb.statix.concurrent.solver.UnitResult;
+import mb.statix.constraints.CFalse;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.Message;
+import mb.statix.constraints.messages.MessageKind;
+import mb.statix.constraints.messages.TextPart;
 import mb.statix.scopegraph.terms.Scope;
+import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
@@ -113,6 +121,8 @@ public class STX_solve_multi extends StatixPrimitive {
                 solveResult = solveResult.combine(groupResult);
             }
             resourceResults.put(projectResult.resource(), solveResult);
+        } else {
+            logger.error("Missing result for project {}", result.id());
         }
         return resourceResults;
     }
@@ -128,6 +138,8 @@ public class STX_solve_multi extends StatixPrimitive {
             groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
             final SolverResult solveResult = flatSolverResult(spec, result);
             groupResults.add(solveResult);
+        } else {
+            logger.error("Missing result for group {}", result.id());
         }
     }
 
@@ -138,13 +150,32 @@ public class STX_solve_multi extends StatixPrimitive {
         if(unitResult != null) {
             final SolverResult solveResult = flatSolverResult(spec, result);
             resourceResults.put(unitResult.resource(), solveResult);
+        } else {
+            logger.error("Missing result for unit {}", result.id());
         }
     }
 
     private SolverResult flatSolverResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult> result) {
         final IStatixResult unitResult = result.analysis();
         SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
+
         solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
+
+        final ImmutableMap.Builder<IConstraint, IMessage> messages =
+                ImmutableMap.<IConstraint, IMessage>builder().putAll(solveResult.messages());
+        if(result.analysis().exception() != null) {
+            final Message message = new Message(MessageKind.ERROR,
+                    ImmutableList.of(new TextPart("Exception: " + result.analysis().exception().getMessage())),
+                    B.newTuple());
+            messages.put(new CFalse(message), message);
+        }
+        for(Throwable failure : result.failures()) {
+            final Message message = new Message(MessageKind.ERROR,
+                    ImmutableList.of(new TextPart("Exception: " + failure.getMessage())), B.newTuple());
+            messages.put(new CFalse(message), message);
+        }
+        solveResult = solveResult.withMessages(messages.build());
+
         return solveResult;
     }
 
