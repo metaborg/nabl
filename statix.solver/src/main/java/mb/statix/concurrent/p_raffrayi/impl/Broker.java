@@ -103,14 +103,16 @@ public class Broker<S, L, D, R> {
                         return;
                     } else if(!scheduler.isActive()) {
                         if(inactive.incrementAndGet() < INACTIVE_TIMEOUT) {
-                            logger.error("Potential system deadlock...");
+                            logger.error("Potential deadlock...");
                         } else {
-                            logger.error("System deadlock timeout.");
+                            logger.error("Deadlock detected.");
                             system.cancel();
                             return;
                         }
                     } else {
-                        inactive.set(0);
+                        if(inactive.getAndSet(0) != 0) {
+                            logger.error("False deadlock.");
+                        }
                     }
                     Thread.sleep(1000);
                 }
