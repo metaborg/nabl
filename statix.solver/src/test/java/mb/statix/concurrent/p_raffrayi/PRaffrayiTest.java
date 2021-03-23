@@ -9,9 +9,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.unit.Unit;
+import org.spoofax.terms.util.NotImplementedException;
 
 import com.google.common.collect.ImmutableList;
 
@@ -510,6 +512,39 @@ public class PRaffrayiTest {
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
+    @Ignore @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
+
+                    @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
+                            List<Scope> roots) {
+                        throw new NotImplementedException();
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
+    }
+
+    @Ignore @Test(timeout = 10000) public void testNoRunResult() {
+        // FIXME Implement
+    }
+
+    @Ignore @Test(timeout = 10000) public void testExceptionalRunResult() {
+        // FIXME Implement
+    }
+
+    @Ignore @Test(timeout = 10000) public void testFailureInQueryPredicate() {
+        // FIXME Implement
+    }
+
+    @Ignore @Test(timeout = 10000) public void testExceptionalQueryPredicateResult() {
+        // FIXME Implement
+    }
+
+    @Ignore @Test(timeout = 10000) public void testNoQueryPredicateResult() {
+        // FIXME Implement
+    }
 
     ///////////////////////////////////////////////////////////////////////////
 
