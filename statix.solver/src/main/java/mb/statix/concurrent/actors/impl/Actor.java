@@ -459,7 +459,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
             case RUNNING:
             case WAITING:
                 doStop(ex2);
-                stopIfNoMoreChildren();
+                stopIfNoMoreChildren(); // FIXME necessary?
                 return;
             case STOPPING:
                 stopIfNoMoreChildren();

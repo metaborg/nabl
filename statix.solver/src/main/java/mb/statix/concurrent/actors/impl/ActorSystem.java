@@ -183,7 +183,14 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
                 throw new IllegalStateException("Stopped actor " + sender + " is not a top-level actor.");
             }
         }
-        completeIfDone();
+
+        Throwable ex2 = ex;
+        if(ex2 != null && !(ex2 instanceof InterruptedException)) {
+            ex2 = new ActorException("Child " + sender + " of " + this + " failed", ex);
+        }
+        doStop(ex2);
+
+        completeIfDone(); // FIXME necessary?
     }
 
     ///////////////////////////////////////////////////////////////////////////
