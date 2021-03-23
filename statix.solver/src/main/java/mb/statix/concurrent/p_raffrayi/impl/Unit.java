@@ -722,10 +722,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         }
         if(nodes.size() == 1) {
             logger.debug("{} self-deadlocked with {}", this, getTokens(self));
-            if(!failDelays(nodes)) {
+            if(failDelays(nodes)) {
+                resume(); // resume to ensure further deadlock detection after these are handled
+            } else {
                 failAll();
             }
         } else {
+            // nodes will include self
             for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
                 self.async(node)._deadlocked(nodes);
             }
@@ -733,8 +736,9 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
     }
 
     @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        // resume(); // FIXME not necessary?
-        failDelays(nodes);
+        if(failDelays(nodes)) {
+            resume(); // resume to ensure further deadlock detection after these are handled
+        }
     }
 
     /**
