@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.NullCancel;
@@ -557,7 +558,7 @@ public class PRaffrayiTest {
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
-    @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
+    @Ignore @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, ITerm, Object>> future =
                 run(".", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
