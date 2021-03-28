@@ -428,6 +428,12 @@ rules
    */
   stx--is-analysis =
     prim("STX_is_analysis")
+    
+  /**
+   * @type : Analysis -> Analysis
+   */
+  stx--analysis-has-errors =
+    prim("STX_analysis_has_errors")    
 
   /**
    * @type : Analysis -> ScopeGraph
