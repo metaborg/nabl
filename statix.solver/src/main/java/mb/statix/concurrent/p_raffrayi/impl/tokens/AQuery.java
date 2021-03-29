@@ -12,7 +12,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.path.IScopePath;
 import mb.statix.scopegraph.reference.Env;
 
-@Value.Immutable(prehash = true)
+@Value.Immutable(prehash = false)
 public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
@@ -48,7 +48,7 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
      */
 
     @Override public int hashCode() {
-        return System.identityHashCode(this);
+        return super.hashCode();
     }
 
     @Override public boolean equals(Object obj) {
