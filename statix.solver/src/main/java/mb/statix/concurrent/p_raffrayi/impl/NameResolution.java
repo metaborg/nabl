@@ -58,17 +58,18 @@ abstract class NameResolution<S, L, D> {
     public ICompletableFuture<Env<S, L, D>> env(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
         logger.trace("env {}", path);
-        final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
-        if(re.accepting()) {
-            labels.__insert(dataLabel);
-        }
-        for(L l : edgeLabels) {
-            if(re.step(l).isPresent()) {
-                labels.__insert(EdgeOrData.edge(l));
+        externalEnv(path, re, labelOrder).orElseGet(() -> {
+            final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
+            if(re.accepting()) {
+                labels.__insert(dataLabel);
             }
-        }
-        externalEnv(path, re, labelOrder).orElseGet(() -> env_L(path, re, labels.freeze(), cancel))
-                .whenComplete(result::complete);
+            for(L l : edgeLabels) {
+                if(re.step(l).isPresent()) {
+                    labels.__insert(EdgeOrData.edge(l));
+                }
+            }
+            return env_L(path, re, labels.freeze(), cancel);
+        }).whenComplete(result::complete);
         return result;
     }
 
@@ -184,6 +185,8 @@ abstract class NameResolution<S, L, D> {
                 final Optional<ScopePath<S, L>> p = path.step(l, nextScope);
                 if(p.isPresent()) {
                     envs.add(env(p.get(), newRe, cancel));
+                } else {
+                    // cycle
                 }
             }
             final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
