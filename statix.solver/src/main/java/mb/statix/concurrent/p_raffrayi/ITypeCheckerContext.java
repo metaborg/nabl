@@ -3,11 +3,15 @@ package mb.statix.concurrent.p_raffrayi;
 import java.util.List;
 import java.util.Set;
 
+import org.metaborg.util.unit.Unit;
+
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
+import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.IScopeGraph.Immutable;
 import mb.statix.scopegraph.path.IResolutionPath;
 
 /**
@@ -21,9 +25,15 @@ public interface ITypeCheckerContext<S, L, D> {
     String id();
 
     /**
-     * Start sub type-checker, with the given root scope.
+     * Start sub unit with the given type-checker and root scopes.
      */
     <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
+
+    /**
+     * Start sub unit with the given static scope graph and root scopes.
+     */
+    IFuture<IUnitResult<S, L, D, Unit>> add(String id, List<S> givenRootScopes, Set<S> givenOwnScopes,
+            IScopeGraph.Immutable<S, L, D> givenScopeGraph, List<S> rootScopes);
 
     /**
      * Initialize root scope.
@@ -97,6 +107,12 @@ public interface ITypeCheckerContext<S, L, D> {
 
             @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
                     ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
+                    List<S> givenRootScopes, Set<S> givenOwnScopes, Immutable<S, L, D> givenScopeGraph,
+                    List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

@@ -1,0 +1,223 @@
+package mb.statix.concurrent.p_raffrayi.impl;
+
+import static com.google.common.collect.Streams.stream;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.metaborg.util.functions.Function2;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.unit.Unit;
+
+import io.usethesource.capsule.Set;
+import mb.nabl2.util.CapsuleUtil;
+import mb.nabl2.util.Tuple2;
+import mb.statix.concurrent.actors.IActor;
+import mb.statix.concurrent.actors.IActorRef;
+import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.ICompletableFuture;
+import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.ITypeChecker;
+import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerResult;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
+import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
+import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
+import mb.statix.scopegraph.IScopeGraph.Immutable;
+import mb.statix.scopegraph.path.IResolutionPath;
+import mb.statix.scopegraph.reference.EdgeOrData;
+import mb.statix.scopegraph.reference.Env;
+import mb.statix.scopegraph.terms.newPath.ScopePath;
+
+class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
+
+
+    private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
+
+    private final ITypeChecker<S, L, D, R> typeChecker;
+
+    private volatile UnitState state;
+
+    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
+            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+        super(self, parent, context, edgeLabels);
+        this.typeChecker = unitChecker;
+        this.state = UnitState.INIT;
+    }
+
+    @Override protected IFuture<D> getExternalDatum(D datum) {
+        return typeChecker.getExternalDatum(datum);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IBroker2UnitProtocol interface, called by IBroker implementations
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public IFuture<IUnitResult<S, L, D, R>> _start(List<S> rootScopes) {
+        assertInState(UnitState.INIT);
+        resume();
+
+        state = UnitState.ACTIVE;
+        doStart(rootScopes);
+        final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
+            state = UnitState.DONE;
+        });
+
+        return doFinish(result);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // ITypeCheckerContext interface, called by ITypeChecker implementations
+    ///////////////////////////////////////////////////////////////////////////
+
+    // NB. Invoke methods via `local` so that we have the same scheduling & ordering
+    // guarantees as for remote calls.
+
+    @Override public String id() {
+        return self.id();
+    }
+
+    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
+            List<S> rootScopes) {
+        assertInState(UnitState.ACTIVE);
+
+        return doAdd(id, (subself, subcontext) -> {
+            return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
+        }, rootScopes);
+    }
+
+    @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, List<S> givenRootScopes,
+            java.util.Set<S> givenOwnScopes, Immutable<S, L, D> givenScopeGraph, List<S> rootScopes) {
+        assertInState(UnitState.ACTIVE);
+
+        return doAdd(id, (subself, subcontext) -> {
+            return new StaticScopeGraphUnit<>(subself, self, subcontext, edgeLabels, givenRootScopes, givenOwnScopes,
+                    givenScopeGraph);
+        }, rootScopes);
+    }
+
+    private <Q> IFuture<IUnitResult<S, L, D, Q>> doAdd(String id,
+            Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
+            List<S> rootScopes) {
+        for(S rootScope : rootScopes) {
+            assertOwnOrSharedScope(rootScope);
+        }
+
+        final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
+                context.add(id, unitProvider, rootScopes);
+        final ICompletableFuture<IUnitResult<S, L, D, Q>> result = new CompletableFuture<>();
+        final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
+        final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);
+        waitFor(token, subunit);
+        result_subunit._1().whenComplete((r, ex) -> {
+            logger.debug("{} subunit {} finished", this, subunit);
+            resume();
+            granted(token, subunit);
+            result.complete(r, ex);
+        });
+
+        for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
+            doAddShare(subunit, rootScope);
+        }
+
+        return result;
+    }
+
+    @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+        assertInState(UnitState.ACTIVE);
+
+        final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
+
+        doInitShare(self, root, edges, sharing);
+    }
+
+    @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
+        assertInState(UnitState.ACTIVE);
+
+        final S scope = doFreshScope(baseName, edgeLabels, data, sharing);
+
+        return scope;
+    }
+
+    @Override public void shareLocal(S scope) {
+        assertInState(UnitState.ACTIVE);
+
+        doAddShare(self, scope);
+    }
+
+    @Override public void setDatum(S scope, D datum) {
+        assertInState(UnitState.ACTIVE);
+
+        doSetDatum(scope, datum);
+    }
+
+    @Override public void addEdge(S source, L label, S target) {
+        assertInState(UnitState.ACTIVE);
+
+        doAddEdge(self, source, label, target);
+    }
+
+    @Override public void closeEdge(S source, L label) {
+        assertInState(UnitState.ACTIVE);
+
+        doCloseLabel(self, source, EdgeOrData.edge(label));
+    }
+
+    @Override public void closeScope(S scope) {
+        assertInState(UnitState.ACTIVE);
+
+        doCloseScope(self, scope);
+    }
+
+    @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, @Nullable DataWf<S, L, D> dataWfInternal,
+            @Nullable DataLeq<S, L, D> dataEquivInternal) {
+        assertInState(UnitState.ACTIVE);
+
+        final ScopePath<S, L> path = new ScopePath<>(scope);
+        final IFuture<Env<S, L, D>> result =
+                doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+        final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
+        waitFor(wf, self);
+        stats.localQueries += 1;
+        return ifActive(result).whenComplete((env, ex) -> {
+            granted(wf, self);
+        }).thenApply(CapsuleUtil::toSet);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Assertions
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void assertInState(UnitState s) {
+        if(!state.equals(s)) {
+            logger.error("Expected state {}, was {}", s, state);
+            throw new IllegalStateException("Expected state " + s + ", was " + state);
+        }
+    }
+
+    private <Q> IFuture<Q> ifActive(IFuture<Q> result) {
+        return result.compose((r, ex) -> {
+            if(state.equals(UnitState.ACTIVE)) {
+                return CompletableFuture.completed(r, ex);
+            } else {
+                return CompletableFuture.noFuture();
+            }
+        });
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // toString
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public String toString() {
+        return "TypeCheckerUnit{" + self.id() + "}";
+    }
+
+}
