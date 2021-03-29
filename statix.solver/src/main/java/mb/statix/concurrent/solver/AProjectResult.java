@@ -5,6 +5,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
+import org.metaborg.util.unit.Unit;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -15,6 +16,8 @@ import mb.statix.solver.persistent.SolverResult;
 public abstract class AProjectResult implements IStatixResult {
 
     @Value.Parameter public abstract String resource();
+
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>> groupResults();
 
