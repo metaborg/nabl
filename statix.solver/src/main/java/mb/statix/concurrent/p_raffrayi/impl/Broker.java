@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -64,7 +65,7 @@ public class Broker<S, L, D, R> {
 
     private IFuture<IUnitResult<S, L, D, R>> run() {
         final IActor<IUnit<S, L, D, R>> unit = system.add(id, TypeTag.of(IUnit.class),
-                self -> new Unit<>(self, null, new UnitContext(self), typeChecker, edgeLabels));
+                self -> new TypeCheckerUnit<>(self, null, new UnitContext(self), typeChecker, edgeLabels));
         addUnit(unit);
 
         final IFuture<IUnitResult<S, L, D, R>> unitResult = system.async(unit)._start(Collections.emptyList());
@@ -138,14 +139,19 @@ public class Broker<S, L, D, R> {
             return scopeImpl.make(self.id(), name);
         }
 
+        @Override public D substituteScopes(D datum, Map<S, S> substitution) {
+            return scopeImpl.subtituteScopes(datum, substitution);
+        }
+
         @Override public IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope) {
             return units.get(scopeImpl.id(scope));
         }
 
-        @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>>
-                add(String id, ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes) {
+        @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> add(
+                String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
+                List<S> rootScopes) {
             final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
-                    (subself) -> new Unit<>(subself, self, new UnitContext(subself), unitChecker, edgeLabels));
+                    (subself) -> unitProvider.apply(subself, new UnitContext(subself)));
             addUnit(unit);
             final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
             unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));

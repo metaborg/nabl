@@ -101,8 +101,9 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result =
-                    context.add(key, new LibraryTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope));
+            IStatixLibrary library = entry.getValue();
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result = context.add(key, library.rootScopes(),
+                    library.ownScopes(), library.scopeGraph(), Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
