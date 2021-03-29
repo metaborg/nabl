@@ -8,8 +8,8 @@
     </encoder>
   </appender>
 
-  <root level="info">
+  <root level="off">
     <appender-ref ref="stdout" />
   </root>
-  <!--logger name="mb.statix.concurrent.actors.deadlock" level="debug" /-->
+
 </configuration>
