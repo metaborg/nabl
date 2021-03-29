@@ -16,4 +16,6 @@ public interface IActorScheduler {
 
     void shutdownNow();
 
+    int parallelism();
+
 }
