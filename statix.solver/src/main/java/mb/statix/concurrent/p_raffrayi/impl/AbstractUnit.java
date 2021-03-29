@@ -335,15 +335,22 @@ public abstract class AbstractUnit<S, L, D, R>
                     }
                     if(external) {
                         logger.debug("require external rep for {}", datum.get());
-                        final ICompletableFuture<D> externalRep = new CompletableFuture<>();
-                        getExternalDatum(datum.get()).whenComplete(externalRep::complete);
-                        final IWaitFor<S, L, D> token =
-                                TypeCheckerState.of(sender, ImmutableList.of(datum.get()), externalRep);
-                        waitFor(token, self);
-                        return externalRep.whenComplete((rep, ex) -> {
-                            self.assertOnActorThread();
-                            granted(token, self);
-                        }).thenApply(rep -> {
+                        final IFuture<D> result = getExternalDatum(datum.get());
+                        final IFuture<D> ret;
+                        if(result.isDone()) {
+                            ret = result;
+                        } else {
+                            final ICompletableFuture<D> internalResult = new CompletableFuture<>();
+                            result.whenComplete(internalResult::complete);
+                            final IWaitFor<S, L, D> token =
+                                    TypeCheckerState.of(sender, ImmutableList.of(datum.get()), internalResult);
+                            waitFor(token, self);
+                            ret = internalResult.whenComplete((rep, ex) -> {
+                                self.assertOnActorThread();
+                                granted(token, self);
+                            });
+                        }
+                        return ret.thenApply(rep -> {
                             logger.debug("got external rep {} for {}", rep, datum.get());
                             return Optional.of(rep);
                         });
@@ -361,34 +368,48 @@ public abstract class AbstractUnit<S, L, D, R>
 
             @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
                 stats.dataWfChecks += 1;
-                final ICompletableFuture<Boolean> result = new CompletableFuture<>();
+                final IFuture<Boolean> result;
                 if(external || dataWfInternal == null) {
-                    dataWF.wf(d, queryContext, cancel).whenComplete(result::complete);
+                    result = dataWF.wf(d, queryContext, cancel);
                 } else {
-                    dataWfInternal.wf(d, queryContext, cancel).whenComplete(result::complete);
+                    result = dataWfInternal.wf(d, queryContext, cancel);
                 }
-                final TypeCheckerState<S, L, D> token = TypeCheckerState.of(sender, ImmutableList.of(d), result);
-                waitFor(token, self);
-                return result.whenComplete((r, ex) -> {
-                    self.assertOnActorThread();
-                    granted(token, self);
-                });
+                if(result.isDone()) {
+                    return result;
+                } else {
+                    final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
+                    result.whenComplete(internalResult::complete);
+                    final TypeCheckerState<S, L, D> token =
+                            TypeCheckerState.of(sender, ImmutableList.of(d), internalResult);
+                    waitFor(token, self);
+                    return internalResult.whenComplete((r, ex) -> {
+                        self.assertOnActorThread();
+                        granted(token, self);
+                    });
+                }
             }
 
             @Override protected IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
                 stats.dataLeqChecks += 1;
-                final ICompletableFuture<Boolean> result = new CompletableFuture<>();
+                final IFuture<Boolean> result;
                 if(external || dataEquivInternal == null) {
-                    dataEquiv.leq(d1, d2, queryContext, cancel).whenComplete(result::complete);
+                    result = dataEquiv.leq(d1, d2, queryContext, cancel);
                 } else {
-                    dataEquivInternal.leq(d1, d2, queryContext, cancel).whenComplete(result::complete);
+                    result = dataEquivInternal.leq(d1, d2, queryContext, cancel);
                 }
-                final TypeCheckerState<S, L, D> token = TypeCheckerState.of(sender, ImmutableList.of(d1, d2), result);
-                waitFor(token, self);
-                return result.whenComplete((r, ex) -> {
-                    self.assertOnActorThread();
-                    granted(token, self);
-                });
+                if(result.isDone()) {
+                    return result;
+                } else {
+                    final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
+                    result.whenComplete(internalResult::complete);
+                    final TypeCheckerState<S, L, D> token =
+                            TypeCheckerState.of(sender, ImmutableList.of(d1, d2), internalResult);
+                    waitFor(token, self);
+                    return internalResult.whenComplete((r, ex) -> {
+                        self.assertOnActorThread();
+                        granted(token, self);
+                    });
+                }
             }
 
         };
