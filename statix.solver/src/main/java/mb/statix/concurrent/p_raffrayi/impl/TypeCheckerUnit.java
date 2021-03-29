@@ -183,12 +183,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         final ScopePath<S, L> path = new ScopePath<>(scope);
         final IFuture<Env<S, L, D>> result =
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
-        final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
-        waitFor(wf, self);
+        final IFuture<Env<S, L, D>> ret;
+        if(result.isDone()) {
+            ret = result;
+        } else {
+            final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
+            waitFor(wf, self);
+            ret = result.whenComplete((env, ex) -> {
+                granted(wf, self);
+            });
+        }
         stats.localQueries += 1;
-        return ifActive(result).whenComplete((env, ex) -> {
-            granted(wf, self);
-        }).thenApply(CapsuleUtil::toSet);
+        return ifActive(ret).thenApply(CapsuleUtil::toSet);
     }
 
     ///////////////////////////////////////////////////////////////////////////
