@@ -18,6 +18,10 @@ public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>> {
         this.paths = paths;
     }
 
+    public int size() {
+        return paths.size();
+    }
+
     public boolean isEmpty() {
         return paths.isEmpty();
     }
