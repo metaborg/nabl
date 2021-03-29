@@ -7,15 +7,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.IActor;
@@ -35,6 +37,8 @@ import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
+
+    private static final ILogger logger = LoggerUtils.logger(StaticScopeGraphUnit.class);
 
     private static final int PARALLEL_WORKERS = 8;
 
@@ -75,10 +79,24 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
 
+        final Set<S> ownScopes = buildScopeGraph(rootScopes);
+
+        clearGiven();
+
+        startWorkers(rootScopes, ownScopes);
+
+        return doFinish(CompletableFuture.completedFuture(Unit.unit));
+    }
+
+    private Set<S> buildScopeGraph(List<S> rootScopes) {
+        final long t0 = System.currentTimeMillis();
+
         final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
 
         final Map<S, S> scopeMap = new HashMap<>();
         final Set<S> ownScopes = new HashSet<>();
+
+        // map given scopes to actual scopes
 
         if(givenRootScopes.size() != rootScopes.size()) {
             throw new IllegalArgumentException("Number of root scopes does not match.");
@@ -92,25 +110,19 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
             scopeMap.put(libRootScope, rootScope);
             doInitShare(self, rootScope, edges, false);
         }
-
         for(S libScope : givenOwnScopes) {
             if(scopeMap.containsKey(libScope)) {
                 throw new IllegalStateException("Scope already initialized.");
             }
-            final S scope = doFreshScope("s"/*libScope.getName()*/, edgeLabels,
-                    givenScopeGraph.getData(libScope).isPresent(), false);
+            final S scope = makeScope("s"/*libScope.getName()*/);
             ownScopes.add(scope);
             scopeMap.put(libScope, scope);
         }
 
-        for(S libScope : Iterables.concat(givenRootScopes, givenOwnScopes)) {
-            final S scope = scopeMap.get(libScope);
+        // add data and edges to actual scopes
 
-            final D libDatum;
-            if((libDatum = givenScopeGraph.getData(libScope).orElse(null)) != null) {
-                final D datum = context.substituteScopes(libDatum, scopeMap);
-                doSetDatum(scope, datum);
-            }
+        for(S libScope : givenRootScopes) {
+            final S scope = scopeMap.get(libScope);
 
             for(L label : edgeLabels) {
                 final EdgeOrData<L> l = EdgeOrData.edge(label);
@@ -121,9 +133,30 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
                 doCloseLabel(self, scope, l);
             }
         }
+        for(S libScope : givenOwnScopes) {
+            final S scope = scopeMap.get(libScope);
 
-        clearGiven();
+            final D libDatum;
+            if((libDatum = givenScopeGraph.getData(libScope).orElse(null)) != null) {
+                final D datum = context.substituteScopes(libDatum, scopeMap);
+                scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
+            }
 
+            for(L label : edgeLabels) {
+                for(S libTarget : givenScopeGraph.getEdges(libScope, label)) {
+                    final S target = scopeMap.get(libTarget);
+                    scopeGraph.set(scopeGraph.get().addEdge(scope, label, target));
+                }
+            }
+        }
+
+        final long dt = System.currentTimeMillis() - t0;
+        logger.info("Initialized {} in {} s", self.id(), TimeUnit.SECONDS.convert(dt, TimeUnit.MILLISECONDS));
+
+        return ownScopes;
+    }
+
+    private void startWorkers(List<S> rootScopes, final Set<S> ownScopes) {
         for(int i = 0; i < PARALLEL_WORKERS; i++) {
             final Tuple2<IFuture<IUnitResult<S, L, D, Unit>>, IActorRef<? extends IUnit<S, L, D, Unit>>> worker =
                     context.<Unit>add("worker-" + i, (subself, subcontext) -> {
@@ -132,8 +165,6 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
                     }, Collections.emptyList());
             workers.add(worker._2());
         }
-
-        return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
     ///////////////////////////////////////////////////////////////////////////
