@@ -496,6 +496,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             }
 
             @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
+                stats.dataWfChecks += 1;
                 final ICompletableFuture<Boolean> result = new CompletableFuture<>();
                 if(external || dataWfInternal == null) {
                     dataWF.wf(d, queryContext, cancel).whenComplete(result::complete);
@@ -511,6 +512,7 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
             }
 
             @Override protected IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+                stats.dataLeqChecks += 1;
                 final ICompletableFuture<Boolean> result = new CompletableFuture<>();
                 if(external || dataEquivInternal == null) {
                     dataEquiv.leq(d1, d2, queryContext, cancel).whenComplete(result::complete);
@@ -873,6 +875,8 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         private int outgoingQueries;
         private int forwardedQueries;
         private long runtimeNanos;
+        private int dataWfChecks;
+        private int dataLeqChecks;
 
         private IActorStats actorStats;
 
@@ -883,11 +887,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         @Override public Iterable<String> csvHeaders() {
             // @formatter:off
             return Iterables.concat(ImmutableList.of(
+                "runtimeMillis",
                 "localQueries",
                 "incomingQueries",
                 "outgoingQueries",
                 "forwardedQueries",
-                "runtimeMillis"
+                "dataWfChecks",
+                "dataLeqChecks"
             ), actorStats.csvHeaders());
             // @formatter:on
         }
@@ -895,11 +901,13 @@ class Unit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorR
         @Override public Iterable<String> csvRow() {
             // @formatter:off
             return Iterables.concat(ImmutableList.of(
+                Long.toString(TimeUnit.MILLISECONDS.convert(runtimeNanos, TimeUnit.NANOSECONDS)),
                 Integer.toString(localQueries),
                 Integer.toString(incomingQueries),
                 Integer.toString(outgoingQueries),
                 Integer.toString(forwardedQueries),
-                Long.toString(TimeUnit.MILLISECONDS.convert(runtimeNanos, TimeUnit.NANOSECONDS))
+                Integer.toString(dataWfChecks),
+                Integer.toString(dataLeqChecks)
             ), actorStats.csvRow());
             // @formatter:on
         }
