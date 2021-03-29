@@ -18,7 +18,7 @@ public class PRaffrayiUtil {
                 out.println(formatLine("unit", unitResult.stats().csvHeaders()));
                 first = false;
             }
-            System.out.println(formatLine(unitResult.id(), unitResult.stats().csvRow()));
+            out.println(formatLine(unitResult.id(), unitResult.stats().csvRow()));
         }
     }
 
