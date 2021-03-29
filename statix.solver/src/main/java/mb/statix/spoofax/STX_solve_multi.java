@@ -14,6 +14,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.unit.Unit;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -26,6 +27,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
+import mb.statix.concurrent.p_raffrayi.PRaffrayiUtil;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.solver.GroupResult;
@@ -81,7 +83,7 @@ public class STX_solve_multi extends StatixPrimitive {
             final List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults = new ArrayList<>();
             final Map<String, SolverResult> resultMap = flattenResult(spec, result, unitResults);
 
-            //            PRaffrayiUtil.writeStatsCsvFromResult(unitResults, System.out);
+            // PRaffrayiUtil.writeStatsCsvFromResult(unitResults, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
 
@@ -113,6 +115,7 @@ public class STX_solve_multi extends StatixPrimitive {
         final ProjectResult projectResult = result.analysis();
         if(projectResult != null) {
             final List<SolverResult> groupResults = new ArrayList<>();
+            projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur, unitResults));
             projectResult.groupResults()
                     .forEach((k, gr) -> flattenGroupResult(spec, gr, groupResults, resourceResults, unitResults));
             projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
@@ -125,6 +128,11 @@ public class STX_solve_multi extends StatixPrimitive {
             logger.error("Missing result for project {}", result.id());
         }
         return resourceResults;
+    }
+
+    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, Unit> result,
+            List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
+        unitResults.add(result);
     }
 
     private void flattenGroupResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, GroupResult> result,
