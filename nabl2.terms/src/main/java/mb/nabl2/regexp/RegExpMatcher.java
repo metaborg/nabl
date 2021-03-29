@@ -156,6 +156,21 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
             this.regexp = regexp;
         }
 
+        @Override public int hashCode() {
+            return Objects.hash(regexp);
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(this == obj)
+                return true;
+            if(obj == null)
+                return false;
+            if(getClass() != obj.getClass())
+                return false;
+            State<?> other = (State<?>) obj;
+            return Objects.equals(regexp, other.regexp);
+        }
+
         @Override public String toString() {
             return regexp.toString();
         }

@@ -1,5 +1,6 @@
 package mb.statix.concurrent.p_raffrayi.nameresolution;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import mb.nabl2.regexp.IRegExpMatcher;
@@ -23,6 +24,21 @@ public class RegExpLabelWf<L> implements LabelWf<L> {
 
     @Override public boolean accepting() {
         return re.isAccepting();
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(re);
+    }
+
+    @Override public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        RegExpLabelWf<?> other = (RegExpLabelWf<?>) obj;
+        return Objects.equals(re, other.re);
     }
 
     @Override public String toString() {
