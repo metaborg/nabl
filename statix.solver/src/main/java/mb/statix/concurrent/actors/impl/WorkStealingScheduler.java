@@ -11,10 +11,16 @@ public class WorkStealingScheduler implements IActorScheduler {
 
     private static final ILogger logger = LoggerUtils.logger(WorkStealingScheduler.class);
 
+    private final int parallelism;
     private final ForkJoinPool executor;
 
     public WorkStealingScheduler(int parallelism) {
+        this.parallelism = parallelism;
         this.executor = new ForkJoinPool(parallelism, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+    }
+
+    @Override public int parallelism() {
+        return parallelism;
     }
 
     @Override public void schedule(Runnable runnable, @SuppressWarnings("unused") int priority,

@@ -29,4 +29,6 @@ public interface IUnitContext<S, L, D> {
             Function2<IActor<IUnit<S, L, D, R>>, IUnitContext<S, L, D>, IUnit<S, L, D, R>> unitProvider,
             List<S> rootScopes);
 
+    int parallelism();
+
 }

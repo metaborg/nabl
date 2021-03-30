@@ -7,24 +7,20 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
-import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
@@ -87,46 +83,23 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
             List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
 
-        return doAdd(id, (subself, subcontext) -> {
+        final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
             return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
-        }, rootScopes);
+        }, rootScopes)._2();
+
+        return ifActive(result);
     }
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, List<S> givenRootScopes,
             java.util.Set<S> givenOwnScopes, Immutable<S, L, D> givenScopeGraph, List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
 
-        return doAdd(id, (subself, subcontext) -> {
+        final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
             return new StaticScopeGraphUnit<>(subself, self, subcontext, edgeLabels, givenRootScopes, givenOwnScopes,
                     givenScopeGraph);
-        }, rootScopes);
-    }
+        }, rootScopes)._2();
 
-    private <Q> IFuture<IUnitResult<S, L, D, Q>> doAdd(String id,
-            Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
-            List<S> rootScopes) {
-        for(S rootScope : rootScopes) {
-            assertOwnOrSharedScope(rootScope);
-        }
-
-        final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
-                context.add(id, unitProvider, rootScopes);
-        final ICompletableFuture<IUnitResult<S, L, D, Q>> result = new CompletableFuture<>();
-        final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
-        final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, result);
-        waitFor(token, subunit);
-        result_subunit._1().whenComplete((r, ex) -> {
-            logger.debug("{} subunit {} finished", this, subunit);
-            resume();
-            granted(token, subunit);
-            result.complete(r, ex);
-        });
-
-        for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
-            doAddShare(subunit, rootScope);
-        }
-
-        return result;
+        return ifActive(result);
     }
 
     @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
@@ -183,12 +156,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         final ScopePath<S, L> path = new ScopePath<>(scope);
         final IFuture<Env<S, L, D>> result =
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
-        final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
-        waitFor(wf, self);
+        final IFuture<Env<S, L, D>> ret;
+        if(result.isDone()) {
+            ret = result;
+        } else {
+            final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
+            waitFor(wf, self);
+            ret = result.whenComplete((env, ex) -> {
+                granted(wf, self);
+            });
+        }
         stats.localQueries += 1;
-        return ifActive(result).whenComplete((env, ex) -> {
-            granted(wf, self);
-        }).thenApply(CapsuleUtil::toSet);
+        return ifActive(ret).thenApply(CapsuleUtil::toSet);
     }
 
     ///////////////////////////////////////////////////////////////////////////

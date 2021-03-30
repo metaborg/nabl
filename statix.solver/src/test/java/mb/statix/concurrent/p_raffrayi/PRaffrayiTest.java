@@ -179,7 +179,7 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
-                        unit.add("sub", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                        final IFuture<?> subResult = unit.add("sub", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                                     List<Scope> roots) {
@@ -190,7 +190,7 @@ public class PRaffrayiTest {
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return subResult.handle((r, ex) -> Unit.unit);
                     }
 
                 }, Set.Immutable.of());
@@ -216,7 +216,7 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
-                        unit.add("sub", new ITypeChecker<Scope, Integer, ITerm, Object>() {
+                        final IFuture<?> subResult = unit.add("sub", new ITypeChecker<Scope, Integer, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                                     List<Scope> roots) {
@@ -229,7 +229,7 @@ public class PRaffrayiTest {
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return subResult.handle((r, ex) -> Unit.unit);
                     }
 
                 }, Set.Immutable.of());
@@ -249,12 +249,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new ResolveBeforeCloseEdgeUnit(2, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new ResolveBeforeCloseEdgeUnit(2, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -272,13 +273,14 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new ResolveBeforeCloseEdgeUnit(2, 3), Arrays.asList(s));
-                        unit.add("three", new ResolveBeforeCloseEdgeUnit(3, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new ResolveBeforeCloseEdgeUnit(2, 3), Arrays.asList(s)));
+                        subResults.add(unit.add("three", new ResolveBeforeCloseEdgeUnit(3, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -295,12 +297,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseEdgeBeforeResolveUnit(2, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new CloseEdgeBeforeResolveUnit(2, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -317,13 +320,14 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseEdgeBeforeResolveUnit(2, 3), Arrays.asList(s));
-                        unit.add("three", new CloseEdgeBeforeResolveUnit(3, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new CloseEdgeBeforeResolveUnit(2, 3), Arrays.asList(s)));
+                        subResults.add(unit.add("three", new CloseEdgeBeforeResolveUnit(3, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -341,12 +345,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseBeforeResolveNoExternalRepUnit(2), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new CloseBeforeResolveNoExternalRepUnit(2), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -363,12 +368,14 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseBeforeResolveFailingExternalRepUnit(2), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(
+                                unit.add("two", new CloseBeforeResolveFailingExternalRepUnit(2), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -385,12 +392,14 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseBeforeResolveExceptionalExternalRepUnit(2), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new CloseEdgeBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(
+                                unit.add("two", new CloseBeforeResolveExceptionalExternalRepUnit(2), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -408,12 +417,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseBeforeResolveNoExternalRepUnit(2), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new ResolveBeforeCloseEdgeUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new CloseBeforeResolveNoExternalRepUnit(2), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -431,12 +441,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new ResolveBeforeSetDatumUnit(2, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new ResolveBeforeSetDatumUnit(2, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -454,13 +465,14 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new ResolveBeforeSetDatumUnit(2, 3), Arrays.asList(s));
-                        unit.add("three", new ResolveBeforeSetDatumUnit(3, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new ResolveBeforeSetDatumUnit(2, 3), Arrays.asList(s)));
+                        subResults.add(unit.add("three", new ResolveBeforeSetDatumUnit(3, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -477,12 +489,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new SetDatumBeforeResolveUnit(2, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new SetDatumBeforeResolveUnit(2, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -499,13 +512,14 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new SetDatumBeforeResolveUnit(2, 3), Arrays.asList(s));
-                        unit.add("three", new SetDatumBeforeResolveUnit(3, 1), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new SetDatumBeforeResolveUnit(2, 3), Arrays.asList(s)));
+                        subResults.add(unit.add("three", new SetDatumBeforeResolveUnit(3, 1), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -522,12 +536,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseBeforeResolveNoDatumUnit(2), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new SetDatumBeforeResolveUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new CloseBeforeResolveNoDatumUnit(2), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -545,12 +560,13 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Collections.emptySet(), false, true);
 
-                        unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s));
-                        unit.add("two", new CloseBeforeResolveNoDatumUnit(2), Arrays.asList(s));
+                        List<IFuture<?>> subResults = new ArrayList<>();
+                        subResults.add(unit.add("one", new ResolveBeforeSetDatumUnit(1, 2), Arrays.asList(s)));
+                        subResults.add(unit.add("two", new CloseBeforeResolveNoDatumUnit(2), Arrays.asList(s)));
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(Unit.unit);
+                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -624,7 +640,7 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
 
-                        unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
+                        final IFuture<?> subResult = unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
                                     List<Scope> rootScopes) {
@@ -644,7 +660,7 @@ public class PRaffrayiTest {
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(null);
+                        return subResult.handle((r, ex) -> Unit.unit);
                     }
 
                 }, Set.Immutable.of());
@@ -661,7 +677,7 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
 
-                        unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
+                        IFuture<?> subResult = unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
                                     List<Scope> rootScopes) {
@@ -682,7 +698,7 @@ public class PRaffrayiTest {
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(null);
+                        return subResult.handle((r, ex) -> Unit.unit);
                     }
 
                 }, Set.Immutable.of());
@@ -698,7 +714,7 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
 
-                        unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
+                        IFuture<?> subResult = unit.add("sub", new ITypeChecker<Scope, Object, ITerm, Object>() {
 
                             @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Object, ITerm> unit,
                                     List<Scope> rootScopes) {
@@ -718,7 +734,7 @@ public class PRaffrayiTest {
 
                         unit.closeScope(s);
 
-                        return CompletableFuture.completedFuture(null);
+                        return subResult.handle((r, ex) -> Unit.unit);
                     }
 
                 }, Set.Immutable.of());
@@ -754,11 +770,11 @@ public class PRaffrayiTest {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            new AggregateFuture<>(results).whenComplete((r, ex) -> {
+            final IFuture<List<Object>> result = new AggregateFuture<>(results).whenComplete((r, ex) -> {
                 unit.closeScope(s1);
             });
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
     }
@@ -784,14 +800,16 @@ public class PRaffrayiTest {
 
             unit.closeScope(s1);
 
+            final List<IFuture<?>> results = new ArrayList<>();
             for(Integer queryLabel : queryLabels) {
                 final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
                 final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
-                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+                results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
+            final IFuture<List<Object>> result = new AggregateFuture<>(results);
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
     }
@@ -822,11 +840,11 @@ public class PRaffrayiTest {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            new AggregateFuture<>(results).whenComplete((r, ex) -> {
+            final IFuture<List<Object>> result = new AggregateFuture<>(results).whenComplete((r, ex) -> {
                 unit.setDatum(s1, s1);
             });
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
     }
@@ -852,14 +870,16 @@ public class PRaffrayiTest {
 
             unit.setDatum(s1, s1);
 
+            final List<IFuture<?>> results = new ArrayList<>();
             for(Integer queryLabel : queryLabels) {
                 final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
                 final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
-                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+                results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
+            final IFuture<List<Object>> result = new AggregateFuture<>(results);
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
     }
@@ -885,14 +905,16 @@ public class PRaffrayiTest {
 
             unit.setDatum(s1, s1);
 
+            final List<IFuture<?>> results = new ArrayList<>();
             for(Integer queryLabel : queryLabels) {
                 final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
                 final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
-                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+                results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
+            final IFuture<List<Object>> result = new AggregateFuture<>(results);
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
         @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
@@ -923,14 +945,16 @@ public class PRaffrayiTest {
 
             unit.setDatum(s1, s1);
 
+            final List<IFuture<?>> results = new ArrayList<>();
             for(Integer queryLabel : queryLabels) {
                 final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
                 final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
-                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+                results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
+            final IFuture<List<Object>> result = new AggregateFuture<>(results);
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
         @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
@@ -961,14 +985,16 @@ public class PRaffrayiTest {
 
             unit.setDatum(s1, s1);
 
+            final List<IFuture<?>> results = new ArrayList<>();
             for(Integer queryLabel : queryLabels) {
                 final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
                 final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
-                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+                results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
+            final IFuture<List<Object>> result = new AggregateFuture<>(results);
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
         @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
@@ -996,14 +1022,16 @@ public class PRaffrayiTest {
             unit.addEdge(s, ownLabel, s1);
             unit.closeEdge(s, ownLabel);
 
+            final List<IFuture<?>> results = new ArrayList<>();
             for(Integer queryLabel : queryLabels) {
                 final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
                 final IRegExp<Integer> re = reb.and(reb.symbol(queryLabel), reb.complement(reb.emptySet()));
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
-                unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none());
+                results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
+            final IFuture<List<Object>> result = new AggregateFuture<>(results);
 
-            return CompletableFuture.completedFuture(Unit.unit);
+            return result.handle((r, ex) -> Unit.unit);
         }
 
         @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {

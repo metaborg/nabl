@@ -16,6 +16,7 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
     private static final int PREEMPT_FACTOR = 3;
     private static final int RESCHEDULE_FACTOR = 7;
 
+    private final int parallelism;
     private final PriorityBlockingQueue<Runnable> executorQueue;
     private final ThreadPoolExecutor executor;
 
@@ -24,8 +25,13 @@ public class PriorityBlockingQueueThreadPoolScheduler implements IActorScheduler
     // FIXME Rebuild queue when #rescheduled > #scheduled
 
     public PriorityBlockingQueueThreadPoolScheduler(int parallelism) {
+        this.parallelism = parallelism;
         this.executorQueue = new PriorityBlockingQueue<>();
         this.executor = new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, executorQueue);
+    }
+
+    @Override public int parallelism() {
+        return parallelism;
     }
 
     @Override public boolean isActive() {

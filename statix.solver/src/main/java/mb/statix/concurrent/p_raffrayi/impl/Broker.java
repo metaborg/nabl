@@ -158,6 +158,10 @@ public class Broker<S, L, D, R> {
             return Tuple2.of(unitResult, unit);
         }
 
+        @Override public int parallelism() {
+            return scheduler.parallelism();
+        }
+
     }
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> unitChecker,

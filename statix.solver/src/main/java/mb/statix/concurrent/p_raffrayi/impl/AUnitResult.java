@@ -1,6 +1,7 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -22,6 +23,8 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
     @Value.Parameter @Override public abstract @Nullable R analysis();
 
     @Value.Parameter @Override public abstract List<Throwable> failures();
+
+    @Value.Parameter @Override public abstract Map<String, IUnitResult<S, L, D, ?>> subUnitResults();
 
     @Value.Parameter @Override public abstract IUnitStats stats();
 

@@ -13,11 +13,17 @@ public class ThreadPoolScheduler implements IActorScheduler {
 
     private static final ILogger logger = LoggerUtils.logger(ThreadPoolScheduler.class);
 
+    private final int parallelism;
     private final ThreadPoolExecutor executor;
 
     public ThreadPoolScheduler(int parallelism) {
+        this.parallelism = parallelism;
         this.executor =
                 new ThreadPoolExecutor(parallelism, parallelism, 60L, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+    }
+
+    @Override public int parallelism() {
+        return parallelism;
     }
 
     @Override public boolean isActive() {

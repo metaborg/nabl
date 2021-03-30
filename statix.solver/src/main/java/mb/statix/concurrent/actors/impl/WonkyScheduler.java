@@ -13,16 +13,22 @@ public class WonkyScheduler implements IActorScheduler {
 
     private static final ILogger logger = LoggerUtils.logger(WonkyScheduler.class);
 
+    private final int parallelism;
     private final ScheduledThreadPoolExecutor executor;
     private final double preemptProbability;
     private final int scheduleDelayBoundMillis;
     private final Random rnd;
 
     public WonkyScheduler(int parallelism, double preemptProbability, int scheduleDelayBoundMillis) {
+        this.parallelism = parallelism;
         this.executor = new ScheduledThreadPoolExecutor(parallelism);
         this.preemptProbability = preemptProbability;
         this.scheduleDelayBoundMillis = scheduleDelayBoundMillis;
         this.rnd = new Random();
+    }
+
+    @Override public int parallelism() {
+        return parallelism;
     }
 
     @Override public boolean isActive() {

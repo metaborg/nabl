@@ -40,8 +40,6 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(StaticScopeGraphUnit.class);
 
-    private static final int PARALLEL_WORKERS = 8;
-
     protected List<S> givenRootScopes;
     protected Set<S> givenOwnScopes;
     protected IScopeGraph.Immutable<S, L, D> givenScopeGraph;
@@ -157,13 +155,13 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     private void startWorkers(List<S> rootScopes, final Set<S> ownScopes) {
-        for(int i = 0; i < PARALLEL_WORKERS; i++) {
-            final Tuple2<IFuture<IUnitResult<S, L, D, Unit>>, IActorRef<? extends IUnit<S, L, D, Unit>>> worker =
-                    context.<Unit>add("worker-" + i, (subself, subcontext) -> {
+        for(int i = 0; i < context.parallelism(); i++) {
+            final Tuple2<IActorRef<? extends IUnit<S, L, D, Unit>>, IFuture<IUnitResult<S, L, D, Unit>>> worker =
+                    doAddSubUnit("worker-" + i, (subself, subcontext) -> {
                         return new StaticScopeGraphWorker<>(subself, self, subcontext, edgeLabels, rootScopes,
                                 ownScopes, scopeGraph.get());
                     }, Collections.emptyList());
-            workers.add(worker._2());
+            workers.add(worker._1());
         }
     }
 
