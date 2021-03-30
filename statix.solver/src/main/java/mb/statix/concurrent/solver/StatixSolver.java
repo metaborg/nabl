@@ -4,12 +4,13 @@ import static com.google.common.collect.Streams.stream;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.constraints.Constraints.disjoin;
+import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
+import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -108,9 +109,6 @@ import mb.statix.spoofax.StatixTerms;
 
 public class StatixSolver {
 
-    public static final int RETURN_ON_FIRST_ERROR = 1;
-    public static final int RETURN_ON_FIRST_DELAY = 2;
-
     private static final ImmutableSet<ITermVar> NO_UPDATED_VARS = ImmutableSet.of();
     private static final ImmutableList<IConstraint> NO_NEW_CONSTRAINTS = ImmutableList.of();
     private static final mb.statix.solver.completeness.Completeness.Immutable NO_NEW_CRITICAL_EDGES =
@@ -140,22 +138,22 @@ public class StatixSolver {
     public StatixSolver(IConstraint constraint, Spec spec, IState.Immutable state, ICompleteness.Immutable completeness,
             IDebugContext debug, IProgress progress, ICancel cancel,
             ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags) {
-        if(Solver.INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
+        if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
             debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
             this.spec = spec.precomputeCriticalEdges();
         } else {
             this.spec = spec;
         }
         this.scopeGraph = scopeGraph;
-        this.debug = debug;
         this.state = state;
+        this.debug = debug;
         this.constraints = new BaseConstraintStore(debug);
         final ICompleteness.Transient _completeness = completeness.melt();
-        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
+        if(INCREMENTAL_CRITICAL_EDGES) {
             final Tuple2<IConstraint, ICompleteness.Immutable> initialConstraintAndCriticalEdges =
                     CompletenessUtil.precomputeCriticalEdges(constraint, spec.scopeExtensions());
             this.constraints.add(initialConstraintAndCriticalEdges._1());
-            _completeness.addAll(initialConstraintAndCriticalEdges._2(), this.state.unifier());
+            _completeness.addAll(initialConstraintAndCriticalEdges._2(), state.unifier());
         } else {
             constraints.add(constraint);
             _completeness.add(constraint, spec, state.unifier());
@@ -194,9 +192,9 @@ public class StatixSolver {
             if(!k.k(r, ex, MAX_DEPTH)) {
                 debug.debug("Finished fast.");
                 result.complete(finishSolve());
-            } else {
-                fixedpoint();
+                return;
             }
+            fixedpoint();
         } catch(Throwable e) {
             result.completeExceptionally(e);
         }
@@ -221,6 +219,7 @@ public class StatixSolver {
             if(!k(constraint, MAX_DEPTH)) {
                 debug.debug("Finished fast.");
                 result.complete(finishSolve());
+                return;
             }
         }
 
@@ -249,13 +248,13 @@ public class StatixSolver {
         debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
         if(debug.isEnabled(Level.Debug)) {
-            for(Entry<IConstraint, Delay> entry : delayed.entrySet()) {
+            for(Map.Entry<IConstraint, Delay> entry : delayed.entrySet()) {
                 debug.debug(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
                 removeCompleteness(entry.getKey());
             }
         }
 
-        final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(ImmutableMap.of());
+        final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
         final java.util.Set<CriticalEdge> removedEdges = ImmutableSet.of();
         final ICompleteness.Immutable completeness = Completeness.Immutable.of();
         final SolverResult result =
@@ -291,7 +290,7 @@ public class StatixSolver {
         if(!newConstraints.isEmpty()) {
             // no constraints::addAll, instead recurse in tail position
             final ICompleteness.Transient _completeness = completeness.melt();
-            if(Solver.INCREMENTAL_CRITICAL_EDGES) {
+            if(INCREMENTAL_CRITICAL_EDGES) {
                 _completeness.addAll(newCriticalEdges, unifier); // must come before ICompleteness::remove
             } else {
                 _completeness.addAll(newConstraints, spec, unifier); // must come before ICompleteness::remove
@@ -347,7 +346,7 @@ public class StatixSolver {
             subDebug.debug("Delayed: {}", Solver.toString(constraint, state.unifier()));
         }
 
-        return (flags & RETURN_ON_FIRST_DELAY) == 0;
+        return true;
     }
 
     private <R> boolean future(IFuture<R> future, K<? super R> k) throws InterruptedException {
@@ -371,7 +370,7 @@ public class StatixSolver {
     private void removeCompleteness(IConstraint constraint) throws InterruptedException {
         final Set.Immutable<CriticalEdge> removedEdges;
         final ICompleteness.Transient _completeness = completeness.melt();
-        if(Solver.INCREMENTAL_CRITICAL_EDGES) {
+        if(INCREMENTAL_CRITICAL_EDGES) {
             if(!constraint.ownCriticalEdges().isPresent()) {
                 throw new IllegalArgumentException("Solver only accepts constraints with pre-computed critical edges.");
             }
@@ -490,7 +489,7 @@ public class StatixSolver {
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
-                if(Solver.INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
+                if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
                 }
@@ -516,8 +515,8 @@ public class StatixSolver {
                             debug.debug("Disunification succeeded: {}", result);
                         }
                         final IState.Immutable newState = state.withUnifier(result.unifier());
-                        final Set<ITermVar> updatedVars =
-                                result.result().<Set<ITermVar>>map(Diseq::domainSet).orElse(CapsuleUtil.immutableSet());
+                        final java.util.Set<ITermVar> updatedVars =
+                                result.result().<java.util.Set<ITermVar>>map(Diseq::domainSet).orElse(NO_UPDATED_VARS);
                         return success(c, newState, updatedVars, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
                                 NO_EXISTENTIALS, fuel);
                     } else {
@@ -545,9 +544,9 @@ public class StatixSolver {
             }
 
             @Override public Boolean caseResolveQuery(CResolveQuery c) throws InterruptedException {
-                final ITerm scopeTerm = c.scopeTerm();
                 final QueryFilter filter = c.filter();
                 final QueryMin min = c.min();
+                final ITerm scopeTerm = c.scopeTerm();
                 final ITerm resultTerm = c.resultTerm();
 
                 final IUniDisunifier unifier = state.unifier();
@@ -712,7 +711,7 @@ public class StatixSolver {
                 final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = scopeGraph.subContext("try");
                 final IState.Immutable subState = state.subState().withResource(subContext.id());
                 final StatixSolver subSolver = new StatixSolver(c.constraint(), spec, subState, completeness, subDebug,
-                        progress, cancel, subContext, RETURN_ON_FIRST_ERROR | RETURN_ON_FIRST_DELAY);
+                        progress, cancel, subContext, RETURN_ON_FIRST_ERROR);
                 final IFuture<SolverResult> subResult = subSolver.entail();
                 final K<SolverResult> k = (r, ex, fuel) -> {
                     if(ex != null) {
@@ -758,7 +757,7 @@ public class StatixSolver {
                     final ApplyResult applyResult = results.get(0)._2();
                     proxyDebug.debug("Rule accepted");
                     proxyDebug.commit();
-                    if(Solver.INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
+                    if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
@@ -789,7 +788,7 @@ public class StatixSolver {
         final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = context.subContext("entails");
         final IState.Immutable subState = state.subState().withResource(subContext.id());
         final StatixSolver subSolver = new StatixSolver(constraint, spec, subState, criticalEdges, subDebug, progress,
-                cancel, subContext, RETURN_ON_FIRST_ERROR | RETURN_ON_FIRST_DELAY);
+                cancel, subContext, RETURN_ON_FIRST_ERROR);
         return subSolver.entail().thenCompose(r -> {
             final boolean result;
             try {
@@ -819,7 +818,7 @@ public class StatixSolver {
         return absorbDelays(() -> {
             final IState.Immutable subState = state.subState().withResource(subContext.id());
             final StatixSolver subSolver = new StatixSolver(constraint, spec, subState, criticalEdges, subDebug,
-                    progress, cancel, subContext, RETURN_ON_FIRST_ERROR | RETURN_ON_FIRST_DELAY);
+                    progress, cancel, subContext, RETURN_ON_FIRST_ERROR);
             return subSolver.entail().thenCompose(r -> {
                 final boolean result;
                 // check entailment w.r.t. the initial substate, not the current state: otherwise,
