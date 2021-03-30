@@ -1,6 +1,8 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -20,6 +23,7 @@ import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
+import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.HashTrieRelation3;
 import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.MultiSet;
@@ -75,6 +79,7 @@ public abstract class AbstractUnit<S, L, D, R>
     private volatile boolean innerResult;
     private final Ref<R> analysis;
     private final List<Throwable> failures;
+    private final Map<String, IUnitResult<S, L, D, ?>> subUnitResults;
     private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
@@ -97,7 +102,8 @@ public abstract class AbstractUnit<S, L, D, R>
 
         this.innerResult = false;
         this.analysis = new Ref<>();
-        this.failures = Lists.newArrayList();
+        this.failures = new ArrayList<>();
+        this.subUnitResults = new HashMap<>();
         this.unitResult = new CompletableFuture<>();
 
         this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of());
@@ -189,6 +195,40 @@ public abstract class AbstractUnit<S, L, D, R>
             innerResult = true;
         });
         return unitResult;
+    }
+
+    protected <Q> Tuple2<IActorRef<? extends IUnit<S, L, D, Q>>, IFuture<IUnitResult<S, L, D, Q>>> doAddSubUnit(
+            String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
+            List<S> rootScopes) {
+        for(S rootScope : rootScopes) {
+            assertOwnOrSharedScope(rootScope);
+        }
+
+        final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
+                context.add(id, unitProvider, rootScopes);
+        final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
+
+        final ICompletableFuture<IUnitResult<S, L, D, Q>> internalResult = new CompletableFuture<>();
+        final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, internalResult);
+        waitFor(token, subunit);
+        result_subunit._1().whenComplete(internalResult::complete); // must come after waitFor
+
+        for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
+            doAddShare(subunit, rootScope);
+        }
+
+        final IFuture<IUnitResult<S, L, D, Q>> ret = internalResult.whenComplete((r, ex) -> {
+            logger.debug("{} subunit {} finished", this, subunit);
+            resume();
+            granted(token, subunit);
+            if(ex != null) {
+                failures.add(new Exception("No result for sub unit " + id));
+            } else {
+                subUnitResults.put(id, r);
+            }
+        });
+
+        return Tuple2.of(subunit, ret);
     }
 
     protected final S doFreshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
@@ -320,8 +360,8 @@ public abstract class AbstractUnit<S, L, D, R>
                         stats.outgoingQueries += 1;
                     }
                     return Optional.of(result.whenComplete((r, ex) -> {
-                        resume();
                         logger.debug("got answer from {}", sender);
+                        resume();
                         granted(wf, owner);
                     }));
                 }
@@ -341,10 +381,10 @@ public abstract class AbstractUnit<S, L, D, R>
                             ret = result;
                         } else {
                             final ICompletableFuture<D> internalResult = new CompletableFuture<>();
-                            result.whenComplete(internalResult::complete);
                             final IWaitFor<S, L, D> token =
                                     TypeCheckerState.of(sender, ImmutableList.of(datum.get()), internalResult);
                             waitFor(token, self);
+                            result.whenComplete(internalResult::complete); // must come after waitFor
                             ret = internalResult.whenComplete((rep, ex) -> {
                                 self.assertOnActorThread();
                                 granted(token, self);
@@ -378,10 +418,10 @@ public abstract class AbstractUnit<S, L, D, R>
                     return result;
                 } else {
                     final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
-                    result.whenComplete(internalResult::complete);
                     final TypeCheckerState<S, L, D> token =
                             TypeCheckerState.of(sender, ImmutableList.of(d), internalResult);
                     waitFor(token, self);
+                    result.whenComplete(internalResult::complete); // must come after waitFor
                     return internalResult.whenComplete((r, ex) -> {
                         self.assertOnActorThread();
                         granted(token, self);
@@ -401,10 +441,10 @@ public abstract class AbstractUnit<S, L, D, R>
                     return result;
                 } else {
                     final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
-                    result.whenComplete(internalResult::complete);
                     final TypeCheckerState<S, L, D> token =
                             TypeCheckerState.of(sender, ImmutableList.of(d1, d2), internalResult);
                     waitFor(token, self);
+                    result.whenComplete(internalResult::complete); // must come after waitFor
                     return internalResult.whenComplete((r, ex) -> {
                         self.assertOnActorThread();
                         granted(token, self);
@@ -539,7 +579,8 @@ public abstract class AbstractUnit<S, L, D, R>
         logger.debug("{} tryFinish", this);
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
-            unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), analysis.get(), failures, stats));
+            unitResult.complete(
+                    UnitResult.of(self.id(), scopeGraph.get(), analysis.get(), failures, subUnitResults, stats));
         }
     }
 
