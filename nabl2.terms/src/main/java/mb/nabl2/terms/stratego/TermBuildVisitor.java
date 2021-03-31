@@ -99,9 +99,10 @@ public abstract class TermBuildVisitor implements TermVisitor {
     List<ITerm> subTerms = new ArrayList<>();
 
     @Override public TermVisitor visitSubTerm() {
+        TermBuildVisitor outer = this;
         return new TermBuildVisitor(build, factory) {
             @Override public void setTerm(ITerm subTerm) {
-                subTerms.add(subTerm);
+                outer.subTerms.add(subTerm);
             }
         };
     }
@@ -110,9 +111,10 @@ public abstract class TermBuildVisitor implements TermVisitor {
     List<IStrategoTerm> annos = new ArrayList<>();
 
     @Override public TermVisitor visitAnnotation() {
+        TermBuildVisitor outer = this;
         return new TermFactoryVisitor(factory) {
             @Override public void setTerm(IStrategoTerm anno) {
-                annos.add(anno);
+                outer.annos.add(anno);
             }
         };
     }
