@@ -1,21 +1,17 @@
-module renaming
+module statix/runtime/renaming
 
-imports 
+imports
+    libstratego-lib 
 	signatures/-
-	libspoofax/stratego/debug
-	libspoofax/ui/dialogs
-	libspoofax/sdf/pp
-	
-	libspoofax/term/annotation
-  	libspoofax/term/origin
-  	libspoofax/analysis/constraint
-  
-  	statix/runtime/-
-  	statixruntime
-  	statix/api
+    libspoofax/analysis/constraint
+  	libspoofax/ui/dialogs
+    statix/runtime/analysis
+    statix/runtime/ast
+    statix/api
+    signatures/statix/runtime/-
 
-  	
-rules	    
+rules
+	    
   rename-action(construct-textual-change, analyze):
     (selected-term, _, selected-ast, _, _) -> renamed-program
     where
@@ -24,13 +20,12 @@ rules
         ; renamed-asts := <rename(analyze|selected-term, new-name)> selected-ast
         ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
       <+ show-errors |}
-      
+    
   rename(analyze|selected-term, new-name): selected-ast -> renamed-asts
     where
       asts := <get-analysed-asts> 
       ; analysis := <get-project-analysis>
       ; resolution-relation :=  <calc-resolution-relation-project(|analysis)> asts
-      ; <ppdebug(|"resolution-relation:")> resolution-relation
       ; selected-index := <find-name-index(|selected-ast, resolution-relation)> selected-term
       ; (target-paths, target-indices) := <find-rename-target> (selected-index, resolution-relation)
       ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
@@ -82,16 +77,15 @@ rules // Step 2: Find name index in selection
 rules //Step 3: Find occurrences to rename	 	
  find-rename-target: (selected-occ, resolution-relation) -> (target-paths, target-indices)
     where
-      target-indices := <calc-name-cluster> (selected-occ, resolution-relation)
+      target-indices := <find-all-related-occs> (selected-occ, resolution-relation)
       ; target-paths := <get-paths-to-rename> target-indices
-      ; <ppdebug(|"paths-to-rename: ")> target-paths 
       
   get-paths-to-rename: target-indices -> paths
     where
       paths := <map(get-paths);nub> target-indices      
       
   get-paths: TermIndex(path, _) -> path
-        
+
 rules //Step 4: Rename terms	 	
   rename-asts(|target-indices, target-paths, new-name): asts -> renamed-asts
     where
@@ -114,14 +108,12 @@ rules //Step 4: Rename terms
       <is-string> term
       ; term-index := <stx--get-ast-index> term
       ; <elem> (term-index, target-indices)
-	  
+
 rules //Step 5: Checking for capture
   check-capture(analyze|renamed-asts, resolution-relation) =
     (new-asts, new-analysis) := <rerun-analysis(analyze)> renamed-asts
     ; new-resolution-relation := <calc-resolution-relation-project(|new-analysis); qsort(res-pair-gt)> new-asts
-    ; <ppdebug(|"new-resolution-relation: ")> new-resolution-relation
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
-    ; <ppdebug(|"old-resolution-relation: ")> old-resolution-relation
     ; <eq>(old-resolution-relation, new-resolution-relation) 
       <+ add-error(|"Capture detected", "This renaming leads to name capture") 
 
@@ -167,7 +159,7 @@ rules //Step 5: Checking for capture
   res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
       <term-index-gt> (ref-1, ref-2) 
-															
+													
   term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
     where
       if <eq> (path-1, path-2) then
@@ -230,6 +222,7 @@ rules // Utility strategies
   show-errors =    
     [(title, message) | _] := <bagof-ErrorMessage> ()
     ; <show-dialog(|title, "ERROR")> message
-						  
-rules // external rules
-	external calc-name-cluster(|)
+					  
+rules // primitives
+  find-all-related-occs =  prim("FindAllRelatedOccurrences")
+	

@@ -1,4 +1,4 @@
-module renaming
+module nabl2/runtime/transform/renaming
 
 imports 
   signatures/-
@@ -98,8 +98,12 @@ rules //Step 5: Checking for capture
       <term-index-gt> (ref-1, ref-2) 
 															
   term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
-    where 
-      <string-gt> (path-1, path-2) <+ <gt> (num-index-1, num-index-2)       
+    where
+      if <eq> (path-1, path-2) then
+         <gt> (num-index-1, num-index-2)
+      else
+         <string-gt> (path-1, path-2)
+      end      
 
 rules // Utility strategies
   read-new-name: _ -> new-name
