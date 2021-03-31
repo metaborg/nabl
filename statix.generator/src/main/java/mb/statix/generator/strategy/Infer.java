@@ -22,7 +22,7 @@ public final class Infer extends SearchStrategy<SearchState, SearchState> {
         try {
             resultConfig =
                     Solver.solve(ctx.spec(), state.state(), state.constraints(), state.delays(), state.completeness(),
-                            IsComplete.ALWAYS, new NullDebugContext(), new NullProgress(), new NullCancel());
+                            IsComplete.ALWAYS, new NullDebugContext(), new NullProgress(), new NullCancel(), Solver.RETURN_ON_FIRST_ERROR);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

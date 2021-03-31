@@ -101,8 +101,8 @@ public class IndexedRuleApplication {
         if(constraint != null) {
             final State state = State.of();
             final NullDebugContext debug = new NullDebugContext();
-            final SolverResult solveResult =
-                    Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(), new NullProgress());
+            final SolverResult solveResult = Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(),
+                    new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
             try {
                 if(!Solver.entailed(state, solveResult, debug)) {
                     return Optional.empty();
@@ -168,7 +168,7 @@ public class IndexedRuleApplication {
         }
 
         final SolverResult solveResult = Solver.solve(spec, newState, applyResult.body(), new NullDebugContext(),
-                new NullCancel(), new NullProgress());
+                new NullCancel(), new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
         if(solveResult.hasErrors()) {
             return Optional.empty();
         }

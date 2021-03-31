@@ -70,7 +70,7 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // no substate is used here, as we allow variables from the context to be unified
         final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
                 Map.Immutable.of(), completeness.freeze(), IsComplete.ALWAYS, new NullDebugContext(),
-                new NullProgress(), new NullCancel());
+                new NullProgress(), new NullCancel(), Solver.RETURN_ON_FIRST_ERROR);
 
         // NOTE This part is almost a duplicate of Solver::entailed and should be
         //      kept in sync

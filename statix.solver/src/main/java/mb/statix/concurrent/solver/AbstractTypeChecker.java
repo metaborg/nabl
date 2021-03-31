@@ -136,7 +136,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                     new IllegalArgumentException("Cannot apply initial rule to root scope.", delay));
         }
         solver = new StatixSolver(applyResult.body(), spec, unitState, Completeness.Immutable.of(), debug,
-                new NullProgress(), new NullCancel(), context);
+                new NullProgress(), new NullCancel(), context, 0);
         solveResult = solver.solve(scopes);
         return solveResult.thenApply(r -> {
             logger.debug("checker {}: solver returned.", context.id());

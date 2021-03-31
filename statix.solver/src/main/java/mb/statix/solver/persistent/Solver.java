@@ -30,6 +30,8 @@ import mb.statix.spec.Spec;
 
 public class Solver {
 
+    public static final int RETURN_ON_FIRST_ERROR = 1;
+
     public static final int TERM_FORMAT_DEPTH = 4;
 
     public static final boolean INCREMENTAL_CRITICAL_EDGES = true;
@@ -38,22 +40,22 @@ public class Solver {
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IDebugContext debug, ICancel cancel, IProgress progress) throws InterruptedException {
-        return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress);
+            final IDebugContext debug, ICancel cancel, IProgress progress, int flags) throws InterruptedException {
+        return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress, flags);
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress)
+            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
             throws InterruptedException {
-        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel).solve();
+        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel, flags).solve();
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
             final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
-            IProgress progress, ICancel cancel) throws InterruptedException {
-        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel)
-                .solve();
+            IProgress progress, ICancel cancel, int flags) throws InterruptedException {
+        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
+                flags).solve();
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final Iterable<IConstraint> constraints,
@@ -67,7 +69,7 @@ public class Solver {
 
         final IState.Immutable subState = state.subState();
         final SolverResult result = Solver.solve(spec, subState, constraints, delays, completeness, isComplete,
-                debug.subContext(), progress, cancel);
+                debug.subContext(), progress, cancel, RETURN_ON_FIRST_ERROR);
         return Solver.entailed(subState, result, debug);
     }
 
@@ -80,8 +82,8 @@ public class Solver {
         }
 
         final IState.Immutable subState = state.subState();
-        final SolverResult result =
-                Solver.solve(spec, subState, constraint, isComplete, debug.subContext(), cancel, progress);
+        final SolverResult result = Solver.solve(spec, subState, constraint, isComplete, debug.subContext(), cancel,
+                progress, RETURN_ON_FIRST_ERROR);
         return Solver.entailed(subState, result, debug);
     }
 
