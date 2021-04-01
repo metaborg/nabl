@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -198,6 +199,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     ///////////////////////////////////////////////////////////////////////////
     // Deadlock
     ///////////////////////////////////////////////////////////////////////////
+
+    @Override public java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> dependentSet() {
+        if(isWaitingFor(Snapshot.of(self))) {
+            return Collections.singleton(self);
+        }
+        return super.dependentSet();
+    }
 
     protected void handleSelfDeadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         if(isWaitingFor(Snapshot.of(self))) {
