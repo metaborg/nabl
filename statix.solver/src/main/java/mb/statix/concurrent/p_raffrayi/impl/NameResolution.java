@@ -53,6 +53,8 @@ abstract class NameResolution<S, L, D> {
 
     protected abstract IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException;
 
+    protected abstract IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel);
+
     ///////////////////////////////////////////////////////////////////////////
 
     public ICompletableFuture<Env<S, L, D>> env(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
@@ -103,14 +105,19 @@ abstract class NameResolution<S, L, D> {
         logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
         env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
         return env1.thenCompose(e1 -> {
-            //if(!e1.isEmpty() && dataEquiv.alwaysTrue()) {
-            //    return CompletableFuture.completedFuture(e1);
-            //}
-            final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
-            logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
-            env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
-            return env2.thenCompose(e2 -> {
-                return shadows(e1, e2, cancel);
+            final IFuture<Boolean> envComplete =
+                    e1.isEmpty() ? CompletableFuture.completedFuture(false) : dataLeqAlwaysTrue(cancel);
+            return envComplete.thenCompose(complete -> {
+                if(complete) {
+                    logger.trace("env_L {} {} {}: env2 fully shadowed", path, re, L);
+                    return CompletableFuture.completedFuture(e1);
+                }
+                final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
+                logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
+                env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
+                return env2.thenCompose(e2 -> {
+                    return shadows(e1, e2, cancel);
+                });
             });
         });
     }
