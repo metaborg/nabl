@@ -452,6 +452,10 @@ public abstract class AbstractUnit<S, L, D, R>
                 }
             }
 
+            public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
+                return dataEquiv.alwaysTrue(queryContext, cancel);
+            }
+
         };
 
         final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
