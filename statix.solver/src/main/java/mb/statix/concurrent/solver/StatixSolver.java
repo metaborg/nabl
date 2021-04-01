@@ -1085,9 +1085,10 @@ public class StatixSolver {
                             ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
                             .orElse(null)) == null) {
                         alwaysTrue = CompletableFuture.completedFuture(false);
+                    } else {
+                        alwaysTrue = entails(context, spec, state, result.body(), result.criticalEdges(),
+                                new NullDebugContext(), cancel, new NullProgress());
                     }
-                    alwaysTrue = entails(context, spec, state, result.body(), result.criticalEdges(),
-                            new NullDebugContext(), cancel, new NullProgress());
                 } catch(Delay e) {
                     throw new IllegalStateException("Unexpected delay.", e);
                 }
@@ -1141,7 +1142,7 @@ public class StatixSolver {
                                 .apply(d2_state._2().unifier(), constraint,
                                         ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
                                 .orElse(null)) == null) {
-                            alwaysTrue.complete(false);
+                            return CompletableFuture.completedFuture(false);
                         }
                         return entails(context, spec, state, result.body(), result.criticalEdges(),
                                 new NullDebugContext(), cancel, new NullProgress());
