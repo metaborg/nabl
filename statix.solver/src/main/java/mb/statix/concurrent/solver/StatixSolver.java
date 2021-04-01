@@ -51,7 +51,6 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
@@ -1076,21 +1075,30 @@ public class StatixSolver {
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
                 try {
-                    final ApplyResult result;
-                    final Tuple2<ITermVar, IState.Immutable> d1_state =
-                            state.freshVar(B.newVar(state.resource(), "d1"));
-                    final Tuple2<ITermVar, IState.Immutable> d2_state =
-                            d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
-                    if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                            ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
-                            .orElse(null)) == null) {
-                        alwaysTrue = CompletableFuture.completedFuture(false);
+                    if((constraint.isAlways(spec).orElse(false))) {
+                        alwaysTrue = CompletableFuture.completedFuture(true);
                     } else {
-                        alwaysTrue = entails(context, spec, d2_state._2(), result.body(), result.criticalEdges(),
-                                new NullDebugContext(), cancel, new NullProgress());
+                        final ApplyResult result;
+                        final Tuple2<ITermVar, IState.Immutable> d1_state =
+                                state.freshVar(B.newVar(state.resource(), "d1"));
+                        final Tuple2<ITermVar, IState.Immutable> d2_state =
+                                d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
+                        try {
+                            if((result = RuleUtil
+                                    .apply(d2_state._2().unifier(), constraint,
+                                            ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
+                                    .orElse(null)) == null) {
+                                alwaysTrue = CompletableFuture.completedFuture(false);
+                            } else {
+                                alwaysTrue = entails(context, spec, d2_state._2(), result.body(),
+                                        result.criticalEdges(), new NullDebugContext(), cancel, new NullProgress());
+                            }
+                        } catch(Delay e) {
+                            throw new IllegalStateException("Unexpected delay.", e);
+                        }
                     }
-                } catch(Delay e) {
-                    throw new IllegalStateException("Unexpected delay.", e);
+                } catch(InterruptedException e) {
+                    return CompletableFuture.completedExceptionally(e);
                 }
             }
             return alwaysTrue;
@@ -1126,30 +1134,37 @@ public class StatixSolver {
             });
         }
 
-        private @Nullable ICompletableFuture<Boolean> alwaysTrue;
+        private @Nullable IFuture<Boolean> alwaysTrue;
 
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
-                alwaysTrue = new CompletableFuture<>();
-                absorbDelays(() -> {
-                    try {
-                        final ApplyResult result;
-                        final Tuple2<ITermVar, IState.Immutable> d1_state =
-                                state.freshVar(B.newVar(state.resource(), "d1"));
-                        final Tuple2<ITermVar, IState.Immutable> d2_state =
-                                d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
-                        if((result = RuleUtil
-                                .apply(d2_state._2().unifier(), constraint,
-                                        ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
-                                .orElse(null)) == null) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                        return entails(context, spec, state, result.body(), result.criticalEdges(),
-                                new NullDebugContext(), cancel, new NullProgress());
-                    } catch(Delay delay) {
-                        return CompletableFuture.completedExceptionally(delay);
+                try {
+                    if((constraint.isAlways(spec).orElse(false))) {
+                        alwaysTrue = CompletableFuture.completedFuture(true);
+                    } else {
+                        alwaysTrue = absorbDelays(() -> {
+                            try {
+                                final ApplyResult result;
+                                final Tuple2<ITermVar, IState.Immutable> d1_state =
+                                        state.freshVar(B.newVar(state.resource(), "d1"));
+                                final Tuple2<ITermVar, IState.Immutable> d2_state =
+                                        d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
+                                if((result = RuleUtil
+                                        .apply(d2_state._2().unifier(), constraint,
+                                                ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
+                                        .orElse(null)) == null) {
+                                    return CompletableFuture.completedFuture(false);
+                                }
+                                return entails(context, spec, state, result.body(), result.criticalEdges(),
+                                        new NullDebugContext(), cancel, new NullProgress());
+                            } catch(Delay delay) {
+                                return CompletableFuture.completedExceptionally(delay);
+                            }
+                        });
                     }
-                }).whenComplete(alwaysTrue::complete);
+                } catch(InterruptedException e) {
+                    return CompletableFuture.completedExceptionally(e);
+                }
             }
             return alwaysTrue;
         }
