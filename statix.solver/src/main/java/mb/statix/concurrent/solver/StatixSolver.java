@@ -1086,7 +1086,7 @@ public class StatixSolver {
                             .orElse(null)) == null) {
                         alwaysTrue = CompletableFuture.completedFuture(false);
                     } else {
-                        alwaysTrue = entails(context, spec, state, result.body(), result.criticalEdges(),
+                        alwaysTrue = entails(context, spec, d2_state._2(), result.body(), result.criticalEdges(),
                                 new NullDebugContext(), cancel, new NullProgress());
                     }
                 } catch(Delay e) {
