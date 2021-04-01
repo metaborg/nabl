@@ -1075,8 +1075,9 @@ public class StatixSolver {
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
                 try {
-                    if((constraint.isAlways(spec).orElse(false))) {
-                        alwaysTrue = CompletableFuture.completedFuture(true);
+                    final Boolean isAlways;
+                    if((isAlways = constraint.isAlways(spec).orElse(null)) != null) {
+                        alwaysTrue = CompletableFuture.completedFuture(isAlways);
                     } else {
                         final ApplyResult result;
                         final Tuple2<ITermVar, IState.Immutable> d1_state =
@@ -1139,8 +1140,9 @@ public class StatixSolver {
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
                 try {
-                    if((constraint.isAlways(spec).orElse(false))) {
-                        alwaysTrue = CompletableFuture.completedFuture(true);
+                    final Boolean isAlways;
+                    if((isAlways = constraint.isAlways(spec).orElse(null)) != null) {
+                        alwaysTrue = CompletableFuture.completedFuture(isAlways);
                     } else {
                         alwaysTrue = absorbDelays(() -> {
                             try {
