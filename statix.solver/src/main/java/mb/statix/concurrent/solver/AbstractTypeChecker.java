@@ -163,4 +163,11 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         }
     }
 
+    @Override public ITerm explicate(ITerm datum) {
+        if(solver != null) {
+            return solver.explicate(datum);
+        }
+        return datum;
+    }
+
 }

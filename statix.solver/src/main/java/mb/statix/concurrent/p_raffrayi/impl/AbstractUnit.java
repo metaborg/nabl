@@ -347,22 +347,25 @@ public abstract class AbstractUnit<S, L, D, R>
                     logger.debug("local env {}", scope);
                     return Optional.empty();
                 } else {
-                    final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-                    logger.debug("remote env {} at {}", scope, owner);
-                    // this code mirrors query(...)
-                    final IFuture<Env<S, L, D>> result =
-                            self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
-                    final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
-                    waitFor(wf, owner);
-                    if(external) {
-                        stats.forwardedQueries += 1;
-                    } else {
-                        stats.outgoingQueries += 1;
-                    }
-                    return Optional.of(result.whenComplete((r, ex) -> {
-                        logger.debug("got answer from {}", sender);
-                        resume();
-                        granted(wf, owner);
+                    return Optional.of(afterCapture(CompletableFuture.completedFuture(Unit.unit)).thenCompose(__ -> {
+                        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
+                        logger.debug("remote env {} at {}", scope, owner);
+                        // this code mirrors query(...)
+                        final IFuture<Env<S, L, D>> result =
+                                self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                        final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
+                        waitFor(wf, owner);
+                        if(external) {
+                            stats.forwardedQueries += 1;
+                        } else {
+                            stats.outgoingQueries += 1;
+                        }
+
+                        return result.whenComplete((r, ex) -> {
+                            logger.debug("got answer from {}", sender);
+                            resume();
+                            granted(wf, owner);
+                        });
                     }));
                 }
             }
@@ -462,6 +465,10 @@ public abstract class AbstractUnit<S, L, D, R>
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
+        return result;
+    }
+
+    protected <Q> IFuture<Q> afterCapture(IFuture<Q> result) {
         return result;
     }
 
@@ -683,17 +690,21 @@ public abstract class AbstractUnit<S, L, D, R>
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
         if(nodes.size() == 1) {
-            logger.debug("{} self-deadlocked with {}", this, getTokens(self));
-            if(failDelays(nodes)) {
-                resume(); // resume to ensure further deadlock detection after these are handled
-            } else {
-                failAll();
-            }
+            handleSelfDeadlocked(nodes);
         } else {
             // nodes will include self
             for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
                 self.async(node)._deadlocked(nodes);
             }
+        }
+    }
+
+    protected void handleSelfDeadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+        logger.debug("{} self-deadlocked with {}", this, getTokens(self));
+        if(failDelays(nodes)) {
+            resume(); // resume to ensure further deadlock detection after these are handled
+        } else {
+            failAll();
         }
     }
 

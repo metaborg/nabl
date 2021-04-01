@@ -16,15 +16,18 @@ import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
+import mb.statix.concurrent.p_raffrayi.impl.tokens.Snapshot;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
+import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.IScopeGraph.Immutable;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.EdgeOrData;
@@ -39,6 +42,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     private final ITypeChecker<S, L, D, R> typeChecker;
 
     private volatile UnitState state;
+
+    private final ICompletableFuture<IScopeGraph.Immutable<S, L, D>> localScopeGraphCapture = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
@@ -63,6 +68,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         doStart(rootScopes);
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
             state = UnitState.DONE;
+        });
+
+        waitFor(Snapshot.of(self), self);
+        localScopeGraphCapture.whenComplete((sg, ex) -> {
+            logger.info("Captured local interface:\n{}", sg);
         });
 
         return doFinish(result);
@@ -154,6 +164,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         assertInState(UnitState.ACTIVE);
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
+
         final IFuture<Env<S, L, D>> result =
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final IFuture<Env<S, L, D>> ret;
@@ -168,6 +179,32 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         }
         stats.localQueries += 1;
         return ifActive(ret).thenApply(CapsuleUtil::toSet);
+    }
+
+    private void capture() {
+        IScopeGraph.Transient<S, L, D> snapshot = scopeGraph.get().melt();
+        scopeGraph.get().getData().forEach((s, d) -> {
+            snapshot.setDatum(s, typeChecker.explicate(d));
+        });
+        localScopeGraphCapture.complete(snapshot.freeze());
+        granted(Snapshot.of(self), self);
+        resume();
+    }
+
+    @Override protected <Q> IFuture<Q> afterCapture(IFuture<Q> result) {
+        return localScopeGraphCapture.thenCompose(__ -> result);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Deadlock
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected void handleSelfDeadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+        if(isWaitingFor(Snapshot.of(self))) {
+            capture();
+        } else {
+            super.handleSelfDeadlocked(nodes);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////

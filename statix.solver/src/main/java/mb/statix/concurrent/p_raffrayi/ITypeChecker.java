@@ -16,4 +16,8 @@ public interface ITypeChecker<S, L, D, R> {
         return CompletableFuture.completedFuture(datum);
     }
 
+    default D explicate(D datum) {
+        return datum;
+    }
+
 }
