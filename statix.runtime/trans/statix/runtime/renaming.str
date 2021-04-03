@@ -191,7 +191,9 @@ rules // Utility strategies
     where 	
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
-      ; analysis-object := <get-analysis-object> analysis 	
+      ; analysis-object := <get-analysis-object> analysis
+      ; <not(stx-analysis-has-errors)> analysis-object
+        <+ add-error(|"Renaming impossible", "The program contains errors.") 	
       
   get-project-entry: entries -> project-analysis
     where
