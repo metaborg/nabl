@@ -81,14 +81,6 @@ public class CInequal implements IConstraint, Serializable {
         return cases.caseInequal(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
-        vars.__insertAll(universals);
-        vars.__insertAll(term1.getVars());
-        vars.__insertAll(term2.getVars());
-        return vars.freeze();
-    }
-
     @Override public CInequal apply(ISubstitution.Immutable subst) {
         final Set.Immutable<ITermVar> us =
                 universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());

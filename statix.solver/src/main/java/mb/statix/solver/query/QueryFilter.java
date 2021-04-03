@@ -13,6 +13,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 
 public class QueryFilter implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -38,7 +39,7 @@ public class QueryFilter implements Serializable {
     }
 
     public Set.Immutable<ITermVar> getVars() {
-        return dataWf.varSet();
+        return RuleUtil.vars(dataWf);
     }
 
     public QueryFilter apply(ISubstitution.Immutable subst) {

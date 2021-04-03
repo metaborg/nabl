@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -54,10 +52,6 @@ public class CConj implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseConj(this);
-    }
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(left.getVars(), right.getVars());
     }
 
     @Override public CConj apply(ISubstitution.Immutable subst) {

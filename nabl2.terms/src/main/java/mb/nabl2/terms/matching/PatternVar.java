@@ -45,6 +45,10 @@ class PatternVar extends Pattern {
         return var;
     }
 
+    @Override public boolean isConstructed() {
+        return false;
+    }
+
     public boolean isWildcard() {
         return var == null;
     }

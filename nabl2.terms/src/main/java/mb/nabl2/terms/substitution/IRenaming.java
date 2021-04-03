@@ -1,6 +1,7 @@
 package mb.nabl2.terms.substitution;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -15,6 +16,8 @@ public interface IRenaming {
     Set<ITermVar> keySet();
 
     Set<ITermVar> valueSet();
+
+    Set<? extends Map.Entry<ITermVar, ITermVar>> entrySet();
 
     ITermVar rename(ITermVar term);
 

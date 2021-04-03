@@ -3,6 +3,7 @@ package mb.nabl2.terms.substitution;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,10 @@ public class Renaming implements IRenaming {
 
     @Override public Set<ITermVar> valueSet() {
         return renaming.values();
+    }
+
+    @Override public Set<? extends Entry<ITermVar, ITermVar>> entrySet() {
+        return renaming.entrySet();
     }
 
     @Override public ITermVar rename(ITermVar var) {

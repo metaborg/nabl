@@ -16,16 +16,14 @@ class ApplyStrict extends ApplyMode<Delay> {
 
     @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
             IConstraint cause) throws Delay {
-        final ISubstitution.Transient subst;
-        final Optional<ISubstitution.Immutable> matchResult =
-                P.match(rule.params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars));
-        if((subst = matchResult.map(u -> u.melt()).orElse(null)) == null) {
+        final ISubstitution.Immutable subst;
+        if((subst =
+                P.match(rule.params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars)).orElse(null)) == null) {
             return Optional.empty();
         }
-        final ISubstitution.Immutable isubst = subst.freeze();
-        final IConstraint newBody = rule.body().apply(isubst).withCause(cause);
+        final IConstraint newBody = rule.body().apply(subst).withCause(cause);
         final ICompleteness.Immutable newBodyCriticalEdges =
-                rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(isubst);
+                rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(subst);
         final ApplyResult applyResult = ApplyResult.of(Optional.empty(), newBody, newBodyCriticalEdges);
         return Optional.of(applyResult);
     }

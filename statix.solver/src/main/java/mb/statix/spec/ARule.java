@@ -1,6 +1,5 @@
 package mb.statix.spec;
 
-import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Comparator;
@@ -12,8 +11,6 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.metaborg.util.task.NullCancel;
-import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
 
@@ -22,19 +19,18 @@ import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.StateUtil;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.log.NullDebugContext;
-import mb.statix.solver.persistent.Solver;
-import mb.statix.solver.persistent.State;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -52,60 +48,66 @@ public abstract class ARule {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
+
+    @Value.Parameter abstract Set.Immutable<ITermVar> evars();
+
+    @Value.Parameter abstract IUniDisunifier.Immutable unifier();
+
+
     @Value.Parameter public abstract IConstraint body();
-
-    @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
-        // 1. Create arguments
-        final ImmutableList.Builder<ITermVar> argsBuilder = ImmutableList.builder();
-        for(int i = 0; i < params().size(); i++) {
-            argsBuilder.add(B.newVar("", "arg" + Integer.toString(i)));
-        }
-        final ImmutableList<ITermVar> args = argsBuilder.build();
-
-        // 2. Instantiate body
-        final IConstraint instBody;
-        try {
-            final ApplyResult applyResult;
-            if((applyResult =
-                    RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null, ApplyMode.STRICT)
-                            .orElse(null)) == null) {
-                return Optional.of(false);
-            }
-            instBody = applyResult.body();
-        } catch(Delay e) {
-            return Optional.of(false);
-        }
-
-        // 3. Solve constraint
-        try {
-            final IConstraint constraint = new CExists(args, instBody);
-            return Optional.of(Solver.entails(spec, State.of(), constraint, (s, l, st) -> true,
-                    new NullDebugContext(), new NullProgress(), new NullCancel()));
-        } catch(Delay d) {
-            return Optional.empty();
-        }
-    }
 
     @Value.Default public @Nullable ICompleteness.Immutable bodyCriticalEdges() {
         return null;
     }
 
-    public Set.Immutable<ITermVar> freeVars() {
-        return Set.Immutable.subtract(Constraints.freeVars(body()), paramVars());
+
+    @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+        if(params().stream().anyMatch(p -> p.isConstructed())) {
+            return Optional.empty();
+        }
+        if(!unifier().isEmpty()) {
+            return Optional.empty();
+        }
+        return body().match(Constraints.<Optional<Boolean>>cases()._true(c -> Optional.of(true))
+                ._false(c -> Optional.of(false)).otherwise(c -> Optional.empty()));
+
     }
 
-    public Set.Immutable<ITermVar> varSet() {
-        return Set.Immutable.union(Constraints.vars(body()), paramVars());
-    }
 
+    /**
+     * Apply capture avoiding substitution.
+     */
     public Rule apply(ISubstitution.Immutable subst) {
         final Immutable localSubst = subst.removeAll(paramVars());
-        final IConstraint newBody = body().apply(localSubst);
-        final ICompleteness.Immutable newCriticalEdges =
-                bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(localSubst);
-        return Rule.of(name(), params(), newBody).withBodyCriticalEdges(newCriticalEdges);
+        if(localSubst.isEmpty()) {
+            return (Rule) this;
+        }
+
+        final FreshVars fresh = new FreshVars(localSubst.rangeSet());
+        final IRenaming ren = fresh.fresh(paramVars());
+        fresh.fix();
+        if(ren.isEmpty()) {
+        // @formatter:off
+            return Rule.of(
+                    name(),
+                    params(),
+                    body().apply(localSubst)
+            ).withBodyCriticalEdges(bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(localSubst));
+        // @formatter:off
+        }
+
+        // @formatter:off
+        return Rule.of(
+                name(),
+                params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList()),
+                body().apply(ren).apply(localSubst)
+        ).withBodyCriticalEdges(bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(ren).apply(localSubst));
+        // @formatter:off
     }
 
+    /**
+     * Apply variable renaming.
+     */
     public Rule apply(IRenaming subst) {
         final List<Pattern> newParams =
                 params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
@@ -114,6 +116,7 @@ public abstract class ARule {
                 bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(subst);
         return Rule.of(name(), newParams, newBody).withBodyCriticalEdges(newCriticalEdges);
     }
+
 
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
@@ -130,6 +133,12 @@ public abstract class ARule {
             sb.append(")");
         }
         sb.append(" :- ");
+        if(!evars().isEmpty()) {
+            sb.append(evars().stream().map(ITerm::toString).collect(Collectors.joining(" ", "{", "} ")));
+        }
+        if(!unifier().isEmpty()) {
+            sb.append(StateUtil.asConstraint(unifier()).stream().map(c -> c.toString(termToString)).collect(Collectors.joining(", ", "", " | ")));
+        }
         sb.append(body().toString(termToString));
         if(name().isEmpty()) {
             sb.append(" }");
@@ -142,6 +151,12 @@ public abstract class ARule {
     @Override public String toString() {
         return toString(ITerm::toString);
     }
+
+
+    public static Rule of(String name, Iterable<? extends Pattern> params, IConstraint body) {
+        return Rule.of(name, params, CapsuleUtil.immutableSet(), PersistentUniDisunifier.Immutable.of(), body);
+    }
+
 
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.

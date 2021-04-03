@@ -6,12 +6,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -86,15 +83,6 @@ public class CResolveQuery implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseResolveQuery(this);
-    }
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
-        vars.__insertAll(filter.getVars());
-        vars.__insertAll(min.getVars());
-        vars.__insertAll(scopeTerm.getVars());
-        vars.__insertAll(resultTerm.getVars());
-        return vars.freeze();
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {

@@ -29,6 +29,7 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.Renaming;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -134,7 +135,7 @@ public class IndexedRuleApplication {
     public static Optional<IndexedRuleApplication> of(Spec spec, Rule rule) throws Delay, InterruptedException {
         final IState.Transient state = State.of().melt();
         final Renaming.Builder _renaming = Renaming.builder();
-        for(ITermVar freeVar : rule.freeVars()) {
+        for(ITermVar freeVar : RuleUtil.freeVars(rule)) {
             _renaming.put(freeVar, state.freshVar(freeVar));
         }
         final IRenaming renaming = _renaming.build();
@@ -151,7 +152,7 @@ public class IndexedRuleApplication {
 
     public static Optional<IndexedRuleApplication> of(IState.Immutable state, Spec spec, Rule rule)
             throws Delay, InterruptedException {
-        final Set.Immutable<ITermVar> freeVars = rule.freeVars();
+        final Set.Immutable<ITermVar> freeVars = RuleUtil.freeVars(rule);
 
         final IState.Transient _state = state.melt();
         final List<ITermVar> args = new ArrayList<>();
@@ -192,7 +193,8 @@ public class IndexedRuleApplication {
             ira = new IndexedRuleApplication(spec, newParams, null, index);
         } else {
             final IConstraint residualConstraint = solveResult.delayed();
-            final java.util.Set<ITermVar> newFreeVars = Sets.difference(residualConstraint.getVars(), newParamVars);
+            final java.util.Set<ITermVar> newFreeVars =
+                    Sets.difference(Constraints.freeVars(residualConstraint), newParamVars);
             if(!newFreeVars.isEmpty()) {
                 throw Delay.ofVars(newFreeVars);
             }

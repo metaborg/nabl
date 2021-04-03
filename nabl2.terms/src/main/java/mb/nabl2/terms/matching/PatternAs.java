@@ -63,6 +63,10 @@ class PatternAs extends Pattern {
         return vars.freeze();
     }
 
+    @Override public boolean isConstructed() {
+        return pattern.isConstructed();
+    }
+
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
     }

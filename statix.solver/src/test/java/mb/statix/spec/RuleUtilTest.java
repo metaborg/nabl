@@ -12,6 +12,8 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableCollection;
 
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.statix.constraints.CConj;
@@ -33,7 +35,9 @@ public class RuleUtilTest {
         testInlineRules2();
         testInlineRules3();
         testInlineRules4();
+        testOptimize();
     }
+
 
     private static void testUnorderedRules1() {
         final ITermVar v1 = B.newVar("", "p-1");
@@ -73,6 +77,7 @@ public class RuleUtilTest {
         logger.info("Unordered rules:");
         newRules.forEach(r -> logger.info(" * {}", r));
     }
+
 
     private static void testInlineRules1() {
         final Pattern p1 = P.newVar("p1");
@@ -127,17 +132,63 @@ public class RuleUtilTest {
         if(r.isPresent()) {
             logger.info("gives");
             logger.info("* {}", r.get());
-            final Optional<Rule> rs = RuleUtil.simplify(r.get());
-            if(rs.isPresent()) {
-                logger.info("which simplifies to");
-                logger.info("* {}", rs.get());
-            } else {
-                logger.info("which cannot be simplified");
-            }
-
+            final Rule rs = RuleUtil.simplify(r.get());
+            logger.info("which simplifies to");
+            logger.info("* {}", rs);
         } else {
             logger.info("failed");
         }
     }
+
+
+    private static void testOptimize() {
+        final ITermVar x = B.newVar("", "x");
+        final ITermVar y = B.newVar("", "y");
+        final ITermVar z = B.newVar("", "z");
+        final ITermVar Ts = B.newVar("", "Ts");
+        final ITermVar Us = B.newVar("", "Us");
+        final IStringTerm A = B.newString("A");
+        final ITermVar wld = B.newVar("", "_1");
+
+        // @formatter:off
+        final List<Rule> rules = Arrays.asList(
+          Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, A))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, y))
+
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(A, wld))))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(y, wld))))
+
+        , Rule.of("", Arrays.asList(P.newAppl("Id", P.newVar(x))), new CEqual(x, A))
+        , Rule.of("", Arrays.asList(P.newAppl("Id", P.newVar(x))), new CEqual(x, y))
+        , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, y))
+
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, B.newAppl("Id", A)))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, B.newAppl("Id", y)))
+
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", A)))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(y, B.newAppl("Id", z))))
+
+        , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, A), new CUser("p", Arrays.asList(Us, Ts))))
+        , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, y), new CUser("p", Arrays.asList(Us, Ts))))
+
+        , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, B.newAppl("ID", y)))
+        );
+        // @formatter:on
+
+        testOptimizeRules(rules);
+    }
+
+    private static void testOptimizeRules(List<Rule> rules) {
+        for(Rule r : rules) {
+            final Rule s = RuleUtil.optimizeRule(r);
+            logger.info("Optimized {}", r);
+            logger.info(" => {}", s.toString());
+            if(!Set.Immutable.subtract(RuleUtil.freeVars(s), RuleUtil.freeVars(r)).isEmpty()) {
+                logger.error(" !! Introduced new free variables");
+            }
+        }
+    }
+
 
 }

@@ -51,6 +51,10 @@ class ApplPattern extends Pattern {
         return vars.freeze();
     }
 
+    @Override public boolean isConstructed() {
+        return true;
+    }
+
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         // @formatter:off
         return unifier.findTerm(term).match(Terms.<Boolean>cases()

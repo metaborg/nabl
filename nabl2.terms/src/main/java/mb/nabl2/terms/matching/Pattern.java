@@ -45,6 +45,8 @@ public abstract class Pattern implements Serializable {
 
     public abstract Set<ITermVar> getVars();
 
+    public abstract boolean isConstructed();
+
     public Optional<ISubstitution.Immutable> match(ITerm term) {
         return match(term, Unifiers.Immutable.of()).match(t -> t, v -> Optional.empty());
     }
@@ -122,7 +124,7 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(Tuple2.of(subst.apply(v), subst.apply(t)));
-            }, (v) -> v.orElse(fresh.freshWld()));
+            }, (v) -> v.orElseGet(() -> fresh.freshWld()));
             stuckVars.add(leftVar);
             allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }

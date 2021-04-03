@@ -604,6 +604,12 @@ public final class Constraints {
         return freeVars.freeze();
     }
 
+    public static Set.Immutable<ITermVar> freeVars(Iterable<? extends IConstraint> constraints) {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        constraints.forEach(c -> freeVars(c, freeVars::__insert));
+        return freeVars.freeze();
+    }
+
     public static void freeVars(IConstraint constraint, Action1<ITermVar> onVar) {
         // @formatter:off
         constraint.match(Constraints.cases(
@@ -702,6 +708,7 @@ public final class Constraints {
                 return Unit.unit;
             },
             onExists -> {
+                onExists.vars().forEach(onVar::apply);
                 vars(onExists.constraint(), onVar);
                 return Unit.unit;
             },

@@ -9,7 +9,6 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchResult;
@@ -30,16 +29,16 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
 
     @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
             IConstraint cause) throws VoidException {
-        Immutable<ITermVar> freeVars = rule.freeVars();
+        Set.Immutable<ITermVar> freeVars = RuleUtil.freeVars(rule);
         for(ITerm arg : args) {
             freeVars = freeVars.__insertAll(arg.getVars());
         }
 
         // match and create equality constraints
         final FreshVars fresh = new FreshVars(freeVars);
-        final VarProvider fresh_ = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
+        final VarProvider freshProvider = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
         final MatchResult matchResult;
-        if((matchResult = P.matchWithEqs(rule.params(), args, unifier, fresh_).orElse(null)) == null) {
+        if((matchResult = P.matchWithEqs(rule.params(), args, unifier, freshProvider).orElse(null)) == null) {
             return Optional.empty();
         }
 

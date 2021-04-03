@@ -9,9 +9,9 @@ import javax.annotation.Nullable;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -70,14 +70,22 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(vars, constraint.getVars());
-    }
-
     @Override public CExists apply(ISubstitution.Immutable subst) {
-        final Immutable localSubst = subst.removeAll(vars);
-        return new CExists(vars, constraint.apply(localSubst), cause,
-                bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(localSubst));
+        final ISubstitution.Immutable localSubst = subst.removeAll(vars);
+        if(subst.isEmpty()) {
+            return this;
+        }
+
+        final FreshVars fresh = new FreshVars(localSubst.rangeSet());
+        final IRenaming ren = fresh.fresh(vars);
+        final Set.Immutable<ITermVar> newVars = fresh.fix();
+        if(ren.isEmpty()) {
+            return new CExists(vars, constraint.apply(localSubst), cause,
+                    bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(localSubst));
+        }
+
+        return new CExists(newVars, constraint.apply(ren).apply(localSubst), cause,
+                bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(ren).apply(localSubst));
     }
 
     @Override public CExists apply(IRenaming subst) {

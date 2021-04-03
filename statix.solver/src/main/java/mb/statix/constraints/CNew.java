@@ -6,9 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -66,10 +64,6 @@ public class CNew implements IConstraint, Serializable {
 
     @Override public CNew withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
         return new CNew(scopeTerm, datumTerm, cause, criticalEdges);
-    }
-
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(scopeTerm.getVars(), datumTerm.getVars());
     }
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
