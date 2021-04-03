@@ -452,7 +452,7 @@ public abstract class AbstractUnit<S, L, D, R>
                 }
             }
 
-            public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
+            @Override public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
                 return dataEquiv.alwaysTrue(queryContext, cancel);
             }
 
