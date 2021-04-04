@@ -75,6 +75,10 @@ public class Renaming implements IRenaming {
         // @formatter:on
     }
 
+    @Override public ISubstitution.Immutable asSubstitution() {
+        return PersistentSubstitution.Immutable.of(renaming);
+    }
+
     @Override public String toString() {
         return renaming.entrySet().stream().map(e -> e.getKey() + " |-> " + e.getValue())
                 .collect(Collectors.joining(", ", "{", "}"));

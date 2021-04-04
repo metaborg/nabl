@@ -29,7 +29,7 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
 
     @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
             IConstraint cause) throws VoidException {
-        Set.Immutable<ITermVar> freeVars = RuleUtil.freeVars(rule);
+        Set.Immutable<ITermVar> freeVars = rule.freeVars();
         for(ITerm arg : args) {
             freeVars = freeVars.__insertAll(arg.getVars());
         }

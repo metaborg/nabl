@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -38,7 +40,7 @@ public class CExists implements IConstraint, Serializable {
         this.bodyCriticalEdges = bodyCriticalEdges;
     }
 
-    public Set<ITermVar> vars() {
+    public Set.Immutable<ITermVar> vars() {
         return vars;
     }
 
@@ -70,22 +72,50 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        constraint.visitFreeVars(v -> {
+            if(!vars.contains(v)) {
+                onFreeVar.apply(v);
+            }
+        });
+    }
+
     @Override public CExists apply(ISubstitution.Immutable subst) {
-        final ISubstitution.Immutable localSubst = subst.removeAll(vars);
-        if(subst.isEmpty()) {
+        ISubstitution.Immutable localSubst = subst.removeAll(vars);
+        if(localSubst.isEmpty()) {
             return this;
         }
 
-        final FreshVars fresh = new FreshVars(localSubst.rangeSet());
+        final FreshVars fresh = new FreshVars();
+        fresh.add(localSubst.domainSet());
+        fresh.add(localSubst.rangeSet());
+        fresh.add(this.freeVars());
         final IRenaming ren = fresh.fresh(vars);
-        final Set.Immutable<ITermVar> newVars = fresh.fix();
-        if(ren.isEmpty()) {
-            return new CExists(vars, constraint.apply(localSubst), cause,
-                    bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(localSubst));
+        final Set.Immutable<ITermVar> vars = fresh.fix();
+
+        IConstraint constraint = this.constraint;
+        @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
+
+        if(!ren.isEmpty()) {
+            localSubst = ren.asSubstitution().compose(localSubst);
         }
 
-        return new CExists(newVars, constraint.apply(ren).apply(localSubst), cause,
-                bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(ren).apply(localSubst));
+        constraint = constraint.apply(localSubst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
+        }
+
+        return new CExists(vars, constraint, cause, bodyCriticalEdges);
     }
 
     @Override public CExists apply(IRenaming subst) {

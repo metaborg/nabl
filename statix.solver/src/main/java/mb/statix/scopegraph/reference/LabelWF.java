@@ -11,7 +11,7 @@ public interface LabelWF<L> {
     static <L> LabelWF<L> ANY() {
         return new LabelWF<L>() {
 
-            @Override public Optional<LabelWF<L>> step(L l) {
+            @Override public Optional<LabelWF<L>> step(@SuppressWarnings("unused") L l) {
                 return Optional.of(this);
             }
 

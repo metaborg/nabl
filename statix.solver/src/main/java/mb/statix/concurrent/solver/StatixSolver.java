@@ -561,8 +561,8 @@ public class StatixSolver {
                 // @formatter:off
                 final Set.Immutable<ITermVar> freeVars = Streams.concat(
                         unifier.getVars(scopeTerm).stream(),
-                        RuleUtil.freeVars(filter.getDataWF()).stream().flatMap(v -> unifier.getVars(v).stream()),
-                        RuleUtil.freeVars(min.getDataEquiv()).stream().flatMap(v -> unifier.getVars(v).stream())
+                        filter.getDataWF().freeVars().stream().flatMap(v -> unifier.getVars(v).stream()),
+                        min.getDataEquiv().freeVars().stream().flatMap(v -> unifier.getVars(v).stream())
                 ).collect(CapsuleCollectors.toSet());
                 // @formatter:on
                 if(!freeVars.isEmpty()) {
@@ -1084,7 +1084,7 @@ public class StatixSolver {
                     switch(SHADOW_OPTIMIZATION) {
                         case CONTEXT:
                             final Boolean isAlways;
-                            if((isAlways = constraint.isAlways(spec).orElse(null)) != null) {
+                            if((isAlways = constraint.isAlways().orElse(null)) != null) {
                                 alwaysTrue = CompletableFuture.completedFuture(isAlways);
                             } else {
                                 final ApplyResult result;
@@ -1108,7 +1108,7 @@ public class StatixSolver {
                             }
                             break;
                         case RULE:
-                            alwaysTrue = CompletableFuture.completedFuture(constraint.isAlways(spec).orElse(false));
+                            alwaysTrue = CompletableFuture.completedFuture(constraint.isAlways().orElse(false));
                             break;
                         case NONE:
                         default:
@@ -1160,7 +1160,7 @@ public class StatixSolver {
                     switch(SHADOW_OPTIMIZATION) {
                         case CONTEXT:
                             final Boolean isAlways;
-                            if((isAlways = constraint.isAlways(spec).orElse(null)) != null) {
+                            if((isAlways = constraint.isAlways().orElse(null)) != null) {
                                 alwaysTrue = CompletableFuture.completedFuture(isAlways);
                             } else {
                                 alwaysTrue = absorbDelays(() -> {
@@ -1184,7 +1184,7 @@ public class StatixSolver {
                             }
                             break;
                         case RULE:
-                            alwaysTrue = CompletableFuture.completedFuture(constraint.isAlways(spec).orElse(false));
+                            alwaysTrue = CompletableFuture.completedFuture(constraint.isAlways().orElse(false));
                             break;
                         case NONE:
                         default:

@@ -8,17 +8,17 @@ public interface LabelWf<L> {
 
     boolean accepting();
 
-    static <L> LabelWf<L> any() {
-        return ANY;
+    @SuppressWarnings("unchecked") static <L> LabelWf<L> any() {
+        return (LabelWf<L>) ANY;
     }
 
-    static final LabelWf ANY = new LabelWf() {
+    @SuppressWarnings("rawtypes") static final LabelWf ANY = new LabelWf() {
 
         @Override public boolean accepting() {
             return true;
         }
 
-        @Override public Optional<LabelWf> step(Object l) {
+        @Override public Optional<LabelWf> step(@SuppressWarnings("unused") Object l) {
             return Optional.of(this);
         }
 

@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
@@ -79,6 +81,25 @@ public class CInequal implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseInequal(this);
+    }
+
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        term1.getVars().stream().filter(v -> !universals.contains(v)).forEach(onFreeVar::apply);
+        term2.getVars().stream().filter(v -> !universals.contains(v)).forEach(onFreeVar::apply);
+        if(message != null) {
+            message.visitVars(onFreeVar);
+        }
+
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {

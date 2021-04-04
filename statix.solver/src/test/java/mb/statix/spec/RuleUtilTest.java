@@ -184,7 +184,7 @@ public class RuleUtilTest {
             final Rule s = RuleUtil.optimizeRule(r);
             logger.info("Optimized {}", r);
             logger.info(" => {}", s.toString());
-            if(!Set.Immutable.subtract(RuleUtil.freeVars(s), RuleUtil.freeVars(r)).isEmpty()) {
+            if(!Set.Immutable.subtract(s.freeVars(), r.freeVars()).isEmpty()) {
                 logger.error(" !! Introduced new free variables");
             }
         }

@@ -135,7 +135,7 @@ public class IndexedRuleApplication {
     public static Optional<IndexedRuleApplication> of(Spec spec, Rule rule) throws Delay, InterruptedException {
         final IState.Transient state = State.of().melt();
         final Renaming.Builder _renaming = Renaming.builder();
-        for(ITermVar freeVar : RuleUtil.freeVars(rule)) {
+        for(ITermVar freeVar : rule.freeVars()) {
             _renaming.put(freeVar, state.freshVar(freeVar));
         }
         final IRenaming renaming = _renaming.build();
@@ -152,7 +152,7 @@ public class IndexedRuleApplication {
 
     public static Optional<IndexedRuleApplication> of(IState.Immutable state, Spec spec, Rule rule)
             throws Delay, InterruptedException {
-        final Set.Immutable<ITermVar> freeVars = RuleUtil.freeVars(rule);
+        final Set.Immutable<ITermVar> freeVars = rule.freeVars();
 
         final IState.Transient _state = state.melt();
         final List<ITermVar> args = new ArrayList<>();
@@ -194,7 +194,7 @@ public class IndexedRuleApplication {
         } else {
             final IConstraint residualConstraint = solveResult.delayed();
             final java.util.Set<ITermVar> newFreeVars =
-                    Sets.difference(Constraints.freeVars(residualConstraint), newParamVars);
+                    Sets.difference(residualConstraint.freeVars(), newParamVars);
             if(!newFreeVars.isEmpty()) {
                 throw Delay.ofVars(newFreeVars);
             }

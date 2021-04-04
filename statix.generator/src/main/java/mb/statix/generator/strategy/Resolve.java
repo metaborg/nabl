@@ -71,7 +71,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(ctx.spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways().orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }

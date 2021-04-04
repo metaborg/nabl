@@ -3,9 +3,7 @@ package mb.statix.spec;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,12 +28,9 @@ import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.SetMultimap;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.MatchResult;
 import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.terms.matching.VarProvider;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.unification.OccursException;
@@ -47,7 +42,6 @@ import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.Tuple3;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
-import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
@@ -297,14 +291,16 @@ public class RuleUtil {
      * </pre>
      */
     public static Rule headPatternsAsBodyEqualities(Rule rule) {
+        return rule;
+        /*
         final Set.Immutable<ITermVar> freeVars = freeVars(rule);
-
+        
         // 1. make arguments
         final FreshVars fresh = new FreshVars(freeVars);
         final VarProvider freshProvider = VarProvider.of(fresh::fresh, () -> fresh.fresh("_"));
         final List<ITerm> args = rule.params().stream().map(p -> fresh.fresh("arg")).collect(Collectors.toList());
         final Set.Immutable<ITermVar> argVars = fresh.fix();
-
+        
         // 2. match patterns
         //    match patterns against abstract arguments to get substitution and implied equalities
         final MatchResult matchResult;
@@ -312,10 +308,10 @@ public class RuleUtil {
                 .orElse(null)) == null) {
             return Rule.of(rule.name(),
                     rule.params().stream().map(p -> P.newWld()).collect(ImmutableList.toImmutableList()),
-                    Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(), new CFalse());
+                    RuleBody.of(new CFalse()));
         }
         final Set.Immutable<ITermVar> matchVars = fresh.fix();
-
+        
         // 3. update unifier with eqs
         final IUniDisunifier.Immutable matchUnifier;
         try {
@@ -330,16 +326,17 @@ public class RuleUtil {
                     rule.params().stream().map(p -> P.newWld()).collect(ImmutableList.toImmutableList()),
                     Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(), new CFalse());
         }
-
+        
         // 4. construct body
         final IConstraint matchBody = rule.body().apply(matchResult.substitution());
         final Set.Immutable<ITermVar> freeMatchBodyVars = freeVars(matchVars, matchUnifier, matchBody);
-
+        
         // 5. construct params
         final List<Pattern> matchParams = args.stream().map(t -> P.fromTerm(t, v -> !freeMatchBodyVars.contains(v)))
                 .collect(ImmutableList.toImmutableList());
-
+        
         return Rule.of(rule.name(), matchParams, matchVars, matchUnifier, matchBody);
+        */
     }
 
     /**
@@ -355,51 +352,7 @@ public class RuleUtil {
      * </pre>
      */
     public static Rule equalitiesAsUnifier(Rule rule) {
-        final FreshVars fresh = new FreshVars(Constraints.freeVars(rule.body()));
-        final IUniDisunifier.Transient unifier = rule.unifier().melt();
-        final List<IConstraint> constraints = Lists.newArrayList();
-
-        final Deque<IConstraint> worklist = Lists.newLinkedList();
-        worklist.push(rule.body());
-        while(!worklist.isEmpty()) {
-            final IConstraint c = worklist.removeLast();
-            // @formatter:off
-            final boolean okay = c.match(Constraints.<Boolean>cases(
-                carith -> { constraints.add(c); return true; },
-                conj   -> { worklist.addAll(Constraints.disjoin(conj)); return true; },
-                cequal -> {
-                    try { return unifier.unify(cequal.term1(), cequal.term2()).isPresent(); } catch(OccursException e) { return false; }
-                },
-                cexists -> {
-                    final IRenaming renaming = fresh.fresh(cexists.vars());
-                    worklist.add(cexists.constraint().apply(renaming));
-                    return true;
-                },
-                cfalse    -> { return false; },
-                cinequal  -> {
-                    return unifier.disunify(cinequal.universals(), cinequal.term1(), cinequal.term2()).isPresent();
-                },
-                cnew      -> { constraints.add(c); return true; },
-                cquery    -> { constraints.add(c); return true; },
-                ctelledge -> { constraints.add(c); return true; },
-                castid    -> { constraints.add(c); return true; },
-                castprop  -> { constraints.add(c); return true; },
-                ctrue     -> { return true; },
-                ctry      -> { constraints.add(c); return true; },
-                cuser     -> { constraints.add(c); return true; }
-            ));
-            // @formatter:on
-            if(!okay) {
-                return Rule.of(rule.name(), rule.params(), Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(),
-                        new CFalse());
-            }
-        }
-
-        final Set.Immutable<ITermVar> newEVars = fresh.fix();
-        final IUniDisunifier.Immutable newUnifier = unifier.freeze();
-
-        return Rule.of(rule.name(), rule.params(), Set.Immutable.union(rule.evars(), newEVars), newUnifier,
-                Constraints.conjoin(constraints));
+        return rule;
     }
 
     /**
@@ -408,13 +361,15 @@ public class RuleUtil {
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {
+        return rule;
+        /*
         final Set.Immutable<ITermVar> freeVars = freeVars(rule);
-
+        
         final FreshVars fresh = new FreshVars(Set.Immutable.union( //
                 freeVars, // prevent capture of free variables
                 rule.evars() // prevent capture by evars as we move under existential
         ));
-
+        
         // convert patterns to terms, creating variables and adding equalities from non-linear patterns
         final List<ITerm> params = new ArrayList<>();
         final IUniDisunifier.Transient unifier = rule.unifier().melt();
@@ -429,16 +384,15 @@ public class RuleUtil {
             }
         });
         if(!okay) {
-            return Rule.of(rule.name(), rule.params(), Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(),
-                    new CFalse());
+            return Rule.of(rule.name(), rule.params(), RuleBody.of(new CFalse()));
         }
         Set.Immutable<ITermVar> paramVars = fresh.fix();
-
+        
         // inline unifier into patterns
         for(int i = 0; i < params.size(); i++) {
             params.set(i, unifier.findRecursive(params.get(i)));
         }
-
+        
         // remove original free vars from patterns
         paramVars = params.stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
         final IRenaming surrogates = fresh.fresh(Set.Immutable.intersect(freeVars, paramVars));
@@ -452,21 +406,22 @@ public class RuleUtil {
         } catch(OccursException ex) {
             throw new IllegalStateException("Unexpected failure.");
         }
-
+        
         // cleanup unifier
         paramVars = params.stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
         final Set.Immutable<ITermVar> bodyVars = Constraints.freeVars(rule.body());
         final Set.Immutable<ITermVar> retainedVars = freeVars.__insertAll(paramVars).__insertAll(bodyVars);
         unifier.retainAll(retainedVars);
-
+        
         // cleanup evars
         final Set.Immutable<ITermVar> evars = Set.Immutable.intersect(Set.Immutable.subtract(rule.evars(), paramVars),
                 Set.Immutable.union(unifier.varSet(), bodyVars));
         final Set.Immutable<ITermVar> newFreeVars = freeVars(evars, unifier, rule.body());
-
+        
         final List<Pattern> patterns = params.stream().map(t -> P.fromTerm(t, v -> !newFreeVars.contains(v)))
                 .collect(ImmutableList.toImmutableList());
         return Rule.of(rule.name(), patterns, evars, unifier.freeze(), rule.body());
+        */
     }
 
 
@@ -531,43 +486,6 @@ public class RuleUtil {
     }
 
 
-    public static Set.Immutable<ITermVar> freeVars(Rule rule) {
-        final Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
-        freeVars(rule, freeVars::__insert);
-        return freeVars.freeze();
-    }
-
-    public static void freeVars(Rule rule, Action1<ITermVar> onVar) {
-        final Set.Immutable<ITermVar> paramVars = rule.paramVars();
-        freeVars(rule.evars(), rule.unifier(), rule.body(), v -> {
-            if(!paramVars.contains(v)) {
-                onVar.apply(v);
-            }
-        });
-    }
-
-    public static Set.Immutable<ITermVar> freeVars(Set.Immutable<ITermVar> evars, IUniDisunifier unifier,
-            IConstraint constraint) {
-        final Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
-        freeVars(evars, unifier, constraint, freeVars::__insert);
-        return freeVars.freeze();
-    }
-
-    public static void freeVars(Set.Immutable<ITermVar> evars, IUniDisunifier unifier, IConstraint constraint,
-            Action1<ITermVar> onVar) {
-        unifier.varSet().forEach(v -> {
-            if(!evars.contains(v)) {
-                onVar.apply(v);
-            }
-        });
-        Constraints.freeVars(constraint, v -> {
-            if(!evars.contains(v)) {
-                onVar.apply(v);
-            }
-        });
-    }
-
-
     public static Set.Immutable<ITermVar> vars(Rule rule) {
         final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         vars(rule, vars::__insert);
@@ -576,15 +494,7 @@ public class RuleUtil {
 
     public static void vars(Rule rule, Action1<ITermVar> onVar) {
         rule.paramVars().forEach(onVar::apply);
-        vars(rule.evars(), rule.unifier(), rule.body(), onVar::apply);
+        Constraints.vars(rule.body(), onVar);
     }
-
-    public static void vars(Set.Immutable<ITermVar> evars, IUniDisunifier.Immutable unifier, IConstraint constraint,
-            Action1<ITermVar> onVar) {
-        evars.forEach(onVar::apply);
-        unifier.varSet().forEach(onVar::apply);
-        Constraints.freeVars(constraint, onVar::apply);
-    }
-
 
 }

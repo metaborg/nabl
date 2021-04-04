@@ -7,7 +7,7 @@ public interface DataWF<D> {
     static <D> DataWF<D> ANY() {
         return new DataWF<D>() {
 
-            @Override public boolean wf(D d) {
+            @Override public boolean wf(@SuppressWarnings("unused") D d) {
                 return true;
             }
 

@@ -9,7 +9,7 @@ public interface DataLeq<D> {
     static <V> DataLeq<V> ALL() {
         return new DataLeq<V>() {
 
-            @Override public boolean leq(V d1, V d2) {
+            @Override public boolean leq(@SuppressWarnings("unused") V d1, @SuppressWarnings("unused") V d2) {
                 return true;
             }
 
@@ -23,7 +23,7 @@ public interface DataLeq<D> {
     static <V> DataLeq<V> NONE() {
         return new DataLeq<V>() {
 
-            @Override public boolean leq(V d1, V d2) {
+            @Override public boolean leq(@SuppressWarnings("unused") V d1, @SuppressWarnings("unused") V d2) {
                 return false;
             }
 

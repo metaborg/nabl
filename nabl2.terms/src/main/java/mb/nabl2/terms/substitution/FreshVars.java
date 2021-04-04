@@ -30,13 +30,11 @@ public class FreshVars {
      * Add pre-existing variables, which cannot be used as fresh names.
      */
     public void add(Iterable<ITermVar> preExistingVars) {
-        final Set.Transient<ITermVar> newVars = this.newVars.asTransient();
+        final Set.Transient<ITermVar> oldVars = this.oldVars.asTransient();
         for(ITermVar var : preExistingVars) {
-            if(!oldVars.contains(var)) {
-                newVars.__insert(var);
-            }
+            oldVars.__insert(var);
         }
-        this.newVars = newVars.freeze();
+        this.oldVars = oldVars.freeze();
     }
 
     /**

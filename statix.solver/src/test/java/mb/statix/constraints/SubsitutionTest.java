@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -17,7 +18,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
-import mb.statix.spec.RuleUtil;
 
 public class SubsitutionTest {
 
@@ -162,13 +162,16 @@ public class SubsitutionTest {
     ////////////////////////////////////////////////////////////////////////////
 
     private void assertInvariant(final IConstraint p, final ISubstitution.Immutable subst, final IConstraint q) {
-        assertEquals(Sets.union(Sets.difference(Constraints.freeVars(p), subst.domainSet()), subst.rangeSet()),
-                Constraints.freeVars(q));
+        assertEquals(Sets.union(Sets.difference(p.freeVars(), subst.domainSet()), subst.rangeSet()), q.freeVars());
     }
 
     private void assertInvariant(final Rule p, final ISubstitution.Immutable subst, final Rule q) {
-        assertEquals(Sets.union(Sets.difference(RuleUtil.freeVars(p), subst.domainSet()), subst.rangeSet()),
-                RuleUtil.freeVars(q));
+        final Set<ITermVar> expected = Sets.union(Sets.difference(p.freeVars(), subst.domainSet()), subst.rangeSet());
+        final Set<ITermVar> actual = q.freeVars();
+        if(!expected.equals(actual)) {
+            throw new AssertionError(
+                    "Expected " + expected + ", got " + actual + ".\nSubstituted " + p + " " + subst + " to " + q);
+        }
     }
 
 

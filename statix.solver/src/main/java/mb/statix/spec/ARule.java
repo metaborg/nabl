@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.functions.Action1;
 
 import com.google.common.collect.ImmutableList;
 
@@ -22,14 +23,10 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.ISubstitution.Immutable;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.StateUtil;
 import mb.statix.solver.completeness.ICompleteness;
 
 @Value.Immutable
@@ -48,29 +45,38 @@ public abstract class ARule {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
-
-    @Value.Parameter abstract Set.Immutable<ITermVar> evars();
-
-    @Value.Parameter abstract IUniDisunifier.Immutable unifier();
-
-
     @Value.Parameter public abstract IConstraint body();
 
     @Value.Default public @Nullable ICompleteness.Immutable bodyCriticalEdges() {
         return null;
     }
 
-
-    @Value.Lazy public Optional<Boolean> isAlways(Spec spec) throws InterruptedException {
+    @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
         if(params().stream().anyMatch(p -> p.isConstructed())) {
-            return Optional.empty();
-        }
-        if(!unifier().isEmpty()) {
             return Optional.empty();
         }
         return body().match(Constraints.<Optional<Boolean>>cases()._true(c -> Optional.of(true))
                 ._false(c -> Optional.of(false)).otherwise(c -> Optional.empty()));
+    }
 
+
+    @Value.Lazy public Set.Immutable<ITermVar> freeVars() {
+        final Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        freeVars().forEach(onFreeVar::apply);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        final Set.Immutable<ITermVar> paramVars = paramVars();
+        body().visitFreeVars(v -> {
+            if(!paramVars.contains(v)) {
+                onFreeVar.apply(v);
+            }
+        });
     }
 
 
@@ -78,43 +84,42 @@ public abstract class ARule {
      * Apply capture avoiding substitution.
      */
     public Rule apply(ISubstitution.Immutable subst) {
-        final Immutable localSubst = subst.removeAll(paramVars());
+        ISubstitution.Immutable localSubst = subst.removeAll(paramVars());
         if(localSubst.isEmpty()) {
             return (Rule) this;
         }
 
-        final FreshVars fresh = new FreshVars(localSubst.rangeSet());
+        final FreshVars fresh = new FreshVars();
+        fresh.add(localSubst.domainSet());
+        fresh.add(localSubst.rangeSet());
+        fresh.add(freeVars());
         final IRenaming ren = fresh.fresh(paramVars());
         fresh.fix();
-        if(ren.isEmpty()) {
-        // @formatter:off
-            return Rule.of(
-                    name(),
-                    params(),
-                    body().apply(localSubst)
-            ).withBodyCriticalEdges(bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(localSubst));
-        // @formatter:off
+
+        List<Pattern> params = this.params();
+        IConstraint body = this.body();
+
+        if(!ren.isEmpty()) {
+            params = params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList());
+            localSubst = ren.asSubstitution().compose(localSubst);
         }
 
-        // @formatter:off
-        return Rule.of(
-                name(),
-                params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList()),
-                body().apply(ren).apply(localSubst)
-        ).withBodyCriticalEdges(bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(ren).apply(localSubst));
-        // @formatter:off
+        body = body.apply(localSubst);
+
+        return Rule.of(name(), params, body);
     }
 
     /**
      * Apply variable renaming.
      */
     public Rule apply(IRenaming subst) {
-        final List<Pattern> newParams =
-                params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
-        final IConstraint newBody = body().apply(subst);
-        final ICompleteness.Immutable newCriticalEdges =
-                bodyCriticalEdges() == null ? null : bodyCriticalEdges().apply(subst);
-        return Rule.of(name(), newParams, newBody).withBodyCriticalEdges(newCriticalEdges);
+        // @formatter:off
+        return Rule.of(
+                name(),
+                params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList()),
+                body().apply(subst)
+        );
+        // @formatter:on
     }
 
 
@@ -133,12 +138,6 @@ public abstract class ARule {
             sb.append(")");
         }
         sb.append(" :- ");
-        if(!evars().isEmpty()) {
-            sb.append(evars().stream().map(ITerm::toString).collect(Collectors.joining(" ", "{", "} ")));
-        }
-        if(!unifier().isEmpty()) {
-            sb.append(StateUtil.asConstraint(unifier()).stream().map(c -> c.toString(termToString)).collect(Collectors.joining(", ", "", " | ")));
-        }
         sb.append(body().toString(termToString));
         if(name().isEmpty()) {
             sb.append(" }");
@@ -150,11 +149,6 @@ public abstract class ARule {
 
     @Override public String toString() {
         return toString(ITerm::toString);
-    }
-
-
-    public static Rule of(String name, Iterable<? extends Pattern> params, IConstraint body) {
-        return Rule.of(name, params, CapsuleUtil.immutableSet(), PersistentUniDisunifier.Immutable.of(), body);
     }
 
 

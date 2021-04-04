@@ -39,4 +39,6 @@ public interface IRenaming {
         return newTerms.build();
     }
 
+    ISubstitution.Immutable asSubstitution();
+
 }

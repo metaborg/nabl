@@ -76,7 +76,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         if(alwaysTrue != null)
             return alwaysTrue.booleanValue();
 
-        return alwaysTrue = constraint.isAlways(spec).orElse(false);
+        return alwaysTrue = constraint.isAlways().orElse(false);
     }
 
     @Override public String toString() {

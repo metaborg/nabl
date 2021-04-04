@@ -6,9 +6,14 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Action1;
+
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
@@ -77,6 +82,21 @@ public class CAstProperty implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseTermProperty(this);
+    }
+
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        idTerm.getVars().forEach(onFreeVar::apply);
+        value.getVars().forEach(onFreeVar::apply);
     }
 
     @Override public CAstProperty apply(ISubstitution.Immutable subst) {

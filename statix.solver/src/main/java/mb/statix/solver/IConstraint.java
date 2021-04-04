@@ -2,9 +2,12 @@ package mb.statix.solver;
 
 import java.util.Optional;
 
+import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
+import io.usethesource.capsule.Set;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -36,7 +39,7 @@ public interface IConstraint {
         return Optional.empty();
     }
 
-    default IConstraint withMessage(IMessage msg) {
+    default IConstraint withMessage(@SuppressWarnings("unused") IMessage msg) {
         throw new UnsupportedOperationException("Constraint does not support message.");
     }
 
@@ -47,7 +50,7 @@ public interface IConstraint {
         return Optional.of(Completeness.Immutable.of());
     }
 
-    default IConstraint withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
+    default IConstraint withOwnCriticalEdges(@SuppressWarnings("unused") ICompleteness.Immutable criticalEdges) {
         throw new UnsupportedOperationException("Constraint does not support own critical edges.");
     }
 
@@ -58,13 +61,17 @@ public interface IConstraint {
         return Optional.of(Completeness.Immutable.of());
     }
 
-    default IConstraint withBodyCriticalEdges(ICompleteness.Immutable criticalEdges) {
+    default IConstraint withBodyCriticalEdges(@SuppressWarnings("unused") ICompleteness.Immutable criticalEdges) {
         throw new UnsupportedOperationException("Constraint does not support body critical edges.");
     }
 
     <R> R match(Cases<R> cases);
 
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
+
+    Set.Immutable<ITermVar> freeVars();
+
+    void visitFreeVars(Action1<ITermVar> onFreeVar);
 
     /**
      * Apply capture avoiding substitution.

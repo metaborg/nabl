@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.functions.Action1;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -14,6 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.TermFormatter;
@@ -64,6 +66,10 @@ public class STX_delays_as_errors extends StatixPrimitive {
 
         @Override public Optional<ITerm> origin() {
             return message.origin();
+        }
+
+        @Override public void visitVars(Action1<ITermVar> onVar) {
+            message.visitVars(onVar);
         }
 
         @Override public IMessage apply(Immutable subst) {

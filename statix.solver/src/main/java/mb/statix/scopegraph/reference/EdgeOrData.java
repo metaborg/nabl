@@ -31,12 +31,12 @@ public abstract class EdgeOrData<L> implements Serializable {
         private Data() {
         }
 
-        @Override public <R> R matchInResolution(OnData<R> onData, OnEdge<L, R> onEdge)
+        @Override public <R> R matchInResolution(OnData<R> onData, @SuppressWarnings("unused") OnEdge<L, R> onEdge)
                 throws ResolutionException, InterruptedException {
             return onData.apply();
         }
 
-        @Override public <R> R match(Function0<R> onData, Function1<L, R> onEdge) {
+        @Override public <R> R match(Function0<R> onData, @SuppressWarnings("unused") Function1<L, R> onEdge) {
             return onData.apply();
         }
 
@@ -70,12 +70,12 @@ public abstract class EdgeOrData<L> implements Serializable {
             this.label = label;
         }
 
-        @Override public <R> R matchInResolution(OnData<R> onData, OnEdge<L, R> onEdge)
+        @Override public <R> R matchInResolution(@SuppressWarnings("unused") OnData<R> onData, OnEdge<L, R> onEdge)
                 throws ResolutionException, InterruptedException {
             return onEdge.apply(label);
         }
 
-        @Override public <R> R match(Function0<R> onData, Function1<L, R> onEdge) {
+        @Override public <R> R match(@SuppressWarnings("unused") Function0<R> onData, Function1<L, R> onEdge) {
             return onEdge.apply(label);
         }
 
