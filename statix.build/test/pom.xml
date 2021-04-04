@@ -16,6 +16,7 @@
 
   <modules>
     <module>../../statix.test</module>
+    <module>../../statix.integrationtest/</module>
   </modules>
 
   <repositories>
