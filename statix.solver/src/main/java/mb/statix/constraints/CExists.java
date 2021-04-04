@@ -72,14 +72,22 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
+
+    private volatile Set.Immutable<ITermVar> freeVars;
+
     @Override public Set.Immutable<ITermVar> freeVars() {
-        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
-        doVisitFreeVars(freeVars::__insert);
-        return freeVars.freeze();
+        Set.Immutable<ITermVar> result = freeVars;
+        if(freeVars == null) {
+            Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
+            doVisitFreeVars(_freeVars::__insert);
+            result = _freeVars.freeze();
+            freeVars = result;
+        }
+        return result;
     }
 
     @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
-        doVisitFreeVars(onFreeVar);
+        freeVars().forEach(onFreeVar::apply);
     }
 
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
@@ -94,6 +102,10 @@ public class CExists implements IConstraint, Serializable {
         ISubstitution.Immutable localSubst = subst.removeAll(vars);
         if(localSubst.isEmpty()) {
             return this;
+        }
+
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.domainSet()).__insertAll(subst.rangeSet());
         }
 
         final FreshVars fresh = new FreshVars();
@@ -119,8 +131,21 @@ public class CExists implements IConstraint, Serializable {
     }
 
     @Override public CExists apply(IRenaming subst) {
-        return new CExists(vars, constraint.apply(subst), cause,
-                bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(subst));
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
+        }
+
+        Set.Immutable<ITermVar> vars = this.vars;
+        IConstraint constraint = this.constraint;
+        ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
+
+        vars = CapsuleUtil.toSet(subst.rename(vars));
+        constraint = constraint.apply(subst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(subst);
+        }
+
+        return new CExists(vars, constraint, cause, bodyCriticalEdges);
     }
 
     @Override public String toString(TermFormatter termToString) {

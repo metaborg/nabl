@@ -60,10 +60,17 @@ public abstract class ARule {
     }
 
 
-    @Value.Lazy public Set.Immutable<ITermVar> freeVars() {
-        final Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
-        doVisitFreeVars(freeVars::__insert);
-        return freeVars.freeze();
+    private volatile Set.Immutable<ITermVar> freeVars;
+
+    public Set.Immutable<ITermVar> freeVars() {
+        Set.Immutable<ITermVar> result = freeVars;
+        if(freeVars == null) {
+            final Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
+            doVisitFreeVars(_freeVars::__insert);
+            result = _freeVars.freeze();
+            freeVars = result;
+        }
+        return result;
     }
 
     public void visitFreeVars(Action1<ITermVar> onFreeVar) {
@@ -89,6 +96,10 @@ public abstract class ARule {
             return (Rule) this;
         }
 
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.domainSet()).__insertAll(subst.rangeSet());
+        }
+
         final FreshVars fresh = new FreshVars();
         fresh.add(localSubst.domainSet());
         fresh.add(localSubst.rangeSet());
@@ -98,6 +109,7 @@ public abstract class ARule {
 
         List<Pattern> params = this.params();
         IConstraint body = this.body();
+        ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
         if(!ren.isEmpty()) {
             params = params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList());
@@ -105,21 +117,32 @@ public abstract class ARule {
         }
 
         body = body.apply(localSubst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
+        }
 
-        return Rule.of(name(), params, body);
+        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
     }
 
     /**
      * Apply variable renaming.
      */
     public Rule apply(IRenaming subst) {
-        // @formatter:off
-        return Rule.of(
-                name(),
-                params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList()),
-                body().apply(subst)
-        );
-        // @formatter:on
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
+        }
+
+        List<Pattern> params = this.params();
+        IConstraint body = this.body();
+        ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
+
+        params = params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+        body = body.apply(subst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(subst);
+        }
+
+        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
     }
 
 

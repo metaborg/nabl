@@ -14,7 +14,6 @@ import org.metaborg.util.functions.Action1;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.FreshVars;
@@ -115,6 +114,7 @@ public class RuleBody {
         });
     }
 
+    // FIXME equals & hashCode?
 
     /**
      * Apply capture avoiding substitution.
@@ -123,6 +123,10 @@ public class RuleBody {
         ISubstitution.Immutable localSubst = subst.removeAll(vars);
         if(localSubst.isEmpty()) {
             return this;
+        }
+
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.domainSet()).__insertAll(subst.rangeSet());
         }
 
         final FreshVars fresh = new FreshVars();
@@ -157,15 +161,23 @@ public class RuleBody {
     }
 
     public RuleBody apply(IRenaming subst) {
-        // @formatter:off
-        return new RuleBody(
-                vars.stream().map(subst::rename).collect(CapsuleCollectors.toSet()),
-                unifier.rename(subst),
-                constraint.apply(subst),
-                cause,
-                bodyCriticalEdges == null ? null : bodyCriticalEdges.apply(subst)
-        );
-        // @formatter:on
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
+        }
+
+        Set.Immutable<ITermVar> vars = this.vars;
+        IUniDisunifier.Immutable unifier = this.unifier;
+        IConstraint constraint = this.constraint;
+        ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
+
+        vars = CapsuleUtil.toSet(subst.rename(vars));
+        unifier = unifier.rename(subst);
+        constraint = constraint.apply(subst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(subst);
+        }
+
+        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges);
     }
 
 
@@ -177,9 +189,6 @@ public class RuleBody {
                 ._false(c -> Optional.of(false)).otherwise(c -> Optional.empty()));
     }
 
-    
-    
-    
 
     public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
