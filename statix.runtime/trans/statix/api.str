@@ -27,6 +27,7 @@ rules // analysis
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
+  stx-analysis-has-errors = stx--analysis-has-errors	
 
 rules // ast
 
