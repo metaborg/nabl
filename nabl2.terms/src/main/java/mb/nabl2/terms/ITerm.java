@@ -1,5 +1,7 @@
 package mb.nabl2.terms;
 
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 
 public interface ITerm {
@@ -7,6 +9,8 @@ public interface ITerm {
     boolean isGround();
 
     Set.Immutable<ITermVar> getVars();
+
+    void visitVars(Action1<ITermVar> onVar);
 
     IAttachments getAttachments();
 

@@ -6,6 +6,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.scopegraph.IOccurrenceIndex;
 import mb.nabl2.terms.IApplTerm;
@@ -39,6 +41,10 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return term.getVars();
+    }
+
+    @Override public void visitVars(Action1<ITermVar> onVar) {
+        term.visitVars(onVar);
     }
 
     @Override public IAttachments getAttachments() {

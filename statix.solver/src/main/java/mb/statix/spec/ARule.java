@@ -86,30 +86,33 @@ public abstract class ARule {
         });
     }
 
+    protected Rule setFreeVars(Set.Immutable<ITermVar> freeVars) {
+        this.freeVars = freeVars;
+        return (Rule) this;
+    }
 
     /**
      * Apply capture avoiding substitution.
      */
     public Rule apply(ISubstitution.Immutable subst) {
-        ISubstitution.Immutable localSubst = subst.removeAll(paramVars());
+        ISubstitution.Immutable localSubst = subst.removeAll(paramVars()).retainAll(freeVars());
         if(localSubst.isEmpty()) {
             return (Rule) this;
         }
 
-        if(freeVars != null) {
-            freeVars = freeVars.__removeAll(subst.domainSet()).__insertAll(subst.rangeSet());
-        }
-
-        final FreshVars fresh = new FreshVars();
-        fresh.add(localSubst.domainSet());
-        fresh.add(localSubst.rangeSet());
-        fresh.add(freeVars());
-        final IRenaming ren = fresh.fresh(paramVars());
-        fresh.fix();
-
         List<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
+        Set.Immutable<ITermVar> freeVars = this.freeVars;
+
+        if(freeVars != null) {
+            // before renaming is included in localSubst
+            freeVars = freeVars.__removeAll(localSubst.domainSet()).__insertAll(localSubst.rangeSet());
+        }
+
+        final FreshVars fresh = new FreshVars(localSubst.domainSet(), localSubst.rangeSet(), freeVars());
+        final IRenaming ren = fresh.fresh(paramVars());
+        fresh.fix();
 
         if(!ren.isEmpty()) {
             params = params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList());
@@ -121,28 +124,28 @@ public abstract class ARule {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
+        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges).setFreeVars(freeVars);
     }
 
     /**
      * Apply variable renaming.
      */
     public Rule apply(IRenaming subst) {
-        if(freeVars != null) {
-            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
-        }
-
         List<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
+        Set.Immutable<ITermVar> freeVars = this.freeVars;
 
         params = params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
         body = body.apply(subst);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
+        }
 
-        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
+        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges).setFreeVars(freeVars);
     }
 
 

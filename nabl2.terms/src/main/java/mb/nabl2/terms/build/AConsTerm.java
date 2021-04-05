@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IConsTerm;
@@ -13,6 +14,7 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
+import mb.nabl2.util.CapsuleUtil;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -31,7 +33,20 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(getHead().getVars(), getTail().getVars());
+        if(isGround()) {
+            return CapsuleUtil.immutableSet();
+        }
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
+        visitVars(vars::__insert);
+        return vars.freeze();
+    }
+
+    @Override public void visitVars(Action1<ITermVar> onVar) {
+        if(isGround()) {
+            return;
+        }
+        getHead().visitVars(onVar);
+        getTail().visitVars(onVar);
     }
 
     @Override public <T> T match(ITerm.Cases<T> cases) {
@@ -50,15 +65,9 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
         return cases.caseCons(this);
     }
 
-    private volatile int hashCode;
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(getHead(), getTail());
-            hashCode = result;
-        }
-        return result;
+        return Objects.hash(getHead(), getTail());
     }
 
     @Override public boolean equals(Object other) {

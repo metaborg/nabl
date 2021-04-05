@@ -39,6 +39,8 @@ public interface ISubstitution {
 
         Immutable removeAll(Iterable<ITermVar> var);
 
+        Immutable retainAll(Iterable<ITermVar> var);
+
         /**
          * Compose this substitution with another, resulting in the substitution that has the same effect as applying
          * this substitution first, and then the other.
@@ -62,6 +64,8 @@ public interface ISubstitution {
         void remove(ITermVar var);
 
         void removeAll(Iterable<ITermVar> var);
+
+        void retainAll(Iterable<ITermVar> var);
 
         /**
          * Compose this substitution with another, resulting in the substitution that has the same effect as applying

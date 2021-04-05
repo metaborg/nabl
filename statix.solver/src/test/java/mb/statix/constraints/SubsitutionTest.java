@@ -2,7 +2,6 @@ package mb.statix.constraints;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
-import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +43,13 @@ public class SubsitutionTest {
 
     @Test public void testOneLevel3() {
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(a, g(c));
+        final IConstraint p = new CExists(list(b), new CEqual(b, a));
+        final IConstraint q = p.apply(subst);
+        assertInvariant(p, subst, q);
+    }
+
+    @Test public void testOneLevel4() {
+        final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(a, g(c)).put(b, f(a));
         final IConstraint p = new CExists(list(b), new CEqual(b, a));
         final IConstraint q = p.apply(subst);
         assertInvariant(p, subst, q);
@@ -162,11 +168,18 @@ public class SubsitutionTest {
     ////////////////////////////////////////////////////////////////////////////
 
     private void assertInvariant(final IConstraint p, final ISubstitution.Immutable subst, final IConstraint q) {
-        assertEquals(Sets.union(Sets.difference(p.freeVars(), subst.domainSet()), subst.rangeSet()), q.freeVars());
+        final Set<ITermVar> expected =
+                Sets.union(Sets.difference(p.freeVars(), subst.domainSet()), subst.retainAll(p.freeVars()).rangeSet());
+        final Set<ITermVar> actual = q.freeVars();
+        if(!expected.equals(actual)) {
+            throw new AssertionError(
+                    "Expected " + expected + ", got " + actual + ".\nSubstituted " + p + " " + subst + " to " + q);
+        }
     }
 
     private void assertInvariant(final Rule p, final ISubstitution.Immutable subst, final Rule q) {
-        final Set<ITermVar> expected = Sets.union(Sets.difference(p.freeVars(), subst.domainSet()), subst.rangeSet());
+        final Set<ITermVar> expected =
+                Sets.union(Sets.difference(p.freeVars(), subst.domainSet()), subst.retainAll(p.freeVars()).rangeSet());
         final Set<ITermVar> actual = q.freeVars();
         if(!expected.equals(actual)) {
             throw new AssertionError(

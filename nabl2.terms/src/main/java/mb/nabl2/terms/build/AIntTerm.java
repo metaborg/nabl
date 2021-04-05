@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IIntTerm;
@@ -24,6 +25,9 @@ abstract class AIntTerm extends AbstractTerm implements IIntTerm {
         return CapsuleUtil.immutableSet();
     }
 
+    @Override public void visitVars(@SuppressWarnings("unused") Action1<ITermVar> onVar) {
+    }
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseInt(this);
     }
@@ -32,15 +36,9 @@ abstract class AIntTerm extends AbstractTerm implements IIntTerm {
         return cases.caseInt(this);
     }
 
-    private volatile int hashCode;
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(getValue());
-            hashCode = result;
-        }
-        return result;
+        return Objects.hash(getValue());
     }
 
     @Override public boolean equals(Object other) {

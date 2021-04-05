@@ -44,13 +44,17 @@ public class RuleBody {
     private final @Nullable IConstraint cause;
     private final @Nullable ICompleteness.Immutable bodyCriticalEdges;
 
+    private volatile Set.Immutable<ITermVar> freeVars;
+
     private RuleBody(Iterable<ITermVar> vars, IUniDisunifier.Immutable unifier, IConstraint constraint,
-            @Nullable IConstraint cause, @Nullable ICompleteness.Immutable bodyCriticalEdges) {
+            @Nullable IConstraint cause, @Nullable ICompleteness.Immutable bodyCriticalEdges,
+            Set.Immutable<ITermVar> freeVars) {
         this.vars = CapsuleUtil.toSet(vars);
         this.unifier = unifier;
         this.constraint = constraint;
         this.cause = cause;
         this.bodyCriticalEdges = bodyCriticalEdges;
+        this.freeVars = freeVars;
     }
 
 
@@ -72,7 +76,7 @@ public class RuleBody {
     }
 
     public RuleBody withCause(@Nullable IConstraint cause) {
-        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges);
+        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges, freeVars);
     }
 
     public Optional<ICompleteness.Immutable> bodyCriticalEdges() {
@@ -80,11 +84,9 @@ public class RuleBody {
     }
 
     public RuleBody withBodyCriticalEdges(ICompleteness.Immutable criticalEdges) {
-        return new RuleBody(vars, unifier, constraint, cause, criticalEdges);
+        return new RuleBody(vars, unifier, constraint, cause, criticalEdges, freeVars);
     }
 
-
-    private volatile Set.Immutable<ITermVar> freeVars;
 
     public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;
@@ -120,25 +122,24 @@ public class RuleBody {
      * Apply capture avoiding substitution.
      */
     public RuleBody apply(ISubstitution.Immutable subst) {
-        ISubstitution.Immutable localSubst = subst.removeAll(vars);
+        ISubstitution.Immutable localSubst = subst.removeAll(vars).retainAll(freeVars());
         if(localSubst.isEmpty()) {
             return this;
         }
 
-        if(freeVars != null) {
-            freeVars = freeVars.__removeAll(subst.domainSet()).__insertAll(subst.rangeSet());
-        }
-
-        final FreshVars fresh = new FreshVars();
-        fresh.add(localSubst.domainSet());
-        fresh.add(localSubst.rangeSet());
-        fresh.add(freeVars());
-        final IRenaming ren = fresh.fresh(vars);
-        final Set.Immutable<ITermVar> vars = fresh.fix();
-
         IUniDisunifier.Immutable unifier = this.unifier;
         IConstraint constraint = this.constraint;
         @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
+        Set.Immutable<ITermVar> freeVars = this.freeVars;
+
+        if(freeVars != null) {
+            // before renaming is included in localSubst
+            freeVars = freeVars.__removeAll(localSubst.domainSet()).__insertAll(localSubst.rangeSet());
+        }
+
+        final FreshVars fresh = new FreshVars(localSubst.domainSet(), localSubst.rangeSet(), freeVars());
+        final IRenaming ren = fresh.fresh(vars);
+        final Set.Immutable<ITermVar> vars = fresh.fix();
 
         if(!ren.isEmpty()) {
             unifier = unifier.rename(ren);
@@ -157,18 +158,15 @@ public class RuleBody {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges);
+        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges, freeVars);
     }
 
     public RuleBody apply(IRenaming subst) {
-        if(freeVars != null) {
-            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
-        }
-
         Set.Immutable<ITermVar> vars = this.vars;
         IUniDisunifier.Immutable unifier = this.unifier;
         IConstraint constraint = this.constraint;
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
+        Set.Immutable<ITermVar> freeVars = this.freeVars;
 
         vars = CapsuleUtil.toSet(subst.rename(vars));
         unifier = unifier.rename(subst);
@@ -176,8 +174,11 @@ public class RuleBody {
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
+        if(freeVars != null) {
+            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
+        }
 
-        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges);
+        return new RuleBody(vars, unifier, constraint, cause, bodyCriticalEdges, freeVars);
     }
 
 
@@ -207,8 +208,8 @@ public class RuleBody {
 
 
     public static RuleBody contradiction(final @Nullable IConstraint cause) {
-        return new RuleBody(Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(), new CFalse(), cause,
-                Completeness.Immutable.of());
+        return new RuleBody(CapsuleUtil.immutableSet(), PersistentUniDisunifier.Immutable.of(), new CFalse(), cause,
+                Completeness.Immutable.of(), null);
     }
 
     public static RuleBody of(IConstraint constraint) {
@@ -220,7 +221,7 @@ public class RuleBody {
             return contradiction(constraint.cause().orElse(null));
         }
         return new RuleBody(fresh.fix(), unifier.freeze(), Constraints.conjoin(constraints),
-                constraint.cause().orElse(null), bodyCriticalEdges.freeze());
+                constraint.cause().orElse(null), bodyCriticalEdges.freeze(), null);
     }
 
 

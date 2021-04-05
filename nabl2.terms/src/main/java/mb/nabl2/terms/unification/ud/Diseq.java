@@ -98,8 +98,7 @@ public class Diseq {
         if(universals.isEmpty()) {
             diseq = this;
         } else {
-            final SetView<ITermVar> freeVars = Sets.union(freeVarSet(), localSubst.rangeSet());
-            final FreshVars fv = new FreshVars(freeVars);
+            final FreshVars fv = new FreshVars(freeVarSet(), localSubst.rangeSet());
             diseq = this.rename(fv.fresh(this.universals));
         }
 

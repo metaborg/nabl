@@ -180,6 +180,14 @@ public abstract class MultiSet<E> implements Iterable<E> {
             return new MultiSet.Immutable<>(elements.__remove(e));
         }
 
+        public Immutable<E> remove(Iterable<E> es) {
+            MultiSet.Immutable<E> result = this;
+            for(E e : es) {
+                result = result.remove(e);
+            }
+            return result;
+        }
+
         public Map.Immutable<E, Integer> asMap() {
             return elements;
         }
@@ -192,12 +200,20 @@ public abstract class MultiSet<E> implements Iterable<E> {
             return EMPTY;
         }
 
-        public static <E> MultiSet.Immutable<E> of(E var) {
-            return of(var, 1);
+        public static <E> MultiSet.Immutable<E> of(E e) {
+            return of(e, 1);
         }
 
-        public static <E> MultiSet.Immutable<E> of(E var, int n) {
-            return new MultiSet.Immutable<>(Map.Immutable.of(var, n));
+        public static <E> MultiSet.Immutable<E> of(Iterable<E> es) {
+            final MultiSet.Transient<E> result = MultiSet.Transient.of();
+            for(E e : es) {
+                result.add(e);
+            }
+            return result.freeze();
+        }
+
+        public static <E> MultiSet.Immutable<E> of(E e, int n) {
+            return new MultiSet.Immutable<>(Map.Immutable.of(e, n));
         }
 
         @SuppressWarnings("unchecked") public static <E> MultiSet.Immutable<E> union(MultiSet.Immutable<E> set1,

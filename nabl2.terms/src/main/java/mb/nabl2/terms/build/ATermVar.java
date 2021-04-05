@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.functions.Action1;
 
 import com.google.common.base.Preconditions;
 
@@ -13,7 +14,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.util.CapsuleUtil;
 
-@Value.Immutable(builder = true, copy = true, prehash = false, lazyhash = false)
+@Value.Immutable
 @Serial.Version(value = 42L)
 public abstract class ATermVar extends AbstractTerm implements ITermVar {
 
@@ -38,6 +39,10 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return CapsuleUtil.immutableSet(this);
     }
 
+    @Override public void visitVars(Action1<ITermVar> onVar) {
+        onVar.apply(this);
+    }
+
     @Override public <T> T match(ITerm.Cases<T> cases) {
         return cases.caseVar(this);
     }
@@ -54,15 +59,8 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return cases.caseVar(this);
     }
 
-    private volatile int hashCode;
-
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(getResource(), getName());
-            hashCode = result;
-        }
-        return result;
+        return Objects.hash(getResource(), getName());
     }
 
     @Override public boolean equals(Object other) {
