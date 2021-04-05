@@ -92,10 +92,15 @@ public class CEqual implements IConstraint, Serializable {
         term1.getVars().forEach(onFreeVar::apply);
         term2.getVars().forEach(onFreeVar::apply);
         if(message != null) {
-            message.visitVars(onFreeVar); }
+            message.visitVars(onFreeVar);
+        }
     }
 
     @Override public CEqual apply(ISubstitution.Immutable subst) {
+        return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
+    }
+
+    @Override public CEqual unsafeApply(ISubstitution.Immutable subst) {
         return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
     }
 

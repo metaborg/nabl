@@ -81,6 +81,10 @@ public class CFalse implements IConstraint, Serializable {
         return new CFalse(cause, message == null ? null : message.apply(subst));
     }
 
+    @Override public CFalse unsafeApply(ISubstitution.Immutable subst) {
+        return new CFalse(cause, message == null ? null : message.apply(subst));
+    }
+
     @Override public CFalse apply(IRenaming subst) {
         return new CFalse(cause, message == null ? null : message.apply(subst));
     }

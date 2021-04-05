@@ -111,6 +111,11 @@ public class CUser implements IConstraint, Serializable {
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
+    @Override public CUser unsafeApply(ISubstitution.Immutable subst) {
+        return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst),
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+    }
+
     @Override public CUser apply(IRenaming subst) {
         return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst),
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));

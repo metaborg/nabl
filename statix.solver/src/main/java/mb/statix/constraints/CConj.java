@@ -78,6 +78,10 @@ public class CConj implements IConstraint, Serializable {
         return new CConj(left.apply(subst), right.apply(subst), cause);
     }
 
+    @Override public CConj unsafeApply(ISubstitution.Immutable subst) {
+        return new CConj(left.unsafeApply(subst), right.unsafeApply(subst), cause);
+    }
+
     @Override public CConj apply(IRenaming subst) {
         return new CConj(left.apply(subst), right.apply(subst), cause);
     }

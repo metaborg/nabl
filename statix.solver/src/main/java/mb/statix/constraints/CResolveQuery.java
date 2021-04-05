@@ -116,6 +116,11 @@ public class CResolveQuery implements IConstraint, Serializable {
                 cause, message == null ? null : message.apply(subst));
     }
 
+    @Override public CResolveQuery unsafeApply(ISubstitution.Immutable subst) {
+        return new CResolveQuery(filter.unsafeApply(subst), min.unsafeApply(subst), subst.apply(scopeTerm),
+                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+    }
+
     @Override public CResolveQuery apply(IRenaming subst) {
         return new CResolveQuery(filter.apply(subst), min.apply(subst), subst.apply(scopeTerm), subst.apply(resultTerm),
                 cause, message == null ? null : message.apply(subst));

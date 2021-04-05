@@ -97,6 +97,11 @@ public class CTellEdge implements IConstraint, Serializable {
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
+    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+    }
+
     @Override public CTellEdge apply(IRenaming subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
                 ownCriticalEdges.apply(subst));

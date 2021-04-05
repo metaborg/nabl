@@ -41,6 +41,10 @@ public class QueryMin implements Serializable {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }
 
+    public QueryMin unsafeApply(ISubstitution.Immutable subst) {
+        return new QueryMin(labelOrd, dataOrd.unsafeApply(subst));
+    }
+
     public QueryMin apply(IRenaming subst) {
         return new QueryMin(labelOrd, dataOrd.apply(subst));
     }

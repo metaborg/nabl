@@ -39,6 +39,7 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
@@ -69,8 +70,9 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         final CUser predicate = input.focus();
 
         final java.util.Map<Rule, Double> rules = getWeightedRules(ctx, predicate.name());
+        // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(input.state().unifier(), rules.keySet(),
-                predicate.args(), predicate, ApplyMode.RELAXED);
+                predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
         results.forEach(result -> {

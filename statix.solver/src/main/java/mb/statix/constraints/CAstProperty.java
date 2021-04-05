@@ -103,6 +103,10 @@ public class CAstProperty implements IConstraint, Serializable {
         return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
     }
 
+    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
+        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+    }
+
     @Override public CAstProperty apply(IRenaming subst) {
         return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
     }

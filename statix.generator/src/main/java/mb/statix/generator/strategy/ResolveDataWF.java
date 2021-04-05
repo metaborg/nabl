@@ -34,6 +34,7 @@ import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
+import mb.statix.spec.ApplyMode.Safety;
 
 public class ResolveDataWF implements DataWF<ITerm, CEqual> {
     private final IState.Immutable state;
@@ -53,8 +54,10 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // apply rule
         final ApplyResult applyResult;
-        if((applyResult = RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED)
-                .orElse(null)) == null) {
+        // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+        if((applyResult =
+                RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED, Safety.UNSAFE)
+                        .orElse(null)) == null) {
             return Optional.empty();
         }
         final IState.Immutable applyState = state;

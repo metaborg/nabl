@@ -28,7 +28,7 @@ import mb.statix.solver.completeness.ICompleteness;
 class ApplyRelaxed extends ApplyMode<VoidException> {
 
     @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
-            IConstraint cause) throws VoidException {
+            IConstraint cause, Safety safety) throws VoidException {
         Set.Immutable<ITermVar> freeVars = rule.freeVars();
         for(ITerm arg : args) {
             freeVars = freeVars.__insertAll(arg.getVars());
@@ -48,7 +48,12 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         // non-generated variables that are constrained by the match
         final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), generatedVars);
 
-        final IConstraint appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+        final IConstraint appliedBody;
+        if(safety.equals(Safety.UNSAFE)) {
+            appliedBody = rule.body().unsafeApply(matchResult.substitution()).withCause(cause);
+        } else {
+            appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+        }
         final ICompleteness.Immutable appliedCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(matchResult.substitution());
 

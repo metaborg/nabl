@@ -79,6 +79,11 @@ public interface IConstraint {
     IConstraint apply(ISubstitution.Immutable subst);
 
     /**
+     * Apply unguarded substitution, which may result in capture.
+     */
+    IConstraint unsafeApply(ISubstitution.Immutable subst);
+
+    /**
      * Apply variable renaming.
      */
     IConstraint apply(IRenaming subst);

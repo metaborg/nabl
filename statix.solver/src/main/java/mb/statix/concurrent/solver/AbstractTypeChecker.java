@@ -32,6 +32,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -126,8 +127,10 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         final IState.Immutable unitState = State.of().withResource(context.id());
         final ApplyResult applyResult;
         try {
-            if((applyResult = RuleUtil.apply(unitState.unifier(), rule.get(), scopes, null, ApplyMode.STRICT)
-                    .orElse(null)) == null) {
+            // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+            if((applyResult =
+                    RuleUtil.apply(unitState.unifier(), rule.get(), scopes, null, ApplyMode.STRICT, Safety.UNSAFE)
+                            .orElse(null)) == null) {
                 return CompletableFuture.completedExceptionally(
                         new IllegalArgumentException("Cannot apply initial rule to root scope."));
             }

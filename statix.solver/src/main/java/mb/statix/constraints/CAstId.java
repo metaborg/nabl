@@ -78,6 +78,10 @@ public class CAstId implements IConstraint, Serializable {
         return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
     }
 
+    @Override public CAstId unsafeApply(ISubstitution.Immutable subst) {
+        return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
+    }
+
     @Override public CAstId apply(IRenaming subst) {
         return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
     }

@@ -46,6 +46,10 @@ public class QueryFilter implements Serializable {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }
 
+    public QueryFilter unsafeApply(ISubstitution.Immutable subst) {
+        return new QueryFilter(pathWf, dataWf.unsafeApply(subst));
+    }
+
     public QueryFilter apply(IRenaming subst) {
         return new QueryFilter(pathWf, dataWf.apply(subst));
     }

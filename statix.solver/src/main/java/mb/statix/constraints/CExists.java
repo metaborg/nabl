@@ -135,6 +135,23 @@ public class CExists implements IConstraint, Serializable {
         return new CExists(vars, constraint, cause, bodyCriticalEdges, freeVars);
     }
 
+    @Override public CExists unsafeApply(ISubstitution.Immutable subst) {
+        ISubstitution.Immutable localSubst = subst.removeAll(vars);
+        if(localSubst.isEmpty()) {
+            return this;
+        }
+
+        IConstraint constraint = this.constraint;
+        @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
+
+        constraint = constraint.unsafeApply(localSubst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
+        }
+
+        return new CExists(vars, constraint, cause, bodyCriticalEdges, null);
+    }
+
     @Override public CExists apply(IRenaming subst) {
         Set.Immutable<ITermVar> vars = this.vars;
         IConstraint constraint = this.constraint;

@@ -109,6 +109,13 @@ public class CInequal implements IConstraint, Serializable {
                 message == null ? null : message.apply(subst));
     }
 
+    @Override public CInequal unsafeApply(ISubstitution.Immutable subst) {
+        final Set.Immutable<ITermVar> us =
+                universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());
+        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
+                message == null ? null : message.apply(subst));
+    }
+
     @Override public CInequal apply(IRenaming subst) {
         final Set.Immutable<ITermVar> us =
                 universals.stream().map(v -> subst.rename(v)).collect(CapsuleCollectors.toSet());

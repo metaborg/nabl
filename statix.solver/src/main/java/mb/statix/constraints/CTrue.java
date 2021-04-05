@@ -63,6 +63,10 @@ public class CTrue implements IConstraint, Serializable {
         return this;
     }
 
+    @Override public CTrue unsafeApply(@SuppressWarnings("unused") ISubstitution.Immutable subst) {
+        return this;
+    }
+
     @Override public CTrue apply(@SuppressWarnings("unused") IRenaming subst) {
         return this;
     }

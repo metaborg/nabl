@@ -128,6 +128,28 @@ public abstract class ARule {
     }
 
     /**
+     * Apply unguarded substitution, which may result in capture.
+     */
+    public Rule unsafeApply(ISubstitution.Immutable subst) {
+        ISubstitution.Immutable localSubst = subst.removeAll(paramVars());
+        if(localSubst.isEmpty()) {
+            return (Rule) this;
+        }
+
+        List<Pattern> params = this.params();
+        IConstraint body = this.body();
+        ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
+
+        body = body.unsafeApply(localSubst);
+        if(bodyCriticalEdges != null) {
+            bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
+        }
+
+        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
+    }
+
+
+    /**
      * Apply variable renaming.
      */
     public Rule apply(IRenaming subst) {

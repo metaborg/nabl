@@ -80,11 +80,17 @@ public class CTry implements IConstraint, Serializable {
 
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         constraint.visitFreeVars(onFreeVar);
-        if(message != null) { message.visitVars(onFreeVar); }
+        if(message != null) {
+            message.visitVars(onFreeVar);
+        }
     }
 
     @Override public CTry apply(ISubstitution.Immutable subst) {
         return new CTry(constraint.apply(subst), cause, message == null ? null : message.apply(subst));
+    }
+
+    @Override public CTry unsafeApply(ISubstitution.Immutable subst) {
+        return new CTry(constraint.unsafeApply(subst), cause, message == null ? null : message.apply(subst));
     }
 
     @Override public CTry apply(IRenaming subst) {

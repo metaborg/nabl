@@ -19,6 +19,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -50,9 +51,9 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         final IUniDisunifier.Immutable unifier = state.unifier();
         try {
             final ApplyResult result;
-            if((result = RuleUtil
-                    .apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
-                    .orElse(null)) == null) {
+            // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+            if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
+                    ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                 return false;
             }
             if(Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),

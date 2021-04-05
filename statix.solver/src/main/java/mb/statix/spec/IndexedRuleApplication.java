@@ -29,7 +29,6 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.Renaming;
-import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
@@ -37,6 +36,7 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.spec.ApplyMode.Safety;
 
 /**
  * A special rule application that supports indexing in its parameters. The index allows grouping based on which
@@ -163,8 +163,8 @@ public class IndexedRuleApplication {
         final IState.Immutable newState = _state.freeze();
 
         final ApplyResult applyResult;
-        if((applyResult =
-                RuleUtil.apply(newState.unifier(), rule, args, null, ApplyMode.RELAXED).orElse(null)) == null) {
+        if((applyResult = RuleUtil.apply(newState.unifier(), rule, args, null, ApplyMode.RELAXED, Safety.SAFE)
+                .orElse(null)) == null) {
             return Optional.empty();
         }
 
@@ -193,8 +193,7 @@ public class IndexedRuleApplication {
             ira = new IndexedRuleApplication(spec, newParams, null, index);
         } else {
             final IConstraint residualConstraint = solveResult.delayed();
-            final java.util.Set<ITermVar> newFreeVars =
-                    Sets.difference(residualConstraint.freeVars(), newParamVars);
+            final java.util.Set<ITermVar> newFreeVars = Sets.difference(residualConstraint.freeVars(), newParamVars);
             if(!newFreeVars.isEmpty()) {
                 throw Delay.ofVars(newFreeVars);
             }

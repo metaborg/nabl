@@ -107,6 +107,7 @@ import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spoofax.StatixTerms;
 
 public class StatixSolver {
@@ -496,7 +497,8 @@ public class StatixSolver {
                 }
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
-                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+                // unsafeApply : we assume the resource of spec variables is empty and of state variables non-empty
+                final IConstraint newConstraint = c.constraint().unsafeApply(subst).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
@@ -756,8 +758,9 @@ public class StatixSolver {
                 final LazyDebugContext proxyDebug = new LazyDebugContext(debug);
 
                 final List<Rule> rules = spec.rules().getRules(name);
+                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                 final List<Tuple2<Rule, ApplyResult>> results =
-                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED);
+                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE);
                 if(results.isEmpty()) {
                     debug.debug("No rule applies");
                     return fail(c);
@@ -994,9 +997,9 @@ public class StatixSolver {
                 ICancel cancel) throws InterruptedException {
             try {
                 final ApplyResult result;
-                if((result =
-                        RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
-                                .orElse(null)) == null) {
+                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null,
+                        ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                     return CompletableFuture.completedFuture(false);
                 }
                 return entails(context, spec, state, result.body(), result.criticalEdges(), new NullDebugContext(),
@@ -1025,9 +1028,9 @@ public class StatixSolver {
             return absorbDelays(() -> {
                 try {
                     final ApplyResult result;
-                    if((result =
-                            RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
-                                    .orElse(null)) == null) {
+                    // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                    if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null,
+                            ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
                     return entails(context, result.body(), result.criticalEdges(), cancel);
@@ -1064,9 +1067,9 @@ public class StatixSolver {
                 ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
             try {
                 final ApplyResult result;
-                if((result = RuleUtil
-                        .apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
-                        .orElse(null)) == null) {
+                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
+                        ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                     return CompletableFuture.completedFuture(false);
                 }
                 return entails(context, spec, state, result.body(), result.criticalEdges(), new NullDebugContext(),
@@ -1093,9 +1096,10 @@ public class StatixSolver {
                                 final Tuple2<ITermVar, IState.Immutable> d2_state =
                                         d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
                                 try {
+                                    // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                                     if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                                            ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
-                                            .orElse(null)) == null) {
+                                            ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
+                                            Safety.UNSAFE).orElse(null)) == null) {
                                         alwaysTrue = CompletableFuture.completedFuture(false);
                                     } else {
                                         alwaysTrue = entails(context, spec, d2_state._2(), result.body(),
@@ -1141,8 +1145,9 @@ public class StatixSolver {
             return absorbDelays(() -> {
                 try {
                     final ApplyResult result;
+                    // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                     if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
-                            ApplyMode.STRICT).orElse(null)) == null) {
+                            ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
                     return entails(context, result.body(), result.criticalEdges(), cancel);
@@ -1170,9 +1175,10 @@ public class StatixSolver {
                                                 state.freshVar(B.newVar(state.resource(), "d1"));
                                         final Tuple2<ITermVar, IState.Immutable> d2_state =
                                                 d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
+                                        // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                                         if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                                                ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT)
-                                                .orElse(null)) == null) {
+                                                ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
+                                                Safety.UNSAFE).orElse(null)) == null) {
                                             return CompletableFuture.completedFuture(false);
                                         }
                                         return entails(context, spec, state, result.body(), result.criticalEdges(),

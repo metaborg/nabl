@@ -106,6 +106,11 @@ public class CArith implements IConstraint, Serializable {
                 message == null ? null : message.apply(subst));
     }
 
+    @Override public CArith unsafeApply(ISubstitution.Immutable subst) {
+        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
+                message == null ? null : message.apply(subst));
+    }
+
     @Override public CArith apply(IRenaming subst) {
         return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
                 message == null ? null : message.apply(subst));

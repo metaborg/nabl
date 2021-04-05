@@ -91,6 +91,11 @@ public class CNew implements IConstraint, Serializable {
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
+    @Override public CNew unsafeApply(ISubstitution.Immutable subst) {
+        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+    }
+
     @Override public CNew apply(IRenaming subst) {
         return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));

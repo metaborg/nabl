@@ -81,6 +81,7 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -394,7 +395,8 @@ class GreedySolver {
                 }
                 final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
                 final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
-                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+                // unsafeApply : we assume the resource of spec variables is empty and of state variables non-empty
+                final IConstraint newConstraint = c.constraint().unsafeApply(subst).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
@@ -631,8 +633,9 @@ class GreedySolver {
                 final IDebugContext debug = params.debug();
 
                 final List<Rule> rules = spec.rules().getRules(name);
+                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                 final List<Tuple2<Rule, ApplyResult>> results =
-                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED);
+                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE);
                 if(results.isEmpty()) {
                     debug.debug("No rule applies");
                     return fail(c);

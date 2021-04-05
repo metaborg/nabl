@@ -46,6 +46,7 @@ import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.StateUtil;
+import mb.statix.spec.ApplyMode.Safety;
 
 public class RuleUtil {
 
@@ -69,8 +70,8 @@ public class RuleUtil {
      */
     public static <E extends Throwable> Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(
             IUniDisunifier.Immutable state, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
-            ApplyMode<E> mode) throws E {
-        return applyOrdered(state, rules, args, cause, true, mode)
+            ApplyMode<E> mode, Safety safety) throws E {
+        return applyOrdered(state, rules, args, cause, true, mode, safety)
                 .map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
     }
 
@@ -91,8 +92,9 @@ public class RuleUtil {
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
     public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IUniDisunifier.Immutable state,
-            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode) throws E {
-        return applyOrdered(state, rules, args, cause, false, mode).get();
+            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety)
+            throws E {
+        return applyOrdered(state, rules, args, cause, false, mode, safety).get();
     }
 
     /**
@@ -101,13 +103,13 @@ public class RuleUtil {
      */
     private static <E extends Throwable> Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(
             IUniDisunifier.Immutable unifier, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
-            boolean onlyOne, ApplyMode<E> mode) throws E {
+            boolean onlyOne, ApplyMode<E> mode, Safety safety) throws E {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
             // apply rule
             final ApplyResult applyResult;
-            if((applyResult = apply(unifier, rule, args, cause, mode).orElse(null)) == null) {
+            if((applyResult = apply(unifier, rule, args, cause, mode, safety).orElse(null)) == null) {
                 // this rule does not apply, continue to next rules
                 continue;
             }
@@ -139,20 +141,20 @@ public class RuleUtil {
      * applied. The result may contain equalities that need to be satisfied for the application to be valid.
      */
     public static <E extends Throwable> Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule,
-            List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode) throws E {
-        return mode.apply(unifier, rule, args, cause);
+            List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety) throws E {
+        return mode.apply(unifier, rule, args, cause, safety);
     }
 
     /**
      * Apply the given rules to the given arguments. Returns the results of application.
      */
     public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(IUniDisunifier.Immutable state,
-            Collection<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode)
-            throws E {
+            Collection<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode,
+            Safety safety) throws E {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         for(Rule rule : rules) {
             final ApplyResult result;
-            if((result = apply(state, rule, args, cause, mode).orElse(null)) != null) {
+            if((result = apply(state, rule, args, cause, mode, safety).orElse(null)) != null) {
                 results.add(Tuple2.of(rule, result));
             }
         }
