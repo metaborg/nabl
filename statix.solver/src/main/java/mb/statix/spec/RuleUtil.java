@@ -47,6 +47,7 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.StateUtil;
 import mb.statix.spec.ApplyMode.Safety;
 
 public class RuleUtil {
@@ -174,7 +175,7 @@ public class RuleUtil {
         final List<Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable>> guards = new ArrayList<>();
         RULE: for(Rule rule : rules) {
             final Set.Immutable<ITermVar> ruleParamVars = rule.paramVars();
-            final FreshVars fresh = new FreshVars(ruleParamVars);
+            final FreshVars fresh = new FreshVars(rule.freeVars(), ruleParamVars);
 
             final List<ITerm> paramTerms = new ArrayList<>();
             final IUniDisunifier.Transient _paramsUnifier = PersistentUniDisunifier.Immutable.of().melt();
@@ -194,15 +195,7 @@ public class RuleUtil {
             final ITerm paramsTerm = B.newTuple(paramTerms);
             final IUniDisunifier.Immutable paramsUnifier = _paramsUnifier.freeze();
 
-            final List<Pattern> params = new ArrayList<>();
-            final Set.Transient<ITermVar> _newVars = paramsUnifier.varSet().asTransient();
-            for(ITerm paramTerm : paramTerms) {
-                params.add(P.fromTerm(paramTerm));
-                _newVars.__removeAll(paramTerm.getVars());
-            }
-            final Set.Immutable<ITermVar> newVars = _newVars.freeze();
-
-            final IUniDisunifier.Transient guardsUnifier = PersistentUniDisunifier.Immutable.of().melt();
+            final IUniDisunifier.Transient _unifier = paramsUnifier.melt();
             GUARD: for(Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable> guard : guards) {
                 final IRenaming guardRen = fresh.fresh(guard._1());
                 final Set.Immutable<ITermVar> guardVars = fresh.reset();
@@ -216,25 +209,25 @@ public class RuleUtil {
                 } catch(OccursException ex) {
                     continue GUARD; // skip, guard already satisfied
                 }
-                if(!guardsUnifier.disunify(guardVars, guardUnifier).isPresent()) {
-                    continue RULE; // skip, incompatible guards
+                if(!_unifier.disunify(guardVars, guardUnifier).isPresent()) {
+                    continue RULE; // skip, incompatible patterns & guards
                 }
             }
-
-            final IUniDisunifier.Immutable unifier;
-            try {
-                if((unifier = paramsUnifier.uniDisunify(guardsUnifier).map(r -> r.unifier()).orElse(null)) == null) {
-                    continue RULE; // skip, incompatible guards
-                }
-            } catch(OccursException ex) {
-                continue RULE; // skip, incompatible guards
-            }
+            final IUniDisunifier.Immutable unifier = _unifier.freeze();
 
             final Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable> guard =
                     Tuple3.of(paramVars, paramsTerm, paramsUnifier);
             guards.add(guard);
 
-            final CExists body = rule.body().intern(newVars, unifier);
+            final List<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImmutableList.toImmutableList());
+
+            // we initialized FreshVars to make sure these do not capture any free variables,
+            // or shadow any pattern variables. We can therefore use the original body without any
+            // renaming
+            final Set.Immutable<ITermVar> newBodyVars = paramVars.__removeAll(paramsTerm.getVars());
+            final IConstraint body =
+                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()));
+
             final Rule newRule = Rule.builder().from(rule).params(params).body(body).build();
 
             newRules.add(newRule);
@@ -553,8 +546,7 @@ public class RuleUtil {
                     }
                 }, false).apply(r.body()).collect(Collectors.toList());
                 for(IConstraint c : cs) {
-                    final Rule f = r.withLabel("").withBody(
-                            new CExists(CapsuleUtil.immutableSet(), c));
+                    final Rule f = r.withLabel("").withBody(new CExists(CapsuleUtil.immutableSet(), c));
                     generation.put(name, simplify(f));
                 }
             }
@@ -573,7 +565,7 @@ public class RuleUtil {
 
     public static void vars(Rule rule, Action1<ITermVar> onVar) {
         rule.paramVars().forEach(onVar::apply);
-        rule.body().visitVars(onVar);
+        Constraints.vars(rule.body(), onVar);
     }
 
 }

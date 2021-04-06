@@ -25,7 +25,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.constraints.CExists;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
@@ -45,7 +45,7 @@ public abstract class ARule {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
-    @Value.Parameter public abstract CExists body();
+    @Value.Parameter public abstract IConstraint body();
 
     @Value.Default public @Nullable ICompleteness.Immutable bodyCriticalEdges() {
         return null;
@@ -55,7 +55,7 @@ public abstract class ARule {
         if(params().stream().anyMatch(p -> p.isConstructed())) {
             return Optional.empty();
         }
-        return body().isAlways();
+        return Constraints.trivial(body()); // FIXME
     }
 
 
@@ -100,7 +100,7 @@ public abstract class ARule {
         }
 
         List<Pattern> params = this.params();
-        CExists body = this.body();
+        IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
         Set.Immutable<ITermVar> freeVars = this.freeVars;
 
@@ -136,7 +136,7 @@ public abstract class ARule {
         }
 
         List<Pattern> params = this.params();
-        CExists body = this.body();
+        IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
         body = body.unsafeApply(localSubst);
@@ -153,7 +153,7 @@ public abstract class ARule {
      */
     public Rule apply(IRenaming subst) {
         List<Pattern> params = this.params();
-        CExists body = this.body();
+        IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
         params = params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
@@ -192,15 +192,6 @@ public abstract class ARule {
 
     @Override public String toString() {
         return toString(ITerm::toString);
-    }
-
-
-    public static Rule of(String name, Iterable<? extends Pattern> params, IConstraint body) {
-        return Rule.of(name, params, new CExists(CapsuleUtil.immutableSet(), body));
-    }
-
-    public static Rule of(String name, Iterable<? extends Pattern> params, CExists body) {
-        return Rule.of(name, params, body);
     }
 
 

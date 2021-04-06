@@ -30,6 +30,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.Renaming;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -74,7 +76,6 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LazyDebugContext;
 import mb.statix.solver.log.NullDebugContext;
-import mb.statix.solver.persistent.Solver.ApplyInStateResult;
 import mb.statix.solver.persistent.query.ConstraintQueries;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
@@ -385,17 +386,26 @@ class GreedySolver {
             }
 
             @Override public Boolean caseExists(CExists c) throws InterruptedException {
+                final Renaming.Builder _existentials = Renaming.builder();
+                IState.Immutable newState = state;
+                for(ITermVar var : c.vars()) {
+                    final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var);
+                    final ITermVar freshVar = varAndState._1();
+                    newState = varAndState._2();
+                    _existentials.put(var, freshVar);
+                }
+                final Renaming existentials = _existentials.build();
+
+                final ISubstitution.Immutable subst = existentials.asSubstitution();
+                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
                 }
-                final ApplyInStateResult applyResult;
-                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                if((applyResult = Solver.applyInState(state, null, c, Safety.UNSAFE).orElse(null)) == null) {
-                    return fail(c);
-                }
-                return success(c, applyResult.state, applyResult.updatedVars, disjoin(applyResult.constraint),
-                        applyResult.criticalEdges, applyResult.existentials, fuel);
+                final ICompleteness.Immutable newCriticalEdges =
+                        c.bodyCriticalEdges().orElse(NO_NEW_CRITICAL_EDGES).apply(subst);
+                return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges,
+                        existentials.asMap(), fuel);
             }
 
             @Override public Boolean caseFalse(CFalse c) {

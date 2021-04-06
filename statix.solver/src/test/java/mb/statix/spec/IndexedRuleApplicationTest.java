@@ -15,7 +15,6 @@ import com.google.common.collect.HashMultimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
@@ -69,7 +68,7 @@ public class IndexedRuleApplicationTest {
 
     @Test public void testPartialInBody() throws Delay, InterruptedException {
         final Rule rule =
-                Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), PersistentUniDisunifier.Immutable.of(), new CEqual(x, B.newTuple(y, z))));
+                Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(x, B.newTuple(y, z))));
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertEquals(assertPresent(ira.applyIndex(foo, bar)), assertPresent(ira.applyIndex(foo, baz)));
         assertNotEquals(assertPresent(ira.applyIndex(bar, foo)), assertPresent(ira.applyIndex(baz, foo)));

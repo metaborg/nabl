@@ -18,7 +18,6 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CConj;
-import mb.statix.constraints.CExists;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
@@ -131,7 +130,7 @@ public class CompletenessUtil {
             Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
         final Set.Immutable<ITermVar> paramVars = rule.paramVars();
         final ICompleteness.Transient criticalEdges = Completeness.Transient.of();
-        final CExists newBody = (CExists) precomputeCriticalEdges(rule.body(), spec, (s, l) -> {
+        final IConstraint newBody = precomputeCriticalEdges(rule.body(), spec, (s, l) -> {
             if(paramVars.contains(s)) {
                 criticalEdges.add(s, l, PersistentUniDisunifier.Immutable.of());
             } else {

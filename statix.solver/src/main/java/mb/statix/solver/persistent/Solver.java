@@ -19,9 +19,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.Renaming;
-import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.UnifierFormatter;
-import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.nabl2.util.Tuple2;
@@ -29,8 +27,6 @@ import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.solver.StatixSolver;
-import mb.statix.constraints.CExists;
-import mb.statix.constraints.CTrue;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
@@ -273,27 +269,31 @@ public class Solver {
 
 
     public static Tuple2<IState.Immutable, IRenaming> buildExistentials(IState.Immutable state, Set<ITermVar> vars) {
-        final Renaming.Builder renaming = Renaming.builder();
+        final Renaming.Builder _existentials = Renaming.builder();
         IState.Immutable newState = state;
         for(ITermVar var : vars) {
             final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var);
             final ITermVar freshVar = varAndState._1();
             newState = varAndState._2();
-            renaming.put(var, freshVar);
+            _existentials.put(var, freshVar);
         }
-        return Tuple2.of(newState, renaming.build());
+        final Renaming existentials = _existentials.build();
+        return Tuple2.of(newState, existentials);
     }
 
     public static Optional<ApplyInStateResult> applyInState(final IState.Immutable state,
-            final @Nullable ICompleteness.Immutable criticalEdges, final CExists body, final Safety safety) {
+            final @Nullable ICompleteness.Immutable criticalEdges, final IConstraint body, final Safety safety) {
+        return Optional.of(new ApplyInStateResult(state, Collections.emptySet(), body,
+                criticalEdges != null ? criticalEdges : Completeness.Immutable.of(), Collections.emptyMap()));
+        /*
         final Optional<Boolean> isAlways = body.isAlways();
         if(isAlways.isPresent() && !isAlways.get()) {
             return Optional.empty();
         }
-
+        
         final Tuple2<IState.Immutable, IRenaming> ext = buildExistentials(state, body.vars());
         IState.Immutable newState = ext._1();
-
+        
         final IUniDisunifier.Immutable newUnifier;
         final Set<ITermVar> updatedVars;
         if(body.unifier().isEmpty()) {
@@ -313,13 +313,13 @@ public class Solver {
             updatedVars = unifyResult.result().domainSet();
         }
         newState = newState.withUnifier(newUnifier);
-
+        
         ICompleteness.Immutable newBodyCriticalEdges =
                 criticalEdges != null ? criticalEdges : Completeness.Immutable.of();
         if(body.bodyCriticalEdges().isPresent()) {
             newBodyCriticalEdges = newBodyCriticalEdges.addAll(body.bodyCriticalEdges().get(), newUnifier);
         }
-
+        
         IConstraint newConstraint;
         if(isAlways.isPresent() && isAlways.get()) {
             newConstraint = new CTrue();
@@ -332,9 +332,10 @@ public class Solver {
             }
         }
         newConstraint = newConstraint.withCause(body.cause().orElse(null));
-
+        
         return Optional.of(
                 new ApplyInStateResult(newState, updatedVars, newConstraint, newBodyCriticalEdges, ext._2().asMap()));
+                */
     }
 
     public static class ApplyInStateResult {

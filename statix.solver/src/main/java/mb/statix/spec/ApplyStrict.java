@@ -8,7 +8,6 @@ import java.util.Optional;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.statix.constraints.CExists;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
@@ -22,7 +21,7 @@ class ApplyStrict extends ApplyMode<Delay> {
                 P.match(rule.params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars)).orElse(null)) == null) {
             return Optional.empty();
         }
-        final CExists newBody;
+        final IConstraint newBody;
         if(safety.equals(Safety.UNSAFE)) {
             newBody = rule.body().unsafeApply(subst).withCause(cause);
         } else {

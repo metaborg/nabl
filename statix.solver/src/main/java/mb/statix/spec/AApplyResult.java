@@ -8,7 +8,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.terms.unification.ud.Diseq;
-import mb.statix.constraints.CExists;
+import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
 @Value.Immutable
@@ -24,7 +24,7 @@ public abstract class AApplyResult {
     /**
      * The applied rule body.
      */
-    @Value.Parameter public abstract CExists body();
+    @Value.Parameter public abstract IConstraint body();
 
     /**
      * Critical edges that are introduced by the application of this rule.
